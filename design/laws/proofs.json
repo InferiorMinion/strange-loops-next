@@ -323,6 +323,11 @@
    "states":
    "∀ {xs ys : List Loops.Record}, Loops.Addressed xs → Loops.Addressed ys → (∀ (r : Loops.Record), r ∈ xs ↔ r ∈ ys) → Loops.perThing xs = Loops.perThing ys",
    "module": "Laws.Things"},
+  "Loops.perThing_cannot_follow_admit":
+  {"uses": [],
+   "states":
+   "¬∃ g, ∀ (xs : List Loops.Record) (r : Loops.Record), Loops.Distinct (xs ++ [r]) → g (Loops.perThing (Loops.admit (fun x x_1 => true) xs)) r = Loops.perThing (Loops.admit (fun x x_1 => true) (xs ++ [r]))",
+   "module": "Laws.Things"},
   "Loops.perHeads_sub":
   {"uses":
    ["Loops.LatestBy.Inv.heads_mem",

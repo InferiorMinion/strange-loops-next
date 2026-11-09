@@ -75,7 +75,7 @@ Over-head proofs use cached LatestBy state, not merely a cached answer.
 | `acc.set` | `Acc.set_decides` | any step that commutes gives the same state for the same set | every count, sum, extrema vector |
 | `acc.late` | `Acc.late` | a late record folds onto the cached state | (follows from `acc.set`) |
 | `heads.set` | `OverHeads.set_decides` | any answer worked out from the heads depends only on the set | `fold/heads/*` |
-| `heads.late` | `OverHeads.late` | a late record folds onto the cached heads | (follows from `heads.set`) |
+| `heads.late` | `OverHeads.late` | a late record folds onto the cached heads of the records folded; a reader folds admitted records, and admission can retract (`admit.late`) | (follows from `heads.set`) |
 | `heads.why` | `Max.cannot_follow_prev` | Max's scalar state cannot maintain the maximum over changing heads | `fold/heads/01`, `02` |
 | `view.no-resurrection` | `LatestBy.view`, `LatestBy.view_head_ids`, `LatestBy.no_false_resurrection` | A view keeps each thing's head ids. A record superseded within a thing is never current there. | `fold/view/*` |
 | `view.refines` | `Where.eval_view` | a view only loses information: a `where` answer stays or becomes unknown | `fold/select/01` |
@@ -126,6 +126,7 @@ It applies admission to `prev`, then computes per-thing states over admitted rec
 | `settle.erased` | `settle_erased` | once a record naming it in `erases` is held, every form of its target is erased | `realm/03`, `09` |
 | `admit.set` | `admit_same`, `refusalOf_none` | admission depends only on the set; a record is refused exactly when it isn't entitled to its `prev` | `realm/04` |
 | `admit.no-cross` | `admit_no_cross` | Each held `prev` target shares a thing with its admitted successor and permits replacement. Readers admit unknown targets because they cannot judge them. | `realm/04`, `08` |
+| `admit.late` | `perThing_cannot_follow_admit` | Admission isn't monotone in arrival. A record admitted while its `prev` target is unknown is refused when the target arrives about another thing, and the records it superseded are current again. No step from the admitted records' per-thing state follows that, so a caching reader keeps what such a revision supersedes. | (arrival, not a set: none) |
 | `thing.local` | `stateIn_local`, `perThing_set_decides` | For a fixed admitted set, a thing's state depends only on its records. The set decides per thing. | `realm/04`–`08`, `fold/latest-by/*` |
 | `view.no-resurrection` (things) | `admit_view`, `stateIn_view`, `stateIn_no_false_resurrection` | With an envelope-only admission rule, a view admits the same records and keeps each thing's heads in view form. A superseded record never becomes current within that thing. | `fold/view/*`, `spec/run/03` |
 

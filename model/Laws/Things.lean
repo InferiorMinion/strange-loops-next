@@ -481,4 +481,41 @@ theorem Latest.repeats {xs : List Record} (hx : Addressed xs) :
   Latest.set_decides (fun a ha b hb => hx a (by simpa using ha) b (by simpa using hb)) hx
     (by simp)
 
+/-! ## A cached heads state can't follow admission
+
+`OverHeads.late` folds a late record onto LatestBy state, over the records it
+is given. A reader gives it the admitted records, and admission isn't monotone
+in arrival: readers admit a record whose `prev` target they don't hold
+(`admit.no-cross`), then refuse it (`prev-unrelated`) once the target arrives
+about another thing. By then LatestBy has dropped the records it superseded.
+
+Here `s` revises `x` (both about `k1`) and also names `p`, which is about `k2`.
+Holding `[x, s]` or only `[s]`, a reader's per-thing state is the same: `k1`
+with named `{x, p}` and heads `[s]`. When `p` arrives, `s` is refused, and `k1`'s
+head is `x` in one history and nothing in the other. A conformant writer never
+emits `s` (`prev-unknown`, `prev-unrelated`), so `s` comes from a writer
+admission exists to stop. A caching reader keeps the records a revision with
+an unheld `prev` target supersedes. -/
+
+def ca.x : Record :=
+  { id := 1, kind := "task", observer := "sl:x", about := ["k1"], value := "", prev := [], emitted := default }
+def ca.s : Record :=
+  { id := 2, kind := "task", observer := "sl:x", about := ["k1"], value := "", prev := [1, 3], emitted := default }
+def ca.p : Record :=
+  { id := 3, kind := "task", observer := "sl:x", about := ["k2"], value := "", prev := [], emitted := default }
+
+/-- No step from the per-thing state of the admitted records follows a late
+arrival, even under the rule that allows everything. -/
+theorem perThing_cannot_follow_admit :
+    ¬ ∃ g : List (String × LatestBy) → Record → List (String × LatestBy), ∀ xs r,
+      Distinct (xs ++ [r]) →
+      g (perThing (admit (fun _ _ => true) xs)) r = perThing (admit (fun _ _ => true) (xs ++ [r])) := by
+  rintro ⟨g, hg⟩
+  have h₁ := hg [ca.x, ca.s] ca.p (by unfold Distinct; decide)
+  have h₂ := hg [ca.s] ca.p (by unfold Distinct; decide)
+  have e : perThing (admit (fun _ _ => true) [ca.x, ca.s]) = perThing (admit (fun _ _ => true) [ca.s]) := by
+    decide
+  rw [e, h₂] at h₁
+  exact absurd h₁ (by decide)
+
 end Loops
