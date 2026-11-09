@@ -5,9 +5,11 @@ Its file headings and exclusions are historical, not a coverage claim for the me
 The catalogue now follows moved definitions into `model/Loops/Id.lean` and `model/Loops/Fold.lean`.
 Use `node model/mutate/run.mjs --list` for current source paths.
 The runner tests check every current replacement site.
-The round-two fixes retain 187 original entries and eight guard mutations: 195 entries total.
+The round-two fixes retain 187 original entries and eight guard mutations: 195 entries.
+The D1 and D2 rulings add six entries for the new library definitions: 201 entries total.
 The raw-reader ordering mutations target library definitions under `Loops`.
-The cheap runner uses the same eight replacements and requires runtime failures after successful builds.
+The cheap runner uses those fourteen replacements and the four former D6 survivors.
+It requires runtime failures after successful builds.
 This inventory does not claim exhaustive coverage of the changed model.
 
 Retire `finish-occurred-stamp-of`: its extra plus-sign guard is equivalent under R4.
@@ -15,7 +17,8 @@ The actual instant parser already rejects every text containing `+`.
 Accepted instants use only digits and fixed UTC separators.
 Rejected instants still return `none` on either path.
 This is a source-based equivalence reason, not an inference from survival.
-The six older survivor entries remain unchanged.
+The six older survivor entries remain in the catalogue.
+D6 proves the four helper lemmas, so four of them no longer survive.
 
 The parser no longer calls `stripZeros`.
 Its accepted fractions already end with a nonzero digit; `tail_last` proves this property.
@@ -100,6 +103,10 @@ The catalogue includes existing entries without definition metadata.
 
 - `Loops.utf16Char`: covered by `wide-json-021`
 - `Loops.utf16`: covered by `last-json-utf16`
+- `Loops.highSurrogate`: covered by `d2-high-surrogate-range`
+- `Loops.lowSurrogate`: covered by `d2-low-surrogate-range`
+- `Loops.notUnicode`: excluded: It is a fixed refusal code. No direct eligible operation.
+- `Loops.ofUtf16?`: covered by `d2-lone-low-accepted`, `d2-lone-high-accepted`
 - `Loops.lexLt`: covered by `wide-json-022`
 - `Loops.strLt`: excluded: It delegates to lexLt. No direct eligible operation.
 - `Loops.insertBy`: covered by `wide-json-023`
@@ -138,6 +145,8 @@ The catalogue includes existing entries without definition metadata.
 - `Loops.Lens.apply`: covered by `extra-lens-apply`
 - `Loops.Lens.edit`: excluded: It maps parse results through diff. No direct eligible operation.
 - `Loops.Lens.normalize`: excluded: It maps parse results through render. No direct eligible operation.
+- `Loops.Lens.baseProblem`: covered by `d1-base-problem-remove`
+- `Loops.Lens.read`: covered by `d1-read-text-first`
 
 ## model/Loops/Occurred.lean
 

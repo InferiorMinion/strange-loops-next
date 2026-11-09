@@ -8,7 +8,7 @@ const model = dirname(fileURLToPath(import.meta.url));
 const root = dirname(model);
 // Both runners use the same replacement sites. This runner builds only runtime checks.
 const catalogue = JSON.parse(readFileSync(join(model, "mutate/mutants.json"), "utf8"));
-const guardMutants = ["step1-base32-reencode","step1-fraction-final-zero","step1-seconds-bound","step1-zone-only-z","step1-envelope-keys-remove","step1-envelope-keys-after-value","step1-draft-keys-after-values","step1-record-keys-after-values","d1-base-problem-remove","d1-read-text-first","d2-lone-low-accepted","d2-lone-high-accepted","d2-low-surrogate-range","wide-families-013","wide-spec-064","extra-families-max-acc","extra-families-min-acc"].map(id => {
+const guardMutants = ["step1-base32-reencode","step1-fraction-final-zero","step1-seconds-bound","step1-zone-only-z","step1-envelope-keys-remove","step1-envelope-keys-after-value","step1-draft-keys-after-values","step1-record-keys-after-values","d1-base-problem-remove","d1-read-text-first","d2-lone-low-accepted","d2-lone-high-accepted","d2-low-surrogate-range","d2-high-surrogate-range","wide-families-013","wide-spec-064","extra-families-max-acc","extra-families-min-acc"].map(id => {
   const m = catalogue.find(m => m.id === id);
   if (!m) throw new Error(`missing guard mutant: ${id}`);
   return [m.id, m.file.includes("/") ? m.file : `Loops/${m.file}`, m.before, m.after];

@@ -131,7 +131,7 @@ def rulingChecks : IO Unit := do
   ensure (Lens.lookup (L "a") [one, two] == some [L "one"]) "D1 raw lookup no longer takes the first section"
   ensure (Lens.diff [one, two] [two] == [.accepted (L "a") [L "two"]]) "D1 raw diff no longer matches the first section"
   -- D2: code units are text only when surrogates pair.
-  for units in [[0xD800], [0xDBFF], [0xDC00], [0xDFFF], [0xDC00, 0xD800], [0xD83D, 0x41],
+  for units in [[0xD800], [0xDBFF], [0xDC00], [0xDFFF], [0xDC00, 0xD800], [0xD83D, 0x41], [0xDBFF, 0x41],
       [0x41, 0xD83D], [0xD83D, 0xD83D, 0xDE00], [0xD83D, 0xDE00, 0xDE00], [0x110000], [0x10000]] do
     ensure ((ofUtf16? units).isNone) s!"D2 lone surrogate reads as text: {units}"
   ensure (ofUtf16? [0xD83D, 0xDE00] == some [Char.ofNat 0x1F600]) "D2 pair does not join"

@@ -1567,5 +1567,13 @@
     "after": "0xDC00 ≤ u && u < 0xDFFF",
     "reason": "Leave the last low surrogate out of the range.",
     "definition": "Loops.lowSurrogate"
+  },
+  {
+    "id": "d2-high-surrogate-range",
+    "file": "Json.lean",
+    "before": "0xD800 ≤ u && u < 0xDC00",
+    "after": "0xD800 ≤ u && u < 0xDBFF",
+    "reason": "Leave the last high surrogate out of the range.",
+    "definition": "Loops.highSurrogate"
   }
 ]
