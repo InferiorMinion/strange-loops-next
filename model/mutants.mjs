@@ -22,8 +22,8 @@ const mutants = [
   // D2, D4 and D5 at the record adapter gen and run share.
   ["text refusal before values", "Gen/Records.lean", 'if let some why := payloadTextRefusal kvs then', 'if let some why := (none : Option String) then'],
   ["text refusal after shape", "Gen/Records.lean", '  if let .error "envelope-field-unknown" := shaped then throw "envelope-field-unknown"\n', ''],
-  ["text refusal needs JSON", "Gen/Read.lean", 'match parseJsonAt text (syntaxOnly := true), parseJsonAt text with', 'match parseJsonAt text, parseJsonAt text with'],
-  ["text refusal is the surrogate's", "Gen/Read.lean", 'if what == notUnicode then some what else none', 'some notUnicode'],
+  ["text refusal needs JSON", "Gen/Read.lean", '  | .ok _, .error _ => some notUnicode\n  | _, _ => none', '  | _, .error (what, _) => if what == notUnicode then some what else none\n  | _, _ => none'],
+  ["text refusal reads the text", "Gen/Read.lean", '  | .ok _, .error _ => some notUnicode\n  | _, _ => none', '  | _, _ => none'],
   ["seed of 32 bytes", "Gen/Records.lean", '    if seed.length != 32 then bad "input.seed" s!"holds {seed.length} bytes; a signing seed is exactly 32"\n', ''],
   ["seed after writing", "Gen/Records.lean", '  let salt ← bytes "input.salt" (← req "input" kvs "salt")\n', '  let salt ← bytes "input.salt" (← req "input" kvs "salt")\n  let _ ← bytes "input.seed" (← req "input" kvs "seed")\n'],
   ["later envelope variant agrees", "Gen/Records.lean", 'if idOf H e\' (r.commit H) != id then', 'if false then'],

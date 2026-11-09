@@ -205,8 +205,9 @@ syntax, and a string or member name in it holds a lone surrogate. Text that is
 not JSON has no refusal here, wherever a surrogate stands in it; it is the
 caller's to report. -/
 def textRefusal (text : String) : Option String :=
+  -- The two readings differ only at a lone surrogate, so that is what failed.
   match parseJsonAt text (syntaxOnly := true), parseJsonAt text with
-  | .ok _, .error (what, _) => if what == notUnicode then some what else none
+  | .ok _, .error _ => some notUnicode
   | _, _ => none
 
 /-- Parse inputs as binary64 JSON, or say where the text stops being JSON. -/
