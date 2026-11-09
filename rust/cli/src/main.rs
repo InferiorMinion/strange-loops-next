@@ -48,10 +48,17 @@ enum Fail {
     Usage(String),
     Refused(String),
     System(String),
+    /// Whoever was reading our answer stopped.
+    Closed,
 }
 impl From<io::Error> for Fail {
     fn from(error: io::Error) -> Self {
-        Self::System(error.to_string())
+        if error.kind() == io::ErrorKind::BrokenPipe {
+            // The reader of our answer left, as `head` does. That is its choice.
+            Self::Closed
+        } else {
+            Self::System(error.to_string())
+        }
     }
 }
 fn refused(code: impl Into<String>) -> Fail {
@@ -230,6 +237,25 @@ fn write_changeset(
     Ok(lines)
 }
 
+/// A revision written without `--about` is about what it replaces: the things
+/// of its `prev` targets, when they all hold the same ones. A record about
+/// nothing anchors the thing its id names, so its revision is about that id.
+fn inherit_things(held: &Held, mut draft: batch::Draft) -> batch::Draft {
+    if !draft.env.about.is_empty() {
+        return draft;
+    }
+    let mut targets = draft.env.prev.iter().map(|id| {
+        held.line(id)
+            .map(|line| loops::json::canon_set(&batch::env_things(id, &line.env().about)))
+    });
+    if let Some(Some(things)) = targets.next() {
+        if targets.all(|other| other.as_ref() == Some(&things)) {
+            draft.env.about = things;
+        }
+    }
+    draft
+}
+
 fn emit(start: &Path, args: &[String]) -> Result<(), Fail> {
     let place = find_store(start)?;
     let held = place.read()?;
@@ -254,6 +280,7 @@ fn emit(start: &Path, args: &[String]) -> Result<(), Fail> {
         return say(&object(vec![("records", Json::Arr(records))]).canon());
     }
     let draft = draft::from_args(args, &now, &key.public(), |given| link(&held, given))?;
+    let draft = inherit_things(&held, draft);
     let lines = write_changeset(&place, &held, &key, &[draft])?;
     say(lines.first().map_or("", Line::id))
 }
@@ -553,7 +580,7 @@ fn run(args: &[String]) -> Result<(), Fail> {
 fn main() -> ExitCode {
     let args: Vec<String> = env::args().skip(1).collect();
     match run(&args) {
-        Ok(()) => ExitCode::SUCCESS,
+        Ok(()) | Err(Fail::Closed) => ExitCode::SUCCESS,
         Err(Fail::Refused(code)) => {
             eprintln!("refused: {code}");
             ExitCode::from(1)

@@ -229,6 +229,14 @@ fn a_batch_is_one_changeset_and_labels_name_its_records() {
         &Json::Int(1_i64.into())
     );
 
+    // A revision written without --about is about what it replaces, here the thing a
+    // record about nothing anchors.
+    let anchor = s.ok(&["emit", "note", "first"]);
+    let revised = s.ok(&["emit", "note", "--prev", &anchor, "second"]);
+    let state = s.json(&["about", &anchor]);
+    assert_eq!(text(&state, &["winner", "id"]), revised);
+    assert_eq!(len(&state, &["others"]), 0);
+
     // Nothing is written unless every draft is taken.
     let held = s.ok(&["export"]);
     for (bad, code) in [
@@ -254,7 +262,7 @@ fn a_batch_is_one_changeset_and_labels_name_its_records() {
         );
     }
     assert_eq!(s.ok(&["export"]), held);
-    assert_eq!(s.segments().len(), 1);
+    assert_eq!(s.segments().len(), 3);
 }
 
 #[test]

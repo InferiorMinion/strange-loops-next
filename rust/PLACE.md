@@ -37,6 +37,7 @@ loops whoami
   labelled changeset meet the same checks, `prev-unknown` and
   `prev-unrelated` included. A changeset writes nothing unless every draft is taken.
 * An id can be given by any prefix that names one held record.
+* A revision written without `--about` is about what it replaces, when its `prev` targets all hold the same things.
 * Every answer is JSON or an id. Lenses are a later step, so `--json` is accepted and changes nothing.
 
 ## On disk
