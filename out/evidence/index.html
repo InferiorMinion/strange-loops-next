@@ -297,7 +297,7 @@ header.top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--g
     <p>A filled cell says the evidence exists, not that it is complete: a law cited by one vector is pinned at one point.</p>
   </div>
   <div class="stack">
-    <p class="cov-sum">73 laws are theorems and 3 hold by construction. For 39, the cited vectors and the vectors naming the law differ. Hover the cell to see which.</p>
+    <p class="cov-sum">75 laws are theorems and 3 hold by construction. For 39, the cited vectors and the vectors naming the law differ. Hover the cell to see which.</p>
     <div class="pan"><div class="cov-scroll"><table class="cov">
       <thead><tr><th scope="col">law</th><th scope="col">shape</th><th scope="col" title="theorems named, or c: by construction">proved</th><th scope="col" title="vector files laws.md cites">cited</th><th scope="col" title="vector files whose laws field names it">named by</th><th scope="col" title="cited and naming agree">agree</th><th scope="col" title="the JS implementation runs at least one of its vectors">JS</th><th scope="col">demo</th><th scope="col" title="laws its proofs rest on / laws resting on it">rests / carries</th></tr></thead>
       <tbody>
@@ -335,6 +335,8 @@ header.top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--g
         <tr><th scope="row"><a href="#law-settle-erased"><code>settle.erased</code></a></th><td class="sh">Exactness</td><td>1</td><td>2</td><td>5</td><td><span class="off" title="naming it, not cited: realm/gap10-refused-eraser, realm/gap10-withheld-eraser, scenario/01-decision">+3</span></td><td><span class="ok">✓</span></td><td><span class="z">–</span></td><td><span class="z">–</span> / <span class="z">–</span></td></tr>
         <tr><th scope="row"><a href="#law-admit-set"><code>admit.set</code></a></th><td class="sh">Exactness</td><td>2</td><td>1</td><td><span class="z">–</span></td><td><span class="off" title="cited, not naming it: realm/04-cross-thing-prev-refused">−1</span></td><td><span class="ok">✓</span></td><td><span class="z">–</span></td><td><span class="z">–</span> / 1</td></tr>
         <tr><th scope="row"><a href="#law-admit-no-cross"><code>admit.no-cross</code></a></th><td class="sh">Exactness</td><td>1</td><td>2</td><td>5</td><td><span class="off" title="naming it, not cited: realm/10-successor-expands-things, realm/gap01-id-order, realm/gap10-refused-eraser">+3</span></td><td><span class="ok">✓</span></td><td><span class="z">–</span></td><td><span class="z">–</span> / <span class="z">–</span></td></tr>
+        <tr><th scope="row"><a href="#law-admit-late"><code>admit.late</code></a></th><td class="sh">Limit</td><td>1</td><td><span class="z">–</span></td><td><span class="z">–</span></td><td><span class="z">–</span></td><td><span class="z">–</span></td><td><span class="z">–</span></td><td><span class="z">–</span> / <span class="z">–</span></td></tr>
+        <tr><th scope="row"><a href="#law-admit-grows"><code>admit.grows</code></a></th><td class="sh">Invariance</td><td>2</td><td><span class="z">–</span></td><td><span class="z">–</span></td><td><span class="z">–</span></td><td><span class="z">–</span></td><td><span class="z">–</span></td><td><span class="z">–</span> / <span class="z">–</span></td></tr>
         <tr><th scope="row"><a href="#law-view-no-resurrection-things"><code>view.no-resurrection (things)</code></a></th><td class="sh">Invariance</td><td>3</td><td>6</td><td>7</td><td><span class="off" title="naming it, not cited: scenario/01-decision">+1</span></td><td><span class="ok">✓</span></td><td><span class="z">–</span></td><td>2 / 1</td></tr>
         <tr><th scope="row"><a href="#law-view-refines-where"><code>view.refines (where)</code></a></th><td class="sh">Refinement</td><td>3</td><td>1</td><td>1</td><td><span class="ok" title="every cited vector names it, and every vector naming it is cited">✓</span></td><td><span class="ok">✓</span></td><td><span class="z">–</span></td><td><span class="z">–</span> / <span class="z">–</span></td></tr>
         <tr class="cov-band"><th scope="rowgroup" colspan="9"><span>State</span></th></tr>
@@ -494,7 +496,7 @@ header.top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--g
 </svg>
     </div></div>
     <p class="map-note" id="map-note" aria-live="polite"></p>
-    <p class="note">35 laws stand alone: their proofs use no other law's theorem. <a class="lawref" href="#law-count-perm"><code>count.perm</code></a> <a class="lawref" href="#law-count-repeats"><code>count.repeats</code></a> <a class="lawref" href="#law-numeric-safe-whole"><code>numeric.safe-whole</code></a> <a class="lawref" href="#law-sum-perm"><code>sum.perm</code></a> <a class="lawref" href="#law-sum-repeats"><code>sum.repeats</code></a> <a class="lawref" href="#law-extrema-set"><code>extrema.set</code></a> <a class="lawref" href="#law-heads-why"><code>heads.why</code></a> <a class="lawref" href="#law-view-refines"><code>view.refines</code></a> <a class="lawref" href="#law-result-full"><code>result.full</code></a> <a class="lawref" href="#law-settle-set"><code>settle.set</code></a> <a class="lawref" href="#law-settle-keeps"><code>settle.keeps</code></a> <a class="lawref" href="#law-settle-erased"><code>settle.erased</code></a> <a class="lawref" href="#law-admit-no-cross"><code>admit.no-cross</code></a> <a class="lawref" href="#law-where-complements"><code>where.complements</code></a> <a class="lawref" href="#law-where-fields"><code>where.fields</code></a> <a class="lawref" href="#law-where-time"><code>where.time</code></a> <a class="lawref" href="#law-where-total"><code>where.total</code></a> <a class="lawref" href="#law-where-set"><code>where.set</code></a> <a class="lawref" href="#law-view-refines-where"><code>view.refines (where)</code></a> <a class="lawref" href="#law-spec-select"><code>spec.select</code></a> <a class="lawref" href="#law-spec-from-thing"><code>spec.from-thing</code></a> <a class="lawref" href="#law-batch-meaning"><code>batch.meaning</code></a> <a class="lawref" href="#law-batch-refuse"><code>batch.refuse</code></a> <a class="lawref" href="#law-batch-refuse-order"><code>batch.refuse-order</code></a> <a class="lawref" href="#law-lens-put-get"><code>lens.put-get</code></a> <a class="lawref" href="#law-lens-nothing-dropped"><code>lens.nothing-dropped</code></a> <a class="lawref" href="#law-lens-absence-not-edit"><code>lens.absence-not-edit</code></a> <a class="lawref" href="#law-record-erasure"><code>record.erasure</code></a> <a class="lawref" href="#law-record-commit"><code>record.commit</code></a> <a class="lawref" href="#law-record-refuse"><code>record.refuse</code></a> <a class="lawref" href="#law-write-checked"><code>write.checked</code></a> <a class="lawref" href="#law-occurred-span"><code>occurred.span</code></a> <a class="lawref" href="#law-occurred-qualifier"><code>occurred.qualifier</code></a> <a class="lawref" href="#law-occurred-moment"><code>occurred.moment</code></a> <a class="lawref" href="#law-occurred-refuse"><code>occurred.refuse</code></a></p>
+    <p class="note">37 laws stand alone: their proofs use no other law's theorem. <a class="lawref" href="#law-count-perm"><code>count.perm</code></a> <a class="lawref" href="#law-count-repeats"><code>count.repeats</code></a> <a class="lawref" href="#law-numeric-safe-whole"><code>numeric.safe-whole</code></a> <a class="lawref" href="#law-sum-perm"><code>sum.perm</code></a> <a class="lawref" href="#law-sum-repeats"><code>sum.repeats</code></a> <a class="lawref" href="#law-extrema-set"><code>extrema.set</code></a> <a class="lawref" href="#law-heads-why"><code>heads.why</code></a> <a class="lawref" href="#law-view-refines"><code>view.refines</code></a> <a class="lawref" href="#law-result-full"><code>result.full</code></a> <a class="lawref" href="#law-settle-set"><code>settle.set</code></a> <a class="lawref" href="#law-settle-keeps"><code>settle.keeps</code></a> <a class="lawref" href="#law-settle-erased"><code>settle.erased</code></a> <a class="lawref" href="#law-admit-no-cross"><code>admit.no-cross</code></a> <a class="lawref" href="#law-admit-late"><code>admit.late</code></a> <a class="lawref" href="#law-admit-grows"><code>admit.grows</code></a> <a class="lawref" href="#law-where-complements"><code>where.complements</code></a> <a class="lawref" href="#law-where-fields"><code>where.fields</code></a> <a class="lawref" href="#law-where-time"><code>where.time</code></a> <a class="lawref" href="#law-where-total"><code>where.total</code></a> <a class="lawref" href="#law-where-set"><code>where.set</code></a> <a class="lawref" href="#law-view-refines-where"><code>view.refines (where)</code></a> <a class="lawref" href="#law-spec-select"><code>spec.select</code></a> <a class="lawref" href="#law-spec-from-thing"><code>spec.from-thing</code></a> <a class="lawref" href="#law-batch-meaning"><code>batch.meaning</code></a> <a class="lawref" href="#law-batch-refuse"><code>batch.refuse</code></a> <a class="lawref" href="#law-batch-refuse-order"><code>batch.refuse-order</code></a> <a class="lawref" href="#law-lens-put-get"><code>lens.put-get</code></a> <a class="lawref" href="#law-lens-nothing-dropped"><code>lens.nothing-dropped</code></a> <a class="lawref" href="#law-lens-absence-not-edit"><code>lens.absence-not-edit</code></a> <a class="lawref" href="#law-record-erasure"><code>record.erasure</code></a> <a class="lawref" href="#law-record-commit"><code>record.commit</code></a> <a class="lawref" href="#law-record-refuse"><code>record.refuse</code></a> <a class="lawref" href="#law-write-checked"><code>write.checked</code></a> <a class="lawref" href="#law-occurred-span"><code>occurred.span</code></a> <a class="lawref" href="#law-occurred-qualifier"><code>occurred.qualifier</code></a> <a class="lawref" href="#law-occurred-moment"><code>occurred.moment</code></a> <a class="lawref" href="#law-occurred-refuse"><code>occurred.refuse</code></a></p>
   </div>
 </section>
 
@@ -507,9 +509,9 @@ header.top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--g
   </div>
   <div class="stack">
     <div class="tiles">
-    <div class="tile"><p class="tile-n">76</p><p class="tile-k">laws</p><p class="tile-w">rows of <code>protocol/laws.md</code>, each a sentence on the laws page</p></div>
+    <div class="tile"><p class="tile-n">78</p><p class="tile-k">laws</p><p class="tile-w">rows of <code>protocol/laws.md</code>, each a sentence on the laws page</p></div>
     <div class="tile-arrow" aria-hidden="true">→</div>
-    <div class="tile"><p class="tile-n">161</p><p class="tile-k">theorems</p><p class="tile-w">the declarations they name, found in the proofs Lean checked</p></div>
+    <div class="tile"><p class="tile-n">164</p><p class="tile-k">theorems</p><p class="tile-w">the declarations they name, found in the proofs Lean checked</p></div>
     <div class="tile-arrow" aria-hidden="true">→</div>
     <div class="tile"><p class="tile-n">298</p><p class="tile-k">vectors</p><p class="tile-w">the files they cite, every one found on disk</p></div>
     <div class="tile-arrow" aria-hidden="true">→</div>
@@ -815,7 +817,7 @@ header.top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--g
       </div>
     </div>
     <div class="layer-group" id="layer-view">
-      <h3>View <span>9 laws</span></h3>
+      <h3>View <span>11 laws</span></h3>
       <div class="laws-grid">
     <article class="law" id="law-view-no-resurrection" data-shape="invariance">
       <div class="law-h"><h4>view.no-resurrection</h4><span class="chip">Invariance</span></div>
@@ -899,6 +901,28 @@ header.top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--g
         <dt>run by</dt><dd>the model, the JS implementation, the Rust implementation</dd>
       </dl>
       <p class="law-back"><a href="../laws/#law-admit-no-cross">In its question</a></p>
+    </article>
+    <article class="law is-limit" id="law-admit-late" data-shape="limit">
+      <div class="law-h"><h4>admit.late</h4><span class="chip">Limit</span></div>
+      <p class="law-s">Admission isn't monotone in arrival: a record admitted while its <code>prev</code> target is unknown is refused when the target arrives about another thing, and what it superseded is current again. No step from the admitted records' per-thing state can follow that.</p>
+      <p class="law-scope">A conformant writer never emits such a record (<code>prev-unknown</code>, <code>prev-unrelated</code>). A reader that caches state across arrivals keeps the records such a revision supersedes, not only the heads (<a class="lawref" href="#law-heads-late"><code>heads.late</code></a>).</p>
+      <p class="law-md"><span>laws.md</span> Admission isn't monotone in arrival. A record admitted while its <code>prev</code> target is unknown is refused when the target arrives about another thing, and the records it superseded are current again. No step from the admitted records' per-thing state follows that, so a caching reader keeps what such a revision supersedes.</p>
+      <dl class="chain">
+        <dt>proved by</dt><dd><details class="thm"><summary><code>perThing_cannot_follow_admit</code></summary><p class="thm-m">Laws.Things</p><pre>¬∃ g, ∀ (xs : List Record) (r : Record), Distinct (xs ++ [r]) → g (perThing (admit (fun x x_1 =&gt; true) xs)) r = perThing (admit (fun x x_1 =&gt; true) (xs ++ [r]))</pre></details></dd>
+        <dt>pinned by</dt><dd><span>(arrival, not a set: none)</span></dd>
+      </dl>
+      <p class="law-back"><a href="../laws/#law-admit-late">In its question</a></p>
+    </article>
+    <article class="law" id="law-admit-grows" data-shape="invariance">
+      <div class="law-h"><h4>admit.grows</h4><span class="chip">Invariance</span></div>
+      <p class="law-s">Change <span class="var">whether a record no held record names in <code>prev</code> is admitted onto the cached state or the whole set readmitted</span>, and <span class="inv">every earlier admission, and each thing's state, stepped by the arrival when it is admitted and about that thing</span> stays.</p>
+      <p class="law-scope">This is the condition <a class="lawref" href="#law-admit-late"><code>admit.late</code></a> needs: only the arrival of a record some held <code>prev</code> already names can retract an admission.</p>
+      <p class="law-md"><span>laws.md</span> When no held record names the arriving record in <code>prev</code>, every earlier admission stands, and each thing's state is the cached one, stepped by the arrival if it is admitted and about that thing.</p>
+      <dl class="chain">
+        <dt>proved by</dt><dd><details class="thm"><summary><code>admit_append_unnamed</code></summary><p class="thm-m">Laws.Things</p><pre>∀ (may : Record → Record → Bool) {xs : List Record} {r : Record}, (∀ (q : Record), q ∈ xs → ¬r.id ∈ q.prev) → admit may (xs ++ [r]) = admit may xs ++ if entitled may (xs ++ [r]) r = true then [r] else []</pre></details><details class="thm"><summary><code>stateIn_late_unnamed</code></summary><p class="thm-m">Laws.Things</p><pre>∀ (may : Record → Record → Bool) {xs : List Record} {r : Record} (t : String), (∀ (q : Record), q ∈ xs → ¬r.id ∈ q.prev) → stateIn t (admit may (xs ++ [r])) = if (entitled may (xs ++ [r]) r &amp;&amp; r.isAbout t) = true then (stateIn t (admit may xs)).step r else stateIn t (admit may xs)</pre></details></dd>
+        <dt>pinned by</dt><dd><span>(arrival, not a set: none)</span></dd>
+      </dl>
+      <p class="law-back"><a href="../laws/#law-admit-grows">In its question</a></p>
     </article>
     <article class="law" id="law-view-no-resurrection-things" data-shape="invariance">
       <div class="law-h"><h4>view.no-resurrection</h4><span class="chip">Invariance</span></div>
@@ -1148,7 +1172,7 @@ header.top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--g
     <article class="law" id="law-heads-late" data-shape="invariance">
       <div class="law-h"><h4>heads.late</h4><span class="chip">Invariance</span></div>
       <p class="law-s">Change <span class="var">whether a late record is folded onto the cached heads or the whole set refolded</span>, and <span class="inv">any answer worked out from the new heads</span> stays.</p>
-      <p class="law-md"><span>laws.md</span> a late record folds onto the cached heads</p>
+      <p class="law-md"><span>laws.md</span> a late record folds onto the cached heads of the records folded; a reader folds admitted records, and admission can retract (<code>admit.late</code>)</p>
       <dl class="chain">
         <dt>proved by</dt><dd><details class="thm"><summary><code>OverHeads.late</code></summary><p class="thm-m">Laws.Families</p><pre>∀ {σ : Sort u_1} (answer : LatestBy → σ) {xs ys : List Record} (r : Record), Addressed (xs ++ [r]) → Addressed ys → (∀ (q : Record), q ∈ ys ↔ q ∈ xs ∨ q = r) → answer ((LatestBy.empty.fold xs).step r) = OverHeads.fold answer ys</pre></details></dd>
         <dt>pinned by</dt><dd><span>(follows from <code>heads.set</code>)</span></dd>
