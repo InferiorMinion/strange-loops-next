@@ -143,7 +143,7 @@ See [the mutation report](model/mutate/REPORT.md).
 ### D7: Canonical result encoding
 
 This is a future human choice, not a current behavior change.
-The [open design](design/rethink/sections/15-open.html) prefers JCS for results.
+The [open design](design/rethink/sections/16-open.html) prefers JCS for results.
 Exact, unbounded `Sum` outputs include `9007199254740993` in `phase2-exact-output`.
 Neither current tests nor the model define a canonical result hash codec.
 **Readings:** Define a separate exact-integer canonical JSON extension, or use typed decimal integer strings inside JCS.
