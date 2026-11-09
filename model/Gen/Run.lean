@@ -122,10 +122,11 @@ def lensRun (input : Json) : Dec J := do
   let kvs ← members? "input" ["base", "text"] input
   let base ← sections "input.base" (← req "input" kvs "base")
   let text ← lines "input.text" (← req "input" kvs "text")
-  pure (match parse text, edit base text with
-    | some d, some os => .obj [("parsed", jDoc d), ("normalized", jLines (render d)),
+  pure (match read base text, parse text with
+    | .error why, _ => .obj [("refused", .str why)]
+    | .ok (some os), some d => .obj [("parsed", jDoc d), ("normalized", jLines (render d)),
         ("outcomes", .arr (os.map jOutcome)), ("applied", jDoc (apply base os))]
-    | _, _ => .obj [("parsed", .null), ("refused", .bool true)])
+    | .ok _, _ => .obj [("parsed", .null), ("refused", .bool true)])
 
 /-- `spec/parse`. A spec that repeats a key comes as written in `spec_text`,
 since `spec` as JSON may lose a repeat in another reader; this one keeps
@@ -162,11 +163,7 @@ def batchRunDecoded (input : Json) : Dec J := do
         .obj [("id", .str (r.id Records.H)), ("env_canonical", .str r.env.toJson.canon)]))]
     | .error why => J.obj [("refused", .str why)])
 
-/-- Raw envelope key refusals cross the fixture adapter as protocol refusals. -/
-def envelopeOutcome (out : Dec J) : Dec J :=
-  match out with
-  | .error "envelope-field-unknown" => .ok (.obj [("refused", .str "envelope-field-unknown")])
-  | other => other
+abbrev envelopeOutcome := @Records.envelopeOutcome
 
 def batchRun (input : Json) : Dec J := envelopeOutcome (batchRunDecoded input)
 
@@ -176,48 +173,8 @@ def realmRun (input : Json) : Dec J := do
 
 /-! ## Record -/
 
-/-- `record`: one record written, or a raw shape or typed writer refusal.
-The envelope comes in the writer's form, perhaps several ways (sets in other orders, repeats), and
-the payload as JSON, perhaps several ways (members in other orders), or as
-text when it repeats a member name. Every way must name the same record, as
-gen requires before writing one. -/
-def recordRunDecoded (input : Json) : Dec J := do
-  let kvs ← members? "input" ["envs", "payloads", "payload_text", "salt", "seed"] input
-  let envs ← Gen.Read.envs "input.envs" (← req "input" kvs "envs")
-  let payloads ← match kvs.lookup "payloads", kvs.lookup "payload_text" with
-    | some ps, none => list "input.payloads" ps
-    | none, some t => do
-      match parseJson (← text "input.payload_text" t) with
-      | .ok j => pure [j]
-      | .error e => bad "input.payload_text" e
-    | _, _ => bad "input" "takes one of \"payloads\" and \"payload_text\""
-  let salt ← bytes "input.salt" (← req "input" kvs "salt")
-  let some e := envs.head? | bad "input.envs" "no envelope given"
-  let some payload := payloads.head? | bad "input.payloads" "no payload given"
-  match write e salt payload with
-  | .error why => pure (.obj [("refused", .str why)])
-  | .ok w =>
-    let r := w.stored
-    let H := Records.H
-    let id := r.id H
-    for (e', i) in envs.zip (List.range envs.length) do
-      if idOf H e' (r.commit H) != id then bad (idx "input.envs" i) "names another record than input.envs[0]"
-    for (p, i) in payloads.zip (List.range payloads.length) do
-      if commitOf H salt p != r.commit H then bad (idx "input.payloads" i) "commits to another payload than input.payloads[0]"
-    let seed ← bytes "input.seed" (← req "input" kvs "seed")
-    pure (.obj [
-      ("env_canonical", .str e.toJson.canon),
-      ("payload_canonical", .str payload.canon),
-      ("commit", .str (r.commit H)),
-      ("id_preimage", .str (idPreimage e (r.commit H))),
-      ("id", .str id),
-      ("signing_input", .str ("loops/record/v1:" ++ id)),
-      ("key", .str (Records.keyText seed)),
-      ("ed25519", .str (base32 (Ed25519.sign seed (signingInput id)))),
-      ("line", .str (Records.storedJson e salt payload seed).canon),
-      ("erased_line", .str (Records.erasedJson e salt payload seed).canon)])
-
-def recordRun (input : Json) : Dec J := envelopeOutcome (recordRunDecoded input)
+/-- `record`: `Records.recordAnswer`, which `gen` asks too. -/
+def recordRun (input : Json) : Dec J := Records.recordAnswer input
 
 /-! ## Scenario -/
 
@@ -274,7 +231,10 @@ def scenarioRun (input : Json) : Dec J := do
   let lk ← members? "input.lens" ["base", "text"] (← req "input" kvs "lens")
   let base ← sections "input.lens.base" (← req "input.lens" lk "base")
   let edited ← lines "input.lens.text" (← req "input.lens" lk "text")
-  let some os := edit base edited | bad "input.lens.text" "doesn't parse as keyed sections"
+  let os ← match read base edited with
+    | .error why => bad "input.lens.base" s!"is refused ({why})"
+    | .ok none => bad "input.lens.text" "doesn't parse as keyed sections"
+    | .ok (some os) => pure os
   pure (.obj [("steps", .arr steps),
     ("lens", .obj [("rendered", jLines (render base)), ("outcomes", .arr (os.map jOutcome)),
       ("applied", jDoc (apply base os))])])

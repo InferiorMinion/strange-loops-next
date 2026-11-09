@@ -34,8 +34,9 @@ open Loops
 /-! ## JSON text -/
 
 /-- A parser over the text left to read. A failure carries how much text was
-left, which places it in the original. -/
-abbrev Parser := StateT (List Char) (Except (Nat × String))
+left, which places it in the original. What it reads along is whether a lone
+surrogate is let through: only to ask whether the text is JSON apart from one. -/
+abbrev Parser := ReaderT Bool (StateT (List Char) (Except (Nat × String)))
 
 def fail {α : Type} (what : String) : Parser α := do
   throw ((← get).length, what)
@@ -67,17 +68,20 @@ def hex4 : Parser Nat := do
   | some [a, b, c, d] => set (cs.drop 4); pure (((a * 16 + b) * 16 + c) * 16 + d)
   | _ => fail "expected four hex digits after \\u"
 
-/-- A `\u` escape, joining a surrogate pair. A lone surrogate names no
-character, so it is refused. -/
+/-- A `\u` escape, with the low surrogate's escape when a high one starts it.
+`ofUtf16?` says whether those code units are text. A lone surrogate names no
+character and is refused with `notUnicode`; nothing is put in its place. (The
+syntax-only reading puts a mark there and gives no value to anyone.) -/
 def unicodeEscape : Parser Char := do
   let hi ← hex4
-  if 0xD800 ≤ hi && hi < 0xDC00 then
-    expectChar '\\'; expectChar 'u'
-    let lo ← hex4
-    if 0xDC00 ≤ lo && lo < 0xE000 then pure (Char.ofNat (0x10000 + (hi - 0xD800) * 0x400 + (lo - 0xDC00)))
-    else fail "a high surrogate not followed by a low one"
-  else if 0xDC00 ≤ hi && hi < 0xE000 then fail "a low surrogate on its own"
-  else pure (Char.ofNat hi)
+  let units ← if highSurrogate hi then
+      match ← get with
+      | '\\' :: 'u' :: rest => do set rest; pure [hi, ← hex4]
+      | _ => pure [hi]
+    else pure [hi]
+  match ofUtf16? units with
+  | some [c] => pure c
+  | _ => if (← read) then pure (Char.ofNat 0xFFFD) else fail notUnicode
 
 partial def stringBody (acc : List Char) : Parser String := do
   match ← get with
@@ -179,16 +183,31 @@ partial def elements (acc : List Json) (mode : NumericMode := .binary64) : Parse
   | _ => fail "expected ',' or ']'"
 end
 
-/-- The shared text parser; only numeric representation varies by mode. -/
-def parseJsonWith (text : String) (mode : NumericMode := .binary64) : Except String Json :=
+/-- The shared text parser; only numeric representation varies by mode. A
+failure gives what was wrong, then the same with its place in the text. -/
+def parseJsonAt (text : String) (mode : NumericMode := .binary64) (syntaxOnly : Bool := false) :
+    Except (String × String) Json :=
   let cs := text.toList
-  match (do let v ← value mode; skipWs; if (← get).isEmpty then pure v else fail "text after the value").run cs with
+  match ((do let v ← value mode; skipWs; if (← get).isEmpty then pure v else fail "text after the value").run
+      syntaxOnly).run cs with
   | .ok (v, _) => .ok v
   | .error (left, what) =>
     let before := cs.take (cs.length - left)
     let line := (before.filter (· == '\n')).length + 1
     let col := (before.reverse.takeWhile (· != '\n')).length + 1
-    .error s!"line {line}, column {col}: {what}"
+    .error (what, s!"line {line}, column {col}: {what}")
+
+def parseJsonWith (text : String) (mode : NumericMode := .binary64) : Except String Json :=
+  (parseJsonAt text mode).mapError (·.2)
+
+/-- The protocol's refusal of a text, if it has one: the text is JSON by its
+syntax, and a string or member name in it holds a lone surrogate. Text that is
+not JSON has no refusal here, wherever a surrogate stands in it; it is the
+caller's to report. -/
+def textRefusal (text : String) : Option String :=
+  match parseJsonAt text (syntaxOnly := true), parseJsonAt text with
+  | .ok _, .error (what, _) => if what == notUnicode then some what else none
+  | _, _ => none
 
 /-- Parse inputs as binary64 JSON, or say where the text stops being JSON. -/
 def parseJson (text : String) : Except String Json := parseJsonWith text .binary64

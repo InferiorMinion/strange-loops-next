@@ -1,6 +1,7 @@
 import Gen.Read
 import Gen.Encode
 import Gen.ByteText
+import Gen.Records
 
 open Loops Gen
 
@@ -101,8 +102,119 @@ def canonicalTextChecks : IO Unit := do
       "R6 all-envelope preflight must precede value decoding"
   IO.println "R1/R4/R6 canonical text runtime checks pass"
 
+/-- The answer `Records.recordAnswer` gives a record input written as text. -/
+def recordAnswerOf (input : String) : IO (Except String String) := do
+  pure ((Records.recordAnswer (← parsed input)).map (·.render 0))
+
+def refusedWith (code : String) : Except String String → Bool
+  | .ok s => s == (J.obj [("refused", .str code)]).render 0
+  | .error _ => false
+
+/-- A fault in the input: no answer at all, so never a protocol refusal. -/
+def faulted : Except String String → Bool
+  | .error _ => true
+  | .ok _ => false
+
+def rulingChecks : IO Unit := do
+  -- D1: the public base boundary refuses a repeated id before it reads the text.
+  let L (s : String) : Lens.Line := s.toList
+  let one : Lens.Section := ⟨L "a", [L "one"]⟩
+  let two : Lens.Section := ⟨L "a", [L "two"]⟩
+  let other : Lens.Section := ⟨L "b", [L "B"]⟩
+  for base in [[one, two], [one, other, two], [one, one]] do
+    for text in [Lens.render [one], Lens.render base, [], [L "::: a", L "unclosed"], [L "stray"]] do
+      ensure (match Lens.read base text with | .error why => why == "base-id-duplicate" | .ok _ => false) "D1 repeated base id is read"
+  for base in [[], [one], [one, other]] do
+    ensure (Lens.baseProblem base == none) "D1 distinct base is refused"
+    for text in [Lens.render [two], Lens.render base, [], [L "stray"]] do
+      ensure (match Lens.read base text with | .ok os => os == Lens.edit base text | .error _ => false) "D1 boundary changes an accepted edit"
+  ensure (Lens.lookup (L "a") [one, two] == some [L "one"]) "D1 raw lookup no longer takes the first section"
+  ensure (Lens.diff [one, two] [two] == [.accepted (L "a") [L "two"]]) "D1 raw diff no longer matches the first section"
+  -- D2: code units are text only when surrogates pair.
+  for units in [[0xD800], [0xDBFF], [0xDC00], [0xDFFF], [0xDC00, 0xD800], [0xD83D, 0x41],
+      [0x41, 0xD83D], [0xD83D, 0xD83D, 0xDE00], [0xD83D, 0xDE00, 0xDE00], [0x110000], [0x10000]] do
+    ensure ((ofUtf16? units).isNone) s!"D2 lone surrogate reads as text: {units}"
+  ensure (ofUtf16? [0xD83D, 0xDE00] == some [Char.ofNat 0x1F600]) "D2 pair does not join"
+  ensure (ofUtf16? [0x41, 0xD7FF, 0xE000, 0xFFFF] ==
+    some [Char.ofNat 0x41, Char.ofNat 0xD7FF, Char.ofNat 0xE000, Char.ofNat 0xFFFF]) "D2 scalar values refused"
+  for s in ["", "plain", "雪😀", String.singleton (Char.ofNat 0x10FFFF)] do
+    ensure (ofUtf16? (utf16 s) == some s.toList) s!"D2 a string's own code units do not read back: {s}"
+  for text in ["\"\\ud800\"", "\"\\udc00\"", "\"\\udc00\\ud800\"", "\"\\ud83dx\"", "\"\\ud83d\\u0041\"",
+      "{\"\\udfff\":0}", "[[\"\\ud83d\\ud83d\\ude00\"]]", "{\"a\":1,\"a\":2,\"b\":\"\\uD800\"}",
+      "[\"\\ud800\\n\", \"\\udc00\"]"] do
+    ensure (Read.textRefusal text == some "string-not-unicode") s!"D2 text is not refused by name: {text}"
+    ensure (refused (Read.parseJson text)) s!"D2 text parses: {text}"
+  -- a pair is text; text that is not JSON is not this refusal's, before or after the surrogate
+  for text in ["\"\\ud83d\\ude00\"", "\"\\uD83D\\uDE00\"", "{\"a\" \"\\ud800\"}", "[1,]", "\"\\ud83d\\uZZZZ\"",
+      "{\"a\":\"\\ud800\"", "\"\\ud800", "[\"\\ud800\",]", "\"\\ud800\" 1", "[\"\\udc00\", 01]"] do
+    ensure (Read.textRefusal text == none) s!"D2 refusal claims text it does not own: {text}"
+  ensure (match Read.parseJson "\"\\ud83d\\ude00\"" with | .ok (.str s) => s == "😀" | _ => false) "D2 pair changes"
+  let env := "{\"kind\":\"note\",\"observer\":\"o:test\",\"emitted\":\"2026-10-21T00:00:00Z\"}"
+  let noKind := "{\"kind\":\"\",\"observer\":\"o:test\",\"emitted\":\"2026-10-21T00:00:00Z\"}"
+  let untyped := "{\"kind\":\"note\",\"observer\":\"test\",\"emitted\":\"2026-10-21T00:00:00Z\"}"
+  let extra := "{\"kind\":\"note\",\"observer\":\"o:test\",\"emitted\":\"2026-10-21T00:00:00Z\",\"x\":0}"
+  let zeros (n : Nat) := String.ofList (List.replicate n '0')
+  let salt := zeros 26
+  let input (envs payloads : String) (seed : Option String := none) (salt : String := salt) : String :=
+    "{\"envs\":[" ++ envs ++ "]," ++ payloads ++ ",\"salt\":\"" ++ salt ++ "\"" ++
+      (match seed with | some s => ",\"seed\":\"" ++ s ++ "\"" | none => "") ++ "}"
+  let lone := "\"payload_text\":\"\\\"\\\\ud800\\\"\""
+  for (envs, salt) in [(env, salt), (noKind, salt), (untyped ++ "," ++ noKind, salt), (env, zeros 24), (env, "!")] do
+    ensure (refusedWith "string-not-unicode" (← recordAnswerOf (input envs lone (salt := salt))))
+      "D2 a lone surrogate in a text payload does not precede envelope values and the salt"
+  for envs in [extra, env ++ "," ++ extra, extra ++ "," ++ noKind] do
+    ensure (refusedWith "envelope-field-unknown" (← recordAnswerOf (input envs lone)))
+      "D2 a lone surrogate in a text payload precedes raw shape"
+  ensure (refused (Read.parseJson (input env "\"payloads\":[\"\\ud800\"]")))
+    "D2 a lone surrogate outside a text payload reads as a fixture"
+  -- D3: overflow stays a number until the writer's number check, in its usual place.
+  for payloads in ["\"payloads\":[1e999]", "\"payloads\":[{\"n\":[-1e999]}]",
+      "\"payload_text\":\"1e999\"", "\"payload_text\":\"{\\\"n\\\":-1E400}\""] do
+    ensure (refusedWith "number-out-of-range" (← recordAnswerOf (input env payloads))) "D3 overflow is not the writer's refusal"
+    ensure (refusedWith "kind-empty" (← recordAnswerOf (input noKind payloads))) "D3 overflow precedes the envelope"
+    ensure (refusedWith "salt-not-16-bytes" (← recordAnswerOf (input env payloads (salt := zeros 24)))) "D3 overflow precedes the salt"
+    ensure (refusedWith "envelope-field-unknown" (← recordAnswerOf (input extra payloads))) "D3 overflow precedes shape"
+  ensure (refusedWith "member-duplicate" (← recordAnswerOf (input env "\"payload_text\":\"{\\\"a\\\":1e999,\\\"a\\\":0}\"")))
+    "D3 overflow precedes repeated members"
+  -- D4: a signing seed is exactly 32 bytes, read only once the record is written.
+  let written := "\"payloads\":[{}]"
+  ensure (!(faulted (← recordAnswerOf (input env written (seed := some (zeros 52)))))) "D4 32-byte seed control fails"
+  for seed in [some (zeros 50), some (zeros 53), some "", some (zeros 51 ++ "1"), some "!", none] do
+    ensure (faulted (← recordAnswerOf (input env written (seed := seed)))) s!"D4 seed is padded, cut or assumed: {seed}"
+    ensure (refusedWith "kind-empty" (← recordAnswerOf (input noKind written (seed := seed))))
+      s!"D4 a refused record waits on its seed: {seed}"
+  -- D5: the first envelope and first payload decide; a later variant never answers.
+  let seed := some (zeros 52)
+  ensure (refusedWith "kind-empty" (← recordAnswerOf (input (noKind ++ "," ++ env) written seed))) "D5 first refusal"
+  ensure (refusedWith "kind-empty" (← recordAnswerOf (input (noKind ++ "," ++ untyped) written seed))) "D5 first of two refusals"
+  ensure (refusedWith "observer-not-typed" (← recordAnswerOf (input (untyped ++ "," ++ noKind) written seed)))
+    "D5 refusals are ranked across variants"
+  ensure (refusedWith "number-out-of-range" (← recordAnswerOf (input (env ++ "," ++ noKind) "\"payloads\":[1e999,{}]" seed)))
+    "D5 first pair"
+  for (envs, payloads) in [(env ++ "," ++ noKind, written), (env ++ "," ++ untyped, written),
+      (env, "\"payloads\":[{},9007199254740992]"), (env, "\"payloads\":[null,1e999]"),
+      (env, "\"payloads\":[{\"a\":1},{\"a\":1,\"a\":2}]"), (env, "\"payloads\":[{\"a\":1},{\"a\":2}]")] do
+    ensure (faulted (← recordAnswerOf (input envs payloads seed))) s!"D5 a later variant answers: {envs} {payloads}"
+  ensure (!(faulted (← recordAnswerOf (input (env ++ "," ++ env) "\"payloads\":[{\"a\":1,\"b\":2},{\"b\":2,\"a\":1}]" seed))))
+    "D5 agreeing variants control fails"
+  -- D6: the four concrete helpers.
+  let r : Record := { id := fixtureId 1, kind := "note", observer := "o:test", about := ["t:one"], value := "", prev := [], emitted := stampAt 0, n := 4, fields := [("est", .int 7), ("tag", .str "x")] }
+  ensure ((Sum.on "est").step 5 r == 12) "D6 Sum.on control fails"
+  for field in ["missing", "tag"] do
+    ensure ((Sum.on field).step 5 r == 5) s!"D6 Sum.on moves on an unreadable field: {field}"
+  ensure ((Sum.on "est").step 5 r.withhold == 5) "D6 Sum.on moves on a withheld record"
+  ensure (Max.acc.readable r && Min.acc.readable r) "D6 extrema do not read a held safe whole n"
+  for hidden in [r.withhold, r.erase] do
+    ensure (!(Max.acc.readable hidden) && !(Min.acc.readable hidden)) "D6 extrema read a hidden record"
+  let sp : Spec := { vertex := "v", sources := [{ store := ".", kinds := ["note"] }] }
+  let vote := { r with id := fixtureId 2, kind := "vote" }
+  ensure (sp.select [r, vote, r.withhold] == [r, r.withhold]) "D6 Spec.select is not the records the spec takes"
+  ensure (sp.select [vote] == []) "D6 Spec.select keeps a record the spec does not take"
+  IO.println "D1-D6 ruling runtime checks pass"
+
 def main (args : List String) : IO Unit := do
   canonicalTextChecks
+  rulingChecks
   let [root] := args | throw (IO.userError "expected repository root")
   let table ← IO.FS.readFile (root ++ "/vectors/standard/es6-numbers.txt")
   let mut count := 0

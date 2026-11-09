@@ -116,6 +116,103 @@ theorem utf16_inj_list : ∀ {a b : List Char}, a.flatMap utf16Char = b.flatMap 
 theorem utf16_inj {a b : String} (h : utf16 a = utf16 b) : a = b :=
   String.toList_inj.1 (utf16_inj_list h)
 
+/-! ## Text is Unicode scalar values
+
+`ofUtf16?` reads code units as text. It accepts exactly what `utf16` writes,
+so a lone surrogate is never a string the model canonicalizes or hashes. -/
+
+theorem toNat_ofNat_valid {n : Nat} (h : n < 0xd800 ∨ (0xdfff < n ∧ n < 0x110000)) :
+    (Char.ofNat n).toNat = n := by
+  have hv : n.isValidChar := h
+  simp [Char.ofNat, hv, Char.ofNatAux, Char.toNat]
+
+theorem utf16Char_ofNat_bmp {u : Nat} (hh : highSurrogate u = false) (hl : lowSurrogate u = false)
+    (hb : ¬ 0x10000 ≤ u) : utf16Char (Char.ofNat u) = [u] := by
+  simp only [highSurrogate, lowSurrogate, Bool.and_eq_false_iff, decide_eq_false_iff_not] at hh hl
+  have hv : (Char.ofNat u).toNat = u := toNat_ofNat_valid (by omega)
+  have hlt : u < 0x10000 := by omega
+  simp only [utf16Char, hv, hlt, ite_true]
+
+theorem utf16Char_ofNat_pair {u l : Nat} (hh : highSurrogate u = true) (hl : lowSurrogate l = true) :
+    utf16Char (Char.ofNat (0x10000 + (u - 0xD800) * 0x400 + (l - 0xDC00))) = [u, l] := by
+  simp only [highSurrogate, lowSurrogate, Bool.and_eq_true, decide_eq_true_eq] at hh hl
+  have hv : (Char.ofNat (0x10000 + (u - 0xD800) * 0x400 + (l - 0xDC00))).toNat =
+      0x10000 + (u - 0xD800) * 0x400 + (l - 0xDC00) := toNat_ofNat_valid (by omega)
+  have hge : ¬ (0x10000 + (u - 0xD800) * 0x400 + (l - 0xDC00) < 0x10000) := by omega
+  simp only [utf16Char, hv, hge, ite_false]
+  simp only [List.cons.injEq, and_true]
+  constructor <;> omega
+
+theorem ofUtf16?_sound : ∀ {us : List Nat} {cs : List Char},
+    ofUtf16? us = some cs → cs.flatMap utf16Char = us := by
+  intro us
+  fun_induction ofUtf16? us with
+  | case1 => intro cs h; cases h; rfl
+  | case2 u hh l rest hl ih =>
+    intro cs h
+    simp only [Option.map_eq_some_iff] at h
+    obtain ⟨cs', h', rfl⟩ := h
+    simp [flatMap_cons, utf16Char_ofNat_pair hh hl, ih h']
+  | case3 u hh l rest hl => intro cs h; cases h
+  | case4 u hh => intro cs h; cases h
+  | case5 u us hh hb => intro cs h; cases h
+  | case6 u us hh hb ih =>
+    intro cs h
+    simp only [Option.map_eq_some_iff] at h
+    obtain ⟨cs', h', rfl⟩ := h
+    simp only [Bool.or_eq_true, decide_eq_true_eq, not_or] at hb
+    simp [flatMap_cons, utf16Char_ofNat_bmp (by simpa using hh) (by simpa using hb.1) hb.2, ih h']
+
+theorem ofUtf16?_complete : ∀ cs : List Char, ofUtf16? (cs.flatMap utf16Char) = some cs
+  | [] => rfl
+  | c :: cs => by
+    have hc := char_valid c
+    have ih := ofUtf16?_complete cs
+    simp only [flatMap_cons]
+    by_cases h1 : c.toNat < 0x10000
+    · have hh : highSurrogate c.toNat = false := by simp [highSurrogate]; omega
+      have hl : lowSurrogate c.toNat = false := by simp [lowSurrogate]; omega
+      have hb : ¬ 0x10000 ≤ c.toNat := by omega
+      simp only [utf16Char, h1, ite_true, cons_append, nil_append]
+      rw [ofUtf16?.eq_def]
+      simp [hh, hl, hb, ih]
+    · have hh : highSurrogate (0xD800 + (c.toNat - 0x10000) / 0x400) = true := by
+        simp [highSurrogate]; omega
+      have hl : lowSurrogate (0xDC00 + (c.toNat - 0x10000) % 0x400) = true := by
+        simp [lowSurrogate]; omega
+      have e : 0x10000 + (0xD800 + (c.toNat - 0x10000) / 0x400 - 0xD800) * 0x400 +
+          (0xDC00 + (c.toNat - 0x10000) % 0x400 - 0xDC00) = c.toNat := by omega
+      simp only [utf16Char, h1, ite_false, cons_append, nil_append]
+      rw [ofUtf16?.eq_def]
+      simp only [hh, hl, ite_true, ih, Option.map_some, e, Char.ofNat_toNat]
+
+/-- Code units read as text exactly when some text writes them. -/
+theorem ofUtf16?_eq_some_iff {us : List Nat} {cs : List Char} :
+    ofUtf16? us = some cs ↔ cs.flatMap utf16Char = us :=
+  ⟨ofUtf16?_sound, fun h => h ▸ ofUtf16?_complete cs⟩
+
+/-- A string's code units read back as that string: no string holds a lone surrogate. -/
+theorem ofUtf16?_utf16 (s : String) : ofUtf16? (utf16 s) = some s.toList :=
+  ofUtf16?_complete s.toList
+
+/-- A high surrogate at the end is no text. -/
+theorem ofUtf16?_lone_high_end {u : Nat} (h : highSurrogate u = true) : ofUtf16? [u] = none := by
+  rw [ofUtf16?.eq_def]; simp [h]
+
+/-- A high surrogate before anything but a low one is no text. -/
+theorem ofUtf16?_lone_high {u l : Nat} (us : List Nat) (h : highSurrogate u = true)
+    (hl : lowSurrogate l = false) : ofUtf16? (u :: l :: us) = none := by
+  rw [ofUtf16?.eq_def]; simp [h, hl]
+
+/-- A low surrogate with no high one before it is no text. -/
+theorem ofUtf16?_lone_low {u : Nat} (us : List Nat) (h : lowSurrogate u = true) :
+    ofUtf16? (u :: us) = none := by
+  have hh : highSurrogate u = false := by
+    simp only [highSurrogate, lowSurrogate, Bool.and_eq_true, decide_eq_true_eq] at h ⊢
+    simp only [Bool.and_eq_false_iff, decide_eq_false_iff_not]
+    omega
+  rw [ofUtf16?.eq_def]; simp [h, hh]
+
 /-! ## Sorting by a key -/
 
 theorem mem_insertBy {α : Type} {key : α → List Nat} {x a : α} {l : List α} :

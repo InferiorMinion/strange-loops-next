@@ -42,7 +42,9 @@ partial def J.render (ind : Nat) : J → String
   | .bool b => toString b
   | .num n => toString n
   | .int i => toString i
-  | .number n => n.canon
+  -- A value past binary64's range has no canonical text. A vector writes it
+  -- as a spelling every reader overflows on, so the input stays what it was.
+  | .number n => if n.finite then n.canon else if n.bits >>> 63 == 1 then "-1e999" else "1e999"
   | .str s => escape s
   | .arr [] => "[]"
   | .arr xs =>

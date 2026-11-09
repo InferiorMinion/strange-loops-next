@@ -57,6 +57,52 @@ theorem writeProblem_codes {env : Env} {salt : List UInt8} {payload : Json} {c :
     all_goals cases h
     all_goals simp [writeCodes]
 
+/-! ## Overflow (D3)
+
+A number spelling past binary64's range rounds to a nonfinite value. The
+writer's number check refuses it by the same name as any other number out of
+range, and in the same place: last, after the envelope, the salt and repeated
+member names. -/
+
+/-- A number in the writer's range is finite. -/
+theorem Number.finite_of_inRange {n : Number} (h : n.inRange = true) : n.finite = true := by
+  simp only [Number.inRange, Bool.and_eq_true] at h
+  exact h.1
+
+/-- A nonfinite number is refused by the number check, under a good envelope and salt. -/
+theorem writeProblem_nonfinite {env : Env} {salt : List UInt8} {n : Number}
+    (he : env.problem = none) (hs : salt.length = 16) (hn : n.finite = false) :
+    writeProblem env salt (.number n) = some "number-out-of-range" := by
+  have hr : (Json.number n).inRange = false := by
+    cases h : n.inRange
+    · simp [Json.inRange, h]
+    · rw [Number.finite_of_inRange h] at hn; cases hn
+  simp [writeProblem, he, hs, Json.keysDistinct, hr]
+
+theorem Env.problem_ne_range {e : Env} : e.problem ≠ some "number-out-of-range" := by
+  intro h
+  unfold Env.problem at h
+  repeat' split at h
+  all_goals simp at h
+
+/-- The number check is last: it speaks only when the envelope, the salt and the member names pass. -/
+theorem writeProblem_range_last {env : Env} {salt : List UInt8} {payload : Json}
+    (h : writeProblem env salt payload = some "number-out-of-range") :
+    env.problem = none ∧ salt.length = 16 ∧ payload.keysDistinct = true ∧ payload.inRange = false := by
+  unfold writeProblem at h
+  split at h
+  · rename_i why he
+    cases h
+    exact absurd he Env.problem_ne_range
+  · rename_i he
+    by_cases hs : salt.length = 16
+    · by_cases hk : payload.keysDistinct = true
+      · by_cases hr : payload.inRange = true
+        · simp [hs, hk, hr] at h
+        · exact ⟨he, hs, hk, by simpa using hr⟩
+      · simp [hs, hk] at h
+    · simp [hs] at h
+
 theorem firstRefusal_set {cs ds : List String} (h : ∀ c, c ∈ cs ↔ c ∈ ds)
     (hw : ∀ c ∈ cs, c ∈ writeCodes) : firstRefusal cs = firstRefusal ds := by
   unfold firstRefusal

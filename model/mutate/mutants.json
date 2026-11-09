@@ -1527,5 +1527,45 @@
     "after": "    let decoded ← each path decodeValues j\n    if let some why := envelopesKeysProblem raw then throw why\n    pure decoded",
     "reason": "Decode envelope variants before all-envelope shape preflight.",
     "definition": "Loops.Read.readMany"
+  },
+  {
+    "id": "d1-base-problem-remove",
+    "file": "Lens.lean",
+    "before": "if (ids base).Nodup then none else some \"base-id-duplicate\"",
+    "after": "if (ids base).Nodup then none else none",
+    "reason": "Take a base that repeats an id.",
+    "definition": "Loops.Lens.baseProblem"
+  },
+  {
+    "id": "d1-read-text-first",
+    "file": "Lens.lean",
+    "before": "  | some why => .error why\n  | none => .ok (edit base text)",
+    "after": "  | some why => if (edit base text).isNone then .ok none else .error why\n  | none => .ok (edit base text)",
+    "reason": "Report a malformed text before a repeated base id.",
+    "definition": "Loops.Lens.read"
+  },
+  {
+    "id": "d2-lone-low-accepted",
+    "file": "Json.lean",
+    "before": "else if lowSurrogate u || 0x10000 ≤ u then none",
+    "after": "else if 0x10000 ≤ u then none",
+    "reason": "Read a lone low surrogate as text.",
+    "definition": "Loops.ofUtf16?"
+  },
+  {
+    "id": "d2-lone-high-accepted",
+    "file": "Json.lean",
+    "before": "        else none\n      | [] => none",
+    "after": "        else none\n      | [] => some [Char.ofNat u]",
+    "reason": "Read a final lone high surrogate as text.",
+    "definition": "Loops.ofUtf16?"
+  },
+  {
+    "id": "d2-low-surrogate-range",
+    "file": "Json.lean",
+    "before": "0xDC00 ≤ u && u < 0xE000",
+    "after": "0xDC00 ≤ u && u < 0xDFFF",
+    "reason": "Leave the last low surrogate out of the range.",
+    "definition": "Loops.lowSurrogate"
   }
 ]
