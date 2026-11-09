@@ -1,0 +1,109 @@
+# GitLab CI: the gates of .github/workflows/ci.yml, on the homelab runner.
+#
+# strange-loops-next is primary on GitLab from 2026-11-08, so merge requests are
+# checked here. Keep the two files in step: a gate added to one belongs in the other.
+#
+# Every job is tagged `homelab` (the Docker executor). The instance's other runner,
+# osxcompute-primary, is a macOS shell executor that also takes untagged jobs and
+# ignores `image:`, so an untagged job could run there without its toolchain.
+
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS
+      when: never
+    - if: $CI_COMMIT_BRANCH
+
+default:
+  tags: [homelab]
+  interruptible: true
+
+stages: [check]
+
+rust:
+  stage: check
+  image: rust:1-bookworm
+  variables:
+    CARGO_HOME: $CI_PROJECT_DIR/.cargo-home
+  cache:
+    key: rust
+    paths: [.cargo-home/registry, rust/target]
+  before_script:
+    - rustup component add rustfmt clippy
+    - export PATH="$CARGO_HOME/bin:$PATH"
+  script:
+    - cd rust
+    - cargo fmt --all --check
+    - cargo clippy --workspace --all-targets --all-features -- -D warnings
+    - cargo test --workspace
+    - cargo doc --workspace --no-deps
+    - cargo build -p loops-eval --bin loops-eval
+
+model:
+  stage: check
+  image: node:22-bookworm
+  variables:
+    ELAN_HOME: $CI_PROJECT_DIR/.elan
+    RUSTUP_HOME: $CI_PROJECT_DIR/.rustup
+    CARGO_HOME: $CI_PROJECT_DIR/.cargo-home
+  cache:
+    key:
+      prefix: model
+      files: [model/lean-toolchain]
+    paths: [.elan, .rustup, .cargo-home, model/.lake]
+  before_script:
+    - curl -sSfL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --no-modify-path --default-toolchain none
+    - curl -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path --profile minimal
+    - export PATH="$ELAN_HOME/bin:$CARGO_HOME/bin:$PATH"
+  script:
+    # Proofs check
+    - (cd model && lake build --wfail)
+    # Vectors are a pure render of the model
+    - (cd model && lake exe gen ../vectors)
+    - git diff --exit-code -- vectors
+    - test -z "$(git status --porcelain -- vectors)"
+    # Every vector's expect follows from its input alone
+    - (cd model && lake exe run --check ../vectors)
+    # Runtime checks
+    - (cd model && lake exe checks ..)
+    # Model mutants
+    - (cd model && node mutants.mjs)
+    # Fuzz adapters and batch transport check
+    - timeout 60 node --test interop/fuzz/*.test.mjs
+    # Rust input-only evaluator for three-way fuzz
+    - (cd rust && cargo build -p loops-eval --bin loops-eval)
+    # The verified fixed fuzz corpus agrees
+    - timeout 120 node interop/fuzz/run.mjs --rust --seed ci-1 --n 28 --out "$CI_PROJECT_DIR/loops-fuzz"
+    # The proof graph is a pure render of the proofs
+    - (cd model && lake exe proofs ../design/laws/proofs.json)
+    - git diff --exit-code -- design/laws/proofs.json
+    - test -z "$(git status --porcelain -- design/laws/proofs.json)"
+    # The premise cases are a pure render of the model
+    - (cd model && lake exe boundaries ../design/laws/boundaries.json)
+    - git diff --exit-code -- design/laws/boundaries.json
+    - test -z "$(git status --porcelain -- design/laws/boundaries.json)"
+  artifacts:
+    name: fuzz-corpus
+    when: always
+    paths: [loops-fuzz/]
+    expire_in: 1 week
+
+interop:
+  stage: check
+  image: node:22-bookworm
+  script:
+    # The JS implementation agrees on every vector
+    - node interop/js/check.mjs vectors
+    # The JS reader guards hold
+    - node --test interop/js/*.test.mjs
+
+design:
+  stage: check
+  image: node:22-bookworm
+  script:
+    # The design pages are a pure render of design/, protocol/ and vectors/
+    - node design/build.mjs
+    - git diff --exit-code -- out
+    - test -z "$(git status --porcelain -- out)"
+    # The design build refuses every mutant it should
+    - node design/mutants.mjs
