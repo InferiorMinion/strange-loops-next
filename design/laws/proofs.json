@@ -155,6 +155,11 @@
    "states":
    "∀ {t : String} {xs ys : List Loops.Record}, Loops.Addressed xs → Loops.Addressed ys → (∀ (r : Loops.Record), r ∈ xs ∧ r.isAbout t = true ↔ r ∈ ys ∧ r.isAbout t = true) → Loops.stateIn t xs = Loops.stateIn t ys",
    "module": "Laws.Things"},
+  "Loops.stateIn_late_unnamed":
+  {"uses": ["Loops.admit_append_unnamed"],
+   "states":
+   "∀ (may : Loops.Record → Loops.Record → Bool) {xs : List Loops.Record} {r : Loops.Record} (t : String), (∀ (q : Loops.Record), q ∈ xs → ¬r.id ∈ q.prev) → Loops.stateIn t (Loops.admit may (xs ++ [r])) = if (Loops.entitled may (xs ++ [r]) r && r.isAbout t) = true then (Loops.stateIn t (Loops.admit may xs)).step r else Loops.stateIn t (Loops.admit may xs)",
+   "module": "Laws.Things"},
   "Loops.stateIn_heads":
   {"uses":
    ["Loops.Addressed.filter",
@@ -1165,6 +1170,11 @@
   {"uses": ["Loops.Distinct.filter"],
    "states":
    "∀ (may : Loops.Record → Loops.Record → Bool) {xs : List Loops.Record}, Loops.Distinct xs → Loops.Distinct (Loops.admit may xs)",
+   "module": "Laws.Things"},
+  "Loops.admit_append_unnamed":
+  {"uses": [],
+   "states":
+   "∀ (may : Loops.Record → Loops.Record → Bool) {xs : List Loops.Record} {r : Loops.Record}, (∀ (q : Loops.Record), q ∈ xs → ¬r.id ∈ q.prev) → Loops.admit may (xs ++ [r]) = Loops.admit may xs ++ if Loops.entitled may (xs ++ [r]) r = true then [r] else []",
    "module": "Laws.Things"},
   "Loops.Written.ok":
   {"uses": [],

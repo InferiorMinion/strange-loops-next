@@ -518,4 +518,39 @@ theorem perThing_cannot_follow_admit :
   rw [e, h₂] at h₁
   exact absurd h₁ (by decide)
 
+/-- A late record that no held record names in `prev` never retracts an
+admission: the admitted records only grow, by the arrival when it is entitled. -/
+theorem admit_append_unnamed (may : Record → Record → Bool) {xs : List Record} {r : Record}
+    (hr : ∀ q ∈ xs, r.id ∉ q.prev) :
+    admit may (xs ++ [r]) = admit may xs ++ (if entitled may (xs ++ [r]) r then [r] else []) := by
+  unfold admit
+  rw [List.filter_append]
+  congr 1
+  · apply List.filter_congr
+    intro q hq
+    have hne : ∀ p ∈ q.prev, r.id ≠ p := fun p hp h => hr q hq (h ▸ hp)
+    apply Bool.eq_iff_iff.mpr
+    simp only [entitled, List.all_eq_true, List.mem_append, List.mem_singleton]
+    constructor
+    · intro h p hp x hx
+      exact h p hp x (Or.inl hx)
+    · intro h p hp x hx
+      rcases hx with hx | rfl
+      · exact h p hp x hx
+      · simp [hne p hp]
+  · cases h : entitled may (xs ++ [r]) r <;> simp [h]
+
+/-- So each thing's state folds such an arrival onto the cached one
+(`OverHeads.late` over the admitted records): stepped by it when it is admitted
+and about the thing, unchanged otherwise. -/
+theorem stateIn_late_unnamed (may : Record → Record → Bool) {xs : List Record} {r : Record}
+    (t : String) (hr : ∀ q ∈ xs, r.id ∉ q.prev) :
+    stateIn t (admit may (xs ++ [r])) =
+      if entitled may (xs ++ [r]) r && r.isAbout t then (stateIn t (admit may xs)).step r
+      else stateIn t (admit may xs) := by
+  rw [admit_append_unnamed may hr]
+  unfold stateIn LatestBy.fold
+  cases h₁ : entitled may (xs ++ [r]) r <;> cases h₂ : r.isAbout t <;>
+    simp [List.filter_append, List.foldl_append, h₂]
+
 end Loops
