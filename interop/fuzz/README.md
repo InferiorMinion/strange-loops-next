@@ -17,16 +17,16 @@ node interop/fuzz/run.mjs --seed ci-1 --n 28 --out /tmp/fuzz-ci
 node interop/fuzz/run.mjs --rust --seed phase2-20261029 --n 5000 --out /tmp/fuzz-large
 node interop/fuzz/run.mjs --seed campaign-1 --n 1000 --family record --no-shrink
 node interop/fuzz/run.mjs --rust --replay /tmp/fuzz-large/mismatches/000000.json --out /tmp/fuzz-replay
-fnm exec --using 22 node interop/fuzz/run.mjs --rust --seed step1-3 --n 5600 --shrink-trials 80 --out /tmp/fuzz-step1-3-5600
-fnm exec --using 22 node interop/fuzz/run.mjs --rust --replay interop/fuzz/found/03-duplicate-base-id.json --out /tmp/fuzz-duplicate-base
+node interop/fuzz/run.mjs --rust --seed d1-d6-1 --n 5600 --shrink-trials 80 --out /tmp/fuzz-d1-d6-1
+node interop/fuzz/run.mjs --rust --replay vectors/lens/section/d1-duplicate-base-id.json --out /tmp/fuzz-duplicate-base
 ```
 
 An explicit output directory must be empty.
 Without `--out`, the runner creates an artifact directory under the system temporary directory.
 It prints that path with the summary.
 Exit codes are 0 for agreement, 1 for disagreements, and 2 for infrastructure or CLI errors.
-[REPORT.md](REPORT.md) records the Step-1 campaign and its 42 duplicate-base lens mismatches.
-It marks earlier campaign results as historical.
+[REPORT.md](REPORT.md) records the campaign after the D1–D6 rulings, which finds no mismatch.
+It marks earlier campaign results as historical, including the 42 duplicate-base lens mismatches D1 settles.
 
 `--n` is the total case count, not a count per family.
 Without `--family`, cases cycle through record, fold, spec, realm, scenario, batch, and lens.
@@ -102,6 +102,11 @@ Record variants reorder JSON members and repeat set members.
 Named record boundaries test uppercase IDs, each character `w` through `z`, and nonzero ID and salt padding bits.
 They test offsets, second 60, trailing-zero fractions, and ten-digit fractions in `emitted` and every `occurred` instant position.
 Another case tests an unknown envelope key with an empty kind.
+Twelve more carry the D2, D3 and D5 boundaries.
+A lone surrogate travels as a payload text, alone, in a member name, after an unknown key, and before a bad kind or salt.
+A number past binary64's range travels as text too, alone, under a bad kind, and beside a repeated member.
+Four cases list variants that disagree: a refused first, two refused differently, and a refused envelope or payload later.
+The last two are malformed input, which every engine must refuse to answer.
 These scheduled cases cannot be replaced by random mutations.
 Other named cases exercise wrong types, bad IDs, integer bounds, EDTF, repeated members, salt lengths, and unresolved labels.
 A deliberate self-label cycle also carries a near-miss label.
@@ -184,7 +189,8 @@ It cannot change which engine refuses or which implementations disagree.
 The partition also preserves which JS orders agree with each engine.
 These checks do not prove envelope validity or preserve the original root cause.
 Review each reduced input against the relevant law premises.
-The reviewed `found/` cases include cause-specific, domain-preserving reduction checks.
+Reviewed candidates go under `found/` with cause-specific, domain-preserving reduction checks.
+None is open: the duplicate-base case is now a model vector.
 It cannot replace an answer mismatch with a JS exception.
 An original JS exception must keep its exact name and message.
 Transport errors stop reduction rather than count as successful trials.
@@ -200,9 +206,10 @@ It makes no global minimality claim.
 The other test files include real Lean checks and raw-source replay checks.
 The adapter corpus test covers every supported existing vector.
 The fuzz runner has no mismatch allowlist or ignored disagreement.
-A test reproduces both recorded answers for the duplicate-base candidate.
+A test checks that no reviewed candidate is open and that the five `d1-` lens vectors agree in every implementation.
 The official gap17 vectors test the resolved repeated and empty edited IDs.
-The human ruling resolves gap17. Duplicate-base behavior remains a protocol-domain question.
-The current `step1-3` campaign finds 42 such lens mismatches in 5,600 cases.
+Human rulings resolve gap17 and, under D1, the duplicate base: every implementation refuses it with `base-id-duplicate`.
+Twelve scheduled record slots carry the D2, D3 and D5 boundaries: lone surrogates and overflow as text, and variants that disagree.
+A record input has one JS answer, from the library's record-input contract; its variants are checked, not answered.
 
-[REPORT.md](REPORT.md) records the Step-1 result and historical two-way and three-way results.
+[REPORT.md](REPORT.md) records the current result and historical two-way and three-way results.
