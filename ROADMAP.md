@@ -143,7 +143,7 @@ See [the mutation report](model/mutate/REPORT.md).
 ### D7: Canonical result encoding
 
 This is a future human choice, not a current behavior change.
-The [open design](design/rethink/sections/16-open.html) prefers JCS for results.
+The [open design](design/rethink/sections/15-open.html) prefers JCS for results.
 Exact, unbounded `Sum` outputs include `9007199254740993` in `phase2-exact-output`.
 Neither current tests nor the model define a canonical result hash codec.
 **Readings:** Define a separate exact-integer canonical JSON extension, or use typed decimal integer strings inside JCS.
@@ -180,6 +180,53 @@ Do not implicitly normalize the core.
 Review corrections narrow proof scope and mark examples as prototype or proposed.
 They also correct privacy, index, hash, signature-prefix, and obsolete Rust claims.
 These mechanical corrections do not add protocol choices.
+
+## Build sequence
+
+Steps 0 and 1 are done. Steps 2–6 are proposals.
+Each step extends the model laws, computes protocol vectors, then implements Rust.
+
+| Step | Builds | Done when |
+| --- | --- | --- |
+| 0, done | The Lean spike: Count and LatestBy, one lens combinator, 23 vectors | The first laws are proved |
+| 1, done | Protocol and vectors for layer 0: canonical bytes, salt and commitment, id, signature | The model and the JS writer agree on every vector; Rust checks all fixture families and external standards |
+| 2 | Emit, read, fold for one person: JSONL segment, JSON spec, the two fold families, `"follow": "prev"`, device key, signing by default. `about` takes ids and natural keys only. | It does the old CLI's workable job, signed |
+| 3 | Standing: declarations, admission, stances, grants, presence key, retire through; then name tables and `resolve-by` | A strict store rejects visibly; a steward's changeset takes effect |
+| 4 | Ticks: content and witness, boundaries, markers | A content tick recomputes to the same hash on two machines |
+| 5 | Sharing: the git layout, then segment-list sync | Two clones converge |
+| 6 | Index and search, SQLite segments, collectors, lenses, `serve` | Something is slow, or a surface needs it |
+
+**Why Rust.** Small writers can use JSON in any language.
+Phones and browser extensions need embedded readers, and Rust runs there without a server.
+Exhaustive enums expose missing cases, and Lean's closed types map directly to enums.
+This is design rationale; no bindings exist.
+
+A reader reaches the core in three proposed ways. All three speak the same JSON shapes.
+
+- **Local server:** a browser, LSP or MCP client speaks JSON-RPC to `loops serve`, which reads `.loops/` on disk.
+  This suits a laptop and keeps keys out of the browser.
+- **WebAssembly:** `loops-wasm` runs inside the page or extension, over browser storage or files the reader picks.
+  This suits an annotation extension, static hosting and an offline web app.
+- **Native bindings:** `loops-ffi`, through UniFFI, runs inside a Swift or Kotlin app, over the app's own storage.
+  This suits a phone.
+
+### Standards to stand on
+
+The record rows are settled; see R1–R6 and [record rules](protocol/record.md).
+Index, keys and provenance export are proposals.
+
+| Concern | Choice |
+| --- | --- |
+| `emitted` | Canonical UTC instant, with at most nine fractional digits |
+| `occurred` | A span: dates, instants and intervals from ISO 8601 and EDTF Level 1; the grammar is closed in `protocol/record.md` |
+| Canonical bytes | RFC 8785 (JCS): ECMAScript-exact numbers, no NaN |
+| Hash | SHA-256 |
+| Id text | Typed prefix plus lowercase unpadded base32hex (`r:`, `st:`, `sl:`, …); algorithm changes go through the version label |
+| Signatures | RFC 8032 (Ed25519) over `loops/record/v1:` + id |
+| Specs | JSON (RFC 8259), defined by [`protocol/spec.md`](protocol/spec.md); declaration and config shapes are proposals |
+| Index, search | SQLite with FTS5 through `rusqlite`, bundled; the CLI only, never the core |
+| Keys | The OS keychain behind a `Signer` trait, with a file fallback |
+| Provenance export | W3C PROV or PREMIS mapping, undecided |
 
 ## Next work, by value
 

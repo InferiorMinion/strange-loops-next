@@ -333,14 +333,14 @@
     "group": "Building",
     "status": "settled",
     "claim": "Budgets guard failures, not size.",
-    "why": "Tokens per module, public API snapshots, vocabulary prices, dependency allowlists and inward layering define the budget plan. A budget increase needs a ledger entry citing the core rule. The Go budget checker left with the Go core. Rust exists now; the proposed <code>xtask</code> budget tool remains unimplemented."
+    "why": "Tokens per module, public API snapshots, vocabulary prices, dependency allowlists and inward layering define the budget plan. A budget increase needs a ledger entry citing the core rule."
   },
   {
     "kind": "decision",
     "group": "Building",
     "status": "settled",
     "claim": "Model laws and external checks guide Rust; the workspace also has characterization tests.",
-    "why": "The historical plan rejected unit tests in favor of proofs, vectors, differential fuzzing and scenarios. Rust now has public fixture tests, standards checks and characterization tests. The Lean model computes protocol-vector answers; separate theorem files prove the listed laws. External standards supply their own expected data. The intended rule remains: do not derive expected answers from the implementation under test."
+    "why": "The plan rejected unit tests in favor of proofs, vectors, differential fuzzing and scenarios. The Lean model computes protocol-vector answers; separate theorem files prove the listed laws. External standards supply their own expected data. The rule: do not derive expected answers from the implementation under test."
   },
   {
     "kind": "decision",
@@ -355,13 +355,6 @@
     "status": "leaning",
     "claim": "An outside review at each modelling step.",
     "why": "A reviewer from another lab gets the code and the docs, never our conclusions. Each finding becomes a vector, a theorem or a narrower claim. Codex found three of our five findings on its own and eight more besides."
-  },
-  {
-    "kind": "decision",
-    "group": "Building",
-    "status": "settled",
-    "claim": "Rust now implements the modeled protocol; product storage and higher transitions remain planned.",
-    "why": "The model proves LatestBy's set law and Count's repeat behavior under their stated premises. Lens render laws require valid ids; put-get also preserves the exact ordered id list. Layer 0 vectors compare modeled, JS and Rust bytes. Hash-parametric laws cover erasure, sets and member order. Step 2 introduced distinct-id fold families, per-thing heads, consistent-form settling, honest unread results, spec parsing and at-most-one batch meaning. Historical boundary reviews produced PRs 7 and 9–13. PR 7 checks writing; PR 9 adds <code>erases</code>; PR 10 preserves unneeded backslashes. PR 11 defines occurred grammar; PR 12 orders real times and digest bytes. PR 13 extends envelope tests and defines the normative spec grammar. Its historical snapshot had 171 vectors. The law catalogue lists 76 entries across 624 theorem declarations. Fixture counts change with the integration campaign; consult the final campaign report. Rust checks all families and standards. Current writers cap every number's magnitude at 2<sup>53</sup> − 1, whole or not. Numeric folds additionally require safe whole values. Ticks, references, boundaries and storage transitions still need future models and proofs."
   },
   {
     "kind": "decision",
