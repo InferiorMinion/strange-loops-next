@@ -41,7 +41,11 @@ The envelope reader uses these refusal codes: `envelope-field-unknown`, `kind-em
 It checks them in that order.
 Raw shape comes first: inspect all envelope keys before decoding any envelope value, label or salt.
 An unknown key gives one top-level `envelope-field-unknown` refusal, including when another envelope has malformed values.
+Text comes second: every string and member name is Unicode scalar values.
+A lone UTF-16 surrogate, in a value or a member name, is refused with `string-not-unicode`.
+This check follows raw shape and precedes every check from `kind-empty` on, including the salt.
 For a batch, the stages are shape, then labels, then writing, then `prev-unknown`, then `prev-unrelated`.
+A batch given as values that can hold a lone surrogate checks text after shape and before labels.
 The typed writer starts at `kind-empty`; its envelope type cannot contain unknown fields.
 Several equivalent envelope variants remain valid when every variant passes shape checks.
 
@@ -65,7 +69,13 @@ replaces (`prev: [r:X], erases: [r:X]`). Targets don't go in `about`:
 Writing checks the envelope, then salt length (`salt-not-16-bytes`) and repeated payload members (`member-duplicate`).
 It then checks nonfinite or out-of-range payload numbers (`number-out-of-range`).
 Every number must have magnitude at most 2^53 − 1, whole or not.
+A number spelling past binary64's range is such a number: it stays a number until this last check.
+No reader refuses it earlier or under another name.
 A batch writes each record through the same checks.
+
+The whole order, for a record given as an envelope, a salt and a payload:
+`envelope-field-unknown`, `string-not-unicode`, the envelope codes from `kind-empty`,
+`salt-not-16-bytes`, `member-duplicate`, `number-out-of-range`.
 
 ## Occurred
 
@@ -118,6 +128,17 @@ ECMAScript number formatting, no whitespace. Object member names must be distinc
 The writer refuses repeated names (`member-duplicate`).
 It does not select the first or last value; parsers disagree on that choice.
 
+Strings and member names are sequences of Unicode scalar values, as RFC 8785 requires.
+A lone surrogate names no scalar value, so it has no canonical bytes and is never hashed.
+The writer refuses it with `string-not-unicode`; it substitutes nothing, U+FFFD included.
+This holds for a payload given as text, where a lone surrogate is written as a `\u` escape,
+and for one given as values in a language whose strings can hold one.
+It covers member names, every envelope field, and what a batch holds.
+A payload text is refused this way only when it is JSON by its syntax.
+Text that is not JSON is malformed input and has no refusal code, wherever a surrogate stands in it.
+Of JSON text, a lone surrogate is refused before a repeated member name: text is decoded, then validated.
+A paired escape, such as `\ud83d\ude00`, is the character it names.
+
 A payload can contain RFC 8259 number spellings, including fractions and exponents.
 JCS reads each number as an IEEE-754 binary64 value.
 The writer accepts finite values only within ±(2^53 − 1), including fractions.
@@ -134,9 +155,14 @@ Its writer refuses raw integers outside ±(2^53 − 1).
 This prevents unchecked exact values from bypassing binary64 semantics.
 These raw integers are not distinct wire values.
 Canon's finite number domain is distinct from the writer's magnitude cap.
-Overflow may fail during ingestion or writer validation; shared wire fixtures do not pin that stage.
-JS parsing can produce infinity, which checked writing rejects.
-The Rust evaluator rejects overflow during decoding; Lean can reach writer validation.
+
+A spelling such as `1e999` is past binary64's range.
+The writer's number check refuses it with `number-out-of-range`, in that check's usual place:
+after the envelope, the salt and repeated member names (law `write.overflow`).
+A spec refuses it where it refuses any number out of range.
+An implementation whose number type is finite keeps it finite.
+Its input adapter carries the overflow to that check; it does not refuse earlier or under another name.
+A reader's own records must hold finite numbers: there an overflowing spelling is malformed input.
 The model's checked writer also refuses out-of-range raw numbers.
 Historical ingestion discussions do not override the magnitude cap.
 
@@ -185,7 +211,3 @@ After erasure the opening is replaced by the commitment:
   A `where` test on `env.occurred` compares starts too.
   A record without `occurred` passes neither bound; a window places it at its `emitted`.
 * Key bindings, presence keys and admission arrive with standing (step 3).
-* Lone UTF-16 surrogates are invalid JSON for RFC 8785.
-  Rust and Lean text parsing reject them; JS does not uniformly reject them.
-  Uniform refusal, its code, and precedence remain unresolved.
-  Callers must not silently replace them.

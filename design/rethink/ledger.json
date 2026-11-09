@@ -66,6 +66,20 @@
     "kind": "decision",
     "group": "Layer 0 · the record",
     "status": "settled",
+    "claim": "D2: Text is Unicode scalar values; a lone surrogate is refused by name before hashing.",
+    "why": "The refusal is <code>string-not-unicode</code>. It covers values, member names, envelope fields and what a batch holds, in text and in direct-value APIs. It follows <code>envelope-field-unknown</code> and precedes <code>kind-empty</code>. A payload text gets it only when the text is JSON by its syntax. Nothing is substituted, U+FFFD included."
+  },
+  {
+    "kind": "decision",
+    "group": "Layer 0 · the record",
+    "status": "settled",
+    "claim": "D3: A number past binary64's range is refused by the writer's number check.",
+    "why": "The refusal is the existing <code>number-out-of-range</code>, last in the writer's order. The core's number type stays finite. An input adapter carries the overflow to that check and to the spec parser; it refuses neither earlier nor under another name. A reader's own records must hold finite numbers."
+  },
+  {
+    "kind": "decision",
+    "group": "Layer 0 · the record",
+    "status": "settled",
     "claim": "A store is a set, not a sequence.",
     "why": "Receipt order leaves the fold. Underneath: immutable single-writer segments, content-addressed blobs, a derived index."
   },
@@ -291,7 +305,14 @@
     "group": "Lenses and context",
     "status": "settled",
     "claim": "A lens is a collector with a base.",
-    "why": "Render roundtrip requires nonempty, distinct section ids. Put-get additionally requires distinct base ids and the exact same ordered id list in the edit. A dropped section retains its old body. The broader lens plan records a base of tick, lens hash and audience. It renders, parses edits, diffs by id and emits a changeset. Committed renders are promotions. One tick can have several renders. Absence is never an edit. Anything an observer writes remains its own record."
+    "why": "Render roundtrip requires nonempty, distinct section ids. Put-get additionally requires distinct base ids and the exact same ordered id list in the edit. A public reader refuses a base without distinct ids. A dropped section retains its old body. The broader lens plan records a base of tick, lens hash and audience. It renders, parses edits, diffs by id and emits a changeset. Committed renders are promotions. One tick can have several renders. Absence is never an edit. Anything an observer writes remains its own record."
+  },
+  {
+    "kind": "decision",
+    "group": "Lenses and context",
+    "status": "settled",
+    "claim": "D1: A public lens refuses a base that repeats a section id.",
+    "why": "The refusal is <code>base-id-duplicate</code>. The base is checked before the text is read, so the refusal is given whatever the text says. The raw matching keeps its first-match behavior and its distinct-id premise."
   },
   {
     "kind": "decision",
