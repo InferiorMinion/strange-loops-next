@@ -1,0 +1,46 @@
+{
+  "vector": "24-overflow-after-envelope",
+  "layer": "batch",
+  "laws": ["batch.refuse", "write.overflow"],
+  "source": "model",
+  "input": {
+    "held": [
+      {
+        "id": "r:tsant02u7bhefv6nom5tukci31agdh8q5sonp4s3h4dhkfbrgli0",
+        "about": ["topic:auth"]
+      },
+      {
+        "id": "r:iivodlg66vgkad2knrdqob3e4obh28sea6omq5kk0u25t925276g",
+        "about": []
+      }
+    ],
+    "drafts": [
+      {
+        "env": {
+          "kind": "estimate",
+          "observer": "sl:u11o5kditce56otma2ksbsnff7n6t0ftgbrmt4sp0j5d1riusfr0",
+          "emitted": "2026-10-24T09:00:00Z",
+          "about": ["topic:auth"]
+        },
+        "salt": "1eka6bjgh4g33pom64lfhst7ls",
+        "payload": {
+          "n": 1e999,
+          "low": -1e999
+        }
+      },
+      {
+        "env": {
+          "kind": "",
+          "observer": "sl:u11o5kditce56otma2ksbsnff7n6t0ftgbrmt4sp0j5d1riusfr0",
+          "emitted": "2026-10-24T09:00:00Z",
+          "about": ["topic:auth"]
+        },
+        "salt": "derngupc6nuqsq2012a7v4bo5c",
+        "payload": {}
+      }
+    ]
+  },
+  "expect": {
+    "refused": "kind-empty"
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "vector": "25-overflow-before-prev",
+  "layer": "batch",
+  "laws": ["batch.refuse", "write.overflow"],
+  "source": "model",
+  "input": {
+    "held": [
+      {
+        "id": "r:tsant02u7bhefv6nom5tukci31agdh8q5sonp4s3h4dhkfbrgli0",
+        "about": ["topic:auth"]
+      },
+      {
+        "id": "r:iivodlg66vgkad2knrdqob3e4obh28sea6omq5kk0u25t925276g",
+        "about": []
+      }
+    ],
+    "drafts": [
+      {
+        "env": {
+          "kind": "estimate",
+          "observer": "sl:u11o5kditce56otma2ksbsnff7n6t0ftgbrmt4sp0j5d1riusfr0",
+          "emitted": "2026-10-24T09:00:00Z",
+          "about": ["topic:auth"]
+        },
+        "salt": "1eka6bjgh4g33pom64lfhst7ls",
+        "payload": {
+          "n": 1e999,
+          "low": -1e999
+        }
+      },
+      {
+        "env": {
+          "kind": "decision",
+          "observer": "sl:u11o5kditce56otma2ksbsnff7n6t0ftgbrmt4sp0j5d1riusfr0",
+          "emitted": "2026-10-24T09:00:00Z",
+          "about": ["topic:auth"],
+          "prev": ["r:68nif1f1orpffet0hj8pag8kbm2g6oquc10v6mesb1osq0pkbkdg"]
+        },
+        "salt": "qefl0evau0e4ght27975290l8g",
+        "payload": {}
+      }
+    ]
+  },
+  "expect": {
+    "refused": "number-out-of-range"
+  }
+}

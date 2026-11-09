@@ -1,0 +1,20 @@
+{
+  "vector": "d2-before-kind",
+  "layer": "record",
+  "laws": ["record.unicode", "record.refuse"],
+  "source": "model",
+  "input": {
+    "envs": [
+      {
+        "kind": "",
+        "observer": "sl:u11o5kditce56otma2ksbsnff7n6t0ftgbrmt4sp0j5d1riusfr0",
+        "emitted": "2026-10-21T09:30:00Z"
+      }
+    ],
+    "salt": "djbpgdvqijo7ufma7sfaqnn2lo",
+    "payload_text": "\"\\ud800\""
+  },
+  "expect": {
+    "refused": "string-not-unicode"
+  }
+}
