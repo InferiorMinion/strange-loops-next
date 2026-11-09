@@ -25,6 +25,9 @@ answers(layer: &str, input: &loops::json::Json)
 evaluate(text: &str) -> Result<loops::json::Json, loops_eval::Error>
 ```
 
+`slots_json` renders a spec's slot values as the `spec/run` vectors write them; the `loops` CLI prints it.
+`loops-place` and `loops-cli` sit outside this boundary; see `PLACE.md`.
+
 `Error` is a concrete error implementing `Display` and `std::error::Error`.
 Family helpers are private. `answers` retains every order/variant answer;
 `evaluate` refuses empty or differing answer sets instead of choosing one.
