@@ -98,6 +98,6 @@ test('real Lean reader retains duplicate refusal, Unicode, and existing text dec
     assert.deepEqual(answers[0].expect, { refused: 'member-duplicate', path: 'vertex' });
     assert.deepEqual(answers[1].expect, { parsed: [{ id: '雪😀', body: ['λ'] }], normalized: ['::: 雪😀', 'λ', ':::'], outcomes: [], applied: [{ id: '雪😀', body: ['λ'] }] });
     assert.match(answers[2].error, /repeats the member "input"/);
-    assert.match(answers[3].error, /expected/);
+    assert.match(answers[3].error, /string-not-unicode/);
   });
 });
