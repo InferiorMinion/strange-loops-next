@@ -205,6 +205,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "loops-cli"
+version = "0.1.0"
+dependencies = [
+ "loops",
+ "loops-eval",
+ "loops-place",
+]
+
+[[package]]
 name = "loops-eval"
 version = "0.1.0"
 dependencies = [
@@ -214,6 +223,17 @@ dependencies = [
  "loops",
  "serde",
  "serde_json",
+ "sha2",
+]
+
+[[package]]
+name = "loops-place"
+version = "0.1.0"
+dependencies = [
+ "ed25519-dalek",
+ "getrandom",
+ "loops",
+ "loops-eval",
  "sha2",
 ]
 

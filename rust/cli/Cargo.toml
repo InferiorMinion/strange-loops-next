@@ -1,0 +1,17 @@
+[package]
+name = "loops-cli"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+
+[[bin]]
+name = "loops"
+path = "src/main.rs"
+
+[lints]
+workspace = true
+
+[dependencies]
+loops = { path = "../core" }
+loops-eval = { path = "../eval" }
+loops-place = { path = "../place" }
