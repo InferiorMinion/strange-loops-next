@@ -61,10 +61,6 @@
       "tab": "Horizons"
     },
     {
-      "id": "build",
-      "tab": "Build"
-    },
-    {
       "id": "open",
       "tab": "Open"
     },
