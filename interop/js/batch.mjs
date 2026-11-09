@@ -2,7 +2,7 @@
 // resolved to real ids, written with loops.mjs's writer so the ids match
 // layer 0's. Written from vectors/batch and protocol/; no dependencies.
 
-import { base32Decode, canonical, envJson, idOf, commitOf, checkEnvelopeKeys, seal } from "./loops.mjs";
+import { base32Decode, canonical, envJson, idOf, commitOf, checkEnvelopeKeys, seal, unicodeProblem, NOT_UNICODE } from "./loops.mjs";
 
 const isLabel = (s) => typeof s === "string" && s.startsWith("@");
 const labelsOf = (d) => [...(d.env.about ?? []), ...(d.env.prev ?? [])].filter(isLabel);
@@ -56,13 +56,16 @@ const thingsOf = (id, about) => (about.length ? about : [id]);
 
 // The batch's records, one per draft in the order given, each { id,
 // env_canonical }; or { refused } with the first stage that refuses: shape,
-// labels (duplicate, unknown, cycle), writing from kind-empty, then
+// lone surrogates, labels (duplicate, unknown, cycle), writing from kind-empty, then
 // prev-unknown, then prev-unrelated.
 // Each stage looks at the whole batch, so no draft order changes the answer.
 export function resolveBatch(drafts, held) {
   // The library checks every envelope's keys before labels or values.
   try { checkEnvelopeKeys(drafts.flatMap(d => d && typeof d === "object" ? [d.env] : [])); }
   catch (e) { if (e.message === "envelope-field-unknown") return { refused: e.message }; throw e; }
+  // Then every string: a lone surrogate anywhere in the changeset or in what
+  // is held refuses before a label is compared or a draft written.
+  if (unicodeProblem(drafts) || unicodeProblem(held)) return { refused: NOT_UNICODE };
   const byLabel = new Map();
   for (const d of drafts) {
     if (d.label === undefined) continue;
