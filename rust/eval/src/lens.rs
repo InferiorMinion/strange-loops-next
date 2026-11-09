@@ -13,8 +13,10 @@ pub(crate) fn answers(layer: &str, input: &Json) -> Result<Vec<Json>, String> {
     let kvs = members("input", &["base", "text"], input)?;
     let base = sections("input.base", required("input", kvs, "base")?)?;
     let text = texts("input.text", required("input", kvs, "text")?)?;
-    let answer = match (lens::parse(&text), lens::edit(&base, &text)) {
-        (Some(parsed), Some(outcomes)) => Json::Obj(vec![
+    // The base is checked first: a repeated id refuses whatever the text says.
+    let answer = match (lens::read(&base, &text), lens::parse(&text)) {
+        (Err(why), _) => Json::Obj(vec![("refused".into(), Json::Str(why.code().into()))]),
+        (Ok(Some(outcomes)), Some(parsed)) => Json::Obj(vec![
             ("parsed".into(), doc(&parsed)),
             ("normalized".into(), lines(&lens::render(&parsed))),
             (
@@ -89,6 +91,24 @@ mod tests {
             assert!(answers("lens/section", &parse(input)).is_err(), "{input}");
         }
         assert!(answers("lens/other", &parse(r#"{"base":[],"text":[]}"#)).is_err());
+    }
+
+    #[test]
+    fn a_repeated_base_id_refuses_before_the_text_is_read() {
+        let base = r#"[{"id":"a","body":["one"]},{"id":"b","body":[]},{"id":"a","body":["two"]}]"#;
+        for text in [
+            r#"["::: a","one",":::"]"#,
+            "[]",
+            r#"["::: a","unclosed"]"#,
+            r#"["stray"]"#,
+        ] {
+            let input = parse(&format!(r#"{{"base":{base},"text":{text}}}"#));
+            assert_eq!(
+                answers("lens/section", &input).expect("an answer"),
+                vec![parse(r#"{"refused":"base-id-duplicate"}"#)],
+                "{text}"
+            );
+        }
     }
 
     #[test]

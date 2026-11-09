@@ -92,6 +92,45 @@ mod tests {
     }
 
     #[test]
+    fn overflow_reaches_the_writers_number_check_across_the_batch() {
+        let env = |kind: &str, prev: &str| {
+            format!(
+                r#"{{"kind":"{kind}","observer":"o:test","emitted":"2026-10-21T00:00:00Z","about":["t:a"]{prev}}}"#
+            )
+        };
+        let draft = |env: &str, payload: &str| {
+            format!(r#"{{"env":{env},"salt":"00000000000000000000000000","payload":{payload}}}"#)
+        };
+        let unknown = format!(r#","prev":["r:{}"]"#, "0".repeat(52));
+        let answer = |drafts: &[String]| {
+            let raw = format!(r#"{{"held":[],"drafts":[{}]}}"#, drafts.join(","));
+            let input = crate::json::parse_input("batch", &raw).expect("carried overflow");
+            answers("batch", &input).expect("an answer")
+        };
+        let refused = |code: &str| vec![parse(&format!(r#"{{"refused":"{code}"}}"#))];
+        let good = env("note", "");
+        for payload in ["1e999", r#"{"n":[-1e999]}"#] {
+            let over = draft(&good, payload);
+            assert_eq!(
+                answer(std::slice::from_ref(&over)),
+                refused("number-out-of-range")
+            );
+            // Writing ranks across the batch: an earlier check in another draft wins.
+            let no_kind = draft(&env("", ""), "{}");
+            assert_eq!(
+                answer(&[over.clone(), no_kind.clone()]),
+                refused("kind-empty")
+            );
+            assert_eq!(answer(&[no_kind, over.clone()]), refused("kind-empty"));
+            // Writing precedes the batch's `prev` checks.
+            let dangling = draft(&env("note", &unknown), "{}");
+            assert_eq!(answer(&[over, dangling]), refused("number-out-of-range"));
+        }
+        // The strict decoder still refuses the same text as malformed.
+        assert!(crate::parse_json(r#"{"held":[],"drafts":[{"payload":1e999}]}"#).is_err());
+    }
+
+    #[test]
     fn strict_shapes_and_base32() {
         for s in [
             "{}",

@@ -21,6 +21,7 @@ use std::fmt;
 
 /// A JSON syntax, fixture decoding, or arrival-order disagreement error.
 /// Writer refusals are successful answers containing `refused`, not errors.
+/// So are a text payload's lone surrogate and a lens base that repeats an id.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Error(String);
 impl fmt::Display for Error {
@@ -40,11 +41,13 @@ impl From<serde_json::Error> for Error {
     }
 }
 
-/// Compute every arrival-order (or record variant/realm rotation) answer.
+/// Compute every arrival-order (or realm rotation) answer.
 ///
 /// Accepts `record`, `fold/*`, `spec/{parse,run}`, `realm`, `scenario`,
 /// `lens/section`, and `batch`; other layers fail closed. No expected answer
 /// is supplied. Keeping all answers makes disagreement observable to callers.
+/// A record input gives one answer: its first envelope and first payload
+/// decide, and a later variant that disagrees once they are written is an error.
 ///
 /// # Errors
 /// Returns malformed input/unknown-layer errors. It does not silently select
@@ -65,6 +68,11 @@ pub fn answers(layer: &str, input: &Json) -> Result<Vec<Json>, Error> {
 }
 
 /// Evaluate a vector's `layer` and `input` only, checking all answers agree.
+///
+/// A number lexeme past binary64's range is malformed input to a reader's
+/// records. In a record's or a batch's payload it reaches the writer, which
+/// refuses it with `number-out-of-range`; in a spec it reaches the spec
+/// parser, which refuses it as it does any number out of range.
 ///
 /// Metadata, including `expect`, is not used as an answer. Its strings are
 /// validated as Unicode scalars without converting numbers. The envelope must be a
@@ -89,7 +97,7 @@ pub fn evaluate(text: &str) -> Result<Json, Error> {
             .ok_or_else(|| Error(format!("the vector: missing {name}")))
     };
     let layer: String = serde_json::from_str(required("layer")?)?;
-    let input = parse_json(required("input")?)?;
+    let input = json::parse_input(&layer, required("input")?)?;
     let mut values = answers(&layer, &input)?.into_iter();
     let first = values
         .next()

@@ -129,7 +129,11 @@ pub(crate) fn answers(layer: &str, input: &Json) -> Result<Vec<Json>, String> {
     )?;
     let base = fixture_lens::sections("input.lens.base", required("input.lens", lk, "base")?)?;
     let edit = texts("input.lens.text", required("input.lens", lk, "text")?)?;
-    let outcomes = lens::edit(&base, &edit).ok_or("input.lens.text: invalid sections")?;
+    // A scenario's base is the reader's own head: one that repeats an id is a
+    // fault in the input, not an answer.
+    let outcomes = lens::read(&base, &edit)
+        .map_err(|why| format!("input.lens.base: is refused ({why})"))?
+        .ok_or("input.lens.text: invalid sections")?;
     Ok(vec![object(vec![
         ("steps", Json::Arr(steps)),
         (

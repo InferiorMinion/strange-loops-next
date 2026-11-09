@@ -1,6 +1,6 @@
 //! Gen.SpecVectors parsing, execution, and slot rendering from model/Gen/Spec.lean.
 use super::{
-    parse_json,
+    json::parse_overflowing,
     reader::{list, members, record, required},
 };
 use loops::{
@@ -73,7 +73,7 @@ pub(crate) fn answers(layer: &str, input: &Json) -> Result<Vec<Json>, String> {
             let raw = kvs.iter().find(|(k, _)| k == "spec_text").map(|(_, j)| j);
             let written = match raw {
                 Some(Json::Str(text)) => {
-                    Some(parse_json(text).map_err(|e| format!("input.spec_text: {e}"))?)
+                    Some(parse_overflowing(text).map_err(|e| format!("input.spec_text: {e}"))?)
                 }
                 None => None,
                 Some(_) => return Err("input.spec_text: expected string".into()),
