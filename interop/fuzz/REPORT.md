@@ -8,9 +8,9 @@ The harness covers record, fold, spec, realm, scenario, batch, and lens inputs.
 
 ## D1–D6 three-way campaign
 
-Source commit: `5e1a90d`.
+Source commit: `bb9dc46`.
 Node 25.9 checks 5,600 cases with seed `d1-d6-1`: 800 cases per family.
-The run uses 88 chunks and takes 64.39 seconds.
+The run uses 88 chunks and takes 62.48 seconds.
 Exit 0: no implementation disagrees on any case.
 The retained [summary](evidence/d1-d6-1/summary.json) supports these counts.
 Run `python3 interop/fuzz/summarize.py report` from the repository root.

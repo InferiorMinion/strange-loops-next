@@ -5,7 +5,7 @@
 The tree has three implementations: Lean, JavaScript, and Rust.
 Step 1 applies the six settled rulings before records exist.
 All three implement the settled decisions D1–D6.
-The law index has 81 entries, 656 theorems, and 6 boundary witnesses.
+The law index has 82 entries, 673 theorems, and 6 boundary witnesses.
 See [the law index](design/laws/laws.json) and [proof and boundary data](design/laws/).
 These proofs apply only under their stated premises.
 
@@ -25,7 +25,7 @@ Numeric folds read safe whole values only.
 Raw constructors and theorem premises retain separate domains.
 
 The D1–D6 sequential gates pass on Node 25.9; the Node 22 runs of Step 1 are not repeated.
-The `d1-d6-1` campaign checks 5,600 cases, 800 per family, in 64.39 seconds.
+The `d1-d6-1` campaign checks 5,600 cases, 800 per family, in 62.48 seconds.
 It reports 4,107 matches, 1,124 protocol refusals, 369 shared decoder refusals, and no mismatch.
 Decoder refusals are not agreement.
 The 42 duplicate-base lens mismatches of the `step1-3` campaign are the class D1 settles.
@@ -33,14 +33,14 @@ The 42 duplicate-base lens mismatches of the `step1-3` campaign are the class D1
 See [the campaign report](interop/fuzz/REPORT.md) for the scripts and current and historical results.
 The CI seed `ci-1` checks 28 three-way cases without mismatches.
 
-The mutation catalogue has 195 entries, including eight new guard mutations.
+The mutation catalogue has 201 entries, including six new entries for the D1 and D2 definitions.
 It retires the redundant positive-offset guard under R4 and the entry for the deleted `stripZeros` family.
-The full run reports 146 build rejections, 27 vector differences, 16 generator assertion exceptions, and 6 survivors.
+The full run reports 157 build rejections, 27 vector differences, 15 generator assertion exceptions, and 2 survivors.
 The runner exits 1 for assertion exceptions; no timeout or infrastructure failure occurs.
-The six old survivors remain, including the four unapproved D6 helpers.
+The four D6 helper survivors now fail the build at their lemmas; the two scoped-equivalence survivors remain.
 All-envelope shape checks now belong to each library.
-Six deliberate per-envelope faults fail the respective vector layers; restored implementations pass.
-All new cheap guard mutations compile and then fail runtime checks.
+Six deliberate per-envelope faults failed the respective vector layers in Step 1; that probe is not repeated here.
+The cheap runner kills 32 of 32 mutants: each compiles and then fails runtime checks.
 Build rejections are not semantic proof kills.
 Survival does not prove equivalence.
 See [the mutation report](model/mutate/REPORT.md) for outcomes, restoration checks, and limits.
