@@ -45,6 +45,10 @@
       "tab": "Sharing"
     },
     {
+      "id": "trust",
+      "tab": "Trust"
+    },
+    {
       "id": "topology",
       "tab": "Realms"
     },
