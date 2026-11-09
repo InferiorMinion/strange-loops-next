@@ -15,7 +15,7 @@ written down here so they can be changed on purpose.
 loops init                          make .loops/ here
 loops emit <kind> [field=text | field:=json]... ["message"]
       [--about <thing>]... [--prev <id>]... [--erases <id>]...
-      [--occurred <when>] [--under <id>] [--observer <ref>]
+      [--occurred <when>] [--under <id>]
 loops emit -                        drafts as JSONL on stdin: one changeset
 loops get <id>                      one record
 loops about <thing>                 a thing's winner, its other heads, how many records
@@ -67,10 +67,14 @@ held. A segment whose name is not the hash of its bytes is listed as altered.
    compaction, or the open segment, can come when the file count hurts.
 2. **`segments/<key>/`, not `segments/<observer>/<device>/`.** Lineages are
    step 3. Until then the device key is the only writer identity a place can check.
-3. **The observer defaults to the device key, `k:…`.** It is a typed
-   reference and it is honest: with no lineage, the key is who is speaking.
-   `--observer` and `LOOPS_OBSERVER` name another. Nothing yet binds a key to
-   an observer, so the observer is the writer's word, as `emitted` is.
+3. **The observer is the device key, `k:…`, and nothing else.** A line
+   proves which key signed it. Nothing yet says which keys speak for an
+   observer, so the only observer a key can honestly write as is itself, and
+   `emit` refuses any other (`observer-unbound`). `--observer` and a draft's
+   `observer` are accepted so the refusal can be said. `loops check` counts
+   held lines whose observer is not their signing key as `unbound`: imported
+   lines, which a reader holds but cannot attribute. Lineages, anchors and key
+   bindings (step 3) replace this rule.
 4. **No anchor file and no store identity.** A store is a lineage with
    declarations; that is step 3. `from.store` in a spec is carried and not
    read: a fold reads the one store it is run in.
@@ -87,7 +91,7 @@ held. A segment whose name is not the hash of its bytes is listed as altered.
 7. **New refusal codes**, outside the protocol's lists: for a line,
    `line-not-json`, `line-shape`, `commit-invalid`, `id-mismatch`,
    `key-invalid`, `signature-invalid`, `line-not-canonical`; for the CLI,
-   `id-unknown`, `id-ambiguous`, `vertex-unknown`, `draft-shape`,
+   `observer-unbound`, `id-unknown`, `id-ambiguous`, `vertex-unknown`, `draft-shape`,
    `draft-field-unknown`, `spec-not-json`, `store-not-clean`.
 8. **Erasure removes bytes only here.** `loops erase` emits a record with
    `erases`, which every reader applies, and rewrites the local segments that

@@ -31,7 +31,7 @@ usage: loops [-C <dir>] <verb> ...
   init                          make .loops/ here
   emit <kind> [field=text | field:=json]... [\"message\"]
        [--about <thing>]... [--prev <id>]... [--erases <id>]...
-       [--occurred <when>] [--under <id>] [--observer <ref>]
+       [--occurred <when>] [--under <id>]
   emit -                        drafts as JSONL on stdin: one changeset
   get <id>                      one record
   about <thing>                 a thing's current state
@@ -159,10 +159,16 @@ fn device_key(missing: Missing) -> Result<Key, Fail> {
         Err(error) => Err(error.into()),
     }
 }
-fn observer_for(key: &Key, given: Option<String>) -> String {
-    given
-        .or_else(|| env::var("LOOPS_OBSERVER").ok())
-        .unwrap_or_else(|| key.public())
+/// Nothing yet binds a key to an observer, so the only observer this key can
+/// honestly write as is itself. Lineages and key bindings (step 3) widen this.
+fn bound(key: &Key, drafts: &[batch::Draft]) -> Result<(), Fail> {
+    match drafts.iter().find(|d| d.env.observer != key.public()) {
+        Some(draft) => Err(refused(format!(
+            "observer-unbound: {} is not this key",
+            draft.env.observer
+        ))),
+        None => Ok(()),
+    }
 }
 
 /// One id for a prefix the person typed.
@@ -216,6 +222,7 @@ fn write_changeset(
     key: &Key,
     drafts: &[batch::Draft],
 ) -> Result<Vec<Line>, Fail> {
+    bound(key, drafts)?;
     let about_of = |id: &str| held.line(id).map(|line| line.env().about.clone());
     let written = batch::resolve_batch(&hash, &about_of, drafts).map_err(|e| refused(e.code()))?;
     let lines: Vec<Line> = written.iter().map(|w| Line::sign(w, key)).collect();
@@ -231,7 +238,7 @@ fn emit(start: &Path, args: &[String]) -> Result<(), Fail> {
     if args == ["-"] {
         let mut input = String::new();
         io::stdin().read_to_string(&mut input)?;
-        let drafts = draft::from_jsonl(&input, &observer_for(&key, None), &now)?;
+        let drafts = draft::from_jsonl(&input, &key.public(), &now)?;
         let lines = write_changeset(&place, &held, &key, &drafts)?;
         let records = drafts
             .iter()
@@ -246,12 +253,7 @@ fn emit(start: &Path, args: &[String]) -> Result<(), Fail> {
             .collect();
         return say(&object(vec![("records", Json::Arr(records))]).canon());
     }
-    let draft = draft::from_args(
-        args,
-        &now,
-        |given| link(&held, given),
-        |given| observer_for(&key, given),
-    )?;
+    let draft = draft::from_args(args, &now, &key.public(), |given| link(&held, given))?;
     let lines = write_changeset(&place, &held, &key, &[draft])?;
     say(lines.first().map_or("", Line::id))
 }
@@ -283,7 +285,7 @@ fn erase(start: &Path, args: &[String]) -> Result<(), Fail> {
         label: None,
         env: loops::envelope::Env {
             kind: "erasure".into(),
-            observer: observer_for(&key, None),
+            observer: key.public(),
             emitted: now,
             erases: ids.clone(),
             ..Default::default()
@@ -476,6 +478,15 @@ fn check(start: &Path) -> Result<(), Fail> {
         ("records", count(held.settled().len())),
         ("refused", Json::Arr(refusals)),
         (
+            "unbound",
+            count(
+                held.lines()
+                    .iter()
+                    .filter(|l| l.env().observer != l.key())
+                    .count(),
+            ),
+        ),
+        (
             "altered",
             Json::Arr(held.altered().iter().map(text).collect()),
         ),
@@ -526,7 +537,7 @@ fn run(args: &[String]) -> Result<(), Fail> {
             let key = device_key(Missing::Refuse)?;
             say(&object(vec![
                 ("key", text(key.public())),
-                ("observer", text(observer_for(&key, None))),
+                ("observer", text(key.public())),
             ])
             .canon())
         }

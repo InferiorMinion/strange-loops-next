@@ -335,6 +335,24 @@ fn usage_refusals_and_a_missing_store_exit_apart() {
         s.fails(&["fold", "-"], r#"{"vertex":"v"}"#),
         (1, "refused: from-missing at from".into())
     );
+    // A key writes only as itself until something binds it to an observer; nothing is written.
+    let held = s.ok(&["export"]);
+    assert_eq!(
+        s.fails(&["emit", "note", "--observer", "sl:kyle", "x"], ""),
+        (
+            1,
+            "refused: observer-unbound: sl:kyle is not this key".into()
+        )
+    );
+    assert_eq!(
+        s.fails(
+            &["emit", "-"],
+            "{\"kind\":\"note\",\"observer\":\"sl:kyle\"}\n"
+        )
+        .0,
+        1
+    );
+    assert_eq!(s.ok(&["export"]), held);
     let nowhere = Store {
         dir: Path::new("/").to_owned(),
     };

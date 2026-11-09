@@ -13,14 +13,14 @@ fn new_salt() -> Result<Vec<u8>, Fail> {
 pub(crate) fn from_args(
     args: &[String],
     now: &str,
+    observer: &str,
     link: impl Fn(&str) -> Result<String, Fail>,
-    observer: impl FnOnce(Option<String>) -> String,
 ) -> Result<Draft, Fail> {
     let mut env = Env {
         emitted: now.to_owned(),
+        observer: observer.to_owned(),
         ..Env::default()
     };
-    let mut given_observer = None;
     let mut salt = None;
     let mut kind = None;
     let mut fields: Vec<(String, Json)> = Vec::new();
@@ -38,7 +38,7 @@ pub(crate) fn from_args(
             "--erases" => env.erases.push(link(&value()?)?),
             "--under" => env.under = Some(link(&value()?)?),
             "--occurred" => env.occurred = Some(value()?),
-            "--observer" => given_observer = Some(value()?),
+            "--observer" => env.observer = value()?,
             "--emitted" => env.emitted = value()?,
             "--salt" => {
                 salt = Some(base32::decode(&value()?).ok_or_else(|| refused("salt-not-16-bytes"))?);
@@ -64,7 +64,6 @@ pub(crate) fn from_args(
         }
     }
     env.kind = kind.ok_or_else(|| usage("emit takes a kind"))?;
-    env.observer = observer(given_observer);
     if let Some(message) = message {
         fields.push(("text".to_owned(), Json::Str(message)));
     }
