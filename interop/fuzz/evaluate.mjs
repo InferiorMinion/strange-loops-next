@@ -11,8 +11,8 @@ import { formOf, step, lensEdit } from '../js/scenario.mjs';
 
 const WRITE_CODES = new Set([
   'kind-empty', 'observer-not-typed', 'emitted-not-rfc3339', 'occurred-not-span',
-  'about-not-typed', 'prev-not-record-id', 'under-not-record-id', 'erases-not-record-id',
-  'salt-not-16-bytes', 'member-duplicate', 'number-out-of-range',
+  'about-not-typed', 'of-not-typed', 'prev-not-record-id', 'under-not-record-id', 'erases-not-record-id',
+  'of-missing', 'salt-not-16-bytes', 'member-duplicate', 'number-out-of-range',
   'string-not-unicode', 'envelope-field-unknown',
 ]);
 const folds = {

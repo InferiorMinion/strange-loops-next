@@ -34,6 +34,18 @@ test('named record boundaries remain scheduled across seeds', () => {
   }
 });
 
+test('named of boundaries remain scheduled across seeds', () => {
+  const cases = [['of-untyped', 'of-not-typed'], ['of-missing', 'of-missing'], ['about-before-of', 'about-not-typed'],
+    ['of-before-prev', 'of-not-typed'], ['erases-before-of-missing', 'erases-not-record-id']];
+  for (const seed of ['a', 'b', 'c', 'd']) {
+    for (const [i, [name, expected]] of cases.entries()) {
+      const v = generate(seed, 32 + i, 'record');
+      assert.equal(v.fuzz.nearMiss, name);
+      assert.deepEqual(evaluateJS(v), [{ refused: expected }], name);
+    }
+  }
+});
+
 test('record preflight and writer refusal precede seed decoding', () => {
   const env = { kind: '', observer: 'o:x', emitted: '2024-01-01T00:00:00Z' };
   const input = { envs: [env], payloads: [null], salt: '00000000000000000000000000', seed: '!' };
