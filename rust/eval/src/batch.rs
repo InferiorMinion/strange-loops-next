@@ -1,5 +1,5 @@
 //! Batch fixture answers from Gen.Run; raw drafts decode in the core library.
-use super::reader::{list, members, required, text, texts};
+use super::reader::{list, members, optional, required, text, texts};
 use loops::{batch, json::Json};
 use sha2::{Digest, Sha256};
 
@@ -20,16 +20,19 @@ fn answers_decoded(layer: &str, input: &Json) -> Result<Vec<Json>, String> {
     }
     let kvs = members("input", &["held", "drafts"], input)?;
     let (held, drafts) = batch::read_all("input.drafts", required("input", kvs, "drafts")?, || {
-        let held: Vec<(String, Vec<String>)> = list("input.held", required("input", kvs, "held")?)?
+        // Lean: `Gen.Run.heldEntry`, model/Gen/Run.lean: each id with its `of` and `prev`.
+        let held: Vec<(String, batch::Held)> = list("input.held", required("input", kvs, "held")?)?
             .iter()
             .enumerate()
             .map(|(i, j)| {
                 let p = format!("input.held[{i}]");
-                let k = members(&p, &["id", "about"], j)?;
-                Ok((
-                    text(&format!("{p}.id"), required(&p, k, "id")?)?.to_owned(),
-                    texts(&format!("{p}.about"), required(&p, k, "about")?)?,
-                ))
+                let k = members(&p, &["id", "of", "prev"], j)?;
+                let id = text(&format!("{p}.id"), required(&p, k, "id")?)?.to_owned();
+                let of = optional(k, "of")
+                    .map(|j| text(&format!("{p}.of"), j).map(str::to_owned))
+                    .transpose()?;
+                let prev = texts(&format!("{p}.prev"), required(&p, k, "prev")?)?;
+                Ok((id, batch::Held { of, prev }))
             })
             .collect::<Result<_, String>>()?;
         Ok(held)
@@ -39,7 +42,7 @@ fn answers_decoded(layer: &str, input: &Json) -> Result<Vec<Json>, String> {
     let lookup = |id: &str| {
         held.iter()
             .find(|(key, _)| key == id)
-            .map(|(_, about)| about.clone())
+            .map(|(_, held)| held.clone())
     };
     let answer = match batch::resolve_batch(&hash, &lookup, &drafts) {
         Ok(records) => Json::Obj(vec![(
@@ -101,7 +104,7 @@ mod tests {
         let draft = |env: &str, payload: &str| {
             format!(r#"{{"env":{env},"salt":"00000000000000000000000000","payload":{payload}}}"#)
         };
-        let unknown = format!(r#","prev":["r:{}"]"#, "0".repeat(52));
+        let unknown = format!(r#","of":"t:a","prev":["r:{}"]"#, "0".repeat(52));
         let answer = |drafts: &[String]| {
             let raw = format!(r#"{{"held":[],"drafts":[{}]}}"#, drafts.join(","));
             let input = crate::json::parse_input("batch", &raw).expect("carried overflow");
@@ -136,8 +139,11 @@ mod tests {
             "{}",
             r#"{"held":[],"drafts":[],"extra":1}"#,
             r#"{"held":[],"held":[],"drafts":[]}"#,
-            r#"{"held":[{"id":1,"about":[]}],"drafts":[]}"#,
+            r#"{"held":[{"id":1,"prev":[]}],"drafts":[]}"#,
             r#"{"held":[{"id":"x"}],"drafts":[]}"#,
+            r#"{"held":[{"id":"x","about":[],"prev":[]}],"drafts":[]}"#,
+            r#"{"held":[{"id":"x","of":null,"prev":[]}],"drafts":[]}"#,
+            r#"{"held":[{"id":"x","prev":[1]}],"drafts":[]}"#,
             r#"{"held":[],"drafts":null}"#,
         ] {
             assert!(answers("batch", &parse(s)).is_err(), "{s}");
@@ -208,10 +214,19 @@ mod tests {
     fn held_first_match_and_arbitrary_ids() {
         let id = format!("r:{}", "0".repeat(52));
         let input = format!(
-            r#"{{"held":[{{"id":"arbitrary","about":[]}},{{"id":"{id}","about":["thing:one"]}},{{"id":"{id}","about":["thing:two"]}}],"drafts":[{{"env":{{"kind":"note","observer":"person:x","emitted":"2025-01-01T00:00:00Z","about":["thing:one"],"prev":["{id}"]}},"salt":"00000000000000000000000000","payload":null}}]}}"#
+            r#"{{"held":[{{"id":"arbitrary","prev":[]}},{{"id":"{id}","of":"thing:one","prev":[]}},{{"id":"{id}","of":"thing:two","prev":[]}}],"drafts":[{{"env":{{"kind":"note","observer":"person:x","emitted":"2025-01-01T00:00:00Z","of":"thing:one","prev":["{id}"]}},"salt":"00000000000000000000000000","payload":null}}]}}"#
         );
         let result = answers("batch", &parse(&input)).expect("shape");
         assert!(matches!(&result[0], Json::Obj(m) if m[0].0 == "records"));
+        // The first held entry decides, so `of` naming that id finds a non-root.
+        let not_root = input.replace(
+            r#""of":"thing:one","prev":["#,
+            &format!(r#""of":"{id}","prev":["#),
+        );
+        assert_eq!(
+            answers("batch", &parse(&not_root)).expect("shape"),
+            vec![parse(r#"{"refused":"of-not-root"}"#)]
+        );
     }
 
     #[test]

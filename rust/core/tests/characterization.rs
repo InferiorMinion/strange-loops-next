@@ -204,6 +204,7 @@ fn refusal_precedence_is_exact() {
     e.emitted = String::new();
     e.occurred = Some("no".into());
     e.about = vec!["no".into()];
+    e.of = Some("no".into());
     e.prev = vec!["no".into()];
     e.under = Some("no".into());
     e.erases = vec!["no".into()];
@@ -224,9 +225,11 @@ fn refusal_precedence_is_exact() {
         Error::EmittedNotRfc3339,
         Error::OccurredNotSpan,
         Error::AboutNotTyped,
+        Error::OfNotTyped,
         Error::PrevNotRecordId,
         Error::UnderNotRecordId,
         Error::ErasesNotRecordId,
+        Error::OfMissing,
     ];
     for code in codes {
         assert_eq!(stored::write_problem(&e, &[], &duplicate), Some(code));
@@ -236,9 +239,11 @@ fn refusal_precedence_is_exact() {
             Error::EmittedNotRfc3339 => e.emitted = env().emitted,
             Error::OccurredNotSpan => e.occurred = None,
             Error::AboutNotTyped => e.about.clear(),
-            Error::PrevNotRecordId => e.prev.clear(),
+            Error::OfNotTyped => e.of = None,
+            Error::PrevNotRecordId => e.prev = vec![format!("r:{}", "0".repeat(52))],
             Error::UnderNotRecordId => e.under = None,
             Error::ErasesNotRecordId => e.erases.clear(),
+            Error::OfMissing => e.of = Some("t:x".into()),
             _ => unreachable!("envelope error"),
         }
     }

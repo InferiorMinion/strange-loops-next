@@ -24,7 +24,7 @@ impl std::error::Error for ShapeError {}
 /// Returns `ShapeError` if any member name is unknown.
 pub fn check_keys<'a>(keys: impl IntoIterator<Item = &'a str>) -> Result<(), ShapeError> {
     const KEYS: &[&str] = &[
-        "kind", "observer", "emitted", "occurred", "about", "prev", "under", "erases",
+        "kind", "observer", "emitted", "occurred", "about", "of", "prev", "under", "erases",
     ];
     if keys.into_iter().any(|key| !KEYS.contains(&key)) {
         Err(ShapeError)
@@ -98,12 +98,14 @@ pub(crate) fn decode_values(path: &str, j: &Json) -> Result<Env, crate::read::Er
     let emitted = required_text("emitted")?;
     let occurred = optional_text("occurred")?;
     let under = optional_text("under")?;
+    let of = optional_text("of")?;
     Ok(Env {
         kind,
         observer,
         emitted,
         occurred,
         about: array("about")?,
+        of,
         prev: array("prev")?,
         under,
         erases: array("erases")?,
@@ -123,8 +125,11 @@ pub struct Env {
     pub emitted: String,
     /// The observer's claim about past time, if any.
     pub occurred: Option<String>,
-    /// The typed references for the things this record concerns.
+    /// The typed references for the things this record mentions.
     pub about: Vec<String>,
+    /// The typed reference for the one thing this record is an emit of, if it says.
+    /// Only a root leaves it out: a record with `prev` states it (`of-missing`).
+    pub of: Option<String>,
     /// The text ids of the records this record supersedes.
     pub prev: Vec<String>,
     /// The text id of the grant this record uses, if any.
@@ -163,14 +168,19 @@ impl Env {
         if let Some(s) = &self.occurred {
             xs.push(("occurred".into(), Json::Str(s.clone())));
         }
-        for (k, values) in [("about", &self.about), ("prev", &self.prev)] {
+        let set = |k: &str, values: &[String], xs: &mut Vec<(String, Json)>| {
             if !values.is_empty() {
                 xs.push((
                     k.into(),
                     Json::Arr(json::canon_set(values).into_iter().map(Json::Str).collect()),
                 ));
             }
+        };
+        set("about", &self.about, &mut xs);
+        if let Some(s) = &self.of {
+            xs.push(("of".into(), Json::Str(s.clone())));
         }
+        set("prev", &self.prev, &mut xs);
         if let Some(s) = &self.under {
             xs.push(("under".into(), Json::Str(s.clone())));
         }
@@ -204,12 +214,16 @@ impl Env {
             Some(Error::OccurredNotSpan)
         } else if !self.about.iter().all(|s| typed_ref(s)) {
             Some(Error::AboutNotTyped)
+        } else if self.of.as_deref().is_some_and(|s| !typed_ref(s)) {
+            Some(Error::OfNotTyped)
         } else if !self.prev.iter().all(|s| record_id(s)) {
             Some(Error::PrevNotRecordId)
         } else if self.under.as_deref().is_some_and(|s| !record_id(s)) {
             Some(Error::UnderNotRecordId)
         } else if !self.erases.iter().all(|s| record_id(s)) {
             Some(Error::ErasesNotRecordId)
+        } else if !self.prev.is_empty() && self.of.is_none() {
+            Some(Error::OfMissing)
         } else {
             None
         }

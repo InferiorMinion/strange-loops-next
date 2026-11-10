@@ -124,8 +124,8 @@ pub(super) fn record(path: &str, j: &Json) -> Result<Record, String> {
     let kvs = members(
         path,
         &[
-            "id", "kind", "observer", "about", "value", "prev", "under", "emitted", "occurred",
-            "erases", "n", "fields", "shown",
+            "id", "kind", "observer", "about", "of", "value", "prev", "under", "emitted",
+            "occurred", "erases", "n", "fields", "shown",
         ],
         j,
     )?;
@@ -140,6 +140,16 @@ pub(super) fn record(path: &str, j: &Json) -> Result<Record, String> {
             return Err(format!("{}[{i}]: expected a typed reference", p("about")));
         }
     }
+    let of = optional(kvs, "of")
+        .map(|j| {
+            let s = text(&p("of"), j)?;
+            if envelope::typed_ref(s) {
+                Ok(s.to_owned())
+            } else {
+                Err(format!("{}: expected a typed reference", p("of")))
+            }
+        })
+        .transpose()?;
     let prev = ids(&p("prev"), req("prev")?)?;
     let under = optional(kvs, "under")
         .map(|j| reader_id(&p("under"), j))
@@ -165,6 +175,7 @@ pub(super) fn record(path: &str, j: &Json) -> Result<Record, String> {
         kind,
         observer,
         about,
+        of,
         prev,
         under,
         emitted,
@@ -261,6 +272,17 @@ mod tests {
         assert_eq!(fractional.num("n"), None);
         let bad = crate::parse(&raw.replace("thing:a", "not typed"));
         assert!(record("record", &bad).is_err());
+        let of = record(
+            "record",
+            &crate::parse(&raw.replace(r#""prev""#, r#""of":"thing:b","prev""#)),
+        )
+        .expect("typed of");
+        assert_eq!(of.of.as_deref(), Some("thing:b"));
+        assert_eq!(r.of, None);
+        for bad in [r#""of":"not typed","#, r#""of":7,"#, r#""of":null,"#] {
+            let input = crate::parse(&raw.replace(r#""prev""#, &format!(r#"{bad}"prev""#)));
+            assert!(record("record", &input).is_err(), "{bad}");
+        }
     }
 
     #[test]

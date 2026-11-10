@@ -267,6 +267,7 @@ impl Line {
             kind: env.kind.clone(),
             observer: env.observer.clone(),
             about: loops::json::canon_set(&env.about),
+            of: env.of.clone(),
             prev: ids(&env.prev),
             under: env.under.as_deref().map(digest),
             occurred: env.occurred.as_deref().map(|s| {

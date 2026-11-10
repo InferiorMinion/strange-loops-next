@@ -220,7 +220,7 @@ impl Slot {
             FoldType::Min(f) => vec![("min".into(), Json::Str(f.clone()))],
             FoldType::Max(f) => vec![("max".into(), Json::Str(f.clone()))],
             FoldType::LatestBy => vec![
-                ("latest-by".into(), Json::Str("about".into())),
+                ("latest-by".into(), Json::Str("of".into())),
                 ("follow".into(), Json::Str("prev".into())),
             ],
             FoldType::Collect { follow, limit } => {
@@ -249,18 +249,22 @@ pub struct Source {
     pub store: String,
     /// The allowed kinds, or all kinds when empty.
     pub kinds: Vec<String>,
-    /// The selected thing, or all things when absent.
+    /// The mention `about` must hold, as written, or any record when absent.
     pub about: Option<String>,
+    /// The selected thing, or all things when absent.
+    pub of: Option<String>,
 }
 impl Source {
     /// Lean: `Loops.Source.takes`, model/Loops/Spec.lean.
-    /// Tests kind and thing membership, including anchors about nothing.
+    /// Tests the kind, what `about` mentions as written, and the record's thing,
+    /// which for a record without `of` is its own id.
     pub fn takes(&self, r: &Record) -> bool {
         (self.kinds.is_empty() || self.kinds.contains(&r.kind))
-            && self.about.as_ref().is_none_or(|t| r.is_about(t))
+            && self.about.as_ref().is_none_or(|t| r.about.contains(t))
+            && self.of.as_ref().is_none_or(|t| r.is_of(t))
     }
     /// Lean: `Loops.Source.toJson`, model/Loops/Spec.lean.
-    /// Encodes store, optional kinds, then optional thing.
+    /// Encodes store, optional kinds, optional mention, then optional thing.
     pub fn to_json(&self) -> Json {
         let mut kvs = vec![("store".into(), Json::Str(self.store.clone()))];
         if !self.kinds.is_empty() {
@@ -271,6 +275,9 @@ impl Source {
         }
         if let Some(a) = &self.about {
             kvs.push(("about".into(), Json::Str(a.clone())));
+        }
+        if let Some(t) = &self.of {
+            kvs.push(("of".into(), Json::Str(t.clone())));
         }
         Json::Obj(kvs)
     }
@@ -423,7 +430,7 @@ pub const SLOT_KEYS: &[&str] = &[
 ];
 /// Lean: `Loops.sourceKeys`, model/Loops/Spec.lean.
 /// Lists allowed source keys.
-pub const SOURCE_KEYS: &[&str] = &["store", "kind", "about"];
+pub const SOURCE_KEYS: &[&str] = &["store", "kind", "about", "of"];
 /// Lean: `Loops.specKeys`, model/Loops/Spec.lean.
 /// Lists allowed root keys, including keys without runtime behavior.
 pub const SPEC_KEYS: &[&str] = &[
@@ -527,7 +534,7 @@ pub fn fold_type(
         ("sum", f) => field_arg(&p, f).map(FoldType::Sum),
         ("min", f) => field_arg(&p, f).map(FoldType::Min),
         ("max", f) => field_arg(&p, f).map(FoldType::Max),
-        ("latest-by", Json::Str(s)) if s == "about" => Ok(FoldType::LatestBy),
+        ("latest-by", Json::Str(s)) if s == "of" => Ok(FoldType::LatestBy),
         ("collect", Json::Bool(true)) => Ok(FoldType::Collect { follow, limit }),
         _ => Err(refuse(RefusalCode::FoldArgument, &p)),
     }
@@ -607,7 +614,7 @@ pub fn source_kinds(j: Option<&Json>) -> Result<Vec<String>, Refusal> {
     j.map_or_else(|| Ok(Vec::new()), |k| parse_kinds("from.kind", k))
 }
 /// Lean: `Loops.sourceAbout`, model/Loops/Spec.lean.
-/// Parses an optional typed thing reference.
+/// Parses an optional typed reference that `about` must mention.
 ///
 /// # Errors
 /// Returns from-invalid at from.about for an invalid present reference.
@@ -618,8 +625,20 @@ pub fn source_about(j: Option<&Json>) -> Result<Option<String>, Refusal> {
         Some(_) => Err(refuse(RefusalCode::FromInvalid, "from.about")),
     }
 }
+/// Lean: `Loops.sourceOf`, model/Loops/Spec.lean.
+/// Parses an optional typed thing reference.
+///
+/// # Errors
+/// Returns from-invalid at from.of for an invalid present reference.
+pub fn source_of(j: Option<&Json>) -> Result<Option<String>, Refusal> {
+    match j {
+        None => Ok(None),
+        Some(Json::Str(t)) if typed_ref(t) => Ok(Some(t.clone())),
+        Some(_) => Err(refuse(RefusalCode::FromInvalid, "from.of")),
+    }
+}
 /// Lean: `Loops.parseSource`, model/Loops/Spec.lean.
-/// Checks source keys, store, kinds, then about, without checking duplicates.
+/// Checks source keys, store, kinds, about, then of, without checking duplicates.
 ///
 /// # Errors
 /// Returns the first source refusal in that fixed order.
@@ -631,10 +650,12 @@ pub fn parse_source(j: &Json) -> Result<Source, Refusal> {
     let store = source_store(lookup(kvs, "store"))?;
     let kinds = source_kinds(lookup(kvs, "kind"))?;
     let about = source_about(lookup(kvs, "about"))?;
+    let of = source_of(lookup(kvs, "of"))?;
     Ok(Source {
         store,
         kinds,
         about,
+        of,
     })
 }
 /// Lean: `Loops.specVertex`, model/Loops/Spec.lean.
@@ -683,13 +704,13 @@ mod tests {
         where_::{Field, Op},
     };
 
-    fn record(id: u8, about: &[&str], hour: u8) -> Record {
+    fn record(id: u8, of: &str, hour: u8) -> Record {
         let mut bytes = [0; 32];
         bytes[31] = id;
         Record {
             id: Digest(bytes),
             kind: "keep".into(),
-            about: about.iter().map(|thing| (*thing).into()).collect(),
+            of: Some(of.into()),
             emitted: Stamp::of(&format!("2026-10-29T{hour:02}:00:00Z"))
                 .expect("valid test timestamp"),
             ..Record::default()
@@ -698,7 +719,7 @@ mod tests {
 
     #[test]
     fn newest_first_clears_links_but_preserves_distinct_raw_forms() {
-        let original = record(1, &["thing:a"], 2);
+        let original = record(1, "thing:a", 2);
         let linked = Record {
             prev: vec![Digest([9; 32])],
             ..original.clone()
@@ -713,14 +734,14 @@ mod tests {
 
     #[test]
     fn head_slots_resolve_every_thing_before_source_selection() {
-        let shared = record(1, &["thing:a", "thing:b"], 4);
-        let old = record(2, &["thing:a"], 1);
+        let shared = record(1, "thing:b", 4);
+        let old = record(2, "thing:a", 1);
         let successor = Record {
             kind: "drop".into(),
             prev: vec![shared.id, old.id],
-            ..record(3, &["thing:a"], 2)
+            ..record(3, "thing:a", 2)
         };
-        let fork = record(4, &["thing:b"], 3);
+        let fork = record(4, "thing:b", 3);
         let xs = [old.clone(), shared.clone(), successor, fork.clone()];
         let select = |r: &Record| r.kind == "keep";
         assert_eq!(
@@ -755,7 +776,7 @@ mod tests {
 
     #[test]
     fn raw_collect_counts_conflicting_unknown_forms_but_latest_counts_ids() {
-        let hidden = record(1, &["thing:a", "thing:b"], 4).withhold();
+        let hidden = record(1, "thing:a", 4).withhold();
         let erased = hidden.erase();
         assert_eq!(hidden.id, erased.id);
         assert_ne!(hidden, erased);
@@ -787,9 +808,9 @@ mod tests {
 
     #[test]
     fn addressed_head_slots_count_unread_ids_once_before_limiting_known_heads() {
-        let hidden = record(1, &["thing:a", "thing:b"], 4).withhold();
-        let first = record(2, &["thing:a"], 3);
-        let second = record(3, &["thing:b"], 2);
+        let hidden = record(1, "thing:a", 4).withhold();
+        let first = record(2, "thing:a", 3);
+        let second = record(3, "thing:b", 2);
         let xs = [
             hidden.clone(),
             hidden.clone(),

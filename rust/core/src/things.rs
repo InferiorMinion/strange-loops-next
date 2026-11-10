@@ -7,28 +7,24 @@ use crate::{
 use std::{error::Error, fmt};
 
 impl Record {
-    /// Lean: `Loops.Record.things`, model/Loops/Fold.lean.
-    /// Returns `about`, or the record's own text id when `about` is empty.
-    pub fn things(&self) -> Vec<String> {
-        if self.about.is_empty() {
-            vec![id_text(&self.id)]
-        } else {
-            self.about.clone()
-        }
+    /// Lean: `Loops.Record.thing`, model/Loops/Fold.lean.
+    /// Returns the one thing this record is an emit of: `of`, read as written,
+    /// or without `of` the record's own text id. `about` plays no part.
+    pub fn thing(&self) -> String {
+        self.of.clone().unwrap_or_else(|| id_text(&self.id))
     }
 
-    /// Lean: `Loops.Record.isAbout`, model/Loops/Fold.lean.
-    /// Checks whether the reference names one of this record's things, including its own id.
-    pub fn is_about(&self, thing: &str) -> bool {
-        self.things().iter().any(|t| t == thing)
+    /// Lean: `Loops.Record.isOf`, model/Loops/Fold.lean.
+    /// Checks whether the reference names this record's thing.
+    pub fn is_of(&self, thing: &str) -> bool {
+        self.thing() == thing
     }
 }
 
 /// Lean: `Loops.shares`, model/Loops/Fold.lean.
-/// Checks whether two records share a thing, including their own id when `about` is empty.
+/// Checks whether two records are of the same thing.
 pub fn shares(a: &Record, b: &Record) -> bool {
-    let bs = b.things();
-    a.things().iter().any(|t| bs.contains(t))
+    a.thing() == b.thing()
 }
 
 /// Lean: `Loops.idsOf`, model/Loops/Things.lean.
@@ -71,7 +67,7 @@ pub fn settle(xs: &[Record]) -> Vec<Record> {
 
 /// Lean: `Loops.entitled`, model/Loops/Things.lean.
 /// Checks all held targets of every succession link.
-/// Missing targets pass. Every matching target must share a thing and pass `may`.
+/// Missing targets pass. Every matching target must be of the record's thing and pass `may`.
 /// The caller must supply a pure `EnvOnly` rule that depends only on both envelopes.
 pub fn entitled(xs: &[Record], r: &Record, may: impl Fn(&Record, &Record) -> bool) -> bool {
     r.prev
@@ -83,7 +79,7 @@ pub fn entitled(xs: &[Record], r: &Record, may: impl Fn(&Record, &Record) -> boo
 /// These two codes describe succession links that fail admission.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Refusal {
-    /// A held predecessor shares no thing with the record.
+    /// A held predecessor is of a different thing from the record.
     PrevUnrelated,
     /// The rule denies replacement of a held predecessor.
     PrevNotPermitted,
@@ -101,7 +97,7 @@ impl Error for Refusal {}
 
 /// Lean: `Loops.refusalOf`, model/Loops/Things.lean.
 /// Checks all links for unrelated predecessors before checking any permission.
-/// Missing targets pass. Every matching held form must share a thing and pass `may`.
+/// Missing targets pass. Every matching held form must be of the record's thing and pass `may`.
 /// The caller supplies a pure `EnvOnly` rule for the admission laws.
 pub fn refusal_of(
     xs: &[Record],
@@ -139,18 +135,18 @@ pub fn realm(xs: &[Record], may: impl Fn(&Record, &Record) -> bool) -> Vec<Recor
 }
 
 /// Lean: `Loops.thingsOf`, model/Loops/Fold.lean.
-/// Returns all distinct things in canonical UTF-16 order.
+/// Returns the thing of every record, each once, in canonical UTF-16 order.
 pub fn things_of(xs: &[Record]) -> Vec<String> {
-    canon_set(&xs.iter().flat_map(Record::things).collect::<Vec<_>>())
+    canon_set(&xs.iter().map(Record::thing).collect::<Vec<_>>())
 }
 
 /// Lean: `Loops.stateIn`, model/Loops/Fold.lean.
-/// Folds supersession after filtering records to one thing, before any payload selection.
+/// Folds supersession over the records of one thing, before any payload selection.
 pub fn state_in(thing: &str, xs: &[Record]) -> LatestBy {
     let mut state = LatestBy::default();
     state.fold(
         &xs.iter()
-            .filter(|r| r.is_about(thing))
+            .filter(|r| r.is_of(thing))
             .cloned()
             .collect::<Vec<_>>(),
     );

@@ -364,12 +364,12 @@ fn max_heads_uses_readable_values_not_placeholder_zero() {
 fn over_heads_remains_a_raw_supersession_fold() {
     let first = Record {
         id: Digest([1; 32]),
-        about: vec!["t:first".into(), "t:second".into()],
+        of: Some("t:first".into()),
         ..Record::default()
     };
     let second = Record {
         id: Digest([2; 32]),
-        about: vec!["t:first".into()],
+        of: Some("t:first".into()),
         prev: vec![first.id],
         ..Record::default()
     };

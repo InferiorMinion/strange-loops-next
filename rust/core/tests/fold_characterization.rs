@@ -217,11 +217,11 @@ fn batches_match_one_fold_and_limits_do_not_truncate_big_nats() {
 #[test]
 fn hidden_successor_does_not_revive_replaced_numeric_head() {
     let a = Record {
-        about: vec!["t:shared".into()],
+        of: Some("t:shared".into()),
         ..rec(1, 900)
     };
     let b = Record {
-        about: vec!["t:shared".into()],
+        of: Some("t:shared".into()),
         prev: vec![a.id],
         ..rec(2, 1)
     }
@@ -235,7 +235,7 @@ fn hidden_successor_does_not_revive_replaced_numeric_head() {
 }
 
 #[test]
-fn empty_about_anchors_keep_unrelated_heads() {
+fn prev_without_of_keeps_the_other_thing_head() {
     let a = rec(1, 900);
     let b = Record {
         prev: vec![a.id],
@@ -301,22 +301,24 @@ fn record_equality_includes_spelling_and_unchecked_state_stays_unchecked() {
 fn per_thing_is_canonical_self_anchored_and_scopes_supersession() {
     let a = rec(1, 1);
     let b = Record {
-        about: vec![id_text(&a.id)],
+        of: Some(id_text(&a.id)),
         prev: vec![a.id],
         ..rec(2, 2)
     };
     assert!(things::shares(&a, &b));
-    assert_eq!(a.things(), vec![id_text(&a.id)]);
+    assert_eq!(a.thing(), id_text(&a.id));
     let x = Record {
-        about: vec!["x".into(), "x".into()],
+        about: vec!["y".into()],
+        of: Some("x".into()),
         ..rec(3, 3)
     };
     let unrelated = Record {
-        about: vec!["y".into()],
+        about: vec!["x".into()],
+        of: Some("y".into()),
         prev: vec![x.id],
         ..rec(4, 4)
     };
-    assert_eq!(x.things(), vec!["x".to_string(), "x".to_string()]);
+    assert_eq!(x.thing(), "x");
     assert!(!things::shares(&x, &unrelated));
     let xs = [a, b.clone(), x.clone(), unrelated.clone()];
     assert_eq!(things::state_in(&id_text(&xs[0].id), &xs).heads, vec![b]);
@@ -328,17 +330,16 @@ fn per_thing_is_canonical_self_anchored_and_scopes_supersession() {
         states.iter().map(|(t, _)| t.clone()).collect::<Vec<_>>(),
         things::things_of(&xs)
     );
-    let unicode = Record {
-        about: vec![
-            "\u{e000}".into(),
-            "\u{10000}".into(),
-            "z".into(),
-            "z".into(),
-        ],
-        ..rec(5, 0)
-    };
+    let unicode: Vec<_> = ["\u{e000}", "\u{10000}", "z", "z"]
+        .into_iter()
+        .zip(5..)
+        .map(|(t, i)| Record {
+            of: Some(t.into()),
+            ..rec(i, 0)
+        })
+        .collect();
     assert_eq!(
-        things::things_of(&[unicode]),
+        things::things_of(&unicode),
         vec!["z", "\u{10000}", "\u{e000}"]
     );
 }
