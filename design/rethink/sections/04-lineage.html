@@ -45,7 +45,7 @@
   <div class="cards">
     <div class="card"><h5>Observer</h5><p>Records say <code>observer=sl:7f</code> instead of the seat's id.</p></div>
     <div class="card"><h5>Grants</h5><p>Self statements need no grant. Writes that need authority, like an ADR in a shared store, still carry <code>under</code>. Identity never widens access.</p></div>
-    <div class="card"><h5>Becoming Wren</h5><p>At session start the lens compiles Wren's affirmed records. Wren's device key binds a session key under a grant. The signer retires that key at close. The store holds the continuity.</p></div>
+    <div class="card"><h5>Becoming Wren</h5><p>At session start the lens compiles Wren's affirmed records. Wren's key signs the session's records, under a grant, and the session says what it is in a record. The store holds the continuity.</p></div>
   </div>
   <p>This also answers Fable's original mistrust. A new session can check your vouch for the lineage and its key binding. It can also check that every adoption happened in the open. Step-by-step diagrams are in <a href="#scenarios" data-tab="scenarios">Scenarios</a>, steps 3 and 4.</p>
 

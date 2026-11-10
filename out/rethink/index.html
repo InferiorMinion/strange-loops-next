@@ -237,7 +237,7 @@ dl.env .sep{grid-column:1/-1;border-top:1px dashed var(--line);margin:3px 0}
     <li><span class="k">2</span><span class="t"><b>Resolution</b><span>content and witness ticks; window, reference, witness sets; late ticks</span></span><span class="pill p-ok">closed</span></li>
     <li><span class="k">3</span><span class="t"><b>Composition</b><span>one vertex reading many stores; things, <code>about</code>, <code>resolve-by</code></span></span><span class="pill p-ok">closed</span></li>
     <li><span class="k">4</span><span class="t"><b>Places</b><span>places, store definitions, a slim index, small erasure</span></span><span class="pill p-ok">closed</span></li>
-    <li><span class="k">5</span><span class="t"><b>Sharing</b><span>union by segment lists, key tiers, presence, retire through</span></span><span class="pill p-ok">closed</span></li>
+    <li><span class="k">5</span><span class="t"><b>Sharing</b><span>union by segment lists, two key tiers, presence, retire through</span></span><span class="pill p-ok">closed</span></li>
     <li class="here"><span class="k">→</span><span class="t"><b>Trust</b><span>who counts: five strata, two tiers of key, standing split around ticks</span></span><span class="pill p-lean">walking</span></li>
     <li><span class="k">+</span><span class="t"><b>Horizons</b><span>editable lenses, selective disclosure, knowledge as a build</span></span><span class="pill p-next">exploring</span></li>
   </ol>
@@ -983,7 +983,7 @@ dl.env .sep{grid-column:1/-1;border-top:1px dashed var(--line);margin:3px 0}
   <div class="cards">
     <div class="card"><h5>Observer</h5><p>Records say <code>observer=sl:7f</code> instead of the seat's id.</p></div>
     <div class="card"><h5>Grants</h5><p>Self statements need no grant. Writes that need authority, like an ADR in a shared store, still carry <code>under</code>. Identity never widens access.</p></div>
-    <div class="card"><h5>Becoming Wren</h5><p>At session start the lens compiles Wren's affirmed records. Wren's device key binds a session key under a grant. The signer retires that key at close. The store holds the continuity.</p></div>
+    <div class="card"><h5>Becoming Wren</h5><p>At session start the lens compiles Wren's affirmed records. Wren's key signs the session's records, under a grant, and the session says what it is in a record. The store holds the continuity.</p></div>
   </div>
   <p>This also answers Fable's original mistrust. A new session can check your vouch for the lineage and its key binding. It can also check that every adoption happened in the open. Step-by-step diagrams are in <a href="#scenarios" data-tab="scenarios">Scenarios</a>, steps 3 and 4.</p>
 
@@ -2080,7 +2080,7 @@ loops emit dispute --about r:x2 --about r:x3                                    
 
 <section class="panel" id="sharing" role="tabpanel" aria-labelledby="t-sharing">
   <div class="panel-head"><h2>Layer 5: sharing</h2><button class="toggle-all" type="button">Unfold all</button></div>
-  <p class="gist">Sharing adds nothing new. Replication is <b>set union</b>, compared segment by segment. Delivery isn't trust: <b>admission</b> decides what counts. Keys come in tiers, standing changes need <b>a person present</b>, and standing ends with <b>"retire through"</b>, a cut by what was held, never by time.</p>
+  <p class="gist">Sharing adds nothing new. Replication is <b>set union</b>, compared segment by segment. Delivery isn't trust: <b>admission</b> decides what counts. Keys come in two tiers, standing changes need <b>a person present</b>, and standing ends with <b>"retire through"</b>, a cut by what was held, never by time.</p>
   <p><span class="pill p-ok">layer closed</span> Every piece reuses something from below: segments (layer 4), admission and stances (layer 1), witness ticks (layer 2), key bindings (observers).</p>
 
   <h3>What moves</h3>
@@ -2139,35 +2139,34 @@ loops emit dispute --about r:x2 --about r:x3                                    
   <h3>Keys</h3>
   <figure>
     <div class="fig">
-      <svg class="dg" viewBox="0 0 400 242" role="img" aria-label="Kyle's lineage sl:a1 is the hash of its anchor and pins the root key. The root key binds a presence key, behind Touch ID, which signs standing changes, and a device key, with no prompt, which signs ordinary emits. Wren's lineage sl:7f has a device key that binds a session key per session, retired when the session closes. Agents never hold a presence key.">
+      <svg class="dg" viewBox="0 0 400 242" role="img" aria-label="Kyle's lineage sl:a1 is the hash of its anchor and pins the root key. The root key asks for you and signs what changes standing. It binds a key on the workbench and a key on the laptop; bound keys sign ordinary emits without a prompt and bind nothing. Wren's lineage sl:7f has its own root key and its own bound key. Kyle's root key signs a grant naming sl:7f.">
         <rect class="box-acc" x="12" y="8" width="246" height="32" rx="7"/><text x="135" y="29" text-anchor="middle" class="mono">kyle · sl:a1 = hash(anchor)</text>
         <line class="ln" x1="135" y1="40" x2="135" y2="58" marker-end="url(#ah)"/>
-        <rect class="box" x="60" y="60" width="150" height="32" rx="7"/><text x="135" y="81" text-anchor="middle" class="b">root key</text>
-        <text x="135" y="108" text-anchor="middle" class="xs m">binds keys · offline-ish</text>
+        <rect class="box-amb" x="60" y="60" width="150" height="32" rx="7"/><text x="135" y="81" text-anchor="middle" class="b">root key</text>
+        <text x="135" y="108" text-anchor="middle" class="xs tb">asks for you · changes standing</text>
         <line class="ln" x1="110" y1="112" x2="74" y2="128" marker-end="url(#ah)"/>
         <line class="ln" x1="160" y1="112" x2="198" y2="128" marker-end="url(#ah)"/>
-        <rect class="box-amb" x="12" y="130" width="118" height="32" rx="7"/><text x="71" y="151" text-anchor="middle" class="s">presence key</text>
-        <rect class="box" x="141" y="130" width="118" height="32" rx="7"/><text x="200" y="151" text-anchor="middle" class="s">device key</text>
-        <text x="71" y="180" text-anchor="middle" class="xs tb">Touch ID</text><text x="71" y="194" text-anchor="middle" class="xs m">changes standing</text>
-        <text x="200" y="180" text-anchor="middle" class="xs">no prompt</text><text x="200" y="194" text-anchor="middle" class="xs m">ordinary emits</text>
+        <rect class="box" x="12" y="130" width="118" height="32" rx="7"/><text x="71" y="151" text-anchor="middle" class="s">bound key</text>
+        <rect class="box" x="141" y="130" width="118" height="32" rx="7"/><text x="200" y="151" text-anchor="middle" class="s">bound key</text>
+        <text x="71" y="180" text-anchor="middle" class="xs">workbench</text><text x="200" y="180" text-anchor="middle" class="xs">laptop</text>
+        <text x="135" y="196" text-anchor="middle" class="xs m">no prompt · ordinary emits · binds nothing</text>
         <rect class="box-acc" x="270" y="8" width="118" height="32" rx="7"/><text x="329" y="29" text-anchor="middle" class="mono">wren · sl:7f</text>
         <line class="ln" x1="329" y1="40" x2="329" y2="58" marker-end="url(#ah)"/>
-        <rect class="box" x="270" y="60" width="118" height="32" rx="7"/><text x="329" y="81" text-anchor="middle" class="s">device key</text>
-        <text x="329" y="108" text-anchor="middle" class="xs m">binds, under a grant</text>
-        <line class="ln" x1="329" y1="112" x2="329" y2="128" marker-end="url(#ah)"/>
-        <rect class="box dash" x="270" y="130" width="118" height="32" rx="7"/><text x="329" y="151" text-anchor="middle" class="s">session key</text>
-        <text x="329" y="180" text-anchor="middle" class="xs">one per session</text><text x="329" y="194" text-anchor="middle" class="xs m">retired at close</text>
-        <text x="200" y="230" text-anchor="middle" class="xs ta">agents never hold a presence key</text>
+        <rect class="box" x="270" y="60" width="118" height="32" rx="7"/><text x="329" y="81" text-anchor="middle" class="s">root key</text>
+        <line class="ln" x1="329" y1="92" x2="329" y2="128" marker-end="url(#ah)"/>
+        <rect class="box" x="270" y="130" width="118" height="32" rx="7"/><text x="329" y="151" text-anchor="middle" class="s">bound key</text>
+        <text x="329" y="180" text-anchor="middle" class="xs m">counts by your grant</text>
+        <text x="200" y="230" text-anchor="middle" class="xs ta">your root key signs a grant naming sl:7f</text>
       </svg>
     </div>
-    <figcaption>A lineage id pins its root key, the way a store id pins its stewards. One device key per segment, so a lost device costs one key.</figcaption>
+    <figcaption>A lineage id pins its root key, the way a store id pins its stewards. Two tiers: the root key signs what changes standing, and a bound key per machine signs the rest, so a lost machine costs one key. <a href="#trust" data-tab="trust">Trust</a> walks how this replaced four tiers.</figcaption>
   </figure>
   <div class="tbl"><table>
     <thead><tr><th>Moment</th><th>What happens</th></tr></thead>
     <tbody>
-      <tr><td>First run, new person</td><td>root, presence and device keys; anchor, key bindings and a name record. The root starts on that machine; the CLI offers a printable recovery key once.</td></tr>
-      <tr><td>First run, new machine</td><td><b>pair</b>: an existing device or the root vouches for the new keys (like linking a Signal device), or use the recovery key</td></tr>
-      <tr><td>Every emit</td><td>signed by the device key; you never see it</td></tr>
+      <tr><td>First run, new person</td><td>a root key and its anchor, a bound key for this machine and its binding, and a name record. Where a root key is made can't be changed for that lineage, so make it where it will stay; the CLI offers a printable recovery key once.</td></tr>
+      <tr><td>First run, new machine</td><td><b>pair</b>: the root key signs a binding for the new machine's key, or use the recovery key. A bound key can't vouch for another.</td></tr>
+      <tr><td>Every emit</td><td>signed by this machine's bound key; you never see it</td></tr>
       <tr><td>No signer (keychain locked)</td><td>stores that require signatures refuse; others write unsigned and the hygiene vertex counts it</td></tr>
       <tr><td>Lost root and recovery key</td><td>a new lineage that descends from the old one and adopts its records; no recovery machinery</td></tr>
     </tbody>
@@ -2192,10 +2191,10 @@ loops emit dispute --about r:x2 --about r:x3                                    
     <li><b>To go further, an agent proposes.</b> A changeset or grant request without standing is already a visible proposal; your <code>affirm</code> is the tap. That's the elevated-request flow, and the model already had it.</li>
     <li><b>Narrow without you, never widen.</b> Wren can hand a sub-agent part of what it holds (Macaroons, Biscuit, UCAN attenuate the same way).</li>
     <li><b>One tap per act, no grace window.</b> An act can cover many records (a changeset, a batch promotion); the next act needs a fresh tap, so nothing rides a sudo-style window.</li>
-    <li><b>Checked at admission.</b> A standing-changing record counts only if a presence key signed it.</li>
+    <li><b>Checked at admission.</b> A standing-changing record counts only if a root key signed it. Presence is not a third key: it is what a root key is.</li>
   </ul>
   <details class="unfold"><summary>The honest limit on presence</summary><div class="body">
-    <p>A presence key's binding says "used only with you present". Other replicas take that on trust. Touch ID protects your machine, not their view of it. Hardware keys can prove it, since FIDO signatures carry a user-presence flag inside the signed bytes, but that means a second signature format beside Ed25519. Start with the keychain claim; add hardware proof only if someone needs it.</p>
+    <p>A root key is meant to be used only with you present. Other replicas take that on trust. Touch ID protects your machine, not their view of it. Hardware keys can prove it, since FIDO signatures carry a user-presence flag inside the signed bytes, but that means a second signature format beside Ed25519. Start with the keychain claim; add hardware proof only if someone needs it.</p>
   </div></details>
 
   <h3>Agents</h3>
@@ -2204,20 +2203,19 @@ loops emit dispute --about r:x2 --about r:x3                                    
     <tbody>
       <tr><td><b>A.</b> the agent signs as you</td><td>presence for anything that changes standing; sandboxing for the rest</td></tr>
       <tr><td><b>B.</b> the agent signs as itself beyond its grant</td><td>already covered: admission at read ignores records outside the grant</td></tr>
-      <tr><td><b>C.</b> the agent's key leaks</td><td>session keys: worth little, retired when the session closes</td></tr>
+      <tr><td><b>C.</b> the agent's key leaks</td><td>the key is worth little: the grant is what makes its records count, and ending the grant ends that</td></tr>
     </tbody>
   </table></div>
   <ul>
-    <li><b>Session keys.</b> Wren's device key binds a key per session under a grant; at close, the signer retires it through the session's last record. A crashed session is retired when the signer next starts. No expiry timestamp, which could be backdated.</li>
+    <li><b>No session keys yet.</b> An agent is its own lineage with its own root key, and your grant makes its records count. A key per run can come later, as a bound key of that lineage. Where it was tried, a key per session under one OS user was no boundary: nothing was ever scoped or revoked per session.</li>
     <li><b>Agents may hold their key.</b> Remote and local agents work the same way: the protection is that the key is worth little, not that it's hidden. It still never enters the session's context, environment or logs.</li>
-    <li><b>Attribution comes free.</b> Each record shows which session wrote it, and the binding can carry <code>runs-on</code>.</li>
-    <li><b>Cost:</b> one small segment per session, closed and hashed at the end.</li>
+    <li><b>A run says what it is.</b> Each session writes a record about itself: the model, the task, where it ran. The key can't check that claim; it is the agent's word.</li>
   </ul>
   <div class="tbl"><table>
     <thead><tr><th>Where the agent runs</th><th>Can it sign ordinary records as you?</th></tr></thead>
     <tbody>
       <tr><td>same OS user, no sandbox</td><td><b>yes</b>: ordinary records only, ended cleanly by a cut; it can't change standing</td></tr>
-      <tr><td>sandboxed (Claude Code's sandbox, a container, a separate user)</td><td><b>no</b>: your keys are out of reach; it has only its session key</td></tr>
+      <tr><td>sandboxed (Claude Code's sandbox, a container, a separate user)</td><td><b>no</b>: your keys are out of reach; it has only its own key</td></tr>
       <tr><td>remote or cloud</td><td><b>no</b>, by construction</td></tr>
     </tbody>
   </table></div>
@@ -2227,8 +2225,8 @@ loops emit dispute --about r:x2 --about r:x3                                    
   <p>One mechanism handles two cases. A key stops speaking for a lineage after loss, theft or rotation. Or an observer stops writing to a store when a colleague leaves or a grant ends. <code>emitted</code> is self-stamped, so a cut by time can be dodged by backdating. <b>Cut by what was held instead.</b></p>
   <figure>
     <div class="fig">
-      <svg class="dg" viewBox="0 0 400 196" role="img" aria-label="The segment sl:7f/laptop holds r1 to r6. A retire record for key k7 through r4 cuts after r4. Records r1 to r4 stay admitted. Records r5 and r6 stay visible but don't count. A forged record dated 2025 isn't in the held prefix, so it doesn't count either.">
-        <text x="12" y="20" class="xs m">segments/sl:7f/laptop.jsonl</text>
+      <svg class="dg" viewBox="0 0 400 196" role="img" aria-label="Key k7 signed records r1 to r6. A retirement of k7 covers r1 to r4. Those stay admitted. Records r5 and r6 are outside the cover: they stay visible but don't count. A forged record dated 2025 isn't in the cover, so it doesn't count either.">
+        <text x="12" y="20" class="xs m">records signed by key k7</text>
         <rect class="box-acc" x="12" y="30" width="52" height="32" rx="6"/><text x="38" y="51" text-anchor="middle" class="mono">r1</text>
         <rect class="box-acc" x="72" y="30" width="52" height="32" rx="6"/><text x="98" y="51" text-anchor="middle" class="mono">r2</text>
         <rect class="box-acc" x="132" y="30" width="52" height="32" rx="6"/><text x="158" y="51" text-anchor="middle" class="mono">r3</text>
@@ -2240,19 +2238,19 @@ loops emit dispute --about r:x2 --about r:x3                                    
         <text x="128" y="94" text-anchor="middle" class="xs ta">admitted</text>
         <text x="318" y="84" text-anchor="middle" class="xs m">kept, visible,</text>
         <text x="318" y="97" text-anchor="middle" class="xs m">doesn't count</text>
-        <rect class="box-amb" x="168" y="124" width="220" height="32" rx="7"/><text x="278" y="145" text-anchor="middle" class="s">retire key k7 through r4</text>
+        <rect class="box-amb" x="168" y="124" width="220" height="32" rx="7"/><text x="278" y="145" text-anchor="middle" class="s">retire key k7 · covers r1–r4</text>
         <line class="ln-amb" x1="253" y1="122" x2="253" y2="76" marker-end="url(#ah-amb)"/>
         <rect class="box dash" x="12" y="124" width="120" height="32" rx="7"/><text x="72" y="145" text-anchor="middle" class="s">forged · 2025</text>
-        <text x="12" y="184" class="xs m">a backdated forgery isn't in the held prefix, so it doesn't count</text>
+        <text x="12" y="184" class="xs m">a backdated forgery isn't in the cover, so it doesn't count</text>
       </svg>
     </div>
-    <figcaption>A segment has one writer and only grows, so "through r4" fixes everything before it exactly. It's a witness tick in miniature ("what I had from this key when I revoked it"), stored compactly. No time is involved.</figcaption>
+    <figcaption>A store is a set, and segments regroup and get rewritten, so there is no position to cut at. The retirement names the set it lets stand. That is a witness tick ("what I had from this key when I revoked it"), so retiring waits for ticks. No time is involved.</figcaption>
   </figure>
   <ul>
     <li><b>Late but legitimate records</b> written before the cut may arrive after it. They stay visible but don't count. The hygiene vertex flags them; the steward affirms them if genuine.</li>
     <li><b>Departure isn't distrust.</b> A colleague who leaves keeps every record admitted; they just can't add more. If a key was stolen before anyone noticed, the steward disputes specific records. Nothing is rewritten.</li>
-    <li><b>Pairing falls with the key.</b> Devices a stolen key paired after the cut lose standing too: their bindings sit in the cut-off part of its segment.</li>
-    <li><b>Rotation</b> is a new binding, then the old key retired through its last record.</li>
+    <li><b>A stolen bound key adds no keys.</b> Only a root key binds. A stolen root key is the case with no clean answer; Trust walks it.</li>
+    <li><b>Rotation</b> of a bound key is a new binding by the root key, then the old key retired with a cover. A root key is not rotated: a new root is a new lineage.</li>
   </ul>
 
   <h3>A boundary: withholding, not hiding</h3>
@@ -2267,11 +2265,11 @@ loops emit dispute --about r:x2 --about r:x3                                    
   <div class="tbl"><table>
     <thead><tr><th>Case</th><th>What happens</th></tr></thead>
     <tbody>
-      <tr><td>Team platform</td><td>clone, write to your own segment, open a PR. Joining is a steward's policy changeset (one tap); leaving is "retire through" your last record.</td></tr>
+      <tr><td>Team platform</td><td>clone, write to your own segment, open a PR. Joining is a steward's policy changeset (one tap); leaving is a retirement that covers your records.</td></tr>
       <tr><td>Novel co-author</td><td>novel replicates to their laptop via git or the NAS; their lineage is added as a writer. They never see <code>feed</code>.</td></tr>
       <tr><td>Feed, laptop and homelab</td><td>the two places compare segment lists</td></tr>
-      <tr><td>Wren, a run</td><td>a session key under <code>g:runs</code>; promotions into <code>runs/*</code> need no tap; retired at close</td></tr>
-      <tr><td>Wren loses a laptop</td><td>retire that device key through its last record; you vouch for a new one</td></tr>
+      <tr><td>Wren, a run</td><td>Wren's key, under <code>g:runs</code>; promotions into <code>runs/*</code> need no tap; the run is a record about its session</td></tr>
+      <tr><td>Wren loses a laptop</td><td>retire that bound key with a cover; Wren's root key binds a new one</td></tr>
     </tbody>
   </table></div>
 
@@ -2817,7 +2815,7 @@ loops emit dispute --about r:x2 --about r:x3                                    
       <li>The seat was shared by every session and every model. Renaming it would hand Wren work done by sessions that never became Wren.</li>
       <li>A new lineage plus adoption is honest retro-claiming. The seat's records stay as written. Wren's adoption is a new, dated, signed record pointing at them.</li>
       <li>Rename stays right when a lineage is already one continuous thread, for example Wren choosing a different name later.</li>
-      <li>At session start, a session <i>becomes</i> Wren by loading Wren's compiled self. Wren's device key binds its session key. The signer retires that key when the session closes. Continuity is held by the store, not by any one session.</li>
+      <li>At session start, a session <i>becomes</i> Wren by loading Wren's compiled self. Wren's key signs its records, and the session says what it is in a record. Continuity is held by the store, not by any one session.</li>
     </ul>
   </div></details>
 
@@ -3856,7 +3854,7 @@ loops emit brief context=T:ctx --about r:t5 "is the compare in ValidateToken sti
     --about git:platform@c0:…#Verify --under g:review-sandbox
 loops emit task-complete --about r:t5                     # the marker → T:t5
 # both by sl:c0/session-9; its last record is a witness tick covering T:ctx, r:pa2 and 2 more</pre>
-    <p><b>The session's witness tick answers "what did it know?":</b> the context it was handed plus every id it fetched, ids only. As the session's last record, it is also what the session key is retired through.</p>
+    <p><b>The session's witness tick answers "what did it know?":</b> the context it was handed plus every id it fetched, ids only. As the session's last record, it is also the cover a retirement of that run's key would cite.</p>
   </div></details>
   <details class="unfold"><summary>6 · Review: the same tick, another lens</summary><div class="body">
     <p>The <code>review</code> lens over <code>T:t5</code> shows the finding, its evidence, and what the session-start lens never needed: <b>the subagent's blind spots</b>. "It didn't see 1 withheld session turn, 1 erased note, 1 unreachable source." You can <code>request-open r:st8</code> from dev2. They open it with one tap. You decide whether the finding stands. Approval is a review stance about <code>T:t5</code>; promoting the finding into the team store is ordinary under a grant. The next hover on <code>ValidateToken</code> shows dev2's question answered, closing the LSP walk's "unanswered" flag.</p>
@@ -3925,7 +3923,7 @@ loops emit task-complete --about r:t5                     # the marker → T:t5
   <details class="unfold"><summary>3 · Up to the cloud: by value, filtered</summary><div class="body">
     <ul>
       <li><b>The cloud can't reach home.</b> The bundle carries what the run may need, filtered by the cloud seat's grant. Session turns travel as envelopes. Anything outside the grant stays home.</li>
-      <li><b>The cloud run is a borrowed place of your realm, not a bridge:</b> your seat, on a session key, under your grant. That is what lets results come home by union.</li>
+      <li><b>The cloud run is a borrowed place of your realm, not a bridge:</b> your seat, on its own key, under your grant. That is what lets results come home by union.</li>
       <li><b>Bundles negotiate like <code>git fetch</code>:</b> content-addressed, so the receiver says which ids it has; repeat runs send almost nothing. Blobs stay fetch-on-request.</li>
       <li><b>Widening the seat's grant</b> to include session turns is a deliberate, one-time act with presence, like declaring a store public; a run never decides it. The cloud provider can read what goes up.</li>
     </ul>
@@ -3981,7 +3979,7 @@ worktree-opened, commit-pushed                               // what the scripts
     <ul>
       <li><b>Sync at every tick:</b> a crashed container loses at most the stage in progress.</li>
       <li><b>Segments are append-only, one writer each:</b> a gap would be a truncation, and that is detectable.</li>
-      <li><b>Retire-through closes it:</b> on a normal close each session key retires through its witness tick. If the container died, the home orchestrator retires the run's keys through the last record it received. A record the cut names that you lack means something is missing; anything signed after the cut doesn't count.</li>
+      <li><b>A cover closes it:</b> on a normal close the run's key is retired with its witness tick as the cover. If the container died, the home orchestrator retires it covering what it received. A record the cover names that you lack means something is missing; anything from that key outside the cover doesn't count.</li>
     </ul>
   </div></details>
   <details class="unfold"><summary>Where it lands, and what it gives</summary><div class="body">
@@ -4219,7 +4217,7 @@ witness observer="ci" vertex="decisions" key=… result="h:7a…" sig=…</pre>
     <details class="unfold"><summary>The crate's name</summary><div class="body"><p>The workspace uses <code>loops</code> internally. Its published crate name remains open and can differ.</p></div></details>
     <details class="unfold"><summary>Schema field names</summary><div class="body"><p>The JSON examples here are proposed grammar, not accepted inputs. <code>protocol/spec.md</code> defines the implemented spec format. No JSON Schema files or <code>schema.md</code> exist. Names for future declarations, places and boundaries remain open.</p></div></details>
     <details class="unfold"><summary>What a numeric fold reads <span class="pill p-done">settled</span></summary><div class="body"><p>The reader reads RFC 8259 numbers as binary64 values. Sum, min, and max accept only safe whole values. Thus <code>1.0</code> counts, but <code>1.5</code> counts as unread. Sum uses an exact integer accumulator. The protocol does not define fixed-scale decimal strings.</p></div></details>
-    <details class="unfold"><summary>The review's other findings</summary><div class="body"><p>Two outside reviews of version 31 are compiled in <a href="https://claude.ai/artifact/TVxL5UBVhc2cTGWMi4B8KE">Strange Loops Rethink: Review</a>. Version 32 took its fold, withholding, tick and vertex findings. The <code>occurred</code> grammar is settled, and with it the window time zone: calendar dates are UTC days. Still open: id prefixes, standing bootstrap order, key tiers and <code>resolve-by</code> transitivity. Also review segment closure, core salt inputs and whether ticks precede standing.</p></div></details>
+    <details class="unfold"><summary>The review's other findings</summary><div class="body"><p>Two outside reviews of version 31 are compiled in <a href="https://claude.ai/artifact/TVxL5UBVhc2cTGWMi4B8KE">Strange Loops Rethink: Review</a>. Version 32 took its fold, withholding, tick and vertex findings. The <code>occurred</code> grammar is settled, and with it the window time zone: calendar dates are UTC days. Still open: id prefixes, standing bootstrap order and <code>resolve-by</code> transitivity. Also review segment closure, core salt inputs and whether ticks precede standing.</p></div></details>
     <details class="unfold"><summary>Canonical encoding for results <span class="pill p-lean">leaning</span></summary><div class="body"><p>A result hash needs one encoding per state. Preferred design: RFC 8785 (JCS) for results, as for records; a Merkle encoding only if hashing large results gets slow.</p></div></details>
     <details class="unfold"><summary>Where does the LSP's history index live?</summary><div class="body"><p>Mapping a cursor to a birth key needs a cache of each symbol's history. Preferred design: the editor tooling's own disposable cache, not loops' index; the core never reads git.</p></div></details>
     <details class="unfold"><summary>Calibrating the budgets</summary><div class="body"><p>The historical budget guesses were 60k core tokens and 15k per module. Step 1 measured Go's <code>record</code> at 3.2k against roughly 8k. The historical surface snapshot had 34 names. Neither snapshot establishes current Rust budgets. Measure the current slice before setting limits.</p></div></details>
@@ -4227,7 +4225,7 @@ witness observer="ci" vertex="decisions" key=… result="h:7a…" sig=…</pre>
   </div>
   <h3>Layer 5 · sharing (closed)</h3>
   <div class="q">
-    <details class="unfold"><summary>Should presence be provable to other replicas?</summary><div class="body"><p>The proposed presence key binding claims "used only with you present". FIDO hardware keys could prove it (a user-presence flag inside the signed bytes) at the cost of a second signature format. Preferred design: wait until someone needs proof.</p></div></details>
+    <details class="unfold"><summary>Should presence be provable to other replicas?</summary><div class="body"><p>A root key is meant to be used only with you present. FIDO hardware keys could prove it (a user-presence flag inside the signed bytes) at the cost of a second signature format. Preferred design: wait until someone needs proof.</p></div></details>
     <details class="unfold"><summary>A local signer behind a socket?</summary><div class="body"><p>Like ssh-agent: sits outside an agent's sandbox, signs only as that agent and only within its grant. Defence in depth; not needed for the model to hold.</p></div></details>
   </div>
   <h3>Composition (closed)</h3>
@@ -4314,7 +4312,7 @@ witness observer="ci" vertex="decisions" key=… result="h:7a…" sig=…</pre>
         <tr><td><b>grant</b></td><td>Standing given ahead of time, with a scope. Agents act within it.</td></tr>
         <tr><td><b>presence</b></td><td>A person present, signing with a key behind Touch ID or similar, for acts that can't be undone. A grant is presence given ahead of time.</td></tr>
         <tr><td><b>root key</b></td><td>The key that signed a lineage's anchor. It signs what changes standing: bindings, grants, stewards. One per lineage, and no binding replaces it.</td></tr>
-        <tr><td><b>bound key</b></td><td>A key the root key named in a <code>key-binding</code>. It signs ordinary records as the lineage and can't bind another key. Earlier text calls it a device key.</td></tr>
+        <tr><td><b>bound key</b></td><td>A key the root key named in a <code>key-binding</code>. It signs ordinary records as the lineage and can't bind another key.</td></tr>
         <tr><td><b>seat</b></td><td>An identity shared by delegates who don't have their own yet.</td></tr>
       </tbody>
     </table></div>

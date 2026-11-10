@@ -561,7 +561,7 @@ loops emit brief context=T:ctx --about r:t5 "is the compare in ValidateToken sti
     --about git:platform@c0:…#Verify --under g:review-sandbox
 loops emit task-complete --about r:t5                     # the marker → T:t5
 # both by sl:c0/session-9; its last record is a witness tick covering T:ctx, r:pa2 and 2 more</pre>
-    <p><b>The session's witness tick answers "what did it know?":</b> the context it was handed plus every id it fetched, ids only. As the session's last record, it is also what the session key is retired through.</p>
+    <p><b>The session's witness tick answers "what did it know?":</b> the context it was handed plus every id it fetched, ids only. As the session's last record, it is also the cover a retirement of that run's key would cite.</p>
   </div></details>
   <details class="unfold"><summary>6 · Review: the same tick, another lens</summary><div class="body">
     <p>The <code>review</code> lens over <code>T:t5</code> shows the finding, its evidence, and what the session-start lens never needed: <b>the subagent's blind spots</b>. "It didn't see 1 withheld session turn, 1 erased note, 1 unreachable source." You can <code>request-open r:st8</code> from dev2. They open it with one tap. You decide whether the finding stands. Approval is a review stance about <code>T:t5</code>; promoting the finding into the team store is ordinary under a grant. The next hover on <code>ValidateToken</code> shows dev2's question answered, closing the LSP walk's "unanswered" flag.</p>
@@ -630,7 +630,7 @@ loops emit task-complete --about r:t5                     # the marker → T:t5
   <details class="unfold"><summary>3 · Up to the cloud: by value, filtered</summary><div class="body">
     <ul>
       <li><b>The cloud can't reach home.</b> The bundle carries what the run may need, filtered by the cloud seat's grant. Session turns travel as envelopes. Anything outside the grant stays home.</li>
-      <li><b>The cloud run is a borrowed place of your realm, not a bridge:</b> your seat, on a session key, under your grant. That is what lets results come home by union.</li>
+      <li><b>The cloud run is a borrowed place of your realm, not a bridge:</b> your seat, on its own key, under your grant. That is what lets results come home by union.</li>
       <li><b>Bundles negotiate like <code>git fetch</code>:</b> content-addressed, so the receiver says which ids it has; repeat runs send almost nothing. Blobs stay fetch-on-request.</li>
       <li><b>Widening the seat's grant</b> to include session turns is a deliberate, one-time act with presence, like declaring a store public; a run never decides it. The cloud provider can read what goes up.</li>
     </ul>
@@ -686,7 +686,7 @@ worktree-opened, commit-pushed                               // what the scripts
     <ul>
       <li><b>Sync at every tick:</b> a crashed container loses at most the stage in progress.</li>
       <li><b>Segments are append-only, one writer each:</b> a gap would be a truncation, and that is detectable.</li>
-      <li><b>Retire-through closes it:</b> on a normal close each session key retires through its witness tick. If the container died, the home orchestrator retires the run's keys through the last record it received. A record the cut names that you lack means something is missing; anything signed after the cut doesn't count.</li>
+      <li><b>A cover closes it:</b> on a normal close the run's key is retired with its witness tick as the cover. If the container died, the home orchestrator retires it covering what it received. A record the cover names that you lack means something is missing; anything from that key outside the cover doesn't count.</li>
     </ul>
   </div></details>
   <details class="unfold"><summary>Where it lands, and what it gives</summary><div class="body">
