@@ -134,7 +134,7 @@ The orchestration dry run is in [Scenarios](design/rethink/sections/13-scenarios
 A task about its plan became a rival head of the plan.
 A record about something else was not a thing under its own id.
 A closing record about the 23 ids it covered became the winner of each.
-Restating a whole payload on every change lost a concurrent change to another field.
+Restating a whole payload on every change left a writer no basis to merge a fork field by field; the fork showed as two heads, and one writer's merge dropped a change.
 The earlier systems (`tasked`, `ticked`) keyed a fold by a field and re-emitted only the changed key.
 
 The choice has three parts. D8a and D8b go together; D8c can follow.
@@ -148,14 +148,18 @@ The choice has three parts. D8a and D8b go together; D8c can follow.
   A link needs no new primitive: it is a thing whose `about` names both ends.
 - **D8c, declared keys.** An envelope field lists the payload keys an emit sets.
   A keyed fold holds, for each key, the setters no descendant setter of that key replaces, over `prev`.
-  Different keys from one head merge; one key set twice from one head is a conflict the fold shows.
+  Different keys from one head merge; one key set to different values from one head is a conflict the fold shows.
   A key is unknown exactly when a live setter's payload is not held, as `where` answers.
-  A declared key absent from the payload is unset.
-  A record that declares no keys is read whole, as today.
+  A declared key absent from the payload is unset, and a payload key that is not declared is not read.
+  An absent declaration and an empty one differ: absent means the record is read whole, as today; empty means it sets nothing, which is a pure join of two heads.
+  A whole-read emit sets every key, named or not, and stays needed until a later whole-read emit replaces it.
 
 **Readings:** Put identity and keys in the envelope, or in the payload.
 In the payload, an erased or withheld emit can be placed only by `prev`, and a slice or a sync cannot be computed from envelopes.
-In the envelope, margins-claude's experiment (`sl-py/keyfold.py`, 240,000 key answers) found no wrong answer, and a slice of one thing is its envelopes plus its live setters' payloads.
+For declared keys, margins-claude's experiment (`sl-py/keyfold.py`) found no wrong answer in 240,000 key answers, and none in 320,000 more with whole-read emits mixed into the chains.
+Within one thing, its envelopes plus its live setters' payloads sufficed, and none could be dropped.
+The experiment takes the item as given, one thing at a time, with no erasing records and no admission.
+That identity belongs in the envelope (D8a) is argued, not measured, and the composition with `thing.slice` is untested.
 Without declared keys, a reader needs every payload in the chain, or answers wrongly when an unheld emit is taken to set nothing.
 **Effects:** Two new envelope fields enter the id; a record without them keeps its bytes and id.
 Records already about a thing stop making heads of it, so the `latest-by` vectors and the heads and slice laws are restated.
@@ -166,7 +170,7 @@ The core starts to read a payload's top-level keys by name.
 `thing.slice` as proved covers whole-record folds only; the keyed fold needs its own slice law, argued and not yet stated in Lean.
 **Recommendation:** Take D8a and D8b now, in the envelope, before any store is kept.
 Take D8c as a second fold family beside whole-record `latest-by`, once D8a's shape is settled and its slice law is stated.
-**Left to the human:** the field names (`of` and `sets` are the working names), whether the item field takes natural keys as `about` does, and whether a writer must refuse a payload key it did not declare.
+**Left to the human:** the field names (`of` and `sets` are the working names), whether the item field takes natural keys as `about` does, whether two live setters giving the same value are a conflict (in the experiment they are not), and whether a writer must refuse a payload key it did not declare (a reader needs only that such keys are not read).
 
 ### Retained boundaries
 
