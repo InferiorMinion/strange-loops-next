@@ -150,6 +150,9 @@ The choice has three parts. D8a and D8b go together; D8c can follow.
   A keyed fold holds, for each key, the setters no descendant setter of that key replaces, over `prev`.
   Different keys from one head merge; one key set to different values from one head is a conflict the fold shows.
   A key is unknown exactly when a live setter's payload is not held, as `where` answers.
+  Withheld and erased are one state to the fold: an envelope without its payload.
+  They differ only in what comes next, which the arrival laws carry: a withheld payload may arrive, an erased one must be dropped.
+  Either way a later emit that sets the key makes it known again.
   A declared key absent from the payload is unset, and a payload key that is not declared is not read.
   An absent declaration and an empty one differ: absent means the record is read whole, as today; empty means it sets nothing, which is a pure join of two heads.
   A whole-read emit sets every key, named or not, and stays needed until a later whole-read emit replaces it.
@@ -166,6 +169,8 @@ Records already about a thing stop making heads of it, so the `latest-by` vector
 `prev-unrelated` is restated over the item field.
 A record is an emit of one thing only; today one record can head several.
 An erased emit still shows which keys it changed, though not to what.
+Kyle accepted this on 2026-11-10: erasure is the emergency stop for something that should not have been emitted, and its job is that the content travels no further.
+`kind`, `about` and the times already survive erasure; secrets do not go in envelopes, key names included.
 The core starts to read a payload's top-level keys by name.
 `thing.slice` as proved covers whole-record folds only; the keyed fold needs its own slice law, argued and not yet stated in Lean.
 **Recommendation:** Take D8a and D8b now, in the envelope, before any store is kept.
