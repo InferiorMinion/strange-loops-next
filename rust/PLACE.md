@@ -45,7 +45,7 @@ loops whoami
 ```
 .loops/segments/<key>/<hash>.jsonl    closed, immutable, named by the SHA-256 of its bytes
 .loops/vertices/<name>.json           a spec, as protocol/spec.md reads it
-~/.config/loops/keys/device           the device key's seed, 0600 (LOOPS_KEY_FILE, or LOOPS_KEY as text)
+~/.config/loops/keys/device           the signing key's seed, 0600 (LOOPS_KEY_FILE, or LOOPS_KEY as text)
 ```
 
 A segment holds the lines one key signed in one changeset. Writing it is a
@@ -67,8 +67,8 @@ held. A segment whose name is not the hash of its bytes is listed as altered.
    emit. The review finding "closing segments per changeset" stays open:
    compaction, or the open segment, can come when the file count hurts.
 2. **`segments/<key>/`, not `segments/<observer>/<device>/`.** Lineages are
-   step 3. Until then the device key is the only writer identity a place can check.
-3. **The observer is the device key, `k:…`, and nothing else.** A line
+   step 3. Until then the signing key is the only writer identity a place can check.
+3. **The observer is the signing key, `k:…`, and nothing else.** A line
    proves which key signed it. Nothing yet says which keys speak for an
    observer, so the only observer a key can honestly write as is itself, and
    `emit` refuses any other (`observer-unbound`). `--observer` and a draft's
