@@ -8,22 +8,26 @@ import Loops.Keys
 * **`speaks.set`**: the set decides (`speaks_set`).
 * **`speaks.view`**: a view changes no answer (`speaks_view`): the rule reads
   envelopes and signing keys only.
-* **`speaks.anchored`**: no anchor, no speaker (`speaks_anchored`), and a key
-  speaks only as a root or because a speaking key bound it (`speaks_cases`,
-  `speaks_needs_binding`). A stranger's binding binds nothing.
-* **`speaks.computed`**: every key the rounds find speaks (`speakers_sound`).
-  That the rounds find every key is not proved here.
+* **`speaks.anchored`**: no anchor, no speaker (`speaks_anchored`).
+* **`speaks.two-tier`**: only a root's binding counts (`speaks_needs_binding`),
+  so a record signed by a key that is no root changes no answer
+  (`bound_binds_nothing`).
+* **`speaks.computed`**: the computed list is exactly the keys that speak
+  (`roots_iff`, `speakers_iff`).
 -/
 
 namespace Loops
 
 open List
 
-theorem speaks_grows {xs ys : List Signed} {L k : String} (h : ∀ s ∈ xs, s ∈ ys)
-    (hk : Speaks xs L k) : Speaks ys L k := by
-  induction hk with
-  | root ha hr => exact .root (h _ ha) hr
-  | bound hb hbind _ ih => exact .bound (h _ hb) hbind ih
+theorem root_grows {xs ys : List Signed} {L k : String} (h : ∀ s ∈ xs, s ∈ ys) :
+    Root xs L k → Root ys L k
+  | ⟨a, ha, hr⟩ => ⟨a, h a ha, hr⟩
+
+theorem speaks_grows {xs ys : List Signed} {L k : String} (h : ∀ s ∈ xs, s ∈ ys) :
+    Speaks xs L k → Speaks ys L k
+  | .inl hr => .inl (root_grows h hr)
+  | .inr ⟨b, hb, hbind, hr⟩ => .inr ⟨b, h b hb, hbind, root_grows h hr⟩
 
 theorem speaks_set {xs ys : List Signed} (h : ∀ s, s ∈ xs ↔ s ∈ ys) (L k : String) :
     Speaks xs L k ↔ Speaks ys L k :=
@@ -46,68 +50,83 @@ theorem binds_view {f : Record → Record} (hf : View f) (s : Signed) (L k : Str
   have e := hf.envelope s.record
   simp [Signed.binds, Signed.through, e.kind, e.observer, e.about]
 
+theorem root_view {f : Record → Record} (hf : View f) (xs : List Signed) (L k : String) :
+    Root (xs.map (Signed.through f)) L k ↔ Root xs L k := by
+  constructor
+  · rintro ⟨a, ha, hr, hk⟩
+    obtain ⟨s, hs, rfl⟩ := mem_map.1 ha
+    rw [anchors_view hf] at hr
+    exact ⟨s, hs, hr, hk⟩
+  · rintro ⟨a, ha, hr, hk⟩
+    exact ⟨a.through f, mem_map.2 ⟨a, ha, rfl⟩, by rw [anchors_view hf]; exact hr, hk⟩
+
 theorem speaks_view {f : Record → Record} (hf : View f) (xs : List Signed) (L k : String) :
     Speaks (xs.map (Signed.through f)) L k ↔ Speaks xs L k := by
   constructor
-  · intro h
-    induction h with
-    | root ha hr =>
-      obtain ⟨s, hs, rfl⟩ := mem_map.1 ha
-      rw [anchors_view hf] at hr
-      exact Speaks.root (a := s) hs hr
-    | bound hb hbind _ ih =>
-      obtain ⟨s, hs, rfl⟩ := mem_map.1 hb
+  · rintro (hr | ⟨b, hb, hbind, hr⟩)
+    · exact .inl ((root_view hf xs L k).1 hr)
+    · obtain ⟨s, hs, rfl⟩ := mem_map.1 hb
       rw [binds_view hf] at hbind
-      exact Speaks.bound (b := s) hs hbind ih
-  · intro h
-    induction h with
-    | @root a ha hr =>
-      exact .root (a := a.through f) (mem_map.2 ⟨a, ha, rfl⟩) (by rw [anchors_view hf]; exact hr)
-    | @bound b k hb hbind _ ih =>
-      exact .bound (b := b.through f) (mem_map.2 ⟨b, hb, rfl⟩) (by rw [binds_view hf]; exact hbind) ih
+      exact .inr ⟨s, hs, hbind, (root_view hf xs L _).1 hr⟩
+  · rintro (hr | ⟨b, hb, hbind, hr⟩)
+    · exact .inl ((root_view hf xs L k).2 hr)
+    · exact .inr ⟨b.through f, mem_map.2 ⟨b, hb, rfl⟩, by rw [binds_view hf]; exact hbind,
+        (root_view hf xs L _).2 hr⟩
 
 /-- No anchor, no speaker. -/
 theorem speaks_anchored {xs : List Signed} {L k : String} (h : Speaks xs L k) :
     ∃ a ∈ xs, a.anchors L = true := by
-  induction h with
-  | root ha hr => exact ⟨_, ha, hr⟩
-  | bound _ _ _ ih => exact ih
+  rcases h with ⟨a, ha, hr, _⟩ | ⟨_, _, _, a, ha, hr, _⟩ <;> exact ⟨a, ha, hr⟩
 
-/-- A key speaks only as a root, or because a key that speaks bound it. -/
-theorem speaks_cases {xs : List Signed} {L k : String} (h : Speaks xs L k) :
-    (∃ a ∈ xs, a.anchors L = true ∧ a.key = k) ∨
-      (∃ b ∈ xs, b.binds L k = true ∧ Speaks xs L b.key) := by
-  cases h with
-  | root ha hr => exact .inl ⟨_, ha, hr, rfl⟩
-  | bound hb hbind hs => exact .inr ⟨_, hb, hbind, hs⟩
+/-- Only a root's binding counts: a key that is no root, and that no root's
+binding names, does not speak. -/
+theorem speaks_needs_binding {xs : List Signed} {L k : String} (hroot : ¬ Root xs L k)
+    (hbind : ∀ b ∈ xs, b.binds L k = true → ¬ Root xs L b.key) : ¬ Speaks xs L k := by
+  rintro (hr | ⟨b, hb, hbd, hr⟩)
+  · exact hroot hr
+  · exact hbind b hb hbd hr
 
-/-- A binding counts only if a speaking key signed it: a key that is no root,
-and that no speaking key's binding names, does not speak. -/
-theorem speaks_needs_binding {xs : List Signed} {L k : String}
-    (hroot : ∀ a ∈ xs, a.anchors L = true → a.key ≠ k)
-    (hbind : ∀ b ∈ xs, b.binds L k = true → ¬ Speaks xs L b.key) : ¬ Speaks xs L k := by
-  intro h
-  rcases speaks_cases h with ⟨a, ha, hr, e⟩ | ⟨b, hb, hbd, hs⟩
-  · exact hroot a ha hr e
-  · exact hbind b hb hbd hs
+/-- A bound key binds nothing: a record signed by a key that is no root
+changes no answer, whatever it says. -/
+theorem bound_binds_nothing {xs : List Signed} {L : String} {s : Signed}
+    (hs : ¬ Root (s :: xs) L s.key) (k : String) : Speaks (s :: xs) L k ↔ Speaks xs L k := by
+  have root {k'} (h : Root (s :: xs) L k') : Root xs L k' := by
+    obtain ⟨a, ha, hr, hk⟩ := h
+    rcases mem_cons.1 ha with rfl | ha
+    · exact absurd ⟨a, mem_cons_self, hr, rfl⟩ hs
+    · exact ⟨a, ha, hr, hk⟩
+  refine ⟨?_, speaks_grows fun _ h => mem_cons_of_mem _ h⟩
+  rintro (hr | ⟨b, hb, hbind, hr⟩)
+  · exact .inl (root hr)
+  · rcases mem_cons.1 hb with rfl | hb
+    · exact absurd hr hs
+    · exact .inr ⟨b, hb, hbind, root hr⟩
 
-theorem speakersIn_sound {xs : List Signed} {L : String} (n : Nat) {k : String}
-    (h : k ∈ speakersIn xs L n) : Speaks xs L k := by
-  induction n generalizing k with
-  | zero =>
+theorem roots_iff {xs : List Signed} {L k : String} : k ∈ roots xs L ↔ Root xs L k := by
+  constructor
+  · intro h
     obtain ⟨a, ha, rfl⟩ := mem_map.1 h
-    exact .root (mem_filter.1 ha).1 (mem_filter.1 ha).2
-  | succ n ih =>
+    exact ⟨a, (mem_filter.1 ha).1, (mem_filter.1 ha).2, rfl⟩
+  · rintro ⟨a, ha, hr, rfl⟩
+    exact mem_map.2 ⟨a, mem_filter.2 ⟨ha, hr⟩, rfl⟩
+
+/-- The computed list is exactly the keys that speak. -/
+theorem speakers_iff {xs : List Signed} {L k : String} : k ∈ speakers xs L ↔ Speaks xs L k := by
+  constructor
+  · intro h
     rcases mem_append.1 h with h | h
-    · exact ih h
+    · exact .inl (roots_iff.1 h)
     · obtain ⟨b, hb, hk⟩ := mem_flatMap.1 h
       obtain ⟨hbx, hp⟩ := mem_filter.1 hb
       obtain ⟨hka, hkr⟩ := mem_filter.1 hk
       simp only [Bool.and_eq_true, beq_iff_eq] at hp
-      refine .bound hbx ?_ (ih (by simpa using hp.2))
+      refine .inr ⟨b, hbx, ?_, roots_iff.1 (by simpa using hp.2)⟩
       simp [Signed.binds, hp.1.1, hp.1.2, hkr, hka]
-
-theorem speakers_sound {xs : List Signed} {L k : String} (h : k ∈ speakers xs L) : Speaks xs L k :=
-  speakersIn_sound _ h
+  · rintro (hr | ⟨b, hb, hbind, hr⟩)
+    · exact mem_append.2 (.inl (roots_iff.2 hr))
+    · simp only [Signed.binds, Bool.and_eq_true, beq_iff_eq] at hbind
+      refine mem_append.2 (.inr (mem_flatMap.2 ⟨b, mem_filter.2 ⟨hb, ?_⟩, mem_filter.2 ⟨?_, hbind.1.2⟩⟩))
+      · simpa [hbind.1.1.1, hbind.1.1.2] using roots_iff.2 hr
+      · simpa using hbind.2
 
 end Loops

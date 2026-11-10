@@ -11,11 +11,15 @@ that is. This file is the smallest rule that does:
   anchor's id, and that key is its root.
 * **A binding adds a key.** It is a record of kind `key-binding` whose
   observer is the lineage and whose `about` names the key. It counts only when
-  a key that already speaks for the lineage signed it.
+  the lineage's root signed it.
 
-Both read only the envelope and the signing key, so a withheld or erased
+So there are two tiers of key and no recursion: the root signs what changes
+who speaks, and a bound key signs everything else. A bound key cannot bind
+another.
+
+Both rules read only the envelope and the signing key, so a withheld or erased
 payload never changes who speaks. Nothing here removes a key: retiring one is
-standing's next step, and the first rule that makes this depend on more than
+standing's later step, and the first rule that makes this depend on more than
 the set.
 -/
 
@@ -45,12 +49,14 @@ def Signed.anchors (a : Signed) (L : String) : Bool :=
 def Signed.binds (b : Signed) (L k : String) : Bool :=
   b.record.kind == bindingKind && b.record.observer == L && keyRef k && b.record.about.contains k
 
-/-- Key `k` speaks for lineage `L`, by what `xs` holds: it is the root an
-anchor pins, or a key that speaks for `L` signed a binding naming it. -/
-inductive Speaks (xs : List Signed) (L : String) : String → Prop where
-  | root {a : Signed} : a ∈ xs → a.anchors L = true → Speaks xs L a.key
-  | bound {b : Signed} {k : String} :
-      b ∈ xs → b.binds L k = true → Speaks xs L b.key → Speaks xs L k
+/-- Key `k` is a root of lineage `L`, by what `xs` holds: an anchor pins it. -/
+def Root (xs : List Signed) (L k : String) : Prop :=
+  ∃ a ∈ xs, a.anchors L = true ∧ a.key = k
+
+/-- Key `k` speaks for lineage `L`, by what `xs` holds: it is a root, or a
+root signed a binding naming it. -/
+def Speaks (xs : List Signed) (L k : String) : Prop :=
+  Root xs L k ∨ ∃ b ∈ xs, b.binds L k = true ∧ Root xs L b.key
 
 /-- A record is its observer's word: the observer is the signing key itself,
 or a lineage that key speaks for. -/
@@ -62,16 +68,13 @@ def Attributed (xs : List Signed) (s : Signed) : Prop :=
 def roots (xs : List Signed) (L : String) : List String :=
   (xs.filter (·.anchors L)).map (·.key)
 
-/-- One round: the keys named by bindings a key in `ks` signed. -/
+/-- The keys named by bindings a key in `ks` signed. -/
 def boundBy (xs : List Signed) (L : String) (ks : List String) : List String :=
   (xs.filter fun b => b.record.kind == bindingKind && b.record.observer == L && ks.contains b.key).flatMap
     fun b => b.record.about.filter keyRef
 
-def speakersIn (xs : List Signed) (L : String) : Nat → List String
-  | 0 => roots xs L
-  | n + 1 => speakersIn xs L n ++ boundBy xs L (speakersIn xs L n)
-
-/-- The keys found in as many rounds as there are records. -/
-def speakers (xs : List Signed) (L : String) : List String := speakersIn xs L xs.length
+/-- The roots, and the keys the roots bound. -/
+def speakers (xs : List Signed) (L : String) : List String :=
+  roots xs L ++ boundBy xs L (roots xs L)
 
 end Loops
