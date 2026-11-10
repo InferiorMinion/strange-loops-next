@@ -25,9 +25,9 @@
       "word": "thing",
       "status": "proved",
       "purpose": "Give each subject its own state within a fixed admitted record set.",
-      "state": "A typed reference, <code>prefix:value</code>, in a record's <code>about</code>. A record about nothing anchors a thing named by its own id.",
+      "state": "A typed reference, <code>prefix:value</code>, in a record's <code>of</code>: a record id or a natural key. Each record is of exactly one thing; a root, with no <code>of</code> and no <code>prev</code>, starts the thing named by its own id. <code>about</code> only mentions things.",
       "principle": "Within a thing, an unreplaced revision is a head. Concurrent revisions form a fork. A record naming those heads can merge them.",
-      "laws": ["thing.local", "admit.no-cross"]
+      "laws": ["thing.one", "thing.local", "admit.no-cross", "thing.mentions"]
     },
     {
       "word": "store",
@@ -57,8 +57,8 @@
       "word": "source",
       "status": "proved",
       "purpose": "Choose records by their envelopes alone.",
-      "state": "A <code>store</code>, then optionally the <code>kind</code>s and the thing it is <code>about</code>.",
-      "principle": "A source takes a record when its kind is listed and it is about the thing. A view selects exactly the same records.",
+      "state": "A <code>store</code>, then optionally the <code>kind</code>s, a thing it mentions (<code>about</code>) and the thing it is <code>of</code>.",
+      "principle": "A source takes a record when its kind is listed, it mentions the thing in <code>about</code>, and it is of the thing in <code>of</code>, each when given. A view selects exactly the same records.",
       "laws": ["spec.select", "spec.from-thing"]
     },
     {
@@ -118,17 +118,17 @@
     { "word": "refuse", "family": "any", "status": "proved", "says": "Say no, with a code from a closed set and the path of what broke the rule. Never guess.", "laws": ["record.refuse", "batch.refuse-order"] },
     { "word": "settle", "family": "read", "status": "proved", "says": "Settle consistent forms to one record per id. Keep a held payload unless a held eraser names its id.", "laws": ["settle.keeps", "settle.erased"] },
     { "word": "admit", "family": "read", "status": "proved", "says": "Refuse records not entitled to their <code>prev</code>. Standing joins it in step 3.", "laws": ["admit.set"] },
-    { "word": "take", "family": "read", "status": "proved", "says": "A source takes the records its store, kinds and thing choose.", "laws": ["spec.select"] },
+    { "word": "take", "family": "read", "status": "proved", "says": "A source takes the records its store, kinds, mention and thing choose.", "laws": ["spec.select"] },
     { "word": "test", "family": "read", "status": "proved", "says": "A <code>where</code> test answers yes, no, or, on a payload the reader lacks, unknown.", "laws": ["where.total", "view.refines"] },
     { "word": "fold", "family": "read", "status": "proved", "says": "Turn what was taken into a slot's value.", "laws": ["acc.set", "heads.set"] },
-    { "word": "follow", "family": "read", "status": "proved", "says": "Walk <code>prev</code> within a thing to its heads: what nothing about it replaces.", "laws": ["latest-by.order", "thing.local"] },
+    { "word": "follow", "family": "read", "status": "proved", "says": "Walk <code>prev</code> within a thing to its heads: what nothing of it replaces.", "laws": ["latest-by.order", "thing.local"] },
     { "word": "render", "family": "text", "status": "proved", "says": "Render keyed sections with nonempty, distinct ids. Audience-aware views remain planned.", "laws": ["lens.escaping"] },
     { "word": "parse", "family": "text", "status": "proved", "says": "Read edited text back, refusing what it can't read.", "laws": ["lens.round-trip", "lens.refuse"] },
     { "word": "apply", "family": "text", "status": "settled", "says": "Turn the edits a parse found into records, emitted together.", "laws": ["lens.put-get"] }
   ],
   "constructions": [
-    { "word": "start", "made": "emit with no <code>prev</code>", "says": "A new chain. About nothing, the record anchors a thing of its own." },
-    { "word": "revise", "made": "emit with <code>prev: [x]</code>", "says": "Replace x within a thing both are about. Naming one about other things is refused, <code>prev-unrelated</code>." },
+    { "word": "start", "made": "emit with no <code>prev</code>", "says": "A new chain. Without <code>of</code>, the record is a root and starts a thing named by its own id." },
+    { "word": "revise", "made": "emit with <code>prev: [x]</code> and <code>of</code>", "says": "Replace x within the thing both are of. A record with <code>prev</code> states <code>of</code> (<code>of-missing</code>); naming one of another thing is refused, <code>prev-unrelated</code>." },
     { "word": "fork", "made": "two records naming one <code>prev</code>", "says": "Nobody's verb: a state. The thing has two heads, both shown, the newer by content order winning." },
     { "word": "merge", "made": "emit with <code>prev: [x, y]</code>", "says": "Naming all heads of a thing leaves one head, unless another concurrent head remains." },
     { "word": "erase", "made": "emit with <code>erases: [x]</code>", "says": "Any kind may. x keeps its id, signature and place; only its opening goes." },
@@ -146,7 +146,7 @@
     "verbs": ["emit", "refuse", "settle", "admit", "take", "test", "fold", "follow", "tick", "render", "parse", "apply"],
     "rows": [
       { "noun": "record", "cells": { "emit": "written", "refuse": "a bad envelope or payload", "settle": "one per id", "admit": "entitled to its prev", "take": "by envelope", "test": "env. or payload", "fold": "into slots", "follow": "via prev", "apply": "what an edit becomes" } },
-      { "noun": "thing", "cells": { "follow": "its heads", "fold": "latest-by about" } },
+      { "noun": "thing", "cells": { "follow": "its heads", "fold": "latest-by of" } },
       { "noun": "store", "cells": { "emit": "appended to", "take": "named by a source", "settle": "its places" } },
       { "noun": "view", "cells": { "settle": "made by", "admit": "made by", "test": "unknown when withheld", "fold": "same heads" } },
       { "noun": "spec", "cells": { "refuse": "first broken rule", "parse": "into its parsed form" } },
@@ -156,10 +156,10 @@
     ]
   },
   "refusals": [
-    { "where": "Envelope", "note": "checked in this order", "codes": ["envelope-field-unknown", "kind-empty", "observer-not-typed", "emitted-not-rfc3339", "occurred-not-span", "about-not-typed", "prev-not-record-id", "under-not-record-id", "erases-not-record-id"] },
+    { "where": "Envelope", "note": "checked in this order", "codes": ["envelope-field-unknown", "kind-empty", "observer-not-typed", "emitted-not-rfc3339", "occurred-not-span", "about-not-typed", "of-not-typed", "prev-not-record-id", "under-not-record-id", "erases-not-record-id", "of-missing"] },
     { "where": "Text", "note": "after an unknown envelope field, before every other check: a string or member name holding a lone surrogate", "codes": ["string-not-unicode"] },
     { "where": "Writing", "note": "after the envelope; number magnitudes must be at most 2^53 - 1, whole or not, and a number past binary64's range is out of range", "codes": ["salt-not-16-bytes", "member-duplicate", "number-out-of-range"] },
-    { "where": "Batch", "note": "shape, then labels, then writing, then prev-unknown, then prev-unrelated", "codes": ["envelope-field-unknown", "label-duplicate", "label-unknown", "label-cycle", "prev-unknown", "prev-unrelated"] },
+    { "where": "Batch", "note": "shape, then labels, then writing, then prev-unknown, then of-not-root, then prev-unrelated", "codes": ["envelope-field-unknown", "label-duplicate", "label-unknown", "label-cycle", "prev-unknown", "of-not-root", "prev-unrelated"] },
     { "where": "Spec", "note": "the grammar's check order", "codes": ["member-duplicate", "spec-not-object", "unknown-key", "vertex-missing", "vertex-invalid", "from-missing", "from-invalid", "fold-invalid", "fold-type", "follow-missing", "follow-invalid", "limit-invalid", "fold-argument", "where-invalid"] },
     { "where": "Lens", "note": "the base, before the text is read", "codes": ["base-id-duplicate"] },
     { "where": "Not pinned yet", "note": "named in the laws, no vector", "pinned": false, "codes": ["prev-not-permitted", "sum-overflow"] }

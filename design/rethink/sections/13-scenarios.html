@@ -281,13 +281,14 @@
         <tr><td>Files on disk</td><td><span class="pill p-lean">noted</span></td><td>25 records made 20 segment files. Recall's volume will make that hurt first.</td></tr>
       </tbody>
     </table></div>
+    <p>The three breaks are decision D8 in the roadmap. D8a and D8b are built in the model, the vectors, JavaScript and Rust. A record is an emit of one thing, the one <code>of</code> names, or its own id; <code>about</code> only mentions and never makes a head. A task about its plan, a record about another task, and a closing record about the ids it covers no longer head those things. D8c, declared keys, is not built. The table records the run as it was.</p>
   </div></details>
 
   <details class="unfold"><summary>What it needs that doesn't exist</summary><div class="body">
     <ul>
       <li><b>Ticks, and a runner for boundaries.</b> The spec grammar carries <code>boundary</code>, <code>ticks</code>, <code>param</code> and <code>into</code>, and nothing reads them. The tick itself waits on D7, the result encoding, which now blocks this as well as retiring.</li>
       <li><b>Something that acts when a boundary fires.</b> The earlier prototype's boundary could carry a command to run, which is what made its cascades start work by themselves. Here a boundary says when a vertex ticks, and "a vertex never signs anything; the observer who ran it signs". So starting a session is an observer's act, and which observer watches which vertex is not designed.</li>
-      <li><b>Where a question or a note about a task goes.</b> Covers handle "belongs to" for work. A record that is only <i>about</i> a task still competes to be its state.</li>
+      <li><b>Where a question or a note about a task goes.</b> Covers handle "belongs to" for work. A record that is only <i>about</i> a task no longer competes to be its state (D8b), and a fold that asks what was said about the task still finds it.</li>
       <li><b>Delegation, for strict stores.</b> In an open store an assignment is just context. In a store that admits only granted writers, the orchestrator's grant must let it sponsor sessions, and authority must only narrow on the way down.</li>
       <li><b>Covers across stores.</b> Preferences, tasks, recall and the repo are likely separate stores. A reader without one of them gets "unknown" for that branch.</li>
       <li><b>Who signs recall's capture.</b> Signed by recall, a transcript is recall's claim about a session. Signed by the session, it is the session's own word.</li>

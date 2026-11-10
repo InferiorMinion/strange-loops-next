@@ -12,13 +12,13 @@
     {
       "name": "emit",
       "title": "Emit",
-      "text": "Ada emits a <code>decision</code> about <code>decision:auth</code>. It is checked, signed and appended: the store holds one record, and the thing has one head.",
+      "text": "Ada emits a <code>decision</code> of <code>decision:auth</code>. It is checked, signed and appended: the store holds one record, and the thing has one head.",
       "laws": ["write.checked"]
     },
     {
       "name": "revise",
       "title": "Revise",
-      "text": "Ada revises it. B names A in <code>prev</code>, within the thing both are about. Nothing is edited: A is still there, superseded, and B is the head.",
+      "text": "Ada revises it. B names A in <code>prev</code> and states the same <code>of</code>, so the revision stays within the thing. Nothing is edited: A is still there, superseded, and B is the head.",
       "laws": ["admit.no-cross"]
     },
     {

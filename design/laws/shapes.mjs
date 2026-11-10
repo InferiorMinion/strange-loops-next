@@ -102,7 +102,7 @@ const cap = (x, y, text, cls = "") =>
 const mv = (m, at, extra = "") => ` data-m="${m}" data-at="${n(at)}"${extra}`;
 
 // A record: a lettered square, as on the grammar page. `mod` is held (default), withheld
-// (dashed: its payload not held), other (faint: about another thing) or tall (doesn't fit).
+// (dashed: its payload not held), other (faint: of another thing) or tall (doesn't fit).
 function rec(x, y, label, { mod = "", w = R, h = R, m = "" } = {}) {
   return `<g class="sg-rec${mod ? " is-" + mod : ""}"${m}><rect x="${n(x)}" y="${n(y)}" width="${n(w)}" height="${n(h)}" rx="5"/>` +
     `<text x="${n(x + w / 2)}" y="${n(y + h / 2 + 4.5)}" text-anchor="middle">${esc(label)}</text></g>`;
@@ -163,7 +163,7 @@ const LANE_RECS = {
 };
 export const laneKind = (change) => (LANES.find(([re]) => re.test(plain(change))) ?? [null, "forms"])[1];
 
-// A generic lane's letters as items: "B?" is withheld, X and Y are about other things, "|" a cut.
+// A generic lane's letters as items: "B?" is withheld, X and Y are of other things, "|" a cut.
 const item = (r) => (r === "|" ? { cut: true } : { k: r.replace("?", ""), mod: r.endsWith("?") ? "withheld" : /[XY]/.test(r) ? "other" : "" });
 const itemW = (it) => (it.cut ? 8 : it.t != null ? tokW({ t: it.t, code: it.code }, SIZE) + 6 : R + 6);
 const laneNeed = (items) => 8 + items.reduce((s, it) => s + itemW(it), 0) + 2;

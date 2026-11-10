@@ -22,7 +22,7 @@
 //   - the vocabulary, a subject list or `premises.exempt` names something no theorem takes.
 //
 // What it does NOT catch, and no build check here could:
-//   - what a hypothesis quantifies over. `stateIn_local` lets only the records not about t
+//   - what a hypothesis quantifies over. `stateIn_local` lets only the records not of t
 //     vary, and a sentence that says "other things" still passes; the premise is named, its
 //     scope is wording;
 //   - hypotheses that are not named predicates: membership, equations, `Perm`, `getLast?`.

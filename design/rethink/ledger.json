@@ -116,14 +116,14 @@
     "group": "Layer 0 · the record",
     "status": "settled",
     "claim": "A record erases through its envelope field <code>erases</code>; any kind may erase.",
-    "why": "<code>erases</code> is a set of record ids, refused unless each is one, and never a label. It sits on the envelope, so every reader applies it, whatever its grant. Targets in <code>about</code> were rejected: <code>about: [r:X]</code> already names the thing X anchors, which holds X's revisions too, and a kind would decide which reading applied. No kind is reserved for erasing, so the field carries the meaning by itself, and a revision can erase what it replaces: <code>prev: [r:X], erases: [r:X]</code>. Authority keys on the field. Version 35."
+    "why": "<code>erases</code> is a set of record ids, refused unless each is one, and never a label. It sits on the envelope, so every reader applies it, whatever its grant. Targets in <code>about</code> were rejected: a kind would decide which reading of <code>about</code> applied. No kind is reserved for erasing, so the field carries the meaning by itself, and a revision can erase what it replaces: <code>prev: [r:X], erases: [r:X]</code>. Authority keys on the field. Version 35."
   },
   {
     "kind": "decision",
     "group": "Layer 0 · the record",
     "status": "settled",
     "claim": "A field belongs on the envelope only if the core reads it.",
-    "why": "The envelope holds <code>kind</code>, <code>observer</code>, <code>emitted</code>, optional <code>occurred</code>, <code>about</code>, <code>prev</code>, <code>under</code> and <code>erases</code>. <code>derived-from</code>, <code>seen</code> and <code>refs</code> belong in payloads. Readers refuse unknown envelope fields."
+    "why": "The envelope holds <code>kind</code>, <code>observer</code>, <code>emitted</code>, optional <code>occurred</code>, <code>about</code>, <code>of</code>, <code>prev</code>, <code>under</code> and <code>erases</code>. <code>derived-from</code>, <code>seen</code> and <code>refs</code> belong in payloads. Readers refuse unknown envelope fields."
   },
   {
     "kind": "decision",
@@ -172,7 +172,7 @@
     "group": "Observers and standing",
     "status": "settled",
     "claim": "A label may stand in <code>under</code>.",
-    "why": "A changeset can create grant <code>@g</code> and act under it. <code>under</code> accepts labels, like <code>about</code> and <code>prev</code>, and participates in cycle detection. Historical standing plan: it names a grant held in the batch or store. Future standing checks decide whether that grant authorizes the act. A label grants no extra authority. Version 35."
+    "why": "A changeset can create grant <code>@g</code> and act under it. <code>under</code> accepts labels, like <code>about</code>, <code>of</code> and <code>prev</code>, and participates in cycle detection. Historical standing plan: it names a grant held in the batch or store. Future standing checks decide whether that grant authorizes the act. A label grants no extra authority. Version 35."
   },
   {
     "kind": "decision",
@@ -185,22 +185,36 @@
     "kind": "decision",
     "group": "Things",
     "status": "settled",
-    "claim": "Identity lives in the record, in <code>about</code>.",
-    "why": "A thing uses an anchor record id or a typed natural key computed by tooling, such as a URL or code birth key. The core compares those references. Observers and stores use proposed reserved <code>*-anchor</code> kinds. A vertex instead hashes its canonical spec and parameters; it has no anchor or standing. Proposed equivalence, provenance and succession remain separate; <code>resolve-by</code> joins identities at read. Unknown names follow the planned store maturity rules."
+    "claim": "D8a: A record is an emit of one thing, named in its envelope by <code>of</code>.",
+    "why": "<code>of</code> is one typed reference, a record id or a natural key, read as written and never resolved through another record. Only a root leaves it out; a record with <code>prev</code> states it (<code>of-missing</code>). <code>latest-by</code>, per-thing state and heads run over it, and every <code>prev</code> target is of the same thing. A writer refuses an <code>of</code> naming a held record that is not a root (<code>of-not-root</code>). A record without <code>of</code> keeps its bytes and id. Kyle, 2026-11-10; built in the model, the vectors, JavaScript and Rust. The refusal names and their order are an implementer's choice, not yet confirmed."
   },
   {
     "kind": "decision",
     "group": "Things",
     "status": "settled",
-    "claim": "A facet is one kind about one thing, emitted whole.",
-    "why": "Current state is LatestBy per thing; <code>from</code> then chooses kinds. <code>prev</code> is a set, so forks retain several heads. Links are new records, never edits to <code>about</code>. A record about several things belongs to each, but a successor may replace it within only some. A record about nothing anchors its own thing by id. Its revision names that id in <code>about</code>, so unrelated empty-about records never fork each other. Version 35."
+    "claim": "D8b: <code>about</code> only mentions; it never makes a head.",
+    "why": "<code>where</code> and <code>collect</code> still read it, so everything said about a thing stays a fold. <code>from.about</code> is a mention test and <code>from.of</code> takes a thing's records. A link is a thing whose <code>about</code> names both ends. Kyle, 2026-11-10; built with D8a. D8c, keys a record declares it sets, is ruled and not built."
+  },
+  {
+    "kind": "decision",
+    "group": "Things",
+    "status": "settled",
+    "claim": "Identity lives in the record, in <code>of</code>.",
+    "why": "A thing uses a root record id or a typed natural key computed by tooling, such as a URL or code birth key. The core compares those references. Observers and stores use proposed reserved <code>*-anchor</code> kinds. A vertex instead hashes its canonical spec and parameters; it has no anchor or standing. Proposed equivalence, provenance and succession remain separate; <code>resolve-by</code> joins identities at read. Unknown names follow the planned store maturity rules."
+  },
+  {
+    "kind": "decision",
+    "group": "Things",
+    "status": "settled",
+    "claim": "A facet is one kind of one thing, emitted whole.",
+    "why": "Current state is LatestBy per thing; <code>from</code> then chooses kinds. <code>prev</code> is a set, so forks retain several heads. Links are new records, never edits to <code>about</code>. A record is of exactly one thing: the one <code>of</code> names, or without <code>of</code> its own id. A root, with no <code>of</code> and no <code>prev</code>, starts a thing named by its id; its revision states that id in <code>of</code>, so unrelated roots never fork each other. Version 35; restated by D8a."
   },
   {
     "kind": "decision",
     "group": "Things",
     "status": "settled",
     "claim": "<code>prev</code> is succession within a thing.",
-    "why": "Within a fixed admitted set, succession affects only shared things. Writers refuse unheld <code>prev</code> targets outside the batch (<code>prev-unknown</code>) and unrelated targets (<code>prev-unrelated</code>). Readers reject held unrelated targets, but admit unknown targets because they cannot judge them. Planned moving or narrowing uses explicit <code>retire</code> records. Replacement rules read only envelopes; future standing supplies authority. Version 34."
+    "why": "Within a fixed admitted set, succession affects only its own thing. Writers refuse unheld <code>prev</code> targets outside the batch (<code>prev-unknown</code>), an <code>of</code> naming a held record that is not a root (<code>of-not-root</code>), and targets of another thing (<code>prev-unrelated</code>). Readers reject held targets of another thing, but admit unknown targets because they cannot judge them. Planned moving or narrowing uses explicit <code>retire</code> records. Replacement rules read only envelopes; future standing supplies authority. Version 34; restated by D8a."
   },
   {
     "kind": "decision",
@@ -235,14 +249,14 @@
     "group": "Meaning · vertices and stores",
     "status": "settled",
     "claim": "<code>where</code> can test any envelope field, named explicitly.",
-    "why": "Envelope tests use <code>env.kind</code>, <code>env.observer</code>, <code>env.emitted</code>, <code>env.occurred</code>, <code>env.about</code>, <code>env.prev</code>, <code>env.under</code> and <code>env.erases</code>. Bare names identify payload fields. Unknown <code>env.</code> names are refused. Arguments must fit their fields: typed references, record ids, times, or supported payload scalars. Numeric tests require safe whole values after binary64 ingestion. Numeric complement laws additionally require a numeric bound. Missing and nonwhole values need not pass either bound. Time equality compares spans, not spelling; time bounds compare starts. Envelope tests select after supersession. A record without <code>occurred</code> passes neither time bound. The future window plan instead uses its <code>emitted</code>. Windows include starts at their lower bound and exclude starts at their upper bound. The supersession policy within windows remains open. Filtering before supersession could revive replaced records. Whole-span bounds were rejected: January ends before its year despite their equal starts. Observer tests use lineage ids until name tables arrive. Specs refuse repeated keys and empty <code>where</code> maps. Latest-by explicitly requires <code>\"follow\": \"prev\"</code>. Version 35."
+    "why": "Envelope tests use <code>env.kind</code>, <code>env.observer</code>, <code>env.emitted</code>, <code>env.occurred</code>, <code>env.about</code>, <code>env.of</code>, <code>env.prev</code>, <code>env.under</code> and <code>env.erases</code>. Bare names identify payload fields. Unknown <code>env.</code> names are refused. Arguments must fit their fields: typed references, record ids, times, or supported payload scalars. Numeric tests require safe whole values after binary64 ingestion. Numeric complement laws additionally require a numeric bound. Missing and nonwhole values need not pass either bound. Time equality compares spans, not spelling; time bounds compare starts. Envelope tests select after supersession. A record without <code>occurred</code> passes neither time bound. The future window plan instead uses its <code>emitted</code>. Windows include starts at their lower bound and exclude starts at their upper bound. The supersession policy within windows remains open. Filtering before supersession could revive replaced records. Whole-span bounds were rejected: January ends before its year despite their equal starts. Observer tests use lineage ids until name tables arrive. Specs refuse repeated keys and empty <code>where</code> maps. Latest-by explicitly requires <code>\"follow\": \"prev\"</code>. Version 35."
   },
   {
     "kind": "decision",
     "group": "Meaning · vertices and stores",
     "status": "settled",
     "claim": "<code>unread</code> counts what couldn't be read.",
-    "why": "A covered record is unread when its payload test is unknown or its selected numeric fold cannot read a safe whole field. Count each id once per slot, including records that head several things. Collect counts unknown candidates before its limit. Full-result equality needs answering tests and fold-readable covered records. Historical version 35 counted only uncertainty affecting the limit and overclaimed <code>unread: 0</code>. PR 13 removed those claims. A stronger limit-sensitive guarantee remains future work, not a current theorem."
+    "why": "A covered record is unread when its payload test is unknown or its selected numeric fold cannot read a safe whole field. Count each id once per slot. Collect counts unknown candidates before its limit. Full-result equality needs answering tests and fold-readable covered records. Historical version 35 counted only uncertainty affecting the limit and overclaimed <code>unread: 0</code>. PR 13 removed those claims. A stronger limit-sensitive guarantee remains future work, not a current theorem."
   },
   {
     "kind": "decision",
