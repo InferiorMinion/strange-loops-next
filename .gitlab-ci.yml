@@ -2,32 +2,82 @@
 #
 # strange-loops-next is primary on GitLab from 2026-11-08, so merge requests are
 # checked here. Keep the two files in step: a gate added to one belongs in the other.
+# GitLab runs the same gates with two economies GitHub does not have: the model
+# mutants run only when their inputs change (model-mutants below), and the model
+# gate runs in a prebuilt image (ci/Dockerfile) instead of installing toolchains.
 #
 # Every job is tagged `homelab` (the Docker executor). The instance's other runner,
 # osxcompute-primary, is a macOS shell executor that also takes untagged jobs and
 # ignores `image:`, so an untagged job could run there without its toolchain.
 
+# What the CI image is built from. A pipeline whose changes touch these builds
+# the image first; on a branch it is tagged with the branch, so a merge request
+# never replaces the image main uses.
+.image-inputs: &image-inputs
+  - ci/Dockerfile
+  - model/lean-toolchain
+
 workflow:
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes: *image-inputs
+      variables:
+        CI_IMAGE: $CI_REGISTRY_IMAGE/ci:$CI_COMMIT_REF_SLUG
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     - if: $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS
       when: never
+    # Only main writes the caches; every other pipeline reads them.
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      variables:
+        CACHE_POLICY: pull-push
     - if: $CI_COMMIT_BRANCH
+      changes: *image-inputs
+      variables:
+        CI_IMAGE: $CI_REGISTRY_IMAGE/ci:$CI_COMMIT_REF_SLUG
+    - if: $CI_COMMIT_BRANCH
+
+variables:
+  CI_IMAGE: $CI_REGISTRY_IMAGE/ci:main
+  CACHE_POLICY: pull
 
 default:
   tags: [homelab]
   interruptible: true
 
-stages: [check]
+stages: [image, check]
+
+# Kaniko builds without a Docker daemon or a privileged container.
+ci-image:
+  stage: image
+  image:
+    name: gcr.io/kaniko-project/executor:v1.23.2-debug
+    entrypoint: [""]
+  rules:
+    - changes: *image-inputs
+  script:
+    - >-
+      printf '{"auths":{"%s":{"auth":"%s"}}}' "$CI_REGISTRY"
+      "$(printf '%s:%s' "$CI_REGISTRY_USER" "$CI_REGISTRY_PASSWORD" | base64 | tr -d '\n')"
+      > /kaniko/.docker/config.json
+    - >-
+      /kaniko/executor
+      --context "$CI_PROJECT_DIR/ci"
+      --dockerfile "$CI_PROJECT_DIR/ci/Dockerfile"
+      --build-arg "LEAN_TOOLCHAIN=$(cat model/lean-toolchain)"
+      --destination "$CI_IMAGE"
+      --snapshot-mode=redo
+      --compressed-caching=false
 
 rust:
   stage: check
+  needs: []
   image: rust:1-bookworm
   variables:
     CARGO_HOME: $CI_PROJECT_DIR/.cargo-home
   cache:
     key: rust
     paths: [.cargo-home/registry, rust/target]
+    policy: $CACHE_POLICY
   before_script:
     - rustup component add rustfmt clippy
     - export PATH="$CARGO_HOME/bin:$PATH"
@@ -39,22 +89,20 @@ rust:
     - cargo doc --workspace --no-deps
     - cargo build -p loops-eval --bin loops-eval
 
-model:
+# The model jobs wait for the image stage, so a pipeline that rebuilds the
+# image runs them in the image it built.
+.model:
   stage: check
-  image: node:22-bookworm
-  variables:
-    ELAN_HOME: $CI_PROJECT_DIR/.elan
-    RUSTUP_HOME: $CI_PROJECT_DIR/.rustup
-    CARGO_HOME: $CI_PROJECT_DIR/.cargo-home
+  image: $CI_IMAGE
   cache:
     key:
-      prefix: model
+      prefix: model-lake
       files: [model/lean-toolchain]
-    paths: [.elan, .rustup, .cargo-home, model/.lake]
-  before_script:
-    - curl -sSfL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --no-modify-path --default-toolchain none
-    - curl -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path --profile minimal
-    - export PATH="$ELAN_HOME/bin:$CARGO_HOME/bin:$PATH"
+    paths: [model/.lake]
+    policy: $CACHE_POLICY
+
+model:
+  extends: .model
   script:
     # Proofs check
     - (cd model && lake build --wfail)
@@ -66,8 +114,6 @@ model:
     - (cd model && lake exe run --check ../vectors)
     # Runtime checks
     - (cd model && lake exe checks ..)
-    # Model mutants
-    - (cd model && node mutants.mjs)
     # Fuzz adapters and batch transport check
     - timeout 60 node --test interop/fuzz/*.test.mjs
     # Rust input-only evaluator for three-way fuzz
@@ -88,8 +134,33 @@ model:
     paths: [loops-fuzz/]
     expire_in: 1 week
 
+# Model mutants. mutants.mjs copies model/ (sources, lakefile, toolchain and the
+# mutate/mutants.json catalogue it draws guard mutants from), builds the checks
+# executable there, and runs it against the checkout, which reads only
+# vectors/standard/es6-numbers.txt. Nothing else can change its outcome, so it
+# runs when one of those, the image or this file changes. In a merge request
+# pipeline the comparison is with the target branch; on a branch push, with the
+# previous push; a web, scheduled or new-branch pipeline always runs it.
+model-mutants:
+  extends: .model
+  cache:
+    key:
+      prefix: model-lake
+      files: [model/lean-toolchain]
+    paths: [model/.lake]
+    policy: pull
+  rules:
+    - changes:
+        - model/**/*
+        - vectors/standard/es6-numbers.txt
+        - ci/Dockerfile
+        - .gitlab-ci.yml
+  script:
+    - (cd model && node mutants.mjs)
+
 interop:
   stage: check
+  needs: []
   image: node:22-bookworm
   script:
     # The JS implementation agrees on every vector
@@ -99,6 +170,7 @@ interop:
 
 design:
   stage: check
+  needs: []
   image: node:22-bookworm
   script:
     # The design pages are a pure render of design/, protocol/ and vectors/
