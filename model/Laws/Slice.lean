@@ -7,12 +7,12 @@ A reader holding everything settles, admits, then reads a thing. A reader
 holding part of the set gets the same state for that thing when its part
 holds three kinds of record (`Slice`):
 
-* every form of the records about the thing;
+* every form of the records of the thing;
 * every record whose `erases` names one of them;
 * every record one of them names in `prev`.
 
 Settling a record reads its own forms and the `erases` of others. Admitting it
-reads the things of its held `prev` targets. A thing's state reads only its
+reads the thing of each held `prev` target. A thing's state reads only its
 admitted records. Each step looks one hop out, so one hop is enough
 (`stateIn_slice`). The second and third kinds matter only through their
 envelopes: the proof never reads their payloads.
@@ -27,20 +27,21 @@ open List
 /-- What a part `S` of the held records `W` must hold to answer for thing `t`. -/
 structure Slice (t : String) (S W : List Record) : Prop where
   sub : ∀ r ∈ S, r ∈ W
-  members : ∀ r ∈ W, r.isAbout t = true → r ∈ S
-  erasers : ∀ r ∈ W, r.isAbout t = true → ∀ e ∈ W, e.erases.contains r.id = true → e ∈ S
-  targets : ∀ r ∈ W, r.isAbout t = true → ∀ q ∈ W, q.id ∈ r.prev → q ∈ S
+  members : ∀ r ∈ W, r.isOf t = true → r ∈ S
+  erasers : ∀ r ∈ W, r.isOf t = true → ∀ e ∈ W, e.erases.contains r.id = true → e ∈ S
+  targets : ∀ r ∈ W, r.isOf t = true → ∀ q ∈ W, q.id ∈ r.prev → q ∈ S
 
-theorem things_env {a b : Record} (h : SameEnvelope a b) : a.things = b.things := by
-  simp [Record.things, h.about, h.id]
+/-- A record's thing is a fact of its envelope. -/
+theorem thing_env {a b : Record} (h : SameEnvelope a b) : a.thing = b.thing := by
+  simp [Record.thing, h.of, h.id]
 
-theorem isAbout_env {a b : Record} (h : SameEnvelope a b) (t : String) :
-    a.isAbout t = b.isAbout t := by
-  simp [Record.isAbout, things_env h]
+theorem isOf_env {a b : Record} (h : SameEnvelope a b) (t : String) :
+    a.isOf t = b.isOf t := by
+  simp [Record.isOf, thing_env h]
 
 theorem shares_env {a a' b b' : Record} (ha : SameEnvelope a a') (hb : SameEnvelope b b') :
     shares a b = shares a' b' := by
-  simp [shares, things_env ha, things_env hb]
+  simp [shares, thing_env ha, thing_env hb]
 
 /-- The record kept for an id has the envelope of one of its forms. -/
 theorem pick_form {xs : List Record} {i : RecordId} {r : Record} (h : pick xs i = some r) :
@@ -72,9 +73,9 @@ theorem pick_some {xs : List Record} {a : Record} (ha : a ∈ xs) : ∃ r, pick 
   obtain ⟨b, hb⟩ := baseForm_some (mem_filter.2 ⟨ha, by simp⟩ : a ∈ xs.filter (·.id == a.id))
   exact ⟨if erasedIn xs a.id then b.erase else b, by simp only [pick, hb, Option.map_some]⟩
 
-/-- A slice keeps, for each record about the thing, what the whole keeps. -/
+/-- A slice keeps, for each record of the thing, what the whole keeps. -/
 theorem pick_slice {t : String} {S W : List Record} (hF : Forms W) (h : Slice t S W)
-    {a : Record} (ha : a ∈ W) (hat : a.isAbout t = true) : pick S a.id = pick W a.id := by
+    {a : Record} (ha : a ∈ W) (hat : a.isOf t = true) : pick S a.id = pick W a.id := by
   unfold pick
   have hforms : ∀ r, r ∈ S.filter (·.id == a.id) ↔ r ∈ W.filter (·.id == a.id) := fun r => by
     simp only [mem_filter]
@@ -82,7 +83,7 @@ theorem pick_slice {t : String} {S W : List Record} (hF : Forms W) (h : Slice t 
     · exact fun ⟨hr, e⟩ => ⟨h.sub r hr, e⟩
     · rintro ⟨hr, e⟩
       have e' : r.id = a.id := by simpa using e
-      exact ⟨h.members r hr (by rw [isAbout_env (hF r hr a ha e').1]; exact hat), e⟩
+      exact ⟨h.members r hr (by rw [isOf_env (hF r hr a ha e').1]; exact hat), e⟩
   have hFS : Forms (S.filter (·.id == a.id)) := fun x hx y hy e =>
     hF x (h.sub x (mem_filter.1 hx).1) y (h.sub y (mem_filter.1 hy).1) e
   have he : erasedIn S a.id = erasedIn W a.id := by
@@ -92,21 +93,21 @@ theorem pick_slice {t : String} {S W : List Record} (hF : Forms W) (h : Slice t 
     exact ⟨fun ⟨e, he, p⟩ => ⟨e, h.sub e he, p⟩, fun ⟨e, he, p⟩ => ⟨e, h.erasers a ha hat e he p, p⟩⟩
   rw [baseForm_eq hFS (fun x hx => by simpa using (mem_filter.1 hx).2) hforms, he]
 
-/-- The records about the thing settle the same in the slice and in the whole. -/
+/-- The records of the thing settle the same in the slice and in the whole. -/
 theorem settle_slice {t : String} {S W : List Record} (hF : Forms W) (h : Slice t S W)
-    {r : Record} (ht : r.isAbout t = true) : r ∈ settle S ↔ r ∈ settle W := by
+    {r : Record} (ht : r.isOf t = true) : r ∈ settle S ↔ r ∈ settle W := by
   constructor
   · intro hr
     obtain ⟨i, -, hp⟩ := mem_filterMap.1 hr
     obtain ⟨a, ha, hai, hra⟩ := pick_form hp
-    have hat : a.isAbout t = true := by rw [← isAbout_env hra]; exact ht
+    have hat : a.isOf t = true := by rw [← isOf_env hra]; exact ht
     have haW := h.sub a ha
     subst hai
     exact mem_filterMap.2 ⟨a.id, mem_idsOf.2 ⟨a, haW, rfl⟩, by rw [← pick_slice hF h haW hat]; exact hp⟩
   · intro hr
     obtain ⟨i, -, hp⟩ := mem_filterMap.1 hr
     obtain ⟨a, haW, hai, hra⟩ := pick_form hp
-    have hat : a.isAbout t = true := by rw [← isAbout_env hra]; exact ht
+    have hat : a.isOf t = true := by rw [← isOf_env hra]; exact ht
     subst hai
     exact mem_filterMap.2 ⟨a.id, mem_idsOf.2 ⟨a, h.members a haW hat, rfl⟩,
       by rw [pick_slice hF h haW hat]; exact hp⟩
@@ -122,13 +123,13 @@ theorem settle_slice_env {t : String} {S W : List Record} (hF : Forms W) (h : Sl
   have hbb : b.id = b'.id := by rw [← hqb.id, ← hqb'.id]; exact e
   exact hqb.trans ((hF b hb b' (h.sub b' hb') hbb).1.trans hqb'.symm)
 
-/-- A record about the thing is entitled in the slice exactly when it is in the whole. -/
+/-- A record of the thing is entitled in the slice exactly when it is in the whole. -/
 theorem entitled_slice {may : Record → Record → Bool} (hm : EnvOnly may) {t : String}
     {S W : List Record} (hF : Forms W) (h : Slice t S W) {r : Record} (hr : r ∈ settle W)
-    (ht : r.isAbout t = true) : entitled may (settle S) r = entitled may (settle W) r := by
+    (ht : r.isOf t = true) : entitled may (settle S) r = entitled may (settle W) r := by
   obtain ⟨i, -, hp⟩ := mem_filterMap.1 hr
   obtain ⟨a, haW, -, hra⟩ := pick_form hp
-  have hat : a.isAbout t = true := by rw [← isAbout_env hra]; exact ht
+  have hat : a.isOf t = true := by rw [← isOf_env hra]; exact ht
   unfold entitled
   apply Bool.eq_iff_iff.2
   simp only [all_eq_true]
@@ -180,20 +181,20 @@ theorem stateIn_slice {may : Record → Record → Bool} (hm : EnvOnly may) {t :
 
 /-! ## Neither addition can be dropped
 
-`sl.x` is about `k1`. `sl.e`, about `k2`, erases it. `sl.s`, about `k1`, names
-`sl.p` in `prev`, and `sl.p` is about `k2`. A part holding only the records
-about `k1` reads `x` as here and admits `s`. A reader holding everything reads
+`sl.x` is of `k1`. `sl.e`, of `k2`, erases it. `sl.s`, of `k1`, names
+`sl.p` in `prev`, and `sl.p` is of `k2`. A part holding only the records
+of `k1` reads `x` as here and admits `s`. A reader holding everything reads
 `x` as erased and refuses `s`. -/
 
 def sl.x : Record :=
-  { id := 1, kind := "task", observer := "sl:x", about := ["k1"], value := "v", prev := [], emitted := default }
+  { id := 1, kind := "task", observer := "sl:x", of := some "k1", value := "v", prev := [], emitted := default }
 def sl.e : Record :=
-  { id := 2, kind := "note", observer := "sl:x", about := ["k2"], value := "", prev := [], emitted := default,
+  { id := 2, kind := "note", observer := "sl:x", of := some "k2", value := "", prev := [], emitted := default,
     erases := [1] }
 def sl.s : Record :=
-  { id := 4, kind := "task", observer := "sl:x", about := ["k1"], value := "", prev := [3], emitted := default }
+  { id := 4, kind := "task", observer := "sl:x", of := some "k1", value := "", prev := [3], emitted := default }
 def sl.p : Record :=
-  { id := 3, kind := "task", observer := "sl:x", about := ["k2"], value := "", prev := [], emitted := default }
+  { id := 3, kind := "task", observer := "sl:x", of := some "k2", value := "", prev := [], emitted := default }
 
 /-- Without the eraser, the part reads a payload the whole has erased. -/
 theorem slice_needs_erasers :

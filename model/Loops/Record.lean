@@ -35,8 +35,10 @@ structure Record where
   kind     : String
   /-- Who says so. -/
   observer : String
-  /-- The things this record is about: a set. -/
+  /-- The things this record mentions: a set. -/
   about    : List String := []
+  /-- The one thing this record is an emit of, if it says. -/
+  of       : Option String := none
   value    : String
   prev     : List RecordId
   /-- The grant this record acts on, if any. -/
@@ -87,6 +89,7 @@ structure SameEnvelope (a b : Record) : Prop where
   kind : a.kind = b.kind
   observer : a.observer = b.observer
   about : a.about = b.about
+  of : a.of = b.of
   prev : a.prev = b.prev
   under : a.under = b.under
   occurred : a.occurred = b.occurred

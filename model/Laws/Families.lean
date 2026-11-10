@@ -182,23 +182,23 @@ theorem View.addressed {f : Record → Record} (hf : View f) {xs : List Record}
   rw [(hf.envelope a).id, (hf.envelope b).id] at e
   rw [hx a ha b hb e]
 
-theorem SameEnvelope.refl (r : Record) : SameEnvelope r r := ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩
+theorem SameEnvelope.refl (r : Record) : SameEnvelope r r := ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩
 
 theorem SameEnvelope.symm {a b : Record} (h : SameEnvelope a b) : SameEnvelope b a :=
-  ⟨h.id.symm, h.kind.symm, h.observer.symm, h.about.symm, h.prev.symm, h.under.symm, h.occurred.symm,
+  ⟨h.id.symm, h.kind.symm, h.observer.symm, h.about.symm, h.of.symm, h.prev.symm, h.under.symm, h.occurred.symm,
     h.emitted.symm, h.erases.symm⟩
 
 theorem SameEnvelope.trans {a b c : Record} (h : SameEnvelope a b) (h' : SameEnvelope b c) :
     SameEnvelope a c :=
-  ⟨h.id.trans h'.id, h.kind.trans h'.kind, h.observer.trans h'.observer, h.about.trans h'.about,
+  ⟨h.id.trans h'.id, h.kind.trans h'.kind, h.observer.trans h'.observer, h.about.trans h'.about, h.of.trans h'.of,
     h.prev.trans h'.prev, h.under.trans h'.under, h.occurred.trans h'.occurred, h.emitted.trans h'.emitted,
     h.erases.trans h'.erases⟩
 
 theorem withhold_envelope (r : Record) : SameEnvelope r.withhold r :=
-  ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩
+  ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩
 
 theorem erase_envelope (r : Record) : SameEnvelope r.erase r :=
-  ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩
+  ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩
 
 theorem withholding_view (p : Record → Bool) : View (withholding p) where
   envelope r := by
@@ -231,16 +231,21 @@ theorem LatestBy.winner_newer {xs : List Record} (hx : Addressed xs) {w : Record
     rw [List.pairwise_cons] at hsort
     exact ⟨(inv.heads_mem h).1 (by simp [hh]), fun o ho => hsort.1 o (by simpa using ho)⟩
 
-/-- A view folds to the same `prev` bookkeeping and the same heads, with their
-payloads hidden as the view hides them. -/
-theorem LatestBy.view {f : Record → Record} (hf : View f) {xs : List Record}
-    (hx : Addressed xs) :
+/-- A map that keeps each record's id, its `prev` and its place in content
+order folds to the same `prev` bookkeeping and the same heads, each mapped. -/
+theorem LatestBy.map_fold {f : Record → Record} (id_eq : ∀ r, (f r).id = r.id)
+    (prev_eq : ∀ r, (f r).prev = r.prev) (newer : ∀ a b, Newer (f a) (f b) ↔ Newer a b)
+    {xs : List Record} (hx : Addressed xs) :
     LatestBy.fold .empty (xs.map f) =
       ⟨(LatestBy.fold .empty xs).named, (LatestBy.fold .empty xs).heads.map f⟩ := by
   have hs := LatestBy.inv_of hx
-  have ht := LatestBy.inv_of (hf.addressed hx)
-  have prev_eq : ∀ r, (f r).prev = r.prev := fun r => (hf.envelope r).prev
-  have id_eq : ∀ r, (f r).id = r.id := fun r => (hf.envelope r).id
+  have hfx : Addressed (xs.map f) := by
+    intro a' ha' b' hb' e
+    obtain ⟨a, ha, rfl⟩ := mem_map.1 ha'
+    obtain ⟨b, hb, rfl⟩ := mem_map.1 hb'
+    rw [id_eq, id_eq] at e
+    rw [hx a ha b hb e]
+  have ht := LatestBy.inv_of hfx
   refine LatestBy.inv_ext ht ⟨hs.named_sorted, ?_, ?_, ?_⟩ fun _ => Iff.rfl
   · intro n
     rw [hs.named_mem]
@@ -248,7 +253,7 @@ theorem LatestBy.view {f : Record → Record} (hf : View f) {xs : List Record}
     constructor
     · rintro ⟨r, hr, hn⟩; exact ⟨f r, ⟨r, hr, rfl⟩, by rw [prev_eq]; exact hn⟩
     · rintro ⟨_, ⟨r, hr, rfl⟩, hn⟩; exact ⟨r, hr, by rw [← prev_eq]; exact hn⟩
-  · exact pairwise_map.2 (hs.heads_sorted.imp fun h => hf.newer.2 h)
+  · exact pairwise_map.2 (hs.heads_sorted.imp fun h => (newer _ _).2 h)
   · intro h
     simp only [mem_map]
     constructor
@@ -262,6 +267,15 @@ theorem LatestBy.view {f : Record → Record} (hf : View f) {xs : List Record}
       refine ⟨g, (hs.heads_mem g).2 ⟨hgx, ?_⟩, rfl⟩
       rintro ⟨q, hq, hq'⟩
       exact hn ⟨f q, ⟨q, hq, rfl⟩, by rw [prev_eq, id_eq]; exact hq'⟩
+
+/-- A view folds to the same `prev` bookkeeping and the same heads, with their
+payloads hidden as the view hides them. -/
+theorem LatestBy.view {f : Record → Record} (hf : View f) {xs : List Record}
+    (hx : Addressed xs) :
+    LatestBy.fold .empty (xs.map f) =
+      ⟨(LatestBy.fold .empty xs).named, (LatestBy.fold .empty xs).heads.map f⟩ :=
+  LatestBy.map_fold (fun r => (hf.envelope r).id) (fun r => (hf.envelope r).prev)
+    (fun _ _ => hf.newer) hx
 
 /-- Every view sees the same records as heads, whatever it can read of them. -/
 theorem LatestBy.view_head_ids {f : Record → Record} (hf : View f) {xs : List Record}

@@ -12,10 +12,15 @@ import Laws.Record
   kept, unless a record in the set names it in `erases`; then every form is
   erased (`settle_keeps`, `settle_erased`).
 * **Admission is a function of the set,** and an admitted record's `prev`
-  names only held records it shares a thing with and may replace
+  names only held records of its thing that it may replace
   (`admit_same`, `admit_no_cross`).
-* **A thing's state depends only on the records about it** (`stateIn_local`),
-  so the set decides per thing (`perThing_set_decides`).
+* **A record is of exactly one thing** (`isOf_unique`), so it heads at most
+  one (`heads_one_thing`); a held `prev` target of an admitted record is of
+  its thing (`admit_same_thing`).
+* **A thing's state depends only on the records of it** (`stateIn_local`),
+  so the set decides per thing (`perThing_set_decides`). `about` plays no
+  part: changing only what records mention leaves each thing's state as it
+  was (`stateIn_about`).
 * **Views keep supersession, per thing.** Admission reads only envelopes, so
   a view admits the same records; a thing's state under a view is the full
   reader's with payloads hidden (`admit_view`, `stateIn_view`).
@@ -47,10 +52,10 @@ theorem idsOf_ext {xs ys : List Record} (h : ∀ i, (∃ r ∈ xs, r.id = i) ↔
 /-! ## Settling -/
 
 theorem withhold_congr {a b : Record} (h : SameEnvelope a b) : a.withhold = b.withhold := by
-  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9⟩ := h
+  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, h10⟩ := h
   cases a; cases b
-  simp only at h1 h2 h3 h4 h5 h6 h7 h8 h9
-  subst h1 h2 h3 h4 h5 h6 h7 h8 h9
+  simp only at h1 h2 h3 h4 h5 h6 h7 h8 h9 h10
+  subst h1 h2 h3 h4 h5 h6 h7 h8 h9 h10
   rfl
 
 theorem baseForm_mem {forms : List Record} {r : Record} (h : baseForm forms = some r) :
@@ -189,8 +194,8 @@ theorem Distinct.filter {xs : List Record} (p : Record → Bool) (h : Distinct x
 theorem admit_distinct (may : Record → Record → Bool) {xs : List Record} (h : Distinct xs) :
     Distinct (admit may xs) := h.filter _
 
-/-- An admitted record's `prev` names only held records it shares a thing with
-and may replace. -/
+/-- An admitted record's `prev` names only held records of its thing that it
+may replace. -/
 theorem admit_no_cross {may : Record → Record → Bool} {xs : List Record} {r q : Record}
     (hr : r ∈ admit may xs) (hq : q ∈ xs) (hp : q.id ∈ r.prev) :
     shares r q = true ∧ may r q = true := by
@@ -198,6 +203,14 @@ theorem admit_no_cross {may : Record → Record → Bool} {xs : List Record} {r 
   simp only [entitled, all_eq_true] at this
   have := this q.id hp q hq
   simpa using this
+
+/-- An admitted record's held `prev` targets are of its thing: `prev` never
+crosses things. -/
+theorem admit_same_thing {may : Record → Record → Bool} {xs : List Record} {r q : Record}
+    (hr : r ∈ admit may xs) (hq : q ∈ xs) (hp : q.id ∈ r.prev) : q.thing = r.thing := by
+  have := (admit_no_cross hr hq hp).1
+  simp only [shares, beq_iff_eq] at this
+  exact this.symm
 
 /-- A record is refused exactly when it is not entitled to its `prev`. -/
 theorem refusalOf_none (may : Record → Record → Bool) (xs : List Record) (r : Record) :
@@ -217,8 +230,28 @@ theorem refusalOf_none (may : Record → Record → Bool) (xs : List Record) (r 
 
 /-! ## Per thing -/
 
+theorem isOf_iff {r : Record} {t : String} : r.isOf t = true ↔ r.thing = t := by
+  simp [Record.isOf]
+
+/-- A record is of exactly one thing. -/
+theorem isOf_unique {r : Record} {t u : String} (ht : r.isOf t = true) (hu : r.isOf u = true) :
+    t = u :=
+  (isOf_iff.1 ht).symm.trans (isOf_iff.1 hu)
+
+/-- A thing's heads are records of it. -/
+theorem stateIn_heads_thing {xs : List Record} (hx : Addressed xs) {t : String} {r : Record}
+    (h : r ∈ (stateIn t xs).heads) : r.thing = t := by
+  unfold stateIn at h
+  have hm := ((LatestBy.inv_of (fun a ha b hb => hx a (mem_filter.1 ha).1 b (mem_filter.1 hb).1)).heads_mem r).1 h
+  exact isOf_iff.1 (mem_filter.1 hm.1).2
+
+/-- So a record heads at most one thing. -/
+theorem heads_one_thing {xs : List Record} (hx : Addressed xs) {t u : String} {r : Record}
+    (ht : r ∈ (stateIn t xs).heads) (hu : r ∈ (stateIn u xs).heads) : t = u :=
+  (stateIn_heads_thing hx ht).symm.trans (stateIn_heads_thing hx hu)
+
 theorem stateIn_local {t : String} {xs ys : List Record} (hx : Addressed xs) (hy : Addressed ys)
-    (h : ∀ r, (r ∈ xs ∧ r.isAbout t = true) ↔ (r ∈ ys ∧ r.isAbout t = true)) :
+    (h : ∀ r, (r ∈ xs ∧ r.isOf t = true) ↔ (r ∈ ys ∧ r.isOf t = true)) :
     stateIn t xs = stateIn t ys := by
   unfold stateIn
   apply LatestBy.set_decides
@@ -230,7 +263,7 @@ theorem stateIn_local {t : String} {xs ys : List Record} (hx : Addressed xs) (hy
 
 theorem thingsOf_same {xs ys : List Record} (h : ∀ r, r ∈ xs ↔ r ∈ ys) :
     thingsOf xs = thingsOf ys :=
-  canonSet_eq fun s => by simp only [mem_flatMap, h]
+  canonSet_eq fun s => by simp only [mem_map, h]
 
 /-- The set decides, for every thing. -/
 theorem perThing_set_decides {xs ys : List Record} (hx : Addressed xs) (hy : Addressed ys)
@@ -239,18 +272,40 @@ theorem perThing_set_decides {xs ys : List Record} (hx : Addressed xs) (hy : Add
   rw [thingsOf_same h]
   exact map_congr_left fun t _ => by rw [stateIn_local hx hy fun r => by rw [h]]
 
+/-! ## `about` makes no head -/
+
+/-- Records with what they mention replaced. -/
+def mentioning (m : Record → List String) (r : Record) : Record := { r with about := m r }
+
+theorem thingsOf_about (m : Record → List String) (xs : List Record) :
+    thingsOf (xs.map (mentioning m)) = thingsOf xs := by
+  unfold thingsOf; congr 1; rw [map_map]; rfl
+
+/-- Changing only what records mention leaves every thing's state as it was:
+the same `prev` bookkeeping and the same heads, each with its new `about`. -/
+theorem stateIn_about (m : Record → List String) (t : String) {xs : List Record}
+    (hx : Addressed xs) :
+    stateIn t (xs.map (mentioning m)) =
+      ⟨(stateIn t xs).named, (stateIn t xs).heads.map (mentioning m)⟩ := by
+  unfold stateIn
+  have e : (xs.map (mentioning m)).filter (·.isOf t) = (xs.filter (·.isOf t)).map (mentioning m) := by
+    rw [filter_map]; rfl
+  rw [e]
+  exact LatestBy.map_fold (f := mentioning m) (fun _ => rfl) (fun _ => rfl) (fun _ _ => Iff.rfl)
+    fun a ha b hb => hx a (mem_filter.1 ha).1 b (mem_filter.1 hb).1
+
 /-! ## Views, per thing -/
 
-theorem things_view {f : Record → Record} (hf : View f) (r : Record) : (f r).things = r.things := by
-  simp [Record.things, (hf.envelope r).about, (hf.envelope r).id]
+theorem thing_view {f : Record → Record} (hf : View f) (r : Record) : (f r).thing = r.thing := by
+  simp [Record.thing, (hf.envelope r).of, (hf.envelope r).id]
 
-theorem isAbout_view {f : Record → Record} (hf : View f) (r : Record) (t : String) :
-    (f r).isAbout t = r.isAbout t := by
-  simp [Record.isAbout, things_view hf]
+theorem isOf_view {f : Record → Record} (hf : View f) (r : Record) (t : String) :
+    (f r).isOf t = r.isOf t := by
+  simp [Record.isOf, thing_view hf]
 
 theorem shares_view {f : Record → Record} (hf : View f) (a b : Record) :
     shares (f a) (f b) = shares a b := by
-  simp [shares, things_view hf]
+  simp [shares, thing_view hf]
 
 theorem entitled_view {f : Record → Record} (hf : View f) {may : Record → Record → Bool}
     (hm : EnvOnly may) (xs : List Record) (r : Record) :
@@ -280,30 +335,27 @@ theorem admit_view {f : Record → Record} (hf : View f) {may : Record → Recor
 theorem thingsOf_view {f : Record → Record} (hf : View f) (xs : List Record) :
     thingsOf (xs.map f) = thingsOf xs :=
   canonSet_eq fun s => by
-    simp only [mem_flatMap, mem_map]
-    constructor
-    · rintro ⟨_, ⟨a, ha, rfl⟩, hs⟩; exact ⟨a, ha, by rwa [things_view hf] at hs⟩
-    · rintro ⟨a, ha, hs⟩; exact ⟨f a, ⟨a, ha, rfl⟩, by rwa [things_view hf]⟩
+    simp only [map_map, Function.comp_def, thing_view hf]
 
 /-- A thing's state under a view is the full reader's, with payloads hidden. -/
 theorem stateIn_view {f : Record → Record} (hf : View f) (t : String) {xs : List Record}
     (hx : Addressed xs) :
     stateIn t (xs.map f) = ⟨(stateIn t xs).named, (stateIn t xs).heads.map f⟩ := by
   unfold stateIn
-  have e : (xs.map f).filter (·.isAbout t) = (xs.filter (·.isAbout t)).map f := by
-    rw [filter_map]; congr 1; apply filter_congr; intro r _; simp [Function.comp, isAbout_view hf]
+  have e : (xs.map f).filter (·.isOf t) = (xs.filter (·.isOf t)).map f := by
+    rw [filter_map]; congr 1; apply filter_congr; intro r _; simp [Function.comp, isOf_view hf]
   rw [e]
   exact LatestBy.view hf fun a ha b hb => hx a (mem_filter.1 ha).1 b (mem_filter.1 hb).1
 
 /-- No false resurrection, per thing: a record superseded within a thing is
 never current there, in any view. -/
 theorem stateIn_no_false_resurrection {f : Record → Record} (hf : View f) {t : String}
-    {xs : List Record} (hx : Addressed xs) {r q : Record} (hq : q ∈ xs) (ht : q.isAbout t = true)
+    {xs : List Record} (hx : Addressed xs) {r q : Record} (hq : q ∈ xs) (ht : q.isOf t = true)
     (hr : r.id ∈ q.prev) : ∀ h ∈ (stateIn t (xs.map f)).heads, h.id ≠ r.id := by
   intro h hh e
   rw [stateIn_view hf t hx] at hh
   obtain ⟨g, hg, rfl⟩ := mem_map.1 hh
-  have hs := LatestBy.inv_of (xs := xs.filter (·.isAbout t))
+  have hs := LatestBy.inv_of (xs := xs.filter (·.isOf t))
     fun a ha b hb => hx a (mem_filter.1 ha).1 b (mem_filter.1 hb).1
   obtain ⟨-, hn⟩ := (hs.heads_mem g).1 hg
   rw [(hf.envelope g).id] at e
@@ -404,20 +456,20 @@ theorem Latest.winner_newest {xs : List Record} (hx : Addressed xs) {w : Record}
 theorem mem_canonSet {s : String} {xs : List String} : s ∈ canonSet xs ↔ s ∈ xs :=
   mem_sortBy (fun _ _ _ _ e => utf16_inj e) s
 
-/-- All records name exactly one shared thing. -/
+/-- All records are of one thing. -/
 def OneThing (t : String) (xs : List Record) : Prop :=
-  ∀ r ∈ xs, r.things = [t]
+  ∀ r ∈ xs, r.thing = t
 
 theorem oneThing_state {t : String} {xs : List Record} (ht : OneThing t xs) :
     stateIn t xs = LatestBy.fold .empty xs := by
   unfold stateIn
   congr 1
-  exact filter_eq_self.2 fun r hr => by simp [Record.isAbout, ht r hr]
+  exact filter_eq_self.2 fun r hr => by simp [Record.isOf, ht r hr]
 
 theorem oneThing_key {t u : String} {xs : List Record} (ht : OneThing t xs)
     (hu : u ∈ thingsOf xs) : u = t := by
-  obtain ⟨r, hr, hu⟩ := mem_flatMap.1 (mem_canonSet.1 hu)
-  simpa [ht r hr] using hu
+  obtain ⟨r, hr, rfl⟩ := mem_map.1 (mem_canonSet.1 hu)
+  exact ht r hr
 
 theorem oneThing_heads {t : String} {xs : List Record} (hx : Addressed xs) (ht : OneThing t xs)
     {r : Record} : r ∈ wholeHeads xs ↔ r ∈ (LatestBy.fold .empty xs).heads := by
@@ -428,9 +480,7 @@ theorem oneThing_heads {t : String} {xs : List Record} (hx : Addressed xs) (ht :
     exact hr
   · intro hr
     have hm := ((LatestBy.inv_of hx).heads_mem r).1 hr
-    refine ⟨t, mem_canonSet.2 (mem_flatMap.2 ⟨r, hm.1, ?_⟩), ?_⟩
-    · simp [ht r hm.1]
-    · rwa [oneThing_state ht]
+    exact ⟨t, mem_canonSet.2 (mem_map.2 ⟨r, hm.1, ht r hm.1⟩), by rwa [oneThing_state ht]⟩
 
 /-- One-thing input preserves the previous Latest state exactly. -/
 theorem Latest.oneThing {t : String} {xs : List Record} (hx : Addressed xs) (ht : OneThing t xs) :
@@ -461,7 +511,7 @@ theorem Latest.oneThing {t : String} {xs : List Record} (hx : Addressed xs) (ht 
     rw [oneThing_key ht hv, oneThing_state ht] at hn
     exact (inv.named_mem n).1 hn
   · rintro ⟨r, hr, hn⟩
-    have hkey : t ∈ thingsOf xs := mem_canonSet.2 (mem_flatMap.2 ⟨r, hr, by simp [ht r hr]⟩)
+    have hkey : t ∈ thingsOf xs := mem_canonSet.2 (mem_map.2 ⟨r, hr, ht r hr⟩)
     exact ⟨stateIn t xs, ⟨t, stateIn t xs, mem_map_of_mem hkey, rfl⟩,
       by rw [oneThing_state ht]; exact (inv.named_mem n).2 ⟨r, hr, hn⟩⟩
 /-- The input set decides Latest, including its ordered other heads. -/
@@ -487,9 +537,9 @@ theorem Latest.repeats {xs : List Record} (hx : Addressed xs) :
 is given. A reader gives it the admitted records, and admission isn't monotone
 in arrival: readers admit a record whose `prev` target they don't hold
 (`admit.no-cross`), then refuse it (`prev-unrelated`) once the target arrives
-about another thing. By then LatestBy has dropped the records it superseded.
+of another thing. By then LatestBy has dropped the records it superseded.
 
-Here `s` revises `x` (both about `k1`) and also names `p`, which is about `k2`.
+Here `s` revises `x` (both of `k1`) and also names `p`, which is of `k2`.
 Holding `[x, s]` or only `[s]`, a reader's per-thing state is the same: `k1`
 with named `{x, p}` and heads `[s]`. When `p` arrives, `s` is refused, and `k1`'s
 head is `x` in one history and nothing in the other. A conformant writer never
@@ -498,11 +548,11 @@ admission exists to stop. A caching reader keeps the records a revision with
 an unheld `prev` target supersedes. -/
 
 def ca.x : Record :=
-  { id := 1, kind := "task", observer := "sl:x", about := ["k1"], value := "", prev := [], emitted := default }
+  { id := 1, kind := "task", observer := "sl:x", of := some "k1", value := "", prev := [], emitted := default }
 def ca.s : Record :=
-  { id := 2, kind := "task", observer := "sl:x", about := ["k1"], value := "", prev := [1, 3], emitted := default }
+  { id := 2, kind := "task", observer := "sl:x", of := some "k1", value := "", prev := [1, 3], emitted := default }
 def ca.p : Record :=
-  { id := 3, kind := "task", observer := "sl:x", about := ["k2"], value := "", prev := [], emitted := default }
+  { id := 3, kind := "task", observer := "sl:x", of := some "k2", value := "", prev := [], emitted := default }
 
 /-- No step from the per-thing state of the admitted records follows a late
 arrival, even under the rule that allows everything. -/
@@ -542,15 +592,15 @@ theorem admit_append_unnamed (may : Record → Record → Bool) {xs : List Recor
 
 /-- So each thing's state folds such an arrival onto the cached one
 (`OverHeads.late` over the admitted records): stepped by it when it is admitted
-and about the thing, unchanged otherwise. -/
+and of the thing, unchanged otherwise. -/
 theorem stateIn_late_unnamed (may : Record → Record → Bool) {xs : List Record} {r : Record}
     (t : String) (hr : ∀ q ∈ xs, r.id ∉ q.prev) :
     stateIn t (admit may (xs ++ [r])) =
-      if entitled may (xs ++ [r]) r && r.isAbout t then (stateIn t (admit may xs)).step r
+      if entitled may (xs ++ [r]) r && r.isOf t then (stateIn t (admit may xs)).step r
       else stateIn t (admit may xs) := by
   rw [admit_append_unnamed may hr]
   unfold stateIn LatestBy.fold
-  cases h₁ : entitled may (xs ++ [r]) r <;> cases h₂ : r.isAbout t <;>
+  cases h₁ : entitled may (xs ++ [r]) r <;> cases h₂ : r.isOf t <;>
     simp [List.filter_append, List.foldl_append, h₂]
 
 end Loops

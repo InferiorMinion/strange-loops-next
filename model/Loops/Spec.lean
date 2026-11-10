@@ -315,7 +315,7 @@ structure Spec where
 /-- Selection reads only the envelope: the kind, and the thing, which for a
 record about nothing is its own id. -/
 def Source.takes (s : Source) (r : Record) : Bool :=
-  (s.kinds.isEmpty || s.kinds.contains r.kind) && s.about.all r.isAbout
+  (s.kinds.isEmpty || s.kinds.contains r.kind) && s.about.all r.isOf
 
 def Spec.takes (sp : Spec) (r : Record) : Bool := sp.sources.any (·.takes r)
 

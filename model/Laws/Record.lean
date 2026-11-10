@@ -350,19 +350,19 @@ theorem canonSet_eq {xs ys : List String} (h : ∀ s, s ∈ xs ↔ s ∈ ys) : c
 
 theorem env_sets {e e' : Env} (hk : e.kind = e'.kind) (ho : e.observer = e'.observer)
     (he : e.emitted = e'.emitted) (hoc : e.occurred = e'.occurred) (hu : e.under = e'.under)
-    (ha : ∀ s, s ∈ e.about ↔ s ∈ e'.about) (hp : ∀ s, s ∈ e.prev ↔ s ∈ e'.prev)
+    (hof : e.of = e'.of) (ha : ∀ s, s ∈ e.about ↔ s ∈ e'.about) (hp : ∀ s, s ∈ e.prev ↔ s ∈ e'.prev)
     (hx : ∀ s, s ∈ e.erases ↔ s ∈ e'.erases) :
     e.toJson.canon = e'.toJson.canon := by
-  simp only [Env.toJson, hk, ho, he, hoc, hu, canonSet_eq ha, canonSet_eq hp, canonSet_eq hx]
+  simp only [Env.toJson, hk, ho, he, hoc, hu, hof, canonSet_eq ha, canonSet_eq hp, canonSet_eq hx]
 
 /-- Reordering or repeating `about`, `prev` or `erases` never changes a record's id. -/
 theorem id_sets (H : Hash) {e e' : Env} (commit : String) (hk : e.kind = e'.kind)
     (ho : e.observer = e'.observer) (he : e.emitted = e'.emitted) (hoc : e.occurred = e'.occurred)
-    (hu : e.under = e'.under) (ha : ∀ s, s ∈ e.about ↔ s ∈ e'.about)
+    (hu : e.under = e'.under) (hof : e.of = e'.of) (ha : ∀ s, s ∈ e.about ↔ s ∈ e'.about)
     (hp : ∀ s, s ∈ e.prev ↔ s ∈ e'.prev) (hx : ∀ s, s ∈ e.erases ↔ s ∈ e'.erases) :
     idOf H e commit = idOf H e' commit := by
   have : e.toJson = e'.toJson := by
-    simp only [Env.toJson, hk, ho, he, hoc, hu, canonSet_eq ha, canonSet_eq hp, canonSet_eq hx]
+    simp only [Env.toJson, hk, ho, he, hoc, hu, hof, canonSet_eq ha, canonSet_eq hp, canonSet_eq hx]
   simp [idOf, idPreimage, Json.canon, Json.canonMembers, this]
 
 /-! ## Member order is free -/

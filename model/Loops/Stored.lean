@@ -109,8 +109,8 @@ def Written.stored (w : Written) : Stored := make w.env w.salt w.payload
 /-- Typed writer refusal order. Raw envelope shape refusals precede this stage. -/
 def writeCodes : List String :=
   ["kind-empty", "observer-not-typed", "emitted-not-rfc3339", "occurred-not-span",
-    "about-not-typed", "prev-not-record-id", "under-not-record-id", "erases-not-record-id",
-    "salt-not-16-bytes", "member-duplicate", "number-out-of-range"]
+    "about-not-typed", "of-not-typed", "prev-not-record-id", "under-not-record-id",
+    "erases-not-record-id", "of-missing", "salt-not-16-bytes", "member-duplicate", "number-out-of-range"]
 
 /-- Of several write refusals, the one reported: the first in `writeCodes`.
 A code outside the list still refuses (`writeProblem_codes` says there is none). -/

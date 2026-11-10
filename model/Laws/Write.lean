@@ -8,6 +8,8 @@ import Laws.Record
   (`writeProblem_none`, in `Loops.Stored`), and what it returns carries the
   proof (`Written`). A batch writes through `write`, so every record it
   returns carries the same proof.
+* **Only a root leaves `of` out.** An envelope `write` accepts with `prev`
+  states `of` (`Env.problem_of`).
 * **Closed codes.** Every refusal `writeProblem` gives is in `writeCodes`, so
   choosing among a batch's refusals by that list never loses one.
 * **The set decides the refusal.** Which refusal a batch reports depends only
@@ -25,8 +27,8 @@ open List
 theorem envelopeKeysProblem_set {xs ys : List (String × Json)}
     (h : ∀ k, k ∈ xs.map Prod.fst ↔ k ∈ ys.map Prod.fst) :
     envelopeKeysProblem xs = envelopeKeysProblem ys := by
-  have hall : xs.all (fun (k, _) => ["kind", "observer", "emitted", "occurred", "about", "prev", "under", "erases"].contains k) =
-      ys.all (fun (k, _) => ["kind", "observer", "emitted", "occurred", "about", "prev", "under", "erases"].contains k) := by
+  have hall : xs.all (fun (k, _) => ["kind", "observer", "emitted", "occurred", "about", "of", "prev", "under", "erases"].contains k) =
+      ys.all (fun (k, _) => ["kind", "observer", "emitted", "occurred", "about", "of", "prev", "under", "erases"].contains k) := by
     apply Bool.eq_iff_iff.mpr
     simp only [List.all_eq_true]
     constructor
@@ -41,6 +43,18 @@ theorem envelopeKeysProblem_set {xs ys : List (String × Json)}
       subst k'
       exact hy (k, v') hm'
   simp only [envelopeKeysProblem, hall]
+
+/-- Only a root leaves `of` out: an envelope `write` accepts with `prev` states `of`. -/
+theorem Env.problem_of {e : Env} (h : e.problem = none) (hp : e.prev ≠ []) : e.of.isSome = true := by
+  cases ho : e.of with
+  | some _ => rfl
+  | none =>
+    cases hpv : e.prev with
+    | nil => exact absurd hpv hp
+    | cons p ps =>
+      unfold Env.problem at h
+      simp only [ho, hpv] at h
+      repeat (split at h <;> try simp_all)
 
 theorem Env.problem_codes {e : Env} {c : String} (h : e.problem = some c) : c ∈ writeCodes := by
   unfold Env.problem at h

@@ -272,17 +272,15 @@ theorem Cond.all_envelope_view {f : Record → Record} (hf : View f) {cs : List 
 theorem Source.takes_view {f : Record → Record} (hf : View f) (s : Source) (r : Record) :
     s.takes (f r) = s.takes r := by
   have he := hf.envelope r
-  have ha : (f r).isAbout = r.isAbout := funext (isAbout_view hf r)
+  have ha : (f r).isOf = r.isOf := funext (isOf_view hf r)
   simp [Source.takes, he.kind, ha]
 
 /-- `from` reads `about` by thing.
 An entry naming a thing takes exactly its records.
 A record about nothing belongs only to the thing named by its own id. -/
 theorem Source.takes_about (store t : String) (r : Record) :
-    (Source.mk store [] (some t)).takes r =
-      if r.about.isEmpty then t == idText r.id else r.about.contains t := by
-  by_cases h : r.about.isEmpty <;>
-    simp [Source.takes, Record.isAbout, Record.things, h, eq_comm] <;> rfl
+    (Source.mk store [] (some t)).takes r = (r.thing == t) := by
+  simp [Source.takes, Record.isOf]
 
 theorem Spec.takes_view {f : Record → Record} (hf : View f) (sp : Spec) (r : Record) :
     sp.takes (f r) = sp.takes r := by
@@ -381,11 +379,11 @@ theorem Spec.view_state {f : Record → Record} (hf : View f) {may : Record → 
 
 /-- A head of thing `t`: held, about `t`, and named in no `prev` of a record about `t`. -/
 def HeadOf (xs : List Record) (t : String) (r : Record) : Prop :=
-  r ∈ xs ∧ r.isAbout t ∧ ¬ ∃ q ∈ xs, q.isAbout t ∧ r.id ∈ q.prev
+  r ∈ xs ∧ r.isOf t ∧ ¬ ∃ q ∈ xs, q.isOf t ∧ r.id ∈ q.prev
 
 theorem stateIn_heads {xs : List Record} (hx : Addressed xs) {t : String} {r : Record}
     (h : r ∈ (stateIn t xs).heads) : HeadOf xs t r := by
-  obtain ⟨hm, hn⟩ := ((LatestBy.inv_of (hx.filter (·.isAbout t))).heads_mem r).1 h
+  obtain ⟨hm, hn⟩ := ((LatestBy.inv_of (hx.filter (·.isOf t))).heads_mem r).1 h
   obtain ⟨hr, ha⟩ := mem_filter.1 hm
   exact ⟨hr, ha, fun ⟨q, hq, hqa, hp⟩ => hn ⟨q, mem_filter.2 ⟨hq, hqa⟩, hp⟩⟩
 
