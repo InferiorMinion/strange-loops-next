@@ -27,7 +27,7 @@ fn rec(n: u8) -> Record {
         id,
         kind: "task".into(),
         observer: "sl:alice".into(),
-        about: vec!["task:one".into()],
+        of: Some("task:one".into()),
         ..Record::default()
     }
 }
@@ -157,6 +157,8 @@ fn refusal_priority_follows_fixed_checks_not_written_order() {
         ),
         (r#"{"about":false,"kind":false,"store":"."}"#, "from.kind"),
         (r#"{"about":false,"store":"."}"#, "from.about"),
+        (r#"{"of":false,"about":false,"store":"."}"#, "from.about"),
+        (r#"{"of":"untyped","store":"."}"#, "from.of"),
     ] {
         let e = spec::parse_source(&json(raw)).expect_err("invalid source");
         assert_eq!(e.path, path);
@@ -205,6 +207,7 @@ fn low_level_parsers_do_not_add_boundary_checks() {
         Vec::<String>::new()
     );
     assert_eq!(spec::source_about(None).expect("no about"), None);
+    assert_eq!(spec::source_of(None).expect("no of"), None);
     assert_eq!(
         spec::spec_slots(None).expect("no slots"),
         Vec::<Slot>::new()
@@ -234,6 +237,7 @@ fn low_level_parsers_do_not_add_boundary_checks() {
     }
     for raw in ["null", "false", "0", r#""""#, r#""untyped""#] {
         assert!(spec::source_about(Some(&json(raw))).is_err(), "{raw}");
+        assert!(spec::source_of(Some(&json(raw))).is_err(), "{raw}");
     }
     for raw in ["null", "false", "0", r#""""#] {
         assert!(spec::source_store(Some(&json(raw))).is_err(), "{raw}");
@@ -255,10 +259,10 @@ fn low_level_parsers_do_not_add_boundary_checks() {
 
 #[test]
 fn serialization_retains_spelling_orders_and_only_runtime_members() {
-    let input = r#"{"note":{"anything":true},"vertex":"x","from":[{"about":"task:one","kind":["task","task"],"store":"."},{"store":"other"}],"fold":{"z":{"where":{"env.occurred":{"below":"2026-10-01T01:00:00Z","is":"2026-09"},"env.kind":{"not":"draft"}},"limit":2,"follow":"prev","collect":true,"note":"drop"},"a":{"sum":"n"},"b":{"min":"n"},"c":{"max":"n"},"d":{"count":true},"e":{"follow":"prev","latest-by":"about"}},"ticks":[],"order":{},"resolve":true,"window":null,"boundary":[],"param":0,"covers":{},"into":false,"bundle":[]}"#;
+    let input = r#"{"note":{"anything":true},"vertex":"x","from":[{"of":"task:two","about":"task:one","kind":["task","task"],"store":"."},{"store":"other"}],"fold":{"z":{"where":{"env.occurred":{"below":"2026-10-01T01:00:00Z","is":"2026-09"},"env.kind":{"not":"draft"}},"limit":2,"follow":"prev","collect":true,"note":"drop"},"a":{"sum":"n"},"b":{"min":"n"},"c":{"max":"n"},"d":{"count":true},"e":{"follow":"prev","latest-by":"of"}},"ticks":[],"order":{},"resolve":true,"window":null,"boundary":[],"param":0,"covers":{},"into":false,"bundle":[]}"#;
     let sp = spec(input);
     let expected = json(
-        r#"{"vertex":"x","from":[{"store":".","kind":["task","task"],"about":"task:one"},{"store":"other"}],"fold":{"z":{"collect":true,"follow":"prev","limit":2,"where":{"env.occurred":{"below":"2026-10-01T01:00:00Z","is":"2026-09"},"env.kind":{"not":"draft"}}},"a":{"sum":"n"},"b":{"min":"n"},"c":{"max":"n"},"d":{"count":true},"e":{"latest-by":"about","follow":"prev"}}}"#,
+        r#"{"vertex":"x","from":[{"store":".","kind":["task","task"],"about":"task:one","of":"task:two"},{"store":"other"}],"fold":{"z":{"collect":true,"follow":"prev","limit":2,"where":{"env.occurred":{"below":"2026-10-01T01:00:00Z","is":"2026-09"},"env.kind":{"not":"draft"}}},"a":{"sum":"n"},"b":{"min":"n"},"c":{"max":"n"},"d":{"count":true},"e":{"latest-by":"of","follow":"prev"}}}"#,
     );
     assert_eq!(sp.to_json(), expected);
     assert_eq!(Spec::of_json(&expected).expect("round trip"), sp);
@@ -304,12 +308,12 @@ fn admission_uses_all_held_targets_original_input_and_envelopes() {
         "unknown prev passes"
     );
     let bad = Record {
-        about: vec!["task:other".into()],
+        of: Some("task:other".into()),
         ..a.clone()
     };
     assert!(
         !things::entitled(&[a.clone(), bad], &b, |_, _| true),
-        "every matching target must share a thing"
+        "every matching target must be of the record's thing"
     );
     let bad = Record {
         observer: "sl:bob".into(),
@@ -325,7 +329,7 @@ fn admission_uses_all_held_targets_original_input_and_envelopes() {
         == q.observer));
     let q = Record {
         prev: vec![a.id],
-        about: vec!["task:other".into()],
+        of: Some("task:other".into()),
         ..rec(2)
     };
     let r = Record {
@@ -366,7 +370,7 @@ fn supersession_precedes_sources_envelope_and_payload_tests() {
     for new in [successor.clone(), successor.withhold()] {
         let xs = [old.clone(), new];
         let sp = spec(
-            r#"{"vertex":"x","from":[{"store":".","kind":["task"]}],"fold":{"l":{"latest-by":"about","follow":"prev"},"f":{"collect":true,"follow":"prev"},"all":{"collect":true}}}"#,
+            r#"{"vertex":"x","from":[{"store":".","kind":["task"]}],"fold":{"l":{"latest-by":"of","follow":"prev"},"f":{"collect":true,"follow":"prev"},"all":{"collect":true}}}"#,
         );
         let values = sp.run(&xs);
         assert_eq!(
@@ -399,8 +403,8 @@ fn supersession_precedes_sources_envelope_and_payload_tests() {
         },
     ];
     for raw in [
-        r#"{"latest-by":"about","follow":"prev","where":{"env.observer":{"is":"sl:alice"}}}"#,
-        r#"{"latest-by":"about","follow":"prev","where":{"status":{"is":"open"}}}"#,
+        r#"{"latest-by":"of","follow":"prev","where":{"env.observer":{"is":"sl:alice"}}}"#,
+        r#"{"latest-by":"of","follow":"prev","where":{"status":{"is":"open"}}}"#,
     ] {
         assert_eq!(
             slot(raw).run(|_| true, &xs),
@@ -416,7 +420,7 @@ fn supersession_precedes_sources_envelope_and_payload_tests() {
     }
     .withhold();
     assert_eq!(
-        slot(r#"{"latest-by":"about","follow":"prev","where":{"status":{"is":"open"}}}"#)
+        slot(r#"{"latest-by":"of","follow":"prev","where":{"status":{"is":"open"}}}"#)
             .run(|_| true, &[old, hidden]),
         SlotValue::Things {
             things: vec![],
@@ -428,10 +432,11 @@ fn supersession_precedes_sources_envelope_and_payload_tests() {
 #[test]
 fn hidden_payloads_and_unknown_counts_differ_by_slot() {
     let mut a = rec(1).withhold();
+    // A mention makes no second thing.
     a.about.push("task:two".into());
     let b = a.erase();
     let xs = [a.clone(), b];
-    let latest = slot(r#"{"latest-by":"about","follow":"prev","where":{"x":{"present":true}}}"#);
+    let latest = slot(r#"{"latest-by":"of","follow":"prev","where":{"x":{"present":true}}}"#);
     assert_eq!(
         latest.run(|_| true, &xs),
         SlotValue::Things {
@@ -461,12 +466,9 @@ fn hidden_payloads_and_unknown_counts_differ_by_slot() {
         }
     );
     assert_eq!(
-        slot(r#"{"latest-by":"about","follow":"prev"}"#).run(|_| true, std::slice::from_ref(&a)),
+        slot(r#"{"latest-by":"of","follow":"prev"}"#).run(|_| true, std::slice::from_ref(&a)),
         SlotValue::Things {
-            things: vec![
-                ("task:one".into(), vec![(a.id, Shown::Withheld)]),
-                ("task:two".into(), vec![(a.id, Shown::Withheld)])
-            ],
+            things: vec![("task:one".into(), vec![(a.id, Shown::Withheld)])],
             unread: 0_u64.into()
         }
     );
@@ -476,7 +478,7 @@ fn hidden_payloads_and_unknown_counts_differ_by_slot() {
             heads: vec![(a.id, Shown::Withheld)],
             unread: 0_u64.into()
         },
-        "one head shared by two things appears once"
+        "one head appears once"
     );
     let known = rec(2);
     let heads = slot(r#"{"collect":true,"limit":1,"where":{"x":{"absent":true}}}"#)
@@ -531,16 +533,35 @@ fn run_keeps_raw_duplicate_ids_and_does_not_settle_or_dedup() {
     };
     assert!(!absent.takes(&a));
     assert_eq!(absent.select(&forms), Vec::<Record>::new());
-    let anchor = Record {
-        about: vec![],
+    let root = Record {
+        of: None,
         ..a.clone()
     };
     let source = Source {
         store: "ignored-at-run".into(),
         kinds: vec![],
-        about: Some(id_text(&a.id)),
+        about: None,
+        of: Some(id_text(&a.id)),
     };
-    assert!(source.takes(&anchor));
+    assert!(source.takes(&root), "a root is of its own id");
+    assert!(!source.takes(&a), "a record with of is not of its own id");
+    let mention = Source {
+        about: Some(id_text(&a.id)),
+        of: None,
+        ..source.clone()
+    };
+    assert!(!mention.takes(&root), "about is tested as written");
+    let mentions = Record {
+        about: vec![id_text(&a.id)],
+        ..a.clone()
+    };
+    assert!(mention.takes(&mentions));
+    let both = Source {
+        about: Some(id_text(&a.id)),
+        of: Some("task:one".into()),
+        ..source
+    };
+    assert!(both.takes(&mentions) && !both.takes(&a) && !both.takes(&root));
 }
 
 #[test]

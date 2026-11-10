@@ -6,15 +6,15 @@ use serde_json::{Value, json};
 use std::fs;
 
 const FAMILIES: &[(&str, usize)] = &[
-    ("record", 119),
+    ("record", 125),
     ("occurred", 9),
     ("byte-text", 5),
-    ("fold", 48),
-    ("spec", 113),
-    ("realm", 15),
+    ("fold", 50),
+    ("spec", 121),
+    ("realm", 16),
     ("scenario", 5),
     ("lens", 21),
-    ("batch", 27),
+    ("batch", 34),
     ("standard", 12),
 ];
 
@@ -210,7 +210,7 @@ fn every_registered_json_and_every_arrival_order() {
     for (family, _) in FAMILIES {
         assert!(seen.iter().any(|s| s == family), "missing {family}");
     }
-    assert_eq!(checked, 374);
+    assert_eq!(checked, 398);
     overflowing.sort();
     assert_eq!(
         overflowing, OVERFLOWING,

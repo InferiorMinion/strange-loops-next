@@ -173,12 +173,12 @@ mod tests {
     use super::*;
     use crate::{occurred::Stamp, things};
 
-    fn record(id: u8, about: &[&str], emitted: &str) -> Record {
+    fn record(id: u8, of: &str, emitted: &str) -> Record {
         let mut bytes = [0; 32];
         bytes[31] = id;
         Record {
             id: Digest(bytes),
-            about: about.iter().map(|t| (*t).into()).collect(),
+            of: Some(of.into()),
             emitted: Stamp::of(emitted).expect("valid test timestamp"),
             ..Record::default()
         }
@@ -186,12 +186,14 @@ mod tests {
 
     #[test]
     fn latest_combines_per_thing_heads_without_global_suppression() {
-        let shared = record(1, &["thing:a", "thing:b"], "2026-10-29T03:00:00Z");
+        // The successor names a record of another thing: admission refuses it,
+        // but the unadmitted per-thing fold must still leave thing:b its head.
+        let shared = record(1, "thing:b", "2026-10-29T03:00:00Z");
         let successor = Record {
             prev: vec![shared.id],
-            ..record(2, &["thing:a"], "2026-10-29T01:00:00Z")
+            ..record(2, "thing:a", "2026-10-29T01:00:00Z")
         };
-        let fork = record(3, &["thing:b"], "2026-10-29T02:00:00Z");
+        let fork = record(3, "thing:b", "2026-10-29T02:00:00Z");
         let records = [shared.clone(), successor.clone(), fork.clone()];
         let expected = LatestBy {
             named: vec![shared.id],
@@ -216,9 +218,9 @@ mod tests {
 
     #[test]
     fn ordered_heads_keep_the_last_form_before_sorting() {
-        let earlier_form = record(1, &["thing:a"], "2026-10-29T03:00:00Z");
-        let last_form = record(1, &["thing:a"], "2026-10-29T01:00:00Z").withhold();
-        let middle = record(2, &["thing:a"], "2026-10-29T02:00:00Z");
+        let earlier_form = record(1, "thing:a", "2026-10-29T03:00:00Z");
+        let last_form = record(1, "thing:a", "2026-10-29T01:00:00Z").withhold();
+        let middle = record(2, "thing:a", "2026-10-29T02:00:00Z");
         assert_eq!(
             order_heads(&[earlier_form, middle.clone(), last_form.clone()]),
             vec![middle, last_form]
@@ -228,8 +230,8 @@ mod tests {
 
     #[test]
     fn whole_heads_deduplicate_in_canonical_thing_order() {
-        let last_thing_form = record(1, &["thing:b"], "2026-10-29T01:00:00Z");
-        let first_thing_form = record(1, &["thing:a"], "2026-10-29T03:00:00Z");
+        let last_thing_form = record(1, "thing:b", "2026-10-29T01:00:00Z");
+        let first_thing_form = record(1, "thing:a", "2026-10-29T03:00:00Z");
         // These unchecked conflicting forms test the raw last-form rule, not settlement.
         assert_eq!(
             whole_heads(&[last_thing_form.clone(), first_thing_form]),
@@ -242,11 +244,11 @@ mod tests {
     fn combined_named_ids_are_ordered_and_deduplicated() {
         let first = Record {
             prev: vec![Digest([9; 32]), Digest([8; 32]), Digest([9; 32])],
-            ..record(1, &["thing:a", "thing:b"], "2026-10-29T01:00:00Z")
+            ..record(1, "thing:b", "2026-10-29T01:00:00Z")
         };
         let second = Record {
             prev: vec![Digest([8; 32]), Digest([7; 32])],
-            ..record(2, &["thing:c"], "2026-10-29T02:00:00Z")
+            ..record(2, "thing:c", "2026-10-29T02:00:00Z")
         };
         let state = latest_fold(&[first.clone(), second.clone()]);
         assert_eq!(
@@ -258,10 +260,10 @@ mod tests {
 
     #[test]
     fn low_level_latest_by_keeps_global_step_semantics_and_distinct_forms() {
-        let shared = record(1, &["thing:a", "thing:b"], "2026-10-29T03:00:00Z");
+        let shared = record(1, "thing:a", "2026-10-29T03:00:00Z");
         let successor = Record {
             prev: vec![shared.id],
-            ..record(2, &["thing:a"], "2026-10-29T01:00:00Z")
+            ..record(2, "thing:a", "2026-10-29T01:00:00Z")
         };
         let mut raw = LatestBy::default();
         raw.fold(&[shared.clone(), successor.clone()]);

@@ -91,6 +91,9 @@ fn signed_lines_are_the_vectors_lines_and_read_back() {
         assert_eq!(line.record().shown, Shown::Here, "{name}");
         assert_eq!(erased.record().shown, Shown::Erased, "{name}");
         assert_eq!(line.record().id, erased.record().id, "{name}");
+        // A reader's record is of what the envelope's `of` names, as written.
+        assert_eq!(line.record().of, line.env().of, "{name}");
+        assert_eq!(erased.record().of, line.env().of, "{name}");
     }
 }
 
@@ -198,5 +201,5 @@ fn only_a_payload_objects_top_level_primitives_are_read() {
         );
     }
     // The envelope a reader gets is the canonical one.
-    assert!(r.about.is_empty() && r.prev.is_empty() && r.erases.is_empty());
+    assert!(r.about.is_empty() && r.of.is_none() && r.prev.is_empty() && r.erases.is_empty());
 }

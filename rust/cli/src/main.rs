@@ -30,15 +30,16 @@ usage: loops [-C <dir>] <verb> ...
 
   init                          make .loops/ here
   emit <kind> [field=text | field:=json]... [\"message\"]
-       [--about <thing>]... [--prev <id>]... [--erases <id>]...
+       [--of <thing>] [--about <thing>]... [--prev <id>]... [--erases <id>]...
        [--occurred <when>] [--under <id>]
+                                a revision without --of is of what it replaces
   emit -                        drafts as JSONL on stdin: one changeset
   get <id>                      one record
-  about <thing>                 a thing's current state
+  about <thing>                 a thing's current state: the records of it
   read <vertex>                 fold .loops/vertices/<vertex>.json
   fold <spec.json | ->          fold a spec given as a file
   erase <id>... [\"why\"]         emit an erasure, and drop the openings held here
-  export [--kind <k>] [--about <thing>]   stored lines, oldest first
+  export [--kind <k>] [--of <thing>] [--about <thing>]   stored lines, oldest first
   import [<file> | -]           add stored lines; a store is the union
   check                         verify every segment and line
   whoami                        the key and observer this machine writes as";
@@ -198,6 +199,16 @@ fn link(held: &Held, given: &str) -> Result<String, Fail> {
         one_id(held, given)
     }
 }
+/// A thing: a natural key as typed, or a record id, which may be a prefix of
+/// a held one. Text with a colon that isn't `r:` passes through, so the writer
+/// can refuse it as `of-not-typed`.
+fn thing_ref(held: &Held, given: &str) -> Result<String, Fail> {
+    if given.contains(':') && !given.starts_with("r:") {
+        Ok(given.to_owned())
+    } else {
+        link(held, given)
+    }
+}
 
 fn content_order(a: &Record, b: &Record) -> Ordering {
     if a.newer(b) {
@@ -230,30 +241,44 @@ fn write_changeset(
     drafts: &[batch::Draft],
 ) -> Result<Vec<Line>, Fail> {
     bound(key, drafts)?;
-    let about_of = |id: &str| held.line(id).map(|line| line.env().about.clone());
-    let written = batch::resolve_batch(&hash, &about_of, drafts).map_err(|e| refused(e.code()))?;
+    let written = batch::resolve_batch(&hash, &|id: &str| held.writer_view(id), drafts)
+        .map_err(|e| refused(e.code()))?;
     let lines: Vec<Line> = written.iter().map(|w| Line::sign(w, key)).collect();
     place.append(&lines)?;
     Ok(lines)
 }
 
-/// A revision written without `--about` is about what it replaces: the things
-/// of its `prev` targets, when they all hold the same ones. A record about
-/// nothing anchors the thing its id names, so its revision is about that id.
-fn inherit_things(held: &Held, mut draft: batch::Draft) -> batch::Draft {
-    if !draft.env.about.is_empty() {
-        return draft;
+/// A revision written without `--of` is of what it replaces. Every record
+/// with `prev` states `of`, and the protocol never infers it, so this writer
+/// fills it in before writing: the thing of each `prev` target, which is the
+/// target's `of`, or its id when it is a root (Lean `Loops.envThing`). The
+/// checks the batch would make decide when it can't: a target this store
+/// doesn't hold is `prev-unknown`, and targets of different things are
+/// `prev-unrelated`. A label is left to the batch, which refuses it here.
+fn fill_of(held: &Held, mut draft: batch::Draft) -> Result<batch::Draft, Fail> {
+    if draft.env.of.is_some()
+        || draft.env.prev.is_empty()
+        || draft.env.prev.iter().any(|p| batch::is_label(p))
+    {
+        return Ok(draft);
     }
-    let mut targets = draft.env.prev.iter().map(|id| {
-        held.line(id)
-            .map(|line| loops::json::canon_set(&batch::env_things(id, &line.env().about)))
-    });
-    if let Some(Some(things)) = targets.next() {
-        if targets.all(|other| other.as_ref() == Some(&things)) {
-            draft.env.about = things;
+    let things = draft
+        .env
+        .prev
+        .iter()
+        .map(|id| {
+            held.writer_view(id)
+                .map(|target| batch::env_thing(id, target.of.as_deref()).to_owned())
+        })
+        .collect::<Option<Vec<_>>>()
+        .ok_or_else(|| refused(batch::Error::PrevUnknown.code()))?;
+    match things.split_first() {
+        Some((thing, rest)) if rest.iter().all(|t| t == thing) => {
+            draft.env.of = Some(thing.clone());
+            Ok(draft)
         }
+        _ => Err(refused(batch::Error::PrevUnrelated.code())),
     }
-    draft
 }
 
 fn emit(start: &Path, args: &[String]) -> Result<(), Fail> {
@@ -279,8 +304,14 @@ fn emit(start: &Path, args: &[String]) -> Result<(), Fail> {
             .collect();
         return say(&object(vec![("records", Json::Arr(records))]).canon());
     }
-    let draft = draft::from_args(args, &now, &key.public(), |given| link(&held, given))?;
-    let draft = inherit_things(&held, draft);
+    let draft = draft::from_args(
+        args,
+        &now,
+        &key.public(),
+        |given| link(&held, given),
+        |given| thing_ref(&held, given),
+    )?;
+    let draft = fill_of(&held, draft)?;
     let lines = write_changeset(&place, &held, &key, &[draft])?;
     say(lines.first().map_or("", Line::id))
 }
@@ -358,6 +389,8 @@ fn about(start: &Path, args: &[String]) -> Result<(), Fail> {
     } else {
         one_id(&held, thing)?
     };
+    // A thing's records are those of it, by `of` or a root's own id; a record
+    // that only mentions it in `about` is not one of them.
     let admitted = realm(&held);
     let state = things::state_in(&thing, &admitted);
     let lines = |records: &[Record]| {
@@ -380,7 +413,7 @@ fn about(start: &Path, args: &[String]) -> Result<(), Fail> {
         ("others", lines(state.others())),
         (
             "records",
-            count(admitted.iter().filter(|r| r.is_about(&thing)).count()),
+            count(admitted.iter().filter(|r| r.is_of(&thing)).count()),
         ),
     ])
     .canon())
@@ -424,13 +457,17 @@ fn read(start: &Path, args: &[String]) -> Result<(), Fail> {
 }
 
 fn export(start: &Path, args: &[String]) -> Result<(), Fail> {
+    // As a spec's `from` reads them: `--of` takes the records of a thing,
+    // `--about` those whose `about` mentions it, as written.
     let mut kind = None;
     let mut thing = None;
+    let mut mention = None;
     let mut rest = args.iter();
     while let Some(arg) = rest.next() {
         let slot = match arg.as_str() {
             "--kind" => &mut kind,
-            "--about" => &mut thing,
+            "--of" => &mut thing,
+            "--about" => &mut mention,
             other => return Err(usage(format!("export does not take {other}"))),
         };
         *slot = Some(
@@ -443,7 +480,10 @@ fn export(start: &Path, args: &[String]) -> Result<(), Fail> {
     records.sort_by(content_order);
     let mut out = io::stdout().lock();
     for record in records {
-        if kind.is_some_and(|k| *k != record.kind) || thing.is_some_and(|t| !record.is_about(t)) {
+        if kind.is_some_and(|k| *k != record.kind)
+            || thing.is_some_and(|t| !record.is_of(t))
+            || mention.is_some_and(|t| !record.about.contains(t))
+        {
             continue;
         }
         if let Some(line) = shown_line(&held, &record) {

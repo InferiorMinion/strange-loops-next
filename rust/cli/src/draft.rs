@@ -10,11 +10,13 @@ fn new_salt() -> Result<Vec<u8>, Fail> {
 
 /// `emit <kind> [field=text | field:=json]... ["message"]` and its flags.
 /// `field=text` is always text and `field:=json` a JSON value, as `HTTPie` writes them.
+/// `link` resolves a record id the person typed; `thing` resolves what `--of` names.
 pub(crate) fn from_args(
     args: &[String],
     now: &str,
     observer: &str,
     link: impl Fn(&str) -> Result<String, Fail>,
+    thing: impl Fn(&str) -> Result<String, Fail>,
 ) -> Result<Draft, Fail> {
     let mut env = Env {
         emitted: now.to_owned(),
@@ -34,6 +36,7 @@ pub(crate) fn from_args(
         };
         match arg.as_str() {
             "--about" => env.about.push(value()?),
+            "--of" => env.of = Some(thing(&value()?)?),
             "--prev" => env.prev.push(link(&value()?)?),
             "--erases" => env.erases.push(link(&value()?)?),
             "--under" => env.under = Some(link(&value()?)?),
@@ -128,6 +131,7 @@ pub(crate) fn from_jsonl(input: &str, observer: &str, now: &str) -> Result<Vec<D
                 "occurred" => draft.env.occurred = Some(text_of(line, name, value)?),
                 "under" => draft.env.under = Some(text_of(line, name, value)?),
                 "about" => draft.env.about = texts_of(line, name, value)?,
+                "of" => draft.env.of = Some(text_of(line, name, value)?),
                 "prev" => draft.env.prev = texts_of(line, name, value)?,
                 "erases" => draft.env.erases = texts_of(line, name, value)?,
                 "payload" => draft.payload = value.clone(),

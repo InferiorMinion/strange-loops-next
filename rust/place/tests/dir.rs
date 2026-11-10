@@ -1,5 +1,5 @@
 //! The directory place: a store is the union of its segments.
-use loops::{envelope::Env, json::Json, record::Shown, stored};
+use loops::{batch, envelope::Env, json::Json, record::Shown, stored, things};
 use loops_place::{
     dir::Dir,
     key::{self, Key},
@@ -164,5 +164,82 @@ fn a_torn_last_line_is_skipped_and_a_changed_segment_is_named() {
             .map(|r| (r.line, r.refusal))
             .collect::<Vec<_>>(),
         [(1, Refusal::IdMismatch)]
+    );
+}
+
+#[test]
+fn the_writer_view_of_a_held_record_decides_the_batch_checks_against_the_store() {
+    let place = Dir::init(&scratch("writer-view")).expect("init");
+    let key = Key::generate().expect("key");
+    let root = line(&key, "root", &[]);
+    let revision = {
+        let env = Env {
+            kind: "note".into(),
+            observer: key.public(),
+            emitted: "2026-11-09T00:00:00Z".into(),
+            about: vec!["topic:mentioned".into()],
+            of: Some(root.id().to_owned()),
+            prev: vec![root.id().to_owned()],
+            ..Env::default()
+        };
+        Line::sign(
+            &stored::write(env, key::salt().expect("salt"), Json::Null).expect("written"),
+            &key,
+        )
+    };
+    place
+        .append(&[root.clone(), revision.clone()])
+        .expect("append");
+    let held = place.read().expect("read");
+    assert_eq!(held.writer_view(root.id()), Some(batch::Held::default()));
+    assert_eq!(
+        held.writer_view(revision.id()),
+        Some(batch::Held {
+            of: Some(root.id().to_owned()),
+            prev: vec![root.id().to_owned()],
+        })
+    );
+    assert_eq!(held.writer_view("r:unknown"), None);
+    let hash = loops_place::line::hash;
+    let lookup = |id: &str| held.writer_view(id);
+    let draft = |of: Option<&str>, prev: &[&str]| batch::Draft {
+        label: None,
+        env: Env {
+            kind: "note".into(),
+            observer: key.public(),
+            emitted: "2026-11-09T00:00:01Z".into(),
+            of: of.map(str::to_owned),
+            prev: prev.iter().map(|s| (*s).to_owned()).collect(),
+            ..Env::default()
+        },
+        salt: vec![0; 16],
+        payload: Json::Null,
+    };
+    // A revision of the root is of the root; naming the revision as a thing is not.
+    assert!(
+        batch::resolve_batch(&hash, &lookup, &[draft(Some(root.id()), &[revision.id()])]).is_ok()
+    );
+    assert_eq!(
+        batch::resolve_batch(&hash, &lookup, &[draft(Some(revision.id()), &[])]),
+        Err(batch::Error::OfNotRoot)
+    );
+    // `about` is a mention: the revision is of the root's thing, not of what it mentions.
+    assert_eq!(
+        batch::resolve_batch(
+            &hash,
+            &lookup,
+            &[draft(Some("topic:mentioned"), &[revision.id()])]
+        ),
+        Err(batch::Error::PrevUnrelated)
+    );
+    let records = held.settled();
+    assert_eq!(things::state_in("topic:mentioned", &records).heads, vec![]);
+    assert_eq!(
+        things::state_in(root.id(), &records)
+            .heads
+            .iter()
+            .map(|r| loops::record::id_text(&r.id))
+            .collect::<Vec<_>>(),
+        [revision.id()]
     );
 }

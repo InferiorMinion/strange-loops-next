@@ -16,8 +16,10 @@ pub enum EnvField {
     Kind,
     /// The typed reference for the observer who emits the record.
     Observer,
-    /// The references for the things this record concerns.
+    /// The references for the things this record mentions.
     About,
+    /// The reference for the one thing this record is an emit of, if it says.
+    Of,
     /// The ids of the records this record supersedes.
     Prev,
     /// The id of the grant this record uses, if any.
@@ -32,10 +34,11 @@ pub enum EnvField {
 impl EnvField {
     /// Lean: `Loops.EnvField.all`, model/Loops/Spec.lean.
     /// Lists every envelope field in declaration order.
-    pub const ALL: [Self; 8] = [
+    pub const ALL: [Self; 9] = [
         Self::Kind,
         Self::Observer,
         Self::About,
+        Self::Of,
         Self::Prev,
         Self::Under,
         Self::Erases,
@@ -50,6 +53,7 @@ impl EnvField {
             Self::Kind => "kind",
             Self::Observer => "observer",
             Self::About => "about",
+            Self::Of => "of",
             Self::Prev => "prev",
             Self::Under => "under",
             Self::Erases => "erases",
@@ -62,7 +66,7 @@ impl EnvField {
     pub fn field_type(self) -> FieldType {
         match self {
             Self::Kind => FieldType::Text,
-            Self::Observer | Self::About => FieldType::Refs,
+            Self::Observer | Self::About | Self::Of => FieldType::Refs,
             Self::Prev | Self::Under | Self::Erases => FieldType::Ids,
             Self::Emitted | Self::Occurred => FieldType::Time,
         }
@@ -140,6 +144,7 @@ impl Field {
             Self::Env(EnvField::Kind) => vec![text(&r.kind)],
             Self::Env(EnvField::Observer) => vec![text(&r.observer)],
             Self::Env(EnvField::About) => r.about.iter().map(|s| text(s)).collect(),
+            Self::Env(EnvField::Of) => r.of.iter().map(|s| text(s)).collect(),
             Self::Env(EnvField::Prev) => ids(&r.prev),
             Self::Env(EnvField::Under) => ids(r.under.as_slice()),
             Self::Env(EnvField::Erases) => ids(&r.erases),

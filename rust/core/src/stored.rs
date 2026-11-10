@@ -16,12 +16,16 @@ pub enum Error {
     OccurredNotSpan,
     /// An about member breaks the typed reference grammar.
     AboutNotTyped,
+    /// The `of` reference breaks the typed reference grammar.
+    OfNotTyped,
     /// A supersession target breaks the record id grammar.
     PrevNotRecordId,
     /// The grant id breaks the record id grammar.
     UnderNotRecordId,
     /// An erasure target breaks the record id grammar.
     ErasesNotRecordId,
+    /// The envelope has `prev` but states no `of`.
+    OfMissing,
     /// The salt does not contain exactly 16 bytes.
     SaltNot16Bytes,
     /// A raw payload object repeats a member name at some depth.
@@ -39,9 +43,11 @@ impl Error {
             Self::EmittedNotRfc3339 => "emitted-not-rfc3339",
             Self::OccurredNotSpan => "occurred-not-span",
             Self::AboutNotTyped => "about-not-typed",
+            Self::OfNotTyped => "of-not-typed",
             Self::PrevNotRecordId => "prev-not-record-id",
             Self::UnderNotRecordId => "under-not-record-id",
             Self::ErasesNotRecordId => "erases-not-record-id",
+            Self::OfMissing => "of-missing",
             Self::SaltNot16Bytes => "salt-not-16-bytes",
             Self::MemberDuplicate => "member-duplicate",
             Self::NumberOutOfRange => "number-out-of-range",

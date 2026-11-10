@@ -13,7 +13,7 @@ fn id(n: u8) -> Digest {
 fn rec(n: u8, thing: &str) -> Record {
     Record {
         id: id(n),
-        about: vec![thing.into()],
+        of: Some(thing.into()),
         value: format!("payload {n}"),
         n: Int::from(i64::from(n)),
         fields: vec![("extra".into(), Val::Bool(true))],
