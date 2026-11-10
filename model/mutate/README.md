@@ -2,9 +2,10 @@
 
 Run `node model/mutate/run.mjs --list` to inspect the catalogue.
 Listing validates every replacement against the current source without changing files.
-The runner tests check all 201 entries and their unique source sites.
+The runner tests check all 210 entries and their unique source sites.
 The catalogue retains 187 original entries, retires two mutations, and adds eight guard mutations.
 Six more entries cover the D1 base boundary and the D2 code-unit reader.
+Nine more cover D8's `of`: the thing, the two envelope checks, `of-not-root`, the batch thing check, labels in `of`, `from.of` and `env.of`.
 The source paths may name the Loops or Gen root; flat filenames still name Loops sources.
 Run `node model/mutate/run.mjs --only things-prev-or,things-drop-may` to select mutations.
 Use `--output path` to choose the JSON result path.

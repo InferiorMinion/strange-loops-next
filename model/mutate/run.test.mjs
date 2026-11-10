@@ -9,9 +9,9 @@ import { changedPaths, replaceUnique, command, sourcePath } from './run.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
-test('catalogue keeps 201 unique mutations at current source sites; listing does not mutate', async () => {
+test('catalogue keeps 210 unique mutations at current source sites; listing does not mutate', async () => {
   const catalogue = JSON.parse(await readFile(path.join(here, 'mutants.json'), 'utf8'));
-  assert.equal(catalogue.length, 201);
+  assert.equal(catalogue.length, 210);
   assert.ok(!catalogue.some(m => ['finish-occurred-stamp-of', 'wide-time-094'].includes(m.id)));
   for (const id of ["wide-families-013","wide-spec-064","extra-families-max-acc","extra-families-min-acc","finish-json-hexdigit","last-spec-tests-conds"]) {
     assert.ok(catalogue.some(m => m.id === id), id);

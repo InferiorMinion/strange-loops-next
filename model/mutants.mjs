@@ -15,6 +15,7 @@ const guardMutants = ["step1-base32-reencode","step1-fraction-final-zero","step1
 });
 const mutants = [
   ["typed about", "Gen/Read.lean", 'if typedRef s then pure s else bad p "expected a typed reference"', 'pure s'],
+  ["typed of", "Gen/Read.lean", 'if typedRef s then pure s else bad (dot path "of") "expected a typed reference"', 'pure s'],
   ["lens validity", "Loops/Lens.lean", 'if Valid d then some d else none', 'some d'],
   ["integer bound", "Loops/Record.lean", 'if -(2^53 - 1) ≤ i ∧ i ≤ 2^53 - 1 then some i else none', 'some i'],
   ["fraction as zero", "Loops/Record.lean", '    | _ => none\n  else none\n\n/-- Withhold', '    | some (.number _) => some 0\n    | _ => none\n  else none\n\n/-- Withhold'],

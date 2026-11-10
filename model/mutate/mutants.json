@@ -58,8 +58,8 @@
   {
     "id": "spec-source-all-any",
     "file": "Spec.lean",
-    "before": "s.about.all r.isAbout",
-    "after": "s.about.any r.isAbout",
+    "before": "s.about.all r.about.contains",
+    "after": "s.about.any r.about.contains",
     "reason": "Reject an empty source selection."
   },
   {
@@ -93,8 +93,8 @@
   {
     "id": "things-no-self-anchor",
     "file": "Fold.lean",
-    "before": "if r.about.isEmpty then [idText r.id] else r.about",
-    "after": "if r.about.isEmpty then [] else r.about",
+    "before": "r.of.getD (idText r.id)",
+    "after": "r.of.getD \"\"",
     "reason": "Drop the self anchor."
   },
   {
@@ -227,8 +227,8 @@
   {
     "id": "wide-batch-004",
     "file": "Batch.lean",
-    "before": "(d.env.about ++ d.env.prev).filter isLabel",
-    "after": "(d.env.about ++ d.env.prev).filter (!isLabel ·)",
+    "before": "(d.env.about ++ d.env.of.toList ++ d.env.prev).filter isLabel",
+    "after": "(d.env.about ++ d.env.of.toList ++ d.env.prev).filter (!isLabel ·)",
     "reason": "Change this selection or check.",
     "definition": "Loops.Draft.refs"
   },
@@ -667,8 +667,8 @@
   {
     "id": "wide-spec-070",
     "file": "Spec.lean",
-    "before": "if typedRef a then pure (some a) else refuse",
-    "after": "if !typedRef a then pure (some a) else refuse",
+    "before": "if typedRef a then pure (some a) else refuse \"from-invalid\" \"from.about\"",
+    "after": "if !typedRef a then pure (some a) else refuse \"from-invalid\" \"from.about\"",
     "reason": "Change this selection or check.",
     "definition": "Loops.sourceAbout"
   },
@@ -707,16 +707,16 @@
   {
     "id": "wide-things-083",
     "file": "Fold.lean",
-    "before": "r.things.contains t",
-    "after": "r.things.contains t == false",
+    "before": "r.thing == t",
+    "after": "r.thing != t",
     "reason": "Change this selection or check.",
-    "definition": "Loops.Record.isAbout"
+    "definition": "Loops.Record.isOf"
   },
   {
     "id": "wide-things-084",
     "file": "Fold.lean",
-    "before": "a.things.any b.things.contains",
-    "after": "a.things.all b.things.contains",
+    "before": "a.thing == b.thing",
+    "after": "a.thing != b.thing",
     "reason": "Change this selection or check.",
     "definition": "Loops.shares"
   },
@@ -923,18 +923,18 @@
   {
     "id": "finish-batch-subst",
     "file": "Batch.lean",
-    "before": "if isLabel s then σ s else some s",
-    "after": "if isLabel s then some s else σ s",
+    "before": "let x ← if isLabel s then σ s else some s",
+    "after": "let x ← if isLabel s then some s else σ s",
     "reason": "Invert label substitution.",
     "definition": "Loops.subst"
   },
   {
     "id": "finish-batch-envthings",
     "file": "Batch.lean",
-    "before": "if about.isEmpty then [id] else about",
-    "after": "if about.isEmpty then [] else (let _ := id; about)",
+    "before": "of.getD id",
+    "after": "(let _ := id; of.getD \"\")",
     "reason": "Drop the self anchor.",
-    "definition": "Loops.envThings"
+    "definition": "Loops.envThing"
   },
   {
     "id": "finish-batch-checkprev",
@@ -1267,9 +1267,9 @@
   {
     "id": "finish-things-statein",
     "file": "Fold.lean",
-    "before": "xs.filter (·.isAbout t)",
-    "after": "xs.filter (!·.isAbout t)",
-    "reason": "Fold records about other things.",
+    "before": "xs.filter (·.isOf t)",
+    "after": "xs.filter (!·.isOf t)",
+    "reason": "Fold records of other things.",
     "definition": "Loops.stateIn"
   },
   {
@@ -1331,8 +1331,8 @@
   {
     "id": "extra-things-thingsof",
     "file": "Fold.lean",
-    "before": "canonSet (xs.flatMap Record.things)",
-    "after": "(canonSet (xs.flatMap Record.things)).reverse",
+    "before": "canonSet (xs.map Record.thing)",
+    "after": "(canonSet (xs.map Record.thing)).reverse",
     "reason": "Reverse the thing order.",
     "definition": "Loops.thingsOf"
   },
@@ -1575,5 +1575,77 @@
     "after": "0xD800 ≤ u && u < 0xDBFF",
     "reason": "Leave the last high surrogate out of the range.",
     "definition": "Loops.highSurrogate"
+  },
+  {
+    "id": "d8-thing-ignores-of",
+    "file": "Fold.lean",
+    "before": "def Record.thing (r : Record) : String := r.of.getD (idText r.id)",
+    "after": "def Record.thing (r : Record) : String := idText r.id",
+    "reason": "Make every record of its own id.",
+    "definition": "Loops.Record.thing"
+  },
+  {
+    "id": "d8-of-not-typed-skipped",
+    "file": "Envelope.lean",
+    "before": "else if !(e.of.map typedRef).getD true then some \"of-not-typed\"",
+    "after": "else if false then some \"of-not-typed\"",
+    "reason": "Accept an untyped of.",
+    "definition": "Loops.Env.problem"
+  },
+  {
+    "id": "d8-of-missing-skipped",
+    "file": "Envelope.lean",
+    "before": "else if !e.prev.isEmpty && e.of.isNone then some \"of-missing\"",
+    "after": "else if false then some \"of-missing\"",
+    "reason": "Accept a revision without of.",
+    "definition": "Loops.Env.problem"
+  },
+  {
+    "id": "d8-of-not-root-skipped",
+    "file": "Batch.lean",
+    "before": "if rs.any fun r => r.env.of.any fun o => (target o).any (!·.root) then throw \"of-not-root\"",
+    "after": "if false then throw \"of-not-root\"",
+    "reason": "Let of name a held record that is not a root.",
+    "definition": "Loops.checkPrev"
+  },
+  {
+    "id": "d8-unrelated-ignores-target-of",
+    "file": "Batch.lean",
+    "before": "envThing p h.of != envThing (r.id H) r.env.of",
+    "after": "envThing p none != envThing (r.id H) r.env.of",
+    "reason": "Read a held target as of its own id.",
+    "definition": "Loops.checkPrev"
+  },
+  {
+    "id": "d8-subst-of-skipped",
+    "file": "Batch.lean",
+    "before": "some <$> if isLabel s then σ s else some s",
+    "after": "some <$> some s",
+    "reason": "Leave a label in of.",
+    "definition": "Loops.substOpt"
+  },
+  {
+    "id": "d8-source-of-by-about",
+    "file": "Spec.lean",
+    "before": "s.of.all r.isOf",
+    "after": "s.of.all r.about.contains",
+    "reason": "Select from.of by mention.",
+    "definition": "Loops.Source.takes"
+  },
+  {
+    "id": "d8-source-of-typed",
+    "file": "Spec.lean",
+    "before": "if typedRef a then pure (some a) else refuse \"from-invalid\" \"from.of\"",
+    "after": "if !typedRef a then pure (some a) else refuse \"from-invalid\" \"from.of\"",
+    "reason": "Change this selection or check.",
+    "definition": "Loops.sourceOf"
+  },
+  {
+    "id": "d8-env-of-reads-thing",
+    "file": "Spec.lean",
+    "before": "| .env .of, r => some (r.of.toList.map (.val ∘ .str))",
+    "after": "| .env .of, r => some [.val (.str r.thing)]",
+    "reason": "Read env.of as the thing, not as written.",
+    "definition": "Loops.Field.read"
   }
 ]
