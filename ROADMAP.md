@@ -182,8 +182,12 @@ Take D8c as a second fold family beside whole-record `latest-by`, once D8a's sha
 **Amended by Kyle, 2026-11-10,** on margins-claude's finding in issue #4 (`sl-py/keyslice.py`): D8a first let a record with `prev` leave `of` out and take its thing from what it replaces.
 That made a record's thing depend on another record being held, and a partial copy then answered wrongly: 10,276 of 33,634 cases under one slice rule and 412 under the other, against none in 35,200 with `of` stated.
 The CLI's "a revision without `--about` is about what it replaces" stays as a writer's convenience only.
-The same experiment found that what is sent of a thing must be convex over `prev`: a replaced member sent without the path to what replaced it reads as live.
-margins-claude will state that in Lean once D8a is modelled.
+The same experiment found that a replaced member sent without the path to what replaced it reads as live, and proposed that what is sent of a thing be convex over `prev`.
+Issue #5 corrects the proposal: convexity is sufficient but not exact, and on a steady history the convex part is nearly the whole history.
+The exact law is *witnessed*: every held setter of a key that is dead for that key has a setter of that key above it through held records (`witnessed_iff`, in margins-claude's `lean/Convex.lean`).
+Either law is about a slice read alone; a slice merged into an older holding is step 5's question.
+margins-claude will state the law over the model once D8a is modelled.
+Whether a writer's tool also names in `prev` the still-live records it partly replaces, which makes the live setters alone a slice, is open with D8c.
 **Kyle's choices, 2026-11-10,** following margins-claude's reasoning on merge request !13:
 - **Names:** the item field is `of` and the declaration is `sets`. A record *of* the task, against a record *about* it; `sets`, like `erases`, is a verb for what the record does.
 - **Natural keys:** `of` takes a record id or a natural key, as `about` does.
