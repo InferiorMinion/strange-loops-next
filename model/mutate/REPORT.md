@@ -1,6 +1,90 @@
 # Lean model mutation report
 
-## Round 2 review-fix snapshot: `8a12ba6`
+## D1–D6 snapshot: `bb9dc46`
+
+The Node 25.9 run completes all 201 catalogue entries with a 240-second command timeout.
+The retained [summary](evidence/mutations-d1-d6/summary.json) supports these counts.
+Run `python3 interop/fuzz/summarize.py report` from the repository root.
+
+| Outcome | Count |
+|---|---:|
+| Rejected by build | 157 |
+| Vector differences | 27 |
+| Generator assertion exceptions | 15 |
+| Survivors | 2 |
+
+The runner exits 1 for generator assertions.
+Each error retains its assertion text in the summary.
+No command times out, receives a signal, or reports a spawn or cleanup error.
+Build rejections are not semantic proof kills.
+Generator assertions are not vector-difference kills.
+Survival alone proves neither equivalence nor reachability.
+
+D6 approves the four helper lemmas, and the model now proves them.
+Each of the four former survivors fails the build at its lemma:
+
+| Mutation | Full-catalogue outcome |
+|---|---|
+| `wide-families-013` | rejected-by-build |
+| `wide-spec-064` | rejected-by-build |
+| `extra-families-max-acc` | rejected-by-build |
+| `extra-families-min-acc` | rejected-by-build |
+
+`Sum.on_step_missing`, `Max.acc_readable`, `Min.acc_readable`, and `Spec.mem_select` are those lemmas.
+Runtime pins in `lake exe checks` reject the same four replacements after a successful build.
+The cheap runner takes them as guards.
+
+2 survivors remain, the two with scoped-equivalence interpretations below:
+
+- `finish-json-hexdigit`
+- `last-spec-tests-conds`
+
+Those interpretations are unchanged and are not approved laws.
+
+The catalogue has six new entries for the D1 base boundary and the D2 code-unit reader.
+With the eight Step-1 guards they give these outcomes:
+
+| Mutation | Full-catalogue outcome |
+|---|---|
+| `step1-base32-reencode` | rejected-by-build |
+| `step1-fraction-final-zero` | rejected-by-build |
+| `step1-seconds-bound` | rejected-by-build |
+| `step1-zone-only-z` | rejected-by-build |
+| `step1-envelope-keys-remove` | error |
+| `step1-envelope-keys-after-value` | error |
+| `step1-draft-keys-after-values` | error |
+| `step1-record-keys-after-values` | error |
+| `d1-base-problem-remove` | rejected-by-build |
+| `d1-read-text-first` | rejected-by-build |
+| `d2-lone-low-accepted` | rejected-by-build |
+| `d2-lone-high-accepted` | rejected-by-build |
+| `d2-low-surrogate-range` | rejected-by-build |
+| `d2-high-surrogate-range` | rejected-by-build |
+
+Every entry whose outcome differs from the Round 2 run:
+
+| Mutation | Round 2 | This run |
+|---|---|---|
+| `extra-families-max-acc` | survived | rejected-by-build |
+| `extra-families-min-acc` | survived | rejected-by-build |
+| `things-negate-erases` | error | rejected-by-build |
+| `wide-families-013` | survived | rejected-by-build |
+| `wide-spec-064` | survived | rejected-by-build |
+
+The run uses a copy of `model/` and `vectors/` at `bb9dc46`, in its own repository.
+Both baseline builds pass there; initial generation matches the committed corpus.
+The completed run covers exactly the current catalogue IDs.
+The copy keeps the working tree free for other builds; no other process builds in the copy.
+The cheap runner, which is rerun, kills 32 of 32 mutants: every one compiles and then fails runtime checks.
+
+```sh
+node model/mutate/run.mjs --timeout 240 --output /tmp/d1-d6-mutants.json
+python3 interop/fuzz/summarize.py mutation /tmp/d1-d6-mutants.json mutations-d1-d6
+```
+
+## HISTORICAL Round 2 review-fix snapshot: `8a12ba6`
+
+This run predates D6: its six survivors include the four helper candidates.
 
 The Node 22 run completes all 195 catalogue entries with a 240-second command timeout.
 The retained [summary](evidence/mutations-fixes2/summary.json) supports these counts.

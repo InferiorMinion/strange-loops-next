@@ -119,4 +119,23 @@ def edit (base : List Section) (text : List Line) : Option (List Outcome) :=
 def normalize (text : List Line) : Option (List Line) :=
   (parse text).map render
 
+/-! ## The public base boundary
+
+`lookup` takes the first section with an id, so a base that repeats an id has
+no single section an edit could mean. The raw functions above keep that
+first-match behavior; a public reader checks the base before it reads the
+text, and refuses a repeated id by name. -/
+
+/-- Why a base is refused at the public boundary, if it is. -/
+def baseProblem (base : List Section) : Option String :=
+  if (ids base).Nodup then none else some "base-id-duplicate"
+
+/-- Read an edited text against a checked base. The base is checked first, so
+a repeated base id is refused whatever the text says. `none` is the text's own
+refusal, as `edit` gives it. -/
+def read (base : List Section) (text : List Line) : Except String (Option (List Outcome)) :=
+  match baseProblem base with
+  | some why => .error why
+  | none => .ok (edit base text)
+
 end Loops.Lens

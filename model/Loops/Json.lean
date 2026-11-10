@@ -29,6 +29,35 @@ def utf16Char (c : Char) : List Nat :=
 
 def utf16 (s : String) : List Nat := s.toList.flatMap utf16Char
 
+/-! ## Text is Unicode scalar values
+
+RFC 8785 canonicalizes I-JSON, whose strings are sequences of Unicode scalar
+values. A `String` here holds nothing else. Text that arrives as UTF-16 code
+units, as `\u` escapes write it, reads as a string only when its surrogates
+pair. A lone surrogate names no character, so there is nothing to
+canonicalize or hash; no replacement is made. -/
+
+def highSurrogate (u : Nat) : Bool := 0xD800 ≤ u && u < 0xDC00
+
+def lowSurrogate (u : Nat) : Bool := 0xDC00 ≤ u && u < 0xE000
+
+/-- The refusal for text that is not Unicode: a lone surrogate, in a value or a member name. -/
+def notUnicode : String := "string-not-unicode"
+
+/-- UTF-16 code units as characters, or `none` when a surrogate stands alone. -/
+def ofUtf16? : List Nat → Option (List Char)
+  | [] => some []
+  | u :: us =>
+    if highSurrogate u then
+      match us with
+      | l :: rest =>
+        if lowSurrogate l then
+          (ofUtf16? rest).map (Char.ofNat (0x10000 + (u - 0xD800) * 0x400 + (l - 0xDC00)) :: ·)
+        else none
+      | [] => none
+    else if lowSurrogate u || 0x10000 ≤ u then none
+    else (ofUtf16? us).map (Char.ofNat u :: ·)
+
 /-- Strict lexicographic order on code-unit sequences. -/
 def lexLt : List Nat → List Nat → Bool
   | [], [] => false

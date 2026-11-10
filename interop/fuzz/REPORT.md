@@ -2,11 +2,60 @@
 
 ## Scope
 
-This report covers the Step-1 JS, Lean, and Rust campaign.
-It also preserves evidence from earlier two-way campaigns as historical findings.
+This report covers the JS, Lean, and Rust campaign after the D1–D6 rulings.
+It also preserves the Step-1 campaign and earlier two-way campaigns as historical findings.
 The harness covers record, fold, spec, realm, scenario, batch, and lens inputs.
 
-## Round 2 review-fix three-way campaign
+## D1–D6 three-way campaign
+
+Source commit: `bb9dc46`.
+Node 25.9 checks 5,600 cases with seed `d1-d6-1`: 800 cases per family.
+The run uses 88 chunks and takes 62.48 seconds.
+Exit 0: no implementation disagrees on any case.
+The retained [summary](evidence/d1-d6-1/summary.json) supports these counts.
+Run `python3 interop/fuzz/summarize.py report` from the repository root.
+
+| Family | Cases | Match | Protocol refusal | Shared decoder refusal | Mismatch |
+|---|---:|---:|---:|---:|---:|
+| record | 800 | 202 | 557 | 41 | 0 |
+| fold | 800 | 694 | 0 | 106 | 0 |
+| spec | 800 | 693 | 68 | 39 | 0 |
+| realm | 800 | 716 | 0 | 84 | 0 |
+| scenario | 800 | 701 | 0 | 99 | 0 |
+| batch | 800 | 530 | 270 | 0 | 0 |
+| lens | 800 | 571 | 229 | 0 | 0 |
+| Total | 5,600 | 4,107 | 1,124 | 369 | 0 |
+
+All 369 decoder refusals occur in both Lean and Rust.
+They are not protocol agreement.
+D1 settles the only earlier mismatch class.
+The scheduled duplicate-base lens case is now a protocol refusal, `base-id-duplicate`, in all three implementations.
+Its [mismatch list](evidence/d1-d6-1/d1-mismatches.json) keeps the historical example and holds no case.
+No reduction runs, because no mismatch exists.
+
+The record family differs from the Step-1 run by design.
+Twelve of every 64 record indices now carry the D2, D3 and D5 boundaries.
+Ten of them are protocol refusals: lone surrogates and overflow carried as text, and a refused first variant.
+Two list a refused variant after a written one; Lean and Rust refuse to answer these as malformed input.
+The JS adapter now gives one answer for a record input, as Lean does.
+It no longer answers every variant.
+A raw lone surrogate or an overflowing number outside a text payload cannot cross this transport.
+JSON serialization would escape the first and write `null` for the second.
+Model vectors and each implementation's own tests cover those forms.
+
+Raw logs and per-case files are not committed.
+The artifact tests check totals, example identity, and infrastructure-failure rejection.
+Run `python3 -B -m unittest discover -s interop/fuzz/evidence -p 'test_*.py'`.
+
+```sh
+node interop/fuzz/run.mjs --rust --seed d1-d6-1 --n 5600 --shrink-trials 80 --out /tmp/fuzz-d1-d6-1
+python3 interop/fuzz/summarize.py campaign /tmp/fuzz-d1-d6-1 d1-d6-1
+```
+
+## HISTORICAL Round 2 review-fix three-way campaign
+
+This campaign predates the D1–D6 rulings.
+Its 42 mismatches are the duplicate-base class that D1 settles.
 
 Source commit: `8a12ba6`.
 Node 22 checks 5,600 cases with seed `step1-3`: 800 cases per family.

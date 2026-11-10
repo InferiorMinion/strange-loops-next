@@ -63,6 +63,10 @@ def badKind := draft none "batch-k"
 def bigNumber := draft none "batch-big"
   { kind := "estimate", observer := kyle, emitted := at0, about := ["topic:auth"] }
   (.obj [("n", .number (Number.ofScientific false 9007199254740992 0))])
+-- A number past binary64's range reaches the writer's number check like any other out of range.
+def overflowNumber := draft none "batch-overflow"
+  { kind := "estimate", observer := kyle, emitted := at0, about := ["topic:auth"] }
+  (.obj [("n", .number (Number.ofScientific false 1 999)), ("low", .number (Number.ofScientific true 1 999))])
 -- one `prev` the writer holds but about another thing, one it doesn't hold
 def bothPrev := draft none "batch-p"
   { kind := "note", observer := kyle, emitted := at0, about := ["topic:cache"],
@@ -105,7 +109,10 @@ def cases : List Case := [
   ⟨"14-prev-unrelated", ["batch.refuse"], [decide1, unrelated]⟩,
   ⟨"15-write-refused", ["batch.refuse", "write.checked"], [decide1, badKind, bigNumber]⟩,
   ⟨"16-refusal-order", ["batch.refuse"], [decide1, unrelated, unknownPrev, bothPrev]⟩,
-  ⟨"17-label-in-erases", ["batch.refuse", "write.checked"], [decide1, eraseLabel]⟩
+  ⟨"17-label-in-erases", ["batch.refuse", "write.checked"], [decide1, eraseLabel]⟩,
+  ⟨"23-overflow-out-of-range", ["batch.refuse", "write.overflow"], [decide1, overflowNumber]⟩,
+  ⟨"24-overflow-after-envelope", ["batch.refuse", "write.overflow"], [overflowNumber, badKind]⟩,
+  ⟨"25-overflow-before-prev", ["batch.refuse", "write.overflow"], [overflowNumber, unknownPrev]⟩
 ]
 
 def jDraft (d : Draft) : J :=

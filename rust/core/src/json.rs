@@ -22,6 +22,19 @@ pub enum Json {
     /// An object that keeps member order and duplicate names.
     Obj(Vec<(String, Json)>),
 }
+/// Lean: `Loops.notUnicode`, model/Loops/Json.lean.
+/// The refusal for text that is not Unicode: a lone surrogate, in a value or a member name.
+pub const NOT_UNICODE: &str = "string-not-unicode";
+
+/// Lean: `Loops.ofUtf16?`, model/Loops/Json.lean.
+/// Reads UTF-16 code units as text, or `None` when a surrogate stands alone.
+/// A `String` holds only Unicode scalar values, so this is where code units enter;
+/// no replacement character is ever substituted.
+#[must_use]
+pub fn of_utf16(units: &[u16]) -> Option<String> {
+    String::from_utf16(units).ok()
+}
+
 /// Lean: `Loops.strLt` and `Loops.utf16`, model/Loops/Json.lean.
 /// Compares text by UTF-16 code units, not Unicode scalar values.
 pub fn str_cmp(a: &str, b: &str) -> Ordering {

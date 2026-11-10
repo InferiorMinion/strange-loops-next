@@ -44,7 +44,9 @@ store string is preserved but does not cause I/O during pure execution.
   No-op and put-get require distinct base ids.
   Put-get also requires the same ordered ids.
   Edited duplicate and empty ids are refused.
-  Duplicate base-id policy remains open; raw Lean uses first-match behavior.
+  `lens::read` is the public boundary: it refuses a base that repeats an id
+  (`base-id-duplicate`) before it reads the text (D1). The raw `lookup`, `diff`
+  and `edit` keep first-match behavior and leave the premise to the caller.
   Absent and unknown outcomes leave the base unchanged.
 
 ## Numeric and canonical boundaries
@@ -65,6 +67,15 @@ Lean roundtrip and shortest proofs remain nonblocking roadmap work.
 Canonicalization handles repeated object names with stable UTF-16 sorting.
 The first equal-key value is rendered, but validators inspect all raw members.
 NaN and infinities are refused; negative zero canonicalizes to zero.
+`Number` stays finite under D3. A lexeme past binary64's range is malformed to
+the public `parse_json`. The evaluator's input decoder carries it, as the
+largest finite magnitude of its sign, only to positions whose readers refuse
+any magnitude above 2^53 − 1 alike: a record's or batch's payload, where the
+writer answers `number-out-of-range` in its usual place, and a spec, where the
+spec parser refuses it. A refused draft or spec is never canonicalized, so the
+stand-in never reaches bytes. A reader's records (`fold`, `realm`, `scenario`,
+and `spec/run`'s `orders`) keep the strict decoder, as Lean refuses a
+nonfinite number there as malformed input.
 
 The test suite consumes every merged JSON fixture, all six JCS byte pairs,
 4,000 IEEE-hex number rows and 128 SUPERCOP signing rows. There is no
@@ -89,12 +100,21 @@ JSON decoder refusals become per-file error rows, while process I/O failures
 are fatal. Expected fixture answers never participate in evaluator decoding
 or execution. Rust validates ignored metadata for Unicode, with regression tests.
 
-## Adapter boundaries needing decisions
+A `String` holds only Unicode scalar values, so no core value holds a lone
+surrogate (D2). `loops::json::of_utf16` is where code units enter, and refuses
+one. A vector whose text holds a lone surrogate anywhere is malformed. A
+record's `payload_text` that is JSON by its syntax but holds one is the
+protocol refusal `string-not-unicode`, after raw shape and before every value
+check; the evaluator tells the two apart by a syntax-only pass.
 
-- Rust rejects nonfinite overflow during decoding. Lean retains an overflow
-  value until writer refusal. Error mapping, stage, and precedence remain open.
-- Rust signing fixtures require a 32-byte seed. Lean accepts canonical base32hex
-  seeds of other lengths. This is a fixture adapter boundary, not a record rule.
-- Lean returns the first writer refusal for record variants. Rust checks
-  Cartesian variants and may report a seed or disagreement error instead.
-  Mixed variants need an explicit fixture contract.
+## Adapter boundaries settled by D3, D4 and D5
+
+- Overflow: see the numeric boundary above. The mapping is the adapter's; the
+  refusal, its stage and its precedence are the writer's own.
+- Signing fixtures require a seed of exactly 32 bytes, read only once the
+  record is written. Lean and JS now require the same. This is a fixture
+  adapter boundary, not a record rule.
+- A record input's first envelope and first payload decide its answer, as in
+  Lean. Once they are written, a variant that names another record, or a
+  payload variant that is refused, is an error and never an answer. `answers`
+  gives one answer for a record input.

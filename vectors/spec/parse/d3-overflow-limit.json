@@ -1,0 +1,26 @@
+{
+  "vector": "d3-overflow-limit",
+  "layer": "spec/parse",
+  "laws": ["spec.parse"],
+  "source": "model",
+  "input": {
+    "spec": {
+      "vertex": "x",
+      "from": [
+        {
+          "store": "."
+        }
+      ],
+      "fold": {
+        "c": {
+          "collect": true,
+          "limit": 1e999
+        }
+      }
+    }
+  },
+  "expect": {
+    "refused": "limit-invalid",
+    "path": "fold.c.limit"
+  }
+}

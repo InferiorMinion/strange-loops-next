@@ -4,44 +4,43 @@
 
 The tree has three implementations: Lean, JavaScript, and Rust.
 Step 1 applies the six settled rulings before records exist.
-The law index has 76 entries, 624 theorems, and 6 boundary witnesses.
+All three implement the settled decisions D1–D6.
+The law index has 82 entries, 673 theorems, and 6 boundary witnesses.
 See [the law index](design/laws/laws.json) and [proof and boundary data](design/laws/).
 These proofs apply only under their stated premises.
 
-The tree has 334 JSON fixtures: 322 generated fixtures and 12 standard fixtures.
-Lean replays 313 generated fixtures; 9 occurred fixtures use separate checks.
+The tree has 374 JSON fixtures: 362 generated fixtures and 12 standard fixtures.
+Lean replays 353 generated fixtures; 9 occurred fixtures use separate checks.
 Rust checks every fixture, six JCS byte pairs, 4,000 binary64 cases, and 128 SUPERCOP signing cases with ed25519-dalek.
-Rust passes 127 tests; JavaScript passes 5,338 vector checks and 18 regression tests.
-The fuzz suite passes 44 tests.
+Rust passes 136 tests; JavaScript passes 5,447 vector checks and 24 regression tests.
+The fuzz suite passes 45 tests.
 See [vectors](vectors/README.md), [Rust boundaries](rust/GAPS.md), and [the mutation report](model/mutate/REPORT.md).
 These checks provide bounded evidence, not complete JCS or cryptographic correctness.
 They do not certify browser accessibility, external links, or official ASD dictionary compliance.
 
 Input numbers round once to binary64.
-The nonfinite refusal stage remains open.
+A number past binary64's range is refused at the writer's number check.
 The writer accepts values with magnitude at most 2^53 − 1, including fractions.
 Numeric folds read safe whole values only.
 Raw constructors and theorem premises retain separate domains.
 
-The round-two review-fix sequential gates pass on Node 22.
-The `step1-3` campaign checks 5,600 cases, 800 per family, in 155.26 seconds.
-It reports 4,194 matches, 975 protocol refusals, 389 shared decoder refusals, and 42 duplicate-base lens mismatches.
+The D1–D6 sequential gates pass on Node 25.9; the Node 22 runs of Step 1 are not repeated.
+The `d1-d6-1` campaign checks 5,600 cases, 800 per family, in 62.48 seconds.
+It reports 4,107 matches, 1,124 protocol refusals, 369 shared decoder refusals, and no mismatch.
 Decoder refusals are not agreement.
-The parent checks every raw and reduced mismatch; no new mismatch class appears.
-Each reduction uses 76 trials and 3 accepted rounds, below the 80-trial limit.
-These reductions do not establish absolute minimality.
-`interop/fuzz/summarize.py` derives these counts from tracked summaries and the D1 mismatch list.
+The 42 duplicate-base lens mismatches of the `step1-3` campaign are the class D1 settles.
+`interop/fuzz/summarize.py` derives these counts from tracked summaries.
 See [the campaign report](interop/fuzz/REPORT.md) for the scripts and current and historical results.
 The CI seed `ci-1` checks 28 three-way cases without mismatches.
 
-The mutation catalogue has 195 entries, including eight new guard mutations.
+The mutation catalogue has 201 entries, including six new entries for the D1 and D2 definitions.
 It retires the redundant positive-offset guard under R4 and the entry for the deleted `stripZeros` family.
-The full run reports 146 build rejections, 27 vector differences, 16 generator assertion exceptions, and 6 survivors.
+The full run reports 157 build rejections, 27 vector differences, 15 generator assertion exceptions, and 2 survivors.
 The runner exits 1 for assertion exceptions; no timeout or infrastructure failure occurs.
-The six old survivors remain, including the four unapproved D6 helpers.
+The four D6 helper survivors now fail the build at their lemmas; the two scoped-equivalence survivors remain.
 All-envelope shape checks now belong to each library.
-Six deliberate per-envelope faults fail the respective vector layers; restored implementations pass.
-All new cheap guard mutations compile and then fail runtime checks.
+Six deliberate per-envelope faults failed the respective vector layers in Step 1; that probe is not repeated here.
+The cheap runner kills 32 of 32 mutants: each compiles and then fails runtime checks.
 Build rejections are not semantic proof kills.
 Survival does not prove equivalence.
 See [the mutation report](model/mutate/REPORT.md) for outcomes, restoration checks, and limits.
@@ -71,7 +70,38 @@ Two of them need the model: what a place is has no law, and a payload reaches a 
   The payload remains the extension point.
 
 See [record rules](protocol/record.md) and [the settled ledger](design/rethink/ledger.json).
-D1–D7 below remain open and unchanged.
+
+### Settled: D1–D6
+
+The human settles each decision as its written recommendation.
+
+- **D1:** A public lens reader refuses a base that repeats a section id, with `base-id-duplicate`.
+  It checks the base before the text, so this refusal precedes every text refusal.
+  The raw core keeps first-lookup behavior.
+- **D2:** Text is Unicode scalar values.
+  A lone surrogate is refused with `string-not-unicode` before hashing, and nothing is substituted.
+  The rule covers values, member names, envelopes, and batches.
+  The refusal follows `envelope-field-unknown` and precedes `kind-empty`.
+  A payload text receives it only when the text is JSON by syntax.
+  A fixture that holds a lone surrogate anywhere else, ignored metadata included, is malformed input in all three.
+- **D3:** A number past binary64's range is refused by the writer's number check, with `number-out-of-range`.
+  That check stays last in the writer's order.
+  The Rust core stays finite; its input adapter carries the overflow to that check and to the spec parser.
+  Reader records still require finite numbers.
+- **D4:** Signing fixtures require a canonical seed of exactly 32 bytes, read only after the record is written.
+  No adapter pads or truncates. This is a fixture rule, not a record rule.
+- **D5:** A record input's first envelope and first payload decide its refusal, as in Lean.
+  Once they are written, a later variant that names another record is malformed input.
+  So is a later payload variant that is refused.
+- **D6:** Four helper lemmas are proved and pinned.
+  They are `Sum.on_step_missing`, `Max.acc_readable`, `Min.acc_readable`, and `Spec.mem_select`.
+
+D2 and D3 left the code name, stage, and precedence to the human.
+Kyle confirmed the landed choices on 2026-11-10:
+the name `string-not-unicode` and its stage after raw shape, the reuse of `number-out-of-range`, the same overflow handling for spec arguments, and D1 refusing duplicates only.
+D1's name `base-id-duplicate`, D5's refused-payload fault, and the Rust stand-in are implementer choices.
+See [record rules](protocol/record.md), [the lens contract](protocol/lens.md), and [Rust boundaries](rust/GAPS.md).
+D7 below remains open and unchanged.
 
 ### Settled: binary64 standards and writer range
 
@@ -81,72 +111,6 @@ The writer refuses every magnitude above 2^53 − 1, including fractional values
 Canonical formatting covers finite binary64 independently of writer acceptance.
 A Lean roundtrip proof and a shortest proof do not yet exist; neither blocks this choice.
 See [Rust numeric boundaries](rust/GAPS.md) and [record rules](protocol/record.md).
-
-### D1: Duplicate base lens IDs
-
-**Readings:** Refuse duplicate IDs at the public base boundary, or define duplicate matching and application semantics.
-**Effects:** Strict validation enforces existing lens premises; wider semantics need new interoperability tests and scoped laws.
-**Recommendation:** Validate public bases strictly and specify refusal precedence.
-Keep raw core first-lookup behavior unchanged.
-See [the lens contract](protocol/lens.md) and [the duplicate-base example](interop/fuzz/found/03-duplicate-base-id.json).
-
-### D2: Lone surrogates
-
-**Readings:** Report decoder refusal, or map that refusal to a protocol refusal before hashing.
-**Effects:** Text decoding and direct JavaScript values can encounter different inputs and error stages.
-**Recommendation:** Reject lone surrogates in text and direct-value APIs before hashing.
-Include keys, envelopes, and ignored metadata.
-The human must choose the refusal mapping, error code, and precedence.
-Non-scalar input must be rejected; no alternative representation is proposed.
-Rust already validates ignored metadata; this correction does not settle the public contract.
-
-### D3: Overflow stage
-
-**Readings:** Refuse overflow during decoding, retain it for writer refusal, or map a decoder error at the adapter boundary.
-**Effects:** Rust currently rejects nonfinite overflow earlier than Lean's writer, which can change refusal precedence.
-**Recommendation:** Preserve the finite core and choose an explicit adapter mapping, stage, and precedence.
-Pin the chosen behavior across implementations.
-
-### D4: Fixture signing seeds
-
-**Readings:** Require exactly 32 decoded seed bytes for successful signing fixtures, or support Lean's arbitrary canonical byte seeds.
-**Effects:** The first narrows the fixture contract; the second needs compatible signing behavior and tests.
-**Recommendation:** Require a canonical 32-byte seed at the fixture boundary.
-Never pad or truncate seeds.
-This is not a record protocol rule.
-
-### D5: Mixed record variants
-
-**Readings:** Return the first writer refusal, as Lean does, or require agreement across all Cartesian variants.
-**Effects:** First refusal depends on order; agreement checks can require a seed before an earlier refusal.
-**Recommendation:** Use Lean-compatible first refusal for oracle equivalence.
-Test mixed accepted and refused variants and differently refused variants.
-
-### D6: Four mutant candidates
-
-All four candidates remain unapproved; no candidate proof was added.
-**Readings:** Approve concrete helper lemmas and pins, or leave their behavior unpromised.
-**Effects:** Approval specifies these helpers, not fundamental protocol rules.
-**Recommendation:** Approve all four concrete helper lemmas and pins.
-`Spec.select` has explicit limited use: `Spec.run` does not call it.
-See [the mutation report](model/mutate/REPORT.md).
-
-1. **Sum missing step.** Statement: `r.num field = none → (Sum.on field).step s r = s`.
-   Premise: the selected field is unreadable.
-   Effect: an unreadable field leaves the sum unchanged.
-   Why: this pins the concrete helper; generic accumulator commutativity does not state it.
-2. **Max readability.** Statement: `Max.acc.readable r = (r.num "n").isSome`.
-   Premises: none beyond the record type.
-   Effect: readability follows the safe-whole numeric field, not visibility alone.
-   Why: a held record can lack a readable `n`; generic accumulator laws do not specify this predicate.
-3. **Min readability.** Statement: `Min.acc.readable r = (r.num "n").isSome`.
-   Premises: none beyond the record type.
-   Effect: readability follows the safe-whole numeric field, not visibility alone.
-   Why: held records can lack readable numbers; the concrete predicate needs its own pin if promised.
-4. **Spec selection.** Statement: `r ∈ sp.select xs ↔ r ∈ xs ∧ sp.takes r = true`.
-   Premises: none beyond the types.
-   Effect: selection contains exactly the input records that pass the test.
-   Why: this follows from filter membership but names the concrete helper contract; `Spec.run` does not call it.
 
 ### D7: Canonical result encoding
 
@@ -175,7 +139,8 @@ See [Rust boundaries](rust/GAPS.md), [laws](protocol/laws.md), and [vectors](vec
 - Raw duplicate object names use stable UTF-16 sorting and first-equal-key rendering; validators inspect all raw members.
 - Parsed time types do not expose every raw Lean moment; typed references use ASCII rules distinct from fixture digest decoding.
 - Scenario checks cover supplied arrivals, not all permutations.
-- Lens laws require their validity and success premises, including distinct base IDs and matching ordered IDs where stated.
+- Raw lens laws require their validity and success premises, including distinct base IDs and matching ordered IDs where stated.
+  The public reader checks distinct base IDs; it does not check that base IDs are nonempty.
 - Batch meaning uniqueness requires acyclicity and meaning premises; it does not establish resolver correctness.
 - Raw extrema fuzz compares held inputs with readable safe-whole `n`.
   This declared scope is not a bug; broader inputs require a different fixture contract.
@@ -242,8 +207,6 @@ Costs are S, M, or L for relative effort, not schedules.
 
 | Work | Value | Cost | Dependencies and blocking choices |
 | --- | --- | --- | --- |
-| Resolve D1–D5; add Lean pins and align three adapters | Shared public boundaries and repeatable refusals | L: cross-runtime contracts and precedence | Human decisions D1–D5; use the classified campaign evidence |
-| Add four candidate helper lemmas and pins | Specifies useful concrete helper behavior | S: local proofs and pins | Human approval under D6; otherwise retain them as implementation details |
 | Integrate a workbench page | Readers build scenarios and try vector presets | M: UI, validation, browser tests | Use the JS interpreter and scenario-vector presets; version localStorage drafts; never treat them as canonical storage |
 | Define result encoding and Lean encoding vectors | Reproducible result bytes and hashes without losing exact integers | L: codec, schemas, and cross-runtime vectors | Human decision D7; preserve unbounded model outputs |
 | Turn horizons into Lean scenario vectors | Tests concrete compositions and exposes missing premises | L: model and scenario work | Start with minimal compositions of existing core; mark new boundary, tick, and service premises unimplemented before proof claims |
@@ -251,5 +214,5 @@ Costs are S, M, or L for relative effort, not schedules.
 | Bridge source and fold records to hashes | Connects text, record bytes, IDs, and fold outputs | L: byte-level model and evidence | Defined source and writer boundaries; do not assume SHA correctness from bounded IDs |
 | Model the place and the payload bridge | Gives the product slice laws: segments as a set, line to reader record | M: model and vectors | The choices in `rust/PLACE.md`; a second reader of the layout |
 | Build standing, routing, key management, and sync | Supports more than one writer | L: architecture and security work | Step 3; explicit service contracts and key decisions; safe-wrapper versus raw access choice |
-| Expand malformed-input fuzz and standards coverage | Finds more boundary and adapter differences | M: generators, triage, and regression pins | D1–D5 where inputs cross unresolved boundaries; explicit contract before broadening raw extrema |
+| Expand malformed-input fuzz and standards coverage | Finds more boundary and adapter differences | M: generators, triage, and regression pins | The settled D1–D5 boundaries; explicit contract before broadening raw extrema |
 | Complete browser, accessibility, and link validation | Checks the reader experience and published references | M: browser and accessibility checks | Workbench and generated pages; validate anchors and external links separately |

@@ -296,6 +296,9 @@ structure LensCase where
 
 def edited (f : List Section → List Section) : List Line := render (f base)
 
+/-- A base no public reader takes: one id, two sections. -/
+def twice : List Section := [S "a" ["one"], S "a" ["two"]]
+
 def lensCases : List LensCase := [
   ⟨"01-round-trip", ["lens.round-trip"], base, render base⟩,
   ⟨"02-escaping", ["lens.escaping"], [],
@@ -321,7 +324,14 @@ def lensCases : List LensCase := [
   ⟨"gap17-duplicate-id", ["lens.refuse"], [], render [S "a" ["one"], S "a" ["two"]]⟩,
   ⟨"gap18-reorder-unknown-absent", ["lens.nothing-dropped"],
     [S "a" ["A"], S "b" ["B"], S "c" ["C"]],
-    render [S "b" ["B2"], S "a" ["A2"], S "unknown" ["X"]]⟩
+    render [S "b" ["B2"], S "a" ["A2"], S "unknown" ["X"]]⟩,
+  -- D1: a base that repeats an id is refused at the boundary, before the text is read
+  ⟨"d1-duplicate-base-id", ["lens.base-distinct"], [S "a" [], S "a" [""]], render [S "a" []]⟩,
+  ⟨"d1-duplicate-base-unedited", ["lens.base-distinct"], twice, render twice⟩,
+  ⟨"d1-duplicate-base-apart", ["lens.base-distinct"],
+    [S "a" ["one"], S "b" ["B"], S "a" ["two"]], render [S "b" ["B"]]⟩,
+  ⟨"d1-duplicate-base-before-text", ["lens.base-distinct", "lens.refuse"], twice, [L "::: a", L "unclosed"]⟩,
+  ⟨"d1-duplicate-base-empty-text", ["lens.base-distinct"], twice, []⟩
 ]
 
 def lensVector (c : LensCase) : Except String J := do
@@ -331,10 +341,15 @@ def lensVector (c : LensCase) : Except String J := do
   match normalize c.text with
   | some n => if normalize n != some n then throw s!"lens/{c.name}: normal form unstable"
   | none => pure ()
-  let expect : J := match parsed, outcomes with
-    | some d, some os => .obj [("parsed", jDoc d), ("normalized", jLines (render d)),
+  -- the public boundary answers what the raw edit does, wherever it takes the base
+  match read c.base c.text with
+  | .ok os => if os != outcomes then throw s!"lens/{c.name}: the boundary changed an accepted edit"
+  | .error _ => pure ()
+  let expect : J := match read c.base c.text, parsed, outcomes with
+    | .error why, _, _ => .obj [("refused", .str why)]
+    | .ok _, some d, some os => .obj [("parsed", jDoc d), ("normalized", jLines (render d)),
         ("outcomes", .arr (os.map jOutcome)), ("applied", jDoc (apply c.base os))]
-    | _, _ => .obj [("parsed", .null), ("refused", .bool true)]
+    | .ok _, _, _ => .obj [("parsed", .null), ("refused", .bool true)]
   return vector c.name "lens/section" c.laws
     (.obj [("base", jDoc c.base), ("text", jLines c.text)]) expect
 

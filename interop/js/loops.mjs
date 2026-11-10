@@ -46,15 +46,44 @@ export function fixedBytes(text, prefix, length) {
   return bytes;
 }
 
+// Text is Unicode scalar values. A JavaScript string is UTF-16 code units and
+// can hold a surrogate with no partner, which names no character: RFC 8785
+// has no bytes for it. It is refused by name, and nothing is put in its place.
+export const NOT_UNICODE = "string-not-unicode";
+
+export function wellFormed(s) {
+  for (let i = 0; i < s.length; i++) {
+    const u = s.charCodeAt(i);
+    if (u >= 0xdc00 && u <= 0xdfff) return false;
+    if (u >= 0xd800 && u <= 0xdbff) {
+      const l = s.charCodeAt(++i);
+      if (!(l >= 0xdc00 && l <= 0xdfff)) return false;
+    }
+  }
+  return true;
+}
+
+// Every string in a value, member names included, or the refusal.
+export function unicodeProblem(v) {
+  if (typeof v === "string") return wellFormed(v) ? null : NOT_UNICODE;
+  if (Array.isArray(v)) return v.some(unicodeProblem) ? NOT_UNICODE : null;
+  if (v !== null && typeof v === "object") {
+    return Object.keys(v).some((k) => !wellFormed(k) || unicodeProblem(v[k])) ? NOT_UNICODE : null;
+  }
+  return null;
+}
+
 // RFC 8785. Numbers use ECMAScript's own formatting, which is the RFC's.
+// Nothing reaches a hash except through here, so a lone surrogate never does.
 export function canonical(v) {
+  if (typeof v === "string" && !wellFormed(v)) throw new Error(NOT_UNICODE);
   if (v === null || typeof v === "boolean" || typeof v === "string") return JSON.stringify(v);
   if (typeof v === "number") {
     if (!Number.isFinite(v)) throw new Error("JCS has no NaN or Infinity");
     return JSON.stringify(v);
   }
   if (Array.isArray(v)) return "[" + v.map(canonical).join(",") + "]";
-  return "{" + Object.keys(v).sort().map((k) => JSON.stringify(k) + ":" + canonical(v[k])).join(",") + "}";
+  return "{" + Object.keys(v).sort().map((k) => canonical(k) + ":" + canonical(v[k])).join(",") + "}";
 }
 
 const utf8 = (s) => new TextEncoder().encode(s);
@@ -162,6 +191,10 @@ const recordId = (s) => {
 };
 const ENV_KEYS = new Set(["kind", "observer", "emitted", "occurred", "about", "prev", "under", "erases"]);
 
+// The envelope's own fields, read by name: after the shape check there are no others.
+const envUnicodeProblem = (env) =>
+  env !== null && typeof env === "object" && [...ENV_KEYS].some((k) => unicodeProblem(env[k])) ? NOT_UNICODE : null;
+
 export const unknownEnvelopeKeys = (env) => env !== null && typeof env === "object" && !Array.isArray(env) && Reflect.ownKeys(env).some((key) => !ENV_KEYS.has(key));
 
 // Check all raw envelope shapes before reading any of their values.
@@ -189,9 +222,13 @@ export const idPreimage = (env, commit) => canonical({ commit, env: envJson(env)
 export const idOf = (env, commit) => "r:" + base32(sha256(utf8(idPreimage(env, commit))));
 export const signingInput = (id) => "loops/record/v1:" + id;
 
-// An Ed25519 private key from its 32-byte seed (PKCS #8 wrapping).
+// An Ed25519 private key from its 32-byte seed (PKCS #8 wrapping). A seed of
+// any other length is refused: none is padded or cut.
 const PKCS8 = Buffer.from("302e020100300506032b657004220420", "hex");
-const privateKey = (seed) => createPrivateKey({ key: Buffer.concat([PKCS8, Buffer.from(seed)]), format: "der", type: "pkcs8" });
+const privateKey = (seed) => {
+  if (seed.length !== 32) throw new Error(`a signing seed is exactly 32 bytes, not ${seed.length}`);
+  return createPrivateKey({ key: Buffer.concat([PKCS8, Buffer.from(seed)]), format: "der", type: "pkcs8" });
+};
 
 export function publicKey(seed) {
   return createPublicKey(privateKey(seed)).export({ format: "der", type: "spki" }).subarray(-32);
@@ -214,9 +251,14 @@ const inRange = (v) =>
   : true;
 
 // JSON text to a value, refusing a repeated member name at any depth, which
-// JSON.parse would silently resolve to the last one.
+// JSON.parse would silently resolve to the last one, and a lone surrogate,
+// written out or as an escape. The text's syntax comes first: text that is not
+// JSON is a fault with no refusal code, wherever a surrogate or a repeat
+// stands in it. Of JSON text, a lone surrogate is refused before a repeated
+// name: text is decoded, then validated.
 export function parse(text) {
-  let i = 0;
+  let i = 0, repeated = false, lone = false;
+  const string = (s) => { if (!wellFormed(s)) lone = true; return s; };
   const ws = () => { while (" \t\n\r".includes(text[i]) && i < text.length) i++; };
   const token = (re) => { re.lastIndex = i; const m = re.exec(text); if (!m) throw new Error(`bad JSON at ${i}`); i = re.lastIndex; return m[0]; };
   const STR = /"(?:[^"\\\u0000-\u001f]|\\.)*"/y, NUM = /-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?/y;
@@ -227,8 +269,8 @@ export function parse(text) {
       i++; const o = {}, seen = new Set();
       ws(); if (text[i] === "}") { i++; return o; }
       for (;;) {
-        ws(); const k = JSON.parse(token(STR));
-        if (seen.has(k)) throw new Error("member-duplicate");
+        ws(); const k = string(JSON.parse(token(STR)));
+        if (seen.has(k)) repeated = true;
         // Defined, not assigned: assigning "__proto__" would set the prototype.
         seen.add(k); ws(); token(/:/y);
         Object.defineProperty(o, k, { value: value(), enumerable: true, writable: true, configurable: true });
@@ -242,27 +284,35 @@ export function parse(text) {
       ws(); if (text[i] === "]") { i++; return a; }
       for (;;) { a.push(value()); ws(); if (text[i] === ",") { i++; continue; } token(/\]/y); return a; }
     }
-    if (c === '"') return JSON.parse(token(STR));
+    if (c === '"') return string(JSON.parse(token(STR)));
     if (c === "t" || c === "f" || c === "n") return JSON.parse(token(/true|false|null/y));
     return Number(token(NUM));
   }
   const v = value(); ws();
   if (i !== text.length) throw new Error(`bad JSON at ${i}`);
+  if (lone) throw new Error(NOT_UNICODE);
+  if (repeated) throw new Error("member-duplicate");
   return v;
 }
 
 const saltProblem = (salt) => (salt.length === 16 ? null : "salt-not-16-bytes");
 
 // Write a record from its payload as JSON text, checking in the model's order:
-// the envelope, the salt, repeated member names, then numbers.
+// the envelope's keys, lone surrogates, the envelope's values, the salt,
+// repeated member names, then numbers. A number past binary64's range reads as
+// an infinity and meets the number check like any other out of range.
 export function writeText(env, salt, text, seed) {
+  checkEnvelopeKeys([env]);
+  let payload, fault = null;
+  try { payload = parse(text); } catch (e) { fault = e; }
+  if (fault?.message === NOT_UNICODE || envUnicodeProblem(env)) throw new Error(NOT_UNICODE);
   salt = prepare(env, salt);
-  return finish(env, salt, parse(text), seed);
+  if (fault) throw fault;
+  return finish(env, salt, payload, seed);
 }
 
-// Check the envelope once, before the salt supplier or payload text is read.
+// The envelope's values, then the salt. Shape and Unicode come before this.
 function prepare(env, salt) {
-  checkEnvelopeKeys([env]);
   const why = problem(env);
   if (why) throw new Error(why);
   salt = typeof salt === "function" ? salt() : salt;
@@ -271,10 +321,14 @@ function prepare(env, salt) {
   return salt;
 }
 
-// Seal a record: the stored line, and the line after erasure. Refuses a bad
-// envelope, a salt that isn't 16 bytes, then a nonfinite or out-of-range payload number.
+// Seal a record: the stored line, and the line after erasure. Refuses unknown
+// envelope keys, then a lone surrogate anywhere in the envelope or payload,
+// then a bad envelope, a salt that isn't 16 bytes, and last a nonfinite or
+// out-of-range payload number.
 // A seed supplier defers fixture seed decoding until all write checks pass.
 export function seal(env, salt, payload, seed) {
+  checkEnvelopeKeys([env]);
+  if (envUnicodeProblem(env) || unicodeProblem(payload)) throw new Error(NOT_UNICODE);
   salt = prepare(env, salt);
   return finish(env, salt, payload, seed);
 }
@@ -283,7 +337,7 @@ function finish(env, salt, payload, seed) {
   if (!inRange(payload)) throw new Error("number-out-of-range");
   const commit = commitOf(salt, payload);
   const id = idOf(env, commit);
-  const sig = signId(typeof seed === "function" ? seed() : seed, id);
+  const sig = signId(typeof seed === "function" ? seed({ salt, commit, id }) : seed, id);
   return {
     commit, id, sig,
     line: canonical({ id, env: envJson(env), salt: base32(salt), payload, sig }),
@@ -291,15 +345,65 @@ function finish(env, salt, payload, seed) {
   };
 }
 
-// A record input can list equivalent envelope variants. Only siblings bypass
-// the selected writer, so only they need this raw-key check. The active
-// envelope goes straight to the writer's own shape boundary.
-export function writeRecord(input, { envIndex = 0, payloadIndex = 0, writer = "seal" } = {}) {
+// JSON text for a value. A nonfinite number is written as a spelling that
+// overflows back to it, since JSON.stringify would write null.
+function textOf(v) {
+  if (typeof v === "number") return Number.isFinite(v) ? JSON.stringify(v) : v < 0 ? "-1e999" : "1e999";
+  if (Array.isArray(v)) return "[" + v.map(textOf).join(",") + "]";
+  if (v !== null && typeof v === "object") return "{" + Object.keys(v).map((k) => JSON.stringify(k) + ":" + textOf(v[k])).join(",") + "}";
+  return JSON.stringify(v);
+}
+
+// What refuses a variant that the writer isn't asked to write, or null.
+function variantProblem(env, salt, payload) {
+  try { seal(env, salt, payload, () => { throw new Error("written"); }); }
+  catch (e) { return e.message === "written" ? null : e.message; }
+  return null;
+}
+
+// A record input: envelope variants, payload variants (or one payload as
+// text), a salt and a seed, as vectors/README.md describes. The fixture
+// contract, in order:
+//  * every sibling envelope's raw keys are checked; only siblings bypass the
+//    selected writer, and the active envelope goes to the writer's own shape
+//    boundary;
+//  * the first envelope and first payload are written, and their refusal is
+//    the answer whatever the other variants are;
+//  * once they are written, every other variant must be writable and name the
+//    same record, or the input is at fault (an error that is no refusal code);
+//  * only then is the seed read, and it is exactly 32 bytes.
+// `payloadTexts` gives each payload variant as it was written, for a caller
+// that kept the raw text: a JavaScript value cannot hold a repeated member.
+export function writeRecord(input, { envIndex = 0, payloadIndex = 0, writer = "seal", payloadTexts } = {}) {
   checkEnvelopeKeys(input.envs.filter((_, i) => i !== envIndex));
   const env = input.envs[envIndex];
   const salt = () => base32Decode(input.salt);
-  const seed = () => base32Decode(input.seed);
-  return writer === "writeText"
-    ? writeText(env, salt, input.payload_text ?? JSON.stringify(input.payloads[payloadIndex]), seed)
-    : seal(env, salt, input.payloads[payloadIndex], seed);
+  const fault = (what) => { throw new Error(`record input: ${what}`); };
+  const seed = ({ salt, commit, id }) => {
+    input.envs.forEach((e, i) => {
+      if (i === envIndex) return;
+      const why = envUnicodeProblem(e) ?? problem(e);
+      if (why) fault(`envs[${i}] is refused (${why}) where envs[${envIndex}] is written`);
+      if (idOf(e, commit) !== id) fault(`envs[${i}] names another record than envs[${envIndex}]`);
+    });
+    const variants = payloadTexts ?? input.payloads ?? [];
+    variants.forEach((p, i) => {
+      if (i === payloadIndex) return;
+      let value = p;
+      if (payloadTexts) {
+        try { value = parse(p); }
+        catch (e) { fault(`payloads[${i}] is refused (${e.message}) where payloads[${payloadIndex}] is written`); }
+      }
+      const why = variantProblem(env, salt, value);
+      if (why) fault(`payloads[${i}] is refused (${why}) where payloads[${payloadIndex}] is written`);
+      if (commitOf(salt, value) !== commit) fault(`payloads[${i}] commits to another payload than payloads[${payloadIndex}]`);
+    });
+    if (typeof input.seed !== "string") fault("seed is missing");
+    return fixedBytes(input.seed, "", 32);
+  };
+  if (writer === "writeText") {
+    const text = input.payload_text ?? payloadTexts?.[payloadIndex] ?? textOf(input.payloads[payloadIndex]);
+    return writeText(env, salt, text, seed);
+  }
+  return seal(env, salt, input.payloads[payloadIndex], seed);
 }

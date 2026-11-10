@@ -159,7 +159,7 @@ def mutation_report(data):
         for command in mutant['commands']:
             command_status(command)
         outcomes[status] += 1
-        if ident.startswith('step1-'):
+        if ident.startswith(('step1-', 'd1-', 'd2-')):
             guards[ident] = status
         if status == 'survived':
             survivors.append(ident)

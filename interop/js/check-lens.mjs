@@ -14,9 +14,14 @@ export function check(dir) {
     const n = `lens/section/${v.vector}`;
     const { base, text } = v.input;
     t.files++;
+    // A named refusal is the base's, given before the text is read.
+    if (typeof v.expect.refused === "string") {
+      t.expect(`${n} base refused`, Lens.edit(base, text), v.expect);
+      continue;
+    }
     const parsed = Lens.parse(text);
     if (v.expect.refused) {
-      t.expect(`${n} refused`, parsed, null);
+      t.expect(`${n} refused`, Lens.edit(base, text), { parsed: null, refused: true });
       continue;
     }
     if (parsed === null) {
@@ -28,6 +33,8 @@ export function check(dir) {
     const outcomes = Lens.diff(base, parsed);
     t.expect(`${n} outcomes`, outcomes, v.expect.outcomes);
     t.expect(`${n} applied`, Lens.apply(base, outcomes), v.expect.applied);
+    // The public boundary gives the same answer whole.
+    t.expect(`${n} edit`, Lens.edit(base, text), v.expect);
     // The laws the vectors illustrate, held over the vector's own documents.
     t.expect(`${n} round trip`, Lens.parse(Lens.render(parsed)), parsed);
     t.expect(`${n} base round trip`, Lens.parse(Lens.render(base)), base);

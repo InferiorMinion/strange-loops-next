@@ -1,0 +1,30 @@
+{
+  "vector": "d3-overflow-argument",
+  "layer": "spec/parse",
+  "laws": ["spec.parse"],
+  "source": "model",
+  "input": {
+    "spec": {
+      "vertex": "x",
+      "from": [
+        {
+          "store": "."
+        }
+      ],
+      "fold": {
+        "c": {
+          "count": true,
+          "where": {
+            "est": {
+              "is": -1e999
+            }
+          }
+        }
+      }
+    }
+  },
+  "expect": {
+    "refused": "where-invalid",
+    "path": "fold.c.where.est"
+  }
+}

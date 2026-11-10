@@ -158,19 +158,22 @@ test('all existing supported vectors agree with the public API adapters', async 
   assert.ok(checked > 100); assert.ok(refused > 10);
 });
 
-test('reviewed candidate vectors reproduce both recorded answers', async () => {
-  const vectors = [];
-  for await (const file of jsonFiles(join(ROOT, 'interop/fuzz/found'))) {
-    vectors.push(JSON.parse(await readFile(file, 'utf8')));
-  }
-  assert.deepEqual((await readdir(join(ROOT, 'interop/fuzz/found'))).sort(), ['03-duplicate-base-id.json']);
-  assert.equal(vectors.length, 1);
+test('no reviewed candidate is open; the duplicate-base finding is a model vector', async () => {
+  // D1 settles `found/03-duplicate-base-id`: its input is now
+  // vectors/lens/section/d1-duplicate-base-id, with the model's refusal.
+  const open = await readdir(join(ROOT, 'interop/fuzz/found')).catch(() => []);
+  assert.deepEqual(open, [], 'An open finding needs its own reproduction test.');
+  const names = (await readdir(join(ROOT, 'vectors/lens/section'))).filter(name => name.startsWith('d1-')).sort();
+  assert.equal(names.length, 5);
+  const vectors = await Promise.all(names.map(async name =>
+    JSON.parse(await readFile(join(ROOT, 'vectors/lens/section', name), 'utf8'))));
+  const promoted = vectors.find(v => v.vector === 'd1-duplicate-base-id');
+  assert.deepEqual(promoted.input, { base: [{ id: 'a', body: [] }, { id: 'a', body: [''] }], text: ['::: a', ':::'] });
   const responses = await batchVectors(vectors);
   for (let i = 0; i < vectors.length; i++) {
-    const vector = vectors[i], result = assess(vector, responses[i]);
-    assert.ok(equal(responses[i].expect, vector.expect));
-    assert.equal(result.status, 'mismatch', 'A finding resolves. Update or promote its candidate vector.');
-    assert.ok(equal(result.js, vector.js));
+    assert.deepEqual(vectors[i].expect, { refused: 'base-id-duplicate' });
+    assert.ok(equal(responses[i].expect, vectors[i].expect));
+    assert.equal(assess(vectors[i], responses[i]).status, 'protocol-refusal');
   }
 });
 

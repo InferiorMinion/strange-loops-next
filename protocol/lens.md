@@ -39,6 +39,13 @@ It refuses text when parsing fails.
 
 ## Edit and apply
 
+A base is a document: its section ids are distinct.
+A public reader checks the base before it reads the edited text.
+It refuses a base that repeats an id with `base-id-duplicate`.
+That refusal comes first: it is given whatever the text says, malformed or not.
+The raw matching below takes the first base section with an id and does not check.
+Callers of the raw functions keep the distinct-id premise themselves.
+
 Match edited sections to base sections by id, not by position.
 A moved section with the same body produces no outcome.
 A changed body for a known id produces an accepted outcome with that id and body.
@@ -57,4 +64,5 @@ It keeps all parts, including empty parts, and leaves CR unchanged.
 Thus an empty string gives one empty line, and a trailing LF gives a final empty line.
 `input.lens.base` holds base sections; `input.lens.text` holds edited lines.
 `expect.lens` holds the rendered base, edit outcomes, and applied sections.
+A scenario whose base repeats an id is malformed input, not an answer.
 The direct lens runner does not itself prove the adapter's head-to-section relation.
