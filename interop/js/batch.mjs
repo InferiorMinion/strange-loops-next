@@ -1,17 +1,17 @@
-// A changeset of drafts whose about and prev may name each other by @label,
+// A changeset of drafts whose about, of and prev may name each other by @label,
 // resolved to real ids, written with loops.mjs's writer so the ids match
 // layer 0's. Written from vectors/batch and protocol/; no dependencies.
 
 import { base32Decode, canonical, envJson, idOf, commitOf, checkEnvelopeKeys, seal, unicodeProblem, NOT_UNICODE } from "./loops.mjs";
 
 const isLabel = (s) => typeof s === "string" && s.startsWith("@");
-const labelsOf = (d) => [...(d.env.about ?? []), ...(d.env.prev ?? [])].filter(isLabel);
+const labelsOf = (d) => [...(d.env.about ?? []), d.env.of, ...(d.env.prev ?? [])].filter(isLabel);
 
 // What writing refuses, in the order protocol/record.md checks it.
 const WRITE_CODES = [
   "kind-empty", "observer-not-typed", "emitted-not-rfc3339", "occurred-not-span",
-  "about-not-typed", "prev-not-record-id", "under-not-record-id", "erases-not-record-id",
-  "salt-not-16-bytes", "member-duplicate", "number-out-of-range",
+  "about-not-typed", "of-not-typed", "prev-not-record-id", "under-not-record-id",
+  "erases-not-record-id", "of-missing", "salt-not-16-bytes", "member-duplicate", "number-out-of-range",
 ];
 
 // A record id that names nothing, standing in for a label while a draft is
@@ -22,6 +22,7 @@ const NO_KEY = new Uint8Array(32);
 const withRefs = (env, ref) => {
   const out = { ...env };
   for (const k of ["about", "prev"]) if (env[k]) out[k] = env[k].map((s) => (isLabel(s) ? ref(s) : s));
+  if (isLabel(env.of)) out.of = ref(env.of);
   return out;
 };
 
@@ -37,7 +38,7 @@ function writeProblem(d) {
   }
 }
 
-// A label cycle: a draft reaching itself through labels in about or prev.
+// A label cycle: a draft reaching itself through labels in about, of or prev.
 function hasCycle(drafts, byLabel) {
   const state = new Map(); // draft -> "open" | "done"
   const visit = (d) => {
@@ -51,13 +52,16 @@ function hasCycle(drafts, byLabel) {
   return drafts.some(visit);
 }
 
-// A record's things: what it is about, or, about nothing, its own id.
-const thingsOf = (id, about) => (about.length ? about : [id]);
+// A record's thing: its `of`, as written, or without `of` its own id.
+const thingOf = (id, of) => of ?? id;
+
+// A root has no `of` and no `prev`; it starts the thing its id names.
+const isRoot = (h) => h.of === undefined && !h.prev.length;
 
 // The batch's records, one per draft in the order given, each { id,
 // env_canonical }; or { refused } with the first stage that refuses: shape,
 // lone surrogates, labels (duplicate, unknown, cycle), writing from kind-empty, then
-// prev-unknown, then prev-unrelated.
+// prev-unknown, of-not-root, then prev-unrelated (vectors/README.md, Batch).
 // Each stage looks at the whole batch, so no draft order changes the answer.
 export function resolveBatch(drafts, held) {
   // The library checks every envelope's keys before labels or values.
@@ -90,11 +94,16 @@ export function resolveBatch(drafts, held) {
   };
   const records = drafts.map(write);
 
-  const things = new Map(held.map((h) => [h.id, thingsOf(h.id, h.about)]));
-  for (const r of records) things.set(r.id, thingsOf(r.id, r.env.about ?? []));
+  // What the writer holds of each record, in the batch or the store: its `of`
+  // and its `prev`. A `held` entry is { id, of?, prev }.
+  const holds = new Map(held.map((h) => [h.id, { of: h.of, prev: h.prev ?? [] }]));
+  for (const r of records) holds.set(r.id, { of: r.env.of, prev: r.env.prev ?? [] });
   const prevs = records.flatMap((r) => (r.env.prev ?? []).map((p) => [r, p]));
-  if (prevs.some(([, p]) => !things.has(p))) return { refused: "prev-unknown" };
-  if (prevs.some(([r, p]) => !things.get(r.id).some((t) => things.get(p).includes(t)))) return { refused: "prev-unrelated" };
+  if (prevs.some(([, p]) => !holds.has(p))) return { refused: "prev-unknown" };
+  // An `of` naming a held record names a root; one the writer doesn't hold is not judged.
+  if (records.some((r) => holds.has(r.env.of) && !isRoot(holds.get(r.env.of)))) return { refused: "of-not-root" };
+  // Succession is within a thing: each `prev` target is of the record's thing.
+  if (prevs.some(([r, p]) => thingOf(p, holds.get(p).of) !== thingOf(r.id, r.env.of))) return { refused: "prev-unrelated" };
 
   return { records: records.map((r) => ({ id: r.id, env_canonical: canonical(envJson(r.env)) })) };
 }

@@ -4,6 +4,12 @@
 `batch.mjs` checks every draft's envelope keys before labels or values.
 The vector harness calls these library boundaries; it does not define the key policy.
 
+## Things
+
+A record is of one thing: its `of`, read as written, or without `of` its own id (`fold.mjs`, `thingOf`).
+Heads, admission (`realm.mjs`), the writer's `prev` checks (`batch.mjs`) and a spec's `latest-by` and `from.of` all read that.
+`about` only mentions; `from.about` and `env.about` test it as written, and it never makes a head.
+
 ## Raw text
 
 A JavaScript object cannot retain repeated JSON members.

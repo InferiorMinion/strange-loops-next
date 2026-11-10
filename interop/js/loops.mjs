@@ -99,6 +99,9 @@ export function envJson(env) {
     if (env[k] && env[k].length) out[k] = canonSet(env[k]);
   }
   if (env.under !== undefined) out.under = env.under;
+  // `of`, like `occurred` and `under`, is left out when absent, so a record
+  // without it keeps its bytes and id.
+  if (env.of !== undefined) out.of = env.of;
   return out;
 }
 
@@ -189,7 +192,7 @@ const typedRef = (s) => /^[a-z][a-z0-9-]*:./su.test(s);
 const recordId = (s) => {
   try { fixedBytes(s, "r:", 32); return true; } catch { return false; }
 };
-const ENV_KEYS = new Set(["kind", "observer", "emitted", "occurred", "about", "prev", "under", "erases"]);
+const ENV_KEYS = new Set(["kind", "observer", "emitted", "occurred", "about", "of", "prev", "under", "erases"]);
 
 // The envelope's own fields, read by name: after the shape check there are no others.
 const envUnicodeProblem = (env) =>
@@ -202,15 +205,21 @@ export function checkEnvelopeKeys(envs) {
   if (envs.some(unknownEnvelopeKeys)) throw new Error("envelope-field-unknown");
 }
 
+// The writer's envelope checks, in the model's order (`Env.problem`,
+// model/Loops/Envelope.lean). `of` is one typed reference, checked right after
+// `about`; a record with `prev` and no `of` is refused last, once every field
+// is well formed.
 export function problem(env) {
   if (!env.kind) return "kind-empty";
   if (!typedRef(env.observer)) return "observer-not-typed";
   if (!validEmitted(env.emitted)) return "emitted-not-rfc3339";
   if (env.occurred !== undefined && !occurredSpan(env.occurred)) return "occurred-not-span";
   if (!(env.about ?? []).every(typedRef)) return "about-not-typed";
+  if (env.of !== undefined && !(typeof env.of === "string" && typedRef(env.of))) return "of-not-typed";
   if (!(env.prev ?? []).every(recordId)) return "prev-not-record-id";
   if (env.under !== undefined && !recordId(env.under)) return "under-not-record-id";
   if (!(env.erases ?? []).every(recordId)) return "erases-not-record-id";
+  if ((env.prev ?? []).length && env.of === undefined) return "of-missing";
   return null;
 }
 

@@ -101,12 +101,14 @@ const extremum = (pick) => (records, opts) => {
 export const min = extremum((a, b) => (b < a ? b : a));
 export const max = extremum((a, b) => (b > a ? b : a));
 
-// The family over heads. A thing's state is LatestBy over the records about
-// it: a record about several things is in each, one about nothing anchors a
-// thing named by its own id. `prev` supersedes within a thing, and reads only
-// the envelope, so a record whose payload is withheld still supersedes.
+// The family over heads. A record is an emit of exactly one thing, a fact of
+// its own envelope: what `of` names, read as written, or without `of` its own
+// id (vectors/README.md). `about` only mentions things and never makes a head.
+// A thing's state is LatestBy over the records of it. `prev` supersedes within
+// a thing, and reads only the envelope, so a record whose payload is withheld
+// still supersedes.
 
-const thingsOf = (r) => (r.about?.length ? [...new Set(r.about)] : [r.id]);
+export const thingOf = (r) => r.of ?? r.id;
 
 // The heads of one set of records, newest first.
 function headsOf(records) {
@@ -118,7 +120,8 @@ function headsOf(records) {
 export function states(records) {
   const byThing = new Map();
   for (const r of distinct(records)) {
-    for (const t of thingsOf(r)) byThing.set(t, [...(byThing.get(t) ?? []), r]);
+    const t = thingOf(r);
+    byThing.set(t, [...(byThing.get(t) ?? []), r]);
   }
   return new Map([...byThing].map(([t, rs]) => [t, headsOf(rs)]));
 }
@@ -138,9 +141,10 @@ export function latest(records) {
   return { winner: hs.length ? hs[0].id : null, others: ids(hs.slice(1)) };
 }
 
-// Every thing's heads together (a record that is a head in two things once), newest first.
+// Every thing's heads together, newest first. A record is of one thing, so
+// each head appears once.
 export function heads(records, { limit } = {}) {
-  const hs = distinct([...states(records).values()].flat()).sort(newestFirst);
+  const hs = [...states(records).values()].flat().sort(newestFirst);
   return limit === undefined ? hs : hs.slice(0, limit);
 }
 
