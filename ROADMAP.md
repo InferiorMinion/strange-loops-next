@@ -140,9 +140,13 @@ The earlier systems (`tasked`, `ticked`) keyed a fold by a field and re-emitted 
 The choice has three parts. D8a and D8b go together; D8c can follow.
 
 - **D8a, an item field.** One single-valued envelope field, `of`, says which thing a record is an emit of.
-  A record without it is an emit of the thing its own id names, or, with `prev`, of what it replaces.
+  Only a root, a record with no `of` and no `prev`, leaves it out; it is an emit of the thing its own id names.
+  Every record with `prev` states `of`. A tool may fill it in; the protocol never infers it.
+  `of` is read literally: a reader never resolves it through another record, so a record's thing is a fact of its own envelope.
+  An id in `of` names a root; a writer holding a record that is not a root refuses to name it.
   `latest-by` runs over this field; a thing's heads are records of it.
-  Every `prev` target must be an emit of the same thing.
+  Every `prev` target must be an emit of the same thing, so `prev` never crosses things.
+  One thing replacing another is a new thing that mentions the old one, plus an emit on the old one that closes it: two records, not atomic.
 - **D8b, `about` is mention only.** `about` never makes a head.
   `where` and `collect` still read it, so "everything said about X" stays a fold.
   A link needs no new primitive: it is a thing whose `about` names both ends.
@@ -175,6 +179,11 @@ The core starts to read a payload's top-level keys by name.
 `thing.slice` as proved covers whole-record folds only; the keyed fold needs its own slice law, argued and not yet stated in Lean.
 **Order:** Take D8a and D8b now, in the envelope, before any store is kept.
 Take D8c as a second fold family beside whole-record `latest-by`, once D8a's shape is settled and its slice law is stated.
+**Amended by Kyle, 2026-11-10,** on margins-claude's finding in issue #4 (`sl-py/keyslice.py`): D8a first let a record with `prev` leave `of` out and take its thing from what it replaces.
+That made a record's thing depend on another record being held, and a partial copy then answered wrongly: 10,276 of 33,634 cases under one slice rule and 412 under the other, against none in 35,200 with `of` stated.
+The CLI's "a revision without `--about` is about what it replaces" stays as a writer's convenience only.
+The same experiment found that what is sent of a thing must be convex over `prev`: a replaced member sent without the path to what replaced it reads as live.
+margins-claude will state that in Lean once D8a is modelled.
 **Kyle's choices, 2026-11-10,** following margins-claude's reasoning on merge request !13:
 - **Names:** the item field is `of` and the declaration is `sets`. A record *of* the task, against a record *about* it; `sets`, like `erases`, is a verb for what the record does.
 - **Natural keys:** `of` takes a record id or a natural key, as `about` does.
