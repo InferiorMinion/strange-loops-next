@@ -210,6 +210,36 @@
    "states":
    "∀ {xs : List Loops.Record}, Loops.Addressed xs → ∀ {t : String} {r : Loops.Record}, r ∈ (Loops.stateIn t xs).heads → Loops.HeadOf xs t r",
    "module": "Laws.Spec"},
+  "Loops.speaks_view":
+  {"uses": ["Loops.binds_view", "Loops.root_view"],
+   "states":
+   "∀ {f : Loops.Record → Loops.Record}, Loops.View f → ∀ (xs : List Loops.Signed) (L k : String), Loops.Speaks (List.map (Loops.Signed.through f) xs) L k ↔ Loops.Speaks xs L k",
+   "module": "Laws.Keys"},
+  "Loops.speaks_set":
+  {"uses": ["Loops.speaks_grows"],
+   "states":
+   "∀ {xs ys : List Loops.Signed}, (∀ (s : Loops.Signed), s ∈ xs ↔ s ∈ ys) → ∀ (L k : String), Loops.Speaks xs L k ↔ Loops.Speaks ys L k",
+   "module": "Laws.Keys"},
+  "Loops.speaks_needs_binding":
+  {"uses": [],
+   "states":
+   "∀ {xs : List Loops.Signed} {L k : String}, ¬Loops.Root xs L k → (∀ (b : Loops.Signed), b ∈ xs → b.binds L k = true → ¬Loops.Root xs L b.key) → ¬Loops.Speaks xs L k",
+   "module": "Laws.Keys"},
+  "Loops.speaks_grows":
+  {"uses": ["Loops.root_grows"],
+   "states":
+   "∀ {xs ys : List Loops.Signed} {L k : String}, (∀ (s : Loops.Signed), s ∈ xs → s ∈ ys) → Loops.Speaks xs L k → Loops.Speaks ys L k",
+   "module": "Laws.Keys"},
+  "Loops.speaks_anchored":
+  {"uses": [],
+   "states":
+   "∀ {xs : List Loops.Signed} {L k : String}, Loops.Speaks xs L k → ∃ a, a ∈ xs ∧ a.anchors L = true",
+   "module": "Laws.Keys"},
+  "Loops.speakers_iff":
+  {"uses": ["Loops.roots_iff"],
+   "states":
+   "∀ {xs : List Loops.Signed} {L k : String}, k ∈ Loops.speakers xs L ↔ Loops.Speaks xs L k",
+   "module": "Laws.Keys"},
   "Loops.sorted_insertRecs":
   {"uses":
    ["Loops.Newer.total", "Loops.mem_insertRec", "Loops.sorted_insertRec"],
@@ -325,6 +355,21 @@
   {"uses": ["Loops.idsOf_sorted", "Loops.pick_id"],
    "states": "∀ (xs : List Loops.Record), Loops.Distinct (Loops.settle xs)",
    "module": "Laws.Things"},
+  "Loops.roots_iff":
+  {"uses": [],
+   "states":
+   "∀ {xs : List Loops.Signed} {L k : String}, k ∈ Loops.roots xs L ↔ Loops.Root xs L k",
+   "module": "Laws.Keys"},
+  "Loops.root_view":
+  {"uses": ["Loops.anchors_view"],
+   "states":
+   "∀ {f : Loops.Record → Loops.Record}, Loops.View f → ∀ (xs : List Loops.Signed) (L k : String), Loops.Root (List.map (Loops.Signed.through f) xs) L k ↔ Loops.Root xs L k",
+   "module": "Laws.Keys"},
+  "Loops.root_grows":
+  {"uses": [],
+   "states":
+   "∀ {xs ys : List Loops.Signed} {L k : String}, (∀ (s : Loops.Signed), s ∈ xs → s ∈ ys) → Loops.Root xs L k → Loops.Root ys L k",
+   "module": "Laws.Keys"},
   "Loops.refuse_ne_ok":
   {"uses": [],
    "states":
@@ -1310,11 +1355,25 @@
    "states":
    "∀ (n : Nat) (s : String), Loops.byteText n s = true ↔ ∃ bs, bs.length = n ∧ Loops.base32 bs = s",
    "module": "Laws.Base32"},
+  "Loops.bound_binds_nothing":
+  {"uses": ["Loops.speaks_grows"],
+   "states":
+   "∀ {xs : List Loops.Signed} {L : String} {s : Loops.Signed}, ¬Loops.Root (s :: xs) L s.key → ∀ (k : String), Loops.Speaks (s :: xs) L k ↔ Loops.Speaks xs L k",
+   "module": "Laws.Keys"},
   "Loops.bitsBytes.eq_def":
   {"uses": [],
    "states":
    "∀ (x : Nat) (x_1 : List Bool), Loops.bitsBytes x x_1 = match x, x_1 with | 0, x => [] | n.succ, bs => (List.foldl (fun n b => 2 * n + if b = true then 1 else 0) 0 (List.take 8 bs)).toUInt8 :: Loops.bitsBytes n (List.drop 8 bs)",
    "module": "Laws.Base32"},
+  "Loops.binds_view":
+  {"uses":
+   ["Loops.SameEnvelope.about",
+    "Loops.SameEnvelope.kind",
+    "Loops.SameEnvelope.observer",
+    "Loops.View.envelope"],
+   "states":
+   "∀ {f : Loops.Record → Loops.Record}, Loops.View f → ∀ (s : Loops.Signed) (L k : String), (Loops.Signed.through f s).binds L k = s.binds L k",
+   "module": "Laws.Keys"},
   "Loops.baseForm_some":
   {"uses": [],
    "states":
@@ -1349,6 +1408,20 @@
    "states":
    "∀ (fuel : Nat) (bs : List Bool) (acc : List Char), Loops.base32.go fuel bs acc = match fuel with | 0 => acc.reverse | fuel.succ => if bs.isEmpty = true then acc.reverse else have group := List.take 5 bs ++ List.replicate (5 - (List.take 5 bs).length) false; have n := List.foldl (fun n b => 2 * n + if b = true then 1 else 0) 0 group; Loops.base32.go fuel (List.drop 5 bs) (Loops.base32Alphabet.getD n 'a' :: acc)",
    "module": "Laws.Base32"},
+  "Loops.attributed_grows":
+  {"uses": ["Loops.speaks_grows"],
+   "states":
+   "∀ {xs ys : List Loops.Signed} {s : Loops.Signed}, (∀ (s : Loops.Signed), s ∈ xs → s ∈ ys) → Loops.Attributed xs s → Loops.Attributed ys s",
+   "module": "Laws.Keys"},
+  "Loops.anchors_view":
+  {"uses":
+   ["Loops.SameEnvelope.id",
+    "Loops.SameEnvelope.kind",
+    "Loops.SameEnvelope.observer",
+    "Loops.View.envelope"],
+   "states":
+   "∀ {f : Loops.Record → Loops.Record}, Loops.View f → ∀ (s : Loops.Signed) (L : String), (Loops.Signed.through f s).anchors L = s.anchors L",
+   "module": "Laws.Keys"},
   "Loops.admit_view":
   {"uses": ["Loops.entitled_view"],
    "states":
@@ -1937,6 +2010,21 @@
    "states":
    "∀ {t : String} {S W : List Loops.Record}, Loops.Slice t S W → ∀ (r : Loops.Record), r ∈ W → r.isAbout t = true → ∀ (e : Loops.Record), e ∈ W → e.erases.contains r.id = true → e ∈ S",
    "module": "Laws.Slice"},
+  "Loops.Signed.mk.sizeOf_spec":
+  {"uses": [],
+   "states":
+   "∀ (record : Loops.Record) (key : String), sizeOf { record := record, key := key } = 1 + sizeOf record + sizeOf key",
+   "module": "Loops.Keys"},
+  "Loops.Signed.mk.injEq":
+  {"uses": ["Loops.Signed.mk.inj"],
+   "states":
+   "∀ (record : Loops.Record) (key : String) (record_1 : Loops.Record) (key_1 : String), ({ record := record, key := key } = { record := record_1, key := key_1 }) = (record = record_1 ∧ key = key_1)",
+   "module": "Loops.Keys"},
+  "Loops.Signed.mk.inj":
+  {"uses": [],
+   "states":
+   "∀ {record : Loops.Record} {key : String} {record_1 : Loops.Record} {key_1 : String}, { record := record, key := key } = { record := record_1, key := key_1 } → record = record_1 ∧ key = key_1",
+   "module": "Loops.Keys"},
   "Loops.Shown.withheld.sizeOf_spec":
   {"uses": [],
    "states": "sizeOf Loops.Shown.withheld = 1",

@@ -5,6 +5,7 @@ import Laws.Numeric
 import Laws.Families
 import Laws.Spec
 import Laws.Slice
+import Laws.Keys
 import Laws.Parse
 import Laws.Batch
 import Laws.Write
