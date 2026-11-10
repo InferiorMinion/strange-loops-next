@@ -2,11 +2,13 @@
 #
 # strange-loops-next is primary on GitLab from 2026-11-08, so merge requests are
 # checked here. Keep the two files in step: a gate added to one belongs in the other.
-# GitLab runs the same gates with three economies GitHub does not have: the model
+# GitLab runs the same gates with four economies GitHub does not have: the model
 # mutants run only when their inputs change (model-mutants below), the model gate
-# runs in a prebuilt image (ci/Dockerfile) instead of installing toolchains, and
-# main does not re-run the gates for a merge request merge whose pipeline already
-# passed on the same tree (merge-check below). GitHub runs every gate on every push.
+# runs in a prebuilt image (ci/Dockerfile) instead of installing toolchains, a
+# merge request that changes nothing the rust, model and interop gates read skips
+# them (gate-inputs below), and main does not re-run the gates for a merge request
+# merge whose pipeline already passed on the same tree (merge-check below). GitHub
+# runs every gate on every push.
 #
 # Every job is tagged `homelab` (the Docker executor). The instance's other runner,
 # osxcompute-primary, is a macOS shell executor that also takes untagged jobs and
@@ -19,6 +21,35 @@
 .image-inputs: &image-inputs
   - ci/Dockerfile
   - model/lean-toolchain
+
+# Everything the rust, model and interop gates read. A merge request pipeline
+# compares its changes with the target branch, so a merge request that changes
+# none of these leaves those gates reading exactly the files they passed on in
+# main, and skips them. What remains outside is the root documents and .github/.
+# A gate that starts reading a path outside this list must have it added here, or
+# a merge request could change that path unchecked. The root files named last do
+# not exist yet: rustup, cargo, rustfmt, clippy and git each look for theirs in
+# the directories above where they run, so adding one could change a gate. The skip is only in merge
+# request pipelines: on a branch push `changes` compares with the previous push,
+# which says nothing about the tree as a whole, so every other pipeline runs them.
+.gate-inputs: &gate-inputs
+  - design/**/*
+  - interop/**/*
+  - model/**/*
+  - rust/**/*
+  - vectors/**/*
+  - out/**/*
+  - protocol/**/*
+  - ci/**/*
+  - .gitlab-ci.yml
+  - rust-toolchain
+  - rust-toolchain.toml
+  - .cargo/**/*
+  - rustfmt.toml
+  - .rustfmt.toml
+  - clippy.toml
+  - .clippy.toml
+  - .gitattributes
 
 # Main skips the gates for a tested merge. That is sound only with the project
 # settings it relies on: merge method "merge commit with semi-linear history"
@@ -112,6 +143,10 @@ rust:
   needs: []
   rules:
     - *not-merged
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes: *gate-inputs
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      when: never
     - when: on_success
   script:
     - cd rust
@@ -137,6 +172,10 @@ model:
   extends: .model
   rules:
     - *not-merged
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes: *gate-inputs
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      when: never
     - when: on_success
   script:
     # Proofs check
@@ -200,6 +239,10 @@ interop:
   image: node:22-bookworm
   rules:
     - *not-merged
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes: *gate-inputs
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      when: never
     - when: on_success
   script:
     # The JS implementation agrees on every vector
@@ -207,6 +250,9 @@ interop:
     # The JS reader guards hold
     - node --test interop/js/*.test.mjs
 
+# The design gate runs in every pipeline, whatever changed. It takes seconds, and
+# "pipelines must succeed" needs a pipeline with at least one job, so without it
+# a merge request that changes only documents could not merge.
 design:
   stage: check
   needs: []
@@ -229,8 +275,13 @@ design:
 # merge-check passes only if this commit is a merge of exactly the previous
 # main and a branch that already contained it, has that branch head's tree,
 # GitLab records it as the merge of a merge request with that head, and the
-# latest merge request pipeline on that head passed. Then every gate has run
-# on this tree.
+# latest merge request pipeline on that head passed. That pipeline ran every
+# gate that reads something the merge request changed. It compared with main as
+# it was then, which the head contains, since a branch that contains the current
+# main contains every earlier one. The gates it skipped read only files identical
+# to that main's, where they passed. Then every gate has passed on this tree or
+# on the very files it reads in this tree, as long as gate-inputs lists everything
+# the gates read.
 merge-check:
   stage: image
   image: node:22-bookworm
