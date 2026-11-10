@@ -353,4 +353,8 @@ def main (args : List String) : IO Unit := do
   ensure ((wholeHeads [a]).length == 1) "a record that mentions two things heads more than once"
   ensure (Latest.winner (Latest.fold [a, b]) == some b) "latest misses newest whole-view head"
   ensure (Latest.others (Latest.fold [a, b]) == []) "about makes a whole-view conflict"
+  -- heads are per thing: a `prev` naming a record of another thing supersedes nothing
+  let c := { base with id := fixtureId 13, of := some "t:b", prev := [fixtureId 11] }
+  ensure (((wholeHeads [a, c]).map (·.id)) == [fixtureId 13, fixtureId 11])
+    "global supersession removes another thing's head"
   IO.println s!"runtime checks pass; {count} RFC binary64 bit patterns pass"
