@@ -170,7 +170,11 @@ The core starts to read a payload's top-level keys by name.
 `thing.slice` as proved covers whole-record folds only; the keyed fold needs its own slice law, argued and not yet stated in Lean.
 **Recommendation:** Take D8a and D8b now, in the envelope, before any store is kept.
 Take D8c as a second fold family beside whole-record `latest-by`, once D8a's shape is settled and its slice law is stated.
-**Left to the human:** the field names (`of` and `sets` are the working names), whether the item field takes natural keys as `about` does, whether two live setters giving the same value are a conflict (in the experiment they are not), and whether a writer must refuse a payload key it did not declare (a reader needs only that such keys are not read).
+**Left to the human:** the field names (`of` and `sets` are the working names), whether the item field takes natural keys as `about` does, whether two live setters giving the same value are a conflict (in the experiment they are not).
+**Kyle, 2026-11-10, on undeclared payload keys:** refusal is progressive.
+A writer refuses a payload key it did not declare only in a store declared strict.
+Elsewhere the key is written, the keyed fold does not read it, and a whole-record fold, a `where` test or a lens still can.
+Making it count takes a new emit that declares it, since the declaration is in the id.
 
 ### Retained boundaries
 
