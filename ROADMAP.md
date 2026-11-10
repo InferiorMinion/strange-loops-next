@@ -124,6 +124,72 @@ Raw JCS numeric rounding cannot preserve every `Int`.
 **Recommendation:** Define a separate versioned result codec using typed decimal integer strings under JCS.
 Never round or cap current model outputs.
 
+### D8: Items, mentions and declared keys
+
+Kyle ruled this on 2026-11-10; nothing here is built or modelled yet.
+It changes the settled envelope, so it lands as R1–R6 and D1–D6 did: model, vectors, JavaScript, Rust, then protocol and pages.
+**Finding:** Two apps built on the product slice hit one wall on 2026-11-10.
+The orchestration dry run is in [Scenarios](design/rethink/sections/13-scenarios.html), step 8; margins-claude's `work` app is described in its notes on merge request !12.
+`about` does two jobs: "this record is an emit of this thing" and "this record mentions that thing".
+A task about its plan became a rival head of the plan.
+A record about something else was not a thing under its own id.
+A closing record about the 23 ids it covered became the winner of each.
+Restating a whole payload on every change left a writer no basis to merge a fork field by field; the fork showed as two heads, and one writer's merge dropped a change.
+The earlier systems (`tasked`, `ticked`) keyed a fold by a field and re-emitted only the changed key.
+
+The choice has three parts. D8a and D8b go together; D8c can follow.
+
+- **D8a, an item field.** One single-valued envelope field, `of`, says which thing a record is an emit of.
+  A record without it is an emit of the thing its own id names, or, with `prev`, of what it replaces.
+  `latest-by` runs over this field; a thing's heads are records of it.
+  Every `prev` target must be an emit of the same thing.
+- **D8b, `about` is mention only.** `about` never makes a head.
+  `where` and `collect` still read it, so "everything said about X" stays a fold.
+  A link needs no new primitive: it is a thing whose `about` names both ends.
+- **D8c, declared keys.** An envelope field, `sets`, lists the payload keys an emit sets.
+  A keyed fold holds, for each key, the setters no descendant setter of that key replaces, over `prev`.
+  Different keys from one head merge; one key set twice from one head leaves two live setters, and the fold reports both.
+  A key is unknown exactly when a live setter's payload is not held, as `where` answers.
+  Withheld and erased are one state to the fold: an envelope without its payload.
+  They differ only in what comes next, which the arrival laws carry: a withheld payload may arrive, an erased one must be dropped.
+  Either way a later emit that sets the key makes it known again.
+  A declared key absent from the payload is unset, and a payload key that is not declared is not read.
+  An absent declaration and an empty one differ: absent means the record is read whole, as today; empty means it sets nothing, which is a pure join of two heads.
+  A whole-read emit sets every key, named or not, and stays needed until a later whole-read emit replaces it.
+
+**Readings:** Put identity and keys in the envelope, or in the payload.
+In the payload, an erased or withheld emit can be placed only by `prev`, and a slice or a sync cannot be computed from envelopes.
+For declared keys, margins-claude's experiment (`sl-py/keyfold.py`) found no wrong answer in 240,000 key answers, and none in 320,000 more with whole-read emits mixed into the chains.
+Within one thing, its envelopes plus its live setters' payloads sufficed, and none could be dropped.
+The experiment takes the item as given, one thing at a time, with no erasing records and no admission.
+That identity belongs in the envelope (D8a) is argued, not measured, and the composition with `thing.slice` is untested.
+Without declared keys, a reader needs every payload in the chain, or answers wrongly when an unheld emit is taken to set nothing.
+**Effects:** Two new envelope fields enter the id; a record without them keeps its bytes and id.
+Records already about a thing stop making heads of it, so the `latest-by` vectors and the heads and slice laws are restated.
+`prev-unrelated` is restated over the item field.
+A record is an emit of one thing only; today one record can head several.
+An erased emit still shows which keys it changed, though not to what.
+Kyle accepted this on 2026-11-10: erasure is the emergency stop for something that should not have been emitted, and its job is that the content travels no further.
+`kind`, `about` and the times already survive erasure; secrets do not go in envelopes, key names included.
+The core starts to read a payload's top-level keys by name.
+`thing.slice` as proved covers whole-record folds only; the keyed fold needs its own slice law, argued and not yet stated in Lean.
+**Order:** Take D8a and D8b now, in the envelope, before any store is kept.
+Take D8c as a second fold family beside whole-record `latest-by`, once D8a's shape is settled and its slice law is stated.
+**Kyle's choices, 2026-11-10,** following margins-claude's reasoning on merge request !13:
+- **Names:** the item field is `of` and the declaration is `sets`. A record *of* the task, against a record *about* it; `sets`, like `erases`, is a verb for what the record does.
+- **Natural keys:** `of` takes a record id or a natural key, as `about` does.
+  A writer can name a thing before holding any record of it, and two writers who start the same named thing join.
+  An unnamed thing is rooted at its first record, and a second branch without `prev` joins it by that id.
+  In an open store anyone can emit of a name and become a head; that is left to standing, where grants per thing belong.
+- **Same value from two setters:** the core declares no conflict.
+  The keyed fold reports each key's live setters, newest first, as whole-record `latest-by` gives a winner and the others.
+  Whether two of them conflict is a reading made above the core, so the core never defines equality on payload values.
+  A reading should not treat agreement as a conflict.
+**Kyle, 2026-11-10, on undeclared payload keys:** refusal is progressive.
+A writer refuses a payload key it did not declare only in a store declared strict.
+Elsewhere the key is written, the keyed fold does not read it, and a whole-record fold, a `where` test or a lens still can.
+Making it count takes a new emit that declares it, since the declaration is in the id.
+
 ### Retained boundaries
 
 These boundaries trace existing domains and premises; they do not create new protocol choices.
@@ -156,7 +222,12 @@ These mechanical corrections do not add protocol choices.
 
 ## Build sequence
 
-Steps 0 and 1 are done. Steps 2–6 are proposals.
+Steps 0 and 1 are done. Step 2's first slice is merged. Steps 2–6 are proposals.
+**Order, as Kyle set it on 2026-11-10:** finish step 2 with D8, then step 4 (ticks), then step 3 (standing) together with step 5 (sharing).
+Standing matters once records cross between people: sharing through git repositories across teams, and over HTTP.
+Everything wanted before that runs on one machine under one trust root.
+Retiring still follows ticks, as the Trust walk found.
+The step numbers below are names, not the order.
 Each step extends the model laws, computes protocol vectors, then implements Rust.
 
 | Step | Builds | Done when |
