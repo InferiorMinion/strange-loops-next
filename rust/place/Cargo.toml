@@ -1,0 +1,15 @@
+[package]
+name = "loops-place"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+loops = { path = "../core" }
+loops-eval = { path = "../eval" }
+sha2 = "0.10"
+ed25519-dalek = "2"
+getrandom = "0.2"

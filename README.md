@@ -22,7 +22,8 @@ The theorem files prove the listed model laws; fixture checks do not prove imple
 | `out/rethink/`, `out/grammar/`, `out/laws/`, `out/evidence/` | the pages, written by `node design/build.mjs`, never by hand |
 
 `rust/` contains the implemented pure core and fixture evaluator; see [`rust/PORTING.md`](rust/PORTING.md).
-The product CLI, storage, budget tooling and the repo's own `.loops/` decision store remain planned.
+It also holds the first product slice: a directory place and the `loops` CLI, for one person; see [`rust/PLACE.md`](rust/PLACE.md).
+Standing, ticks, sync, budget tooling and the repo's own `.loops/` decision store remain planned.
 `vectors/scenario/` already covers reader scenarios, not the future product CLI.
 
 ## Checking
