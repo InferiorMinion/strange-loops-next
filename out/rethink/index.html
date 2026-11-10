@@ -2292,7 +2292,7 @@ loops emit dispute --about r:x2 --about r:x3                                    
 <section class="panel" id="trust" role="tabpanel" aria-labelledby="t-trust">
   <div class="panel-head"><h2>Trust: who counts, walked</h2><button class="toggle-all" type="button">Unfold all</button></div>
   <p class="gist">A line proves which <b>key</b> signed it. Trust is everything between that and "this record counts". Walked end to end, it comes apart into <b>five strata</b>, each reading only the ones below. Two tiers of key are enough. And <b>retire through</b> turns out to need a tick, so standing splits in two around step 4.</p>
-  <p><span class="pill p-lean">proposal</span> Nothing here is settled or built. The first product slice writes only as its signing key, and one draft model exists for stratum 1. No anchor that anyone means to keep should be made until this walk is closed.</p>
+  <p><span class="pill p-lean">proposal</span> Two tiers of key is settled; the rest is not, and none of it is built. The first product slice writes only as its signing key, and one model exists for stratum 1. No anchor that anyone means to keep should be made until this walk is closed.</p>
 
   <h3>The strata</h3>
   <figure>
@@ -2318,7 +2318,7 @@ loops emit dispute --about r:x2 --about r:x3                                    
     <thead><tr><th>Stratum</th><th>Question</th><th>Reads</th><th>State</th></tr></thead>
     <tbody>
       <tr><td><b>0 · bytes</b></td><td>Is this line what it claims?</td><td>the line alone</td><td>built: the place checks every line it reads</td></tr>
-      <tr><td><b>1 · speakers</b></td><td>Does this key speak for this observer?</td><td>anchors, key bindings</td><td>modelled as a draft; retiring a key is not</td></tr>
+      <tr><td><b>1 · speakers</b></td><td>Does this key speak for this observer?</td><td>anchors, key bindings</td><td>modelled with two tiers; retiring a key is not</td></tr>
       <tr><td><b>2 · stewards</b></td><td>Who may change this store's standing?</td><td>the store's anchor, stratum 1</td><td>design only</td></tr>
       <tr><td><b>3 · grants and policy</b></td><td>Who may write what here?</td><td>grants and policy records, strata 1 and 2</td><td>design only</td></tr>
       <tr><td><b>4 · admission</b></td><td>Does this record count?</td><td>the record, strata 1 to 3</td><td>today's admission reads only <code>prev</code></td></tr>
@@ -2402,10 +2402,10 @@ loops emit dispute --about r:x2 --about r:x3                                    
     </div>
   </details>
 
-  <details class="unfold"><summary>What the draft model already proves, and what it gets wrong</summary>
+  <details class="unfold"><summary>What the model proves</summary>
     <div class="body">
-      <p><code>model/Loops/Keys.lean</code> on the branch <code>step3/key-binding</code> models stratum 1 without retirement. It proves that holding more never silences a key, that the set decides, that withholding payloads changes nothing, that there is no speaker without an anchor, and that a stranger's binding binds nothing.</p>
-      <p>The walk overrules one thing in it: the draft lets any speaking key sign a binding. With two tiers only the root does, and the rule gets shorter. The anchor's shape survives the walk unchanged.</p>
+      <p><code>model/Loops/Keys.lean</code> models stratum 1 without retirement, with two tiers: a key speaks for a lineage when it is the root an anchor pins, or the root signed a binding naming it. It proves that holding more never silences a key, that the set decides, that withholding payloads changes nothing, that there is no speaker without an anchor, and that a record signed by a key that is no root changes no answer.</p>
+      <p>The first draft let any speaking key sign a binding. The walk overruled that, and the rule got shorter: with no recursion, the computed list of speakers is proved to be exactly the keys that speak. It is still not a law of the protocol: no vectors, no protocol text, and no entry in the law index.</p>
     </div>
   </details>
 
@@ -2415,24 +2415,27 @@ loops emit dispute --about r:x2 --about r:x3                                    
       <div class="body">
         <p>The root signs every standing change, so it is the one key worth protecting. On the workbench it would be a file any process running as you can use, agents included. On a laptop keychain or a hardware key it asks for you, and binding the workbench's device key becomes one signed record carried over.</p>
         <p><span class="pill p-lean">leaning</span> Not on the workbench. Until a second machine runs <code>loops</code>, nothing canonical gets anchored there.</p>
+        <p><span class="pill p-lean">Kyle, 2026-11-10</span> Where a key is kept looks like the application's business, not the protocol's: a ladder from a 0600 file to the OS keychain to a vault. The root in particular is not kept on the workbench. Still open: whether it may be made there, and how the workbench gets its binding signed.</p>
       </div>
     </details>
     <details class="unfold"><summary>Two tiers, with the root as presence?</summary>
       <div class="body">
         <p>It costs one thing: adding a device always needs the root, where the four-tier design let an existing device vouch. It buys a stratum 1 with no recursion and no question of which key may end which.</p>
-        <p><span class="pill p-lean">leaning</span> Yes.</p>
+        <p><span class="pill p-ok">settled</span> Yes. Kyle, 2026-11-10. The model now says so.</p>
       </div>
     </details>
     <details class="unfold"><summary>Standing reads envelopes only?</summary>
       <div class="body">
         <p>The alternative is a second rule: standing kinds can't be erased or withheld. Envelope-only needs no exception, but pushes steward and subject lists into <code>about</code>, and leaves a grant's scope with nowhere to go.</p>
         <p><span class="pill p-lean">leaning</span> Envelope-only for who; payload for scope, with three-way admission.</p>
+        <p><span class="pill p-next">to walk</span> Kyle wants this unpacked as the design goes on, not ruled now.</p>
       </div>
     </details>
     <details class="unfold"><summary>Split standing around ticks?</summary>
       <div class="body">
         <p>3a (anchors, bindings, stewards, grants, admission), then ticks, then 3b (retiring). Until 3b exists, a lost key or a departed writer can only be handled by starting a new lineage or a new store, which is honest for a solo store and not for a team.</p>
         <p><span class="pill p-lean">leaning</span> Yes. It also means D7, the result encoding, gates retiring as well as ticks.</p>
+        <p><span class="pill p-next">to walk</span> Kyle leans yes too, and wants it walked before it is ruled.</p>
       </div>
     </details>
   </div>
