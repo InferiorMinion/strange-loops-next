@@ -213,13 +213,14 @@ dl.env .sep{grid-column:1/-1;border-top:1px dashed var(--line);margin:3px 0}
     <button role="tab" id="t-resolution" aria-controls="resolution" aria-selected="false"><span class="n">08</span>Resolution</button>
     <button role="tab" id="t-residence" aria-controls="residence" aria-selected="false"><span class="n">09</span>Places</button>
     <button role="tab" id="t-sharing" aria-controls="sharing" aria-selected="false"><span class="n">10</span>Sharing</button>
-    <button role="tab" id="t-topology" aria-controls="topology" aria-selected="false"><span class="n">11</span>Realms</button>
-    <button role="tab" id="t-scenarios" aria-controls="scenarios" aria-selected="false"><span class="n">12</span>Scenarios</button>
-    <button role="tab" id="t-example" aria-controls="example" aria-selected="false"><span class="n">13</span>Example</button>
-    <button role="tab" id="t-horizons" aria-controls="horizons" aria-selected="false"><span class="n">14</span>Horizons</button>
-    <button role="tab" id="t-open" aria-controls="open" aria-selected="false"><span class="n">15</span>Open</button>
-    <button role="tab" id="t-glossary" aria-controls="glossary" aria-selected="false"><span class="n">16</span>Glossary</button>
-    <button role="tab" id="t-sources" aria-controls="sources" aria-selected="false"><span class="n">17</span>Sources</button>
+    <button role="tab" id="t-trust" aria-controls="trust" aria-selected="false"><span class="n">11</span>Trust</button>
+    <button role="tab" id="t-topology" aria-controls="topology" aria-selected="false"><span class="n">12</span>Realms</button>
+    <button role="tab" id="t-scenarios" aria-controls="scenarios" aria-selected="false"><span class="n">13</span>Scenarios</button>
+    <button role="tab" id="t-example" aria-controls="example" aria-selected="false"><span class="n">14</span>Example</button>
+    <button role="tab" id="t-horizons" aria-controls="horizons" aria-selected="false"><span class="n">15</span>Horizons</button>
+    <button role="tab" id="t-open" aria-controls="open" aria-selected="false"><span class="n">16</span>Open</button>
+    <button role="tab" id="t-glossary" aria-controls="glossary" aria-selected="false"><span class="n">17</span>Glossary</button>
+    <button role="tab" id="t-sources" aria-controls="sources" aria-selected="false"><span class="n">18</span>Sources</button>
   </div>
 </nav>
 
@@ -237,6 +238,7 @@ dl.env .sep{grid-column:1/-1;border-top:1px dashed var(--line);margin:3px 0}
     <li><span class="k">3</span><span class="t"><b>Composition</b><span>one vertex reading many stores; things, <code>about</code>, <code>resolve-by</code></span></span><span class="pill p-ok">closed</span></li>
     <li><span class="k">4</span><span class="t"><b>Places</b><span>places, store definitions, a slim index, small erasure</span></span><span class="pill p-ok">closed</span></li>
     <li><span class="k">5</span><span class="t"><b>Sharing</b><span>union by segment lists, key tiers, presence, retire through</span></span><span class="pill p-ok">closed</span></li>
+    <li class="here"><span class="k">→</span><span class="t"><b>Trust</b><span>who counts: five strata, two tiers of key, standing split around ticks</span></span><span class="pill p-lean">walking</span></li>
     <li><span class="k">+</span><span class="t"><b>Horizons</b><span>editable lenses, selective disclosure, knowledge as a build</span></span><span class="pill p-next">exploring</span></li>
   </ol>
   <p>Build status and sequence are in <code>ROADMAP.md</code> in the repo.</p>
@@ -2285,6 +2287,165 @@ loops emit dispute --about r:x2 --about r:x3                                    
     <li>AT Protocol handle resolution, Nostr NIP-05: a domain vouching for a name</li>
     <li>RFC 8032: Ed25519</li>
   </ul></div></details>
+</section>
+
+<section class="panel" id="trust" role="tabpanel" aria-labelledby="t-trust">
+  <div class="panel-head"><h2>Trust: who counts, walked</h2><button class="toggle-all" type="button">Unfold all</button></div>
+  <p class="gist">A line proves which <b>key</b> signed it. Trust is everything between that and "this record counts". Walked end to end, it comes apart into <b>five strata</b>, each reading only the ones below. Two tiers of key are enough. And <b>retire through</b> turns out to need a tick, so standing splits in two around step 4.</p>
+  <p><span class="pill p-lean">proposal</span> Nothing here is settled or built. The first product slice writes only as its signing key, and one draft model exists for stratum 1. No anchor that anyone means to keep should be made until this walk is closed.</p>
+
+  <h3>The strata</h3>
+  <figure>
+    <div class="fig">
+      <svg class="dg" viewBox="0 0 400 330" role="img" aria-label="Five strata, bottom to top. Bytes: the id, commitment and signature of one line. Speakers: which keys speak for a lineage, from anchors and key bindings. Stewards: which lineages may change a store, from the store anchor. Grants and policy: who may write what. Admission: an ordinary record counts. Each stratum reads only the strata below it. Folds read what admission lets through.">
+        <rect class="box" x="60" y="272" width="280" height="42" rx="8"/><text x="72" y="290" class="b">0 · bytes</text><text x="72" y="306" class="s m">one line: id, commitment, signature</text>
+        <rect class="box-acc" x="60" y="212" width="280" height="42" rx="8"/><text x="72" y="230" class="b">1 · speakers</text><text x="72" y="246" class="s m">which keys speak for a lineage</text>
+        <rect class="box" x="60" y="152" width="280" height="42" rx="8"/><text x="72" y="170" class="b">2 · stewards</text><text x="72" y="186" class="s m">which lineages may change a store</text>
+        <rect class="box" x="60" y="92" width="280" height="42" rx="8"/><text x="72" y="110" class="b">3 · grants and policy</text><text x="72" y="126" class="s m">who may write what, and for whom</text>
+        <rect class="box-amb" x="60" y="32" width="280" height="42" rx="8"/><text x="72" y="50" class="b">4 · admission</text><text x="72" y="66" class="s m">an ordinary record counts, or doesn't</text>
+        <line class="ln" x1="200" y1="270" x2="200" y2="257" marker-end="url(#ah)"/>
+        <line class="ln" x1="200" y1="210" x2="200" y2="197" marker-end="url(#ah)"/>
+        <line class="ln" x1="200" y1="150" x2="200" y2="137" marker-end="url(#ah)"/>
+        <line class="ln" x1="200" y1="90" x2="200" y2="77" marker-end="url(#ah)"/>
+        <text x="200" y="20" text-anchor="middle" class="xs m">folds read only what admission lets through</text>
+        <path class="ln dash" d="M340,233 H372 V53 H343" marker-end="url(#ah)"/>
+        <text x="386" y="143" text-anchor="middle" class="xs m" transform="rotate(90 386 143)">reads, never the reverse</text>
+      </svg>
+    </div>
+    <figcaption>A record's stratum is its kind. The standing kinds are a closed set, and none of them passes through stratum 4: a grant can't be what admits the binding that signed it.</figcaption>
+  </figure>
+  <div class="tbl"><table>
+    <thead><tr><th>Stratum</th><th>Question</th><th>Reads</th><th>State</th></tr></thead>
+    <tbody>
+      <tr><td><b>0 · bytes</b></td><td>Is this line what it claims?</td><td>the line alone</td><td>built: the place checks every line it reads</td></tr>
+      <tr><td><b>1 · speakers</b></td><td>Does this key speak for this observer?</td><td>anchors, key bindings</td><td>modelled as a draft; retiring a key is not</td></tr>
+      <tr><td><b>2 · stewards</b></td><td>Who may change this store's standing?</td><td>the store's anchor, stratum 1</td><td>design only</td></tr>
+      <tr><td><b>3 · grants and policy</b></td><td>Who may write what here?</td><td>grants and policy records, strata 1 and 2</td><td>design only</td></tr>
+      <tr><td><b>4 · admission</b></td><td>Does this record count?</td><td>the record, strata 1 to 3</td><td>today's admission reads only <code>prev</code></td></tr>
+    </tbody>
+  </table></div>
+  <div class="callout stack">
+    <p><b>Why strata.</b> The outside review's finding D: admission reads grants, grants are admitted by standing, and standing is a fold over key bindings signed by keys whose standing comes from an anchor. That is a loop unless each question reads only answers already fixed. Stratifying by kind makes it a ladder.</p>
+  </div>
+
+  <h3>The walk</h3>
+  <p>One store, three writers: you, an agent seat working with you, and a second person who joins and later leaves. Each step says whether the design so far <b>holds</b> or <b>breaks</b>.</p>
+  <ol class="steps">
+    <li><div class="stack">
+      <p><b>You start.</b> One record of kind <code>lineage-anchor</code>, whose observer is the key that signed it. Its hash is your <code>sl:</code> id, and that key is your root.</p>
+      <p><b>Holds</b>, with one decision inside it: the root needs nothing from the payload, so erasing or withholding the anchor's payload never changes who you are. Your name and email are separate records about the lineage.</p>
+    </div></li>
+    <li><div class="stack">
+      <p><b>You write from the workbench.</b> A <code>key-binding</code> record, observer your lineage, about the workbench's device key. Records the device key signs with <code>observer: sl:you</code> are now your word.</p>
+      <p><b>Breaks</b> the four-tier key scheme, in a useful way. Who may sign a binding? If any bound key may, a stolen device key can bind more keys, and two keys can each try to end the other. If only the root may, stratum 1 has no recursion at all: the speakers are the root, plus what the root bound.</p>
+      <p>So: <b>two tiers.</b> The root signs every record that changes standing. Device keys sign everything else. "Presence" stops being a third key and becomes what the root is: the key that asks for you before it signs. This is the review's "two key tiers, not four".</p>
+    </div></li>
+    <li><div class="stack">
+      <p><b>An agent works with you.</b> It is not a key of yours. The seat has its own lineage and its own root, and your root signs a <code>grant</code> naming it, with a scope. Its records carry <code>under</code>, pointing at the grant.</p>
+      <p><b>Holds.</b> The agent's key is worth little because the grant, not the key, is what makes its records count, and you end the grant without touching its key. Session keys can come later as device keys of the seat; nothing needs them yet.</p>
+      <p><b>The honest limit stays:</b> an agent running as your OS user can read a device key kept in a file, and sign ordinary records as you. It can't change standing unless it can also reach the root. Where your root lives is the real decision, below.</p>
+    </div></li>
+    <li><div class="stack">
+      <p><b>The store gets a steward.</b> A <code>store-anchor</code> names the lineages that may change the store's standing. Solo, that is you.</p>
+      <p><b>Breaks</b> the earlier sketch, which kept <code>stewards</code> in the payload. A payload can be erased or withheld, and a store whose stewards can be erased has no stewards. Either the standing kinds keep everything standing reads in the envelope, or the standing kinds can't be erased. The first is one rule instead of two, and it is what the anchor and the binding already do.</p>
+    </div></li>
+    <li><div class="stack">
+      <p><b>A second person joins.</b> A steward's policy record adds their lineage as a writer. Their anchor and bindings are copied in, so the store verifies itself.</p>
+      <p><b>Holds</b>, and shows what admission is: a record counts when its key speaks for its observer (stratum 1) and the store's policy takes that observer (stratum 3). The first is not negotiable at any maturity, or anyone could write as anyone. Only the second varies from open to strict.</p>
+    </div></li>
+    <li><div class="stack">
+      <p><b>Everything so far only grows.</b> No rule yet takes standing away. More records never silence a key, unbind a writer or end a grant, and arrival order can't matter. The laws already proved for folds and for late arrivals carry over unchanged.</p>
+      <p><b>Holds.</b> This half of standing is small, and the draft model proves its stratum 1.</p>
+    </div></li>
+    <li><div class="stack">
+      <p><b>The second person leaves, and a device is lost.</b> Both are "retire through": a cut by what was held, never by time, since <code>emitted</code> can be backdated.</p>
+      <p><b>Breaks</b> on what "through" means. The Sharing walk leaned on a segment being one writer's growing file, so "through r4" names a prefix. A store is a set. The first product slice closes a segment per changeset, <code>export | import</code> regroups lines, and an erasure rewrites a segment. There is no position to cut at that every replica agrees on.</p>
+      <p>What every replica can agree on is a set of ids. A retirement has to <b>cover</b> the records it lets stand, and "a signed record that covers a set of ids" is a witness tick. The Sharing tab already said so: "a witness tick in miniature".</p>
+    </div></li>
+    <li><div class="stack">
+      <p><b>So retiring waits for ticks.</b> It needs the tick's way of covering a set compactly, and the result encoding that question D7 leaves open.</p>
+      <p><b>This settles the order</b> the review argued about. Standing is not one step. The growing half (anchors, bindings, stewards, grants, admission) can come now. Ticks come next. Retiring comes after, as a tick with a stance.</p>
+    </div></li>
+    <li><div class="stack">
+      <p><b>A retirement arrives late.</b> A replica that already counted the lost device's records must stop counting the ones outside the cover.</p>
+      <p><b>Holds</b>, as a known shape: it is the same fact as a late <code>prev</code> target retracting an admission. The set still decides; a cached state can't follow it and must be rebuilt for that key's records. The review's law A fits here: the cut ends a key's standing after it and nothing before it, and grants the key signed before the cut stand.</p>
+    </div></li>
+  </ol>
+
+  <h3>What the walk changes</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Was</th><th>Becomes</th><th>Why</th></tr></thead>
+    <tbody>
+      <tr><td>Four key tiers: root, presence, device, session</td><td>Two: a root that signs standing, device keys that sign the rest</td><td>Stratum 1 loses its recursion; presence is what the root is</td></tr>
+      <tr><td>An agent's session key bound under your lineage</td><td>The seat is its own lineage; a grant makes its records count</td><td>Key binding and authority stay separate, as Observers asked</td></tr>
+      <tr><td>Standing kept in payloads (<code>stewards</code>, a grant's subject)</td><td>Standing reads envelopes only</td><td>Erasing or withholding must never change who counts</td></tr>
+      <tr><td>Retire through a position in a segment</td><td>Retire through a covered set: a tick</td><td>A store is a set; segments regroup and get rewritten</td></tr>
+      <tr><td>Step 3 standing, then step 4 ticks</td><td>3a growing standing, 4 ticks, 3b retiring</td><td>Retiring needs what ticks define</td></tr>
+    </tbody>
+  </table></div>
+
+  <details class="unfold"><summary>What each standing kind would hold</summary>
+    <div class="body">
+      <p>A sketch, to test the envelope-only rule. Kind names follow the ledger's reserved <code>*-anchor</code>.</p>
+      <div class="tbl"><table>
+        <thead><tr><th>Kind</th><th>Observer</th><th>About</th><th>Counts when signed by</th></tr></thead>
+        <tbody>
+          <tr><td><code>lineage-anchor</code></td><td>the root key, <code>k:…</code></td><td>nothing</td><td>that key</td></tr>
+          <tr><td><code>key-binding</code></td><td>the lineage</td><td>the key bound</td><td>the lineage's root</td></tr>
+          <tr><td><code>store-anchor</code></td><td>the founding lineage</td><td>the steward lineages</td><td>a key speaking for the founder</td></tr>
+          <tr><td><code>grant</code></td><td>the granting lineage</td><td>the lineage granted</td><td>the granter's root</td></tr>
+          <tr><td>retirement (step 3b)</td><td>the lineage or steward</td><td>the key or lineage retired</td><td>a root; and it covers a set</td></tr>
+        </tbody>
+      </table></div>
+      <p><b>Where it strains.</b> A grant's scope (which stores, which kinds) does not fit an envelope. If the scope is payload, a reader without that payload can't judge a record written under the grant. Admission would then answer three ways, as <code>where</code> does: yes, no, or unknown, with the unknowns counted beside the result. That is open, below.</p>
+      <p><b>A side effect.</b> A record about a lineage joins that lineage's thing. A store anchor about its stewards shows up in each steward's state. That may be right (it is something true about them) or noise. Also open.</p>
+    </div>
+  </details>
+
+  <details class="unfold"><summary>What the draft model already proves, and what it gets wrong</summary>
+    <div class="body">
+      <p><code>model/Loops/Keys.lean</code> on the branch <code>step3/key-binding</code> models stratum 1 without retirement. It proves that holding more never silences a key, that the set decides, that withholding payloads changes nothing, that there is no speaker without an anchor, and that a stranger's binding binds nothing.</p>
+      <p>The walk overrules one thing in it: the draft lets any speaking key sign a binding. With two tiers only the root does, and the rule gets shorter. The anchor's shape survives the walk unchanged.</p>
+    </div>
+  </details>
+
+  <h3>Decisions this needs from you</h3>
+  <div class="q">
+    <details class="unfold"><summary>Where does your root key live?</summary>
+      <div class="body">
+        <p>The root signs every standing change, so it is the one key worth protecting. On the workbench it would be a file any process running as you can use, agents included. On a laptop keychain or a hardware key it asks for you, and binding the workbench's device key becomes one signed record carried over.</p>
+        <p><span class="pill p-lean">leaning</span> Not on the workbench. Until a second machine runs <code>loops</code>, nothing canonical gets anchored there.</p>
+      </div>
+    </details>
+    <details class="unfold"><summary>Two tiers, with the root as presence?</summary>
+      <div class="body">
+        <p>It costs one thing: adding a device always needs the root, where the four-tier design let an existing device vouch. It buys a stratum 1 with no recursion and no question of which key may end which.</p>
+        <p><span class="pill p-lean">leaning</span> Yes.</p>
+      </div>
+    </details>
+    <details class="unfold"><summary>Standing reads envelopes only?</summary>
+      <div class="body">
+        <p>The alternative is a second rule: standing kinds can't be erased or withheld. Envelope-only needs no exception, but pushes steward and subject lists into <code>about</code>, and leaves a grant's scope with nowhere to go.</p>
+        <p><span class="pill p-lean">leaning</span> Envelope-only for who; payload for scope, with three-way admission.</p>
+      </div>
+    </details>
+    <details class="unfold"><summary>Split standing around ticks?</summary>
+      <div class="body">
+        <p>3a (anchors, bindings, stewards, grants, admission), then ticks, then 3b (retiring). Until 3b exists, a lost key or a departed writer can only be handled by starting a new lineage or a new store, which is honest for a solo store and not for a team.</p>
+        <p><span class="pill p-lean">leaning</span> Yes. It also means D7, the result encoding, gates retiring as well as ticks.</p>
+      </div>
+    </details>
+  </div>
+
+  <h3>What this walk didn't touch</h3>
+  <ul>
+    <li><b>Forked policy.</b> Two stewards change policy apart. The review's answer: the newest head by content order is in effect, the fork is shown. Not walked.</li>
+    <li><b>Declarations and maturity.</b> Which kinds and shapes a strict store takes, judged at <code>emitted</code>. That is the other half of step 3 and reads nothing from this half but who the stewards are.</li>
+    <li><b>Names.</b> Name tables and <code>@home</code> resolve at read and never take part in matching.</li>
+    <li><b>Across realms.</b> Vouches, follows and federation's admission.</li>
+    <li><b>Receipt evidence.</b> A backdated record from a stolen key, before anyone retires it. A covering tick is the evidence; this walk only shows where it plugs in.</li>
+    <li><b>Proving presence</b> to other replicas, and a signer behind a socket. Both stay open under Sharing.</li>
+  </ul>
 </section>
 
 <section class="panel" id="topology" role="tabpanel" aria-labelledby="t-topology">
