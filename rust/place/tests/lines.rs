@@ -29,7 +29,12 @@ fn accepted() -> Vec<(String, Line, Json)> {
     paths.sort();
     let mut out = Vec::new();
     for path in paths {
-        let vector = parse_json(&fs::read_to_string(&path).expect("vector")).expect("JSON");
+        let raw = fs::read_to_string(&path).expect("vector");
+        // A number past binary64's range is not read here; such a vector is a refusal.
+        let Ok(vector) = parse_json(&raw) else {
+            assert!(raw.contains(r#""refused""#), "{}", path.display());
+            continue;
+        };
         let expect = member(&vector, "expect").expect("expect").clone();
         if member(&expect, "refused").is_some() {
             continue;
@@ -38,14 +43,17 @@ fn accepted() -> Vec<(String, Line, Json)> {
         let Some(Json::Arr(envs)) = member(input, "envs") else {
             panic!("envs")
         };
-        let Some(Json::Arr(payloads)) = member(input, "payloads") else {
-            panic!("payloads")
+        // A vector gives its payload as values, or as one JSON text.
+        let payloads = match (member(input, "payloads"), member(input, "payload_text")) {
+            (Some(Json::Arr(payloads)), None) => payloads.clone(),
+            (None, Some(Json::Str(raw))) => vec![parse_json(raw).expect("payload text")],
+            _ => panic!("payloads"),
         };
         let salt = loops::base32::decode(text(input, "salt")).expect("salt");
         let key = Key::from_text(text(input, "seed")).expect("seed");
         // Every variant of a vector writes the same line.
         for env in envs {
-            for payload in payloads {
+            for payload in &payloads {
                 let env = envelope::read("env", env).expect("envelope");
                 let written = stored::write(env, salt.clone(), payload.clone()).expect("written");
                 out.push((

@@ -97,9 +97,9 @@ The human settles each decision as its written recommendation.
   They are `Sum.on_step_missing`, `Max.acc_readable`, `Min.acc_readable`, and `Spec.mem_select`.
 
 D2 and D3 left the code name, stage, and precedence to the human.
-The landed choices are the implementer's and await confirmation:
-the name `string-not-unicode`, its stage after raw shape, the reuse of `number-out-of-range`, and the Rust stand-in.
-D1's name `base-id-duplicate` and D5's refused-payload fault are also implementer choices.
+Kyle confirmed the landed choices on 2026-11-10:
+the name `string-not-unicode` and its stage after raw shape, the reuse of `number-out-of-range`, the same overflow handling for spec arguments, and D1 refusing duplicates only.
+D1's name `base-id-duplicate`, D5's refused-payload fault, and the Rust stand-in are implementer choices.
 See [record rules](protocol/record.md), [the lens contract](protocol/lens.md), and [Rust boundaries](rust/GAPS.md).
 D7 below remains open and unchanged.
 
