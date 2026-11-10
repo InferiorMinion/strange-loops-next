@@ -1612,7 +1612,7 @@
     "id": "d8-unrelated-ignores-target-of",
     "file": "Batch.lean",
     "before": "envThing p h.of != envThing (r.id H) r.env.of",
-    "after": "envThing p none != envThing (r.id H) r.env.of",
+    "after": "(let _ := h; envThing p none) != envThing (r.id H) r.env.of",
     "reason": "Read a held target as of its own id.",
     "definition": "Loops.checkPrev"
   },
@@ -1620,7 +1620,7 @@
     "id": "d8-subst-of-skipped",
     "file": "Batch.lean",
     "before": "some <$> if isLabel s then σ s else some s",
-    "after": "some <$> some s",
+    "after": "some <$> (let _ := σ; some s)",
     "reason": "Leave a label in of.",
     "definition": "Loops.substOpt"
   },
