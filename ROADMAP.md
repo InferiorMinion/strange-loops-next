@@ -35,11 +35,13 @@ The 42 duplicate-base lens mismatches of the `step1-3` campaign are the class D1
 See [the campaign report](interop/fuzz/REPORT.md) for the scripts and current and historical results.
 The CI seed `ci-1` checks 28 three-way cases without mismatches.
 
-The mutation catalogue has 201 entries, including six new entries for the D1 and D2 definitions.
+The mutation catalogue has 210 entries, including six for the D1 and D2 definitions and nine for D8's `of`.
+Ten earlier entries are retargeted at `of` and the one thing it names.
 It retires the redundant positive-offset guard under R4 and the entry for the deleted `stripZeros` family.
-The full run reports 157 build rejections, 27 vector differences, 15 generator assertion exceptions, and 2 survivors.
+The full run reports 165 build rejections, 28 vector differences, 15 generator assertion exceptions, and 2 survivors.
 The runner exits 1 for assertion exceptions; no timeout or infrastructure failure occurs.
-The four D6 helper survivors now fail the build at their lemmas; the two scoped-equivalence survivors remain.
+Of the nine D8 entries, six fail the build, two change batch vectors, and one stops at a generator assertion.
+The four D6 helper survivors fail the build at their lemmas; the two scoped-equivalence survivors remain.
 All-envelope shape checks now belong to each library.
 Six deliberate per-envelope faults failed the respective vector layers in Step 1; that probe is not repeated here.
 The cheap runner kills 33 of 33 mutants: each compiles and then fails runtime checks.
