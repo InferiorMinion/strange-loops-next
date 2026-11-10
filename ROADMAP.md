@@ -126,7 +126,7 @@ Never round or cap current model outputs.
 
 ### D8: Items, mentions and declared keys
 
-This is an open human choice; nothing here is built or modelled.
+Kyle ruled this on 2026-11-10; nothing here is built or modelled yet.
 It changes the settled envelope, so it lands as R1–R6 and D1–D6 did: model, vectors, JavaScript, Rust, then protocol and pages.
 **Finding:** Two apps built on the product slice hit one wall on 2026-11-10.
 The orchestration dry run is in [Scenarios](design/rethink/sections/13-scenarios.html), step 8; margins-claude's `work` app is described in its notes on merge request !12.
@@ -139,16 +139,16 @@ The earlier systems (`tasked`, `ticked`) keyed a fold by a field and re-emitted 
 
 The choice has three parts. D8a and D8b go together; D8c can follow.
 
-- **D8a, an item field.** One single-valued envelope field says which thing a record is an emit of.
+- **D8a, an item field.** One single-valued envelope field, `of`, says which thing a record is an emit of.
   A record without it is an emit of the thing its own id names, or, with `prev`, of what it replaces.
   `latest-by` runs over this field; a thing's heads are records of it.
   Every `prev` target must be an emit of the same thing.
 - **D8b, `about` is mention only.** `about` never makes a head.
   `where` and `collect` still read it, so "everything said about X" stays a fold.
   A link needs no new primitive: it is a thing whose `about` names both ends.
-- **D8c, declared keys.** An envelope field lists the payload keys an emit sets.
+- **D8c, declared keys.** An envelope field, `sets`, lists the payload keys an emit sets.
   A keyed fold holds, for each key, the setters no descendant setter of that key replaces, over `prev`.
-  Different keys from one head merge; one key set to different values from one head is a conflict the fold shows.
+  Different keys from one head merge; one key set twice from one head leaves two live setters, and the fold reports both.
   A key is unknown exactly when a live setter's payload is not held, as `where` answers.
   Withheld and erased are one state to the fold: an envelope without its payload.
   They differ only in what comes next, which the arrival laws carry: a withheld payload may arrive, an erased one must be dropped.
@@ -173,9 +173,18 @@ Kyle accepted this on 2026-11-10: erasure is the emergency stop for something th
 `kind`, `about` and the times already survive erasure; secrets do not go in envelopes, key names included.
 The core starts to read a payload's top-level keys by name.
 `thing.slice` as proved covers whole-record folds only; the keyed fold needs its own slice law, argued and not yet stated in Lean.
-**Recommendation:** Take D8a and D8b now, in the envelope, before any store is kept.
+**Order:** Take D8a and D8b now, in the envelope, before any store is kept.
 Take D8c as a second fold family beside whole-record `latest-by`, once D8a's shape is settled and its slice law is stated.
-**Left to the human:** the field names (`of` and `sets` are the working names), whether the item field takes natural keys as `about` does, whether two live setters giving the same value are a conflict (in the experiment they are not).
+**Kyle's choices, 2026-11-10,** following margins-claude's reasoning on merge request !13:
+- **Names:** the item field is `of` and the declaration is `sets`. A record *of* the task, against a record *about* it; `sets`, like `erases`, is a verb for what the record does.
+- **Natural keys:** `of` takes a record id or a natural key, as `about` does.
+  A writer can name a thing before holding any record of it, and two writers who start the same named thing join.
+  An unnamed thing is rooted at its first record, and a second branch without `prev` joins it by that id.
+  In an open store anyone can emit of a name and become a head; that is left to standing, where grants per thing belong.
+- **Same value from two setters:** the core declares no conflict.
+  The keyed fold reports each key's live setters, newest first, as whole-record `latest-by` gives a winner and the others.
+  Whether two of them conflict is a reading made above the core, so the core never defines equality on payload values.
+  A reading should not treat agreement as a conflict.
 **Kyle, 2026-11-10, on undeclared payload keys:** refusal is progressive.
 A writer refuses a payload key it did not declare only in a store declared strict.
 Elsewhere the key is written, the keyed fold does not read it, and a whole-record fold, a `where` test or a lens still can.
