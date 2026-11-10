@@ -45,6 +45,14 @@ Build rejections are not semantic proof kills.
 Survival does not prove equivalence.
 See [the mutation report](model/mutate/REPORT.md) for outcomes, restoration checks, and limits.
 
+## Step 2: the first product slice
+
+`loops-place` and the `loops` CLI emit, read and fold for one person, signed, over `.loops/`.
+Stored lines match the model's record vectors byte for byte; 11 tests drive the place and the binary.
+The layout, the CLI and their refusal codes are a working proposal, not protocol.
+[`rust/PLACE.md`](rust/PLACE.md) lists what is implemented and the eight choices made on the way.
+Two of them need the model: what a place is has no law, and a payload reaches a fold only as `value`, `n` and top-level fields.
+
 ## Decisions for the human
 
 ### Settled: Step-1 rulings R1–R6
@@ -204,6 +212,7 @@ Costs are S, M, or L for relative effort, not schedules.
 | Turn horizons into Lean scenario vectors | Tests concrete compositions and exposes missing premises | L: model and scenario work | Start with minimal compositions of existing core; mark new boundary, tick, and service premises unimplemented before proof claims |
 | Prove binary64 roundtrip, then shortest | Strengthens assurance beyond sampled standard cases | L: formal number reasoning | Existing canonical formatter; neither proof blocks the settled standard choice |
 | Bridge source and fold records to hashes | Connects text, record bytes, IDs, and fold outputs | L: byte-level model and evidence | Defined source and writer boundaries; do not assume SHA correctness from bounded IDs |
-| Build services, routing, key management, and persistence | Supports operation beyond pure fixtures | L: architecture and security work | Explicit service contracts and key decisions; safe-wrapper versus raw access choice |
+| Model the place and the payload bridge | Gives the product slice laws: segments as a set, line to reader record | M: model and vectors | The choices in `rust/PLACE.md`; a second reader of the layout |
+| Build standing, routing, key management, and sync | Supports more than one writer | L: architecture and security work | Step 3; explicit service contracts and key decisions; safe-wrapper versus raw access choice |
 | Expand malformed-input fuzz and standards coverage | Finds more boundary and adapter differences | M: generators, triage, and regression pins | The settled D1–D5 boundaries; explicit contract before broadening raw extrema |
 | Complete browser, accessibility, and link validation | Checks the reader experience and published references | M: browser and accessibility checks | Workbench and generated pages; validate anchors and external links separately |

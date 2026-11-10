@@ -41,6 +41,16 @@ impl From<serde_json::Error> for Error {
     }
 }
 
+/// Renders a spec's slot values as the `spec/run` vectors write them.
+pub fn slots_json(values: Vec<(String, loops::spec::SlotValue)>) -> Json {
+    Json::Obj(
+        values
+            .into_iter()
+            .map(|(name, value)| (name, spec::slot(value)))
+            .collect(),
+    )
+}
+
 /// Compute every arrival-order (or realm rotation) answer.
 ///
 /// Accepts `record`, `fold/*`, `spec/{parse,run}`, `realm`, `scenario`,
