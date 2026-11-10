@@ -35,7 +35,7 @@ usage: loops [-C <dir>] <verb> ...
                                 a revision without --of is of what it replaces
   emit -                        drafts as JSONL on stdin: one changeset
   get <id>                      one record
-  about <thing>                 a thing's current state: the records of it
+  of <thing>                    a thing's current state: the records of it
   read <vertex>                 fold .loops/vertices/<vertex>.json
   fold <spec.json | ->          fold a spec given as a file
   erase <id>... [\"why\"]         emit an erasure, and drop the openings held here
@@ -379,9 +379,9 @@ fn get(start: &Path, args: &[String]) -> Result<(), Fail> {
     say(&line.canon())
 }
 
-fn about(start: &Path, args: &[String]) -> Result<(), Fail> {
+fn of(start: &Path, args: &[String]) -> Result<(), Fail> {
     let [thing] = args else {
-        return Err(usage("about takes one thing"));
+        return Err(usage("of takes one thing"));
     };
     let held = find_store(start)?.read()?;
     let thing = if loops::envelope::typed_ref(thing) && !thing.starts_with("r:") {
@@ -594,7 +594,7 @@ fn run(args: &[String]) -> Result<(), Fail> {
         "emit" => emit(&start, rest),
         "erase" => erase(&start, rest),
         "get" => get(&start, rest),
-        "about" => about(&start, rest),
+        "of" => of(&start, rest),
         "read" => read(&start, rest),
         "fold" => fold(&start, rest),
         "export" => export(&start, rest),

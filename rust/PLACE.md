@@ -18,7 +18,7 @@ loops emit <kind> [field=text | field:=json]... ["message"]
       [--occurred <when>] [--under <id>]
 loops emit -                        drafts as JSONL on stdin: one changeset
 loops get <id>                      one record
-loops about <thing>                 a thing's winner, its other heads, how many records are of it
+loops of <thing>                    a thing's winner, its other heads, how many records are of it
 loops read <vertex>                 fold .loops/vertices/<vertex>.json
 loops fold <spec.json | ->          fold a spec given as a file
 loops erase <id>... ["why"]         emit an erasure, and drop the openings held here
@@ -39,11 +39,11 @@ loops whoami
   `prev` from its stored envelope (`Held::writer_view`). A changeset writes
   nothing unless every draft is taken.
 * An id can be given by any prefix that names one held record, in `--prev`,
-  `--erases`, `--under`, `--of` and `about`. A thing with a colon that is not
+  `--erases`, `--under`, `--of` and the `of` verb. A thing with a colon that is not
   `r:` is a natural key, taken as typed.
 * A record is of one thing (D8): `--of` names it, and a record without it is
   a root, its own thing. `--about` only mentions: it never makes a head, and
-  `loops about`, `latest-by` and the heads read the thing, not the mention.
+  `loops of`, `latest-by` and the heads read the thing, not the mention.
   `export --of` takes the records of a thing and `export --about` those that
   mention it, as a spec's `from.of` and `from.about` do.
 * A revision written without `--of` is of what it replaces; see choice 9.
@@ -112,11 +112,16 @@ held. A segment whose name is not the hash of its bytes is listed as altered.
    with `--prev` and no `--of` is given, at write time, the thing of what it
    replaces: the target's `of`, or its id when it is a root. The value is
    written into the envelope, and nothing reads it in later. When the CLI
-   can't fill it in, the batch's own checks say why: a target this store
-   doesn't hold is `prev-unknown`, and targets of different things are
-   `prev-unrelated`. This replaces the earlier "a revision without `--about`
-   is about what it replaces". `emit -` fills nothing in: a changeset states
-   `of` itself, and may use a label there.
+   can't fill it in, it refuses with the batch's codes: a target this store
+   doesn't hold is `prev-unknown`, since there is nothing to fill `of` in
+   from, and targets of different things are `prev-unrelated`. On this path
+   only, these precede the writer's other checks. This replaces the earlier
+   "a revision without `--about` is about what it replaces". `emit -` fills
+   nothing in: a changeset states `of` itself, and may use a label there.
+   Kyle confirmed on 2026-11-10 that only the single-record path fills `of`
+   in, that this path refuses `prev-unknown` itself, that `export --about`
+   is a mention filter and `export --of` a thing filter, and that the verb
+   that shows a thing is `loops of`, which replaced `loops about`.
 
 ## Checked by
 

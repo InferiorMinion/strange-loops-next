@@ -146,13 +146,15 @@ fn emit_revise_fork_fold_and_erase() {
         at(&got, &["env", "about"]),
         &Json::Arr(vec![Json::Str("lang:rust".into())])
     );
-    let state = s.json(&["about", thing]);
+    let state = s.json(&["of", thing]);
     assert_eq!(text(&state, &["winner", "id"]), second);
     assert_eq!(len(&state, &["others"]), 0);
     // A mention makes no head.
-    let mentioned = s.json(&["about", "lang:rust"]);
+    let mentioned = s.json(&["of", "lang:rust"]);
     assert_eq!(at(&mentioned, &["winner"]), &Json::Null);
     assert_eq!(at(&mentioned, &["records"]), &Json::Int(0_i64.into()));
+    // The verb that shows a thing is `of`; `about` names no verb.
+    assert_eq!(s.fails(&["about", thing], "").0, 2);
     let fork = s.ok(&[
         "emit",
         "decision",
@@ -164,7 +166,7 @@ fn emit_revise_fork_fold_and_erase() {
         "n:=4",
         "Zig",
     ]);
-    let state = s.json(&["about", thing]);
+    let state = s.json(&["of", thing]);
     assert_eq!(text(&state, &["winner", "id"]), fork);
     assert_eq!(len(&state, &["others"]), 1);
     assert_eq!(at(&state, &["records"]), &Json::Int(3_i64.into()));
@@ -202,7 +204,7 @@ fn emit_revise_fork_fold_and_erase() {
     assert_eq!(at(&slots, &["weight", "value"]), &Json::Int(3_i64.into()));
     assert_eq!(at(&slots, &["weight", "unread"]), &Json::Int(1_i64.into()));
     assert_eq!(at(&slots, &["settled", "unread"]), &Json::Int(1_i64.into()));
-    assert_eq!(text(&s.json(&["about", thing]), &["winner", "id"]), fork);
+    assert_eq!(text(&s.json(&["of", thing]), &["winner", "id"]), fork);
     let check = s.json(&["check"]);
     assert_eq!(
         (len(&check, &["refused"]), len(&check, &["altered"])),
@@ -229,11 +231,11 @@ fn a_batch_is_one_changeset_and_labels_name_its_records() {
         at(&note, &["env", "about"]),
         &Json::Arr(vec![Json::Str(text(&records[0], &["id"]).into())])
     );
-    let state = s.json(&["about", "repo:strange-loops"]);
+    let state = s.json(&["of", "repo:strange-loops"]);
     assert_eq!(text(&state, &["winner", "id"]), text(&records[2], &["id"]));
     // The note mentions the first decision, which is of the repo: neither the
     // mention nor the decision's id makes a thing with records of it.
-    let mentioned = s.json(&["about", text(&records[0], &["id"])]);
+    let mentioned = s.json(&["of", text(&records[0], &["id"])]);
     assert_eq!(at(&mentioned, &["records"]), &Json::Int(0_i64.into()));
     assert_eq!(at(&mentioned, &["winner"]), &Json::Null);
     assert_eq!(
@@ -313,7 +315,7 @@ fn a_revision_is_of_what_it_replaces_and_the_store_decides_of_not_root() {
     for id in [&revised, &again] {
         assert_eq!(text(&s.json(&["get", id]), &["env", "of"]), root);
     }
-    let state = s.json(&["about", &root]);
+    let state = s.json(&["of", &root]);
     assert_eq!(text(&state, &["winner", "id"]), again);
     assert_eq!(len(&state, &["others"]), 0);
     assert_eq!(at(&state, &["records"]), &Json::Int(3_i64.into()));
@@ -345,7 +347,7 @@ fn a_revision_is_of_what_it_replaces_and_the_store_decides_of_not_root() {
     assert_eq!(s.ok(&["export"]), held);
     // An `of` naming a root is a revision's thing, stated rather than filled in.
     let stated = s.ok(&["emit", "note", "--of", &root, "--prev", &again, "fourth"]);
-    assert_eq!(text(&s.json(&["about", &root]), &["winner", "id"]), stated);
+    assert_eq!(text(&s.json(&["of", &root]), &["winner", "id"]), stated);
 }
 
 #[test]
@@ -372,7 +374,7 @@ fn two_stores_converge_by_export_and_import() {
     assert_eq!(a.ok(&["export"]), b.ok(&["export"]));
     assert_eq!(a.ok(&["export"]).lines().count(), 5);
     // Both now show the same fork, with the same winner.
-    let (sa, sb) = (a.json(&["about", thing]), b.json(&["about", thing]));
+    let (sa, sb) = (a.json(&["of", thing]), b.json(&["of", thing]));
     assert_eq!(sa, sb);
     // Three heads: the two revisions fork, and b's note was never replaced.
     // The note that only mentions the thing is not one of them.
