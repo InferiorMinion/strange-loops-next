@@ -48,9 +48,10 @@ export function renderLaws(root) {
     if (!(v.laws ?? []).includes(d.law)) fail(`demo ${d.law}: ${d.vector} doesn't name ${d.law}`);
     const out = { law: d.law, key, anchor: anchor(key), vector: d.vector, change: d.change, stays: d.stays, shape: law(key).shape };
     // A record as the walk draws one: its letter and when it was written, its value, and the
-    // thing it is about and what it follows. The full id is its title and never its name.
+    // thing it is of and what it follows. The full id is its title and never its name. A root,
+    // with no `of`, is of its own id, so it shows its own letter.
     const rec = (label, r, again) => {
-      const thing = r.about.map((a) => a.replace(/^[a-z]+:/, "")).join(", ");
+      const thing = r.of != null ? r.of.replace(/^[a-z]+:/, "") : label(r.id);
       const after = r.prev.length ? ` · after ${heads(label, r.prev)}` : "";
       return `<div class="rec${r.shown ? ` ${r.shown}` : ""}" data-k="${label(r.id)}" title="${esc(r.id)}">` +
         `<div class="rid"><b>${label(r.id)}</b><span>${r.emitted.slice(11, 19)}</span></div>` +

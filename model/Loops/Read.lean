@@ -83,9 +83,10 @@ private def decodeValues (path : String) (j : Json) : Dec Env := do
   let emitted ← text (dot path "emitted") (← req path kvs "emitted")
   let occurred ← opt kvs "occurred" (text (dot path "occurred"))
   let under ← opt kvs "under" (text (dot path "under"))
+  let of ← opt kvs "of" (text (dot path "of"))
   pure
     { kind := kind, observer := observer, emitted := emitted, occurred := occurred,
-      about := ← setOf "about", prev := ← setOf "prev", under := under, erases := ← setOf "erases" }
+      about := ← setOf "about", of := of, prev := ← setOf "prev", under := under, erases := ← setOf "erases" }
 
 
 /-- Read one envelope. Raw keys precede duplicate and value decoding. -/

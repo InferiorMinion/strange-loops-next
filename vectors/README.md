@@ -29,13 +29,14 @@ Fold each order separately; each must produce `expect`.
 * Count: `expect` is the number.
 * LatestBy: each thing has `heads` newest first, a `winner` and `others`.
   Nonempty `others` shows a fork.
-  A record about several things counts in each.
-  A record about nothing anchors its own thing, named by its id.
+  A record is of exactly one thing: its `of`, read as written, or without `of` its own id.
+  `about` never makes a head.
 * Latest: the `winner` and `others` of the combined, distinct-id per-thing heads.
 * Sum: the number.
 * Extrema: `min` and `max`, each `null` when nothing was folded.
 
-Each record's `about` is a set of things.
+Each record's `about` is a set of the things it mentions.
+A record may carry `of`, the one thing it is an emit of; a record without it is of its own id.
 It carries `emitted` and may carry `occurred`, as defined in `protocol/record.md`.
 Content order compares span start, span end, `emitted`, then id digest bytes.
 A record without `occurred` has an instant span at its `emitted`.
@@ -89,11 +90,13 @@ Count, sum, min and max return `value` and `unread`.
 Latest-by returns each thing's current records in `things`.
 Collect returns records newest first in `heads`.
 Each record carries its held form; `unread` counts records whose payload tests cannot answer.
-Count each unread id once per slot, even when it heads several things.
+Count each unread id once per slot.
 
 Latest-by and collect with `"follow": "prev"` read heads.
 Supersession runs per thing over the admitted set before selection.
 `from` and envelope tests choose heads; payload tests then filter them.
+`from.of` takes the records of a thing; `from.about` takes the records whose `about` names it, as written.
+`env.of` tests `of` as written, so a record without `of` holds nothing there.
 Collect without `follow` takes every selected record, superseded or not.
 Collect counts unread candidates before applying its limit.
 
@@ -101,8 +104,8 @@ Collect counts unread candidates before applying its limit.
 
 `input.drafts` is one changeset.
 Each draft has an optional `label` (`@name`), an envelope, a `salt` and a payload.
-`about`, `prev` and `under` may use labels; `erases` may not.
-`input.held` lists store-held ids and their `about` sets.
+`about`, `of`, `prev` and `under` may use labels; `erases` may not.
+`input.held` lists store-held records: each `id`, its `of` when it has one, and its `prev`.
 Writers require every `prev` target in the batch or held store state.
 Readers can admit unknown targets because they cannot judge them.
 
@@ -112,7 +115,9 @@ Shape checks run first across every raw envelope, before any draft value: `envel
 A payload number past binary64's range is a writer refusal, `number-out-of-range`, ranked with the others.
 Label checks follow: `label-duplicate`, `label-unknown`, then `label-cycle`.
 Next come writer codes from `kind-empty`, in `protocol/record.md` order across every draft.
-Finally, `prev-unknown` and `prev-unrelated` run across the whole batch.
+Finally, `prev-unknown`, `of-not-root` and `prev-unrelated` run, in that order, across the whole batch.
+`of-not-root` refuses an `of` naming a record the writer holds, in the batch or `held`, that is not a root: one with `of` or `prev`.
+`prev-unrelated` refuses a `prev` naming a held record of another thing.
 Every draft order and `prev` order gives the same records or refusal.
 Meaning uniqueness states at most one satisfying label assignment; it does not prove resolver correctness.
 
@@ -122,7 +127,7 @@ Meaning uniqueness states at most one satisfying label assignment; it does not p
 Consistent forms share one record per id.
 A held eraser can suppress a target's payload; a bare erased copy cannot suppress a held payload.
 `expect.settled` gives one record per id and its held form.
-`expect.refused` gives admission refusals and codes.
+`expect.refused` gives admission refusals and codes: `prev-unrelated` when a held `prev` target is of another thing.
 `expect.things` gives per-thing states, as in `fold/latest-by`.
 `expect.sum` gives Sum over admitted records.
 Every rotation must give the same answer when forms are consistent.

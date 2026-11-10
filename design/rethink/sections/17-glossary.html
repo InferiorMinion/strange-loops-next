@@ -8,13 +8,14 @@
       <tbody>
         <tr><td><b>record</b></td><td>The unit of everything: an envelope, a payload and a signature, named by a content hash. An observation, never a statement of truth.</td></tr>
         <tr><td><b>emit</b></td><td>To write a record. One of the two write verbs; the other is <i>tick</i>.</td></tr>
-        <tr><td><b>envelope</b></td><td>The fields the core reads: <code>kind</code>, <code>observer</code>, <code>emitted</code>, <code>occurred</code>, <code>about</code>, <code>prev</code>, <code>under</code>, <code>erases</code>. A field belongs here only if the core reads it.</td></tr>
+        <tr><td><b>envelope</b></td><td>The fields the core reads: <code>kind</code>, <code>observer</code>, <code>emitted</code>, <code>occurred</code>, <code>about</code>, <code>of</code>, <code>prev</code>, <code>under</code>, <code>erases</code>. A field belongs here only if the core reads it.</td></tr>
         <tr><td><b>payload</b></td><td>Everything else. The core never interprets it; folds read typed fields from it.</td></tr>
         <tr><td><b>kind</b></td><td>A record's label. It stays a label, not a type; declarations describe it.</td></tr>
         <tr><td><b>observer</b></td><td>Whoever says "I saw": a lineage id on every record. A collector is an observer reporting hearsay.</td></tr>
         <tr><td><b>emitted · occurred</b></td><td>Two times. <code>emitted</code> is when the observer wrote it; <code>occurred</code> is the claimed span, and may be coarse.</td></tr>
-        <tr><td><b>about</b></td><td>The things a record is about: a set, usually one.</td></tr>
-        <tr><td><b>prev</b></td><td>The records this one replaces, within the things both are about: a set. Empty starts a chain; two or more merge. It may name only records the writer holds about a shared thing.</td></tr>
+        <tr><td><b>about</b></td><td>The things a record mentions: a set. It never makes a head.</td></tr>
+        <tr><td><b>of</b></td><td>The one thing a record is an emit of: a record id or a natural key, read as written. A root leaves it out and is of the thing its own id names; a record with <code>prev</code> states it.</td></tr>
+        <tr><td><b>prev</b></td><td>The records this one replaces, within the thing both are of: a set. Empty starts a chain; two or more merge. It may name only records the writer holds of the same thing.</td></tr>
         <tr><td><b>under</b></td><td>The grant a record relies on.</td></tr>
         <tr><td><b>commitment · salt</b></td><td>The payload's salted hash. A secret salt makes offline guesses harder while the opening remains withheld. Opening it means showing the payload and the salt.</td></tr>
         <tr><td><b>erases</b></td><td>The ids whose openings this record asks the store to erase.</td></tr>
@@ -26,7 +27,7 @@
     <div class="tbl"><table>
       <thead><tr><th>Term</th><th>Means</th></tr></thead>
       <tbody>
-        <tr><td><b>thing</b></td><td>Whatever records are about: a chapter, a service, a URL, a person. Each thing has its own state; a record about nothing lives in one thing of its own.</td></tr>
+        <tr><td><b>thing</b></td><td>Whatever records are of: a chapter, a service, a URL, a person. Each record is of exactly one thing, and each thing has its own state; a root starts a thing named by its own id.</td></tr>
         <tr><td><b>anchor</b></td><td>The record a thing or a lineage starts with; its id is the identity. Primitives start with the reserved <code>*-anchor</code> kinds.</td></tr>
         <tr><td><b>natural key</b></td><td>A typed key that needs no anchor, such as <code>url:</code>, <code>isbn:</code> or <code>svc:</code>. Anyone computes the same one.</td></tr>
         <tr><td><b>birth key</b></td><td>The natural key for code: the symbol as it was in the commit that created it.</td></tr>
@@ -47,7 +48,7 @@
         <tr><td><b>vertex</b></td><td>A standing question over stores: it selects, folds and ticks, and its ticks feed higher vertices. Where loops meet, which nothing else names, so it keeps its word from the original vocabulary.</td></tr>
         <tr><td><b>spec</b></td><td>A vertex's definition: inputs, folds, a boundary. One spec can be instantiated as several vertices, each named by the hash of the spec and its parameters. Written as JSON, stored as a record of kind <code>vertex</code>; its <code>note</code> explains it and stays out of the input key.</td></tr>
         <tr><td><b>fold</b></td><td>Turning a set of records into state, with one of six: Count, Sum, Min, Max, LatestBy, Collect. Accumulating folds are commutative; folds over heads follow <code>prev</code>. Latest, TopN and Window are proposed modifiers; Avg is left to the lens.</td></tr>
-        <tr><td><b>head</b></td><td>A record nothing about the same thing names in <code>prev</code>: a thing's current record. A thing with several heads is forked, shown as a conflict. Heads are worked out from envelopes alone, over everything the reader holds.</td></tr>
+        <tr><td><b>head</b></td><td>A record no record of the same thing names in <code>prev</code>: a thing's current record. A thing with several heads is forked, shown as a conflict. Heads are worked out from envelopes alone, over everything the reader holds.</td></tr>
         <tr><td><b>content order</b></td><td>How a fold decides which record wins: taken from what records carry, never from arrival. No fold needs records read in this order.</td></tr>
         <tr><td><b>predicate</b></td><td>Wherever a spec says which records, or when to tick. A closed, typed set.</td></tr>
         <tr><td><b>boundary · marker</b></td><td>When a vertex ticks. A marker is a record whose arrival is that moment.</td></tr>
@@ -122,7 +123,7 @@
       <tbody>
         <tr><td><b>fact</b></td><td>record</td><td>"Fact" implies truth; the model holds observations.</td></tr>
         <tr><td><b>genesis</b></td><td>anchor</td><td>One concept: the record an identity starts with.</td></tr>
-        <tr><td><b>subject</b></td><td>thing</td><td><code>about</code> holds things.</td></tr>
+        <tr><td><b>subject</b></td><td>thing</td><td><code>of</code> names a thing; <code>about</code> mentions things.</td></tr>
         <tr><td><b>residence</b></td><td>place</td><td>A residence was just a store's places on one machine.</td></tr>
         <tr><td><b>topology</b></td><td>realm</td><td>A topology was a realm whose name table links others.</td></tr>
         <tr><td><b>boundary list</b></td><td>the limits</td><td><i>Boundary</i> means when a vertex ticks.</td></tr>

@@ -6,6 +6,9 @@ The sections below preserve earlier analysis, recommendations, proposed sentence
 They do not state current requirements or current implementation status.
 In particular, the earlier gap 17 draft allowed empty ids, and the earlier gap 16 draft used global succession state.
 Both drafts are superseded by the table and the normative protocol pages.
+D8a and D8b, decided later, restate what a thing is: a record is of exactly one thing, from `of`, and `about` only mentions.
+A record about several things, or heading several, no longer arises, so the analysis of gaps 4 and 15 describes the earlier model.
+Their resolutions still hold: heads are computed per thing and combined once per id, and each unread id counts once per slot.
 Output ids in the historical examples abbreviate canonical `idText` values.
 
 ## Final resolutions

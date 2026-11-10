@@ -80,7 +80,7 @@ loops emit same-as --about r:h1 --about org:willowcreek-mgmt.example            
 { "vertex": "identity",
   "note": "The latest stance per pair.",
   "from": [{ "store": "root", "kind": ["same-as", "dispute"] }],
-  "fold": { "pairs": { "latest-by": "about", "follow": "prev" } } }
+  "fold": { "pairs": { "latest-by": "of", "follow": "prev" } } }
 
 { "vertex": "salience",
   "note": "Who touched each thing; a witness tick each morning.",
@@ -126,22 +126,22 @@ loops emit read refs:='["r:f12…"]' --about T:digest-1019</pre>
 }
 
 loops emit chapter-start title="The Lighthouse"                                   # → r:a1
-loops emit chapter-prose text=blob:h:… --about r:a1 --prev r:p2                   # laptop
-loops emit chapter-prose text=blob:h:… --about r:a1 --prev r:p2                   # phone: two heads, a visible fork
-loops emit chapter-mentions characters:='["r:c1"]' ideas:='["r:i9"]' --about r:a1
-loops emit book-order chapters:='["r:a4","r:a1","r:a2"]' --about r:b0 --prev r:o3  # a move is one record
+loops emit chapter-prose text=blob:h:… --of r:a1 --prev r:p2                      # laptop
+loops emit chapter-prose text=blob:h:… --of r:a1 --prev r:p2                      # phone: two heads, a visible fork
+loops emit chapter-mentions characters:='["r:c1"]' ideas:='["r:i9"]' --of r:a1
+loops emit book-order chapters:='["r:a4","r:a1","r:a2"]' --of r:b0 --prev r:o3     # a move is one record
 loops emit draft-complete label="draft 2"                                         # the marker
 
 # .loops/vertices/chapter.json
 { "vertex": "chapter", "param": ["chapter"],
-  "from": [{ "store": "novel", "about": "$chapter" }],
+  "from": [{ "store": "novel", "of": "$chapter" }],
   "fold": { "facets": { "latest-by": "kind", "follow": "prev" },
             "notes":  { "collect": true, "where": { "env.kind": { "is": "chapter-note" } } } } }
 
 # .loops/vertices/manuscript.json
 { "vertex": "manuscript",
   "from": [{ "store": "novel", "kind": ["chapter-prose", "book-order"] }],
-  "fold": { "chapters": { "latest-by": "about", "follow": "prev" },
+  "fold": { "chapters": { "latest-by": "of", "follow": "prev" },
             "order":    { "latest": true, "follow": "prev", "where": { "env.kind": { "is": "book-order" } } } },
   "boundary": [{ "when": "draft-complete" }] }
 
@@ -201,7 +201,7 @@ loops emit incident-start title="jellyfin stalls"                               
 loops emit incident-evidence refs:='["r:l7"]' --about r:i1
 loops emit finding text="transcode cache full" refs:='["r:l7","r:l9"]' \
     --about r:i1 --under g:homelab-ops                                               # by sl:7f
-loops emit incident-status status=resolved --about r:i1
+loops emit incident-status status=resolved --of r:i1
 
 { "vertex": "health",
   "note": "A cron made content by a marker.",
@@ -210,7 +210,8 @@ loops emit incident-status status=resolved --about r:i1
   "boundary": [{ "when": "cycle-complete" }] }
 
 { "vertex": "incident", "param": ["incident"],
-  "from": [{ "store": "homelab", "about": "$incident", "follow-refs": true }],
+  "from": [{ "store": "homelab", "of": "$incident" },
+           { "store": "homelab", "about": "$incident", "follow-refs": true }],
   "fold": { "state":    { "latest-by": "kind", "follow": "prev" },
             "evidence": { "collect": true, "set": true } },
   "boundary": [{ "when": "incident-status", "where": { "status": { "is": "resolved" } } },
@@ -251,8 +252,8 @@ loops emit review verdict=approved --about T:t1                        # by sl:a
 
 loops emit component-start name=auth-svc                               # sl:dev1 → r:x1
 loops emit component-start name="SSO gateway"                          # sl:director → r:x3
-loops emit same-as --about r:x1 --about r:x3                           # sl:dev2: a guess
-loops emit dispute --about r:x1 --about r:x3                           # sl:director: not the same thing
+loops emit same-as --about r:x1 --about r:x3                           # sl:dev2: a guess → r:s2
+loops emit dispute --of r:s2 --prev r:s2                               # sl:director: not the same thing
 loops emit note body="the proxy in front of auth-svc" --about r:x3 --about r:x1   # sl:director
 loops emit decision title="Move auth-svc behind the gateway" status=accepted \
     evidence:='["r:n4","r:n7"]' --about r:x1 --occurred 2019-04

@@ -2,11 +2,57 @@
 
 ## Scope
 
-This report covers the JS, Lean, and Rust campaign after the D1–D6 rulings.
-It also preserves the Step-1 campaign and earlier two-way campaigns as historical findings.
+This report covers the JS, Lean, and Rust campaign after D8a and D8b.
+It also preserves the D1–D6 campaign, the Step-1 campaign and earlier two-way campaigns as historical findings.
+Their counts are historical: the generator changed with D8, so the same seeds now generate different inputs.
 The harness covers record, fold, spec, realm, scenario, batch, and lens inputs.
 
-## D1–D6 three-way campaign
+## D8a and D8b three-way campaign
+
+Source commit: `b9f4389`; its model, JavaScript and Rust evaluator are those of `11784e5`.
+Node 25.9 checks 5,600 cases with seed `d8ab-1`: 800 cases per family.
+The run uses 88 chunks and takes 65.32 seconds.
+Exit 0: no implementation disagrees on any case.
+The retained [summary](evidence/d8ab-1/summary.json) supports these counts.
+Run `python3 interop/fuzz/summarize.py report` from the repository root.
+
+| Family | Cases | Match | Protocol refusal | Shared decoder refusal | Mismatch |
+|---|---:|---:|---:|---:|---:|
+| record | 800 | 156 | 601 | 43 | 0 |
+| fold | 800 | 699 | 0 | 101 | 0 |
+| spec | 800 | 712 | 42 | 46 | 0 |
+| realm | 800 | 693 | 0 | 107 | 0 |
+| scenario | 800 | 709 | 0 | 91 | 0 |
+| batch | 800 | 425 | 375 | 0 | 0 |
+| lens | 800 | 560 | 240 | 0 | 0 |
+| Total | 5,600 | 3,954 | 1,258 | 388 | 0 |
+
+All 388 decoder refusals occur in both Lean and Rust.
+They are not protocol agreement.
+No reduction runs, because no mismatch exists.
+The [mismatch list](evidence/d8ab-1/d1-mismatches.json) keeps the historical D1 example and holds no case.
+
+The generator carries `of` since D8.
+A root leaves it out; other records name a natural key or an earlier record's thing.
+Most revisions state their target's thing; a few name another, or leave `of` out, which admission refuses.
+`about` only mentions; specs choose by `from.of`, `from.about`, both, or neither.
+Five of every 64 record indices carry the `of` boundaries: an untyped `of`, a `prev` without `of`, and its order against `about`, `prev` and `erases`.
+Four of every 16 batch indices break one `of` rule: `of-missing`, `of-not-root` by label or held record, or `prev-unrelated`.
+Spec cases include `"latest-by": "about"` and an untyped `from.of`.
+So the record and batch families refuse more often than in the D1–D6 run, and these counts are not comparable with it.
+
+Raw logs and per-case files are not committed.
+Run `python3 -B -m unittest discover -s interop/fuzz/evidence -p 'test_*.py'`.
+
+```sh
+node interop/fuzz/run.mjs --rust --seed d8ab-1 --n 5600 --shrink-trials 80 --out /tmp/fuzz-d8ab-1
+python3 interop/fuzz/summarize.py campaign /tmp/fuzz-d8ab-1 d8ab-1
+```
+
+## HISTORICAL D1–D6 three-way campaign
+
+This campaign predates D8.
+Its counts come from the generator of that time; seed `d1-d6-1` now generates different inputs.
 
 Source commit: `bb9dc46`.
 Node 25.9 checks 5,600 cases with seed `d1-d6-1`: 800 cases per family.

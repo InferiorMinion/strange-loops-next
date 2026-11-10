@@ -103,7 +103,7 @@ const SPEC: &str = r#"{"vertex":"decisions","from":[{"store":".","kind":["decisi
   "all":{"count":true},
   "settled":{"count":true,"where":{"status":{"is":"settled"}}},
   "weight":{"sum":"n"},
-  "current":{"latest-by":"about","follow":"prev"}}}"#;
+  "current":{"latest-by":"of","follow":"prev"}}}"#;
 
 #[test]
 fn emit_revise_fork_fold_and_erase() {
@@ -112,7 +112,7 @@ fn emit_revise_fork_fold_and_erase() {
     let first = s.ok(&[
         "emit",
         "decision",
-        "--about",
+        "--of",
         thing,
         "status=leaning",
         "n:=1",
@@ -128,24 +128,37 @@ fn emit_revise_fork_fold_and_erase() {
     assert_eq!(text(&got, &["payload", "status"]), "leaning");
 
     // A revision replaces it; a second revision of the same record is a fork, and both heads show.
+    // Written without --of, a revision is of what it replaces, and its envelope says so.
     let second = s.ok(&[
         "emit",
         "decision",
         "--about",
-        thing,
+        "lang:rust",
         "--prev",
         &first[2..10],
         "status=settled",
         "n:=2",
         "Rust, in a new repo",
     ]);
-    let state = s.json(&["about", thing]);
+    let got = s.json(&["get", &second]);
+    assert_eq!(text(&got, &["env", "of"]), thing);
+    assert_eq!(
+        at(&got, &["env", "about"]),
+        &Json::Arr(vec![Json::Str("lang:rust".into())])
+    );
+    let state = s.json(&["of", thing]);
     assert_eq!(text(&state, &["winner", "id"]), second);
     assert_eq!(len(&state, &["others"]), 0);
+    // A mention makes no head.
+    let mentioned = s.json(&["of", "lang:rust"]);
+    assert_eq!(at(&mentioned, &["winner"]), &Json::Null);
+    assert_eq!(at(&mentioned, &["records"]), &Json::Int(0_i64.into()));
+    // The verb that shows a thing is `of`; `about` names no verb.
+    assert_eq!(s.fails(&["about", thing], "").0, 2);
     let fork = s.ok(&[
         "emit",
         "decision",
-        "--about",
+        "--of",
         thing,
         "--prev",
         &first,
@@ -153,7 +166,7 @@ fn emit_revise_fork_fold_and_erase() {
         "n:=4",
         "Zig",
     ]);
-    let state = s.json(&["about", thing]);
+    let state = s.json(&["of", thing]);
     assert_eq!(text(&state, &["winner", "id"]), fork);
     assert_eq!(len(&state, &["others"]), 1);
     assert_eq!(at(&state, &["records"]), &Json::Int(3_i64.into()));
@@ -191,7 +204,7 @@ fn emit_revise_fork_fold_and_erase() {
     assert_eq!(at(&slots, &["weight", "value"]), &Json::Int(3_i64.into()));
     assert_eq!(at(&slots, &["weight", "unread"]), &Json::Int(1_i64.into()));
     assert_eq!(at(&slots, &["settled", "unread"]), &Json::Int(1_i64.into()));
-    assert_eq!(text(&s.json(&["about", thing]), &["winner", "id"]), fork);
+    assert_eq!(text(&s.json(&["of", thing]), &["winner", "id"]), fork);
     let check = s.json(&["check"]);
     assert_eq!(
         (len(&check, &["refused"]), len(&check, &["altered"])),
@@ -202,9 +215,9 @@ fn emit_revise_fork_fold_and_erase() {
 #[test]
 fn a_batch_is_one_changeset_and_labels_name_its_records() {
     let s = Store::new("batch");
-    let drafts = r#"{"label":"@d","kind":"decision","about":["repo:strange-loops"],"payload":{"text":"Rust, in a new repo"}}
+    let drafts = r#"{"label":"@d","kind":"decision","of":"repo:strange-loops","payload":{"text":"Rust, in a new repo"}}
 {"kind":"note","about":["@d"],"payload":{"text":"phones and extensions need the core itself"}}
-{"label":"@d2","kind":"decision","about":["repo:strange-loops"],"prev":["@d"],"payload":{"text":"until the rename"}}
+{"label":"@d2","kind":"decision","of":"repo:strange-loops","prev":["@d"],"payload":{"text":"until the rename"}}
 "#;
     let out = parse_json(&s.ok_with(&["emit", "-"], drafts)).expect("JSON");
     let Json::Arr(records) = at(&out, &["records"]) else {
@@ -218,33 +231,57 @@ fn a_batch_is_one_changeset_and_labels_name_its_records() {
         at(&note, &["env", "about"]),
         &Json::Arr(vec![Json::Str(text(&records[0], &["id"]).into())])
     );
-    let state = s.json(&["about", "repo:strange-loops"]);
+    let state = s.json(&["of", "repo:strange-loops"]);
     assert_eq!(text(&state, &["winner", "id"]), text(&records[2], &["id"]));
-    // The note is about the first decision's own thing, which the decision anchors.
+    // The note mentions the first decision, which is of the repo: neither the
+    // mention nor the decision's id makes a thing with records of it.
+    let mentioned = s.json(&["of", text(&records[0], &["id"])]);
+    assert_eq!(at(&mentioned, &["records"]), &Json::Int(0_i64.into()));
+    assert_eq!(at(&mentioned, &["winner"]), &Json::Null);
     assert_eq!(
-        at(
-            &s.json(&["about", text(&records[0], &["id"])]),
-            &["records"]
-        ),
-        &Json::Int(1_i64.into())
+        s.ok(&["export", "--about", text(&records[0], &["id"])]),
+        s.ok(&["export", "--kind", "note"])
+    );
+    assert_eq!(s.ok(&["export", "--of", text(&records[0], &["id"])]), "");
+    assert_eq!(
+        s.ok(&["export", "--of", "repo:strange-loops"])
+            .lines()
+            .count(),
+        2
     );
 
-    // A revision written without --about is about what it replaces, here the thing a
-    // record about nothing anchors.
-    let anchor = s.ok(&["emit", "note", "first"]);
-    let revised = s.ok(&["emit", "note", "--prev", &anchor, "second"]);
-    let state = s.json(&["about", &anchor]);
-    assert_eq!(text(&state, &["winner", "id"]), revised);
-    assert_eq!(len(&state, &["others"]), 0);
+    // A label in `of` names a record of the same changeset.
+    let out = parse_json(&s.ok_with(
+        &["emit", "-"],
+        "{\"label\":\"@r\",\"kind\":\"note\"}\n{\"kind\":\"note\",\"of\":\"@r\",\"prev\":[\"@r\"]}\n",
+    ))
+    .expect("JSON");
+    let Json::Arr(pair) = at(&out, &["records"]) else {
+        panic!("records")
+    };
+    assert_eq!(
+        text(&s.json(&["get", text(&pair[1], &["id"])]), &["env", "of"]),
+        text(&pair[0], &["id"])
+    );
 
     // Nothing is written unless every draft is taken.
     let held = s.ok(&["export"]);
     for (bad, code) in [
         (r#"{"kind":"note","about":["@nobody"]}"#, "label-unknown"),
+        (r#"{"kind":"note","of":"@nobody"}"#, "label-unknown"),
         (r#"{"kind":"","payload":{}}"#, "kind-empty"),
         (
-            r#"{"kind":"note","prev":["r:0000000000000000000000000000000000000000000000000000"]}"#,
+            r#"{"kind":"note","of":"thing:x","prev":["r:0000000000000000000000000000000000000000000000000000"]}"#,
             "prev-unknown",
+        ),
+        // A changeset states its `of`: nothing fills it in.
+        (
+            r#"{"kind":"note","prev":["r:0000000000000000000000000000000000000000000000000000"]}"#,
+            "of-missing",
+        ),
+        (
+            "{\"label\":\"@a\",\"kind\":\"note\",\"of\":\"thing:x\"}\n{\"kind\":\"note\",\"of\":\"@a\"}",
+            "of-not-root",
         ),
         (
             r#"{"kind":"note","colour":"red"}"#,
@@ -262,35 +299,70 @@ fn a_batch_is_one_changeset_and_labels_name_its_records() {
         );
     }
     assert_eq!(s.ok(&["export"]), held);
-    assert_eq!(s.segments().len(), 3);
+    assert_eq!(s.segments().len(), 2);
+}
+
+#[test]
+fn a_revision_is_of_what_it_replaces_and_the_store_decides_of_not_root() {
+    let s = Store::new("of");
+    let decision = s.ok(&["emit", "decision", "--of", "repo:strange-loops", "start"]);
+    let decision = decision.as_str();
+    // A revision written without --of is of what it replaces: here a root,
+    // whose thing is its own id, and then a revision of it, whose thing is its `of`.
+    let root = s.ok(&["emit", "note", "first"]);
+    let revised = s.ok(&["emit", "note", "--prev", &root, "second"]);
+    let again = s.ok(&["emit", "note", "--prev", &revised, "third"]);
+    for id in [&revised, &again] {
+        assert_eq!(text(&s.json(&["get", id]), &["env", "of"]), root);
+    }
+    let state = s.json(&["of", &root]);
+    assert_eq!(text(&state, &["winner", "id"]), again);
+    assert_eq!(len(&state, &["others"]), 0);
+    assert_eq!(at(&state, &["records"]), &Json::Int(3_i64.into()));
+
+    // What the writer holds decides `of-not-root` and `prev-unrelated`, from the store.
+    let held = s.ok(&["export"]);
+    for (args, code) in [
+        (vec!["--of", revised.as_str()], "of-not-root"),
+        (vec!["--of", decision], "of-not-root"),
+        (
+            vec!["--of", &revised[2..12], "--prev", &again],
+            "of-not-root",
+        ),
+        (vec!["--prev", &root, "--prev", decision], "prev-unrelated"),
+        (
+            vec!["--of", "repo:other", "--prev", &again],
+            "prev-unrelated",
+        ),
+        (vec!["--of", "Untyped:x"], "of-not-typed"),
+    ] {
+        let mut argv = vec!["emit", "note"];
+        argv.extend(args);
+        assert_eq!(
+            s.fails(&argv, ""),
+            (1, format!("refused: {code}")),
+            "{argv:?}"
+        );
+    }
+    assert_eq!(s.ok(&["export"]), held);
+    // An `of` naming a root is a revision's thing, stated rather than filled in.
+    let stated = s.ok(&["emit", "note", "--of", &root, "--prev", &again, "fourth"]);
+    assert_eq!(text(&s.json(&["of", &root]), &["winner", "id"]), stated);
 }
 
 #[test]
 fn two_stores_converge_by_export_and_import() {
     let (a, b) = (Store::new("sync-a"), Store::new("sync-b"));
     let thing = "repo:strange-loops";
-    let root = a.ok(&["emit", "decision", "--about", thing, "start"]);
+    let root = a.ok(&["emit", "decision", "--of", thing, "start"]);
     b.ok_with(&["import"], &a.ok(&["export"]));
     // Each revises what both hold, apart; a third record exists only in b.
-    let from_a = a.ok(&[
-        "emit",
-        "decision",
-        "--about",
-        thing,
-        "--prev",
-        &root,
-        "a's revision",
-    ]);
-    let from_b = b.ok(&[
-        "emit",
-        "decision",
-        "--about",
-        thing,
-        "--prev",
-        &root,
-        "b's revision",
-    ]);
-    b.ok(&["emit", "note", "--about", thing, "only b so far"]);
+    // A revision is of what it replaces, filled in from the imported line.
+    let from_a = a.ok(&["emit", "decision", "--prev", &root, "a's revision"]);
+    let from_b = b.ok(&["emit", "decision", "--prev", &root, "b's revision"]);
+    b.ok(&["emit", "note", "--of", thing, "only b so far"]);
+    // A record that only mentions the thing is none of its heads.
+    b.ok(&["emit", "note", "--about", thing, "said in passing"]);
     assert_ne!(a.ok(&["export"]), b.ok(&["export"]));
     // b can't revise a record it doesn't hold.
     assert_eq!(
@@ -300,12 +372,19 @@ fn two_stores_converge_by_export_and_import() {
     b.ok_with(&["import"], &a.ok(&["export"]));
     a.ok_with(&["import"], &b.ok(&["export"]));
     assert_eq!(a.ok(&["export"]), b.ok(&["export"]));
-    assert_eq!(a.ok(&["export"]).lines().count(), 4);
+    assert_eq!(a.ok(&["export"]).lines().count(), 5);
     // Both now show the same fork, with the same winner.
-    let (sa, sb) = (a.json(&["about", thing]), b.json(&["about", thing]));
+    let (sa, sb) = (a.json(&["of", thing]), b.json(&["of", thing]));
     assert_eq!(sa, sb);
     // Three heads: the two revisions fork, and b's note was never replaced.
+    // The note that only mentions the thing is not one of them.
     assert_eq!(len(&sa, &["others"]), 2);
+    assert_eq!(at(&sa, &["records"]), &Json::Int(4_i64.into()));
+    assert!(!a.ok(&["export", "--of", thing]).contains("said in passing"));
+    assert!(
+        a.ok(&["export", "--about", thing])
+            .contains("said in passing")
+    );
     let mut heads = vec![text(&sa, &["winner", "id"])];
     if let Json::Arr(others) = at(&sa, &["others"]) {
         heads.extend(others.iter().map(|line| text(line, &["id"])));
@@ -333,6 +412,10 @@ fn usage_refusals_and_a_missing_store_exit_apart() {
     assert_eq!(
         s.fails(&["emit", "note", "--about", "untyped"], ""),
         (1, "refused: about-not-typed".into())
+    );
+    assert_eq!(
+        s.fails(&["emit", "note", "--of", "Not:typed"], ""),
+        (1, "refused: of-not-typed".into())
     );
     assert_eq!(
         s.fails(&["get", "zzzz"], ""),

@@ -7,11 +7,16 @@
     "held": [
       {
         "id": "r:tsant02u7bhefv6nom5tukci31agdh8q5sonp4s3h4dhkfbrgli0",
-        "about": ["topic:auth"]
+        "prev": []
+      },
+      {
+        "id": "r:l3c6scqhfqu3bfmj288git5kimd1e3ik809q8pv8p2637qi48kc0",
+        "of": "r:tsant02u7bhefv6nom5tukci31agdh8q5sonp4s3h4dhkfbrgli0",
+        "prev": ["r:tsant02u7bhefv6nom5tukci31agdh8q5sonp4s3h4dhkfbrgli0"]
       },
       {
         "id": "r:iivodlg66vgkad2knrdqob3e4obh28sea6omq5kk0u25t925276g",
-        "about": []
+        "prev": []
       }
     ],
     "drafts": [
@@ -20,7 +25,7 @@
           "kind": "note",
           "observer": "sl:u11o5kditce56otma2ksbsnff7n6t0ftgbrmt4sp0j5d1riusfr0",
           "emitted": "2026-10-24T09:00:00Z",
-          "about": ["r:iivodlg66vgkad2knrdqob3e4obh28sea6omq5kk0u25t925276g"],
+          "of": "r:iivodlg66vgkad2knrdqob3e4obh28sea6omq5kk0u25t925276g",
           "prev": ["r:iivodlg66vgkad2knrdqob3e4obh28sea6omq5kk0u25t925276g"]
         },
         "salt": "oeouj9lihv3ni77lc04dveklm0",
@@ -31,8 +36,8 @@
   "expect": {
     "records": [
       {
-        "id": "r:atbt633e2clbe0js2tl1c1th2rb2j9lvl01gf0fns6thqf3merpg",
-        "env_canonical": "{\"about\":[\"r:iivodlg66vgkad2knrdqob3e4obh28sea6omq5kk0u25t925276g\"],\"emitted\":\"2026-10-24T09:00:00Z\",\"kind\":\"note\",\"observer\":\"sl:u11o5kditce56otma2ksbsnff7n6t0ftgbrmt4sp0j5d1riusfr0\",\"prev\":[\"r:iivodlg66vgkad2knrdqob3e4obh28sea6omq5kk0u25t925276g\"]}"
+        "id": "r:l8d1eveddu2tu6sk537c30sumg6ksflub1m5pkskalcirpk9d3sg",
+        "env_canonical": "{\"emitted\":\"2026-10-24T09:00:00Z\",\"kind\":\"note\",\"observer\":\"sl:u11o5kditce56otma2ksbsnff7n6t0ftgbrmt4sp0j5d1riusfr0\",\"of\":\"r:iivodlg66vgkad2knrdqob3e4obh28sea6omq5kk0u25t925276g\",\"prev\":[\"r:iivodlg66vgkad2knrdqob3e4obh28sea6omq5kk0u25t925276g\"]}"
       }
     ]
   }

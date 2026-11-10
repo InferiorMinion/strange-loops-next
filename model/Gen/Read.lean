@@ -24,7 +24,7 @@ Two rules shape it:
   every refusal says where (`input.orders[0][1].prev[0]`) and what was
   wanted. A record is decoded as far as the model's `Record` needs: ids
   that are record ids and times that read. Layer 0's other envelope rules
-  remain `write`'s, which a batch's drafts go through. The decoder checks typed `about` members.
+  remain `write`'s, which a batch's drafts go through. The decoder checks typed `about` members and a typed `of`.
 -/
 
 namespace Gen.Read
@@ -295,7 +295,7 @@ def fieldsOf (path : String) (j : Json) : Dec (List (String × Val)) := do
     pure (k, ← valOf (dot path k) v)
 
 def recordKeys : List String :=
-  ["id", "kind", "observer", "about", "value", "prev", "under", "emitted", "occurred", "erases", "n",
+  ["id", "kind", "observer", "about", "of", "value", "prev", "under", "emitted", "occurred", "erases", "n",
     "fields", "shown"]
 
 /-- A record as a reader holds it. A missing payload is written as `shown`
@@ -310,13 +310,16 @@ def record (path : String) (j : Json) : Dec Record := do
   let about ← each (dot path "about") (fun p j => do
     let s ← text p j
     if typedRef s then pure s else bad p "expected a typed reference") (← req path kvs "about")
+  let of ← opt kvs "of" (fun j => do
+    let s ← text (dot path "of") j
+    if typedRef s then pure s else bad (dot path "of") "expected a typed reference")
   let prev ← each (dot path "prev") recordId (← req path kvs "prev")
   let under ← opt kvs "under" (recordId (dot path "under"))
   let emitted ← stampOf (dot path "emitted") (← req path kvs "emitted")
   let occurred ← opt kvs "occurred" (claimOf (dot path "occurred"))
   let erases ← (opt kvs "erases" (each (dot path "erases") recordId)).map (·.getD [])
   let shown ← (opt kvs "shown" (shownOf (dot path "shown"))).map (·.getD .here)
-  let base : Record := { id, kind, observer, about, value := "", prev, under, occurred, emitted, erases, shown }
+  let base : Record := { id, kind, observer, about, of, value := "", prev, under, occurred, emitted, erases, shown }
   match shown with
   | .here =>
     let value ← text (dot path "value") (← req path kvs "value")

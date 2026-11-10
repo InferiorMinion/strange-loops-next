@@ -84,8 +84,8 @@ fn digest_text_and_consumers_keep_leading_and_high_bytes() {
             erases: vec![digest],
             ..Record::default()
         };
-        assert_eq!(r.things(), vec![text.clone()]);
-        assert!(r.is_about(&text));
+        assert_eq!(r.thing(), text);
+        assert!(r.is_of(&text));
         for (field, count) in [
             (EnvField::Prev, 2),
             (EnvField::Under, 1),

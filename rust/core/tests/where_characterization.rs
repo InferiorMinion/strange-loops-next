@@ -57,6 +57,12 @@ fn field_reads_preserve_raw_lists_and_first_lookup() {
         Field::Env(EnvField::About).read(&r),
         Some(vec![item("z"), item("a"), item("z")])
     );
+    assert_eq!(Field::Env(EnvField::Of).read(&r), Some(vec![]));
+    let of = Record {
+        of: Some("t:x".into()),
+        ..r.clone()
+    };
+    assert_eq!(Field::Env(EnvField::Of).read(&of), Some(vec![item("t:x")]));
     for (f, ns) in [
         (EnvField::Prev, vec![2, 1, 2]),
         (EnvField::Under, vec![4]),

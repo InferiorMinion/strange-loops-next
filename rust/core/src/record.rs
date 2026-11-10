@@ -41,8 +41,10 @@ pub struct Record {
     pub kind: String,
     /// The reference for the observer who makes the claim.
     pub observer: String,
-    /// The references for the things this record concerns.
+    /// The references for the things this record mentions.
     pub about: Vec<String>,
+    /// The reference for the one thing this record is an emit of, if it says.
+    pub of: Option<String>,
     /// The text payload field.
     pub value: String,
     /// The digests of the records this record supersedes.

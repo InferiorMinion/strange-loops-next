@@ -1,6 +1,86 @@
 # Lean model mutation report
 
-## D1–D6 snapshot: `bb9dc46`
+## D8a and D8b snapshot: `11784e5`
+
+The Node 25.9 run completes all 210 catalogue entries with a 240-second command timeout.
+The retained [summary](evidence/mutations-d8ab/summary.json) supports these counts.
+Run `python3 interop/fuzz/summarize.py report` from the repository root.
+
+| Outcome | Count |
+|---|---:|
+| Rejected by build | 165 |
+| Vector differences | 28 |
+| Generator assertion exceptions | 15 |
+| Survivors | 2 |
+
+The runner exits 1 for generator assertions.
+Each error retains its assertion text in the summary.
+No command times out, receives a signal, or reports a spawn or cleanup error.
+Build rejections are not semantic proof kills.
+Generator assertions are not vector-difference kills.
+Survival alone proves neither equivalence nor reachability.
+
+The catalogue retargets ten entries at `of` and the one thing it names.
+Each gives this outcome:
+
+| Mutation | D1–D6 run | This run |
+|---|---|---|
+| `spec-source-all-any` | error | rejected-by-build |
+| `things-no-self-anchor` | rejected-by-build | rejected-by-build |
+| `wide-batch-004` | rejected-by-build | rejected-by-build |
+| `wide-spec-070` | rejected-by-build | rejected-by-build |
+| `wide-things-083` | rejected-by-build | rejected-by-build |
+| `wide-things-084` | killed-by-vector | rejected-by-build |
+| `finish-batch-subst` | rejected-by-build | rejected-by-build |
+| `finish-batch-envthings` | killed-by-vector | killed-by-vector |
+| `finish-things-statein` | rejected-by-build | rejected-by-build |
+| `extra-things-thingsof` | rejected-by-build | rejected-by-build |
+
+Their targets changed, so these rows compare outcomes, not the same replacement.
+No entry outside these ten changes its outcome.
+
+Nine new entries cover D8:
+
+| Mutation | Full-catalogue outcome |
+|---|---|
+| `d8-thing-ignores-of` | rejected-by-build |
+| `d8-of-not-typed-skipped` | error |
+| `d8-of-missing-skipped` | rejected-by-build |
+| `d8-of-not-root-skipped` | killed-by-vector |
+| `d8-unrelated-ignores-target-of` | killed-by-vector |
+| `d8-subst-of-skipped` | rejected-by-build |
+| `d8-source-of-by-about` | rejected-by-build |
+| `d8-source-of-typed` | rejected-by-build |
+| `d8-env-of-reads-thing` | rejected-by-build |
+
+`d8-of-not-typed-skipped` stops at a generator assertion: `record/40-of-untyped: expected a refusal`.
+`d8-of-not-root-skipped` and `d8-unrelated-ignores-target-of` build, and change batch vectors.
+No law states the batch checks; the vectors pin them.
+
+The 14 Step-1, D1 and D2 guard entries keep their D1–D6 outcomes.
+2 survivors remain, the two with scoped-equivalence interpretations below:
+
+- `finish-json-hexdigit`
+- `last-spec-tests-conds`
+
+Those interpretations are unchanged and are not approved laws.
+
+The run uses a copy of `model/` and `vectors/` at `11784e5`, in its own repository.
+`11784e5` is the model this report's commit carries; later commits change no file under `model/` or `vectors/`.
+Both baseline builds pass there; initial generation matches the committed corpus.
+The completed run covers exactly the current catalogue IDs.
+Source files restore to the copy's commit, and `model/.mutation-run.lock` is absent.
+Other builds ran in the working tree, not the copy, during the run.
+The cheap runner, which is rerun, kills 33 of 33 mutants: every one compiles and then fails runtime checks.
+
+```sh
+node model/mutate/run.mjs --timeout 240 --output /tmp/d8ab-mutants.json
+python3 interop/fuzz/summarize.py mutation /tmp/d8ab-mutants.json mutations-d8ab
+```
+
+## HISTORICAL D1–D6 snapshot: `bb9dc46`
+
+This run predates D8; ten of its entries had other targets then.
 
 The Node 25.9 run completes all 201 catalogue entries with a 240-second command timeout.
 The retained [summary](evidence/mutations-d1-d6/summary.json) supports these counts.

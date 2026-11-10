@@ -73,7 +73,9 @@ silently acquire those outer-boundary checks.
 
 Reader ids and links are canonical 32-byte `Digest` values; writer envelopes
 retain raw text so writer refusals remain observable. Reader `about` entries
-must be typed references. Numeric `n` and fields retain finite non-whole values
+and a reader `of`, when present, must be typed references; a raw envelope's
+`of` that is not text is malformed input, as `under` and `occurred` are. A
+batch fixture's `held` entries are `{"id", "of"?, "prev"}`, Lean `Held`. Numeric `n` and fields retain finite non-whole values
 without pretending they are readable integers. Successful record signing
 requires a canonical base32hex encoding of exactly 32 seed bytes.
 Byte text uses lowercase base32hex without padding. The decoder checks the
@@ -82,12 +84,17 @@ and optional fractions of one to nine digits without a trailing zero.
 
 ## Composition rulings
 
+A record is of exactly one thing (D8): its `of` as written, or its own id
+(`Record::thing`). `about` only mentions and never makes a head; `from.about`
+tests it as written and `from.of` tests the thing.
 Per-thing heads are composed by a distinct-id union for `fold/heads`,
 `fold/view`, and whole-view latest. The low-level `LatestBy::fold` retains its
 unchecked raw behavior. Spec/realm/scenario adapters keep their separate
 settlement and admission boundaries. Scenarios use `things::state_in` on
 admitted records, folding only the target thing without repeating admission.
-Whole-view head unions retain records superseded on one thing but current on another.
+Whole-view head unions retain records superseded on one thing but current on
+another: a `prev` across things, which admission refuses, leaves the other
+thing's head where unadmitted input reaches a fold.
 The generated `scenario/phase2-thing-state` pin distinguishes both heads and winner
 from whole-view state across every rotation.
 
@@ -104,17 +111,17 @@ There is no deferred-family or skipped-file allowlist:
 
 | Family | JSON files |
 | --- | ---: |
-| record | 119 |
+| record | 125 |
 | occurred | 9 |
 | byte-text | 5 |
-| fold | 48 |
-| spec | 113 |
-| realm | 15 |
+| fold | 50 |
+| spec | 121 |
+| realm | 16 |
 | scenario | 5 |
 | lens | 21 |
-| batch | 27 |
+| batch | 34 |
 | standard | 12 |
-| **Total** | **374** |
+| **Total** | **398** |
 
 All evaluator families are checked against immutable fixture answers,
 including every listed arrival order. A record's variants are checked against

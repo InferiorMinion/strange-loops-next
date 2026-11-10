@@ -1,5 +1,5 @@
 {
-  "vector": "10-successor-expands-things",
+  "vector": "10-successor-mentions-another-thing",
   "layer": "realm",
   "laws": ["admit.no-cross", "thing.local"],
   "source": "model",
@@ -9,7 +9,8 @@
         "id": "r:00000000000000000000000000000000000000000000000002og",
         "kind": "note",
         "observer": "sl:kyle",
-        "about": ["thing:A"],
+        "about": [],
+        "of": "thing:A",
         "value": "",
         "prev": [],
         "emitted": "2026-10-01T00:00:01Z",
@@ -21,6 +22,7 @@
         "kind": "note",
         "observer": "sl:kyle",
         "about": ["thing:A", "thing:B"],
+        "of": "thing:A",
         "value": "",
         "prev": ["r:00000000000000000000000000000000000000000000000002og"],
         "emitted": "2026-10-01T00:00:02Z",
@@ -43,11 +45,6 @@
     "refused": [],
     "things": {
       "thing:A": {
-        "heads": ["r:00000000000000000000000000000000000000000000000002p0"],
-        "winner": "r:00000000000000000000000000000000000000000000000002p0",
-        "others": []
-      },
-      "thing:B": {
         "heads": ["r:00000000000000000000000000000000000000000000000002p0"],
         "winner": "r:00000000000000000000000000000000000000000000000002p0",
         "others": []

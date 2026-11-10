@@ -11,9 +11,9 @@ use std::fmt;
 /// A draft holds an unchecked record and an optional batch label.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Draft {
-    /// The optional name that other drafts can use in about or prev.
+    /// The optional name that other drafts can use in about, of or prev.
     pub label: Option<String>,
-    /// The unchecked envelope, which can contain labels in about and prev.
+    /// The unchecked envelope, which can contain labels in about, of and prev.
     pub env: Env,
     /// The bytes that open the payload commitment.
     pub salt: Vec<u8>,
@@ -96,7 +96,9 @@ pub enum Error {
     Write(stored::Error),
     /// A prev target is absent from the batch and held store.
     PrevUnknown,
-    /// A record and its prev target share no thing.
+    /// An `of` names a held record that is not a root.
+    OfNotRoot,
+    /// A prev target is of a different thing from the record.
     PrevUnrelated,
 }
 
@@ -110,6 +112,7 @@ impl Error {
             Self::LabelCycle => "label-cycle",
             Self::Write(error) => error.code(),
             Self::PrevUnknown => "prev-unknown",
+            Self::OfNotRoot => "of-not-root",
             Self::PrevUnrelated => "prev-unrelated",
         }
     }
@@ -156,11 +159,25 @@ pub fn subst(ss: &[String], mapping: impl Fn(&str) -> Option<String>) -> Option<
         .collect()
 }
 
+/// Lean: `Loops.substOpt`, model/Loops/Batch.lean.
+/// Replaces a label in an optional field, and returns None for a missing label.
+pub fn subst_opt(
+    s: Option<&String>,
+    mapping: impl Fn(&str) -> Option<String>,
+) -> Option<Option<String>> {
+    match s {
+        None => Some(None),
+        Some(s) if is_label(s) => mapping(s).map(Some),
+        Some(s) => Some(Some(s.clone())),
+    }
+}
+
 /// Lean: `Loops.substEnv`, model/Loops/Batch.lean.
-/// Replaces labels in about and prev only; all other envelope fields keep their original values.
+/// Replaces labels in about, of and prev only; all other envelope fields keep their original values.
 pub fn subst_env(env: &Env, mapping: impl Fn(&str) -> Option<String>) -> Option<Env> {
     Some(Env {
         about: subst(&env.about, &mapping)?,
+        of: subst_opt(env.of.as_ref(), &mapping)?,
         prev: subst(&env.prev, &mapping)?,
         ..env.clone()
     })
@@ -175,11 +192,12 @@ fn lookup<'a>(mapping: &'a [(String, String)], label: &str) -> Option<&'a str> {
 
 impl Draft {
     /// Lean: `Loops.Draft.refs`, model/Loops/Batch.lean.
-    /// Lists labels from about, then prev, with their order and repeats unchanged.
+    /// Lists labels from about, then of, then prev, with their order and repeats unchanged.
     pub fn refs(&self) -> Vec<String> {
         self.env
             .about
             .iter()
+            .chain(&self.env.of)
             .chain(&self.env.prev)
             .filter(|s| is_label(s))
             .cloned()
@@ -236,31 +254,56 @@ pub fn resolve_rounds(
     Ok(mapping)
 }
 
-/// Lean: `Loops.envThings`, model/Loops/Batch.lean.
-/// Returns about unchanged, or the record's own id when about is empty.
-pub fn env_things(id: &str, about: &[String]) -> Vec<String> {
-    if about.is_empty() {
-        vec![id.to_owned()]
-    } else {
-        about.to_vec()
+/// Lean: `Loops.Held`, model/Loops/Batch.lean.
+/// What a writer reads of a record it holds: its `of` and its `prev`.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct Held {
+    /// The record's `of`, as written.
+    pub of: Option<String>,
+    /// The record's `prev`, as written.
+    pub prev: Vec<String>,
+}
+
+impl Held {
+    /// Lean: `Loops.Held.root`, model/Loops/Batch.lean.
+    /// A root has no `of` and no `prev`.
+    pub fn root(&self) -> bool {
+        self.of.is_none() && self.prev.is_empty()
     }
 }
 
+/// Lean: `Loops.envThing`, model/Loops/Batch.lean.
+/// The thing a record is of, as `Record.thing` reads it: `of`, or its own id.
+pub fn env_thing<'a>(id: &'a str, of: Option<&'a str>) -> &'a str {
+    of.unwrap_or(id)
+}
+
 /// Lean: `Loops.checkPrev`, model/Loops/Batch.lean.
-/// Checks prev targets with batch lookup before held lookup, and unknown targets before unrelated targets.
+/// Looks a target up in the batch before the held lookup. Checks every
+/// unknown prev target first, then every `of` that names a held non-root,
+/// then every prev target of another thing, each across the whole batch.
 /// # Errors
-/// Returns prev-unknown for an absent target, then prev-unrelated when source and target share no thing.
+/// Returns prev-unknown for an absent target, then of-not-root, then prev-unrelated.
 pub fn check_prev(
     h: &impl Fn(&[u8]) -> Vec<u8>,
-    held: &impl Fn(&str) -> Option<Vec<String>>,
+    held: &impl Fn(&str) -> Option<Held>,
     rs: &[Stored],
 ) -> Result<(), Error> {
-    let in_batch: Vec<_> = rs.iter().map(|r| (r.id(h), &r.env.about)).collect();
+    let in_batch: Vec<_> = rs
+        .iter()
+        .map(|r| {
+            let held = Held {
+                of: r.env.of.clone(),
+                prev: r.env.prev.clone(),
+            };
+            (r.id(h), held)
+        })
+        .collect();
     let target = |p: &str| {
         in_batch
             .iter()
             .find(|(id, _)| id == p)
-            .map(|(_, about)| (*about).clone())
+            .map(|(_, held)| held.clone())
             .or_else(|| held(p))
     };
     if rs
@@ -270,13 +313,20 @@ pub fn check_prev(
         return Err(Error::PrevUnknown);
     }
     if rs.iter().any(|r| {
-        r.env.prev.iter().any(|p| {
-            target(p).is_some_and(|about| {
-                let source = env_things(&r.id(h), &r.env.about);
-                let target = env_things(p, &about);
-                !source.iter().any(|thing| target.contains(thing))
-            })
-        })
+        r.env
+            .of
+            .iter()
+            .any(|o| target(o).is_some_and(|t| !t.root()))
+    }) {
+        return Err(Error::OfNotRoot);
+    }
+    if rs.iter().any(|r| {
+        let id = r.id(h);
+        let thing = env_thing(&id, r.env.of.as_deref());
+        r.env
+            .prev
+            .iter()
+            .any(|p| target(p).is_some_and(|t| env_thing(p, t.of.as_deref()) != thing))
     }) {
         return Err(Error::PrevUnrelated);
     }
@@ -291,22 +341,25 @@ fn writer_priority(error: stored::Error) -> u8 {
         stored::Error::EmittedNotRfc3339 => 3,
         stored::Error::OccurredNotSpan => 4,
         stored::Error::AboutNotTyped => 5,
-        stored::Error::PrevNotRecordId => 6,
-        stored::Error::UnderNotRecordId => 7,
-        stored::Error::ErasesNotRecordId => 8,
-        stored::Error::SaltNot16Bytes => 9,
-        stored::Error::MemberDuplicate => 10,
-        stored::Error::NumberOutOfRange => 11,
+        stored::Error::OfNotTyped => 6,
+        stored::Error::PrevNotRecordId => 7,
+        stored::Error::UnderNotRecordId => 8,
+        stored::Error::ErasesNotRecordId => 9,
+        stored::Error::OfMissing => 10,
+        stored::Error::SaltNot16Bytes => 11,
+        stored::Error::MemberDuplicate => 12,
+        stored::Error::NumberOutOfRange => 13,
     }
 }
 
 /// Lean: `Loops.resolveBatch`, model/Loops/Batch.lean.
 /// Resolves labels, writes checked records, and checks prev targets while preserving the original draft order.
 /// # Errors
-/// Checks duplicate labels, unknown labels, cycles, global writer priority, unknown prev targets, then unrelated prev targets.
+/// Checks duplicate labels, unknown labels, cycles, global writer priority, unknown prev targets,
+/// an `of` naming a held non-root, then prev targets of another thing.
 pub fn resolve_batch(
     h: &impl Fn(&[u8]) -> Vec<u8>,
-    held: &impl Fn(&str) -> Option<Vec<String>>,
+    held: &impl Fn(&str) -> Option<Held>,
     ds: &[Draft],
 ) -> Result<Vec<Written>, Error> {
     let labels: Vec<_> = ds.iter().filter_map(|d| d.label.as_deref()).collect();
@@ -395,7 +448,7 @@ mod tests {
         Sha256::digest(bytes).to_vec()
     }
 
-    fn no_held(_: &str) -> Option<Vec<String>> {
+    fn no_held(_: &str) -> Option<Held> {
         None
     }
 
@@ -442,8 +495,19 @@ mod tests {
         );
         assert_eq!(subst(&texts(&["@missing"]), mapping), None);
         assert_eq!(subst(&[], mapping), Some(vec![]));
+        assert_eq!(subst_opt(None, mapping), Some(None));
+        assert_eq!(
+            subst_opt(Some(&"x:one".into()), mapping),
+            Some(Some("x:one".into()))
+        );
+        assert_eq!(
+            subst_opt(Some(&"@a".into()), mapping),
+            Some(Some("r:resolved".into()))
+        );
+        assert_eq!(subst_opt(Some(&"@missing".into()), mapping), None);
         let mut d = draft(Some("@own"));
         d.env.about = input;
+        d.env.of = Some("@a".into());
         d.env.prev = texts(&["@a"]);
         d.env.kind = "@kind".into();
         d.env.observer = "@observer".into();
@@ -452,11 +516,15 @@ mod tests {
         d.env.under = Some("@under".into());
         d.env.erases = texts(&["@erases"]);
         d.payload = Json::Str("@payload".into());
-        assert_eq!(d.refs(), texts(&["@a", "@a", "@a"]));
+        assert_eq!(d.refs(), texts(&["@a", "@a", "@a", "@a"]));
         let mut expected = d.env.clone();
         expected.about = texts(&["x:one", "r:resolved", "r:resolved"]);
+        expected.of = Some("r:resolved".into());
         expected.prev = texts(&["r:resolved"]);
         assert_eq!(subst_env(&d.env, mapping), Some(expected));
+        d.env.of = Some("@missing".into());
+        assert_eq!(subst_env(&d.env, mapping), None);
+        d.env.of = Some("@a".into());
         assert_eq!(
             d.commit(&hash),
             stored::commit_of(&hash, &d.salt, &d.payload)
@@ -621,27 +689,31 @@ mod tests {
     }
 
     fn invalid_drafts() -> Vec<(Draft, stored::Error, &'static str)> {
-        let mut ds = vec![draft(None); 11];
+        let mut ds = vec![draft(None); 13];
         ds[0].env.kind.clear();
         ds[1].env.observer = "bad".into();
         ds[2].env.emitted = "bad".into();
         ds[3].env.occurred = Some("bad".into());
         ds[4].env.about = texts(&["bad"]);
-        ds[5].env.prev = texts(&["bad"]);
-        ds[6].env.under = Some("bad".into());
-        ds[7].env.erases = texts(&["bad"]);
-        ds[8].salt.clear();
-        ds[9].payload = duplicate_payload();
-        ds[10].payload = big_payload();
+        ds[5].env.of = Some("bad".into());
+        ds[6].env.prev = texts(&["bad"]);
+        ds[7].env.under = Some("bad".into());
+        ds[8].env.erases = texts(&["bad"]);
+        ds[9].env.prev = vec![format!("r:{}", crate::base32::base32(&[0; 32]))];
+        ds[10].salt.clear();
+        ds[11].payload = duplicate_payload();
+        ds[12].payload = big_payload();
         let errors = [
             (stored::Error::KindEmpty, "kind-empty"),
             (stored::Error::ObserverNotTyped, "observer-not-typed"),
             (stored::Error::EmittedNotRfc3339, "emitted-not-rfc3339"),
             (stored::Error::OccurredNotSpan, "occurred-not-span"),
             (stored::Error::AboutNotTyped, "about-not-typed"),
+            (stored::Error::OfNotTyped, "of-not-typed"),
             (stored::Error::PrevNotRecordId, "prev-not-record-id"),
             (stored::Error::UnderNotRecordId, "under-not-record-id"),
             (stored::Error::ErasesNotRecordId, "erases-not-record-id"),
+            (stored::Error::OfMissing, "of-missing"),
             (stored::Error::SaltNot16Bytes, "salt-not-16-bytes"),
             (stored::Error::MemberDuplicate, "member-duplicate"),
             (stored::Error::NumberOutOfRange, "number-out-of-range"),
@@ -675,6 +747,7 @@ mod tests {
                 }
             }
             let mut unknown_prev = draft(None);
+            unknown_prev.env.of = Some("thing:x".into());
             unknown_prev.env.prev = vec![format!("r:{}", crate::base32::base32(&[0; 32]))];
             assert_eq!(
                 resolve_batch(&hash, &no_held, &[unknown_prev, earlier.clone()]),
@@ -694,7 +767,7 @@ mod tests {
     fn unknown_prev_precedes_unrelated_in_both_orders() {
         let unrelated = stored::make(
             Env {
-                about: texts(&["thing:one"]),
+                of: Some("thing:one".into()),
                 ..Env::default()
             },
             vec![],
@@ -702,13 +775,18 @@ mod tests {
         );
         let target = unrelated.id(&hash);
         let missing = "r:missing".to_owned();
-        let held = |id: &str| (id == target).then(|| texts(&["thing:one"]));
+        let held = |id: &str| {
+            (id == target).then(|| Held {
+                of: Some("thing:one".into()),
+                prev: vec![],
+            })
+        };
         for prev in [
             vec![target.clone(), missing.clone()],
             vec![missing.clone(), target.clone()],
         ] {
             let mut d = draft(None);
-            d.env.about = texts(&["thing:other"]);
+            d.env.of = Some("thing:other".into());
             d.env.prev = prev;
             assert_eq!(
                 check_prev(&hash, &held, &[stored::make(d.env, d.salt, d.payload)]),
@@ -718,7 +796,7 @@ mod tests {
         let mut unknown = draft(None);
         unknown.env.prev = vec![missing];
         let mut wrong = draft(None);
-        wrong.env.about = texts(&["thing:other"]);
+        wrong.env.of = Some("thing:other".into());
         wrong.env.prev = vec![target.clone()];
         for ds in [[unknown.clone(), wrong.clone()], [wrong.clone(), unknown]] {
             let rs: Vec<_> = ds
@@ -740,22 +818,25 @@ mod tests {
     #[test]
     fn held_lookup_repeats_and_batch_first_match_overrides_held() {
         let calls = Cell::new(0);
-        let held = |_: &str| {
+        let held = |p: &str| {
             calls.set(calls.get() + 1);
-            Some(texts(&["thing:shared"]))
+            (p == "r:external").then(|| Held {
+                of: Some("thing:shared".into()),
+                prev: vec![],
+            })
         };
         let mut d = draft(None);
-        d.env.about = texts(&["thing:shared"]);
+        d.env.of = Some("thing:shared".into());
         d.env.prev = texts(&["r:external", "r:external"]);
         let r = stored::make(d.env, d.salt, d.payload);
         assert_eq!(check_prev(&hash, &held, &[r]), Ok(()));
-        assert_eq!(calls.get(), 4, "two passes keep repeated lookup calls");
+        assert_eq!(calls.get(), 5, "three passes keep repeated lookup calls");
 
         let constant = |_: &[u8]| vec![0];
         let mut first = draft(None);
-        first.env.about = texts(&["thing:first"]);
+        first.env.of = Some("thing:first".into());
         let mut second = first.clone();
-        second.env.about = texts(&["thing:second"]);
+        second.env.of = Some("thing:second".into());
         let mut successor = first.clone();
         successor.env.prev = vec![stored::id_of(
             &constant,
@@ -766,8 +847,11 @@ mod tests {
             .into_iter()
             .map(|d| stored::make(d.env, d.salt, d.payload))
             .collect();
-        let forbidden_held =
-            |_: &str| -> Option<Vec<String>> { panic!("batch target must override held") };
+        // Only a natural key in `of` reaches the held lookup here.
+        let forbidden_held = |p: &str| -> Option<Held> {
+            assert!(!p.starts_with("r:"), "batch target must override held");
+            None
+        };
         assert_eq!(check_prev(&constant, &forbidden_held, &rs), Ok(()));
         let reversed = [rs[1].clone(), rs[0].clone(), rs[2].clone()];
         assert_eq!(
@@ -777,24 +861,59 @@ mod tests {
     }
 
     #[test]
-    fn empty_about_is_a_self_anchor_for_source_and_target() {
-        assert_eq!(env_things("r:self", &[]), texts(&["r:self"]));
-        assert_eq!(
-            env_things("r:self", &texts(&["t:x", "t:x"])),
-            texts(&["t:x", "t:x"])
+    fn a_record_without_of_is_its_own_thing_for_source_and_target() {
+        assert_eq!(env_thing("r:self", None), "r:self");
+        assert_eq!(env_thing("r:self", Some("t:x")), "t:x");
+        assert!(Held::default().root());
+        assert!(
+            !Held {
+                of: Some("t:x".into()),
+                prev: vec![]
+            }
+            .root()
+        );
+        assert!(
+            !Held {
+                of: None,
+                prev: texts(&["r:p"])
+            }
+            .root()
         );
         let root = draft(None);
         let id = stored::id_of(&hash, &root.env, &root.commit(&hash));
-        let held = |p: &str| (p == id).then(Vec::new);
+        let held = |p: &str| (p == id).then(Held::default);
         let mut child = draft(None);
-        child.env.about = vec![id.clone()];
+        child.env.of = Some(id.clone());
         child.env.prev = vec![id.clone()];
         assert!(resolve_batch(&hash, &held, &[child.clone()]).is_ok());
-        child.env.about.clear();
+        // `about` names the thing but does not make the record of it.
+        child.env.about = vec![id.clone()];
+        child.env.of = Some("thing:other".into());
         assert_eq!(
-            resolve_batch(&hash, &held, &[child]),
+            resolve_batch(&hash, &held, &[child.clone()]),
             Err(Error::PrevUnrelated)
         );
+        child.env.of = None;
+        assert_eq!(
+            resolve_batch(&hash, &held, &[child.clone()]),
+            Err(Error::Write(stored::Error::OfMissing))
+        );
+        // An `of` naming a held record that is not a root.
+        let revision = |p: &str| {
+            (p == id).then(|| Held {
+                of: Some("thing:other".into()),
+                prev: texts(&["r:p"]),
+            })
+        };
+        child.env.of = Some(id.clone());
+        assert_eq!(
+            resolve_batch(&hash, &revision, &[child]),
+            Err(Error::OfNotRoot)
+        );
+        // `of` is read as written: a natural key nobody holds is no refusal.
+        let mut keyed = draft(None);
+        keyed.env.of = Some("thing:anything".into());
+        assert!(resolve_batch(&hash, &no_held, &[keyed]).is_ok());
         let constant = |_: &[u8]| vec![0];
         let mut self_prev = root;
         self_prev.env.prev = vec![stored::id_of(
@@ -824,18 +943,20 @@ mod tests {
         let root_id = root_written.stored().id(&hash);
         let mut child = draft(Some("@child"));
         child.env.about = texts(&["@root"]);
+        child.env.of = Some("@root".into());
         child.env.prev = texts(&["@root"]);
         child.payload = Json::Str("child".into());
         let mut child_env = child.env.clone();
         child_env.about = vec![root_id.clone()];
+        child_env.of = Some(root_id.clone());
         child_env.prev = vec![root_id.clone()];
         let child_written = stored::write(child_env, child.salt.clone(), child.payload.clone())
             .expect("valid child");
         let mut leaf = draft(None);
-        leaf.env.about = texts(&["@root"]);
+        leaf.env.of = Some("@root".into());
         leaf.env.prev = texts(&["@child"]);
         let mut leaf_env = leaf.env.clone();
-        leaf_env.about = vec![root_id];
+        leaf_env.of = Some(root_id);
         leaf_env.prev = vec![child_written.stored().id(&hash)];
         let leaf_written =
             stored::write(leaf_env, leaf.salt.clone(), leaf.payload.clone()).expect("valid leaf");
@@ -862,17 +983,33 @@ mod tests {
     fn batch_prev_refusals_are_global_after_writer_checks() {
         let held_id = format!("r:{}", crate::base32::base32(&[0; 32]));
         let missing_id = format!("r:{}", crate::base32::base32(&[1; 32]));
-        let held = |p: &str| (p == held_id).then(|| texts(&["thing:held"]));
+        let held = |p: &str| {
+            (p == held_id).then(|| Held {
+                of: Some("thing:held".into()),
+                prev: vec![],
+            })
+        };
         let mut unrelated = draft(None);
-        unrelated.env.about = texts(&["thing:other"]);
+        unrelated.env.of = Some("thing:other".into());
         unrelated.env.prev = vec![held_id.clone()];
         let mut unknown = draft(None);
+        unknown.env.of = Some("thing:other".into());
         unknown.env.prev = vec![missing_id.clone()];
+        let mut not_root = draft(None);
+        not_root.env.of = Some(held_id.clone());
         for ds in [
             [unrelated.clone(), unknown.clone()],
             [unknown.clone(), unrelated.clone()],
+            [not_root.clone(), unknown.clone()],
+            [unknown.clone(), not_root.clone()],
         ] {
             assert_eq!(resolve_batch(&hash, &held, &ds), Err(Error::PrevUnknown));
+        }
+        for ds in [
+            [unrelated.clone(), not_root.clone()],
+            [not_root, unrelated.clone()],
+        ] {
+            assert_eq!(resolve_batch(&hash, &held, &ds), Err(Error::OfNotRoot));
         }
         for prev in [
             vec![held_id.clone(), missing_id.clone()],
@@ -893,18 +1030,17 @@ mod tests {
     }
 
     #[test]
-    fn batch_lookup_keeps_empty_about_and_hash_has_no_size_constraint() {
+    fn batch_lookup_finds_a_root_and_hash_has_no_size_constraint() {
         let constant = |_: &[u8]| vec![];
         let root = draft(None);
         let written = resolve_batch(&constant, &no_held, std::slice::from_ref(&root))
             .expect("the hash output has no size constraint");
         assert_eq!(written[0].stored().id(&constant), "r:");
         let mut successor = draft(None);
-        successor.env.about = texts(&["r:"]);
+        successor.env.of = Some("r:".into());
         successor.env.prev = texts(&["r:"]);
-        let forbidden_held = |_: &str| -> Option<Vec<String>> {
-            panic!("an empty batch about still overrides held")
-        };
+        let forbidden_held =
+            |_: &str| -> Option<Held> { panic!("a root in the batch still overrides held") };
         let rs: Vec<_> = [root, successor]
             .into_iter()
             .map(|d| stored::make(d.env, d.salt, d.payload))
@@ -920,6 +1056,7 @@ mod tests {
             (Error::LabelUnknown, "label-unknown"),
             (Error::LabelCycle, "label-cycle"),
             (Error::PrevUnknown, "prev-unknown"),
+            (Error::OfNotRoot, "of-not-root"),
             (Error::PrevUnrelated, "prev-unrelated"),
         ] {
             assert_eq!(error.code(), code);

@@ -101,13 +101,13 @@ const payloadValue = (v) => typeof v === "string" || typeof v === "boolean" || w
 
 // Each envelope field and what `is` and `not` may compare it with.
 const ENV_FIELDS = {
-  kind: text, observer: typedRef, about: typedRef,
+  kind: text, observer: typedRef, about: typedRef, of: typedRef,
   prev: recordId, under: recordId, erases: recordId,
   emitted: time, occurred: time,
 };
 
 const TOP_KEYS = new Set(["vertex", "from", "fold", "note", "ticks", "order", "resolve", "window", "boundary", "param", "covers", "into", "bundle"]);
-const SOURCE_KEYS = new Set(["store", "kind", "about"]);
+const SOURCE_KEYS = new Set(["store", "kind", "about", "of"]);
 const FOLD_TYPES = ["count", "sum", "min", "max", "latest-by", "collect"];
 const SLOT_KEYS = new Set([...FOLD_TYPES, "follow", "limit", "where", "note"]);
 
@@ -115,7 +115,8 @@ const SLOT_KEYS = new Set([...FOLD_TYPES, "follow", "limit", "where", "note"]);
 const ARGUMENT = {
   count: (v) => v === true, collect: (v) => v === true,
   sum: text, min: text, max: text,
-  "latest-by": (v) => v === "about",
+  // Per thing, by `of`; `about` only mentions and makes no head.
+  "latest-by": (v) => v === "of",
 };
 
 class Refusal extends Error {
@@ -169,17 +170,19 @@ function slotOf(name, n) {
   return slot;
 }
 
-// store, kind and about are checked in that order however they are written.
+// store, kind, about and of are checked in that order however they are written.
 function sourceOf(n) {
   if (!isObject(n)) refuse("from-invalid", ["from"]);
   for (const [k] of n.members) if (!SOURCE_KEYS.has(k)) refuse("unknown-key", ["from", k]);
-  const [store, kind, about] = ["store", "kind", "about"].map((k) => get(n, k));
+  const [store, kind, about, of] = ["store", "kind", "about", "of"].map((k) => get(n, k));
   if (!text(store)) refuse("from-invalid", ["from", "store"]);
   if (kind !== undefined && !(isArray(kind) && kind.items.length > 0 && kind.items.every(text))) refuse("from-invalid", ["from", "kind"]);
   if (about !== undefined && !typedRef(about)) refuse("from-invalid", ["from", "about"]);
+  if (of !== undefined && !typedRef(of)) refuse("from-invalid", ["from", "of"]);
   const source = { store };
   if (kind !== undefined) source.kind = plain(kind);
   if (about !== undefined) source.about = about;
+  if (of !== undefined) source.of = of;
   return source;
 }
 
@@ -222,12 +225,13 @@ export const parseSpec = (v) => parseNode(nodeOf(v));
 // Running a parsed spec over the records a reader holds, one per id, in the
 // fold vectors' JSON form.
 
-// A record's things: what it is about, or, about nothing, its own id.
-const thingsOf = (r) => (r.about?.length ? r.about : [r.id]);
-
-// A source takes a record of one of its kinds about its thing; the spec, a
-// record any source takes. Only envelopes are read.
-const sourceTakes = (s, r) => (s.kind === undefined || s.kind.includes(r.kind)) && (s.about === undefined || thingsOf(r).includes(s.about));
+// A source takes a record of one of its kinds whose `about` names its `about`,
+// as written, and whose thing is its `of`, both when both are given; the spec,
+// a record any source takes. Only envelopes are read (vectors/README.md, Spec).
+const sourceTakes = (s, r) =>
+  (s.kind === undefined || s.kind.includes(r.kind)) &&
+  (s.about === undefined || (r.about ?? []).includes(s.about)) &&
+  (s.of === undefined || F.thingOf(r) === s.of);
 export const takes = (spec, r) => spec.from.some((s) => sourceTakes(s, r));
 
 const shownOf = (r) => ({ id: r.id, shown: held(r) ? "here" : r.shown });
@@ -252,7 +256,7 @@ function collect(records, slot) {
 
 // Latest-by: per thing, its heads `from` takes and every test holds for; a
 // thing with none is left out. A head the tests couldn't answer is unread
-// once, however many things it heads.
+// once; a record heads at most one thing.
 function latestBy(states, spec, slot) {
   const things = Object.create(null), unread = new Set();
   for (const [t, hs] of states) {

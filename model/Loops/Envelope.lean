@@ -9,6 +9,12 @@ What the core reads about a record. `about` and `prev` are sets: their
 canonical form is sorted by UTF-16 code units with repeats removed, and an
 empty set is left out, so the same set always gives the same bytes. `erases`
 is a set too: the records whose payloads this one erases, whatever its kind.
+
+`of` names the one thing a record is an emit of: a typed reference, a record
+id or a natural key. It is optional and, like `occurred` and `under`, left out
+when absent, so a record without it keeps its bytes. Only a root leaves it
+out: a record with `prev` states `of` (`of-missing`). `about` names the things
+a record mentions; it never says what the record is an emit of.
 -/
 
 namespace Loops
@@ -19,6 +25,7 @@ structure Env where
   emitted  : String
   occurred : Option String := none
   about    : List String := []
+  of       : Option String := none
   prev     : List String := []
   under    : Option String := none
   erases   : List String := []
@@ -33,7 +40,7 @@ def Env.toJson (e : Env) : Json :=
     | [] => []
     | ys => [(k, .arr (ys.map .str))]
   .obj ([("kind", .str e.kind), ("observer", .str e.observer), ("emitted", .str e.emitted)] ++
-    opt "occurred" e.occurred ++ set "about" e.about ++ set "prev" e.prev ++ opt "under" e.under ++
+    opt "occurred" e.occurred ++ set "about" e.about ++ opt "of" e.of ++ set "prev" e.prev ++ opt "under" e.under ++
     set "erases" e.erases)
 
 /-! ## Validation -/
@@ -54,7 +61,7 @@ def recordId (s : String) : Bool :=
 
 /-- Check raw envelope keys before decoding values. Typed `Env` has no unknown fields. -/
 def envelopeKeysProblem (kvs : List (String × Json)) : Option String :=
-  if kvs.all (fun (k, _) => ["kind", "observer", "emitted", "occurred", "about", "prev", "under", "erases"].contains k)
+  if kvs.all (fun (k, _) => ["kind", "observer", "emitted", "occurred", "about", "of", "prev", "under", "erases"].contains k)
   then none else some "envelope-field-unknown"
 
 /-- Check every raw envelope before decoding any envelope value.
@@ -77,9 +84,11 @@ def Env.problem (e : Env) : Option String :=
   else if !validEmitted e.emitted then some "emitted-not-rfc3339"
   else if !(e.occurred.map fun s => (occurredSpan? s).isSome).getD true then some "occurred-not-span"
   else if !e.about.all typedRef then some "about-not-typed"
+  else if !(e.of.map typedRef).getD true then some "of-not-typed"
   else if !e.prev.all recordId then some "prev-not-record-id"
   else if !(e.under.map recordId).getD true then some "under-not-record-id"
   else if !e.erases.all recordId then some "erases-not-record-id"
+  else if !e.prev.isEmpty && e.of.isNone then some "of-missing"
   else none
 
 end Loops

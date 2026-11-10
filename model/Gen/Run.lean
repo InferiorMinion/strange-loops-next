@@ -148,10 +148,11 @@ def specRunRun (input : Json) : Dec J := do
   let os ← orders "input.orders" (← req "input" kvs "orders")
   agreed "input.orders" (os.map fun xs => J.obj ((sp.run xs).map fun (n, v) => (n, SpecVectors.jSlot v)))
 
-/-- What the store holds besides the batch: each id and its `about`. -/
-def heldEntry (path : String) (j : Json) : Dec (String × List String) := do
-  let kvs ← members? path ["id", "about"] j
-  pure (← text (dot path "id") (← req path kvs "id"), ← texts (dot path "about") (← req path kvs "about"))
+/-- What the store holds besides the batch: each id with its `of` and `prev`. -/
+def heldEntry (path : String) (j : Json) : Dec (String × Held) := do
+  let kvs ← members? path ["id", "of", "prev"] j
+  pure (← text (dot path "id") (← req path kvs "id"),
+    { of := ← opt kvs "of" (text (dot path "of")), prev := ← texts (dot path "prev") (← req path kvs "prev") })
 
 def batchRunDecoded (input : Json) : Dec J := do
   let kvs ← members? "input" ["held", "drafts"] input

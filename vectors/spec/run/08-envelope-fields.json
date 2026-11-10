@@ -52,6 +52,30 @@
             }
           }
         },
+        "of-task-1": {
+          "collect": true,
+          "where": {
+            "env.of": {
+              "is": "task:1"
+            }
+          }
+        },
+        "of-loops": {
+          "count": true,
+          "where": {
+            "env.of": {
+              "is": "proj:loops"
+            }
+          }
+        },
+        "without-of": {
+          "collect": true,
+          "where": {
+            "env.of": {
+              "absent": true
+            }
+          }
+        },
         "revisions": {
           "collect": true,
           "where": {
@@ -125,7 +149,7 @@
           }
         },
         "alice-current": {
-          "latest-by": "about",
+          "latest-by": "of",
           "follow": "prev",
           "where": {
             "env.observer": {
@@ -151,6 +175,7 @@
           "kind": "task",
           "observer": "sl:alice",
           "about": ["task:1"],
+          "of": "task:1",
           "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:01:40Z",
@@ -164,6 +189,7 @@
           "kind": "task",
           "observer": "sl:bob",
           "about": ["task:1"],
+          "of": "task:1",
           "value": "",
           "prev": ["r:00000000000000000000000000000000000000000000000001gg"],
           "emitted": "2026-10-01T00:03:20Z",
@@ -177,6 +203,7 @@
           "kind": "task",
           "observer": "sl:alice",
           "about": ["task:2", "proj:loops"],
+          "of": "task:2",
           "prev": [],
           "emitted": "2026-10-01T00:05:00Z",
           "shown": "erased"
@@ -186,6 +213,7 @@
           "kind": "task",
           "observer": "sl:carol",
           "about": ["task:3"],
+          "of": "task:3",
           "value": "",
           "prev": [],
           "under": "r:00000000000000000000000000000000000000000000000002cg",
@@ -208,6 +236,7 @@
           "kind": "chore",
           "observer": "sl:bob",
           "about": ["task:4"],
+          "of": "task:4",
           "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:02:30Z",
@@ -220,6 +249,7 @@
           "kind": "task",
           "observer": "sl:bob",
           "about": ["task:1"],
+          "of": "task:1",
           "value": "",
           "prev": ["r:00000000000000000000000000000000000000000000000001gg"],
           "emitted": "2026-10-01T00:03:20Z",
@@ -233,6 +263,7 @@
           "kind": "task",
           "observer": "sl:alice",
           "about": ["task:2", "proj:loops"],
+          "of": "task:2",
           "prev": [],
           "emitted": "2026-10-01T00:05:00Z",
           "shown": "erased"
@@ -242,6 +273,7 @@
           "kind": "task",
           "observer": "sl:carol",
           "about": ["task:3"],
+          "of": "task:3",
           "value": "",
           "prev": [],
           "under": "r:00000000000000000000000000000000000000000000000002cg",
@@ -264,6 +296,7 @@
           "kind": "chore",
           "observer": "sl:bob",
           "about": ["task:4"],
+          "of": "task:4",
           "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:02:30Z",
@@ -274,6 +307,7 @@
           "kind": "task",
           "observer": "sl:alice",
           "about": ["task:1"],
+          "of": "task:1",
           "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:01:40Z",
@@ -289,6 +323,7 @@
           "kind": "task",
           "observer": "sl:alice",
           "about": ["task:2", "proj:loops"],
+          "of": "task:2",
           "prev": [],
           "emitted": "2026-10-01T00:05:00Z",
           "shown": "erased"
@@ -298,6 +333,7 @@
           "kind": "task",
           "observer": "sl:carol",
           "about": ["task:3"],
+          "of": "task:3",
           "value": "",
           "prev": [],
           "under": "r:00000000000000000000000000000000000000000000000002cg",
@@ -320,6 +356,7 @@
           "kind": "chore",
           "observer": "sl:bob",
           "about": ["task:4"],
+          "of": "task:4",
           "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:02:30Z",
@@ -330,6 +367,7 @@
           "kind": "task",
           "observer": "sl:alice",
           "about": ["task:1"],
+          "of": "task:1",
           "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:01:40Z",
@@ -343,6 +381,7 @@
           "kind": "task",
           "observer": "sl:bob",
           "about": ["task:1"],
+          "of": "task:1",
           "value": "",
           "prev": ["r:00000000000000000000000000000000000000000000000001gg"],
           "emitted": "2026-10-01T00:03:20Z",
@@ -358,6 +397,7 @@
           "kind": "task",
           "observer": "sl:carol",
           "about": ["task:3"],
+          "of": "task:3",
           "value": "",
           "prev": [],
           "under": "r:00000000000000000000000000000000000000000000000002cg",
@@ -380,6 +420,7 @@
           "kind": "chore",
           "observer": "sl:bob",
           "about": ["task:4"],
+          "of": "task:4",
           "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:02:30Z",
@@ -390,6 +431,7 @@
           "kind": "task",
           "observer": "sl:alice",
           "about": ["task:1"],
+          "of": "task:1",
           "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:01:40Z",
@@ -403,6 +445,7 @@
           "kind": "task",
           "observer": "sl:bob",
           "about": ["task:1"],
+          "of": "task:1",
           "value": "",
           "prev": ["r:00000000000000000000000000000000000000000000000001gg"],
           "emitted": "2026-10-01T00:03:20Z",
@@ -416,6 +459,7 @@
           "kind": "task",
           "observer": "sl:alice",
           "about": ["task:2", "proj:loops"],
+          "of": "task:2",
           "prev": [],
           "emitted": "2026-10-01T00:05:00Z",
           "shown": "erased"
@@ -437,6 +481,7 @@
           "kind": "chore",
           "observer": "sl:bob",
           "about": ["task:4"],
+          "of": "task:4",
           "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:02:30Z",
@@ -447,6 +492,7 @@
           "kind": "task",
           "observer": "sl:alice",
           "about": ["task:1"],
+          "of": "task:1",
           "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:01:40Z",
@@ -460,6 +506,7 @@
           "kind": "task",
           "observer": "sl:bob",
           "about": ["task:1"],
+          "of": "task:1",
           "value": "",
           "prev": ["r:00000000000000000000000000000000000000000000000001gg"],
           "emitted": "2026-10-01T00:03:20Z",
@@ -473,6 +520,7 @@
           "kind": "task",
           "observer": "sl:alice",
           "about": ["task:2", "proj:loops"],
+          "of": "task:2",
           "prev": [],
           "emitted": "2026-10-01T00:05:00Z",
           "shown": "erased"
@@ -482,6 +530,7 @@
           "kind": "task",
           "observer": "sl:carol",
           "about": ["task:3"],
+          "of": "task:3",
           "value": "",
           "prev": [],
           "under": "r:00000000000000000000000000000000000000000000000002cg",
@@ -496,6 +545,7 @@
           "kind": "chore",
           "observer": "sl:bob",
           "about": ["task:4"],
+          "of": "task:4",
           "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:02:30Z",
@@ -506,6 +556,7 @@
           "kind": "task",
           "observer": "sl:alice",
           "about": ["task:1"],
+          "of": "task:1",
           "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:01:40Z",
@@ -519,6 +570,7 @@
           "kind": "task",
           "observer": "sl:bob",
           "about": ["task:1"],
+          "of": "task:1",
           "value": "",
           "prev": ["r:00000000000000000000000000000000000000000000000001gg"],
           "emitted": "2026-10-01T00:03:20Z",
@@ -532,6 +584,7 @@
           "kind": "task",
           "observer": "sl:alice",
           "about": ["task:2", "proj:loops"],
+          "of": "task:2",
           "prev": [],
           "emitted": "2026-10-01T00:05:00Z",
           "shown": "erased"
@@ -541,6 +594,7 @@
           "kind": "task",
           "observer": "sl:carol",
           "about": ["task:3"],
+          "of": "task:3",
           "value": "",
           "prev": [],
           "under": "r:00000000000000000000000000000000000000000000000002cg",
@@ -626,6 +680,32 @@
       ],
       "unread": 0
     },
+    "of-task-1": {
+      "heads": [
+        {
+          "id": "r:00000000000000000000000000000000000000000000000001h0",
+          "shown": "here"
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000001gg",
+          "shown": "here"
+        }
+      ],
+      "unread": 0
+    },
+    "of-loops": {
+      "value": 0,
+      "unread": 0
+    },
+    "without-of": {
+      "heads": [
+        {
+          "id": "r:00000000000000000000000000000000000000000000000001ig",
+          "shown": "withheld"
+        }
+      ],
+      "unread": 0
+    },
     "revisions": {
       "heads": [
         {
@@ -702,12 +782,6 @@
     },
     "alice-current": {
       "things": {
-        "proj:loops": [
-          {
-            "id": "r:00000000000000000000000000000000000000000000000001hg",
-            "shown": "erased"
-          }
-        ],
         "r:00000000000000000000000000000000000000000000000001ig": [
           {
             "id": "r:00000000000000000000000000000000000000000000000001ig",

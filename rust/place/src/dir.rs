@@ -15,7 +15,7 @@
 //! not the hash of its bytes changed some other way; [`Held::altered`] lists
 //! those.
 use crate::line::{Line, Refusal, hash};
-use loops::{base32, record::Record, things};
+use loops::{base32, batch, record::Record, things};
 use std::{
     fs,
     io::{self, Write},
@@ -268,6 +268,16 @@ impl Held {
             return Some(first);
         }
         Some(forms.find(|l| l.payload().is_some()).unwrap_or(first))
+    }
+    /// What a writer reads of a held record, from its stored envelope: its
+    /// `of` and its `prev` (Lean `Loops.Held`, model/Loops/Batch.lean). This
+    /// is the lookup the batch check takes, so `of-not-root` and
+    /// `prev-unrelated` are decided against the store.
+    pub fn writer_view(&self, id: &str) -> Option<batch::Held> {
+        self.line(id).map(|line| batch::Held {
+            of: line.env().of.clone(),
+            prev: line.env().prev.clone(),
+        })
     }
     /// The ids that start with `prefix`, each once, in order. A prefix may
     /// leave off the `r:`.

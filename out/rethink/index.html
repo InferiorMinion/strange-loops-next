@@ -232,7 +232,7 @@ dl.env .sep{grid-column:1/-1;border-top:1px dashed var(--line);margin:3px 0}
 
   <h3>The walk, layer by layer</h3>
   <ol class="layers">
-    <li><span class="k">0</span><span class="t"><b>Record</b><span>records, observers, <code>about</code> (things), <code>prev</code>, two kinds of time</span></span><span class="pill p-ok">mostly settled</span></li>
+    <li><span class="k">0</span><span class="t"><b>Record</b><span>records, observers, <code>of</code> (things), <code>about</code> (mentions), <code>prev</code>, two kinds of time</span></span><span class="pill p-ok">mostly settled</span></li>
     <li><span class="k">1</span><span class="t"><b>Meaning</b><span>vertex and store: a question, and a thing you write into</span></span><span class="pill p-ok">closed</span></li>
     <li><span class="k">2</span><span class="t"><b>Resolution</b><span>content and witness ticks; window, reference, witness sets; late ticks</span></span><span class="pill p-ok">closed</span></li>
     <li><span class="k">3</span><span class="t"><b>Composition</b><span>one vertex reading many stores; things, <code>about</code>, <code>resolve-by</code></span></span><span class="pill p-ok">closed</span></li>
@@ -287,8 +287,8 @@ dl.env .sep{grid-column:1/-1;border-top:1px dashed var(--line);margin:3px 0}
     <div class="rec"><div class="meta"><span>kind: decision</span><span class="pill p-ok">settled</span></div><div class="claim"><code>occurred</code> is a span with a closed grammar: dates, instants and intervals, never a duration.</div><div class="why">Each <code>occurred</code> value names one span. Content order reads that span; future windows use its start. Calendar dates are UTC days. EDTF Level 1 qualifiers (<code>2009~</code>) and trailing unspecified digits (<code>201X</code>) retain one span. Qualifiers never change it. Intervals join two points and may have an open end (<code>2019/..</code>). Spans order by start, then end, with open ends last. Content order compares span, <code>emitted</code>, then id digest bytes, never spellings. Without <code>occurred</code>, a record has its <code>emitted</code> instant span. Canonical base32hex id text has the same order as digest bytes. Durations repeat what an end instant says. Seasons, open or unknown starts, unknown ends and years past 9999 fail with <code>occurred-not-span</code>. Accepting less would invalidate stored records. Version 35.</div></div>
     <div class="rec"><div class="meta"><span>kind: decision</span><span class="pill p-ok">settled</span></div><div class="claim">Identity is a content hash; signatures sit beside it.</div><div class="why">A salted payload commitment, an id over the canonical <code>{commit, env}</code>, an Ed25519 signature over <code>loops/record/v1:</code> plus the id. References stay opaque. Records are signed by default and a store carries its writers' key bindings, so it verifies itself. The version in the signed prefix lets a reader refuse only what is newer than it knows.</div></div>
     <div class="rec"><div class="meta"><span>kind: decision</span><span class="pill p-ok">settled</span></div><div class="claim">Writing the same record twice is a no-op.</div><div class="why">A record's id covers its envelope, including <code>emitted</code>, plus its salt and payload. The same draft written twice is the same record, and set union absorbs it, in a batch or across batches. A new observation gets a fresh salt, so it gets a new id and is simply a new record. Version 35.</div></div>
-    <div class="rec"><div class="meta"><span>kind: decision</span><span class="pill p-ok">settled</span></div><div class="claim">A record erases through its envelope field <code>erases</code>; any kind may erase.</div><div class="why"><code>erases</code> is a set of record ids, refused unless each is one, and never a label. It sits on the envelope, so every reader applies it, whatever its grant. Targets in <code>about</code> were rejected: <code>about: [r:X]</code> already names the thing X anchors, which holds X's revisions too, and a kind would decide which reading applied. No kind is reserved for erasing, so the field carries the meaning by itself, and a revision can erase what it replaces: <code>prev: [r:X], erases: [r:X]</code>. Authority keys on the field. Version 35.</div></div>
-    <div class="rec"><div class="meta"><span>kind: decision</span><span class="pill p-ok">settled</span></div><div class="claim">A field belongs on the envelope only if the core reads it.</div><div class="why">The envelope holds <code>kind</code>, <code>observer</code>, <code>emitted</code>, optional <code>occurred</code>, <code>about</code>, <code>prev</code>, <code>under</code> and <code>erases</code>. <code>derived-from</code>, <code>seen</code> and <code>refs</code> belong in payloads. Readers refuse unknown envelope fields.</div></div>
+    <div class="rec"><div class="meta"><span>kind: decision</span><span class="pill p-ok">settled</span></div><div class="claim">A record erases through its envelope field <code>erases</code>; any kind may erase.</div><div class="why"><code>erases</code> is a set of record ids, refused unless each is one, and never a label. It sits on the envelope, so every reader applies it, whatever its grant. Targets in <code>about</code> were rejected: a kind would decide which reading of <code>about</code> applied. No kind is reserved for erasing, so the field carries the meaning by itself, and a revision can erase what it replaces: <code>prev: [r:X], erases: [r:X]</code>. Authority keys on the field. Version 35.</div></div>
+    <div class="rec"><div class="meta"><span>kind: decision</span><span class="pill p-ok">settled</span></div><div class="claim">A field belongs on the envelope only if the core reads it.</div><div class="why">The envelope holds <code>kind</code>, <code>observer</code>, <code>emitted</code>, optional <code>occurred</code>, <code>about</code>, <code>of</code>, <code>prev</code>, <code>under</code> and <code>erases</code>. <code>derived-from</code>, <code>seen</code> and <code>refs</code> belong in payloads. Readers refuse unknown envelope fields.</div></div>
     <div class="rec"><div class="meta"><span>kind: decision</span><span class="pill p-ok">settled</span></div><div class="claim">A payload is here, withheld or erased; supersession reads only the envelope.</div><div class="why"><code>prev</code> sits on the envelope. Withholding or erasing payloads preserves each thing's head ids. A record superseded within a thing cannot become current there. A payload test answers unknown when its payload is unavailable. Results count covered records they cannot read. Added in version 32.</div></div>
     <div class="rec"><div class="meta"><span>kind: decision</span><span class="pill p-ok">settled</span></div><div class="claim">Erasure is per store and small; privacy is withholding, not hiding.</div><div class="why">Erasure removes payloads but keeps commitments and ids. Consistent forms determine one settled record per id, independent of read order. A reader keeps a held payload unless a held eraser names its id. A bare erased copy cannot suppress a held payload. Disclosure splits by kind when recording. Planned disclosure keeps derived data under its least-public input's grant.</div></div>
     <div class="rec"><div class="meta"><span>kind: decision</span><span class="pill p-ok">settled</span></div><div class="claim">Writers bound every number’s magnitude; numeric readers additionally require whole values.</div><div class="why">RFC 8785 reads numbers as binary64 before canonicalization. The final 13:25 human ruling keeps Option A: writers refuse any magnitude above 2<sup>53</sup>−1, whole or not (<code>number-out-of-range</code>); 1e30 is refused. Within-range fractions are accepted. Numeric readers additionally require whole values. Exact decimal or large-integer values belong in strings.</div></div>
@@ -296,19 +296,21 @@ dl.env .sep{grid-column:1/-1;border-top:1px dashed var(--line);margin:3px 0}
     <h4>Observers and standing</h4>
     <div class="rec"><div class="meta"><span>kind: decision</span><span class="pill p-ok">settled</span></div><div class="claim">Observers are things, with lineages under their names.</div><div class="why">A lineage id is the hash of its anchor. Names, keys and models are records about a lineage. Names never take part in matching: they resolve at read, through name tables and <code>@home</code>.</div></div>
     <div class="rec"><div class="meta"><span>kind: decision</span><span class="pill p-ok">settled</span></div><div class="claim">Naming, key binding and authority stay separate.</div><div class="why">Authority is a grant record, pointed to by <code>under</code>. One stance shape covers affirm, adopt, dispute, retire and authorize. A delegate is a shared seat; an identity that emerges starts its own lineage and adopts what it wants to own.</div></div>
-    <div class="rec"><div class="meta"><span>kind: decision</span><span class="pill p-ok">settled</span></div><div class="claim">A label may stand in <code>under</code>.</div><div class="why">A changeset can create grant <code>@g</code> and act under it. <code>under</code> accepts labels, like <code>about</code> and <code>prev</code>, and participates in cycle detection. Historical standing plan: it names a grant held in the batch or store. Future standing checks decide whether that grant authorizes the act. A label grants no extra authority. Version 35.</div></div>
+    <div class="rec"><div class="meta"><span>kind: decision</span><span class="pill p-ok">settled</span></div><div class="claim">A label may stand in <code>under</code>.</div><div class="why">A changeset can create grant <code>@g</code> and act under it. <code>under</code> accepts labels, like <code>about</code>, <code>of</code> and <code>prev</code>, and participates in cycle detection. Historical standing plan: it names a grant held in the batch or store. Future standing checks decide whether that grant authorizes the act. A label grants no extra authority. Version 35.</div></div>
     <div class="rec"><div class="meta"><span>kind: decision</span><span class="pill p-ok">settled</span></div><div class="claim">Keys in tiers, and presence for what takes effect.</div><div class="why">A lineage pins its root key. The standing plan gives each device presence and emit keys; agents receive session keys. Effective authority changes require a person present. A grant records presence ahead of time: agents propose and narrow, never widen. Standing ends by retirement through held records, never by time.</div></div>
     <h4>Things</h4>
-    <div class="rec"><div class="meta"><span>kind: decision</span><span class="pill p-ok">settled</span></div><div class="claim">Identity lives in the record, in <code>about</code>.</div><div class="why">A thing uses an anchor record id or a typed natural key computed by tooling, such as a URL or code birth key. The core compares those references. Observers and stores use proposed reserved <code>*-anchor</code> kinds. A vertex instead hashes its canonical spec and parameters; it has no anchor or standing. Proposed equivalence, provenance and succession remain separate; <code>resolve-by</code> joins identities at read. Unknown names follow the planned store maturity rules.</div></div>
-    <div class="rec"><div class="meta"><span>kind: decision</span><span class="pill p-ok">settled</span></div><div class="claim">A facet is one kind about one thing, emitted whole.</div><div class="why">Current state is LatestBy per thing; <code>from</code> then chooses kinds. <code>prev</code> is a set, so forks retain several heads. Links are new records, never edits to <code>about</code>. A record about several things belongs to each, but a successor may replace it within only some. A record about nothing anchors its own thing by id. Its revision names that id in <code>about</code>, so unrelated empty-about records never fork each other. Version 35.</div></div>
-    <div class="rec"><div class="meta"><span>kind: decision</span><span class="pill p-ok">settled</span></div><div class="claim"><code>prev</code> is succession within a thing.</div><div class="why">Within a fixed admitted set, succession affects only shared things. Writers refuse unheld <code>prev</code> targets outside the batch (<code>prev-unknown</code>) and unrelated targets (<code>prev-unrelated</code>). Readers reject held unrelated targets, but admit unknown targets because they cannot judge them. Planned moving or narrowing uses explicit <code>retire</code> records. Replacement rules read only envelopes; future standing supplies authority. Version 34.</div></div>
+    <div class="rec"><div class="meta"><span>kind: decision</span><span class="pill p-ok">settled</span></div><div class="claim">D8a: A record is an emit of one thing, named in its envelope by <code>of</code>.</div><div class="why"><code>of</code> is one typed reference, a record id or a natural key, read as written and never resolved through another record. Only a root leaves it out; a record with <code>prev</code> states it (<code>of-missing</code>). <code>latest-by</code>, per-thing state and heads run over it, and every <code>prev</code> target is of the same thing. A writer refuses an <code>of</code> naming a held record that is not a root (<code>of-not-root</code>). A record without <code>of</code> keeps its bytes and id. Kyle, 2026-11-10; built in the model, the vectors, JavaScript and Rust. The refusal names and their order are an implementer's choice, not yet confirmed.</div></div>
+    <div class="rec"><div class="meta"><span>kind: decision</span><span class="pill p-ok">settled</span></div><div class="claim">D8b: <code>about</code> only mentions; it never makes a head.</div><div class="why"><code>where</code> and <code>collect</code> still read it, so everything said about a thing stays a fold. <code>from.about</code> is a mention test and <code>from.of</code> takes a thing's records. A link is a thing whose <code>about</code> names both ends. Kyle, 2026-11-10; built with D8a. D8c, keys a record declares it sets, is ruled and not built.</div></div>
+    <div class="rec"><div class="meta"><span>kind: decision</span><span class="pill p-ok">settled</span></div><div class="claim">Identity lives in the record, in <code>of</code>.</div><div class="why">A thing uses a root record id or a typed natural key computed by tooling, such as a URL or code birth key. The core compares those references. Observers and stores use proposed reserved <code>*-anchor</code> kinds. A vertex instead hashes its canonical spec and parameters; it has no anchor or standing. Proposed equivalence, provenance and succession remain separate; <code>resolve-by</code> joins identities at read. Unknown names follow the planned store maturity rules.</div></div>
+    <div class="rec"><div class="meta"><span>kind: decision</span><span class="pill p-ok">settled</span></div><div class="claim">A facet is one kind of one thing, emitted whole.</div><div class="why">Current state is LatestBy per thing; <code>from</code> then chooses kinds. <code>prev</code> is a set, so forks retain several heads. Links are new records, never edits to <code>about</code>. A record is of exactly one thing: the one <code>of</code> names, or without <code>of</code> its own id. A root, with no <code>of</code> and no <code>prev</code>, starts a thing named by its id; its revision states that id in <code>of</code>, so unrelated roots never fork each other. Version 35; restated by D8a.</div></div>
+    <div class="rec"><div class="meta"><span>kind: decision</span><span class="pill p-ok">settled</span></div><div class="claim"><code>prev</code> is succession within a thing.</div><div class="why">Within a fixed admitted set, succession affects only its own thing. Writers refuse unheld <code>prev</code> targets outside the batch (<code>prev-unknown</code>), an <code>of</code> naming a held record that is not a root (<code>of-not-root</code>), and targets of another thing (<code>prev-unrelated</code>). Readers reject held targets of another thing, but admit unknown targets because they cannot judge them. Planned moving or narrowing uses explicit <code>retire</code> records. Replacement rules read only envelopes; future standing supplies authority. Version 34; restated by D8a.</div></div>
     <h4>Meaning · vertices and stores</h4>
     <div class="rec"><div class="meta"><span>kind: decision</span><span class="pill p-ok">settled</span></div><div class="claim">A vertex is a question; a store is a thing you write into.</div><div class="why">A vertex owns no storage or sources. Its id hashes its canonical spec and parameters; a name record points to the current id. It has no anchor, key or standing. Equal specs and parameters name the same vertex wherever evaluated (version 32). The store plan uses lineage declarations and machine-local places. Dated declarations accrete without migrations; admission enforces maturity.</div></div>
     <div class="rec"><div class="meta"><span>kind: decision</span><span class="pill p-ok">settled</span></div><div class="claim">Specs are JSON, stored as records.</div><div class="why"><code>protocol/spec.md</code> is normative; <code>protocol/schema.md</code> and JSON Schema files do not exist. The storage plan uses <code>vertex</code> records and <code>note</code> comments. Parameterized templates remain proposed. The core accepts supported specs as data. Every accepted spec has at least one source; absent or empty <code>from</code> fails with <code>from-missing</code>.</div></div>
     <div class="rec"><div class="meta"><span>kind: decision</span><span class="pill p-ok">settled</span></div><div class="claim">Six folds in two families, plus modifiers.</div><div class="why">Count, Sum, Min, Max, LatestBy and Collect form the supported fold vocabulary. Supported modifiers follow <code>protocol/spec.md</code>. Historical proposals include <code>by</code>, <code>order</code>, set mode, windows and ranking-only <code>weight-by</code>; they are not implemented grammar. The proposed Avg lens divides Sum by Count. With each input id supplied once, commuting accumulators and over-head folds obey their set laws. Incremental over-head evaluation needs cached LatestBy state, not merely a cached answer. Max's scalar state cannot track changing heads; this proves no impossibility for all bounded-state algorithms. JS and Rust sums use unbounded integers. Future bounded ports must refuse overflow. Version 32.</div></div>
     <div class="rec"><div class="meta"><span>kind: decision</span><span class="pill p-ok">settled</span></div><div class="claim">Predicates are a closed, typed set.</div><div class="why">Six where operators test individual records. Future boundaries can test vertex state. No regex, arithmetic, user code or effects: an observer records classifications instead. Proposed collectors own parse pipelines; future boundaries omit run hooks.</div></div>
-    <div class="rec"><div class="meta"><span>kind: decision</span><span class="pill p-ok">settled</span></div><div class="claim"><code>where</code> can test any envelope field, named explicitly.</div><div class="why">Envelope tests use <code>env.kind</code>, <code>env.observer</code>, <code>env.emitted</code>, <code>env.occurred</code>, <code>env.about</code>, <code>env.prev</code>, <code>env.under</code> and <code>env.erases</code>. Bare names identify payload fields. Unknown <code>env.</code> names are refused. Arguments must fit their fields: typed references, record ids, times, or supported payload scalars. Numeric tests require safe whole values after binary64 ingestion. Numeric complement laws additionally require a numeric bound. Missing and nonwhole values need not pass either bound. Time equality compares spans, not spelling; time bounds compare starts. Envelope tests select after supersession. A record without <code>occurred</code> passes neither time bound. The future window plan instead uses its <code>emitted</code>. Windows include starts at their lower bound and exclude starts at their upper bound. The supersession policy within windows remains open. Filtering before supersession could revive replaced records. Whole-span bounds were rejected: January ends before its year despite their equal starts. Observer tests use lineage ids until name tables arrive. Specs refuse repeated keys and empty <code>where</code> maps. Latest-by explicitly requires <code>"follow": "prev"</code>. Version 35.</div></div>
-    <div class="rec"><div class="meta"><span>kind: decision</span><span class="pill p-ok">settled</span></div><div class="claim"><code>unread</code> counts what couldn't be read.</div><div class="why">A covered record is unread when its payload test is unknown or its selected numeric fold cannot read a safe whole field. Count each id once per slot, including records that head several things. Collect counts unknown candidates before its limit. Full-result equality needs answering tests and fold-readable covered records. Historical version 35 counted only uncertainty affecting the limit and overclaimed <code>unread: 0</code>. PR 13 removed those claims. A stronger limit-sensitive guarantee remains future work, not a current theorem.</div></div>
+    <div class="rec"><div class="meta"><span>kind: decision</span><span class="pill p-ok">settled</span></div><div class="claim"><code>where</code> can test any envelope field, named explicitly.</div><div class="why">Envelope tests use <code>env.kind</code>, <code>env.observer</code>, <code>env.emitted</code>, <code>env.occurred</code>, <code>env.about</code>, <code>env.of</code>, <code>env.prev</code>, <code>env.under</code> and <code>env.erases</code>. Bare names identify payload fields. Unknown <code>env.</code> names are refused. Arguments must fit their fields: typed references, record ids, times, or supported payload scalars. Numeric tests require safe whole values after binary64 ingestion. Numeric complement laws additionally require a numeric bound. Missing and nonwhole values need not pass either bound. Time equality compares spans, not spelling; time bounds compare starts. Envelope tests select after supersession. A record without <code>occurred</code> passes neither time bound. The future window plan instead uses its <code>emitted</code>. Windows include starts at their lower bound and exclude starts at their upper bound. The supersession policy within windows remains open. Filtering before supersession could revive replaced records. Whole-span bounds were rejected: January ends before its year despite their equal starts. Observer tests use lineage ids until name tables arrive. Specs refuse repeated keys and empty <code>where</code> maps. Latest-by explicitly requires <code>"follow": "prev"</code>. Version 35.</div></div>
+    <div class="rec"><div class="meta"><span>kind: decision</span><span class="pill p-ok">settled</span></div><div class="claim"><code>unread</code> counts what couldn't be read.</div><div class="why">A covered record is unread when its payload test is unknown or its selected numeric fold cannot read a safe whole field. Count each id once per slot. Collect counts unknown candidates before its limit. Full-result equality needs answering tests and fold-readable covered records. Historical version 35 counted only uncertainty affecting the limit and overclaimed <code>unread: 0</code>. PR 13 removed those claims. A stronger limit-sensitive guarantee remains future work, not a current theorem.</div></div>
     <div class="rec"><div class="meta"><span>kind: decision</span><span class="pill p-ok">settled</span></div><div class="claim">Supersession runs over everything held; selection comes after.</div><div class="why">Each thing's state uses its records from the fixed admitted set, before vertex selection. <code>from</code>, envelope tests and payload tests then choose among heads. Selecting first could revive a record superseded by another kind, an excluded source, a failed filter or a withheld successor. Count and sum include selected history, even when superseded. Found while modelling the spec (versions 33 and 34).</div></div>
     <h4>Resolution · ticks</h4>
     <div class="rec"><div class="meta"><span>kind: decision</span><span class="pill p-ok">settled</span></div><div class="claim">A tick is a value; a stored tick is a signed record.</div><div class="why">Future tick design: a content tick hashes its vertex, covered ids and result. Machines with the same inputs can recompute that id. Persistence uses an ordinary <code>tick</code> record signed by its writer, preserving one envelope. A witness tick records the runner's observed set. Erased numeric inputs leave only the signature as evidence for prior results. Proposed revisits create ticks citing earlier ticks. These transitions are not implemented proofs. Version 32.</div></div>
@@ -573,7 +575,8 @@ dl.env .sep{grid-column:1/-1;border-top:1px dashed var(--line);margin:3px 0}
         <dt>kind</dt><dd>a label, not a type</dd>
         <dt>emitted</dt><dd>stamped instant, never set by hand</dd>
         <dt>occurred?</dt><dd>claimed span; can be coarse</dd>
-        <dt>about?</dt><dd>the things it is about: a set, usually one</dd>
+        <dt>about?</dt><dd>the things it mentions: a set</dd>
+        <dt>of?</dt><dd>the one thing it is an emit of; a root leaves it out</dd>
         <dt>prev?</dt><dd>the records this one replaces: a set, usually one</dd>
         <dt>under?</dt><dd>the grant it acts on</dd>
         <dt>erases?</dt><dd>record ids whose payloads it erases</dd>
@@ -607,7 +610,8 @@ dl.env .sep{grid-column:1/-1;border-top:1px dashed var(--line);margin:3px 0}
       <tr><td><code>kind</code></td><td>selection</td><td><span class="pill p-ok">keep</span></td></tr>
       <tr><td><code>emitted</code></td><td>content order</td><td><span class="pill p-ok">keep</span></td></tr>
       <tr><td><code>occurred?</code></td><td>content order</td><td><span class="pill p-ok">keep</span></td></tr>
-      <tr><td><code>about?</code></td><td>selection</td><td><span class="pill p-ok">keep</span></td></tr>
+      <tr><td><code>about?</code></td><td>selection: a mention test</td><td><span class="pill p-ok">keep</span></td></tr>
+      <tr><td><code>of?</code></td><td>per-thing state, heads and admission: the thing a record is an emit of</td><td><span class="pill p-ok">keep</span></td></tr>
       <tr><td><code>prev?</code></td><td>Latest and LatestBy follow chains to their heads instead of trusting clocks; a set, so one record can merge a fork</td><td><span class="pill p-lean">keep</span></td></tr>
       <tr><td><code>under?</code></td><td>admission (the grant check)</td><td><span class="pill p-ok">keep</span></td></tr>
       <tr><td><code>erases?</code></td><td>settling payload forms</td><td><span class="pill p-ok">keep</span></td></tr>
@@ -727,6 +731,7 @@ dl.env .sep{grid-column:1/-1;border-top:1px dashed var(--line);margin:3px 0}
 
   <details class="unfold"><summary>The <code>about</code> field and thing identity</summary><div class="body">
     <p><code>about</code> is promoted from a payload <code>ref</code> to an envelope field because composition depends on it: salience groups by thing across three stores.</p>
+    <p><code>about</code> only mentions. The thing a record is an emit of is a separate field, <code>of</code> (D8a): one typed reference, a record id or a natural key, read as written. A root has neither <code>of</code> nor <code>prev</code> and starts the thing named by its own id; a record with <code>prev</code> states <code>of</code>. Heads, <code>latest-by</code> and admission run over <code>of</code>; <code>about</code> never makes a head (D8b).</p>
     <p>The hard part is thing identity across stores. The same essay shows up as a feed GUID in RSS, a URL with tracking parameters in Safari, and a post id in likes. Use a typed natural key where the world supplies one. Normalize it per prefix. Use <code>same-as</code> records, folded at read, where identity needs judgment. Worked through in <a href="#things" data-tab="things">Things</a>.</p>
   </div></details>
 </section>
@@ -1093,7 +1098,8 @@ dl.env .sep{grid-column:1/-1;border-top:1px dashed var(--line);margin:3px 0}
     <tbody>
       <tr><td>kind</td><td><code>"kind": ["decision"]</code></td></tr>
       <tr><td>observer</td><td><code>"observer": ["sl:7f"]</code> (resolved from a name when written)</td></tr>
-      <tr><td>thing</td><td><code>"about": "url:example.com/x"</code></td></tr>
+      <tr><td>thing</td><td><code>"of": "url:example.com/x"</code></td></tr>
+      <tr><td>mention</td><td><code>"about": "url:example.com/x"</code></td></tr>
       <tr><td>ticks from a vertex</td><td><code>"ticks": ["review"]</code></td></tr>
       <tr><td>another vertex's state</td><td><code>"admitted-by": "auth"</code>: admission without special machinery</td></tr>
     </tbody>
@@ -1108,7 +1114,7 @@ dl.env .sep{grid-column:1/-1;border-top:1px dashed var(--line);margin:3px 0}
         <tr><td>Compact state; the step is commutative</td><td>The state retains per-thing heads and referenced ids. The answer comes from that state.</td></tr>
       </tbody>
     </table></div>
-    <p>Both families have set-invariance laws under their stated premises. Accumulating folds consume each id once. LatestBy retains heads and all referenced ids, not just the current answer. Its cached state accepts late records. Heads apply per thing; a record remains if any thing retains it. Modifiers shape the final answer. Content order chooses among heads, not arrival order.</p>
+    <p>Both families have set-invariance laws under their stated premises. Accumulating folds consume each id once. LatestBy retains heads and all referenced ids, not just the current answer. Its cached state accepts late records. Heads apply per thing, and a record is of exactly one thing; it remains if its thing retains it. Modifiers shape the final answer. Content order chooses among heads, not arrival order.</p>
   </div></details>
   <details class="unfold"><summary>Boundaries: content vs operational</summary><div class="body">
     <p>In the earlier prototype, a boundary fired "when a record of kind X <i>arrives</i>": receipt order in disguise.</p>
@@ -1503,9 +1509,9 @@ loops emit tenure years:=14 domain=platform --about sl:a1          # by sl:team-
 </section>
 
 <section class="panel" id="things" role="tabpanel" aria-labelledby="t-things">
-  <div class="panel-head"><h2>Things and <code>about</code></h2><button class="toggle-all" type="button">Unfold all</button></div>
+  <div class="panel-head"><h2>Things, <code>of</code> and <code>about</code></h2><button class="toggle-all" type="button">Unfold all</button></div>
   <p class="callout"><b>Design proposals:</b> these examples include unsupported grammar and future product surfaces. <code>protocol/spec.md</code> defines accepted specs. Examples are not conformance fixtures.</p>
-  <p class="gist">Records are the only thing stored. A <b>thing</b> is what a record is about. Identity moves out of the fold and into the record, through <code>about</code> on the envelope. Tested against every case so far, it holds with no new machinery and six refinements.</p>
+  <p class="gist">Records are the only thing stored. A <b>thing</b> is what a record is an emit of. Identity moves out of the fold and into the record, through <code>of</code> on the envelope; <code>about</code> names what a record mentions. Tested against every case so far, it holds with no new machinery and six refinements.</p>
   <p><span class="pill p-ok">layer closed</span> Composition needs shared thing identity when a vertex reads several stores. It closed on three more decisions:</p>
   <ul>
     <li><b>Promotion carries its anchor</b> verbatim when the target store lacks it. Across realms a natural key is content, not a reference (<code>svc:auth@corp-prod</code> says something), so it crosses only by bridge. A public store is a standing bridge, which is how <code>url:</code> keys meet across realms (see the web annotation walk in <a href="#horizons/h-web" data-tab="horizons" data-sub="h-web">Horizons</a>).</li>
@@ -1518,7 +1524,7 @@ loops emit tenure years:=14 domain=platform --about sl:a1          # by sl:team-
     <thead><tr><th></th><th>What it is</th><th>Examples</th><th>Identity</th><th>Who reads its lineage</th></tr></thead>
     <tbody>
       <tr><td><b>Record</b></td><td>an immutable claim; the only thing stored</td><td>log snippet, RSS entry, prose save, tick</td><td>content hash</td><td>none: a record is a point</td></tr>
-      <tr><td><b>Thing</b></td><td>what records are <i>about</i></td><td>chapter, incident, service, URL, Mara</td><td>an anchoring record, or a natural key</td><td>vertices only</td></tr>
+      <tr><td><b>Thing</b></td><td>what records are <i>of</i></td><td>chapter, incident, service, URL, Mara</td><td>a root record, or a natural key</td><td>vertices only</td></tr>
       <tr><td><b>Primitive</b></td><td>observer or store lineage</td><td>observer, store</td><td><code>*-anchor</code> lineage</td><td>future standing code</td></tr>
     </tbody>
   </table></div>
@@ -1551,14 +1557,14 @@ loops emit tenure years:=14 domain=platform --about sl:a1          # by sl:team-
     </div>
     <figcaption>In the earlier prototype, a vertex picked a payload field (<code>Upsert key="topic"</code>). Two facts were related only because their strings happened to match. Now the emitter states the thing. Payload-field grouping remains proposed grammar, not implemented LatestBy behavior.</figcaption>
   </figure>
-  <p><code>about</code> is the emitter's <b>claim</b> ("this is about r:x1"). A fold key is the vertex's <b>question</b> ("group these by host"). Both stay. <code>about</code> carries typed references. The design uses anchoring record ids, natural keys and named system objects. A vertex reference names its spec hash.</p>
+  <p><code>of</code> is the emitter's <b>claim</b> ("this is an emit of r:x1"). A fold key is the vertex's <b>question</b> ("group these by host"). Both stay. <code>of</code> carries one typed reference and <code>about</code> a set of them. The design uses anchoring record ids, natural keys and named system objects. A vertex reference names its spec hash.</p>
 
   <h3>Case: a chapter, in facets</h3>
   <figure>
     <div class="fig">
       <svg class="dg" viewBox="0 0 400 256" role="img" aria-label="Chapter-start anchors r:a1. Prose p2 replaces p1; two concurrent p3 saves both replace p2. Titles and mentions form separate chains. Mentions refer to Mara r:c1. Notes n1 to n3 accumulate. The proposed chapter view shows facets and the prose fork.">
         <rect class="box-amb" x="8" y="74" width="100" height="44" rx="9"/><text x="58" y="92" text-anchor="middle" class="s b">chapter-start</text><text x="58" y="107" text-anchor="middle" class="xs">r:a1</text>
-        <text x="58" y="136" text-anchor="middle" class="xs ta">every record:</text><text x="58" y="150" text-anchor="middle" class="xs ta">about r:a1</text>
+        <text x="58" y="136" text-anchor="middle" class="xs ta">every record:</text><text x="58" y="150" text-anchor="middle" class="xs ta">of r:a1</text>
         <line class="ln-acc" x1="122" y1="39" x2="122" y2="169"/>
         <line class="ln-acc" x1="122" y1="39" x2="128" y2="39"/><line class="ln-acc" x1="122" y1="97" x2="128" y2="97"/><line class="ln-acc" x1="122" y1="133" x2="128" y2="133"/><line class="ln-acc" x1="122" y1="169" x2="128" y2="169"/>
         <line class="ln-acc" x1="122" y1="96" x2="111" y2="96" marker-end="url(#ah-acc)"/>
@@ -1587,13 +1593,13 @@ loops emit tenure years:=14 domain=platform --about sl:a1          # by sl:team-
         <rect class="box" x="294" y="158" width="40" height="22" rx="5"/><text x="314" y="173" text-anchor="middle" class="xs">n3</text>
         <line class="ln" x1="200" y1="184" x2="200" y2="197" marker-end="url(#ah)"/>
         <rect class="box-acc" x="8" y="200" width="384" height="46" rx="9"/>
-        <text x="200" y="219" text-anchor="middle" class="s b">chapter view · LatestBy key=kind over about r:a1</text>
+        <text x="200" y="219" text-anchor="middle" class="s b">chapter view · LatestBy key=kind over of r:a1</text>
         <text x="200" y="236" text-anchor="middle" class="xs">two prose saves share prev p2 → a fork, shown, not hidden</text>
       </svg>
     </div>
-    <figcaption>Each facet is one kind about one thing, emitted whole. Saving prose never copies the title; changing mentions never copies the prose. Notes add up, so they're collected, not chained. The dashed arrow is a reference in the payload, not <code>about</code>: the mentions record is <i>about</i> the chapter and <i>refers to</i> Mara.</figcaption>
+    <figcaption>Each facet is one kind of one thing, emitted whole. Saving prose never copies the title; changing mentions never copies the prose. Notes add up, so they're collected, not chained. The dashed arrow is a reference in the payload, not <code>of</code>: the mentions record is <i>of</i> the chapter and <i>refers to</i> Mara.</figcaption>
   </figure>
-  <p><span class="pill p-ok">holds</span> The fold is LatestBy keyed by kind, once a key may name an envelope field. Renumbering, retitling and splitting a chapter all leave <code>r:a1</code> intact. Diffs inside prose stay out of the model: git and a future blob store compress similar snapshots underneath.</p>
+  <p><span class="pill p-ok">holds</span> The fold is LatestBy keyed by kind, once a key may name an envelope field. That key is proposed: today every facet chain is of <code>r:a1</code>, so their heads are heads of one thing. Renumbering, retitling and splitting a chapter all leave <code>r:a1</code> intact. Diffs inside prose stay out of the model: git and a future blob store compress similar snapshots underneath.</p>
 
   <h3>Case: a homelab incident</h3>
   <figure>
@@ -1648,7 +1654,7 @@ loops emit tenure years:=14 domain=platform --about sl:a1          # by sl:team-
     </div>
     <figcaption>Duplicates are the expected path, not a failure: three people, three vocabularies, three anchors. Merging them is a claim someone makes, disputable like any other, and each reader's identity vertex decides which claims count. Afterwards all three names resolve to the class through the name tables.</figcaption>
   </figure>
-  <p><span class="pill p-lean">holds, with one new parameter</span> <code>resolve-by=&lt;identity vertex&gt;</code> maps each <code>about</code> to its class before grouping. It's the third state reference, after <code>admitted-by</code> and <code>weight-by</code>, and the DAG rule covers it. This is the only place identity needs state.</p>
+  <p><span class="pill p-lean">holds, with one new parameter</span> <code>resolve-by=&lt;identity vertex&gt;</code> maps each thing reference to its class before grouping. It's the third state reference, after <code>admitted-by</code> and <code>weight-by</code>, and the DAG rule covers it. This is the only place identity needs state.</p>
 
   <h3>The other cases</h3>
   <div class="tbl"><table>
@@ -1665,12 +1671,12 @@ loops emit tenure years:=14 domain=platform --about sl:a1          # by sl:team-
   <div class="tbl"><table>
     <thead><tr><th>Refinement</th><th>Why</th></tr></thead>
     <tbody>
-      <tr><td><b><code>about</code> holds things; references are payload values that are ids.</b> A set, usually of one.</td><td>A decision about two services folds into both views. The mentions record is about the chapter and refers to Mara: different roles, so different places. Facets take exactly one thing.</td></tr>
+      <tr><td><b><code>of</code> names one thing; <code>about</code> holds the things a record mentions; references are payload values that are ids.</b></td><td>A decision about two services is read in both services' views and heads neither. The mentions record is of the chapter and refers to Mara: different roles, so different places. A record is of exactly one thing.</td></tr>
       <tr><td><b>Later links are records,</b> about the target and referring to the evidence.</td><td>No selection by state; a correction retires the link record, never the evidence.</td></tr>
       <tr><td><b><code>resolve-by</code></b> is the third state reference.</td><td>Identity across anchors is disputed, so it's a fold, read like <code>weight-by</code>.</td></tr>
       <tr><td><b>Natural keys are typed</b>: <code>prefix:value</code>, with normalization declared per prefix in the store.</td><td>Makes <code>url:</code>, <code>host:</code>, <code>svc:</code> comparable without minting.</td></tr>
       <tr><td><b>Only primitives use the reserved <code>*-anchor</code> kinds.</b> Any other thing is anchored by whatever record starts it.</td><td>Keeps the reserved list short; thing kinds stay in user vocabulary.</td></tr>
-      <tr><td><b><code>prev</code> is a general link and a set,</b> and Latest follows it. Two records sharing a <code>prev</code> are a fork; one record naming both heads merges it.</td><td>Prose saves, name records and stances all hit concurrent edits. Following the chain takes clock skew out of "current". Heads are records no successor names in <code>prev</code> for that thing. A whole view retains a record if any thing retains it.</td></tr>
+      <tr><td><b><code>prev</code> is a general link and a set,</b> and Latest follows it. Two records sharing a <code>prev</code> are a fork; one record naming both heads merges it.</td><td>Prose saves, name records and stances all hit concurrent edits. Following the chain takes clock skew out of "current". Heads are records no successor of that thing names in <code>prev</code>, and a <code>prev</code> never crosses things. A whole view retains a record if its thing retains it.</td></tr>
     </tbody>
   </table></div>
 
@@ -1681,7 +1687,7 @@ loops emit tenure years:=14 domain=platform --about sl:a1          # by sl:team-
     <tbody>
       <tr><td><b>Identifiers</b></td><td>2</td><td>A <b>content hash</b> names records and anchoring records for lineages, stores and things. A vertex hash names its spec and parameters. Prefixes label references. A <b>natural key</b>, <code>prefix:value</code>.</td></tr>
       <tr><td><b>Names</b></td><td>1</td><td>Name records in name tables. Self-name, petname paths and <code>@home</code> are forms of it. Never matched.</td></tr>
-      <tr><td><b>Envelope pointers</b></td><td>4</td><td><code>about</code> · <code>prev</code> · <code>under</code> · <code>erases</code>. Proposed tick payloads carry <code>covers</code>.</td></tr>
+      <tr><td><b>Envelope pointers</b></td><td>5</td><td><code>of</code> · <code>about</code> · <code>prev</code> · <code>under</code> · <code>erases</code>. Proposed tick payloads carry <code>covers</code>.</td></tr>
       <tr><td><b>Vertex state references</b></td><td>3</td><td><code>admitted-by</code> · <code>weight-by</code> · <code>resolve-by</code></td></tr>
       <tr><td><b>Everything else</b></td><td></td><td>A record whose <code>about</code> points at something. Stances point at a record; <code>same-as</code> at two things; vouch, grant, tenure and <code>runs-on</code> at a lineage; name records at what they name.</td></tr>
     </tbody>
@@ -1694,7 +1700,7 @@ loops emit tenure years:=14 domain=platform --about sl:a1          # by sl:team-
       <tr><td><b>Succession</b></td><td>record → the records it replaces</td><td><code>prev</code></td><td>Latest</td></tr>
     </tbody>
   </table></div>
-  <p>The three families stay separate; blurring them is the <code>owl:sameAs</code> failure. A restated promotion keeps thing identity through <code>about</code>. Its <code>derived-from</code> link records provenance as a payload convention.</p>
+  <p>The three families stay separate; blurring them is the <code>owl:sameAs</code> failure. A restated promotion keeps thing identity through <code>of</code>. Its <code>derived-from</code> link records provenance as a payload convention.</p>
 
   <h3>Discipline in an open store</h3>
   <p>In a semantic store, convention is what keeps a growing store aligned. The future admission design applies policy at read time. Records remain unchanged. Records outside the current policy become visible rejections. A schema-first store must be disciplined from day one; this one can be disciplined as it matures.</p>
@@ -1719,7 +1725,7 @@ strict    refused: no thing called "auth service"; did you mean auth-svc (r:x1)?
     <li><b>Keys converge on their own.</b> Two agents who write <code>topic:auth-service</code> meet without coordinating. Anchors never collide, so minting on every miss makes duplicates: three anchors for one service in the team case above.</li>
     <li><b>Minting becomes deliberate</b> when a thing must survive a rename or be told apart from a namesake. It comes with a <code>same-as</code> from the key to the new anchor, and every early record joins the anchor's class through <code>resolve-by</code>. No migration.</li>
     <li><b>The start record carries the first name,</b> as an anchor carries a self-name; no separate name record.</li>
-    <li><b>Only <code>about</code> joins.</b> Payload-topic grouping is proposed. A later record can link evidence to a thing through <code>about</code> and a payload reference. <code>resolve-by</code> never reads payloads.</li>
+    <li><b>Only the envelope joins.</b> <code>of</code> names the thing and <code>about</code> what is mentioned. Payload-topic grouping is proposed. A later record can link evidence to a thing through <code>about</code> and a payload reference. <code>resolve-by</code> never reads payloads.</li>
   </ul>
 
   <details class="unfold"><summary>Matching: one equality relation is enough</summary><div class="body">
@@ -1750,11 +1756,11 @@ strict    refused: no thing called "auth service"; did you mean auth-svc (r:x1)?
   <details class="unfold"><summary>The cases as records and vertices</summary><div class="body">
     <pre style="margin:0;font-family:var(--mono);font-size:13px;background:var(--sunk);padding:12px;border-radius:8px;overflow-x:auto"># the novel
 loops emit chapter-start title="The Lighthouse"                                   # → r:a1
-loops emit chapter-prose text=blob:… --about r:a1 --prev r:p2
-loops emit chapter-mentions characters:='["r:c1"]' ideas:='["r:i9"]' --about r:a1
+loops emit chapter-prose text=blob:… --of r:a1 --prev r:p2
+loops emit chapter-mentions characters:='["r:c1"]' ideas:='["r:i9"]' --of r:a1
 
 { "vertex": "chapter", "param": ["chapter"],
-  "from": [{ "store": "novel", "about": "$chapter" }],
+  "from": [{ "store": "novel", "of": "$chapter" }],
   "fold": { "facets": { "latest-by": "kind", "follow": "prev" },
             "notes":  { "collect": true, "where": { "env.kind": { "is": "chapter-note" } } } } }
 
@@ -1764,13 +1770,14 @@ loops emit incident-start title="jellyfin stalls"                               
 loops emit incident-evidence refs:='["r:l7"]' --about r:i1
 
 # the team store
-loops emit same-as --about r:x1 --about r:x2                                      # kyle
-loops emit dispute --about r:x2 --about r:x3                                      # director
+loops emit same-as --about r:x1 --about r:x2                                      # kyle → r:s1
+loops emit same-as --about r:x2 --about r:x3                                      # a developer → r:s2
+loops emit dispute --of r:s2 --prev r:s2                                          # director
 
 { "vertex": "identity",
   "note": "The latest stance per pair.",
   "from": [{ "store": "team", "kind": ["same-as", "dispute"] }],
-  "fold": { "pairs": { "latest-by": "about", "follow": "prev" } } }
+  "fold": { "pairs": { "latest-by": "of", "follow": "prev" } } }
 
 { "vertex": "platform-knowledge",
   "from": [{ "store": "team", "kind": ["decision", "note"] }],
@@ -2294,7 +2301,7 @@ loops emit dispute --about r:x2 --about r:x3                                    
   <div class="panel-head"><h2>Trust: who counts, walked</h2><button class="toggle-all" type="button">Unfold all</button></div>
   <p class="gist">A line proves which <b>key</b> signed it. Trust is everything between that and "this record counts". Walked end to end, it comes apart into <b>five strata</b>, each reading only the ones below. Two tiers of key are enough. And <b>retire through</b> turns out to need a tick, so standing splits in two around step 4.</p>
   <p><span class="pill p-lean">proposal</span> Two tiers of key is settled; the rest is not, and none of it is built. The first product slice writes only as its signing key, and one model exists for stratum 1. No anchor that anyone means to keep should be made until this walk is closed.</p>
-  <p><span class="pill p-next">order</span> Kyle, 2026-11-10: standing comes after ticks, and arrives with sharing, when records first cross between people. Until then everything runs on one machine under one trust root. Before either comes the item and mention split, decision D8 in the roadmap.</p>
+  <p><span class="pill p-next">order</span> Kyle, 2026-11-10: standing comes after ticks, and arrives with sharing, when records first cross between people. Until then everything runs on one machine under one trust root. Before either comes the item and mention split, decision D8 in the roadmap. Its first two parts, D8a and D8b, are built; D8c is not.</p>
 
   <h3>The strata</h3>
   <figure>
@@ -2401,7 +2408,7 @@ loops emit dispute --about r:x2 --about r:x3                                    
         </tbody>
       </table></div>
       <p><b>Where it strains.</b> A grant's scope (which stores, which kinds) does not fit an envelope. If the scope is payload, a reader without that payload can't judge a record written under the grant. Admission would then answer three ways, as <code>where</code> does: yes, no, or unknown, with the unknowns counted beside the result. That is open, below.</p>
-      <p><b>A side effect.</b> A record about a lineage joins that lineage's thing. A store anchor about its stewards shows up in each steward's state. That may be right (it is something true about them) or noise. Also open.</p>
+      <p><b>A side effect, closed by D8b.</b> When <code>about</code> made heads, a record about a lineage joined that lineage's thing, and a store anchor about its stewards showed up in each steward's state. <code>about</code> now only mentions: a store anchor is of its own id and heads no steward's state. A fold that asks what was said about a steward still finds it.</p>
     </div>
   </details>
 
@@ -2961,13 +2968,14 @@ loops emit dispute --about r:x2 --about r:x3                                    
         <tr><td>Files on disk</td><td><span class="pill p-lean">noted</span></td><td>25 records made 20 segment files. Recall's volume will make that hurt first.</td></tr>
       </tbody>
     </table></div>
+    <p>The three breaks are decision D8 in the roadmap. D8a and D8b are built in the model, the vectors, JavaScript and Rust. A record is an emit of one thing, the one <code>of</code> names, or its own id; <code>about</code> only mentions and never makes a head. A task about its plan, a record about another task, and a closing record about the ids it covers no longer head those things. D8c, declared keys, is not built. The table records the run as it was.</p>
   </div></details>
 
   <details class="unfold"><summary>What it needs that doesn't exist</summary><div class="body">
     <ul>
       <li><b>Ticks, and a runner for boundaries.</b> The spec grammar carries <code>boundary</code>, <code>ticks</code>, <code>param</code> and <code>into</code>, and nothing reads them. The tick itself waits on D7, the result encoding, which now blocks this as well as retiring.</li>
       <li><b>Something that acts when a boundary fires.</b> The earlier prototype's boundary could carry a command to run, which is what made its cascades start work by themselves. Here a boundary says when a vertex ticks, and "a vertex never signs anything; the observer who ran it signs". So starting a session is an observer's act, and which observer watches which vertex is not designed.</li>
-      <li><b>Where a question or a note about a task goes.</b> Covers handle "belongs to" for work. A record that is only <i>about</i> a task still competes to be its state.</li>
+      <li><b>Where a question or a note about a task goes.</b> Covers handle "belongs to" for work. A record that is only <i>about</i> a task no longer competes to be its state (D8b), and a fold that asks what was said about the task still finds it.</li>
       <li><b>Delegation, for strict stores.</b> In an open store an assignment is just context. In a store that admits only granted writers, the orchestrator's grant must let it sponsor sessions, and authority must only narrow on the way down.</li>
       <li><b>Covers across stores.</b> Preferences, tasks, recall and the repo are likely separate stores. A reader without one of them gets "unknown" for that branch.</li>
       <li><b>Who signs recall's capture.</b> Signed by recall, a transcript is recall's claim about a session. Signed by the session, it is the session's own word.</li>
@@ -3057,7 +3065,7 @@ loops emit same-as --about r:h1 --about org:willowcreek-mgmt.example            
 { "vertex": "identity",
   "note": "The latest stance per pair.",
   "from": [{ "store": "root", "kind": ["same-as", "dispute"] }],
-  "fold": { "pairs": { "latest-by": "about", "follow": "prev" } } }
+  "fold": { "pairs": { "latest-by": "of", "follow": "prev" } } }
 
 { "vertex": "salience",
   "note": "Who touched each thing; a witness tick each morning.",
@@ -3103,22 +3111,22 @@ loops emit read refs:='["r:f12…"]' --about T:digest-1019</pre>
 }
 
 loops emit chapter-start title="The Lighthouse"                                   # → r:a1
-loops emit chapter-prose text=blob:h:… --about r:a1 --prev r:p2                   # laptop
-loops emit chapter-prose text=blob:h:… --about r:a1 --prev r:p2                   # phone: two heads, a visible fork
-loops emit chapter-mentions characters:='["r:c1"]' ideas:='["r:i9"]' --about r:a1
-loops emit book-order chapters:='["r:a4","r:a1","r:a2"]' --about r:b0 --prev r:o3  # a move is one record
+loops emit chapter-prose text=blob:h:… --of r:a1 --prev r:p2                      # laptop
+loops emit chapter-prose text=blob:h:… --of r:a1 --prev r:p2                      # phone: two heads, a visible fork
+loops emit chapter-mentions characters:='["r:c1"]' ideas:='["r:i9"]' --of r:a1
+loops emit book-order chapters:='["r:a4","r:a1","r:a2"]' --of r:b0 --prev r:o3     # a move is one record
 loops emit draft-complete label="draft 2"                                         # the marker
 
 # .loops/vertices/chapter.json
 { "vertex": "chapter", "param": ["chapter"],
-  "from": [{ "store": "novel", "about": "$chapter" }],
+  "from": [{ "store": "novel", "of": "$chapter" }],
   "fold": { "facets": { "latest-by": "kind", "follow": "prev" },
             "notes":  { "collect": true, "where": { "env.kind": { "is": "chapter-note" } } } } }
 
 # .loops/vertices/manuscript.json
 { "vertex": "manuscript",
   "from": [{ "store": "novel", "kind": ["chapter-prose", "book-order"] }],
-  "fold": { "chapters": { "latest-by": "about", "follow": "prev" },
+  "fold": { "chapters": { "latest-by": "of", "follow": "prev" },
             "order":    { "latest": true, "follow": "prev", "where": { "env.kind": { "is": "book-order" } } } },
   "boundary": [{ "when": "draft-complete" }] }
 
@@ -3178,7 +3186,7 @@ loops emit incident-start title="jellyfin stalls"                               
 loops emit incident-evidence refs:='["r:l7"]' --about r:i1
 loops emit finding text="transcode cache full" refs:='["r:l7","r:l9"]' \
     --about r:i1 --under g:homelab-ops                                               # by sl:7f
-loops emit incident-status status=resolved --about r:i1
+loops emit incident-status status=resolved --of r:i1
 
 { "vertex": "health",
   "note": "A cron made content by a marker.",
@@ -3187,7 +3195,8 @@ loops emit incident-status status=resolved --about r:i1
   "boundary": [{ "when": "cycle-complete" }] }
 
 { "vertex": "incident", "param": ["incident"],
-  "from": [{ "store": "homelab", "about": "$incident", "follow-refs": true }],
+  "from": [{ "store": "homelab", "of": "$incident" },
+           { "store": "homelab", "about": "$incident", "follow-refs": true }],
   "fold": { "state":    { "latest-by": "kind", "follow": "prev" },
             "evidence": { "collect": true, "set": true } },
   "boundary": [{ "when": "incident-status", "where": { "status": { "is": "resolved" } } },
@@ -3228,8 +3237,8 @@ loops emit review verdict=approved --about T:t1                        # by sl:a
 
 loops emit component-start name=auth-svc                               # sl:dev1 → r:x1
 loops emit component-start name="SSO gateway"                          # sl:director → r:x3
-loops emit same-as --about r:x1 --about r:x3                           # sl:dev2: a guess
-loops emit dispute --about r:x1 --about r:x3                           # sl:director: not the same thing
+loops emit same-as --about r:x1 --about r:x3                           # sl:dev2: a guess → r:s2
+loops emit dispute --of r:s2 --prev r:s2                               # sl:director: not the same thing
 loops emit note body="the proxy in front of auth-svc" --about r:x3 --about r:x1   # sl:director
 loops emit decision title="Move auth-svc behind the gateway" status=accepted \
     evidence:='["r:n4","r:n7"]' --about r:x1 --occurred 2019-04
@@ -4252,13 +4261,14 @@ witness observer="ci" vertex="decisions" key=… result="h:7a…" sig=…</pre>
       <tbody>
         <tr><td><b>record</b></td><td>The unit of everything: an envelope, a payload and a signature, named by a content hash. An observation, never a statement of truth.</td></tr>
         <tr><td><b>emit</b></td><td>To write a record. One of the two write verbs; the other is <i>tick</i>.</td></tr>
-        <tr><td><b>envelope</b></td><td>The fields the core reads: <code>kind</code>, <code>observer</code>, <code>emitted</code>, <code>occurred</code>, <code>about</code>, <code>prev</code>, <code>under</code>, <code>erases</code>. A field belongs here only if the core reads it.</td></tr>
+        <tr><td><b>envelope</b></td><td>The fields the core reads: <code>kind</code>, <code>observer</code>, <code>emitted</code>, <code>occurred</code>, <code>about</code>, <code>of</code>, <code>prev</code>, <code>under</code>, <code>erases</code>. A field belongs here only if the core reads it.</td></tr>
         <tr><td><b>payload</b></td><td>Everything else. The core never interprets it; folds read typed fields from it.</td></tr>
         <tr><td><b>kind</b></td><td>A record's label. It stays a label, not a type; declarations describe it.</td></tr>
         <tr><td><b>observer</b></td><td>Whoever says "I saw": a lineage id on every record. A collector is an observer reporting hearsay.</td></tr>
         <tr><td><b>emitted · occurred</b></td><td>Two times. <code>emitted</code> is when the observer wrote it; <code>occurred</code> is the claimed span, and may be coarse.</td></tr>
-        <tr><td><b>about</b></td><td>The things a record is about: a set, usually one.</td></tr>
-        <tr><td><b>prev</b></td><td>The records this one replaces, within the things both are about: a set. Empty starts a chain; two or more merge. It may name only records the writer holds about a shared thing.</td></tr>
+        <tr><td><b>about</b></td><td>The things a record mentions: a set. It never makes a head.</td></tr>
+        <tr><td><b>of</b></td><td>The one thing a record is an emit of: a record id or a natural key, read as written. A root leaves it out and is of the thing its own id names; a record with <code>prev</code> states it.</td></tr>
+        <tr><td><b>prev</b></td><td>The records this one replaces, within the thing both are of: a set. Empty starts a chain; two or more merge. It may name only records the writer holds of the same thing.</td></tr>
         <tr><td><b>under</b></td><td>The grant a record relies on.</td></tr>
         <tr><td><b>commitment · salt</b></td><td>The payload's salted hash. A secret salt makes offline guesses harder while the opening remains withheld. Opening it means showing the payload and the salt.</td></tr>
         <tr><td><b>erases</b></td><td>The ids whose openings this record asks the store to erase.</td></tr>
@@ -4270,7 +4280,7 @@ witness observer="ci" vertex="decisions" key=… result="h:7a…" sig=…</pre>
     <div class="tbl"><table>
       <thead><tr><th>Term</th><th>Means</th></tr></thead>
       <tbody>
-        <tr><td><b>thing</b></td><td>Whatever records are about: a chapter, a service, a URL, a person. Each thing has its own state; a record about nothing lives in one thing of its own.</td></tr>
+        <tr><td><b>thing</b></td><td>Whatever records are of: a chapter, a service, a URL, a person. Each record is of exactly one thing, and each thing has its own state; a root starts a thing named by its own id.</td></tr>
         <tr><td><b>anchor</b></td><td>The record a thing or a lineage starts with; its id is the identity. Primitives start with the reserved <code>*-anchor</code> kinds.</td></tr>
         <tr><td><b>natural key</b></td><td>A typed key that needs no anchor, such as <code>url:</code>, <code>isbn:</code> or <code>svc:</code>. Anyone computes the same one.</td></tr>
         <tr><td><b>birth key</b></td><td>The natural key for code: the symbol as it was in the commit that created it.</td></tr>
@@ -4291,7 +4301,7 @@ witness observer="ci" vertex="decisions" key=… result="h:7a…" sig=…</pre>
         <tr><td><b>vertex</b></td><td>A standing question over stores: it selects, folds and ticks, and its ticks feed higher vertices. Where loops meet, which nothing else names, so it keeps its word from the original vocabulary.</td></tr>
         <tr><td><b>spec</b></td><td>A vertex's definition: inputs, folds, a boundary. One spec can be instantiated as several vertices, each named by the hash of the spec and its parameters. Written as JSON, stored as a record of kind <code>vertex</code>; its <code>note</code> explains it and stays out of the input key.</td></tr>
         <tr><td><b>fold</b></td><td>Turning a set of records into state, with one of six: Count, Sum, Min, Max, LatestBy, Collect. Accumulating folds are commutative; folds over heads follow <code>prev</code>. Latest, TopN and Window are proposed modifiers; Avg is left to the lens.</td></tr>
-        <tr><td><b>head</b></td><td>A record nothing about the same thing names in <code>prev</code>: a thing's current record. A thing with several heads is forked, shown as a conflict. Heads are worked out from envelopes alone, over everything the reader holds.</td></tr>
+        <tr><td><b>head</b></td><td>A record no record of the same thing names in <code>prev</code>: a thing's current record. A thing with several heads is forked, shown as a conflict. Heads are worked out from envelopes alone, over everything the reader holds.</td></tr>
         <tr><td><b>content order</b></td><td>How a fold decides which record wins: taken from what records carry, never from arrival. No fold needs records read in this order.</td></tr>
         <tr><td><b>predicate</b></td><td>Wherever a spec says which records, or when to tick. A closed, typed set.</td></tr>
         <tr><td><b>boundary · marker</b></td><td>When a vertex ticks. A marker is a record whose arrival is that moment.</td></tr>
@@ -4366,7 +4376,7 @@ witness observer="ci" vertex="decisions" key=… result="h:7a…" sig=…</pre>
       <tbody>
         <tr><td><b>fact</b></td><td>record</td><td>"Fact" implies truth; the model holds observations.</td></tr>
         <tr><td><b>genesis</b></td><td>anchor</td><td>One concept: the record an identity starts with.</td></tr>
-        <tr><td><b>subject</b></td><td>thing</td><td><code>about</code> holds things.</td></tr>
+        <tr><td><b>subject</b></td><td>thing</td><td><code>of</code> names a thing; <code>about</code> mentions things.</td></tr>
         <tr><td><b>residence</b></td><td>place</td><td>A residence was just a store's places on one machine.</td></tr>
         <tr><td><b>topology</b></td><td>realm</td><td>A topology was a realm whose name table links others.</td></tr>
         <tr><td><b>boundary list</b></td><td>the limits</td><td><i>Boundary</i> means when a vertex ticks.</td></tr>

@@ -1,7 +1,7 @@
 <section class="panel" id="things" role="tabpanel" aria-labelledby="t-things">
-  <div class="panel-head"><h2>Things and <code>about</code></h2><button class="toggle-all" type="button">Unfold all</button></div>
+  <div class="panel-head"><h2>Things, <code>of</code> and <code>about</code></h2><button class="toggle-all" type="button">Unfold all</button></div>
   <p class="callout"><b>Design proposals:</b> these examples include unsupported grammar and future product surfaces. <code>protocol/spec.md</code> defines accepted specs. Examples are not conformance fixtures.</p>
-  <p class="gist">Records are the only thing stored. A <b>thing</b> is what a record is about. Identity moves out of the fold and into the record, through <code>about</code> on the envelope. Tested against every case so far, it holds with no new machinery and six refinements.</p>
+  <p class="gist">Records are the only thing stored. A <b>thing</b> is what a record is an emit of. Identity moves out of the fold and into the record, through <code>of</code> on the envelope; <code>about</code> names what a record mentions. Tested against every case so far, it holds with no new machinery and six refinements.</p>
   <p><span class="pill p-ok">layer closed</span> Composition needs shared thing identity when a vertex reads several stores. It closed on three more decisions:</p>
   <ul>
     <li><b>Promotion carries its anchor</b> verbatim when the target store lacks it. Across realms a natural key is content, not a reference (<code>svc:auth@corp-prod</code> says something), so it crosses only by bridge. A public store is a standing bridge, which is how <code>url:</code> keys meet across realms (see the web annotation walk in <a href="#horizons/h-web" data-tab="horizons" data-sub="h-web">Horizons</a>).</li>
@@ -14,7 +14,7 @@
     <thead><tr><th></th><th>What it is</th><th>Examples</th><th>Identity</th><th>Who reads its lineage</th></tr></thead>
     <tbody>
       <tr><td><b>Record</b></td><td>an immutable claim; the only thing stored</td><td>log snippet, RSS entry, prose save, tick</td><td>content hash</td><td>none: a record is a point</td></tr>
-      <tr><td><b>Thing</b></td><td>what records are <i>about</i></td><td>chapter, incident, service, URL, Mara</td><td>an anchoring record, or a natural key</td><td>vertices only</td></tr>
+      <tr><td><b>Thing</b></td><td>what records are <i>of</i></td><td>chapter, incident, service, URL, Mara</td><td>a root record, or a natural key</td><td>vertices only</td></tr>
       <tr><td><b>Primitive</b></td><td>observer or store lineage</td><td>observer, store</td><td><code>*-anchor</code> lineage</td><td>future standing code</td></tr>
     </tbody>
   </table></div>
@@ -47,14 +47,14 @@
     </div>
     <figcaption>In the earlier prototype, a vertex picked a payload field (<code>Upsert key="topic"</code>). Two facts were related only because their strings happened to match. Now the emitter states the thing. Payload-field grouping remains proposed grammar, not implemented LatestBy behavior.</figcaption>
   </figure>
-  <p><code>about</code> is the emitter's <b>claim</b> ("this is about r:x1"). A fold key is the vertex's <b>question</b> ("group these by host"). Both stay. <code>about</code> carries typed references. The design uses anchoring record ids, natural keys and named system objects. A vertex reference names its spec hash.</p>
+  <p><code>of</code> is the emitter's <b>claim</b> ("this is an emit of r:x1"). A fold key is the vertex's <b>question</b> ("group these by host"). Both stay. <code>of</code> carries one typed reference and <code>about</code> a set of them. The design uses anchoring record ids, natural keys and named system objects. A vertex reference names its spec hash.</p>
 
   <h3>Case: a chapter, in facets</h3>
   <figure>
     <div class="fig">
       <svg class="dg" viewBox="0 0 400 256" role="img" aria-label="Chapter-start anchors r:a1. Prose p2 replaces p1; two concurrent p3 saves both replace p2. Titles and mentions form separate chains. Mentions refer to Mara r:c1. Notes n1 to n3 accumulate. The proposed chapter view shows facets and the prose fork.">
         <rect class="box-amb" x="8" y="74" width="100" height="44" rx="9"/><text x="58" y="92" text-anchor="middle" class="s b">chapter-start</text><text x="58" y="107" text-anchor="middle" class="xs">r:a1</text>
-        <text x="58" y="136" text-anchor="middle" class="xs ta">every record:</text><text x="58" y="150" text-anchor="middle" class="xs ta">about r:a1</text>
+        <text x="58" y="136" text-anchor="middle" class="xs ta">every record:</text><text x="58" y="150" text-anchor="middle" class="xs ta">of r:a1</text>
         <line class="ln-acc" x1="122" y1="39" x2="122" y2="169"/>
         <line class="ln-acc" x1="122" y1="39" x2="128" y2="39"/><line class="ln-acc" x1="122" y1="97" x2="128" y2="97"/><line class="ln-acc" x1="122" y1="133" x2="128" y2="133"/><line class="ln-acc" x1="122" y1="169" x2="128" y2="169"/>
         <line class="ln-acc" x1="122" y1="96" x2="111" y2="96" marker-end="url(#ah-acc)"/>
@@ -83,13 +83,13 @@
         <rect class="box" x="294" y="158" width="40" height="22" rx="5"/><text x="314" y="173" text-anchor="middle" class="xs">n3</text>
         <line class="ln" x1="200" y1="184" x2="200" y2="197" marker-end="url(#ah)"/>
         <rect class="box-acc" x="8" y="200" width="384" height="46" rx="9"/>
-        <text x="200" y="219" text-anchor="middle" class="s b">chapter view · LatestBy key=kind over about r:a1</text>
+        <text x="200" y="219" text-anchor="middle" class="s b">chapter view · LatestBy key=kind over of r:a1</text>
         <text x="200" y="236" text-anchor="middle" class="xs">two prose saves share prev p2 → a fork, shown, not hidden</text>
       </svg>
     </div>
-    <figcaption>Each facet is one kind about one thing, emitted whole. Saving prose never copies the title; changing mentions never copies the prose. Notes add up, so they're collected, not chained. The dashed arrow is a reference in the payload, not <code>about</code>: the mentions record is <i>about</i> the chapter and <i>refers to</i> Mara.</figcaption>
+    <figcaption>Each facet is one kind of one thing, emitted whole. Saving prose never copies the title; changing mentions never copies the prose. Notes add up, so they're collected, not chained. The dashed arrow is a reference in the payload, not <code>of</code>: the mentions record is <i>of</i> the chapter and <i>refers to</i> Mara.</figcaption>
   </figure>
-  <p><span class="pill p-ok">holds</span> The fold is LatestBy keyed by kind, once a key may name an envelope field. Renumbering, retitling and splitting a chapter all leave <code>r:a1</code> intact. Diffs inside prose stay out of the model: git and a future blob store compress similar snapshots underneath.</p>
+  <p><span class="pill p-ok">holds</span> The fold is LatestBy keyed by kind, once a key may name an envelope field. That key is proposed: today every facet chain is of <code>r:a1</code>, so their heads are heads of one thing. Renumbering, retitling and splitting a chapter all leave <code>r:a1</code> intact. Diffs inside prose stay out of the model: git and a future blob store compress similar snapshots underneath.</p>
 
   <h3>Case: a homelab incident</h3>
   <figure>
@@ -144,7 +144,7 @@
     </div>
     <figcaption>Duplicates are the expected path, not a failure: three people, three vocabularies, three anchors. Merging them is a claim someone makes, disputable like any other, and each reader's identity vertex decides which claims count. Afterwards all three names resolve to the class through the name tables.</figcaption>
   </figure>
-  <p><span class="pill p-lean">holds, with one new parameter</span> <code>resolve-by=&lt;identity vertex&gt;</code> maps each <code>about</code> to its class before grouping. It's the third state reference, after <code>admitted-by</code> and <code>weight-by</code>, and the DAG rule covers it. This is the only place identity needs state.</p>
+  <p><span class="pill p-lean">holds, with one new parameter</span> <code>resolve-by=&lt;identity vertex&gt;</code> maps each thing reference to its class before grouping. It's the third state reference, after <code>admitted-by</code> and <code>weight-by</code>, and the DAG rule covers it. This is the only place identity needs state.</p>
 
   <h3>The other cases</h3>
   <div class="tbl"><table>
@@ -161,12 +161,12 @@
   <div class="tbl"><table>
     <thead><tr><th>Refinement</th><th>Why</th></tr></thead>
     <tbody>
-      <tr><td><b><code>about</code> holds things; references are payload values that are ids.</b> A set, usually of one.</td><td>A decision about two services folds into both views. The mentions record is about the chapter and refers to Mara: different roles, so different places. Facets take exactly one thing.</td></tr>
+      <tr><td><b><code>of</code> names one thing; <code>about</code> holds the things a record mentions; references are payload values that are ids.</b></td><td>A decision about two services is read in both services' views and heads neither. The mentions record is of the chapter and refers to Mara: different roles, so different places. A record is of exactly one thing.</td></tr>
       <tr><td><b>Later links are records,</b> about the target and referring to the evidence.</td><td>No selection by state; a correction retires the link record, never the evidence.</td></tr>
       <tr><td><b><code>resolve-by</code></b> is the third state reference.</td><td>Identity across anchors is disputed, so it's a fold, read like <code>weight-by</code>.</td></tr>
       <tr><td><b>Natural keys are typed</b>: <code>prefix:value</code>, with normalization declared per prefix in the store.</td><td>Makes <code>url:</code>, <code>host:</code>, <code>svc:</code> comparable without minting.</td></tr>
       <tr><td><b>Only primitives use the reserved <code>*-anchor</code> kinds.</b> Any other thing is anchored by whatever record starts it.</td><td>Keeps the reserved list short; thing kinds stay in user vocabulary.</td></tr>
-      <tr><td><b><code>prev</code> is a general link and a set,</b> and Latest follows it. Two records sharing a <code>prev</code> are a fork; one record naming both heads merges it.</td><td>Prose saves, name records and stances all hit concurrent edits. Following the chain takes clock skew out of "current". Heads are records no successor names in <code>prev</code> for that thing. A whole view retains a record if any thing retains it.</td></tr>
+      <tr><td><b><code>prev</code> is a general link and a set,</b> and Latest follows it. Two records sharing a <code>prev</code> are a fork; one record naming both heads merges it.</td><td>Prose saves, name records and stances all hit concurrent edits. Following the chain takes clock skew out of "current". Heads are records no successor of that thing names in <code>prev</code>, and a <code>prev</code> never crosses things. A whole view retains a record if its thing retains it.</td></tr>
     </tbody>
   </table></div>
 
@@ -177,7 +177,7 @@
     <tbody>
       <tr><td><b>Identifiers</b></td><td>2</td><td>A <b>content hash</b> names records and anchoring records for lineages, stores and things. A vertex hash names its spec and parameters. Prefixes label references. A <b>natural key</b>, <code>prefix:value</code>.</td></tr>
       <tr><td><b>Names</b></td><td>1</td><td>Name records in name tables. Self-name, petname paths and <code>@home</code> are forms of it. Never matched.</td></tr>
-      <tr><td><b>Envelope pointers</b></td><td>4</td><td><code>about</code> · <code>prev</code> · <code>under</code> · <code>erases</code>. Proposed tick payloads carry <code>covers</code>.</td></tr>
+      <tr><td><b>Envelope pointers</b></td><td>5</td><td><code>of</code> · <code>about</code> · <code>prev</code> · <code>under</code> · <code>erases</code>. Proposed tick payloads carry <code>covers</code>.</td></tr>
       <tr><td><b>Vertex state references</b></td><td>3</td><td><code>admitted-by</code> · <code>weight-by</code> · <code>resolve-by</code></td></tr>
       <tr><td><b>Everything else</b></td><td></td><td>A record whose <code>about</code> points at something. Stances point at a record; <code>same-as</code> at two things; vouch, grant, tenure and <code>runs-on</code> at a lineage; name records at what they name.</td></tr>
     </tbody>
@@ -190,7 +190,7 @@
       <tr><td><b>Succession</b></td><td>record → the records it replaces</td><td><code>prev</code></td><td>Latest</td></tr>
     </tbody>
   </table></div>
-  <p>The three families stay separate; blurring them is the <code>owl:sameAs</code> failure. A restated promotion keeps thing identity through <code>about</code>. Its <code>derived-from</code> link records provenance as a payload convention.</p>
+  <p>The three families stay separate; blurring them is the <code>owl:sameAs</code> failure. A restated promotion keeps thing identity through <code>of</code>. Its <code>derived-from</code> link records provenance as a payload convention.</p>
 
   <h3>Discipline in an open store</h3>
   <p>In a semantic store, convention is what keeps a growing store aligned. The future admission design applies policy at read time. Records remain unchanged. Records outside the current policy become visible rejections. A schema-first store must be disciplined from day one; this one can be disciplined as it matures.</p>
@@ -215,7 +215,7 @@ strict    refused: no thing called "auth service"; did you mean auth-svc (r:x1)?
     <li><b>Keys converge on their own.</b> Two agents who write <code>topic:auth-service</code> meet without coordinating. Anchors never collide, so minting on every miss makes duplicates: three anchors for one service in the team case above.</li>
     <li><b>Minting becomes deliberate</b> when a thing must survive a rename or be told apart from a namesake. It comes with a <code>same-as</code> from the key to the new anchor, and every early record joins the anchor's class through <code>resolve-by</code>. No migration.</li>
     <li><b>The start record carries the first name,</b> as an anchor carries a self-name; no separate name record.</li>
-    <li><b>Only <code>about</code> joins.</b> Payload-topic grouping is proposed. A later record can link evidence to a thing through <code>about</code> and a payload reference. <code>resolve-by</code> never reads payloads.</li>
+    <li><b>Only the envelope joins.</b> <code>of</code> names the thing and <code>about</code> what is mentioned. Payload-topic grouping is proposed. A later record can link evidence to a thing through <code>about</code> and a payload reference. <code>resolve-by</code> never reads payloads.</li>
   </ul>
 
   <details class="unfold"><summary>Matching: one equality relation is enough</summary><div class="body">
@@ -246,11 +246,11 @@ strict    refused: no thing called "auth service"; did you mean auth-svc (r:x1)?
   <details class="unfold"><summary>The cases as records and vertices</summary><div class="body">
     <pre style="margin:0;font-family:var(--mono);font-size:13px;background:var(--sunk);padding:12px;border-radius:8px;overflow-x:auto"># the novel
 loops emit chapter-start title="The Lighthouse"                                   # → r:a1
-loops emit chapter-prose text=blob:… --about r:a1 --prev r:p2
-loops emit chapter-mentions characters:='["r:c1"]' ideas:='["r:i9"]' --about r:a1
+loops emit chapter-prose text=blob:… --of r:a1 --prev r:p2
+loops emit chapter-mentions characters:='["r:c1"]' ideas:='["r:i9"]' --of r:a1
 
 { "vertex": "chapter", "param": ["chapter"],
-  "from": [{ "store": "novel", "about": "$chapter" }],
+  "from": [{ "store": "novel", "of": "$chapter" }],
   "fold": { "facets": { "latest-by": "kind", "follow": "prev" },
             "notes":  { "collect": true, "where": { "env.kind": { "is": "chapter-note" } } } } }
 
@@ -260,13 +260,14 @@ loops emit incident-start title="jellyfin stalls"                               
 loops emit incident-evidence refs:='["r:l7"]' --about r:i1
 
 # the team store
-loops emit same-as --about r:x1 --about r:x2                                      # kyle
-loops emit dispute --about r:x2 --about r:x3                                      # director
+loops emit same-as --about r:x1 --about r:x2                                      # kyle → r:s1
+loops emit same-as --about r:x2 --about r:x3                                      # a developer → r:s2
+loops emit dispute --of r:s2 --prev r:s2                                          # director
 
 { "vertex": "identity",
   "note": "The latest stance per pair.",
   "from": [{ "store": "team", "kind": ["same-as", "dispute"] }],
-  "fold": { "pairs": { "latest-by": "about", "follow": "prev" } } }
+  "fold": { "pairs": { "latest-by": "of", "follow": "prev" } } }
 
 { "vertex": "platform-knowledge",
   "from": [{ "store": "team", "kind": ["decision", "note"] }],

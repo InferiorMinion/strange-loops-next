@@ -42,7 +42,7 @@ With the model's SHA-256, an id written from bytes equals the id written from th
 | `latest.set`, `latest.repeats` | `Latest.set_decides`, `Latest.perm`, `Latest.repeats` | the input set decides Latest's whole-reader heads and winner | `fold/latest/*` |
 | `heads.whole-view` | `mem_wholeHeads`, `wholeHeads_sorted`, `wholeHeads_distinct` | every head belongs to some thing; heads occur once per id in content order | `fold/heads/gap15-partial-and-anchor`, `fold/view/gap15-partial-and-anchor`, `fold/latest/gap16-newest-union-head` |
 | `latest.newest` | `Latest.winner_newest`, `Latest.others_ordered` | Latest chooses the newest whole-reader head; its other heads stay in content order | `fold/latest/01-chain`, `fold/latest/gap16-newest-union-head` |
-| `latest.one-thing` | `Latest.oneThing` | Latest equals global LatestBy when every record names exactly the same single thing | `fold/latest/01-chain` |
+| `latest.one-thing` | `Latest.oneThing` | Latest equals global LatestBy when every record is of the same thing | `fold/latest/01-chain` |
 | `numeric.safe-whole` | `Record.num_safe`, `Record.num_number`, `Sum.on_step_missing`, `Max.acc_readable`, `Min.acc_readable` | numeric slots read only safe-whole values; nonwhole values count as unread. An unreadable field leaves `Sum.on`'s sum as it was. `Max.acc` and `Min.acc` read a record exactly when its `n` is a held safe whole number. | `spec/run/gap14-field-types` |
 | `sum.perm` | `Sum.perm` | arrival order doesn't change a sum | `fold/sum/01`, `02` |
 | `sum.repeats` | `Sum.repeats` | a repeated delivery is added again, which is why the read path hands each id over once | `fold/sum/03` |
@@ -77,7 +77,7 @@ Over-head proofs use cached LatestBy state, not merely a cached answer.
 | `heads.set` | `OverHeads.set_decides` | any answer worked out from the heads depends only on the set | `fold/heads/*` |
 | `heads.late` | `OverHeads.late` | a late record folds onto the cached heads of the records folded; a reader folds admitted records, and admission can retract (`admit.late`) | (follows from `heads.set`) |
 | `heads.why` | `Max.cannot_follow_prev` | Max's scalar state cannot maintain the maximum over changing heads | `fold/heads/01`, `02` |
-| `view.no-resurrection` | `LatestBy.view`, `LatestBy.view_head_ids`, `LatestBy.no_false_resurrection` | A view keeps each thing's head ids. A record superseded within a thing is never current there. | `fold/view/*` |
+| `view.no-resurrection` | `LatestBy.view`, `LatestBy.map_fold`, `LatestBy.view_head_ids`, `LatestBy.no_false_resurrection` | A view keeps each thing's head ids. A record superseded within a thing is never current there. Any map that keeps each record's id, `prev` and place in content order keeps the heads, each mapped. | `fold/view/*` |
 | `view.refines` | `Where.eval_view` | a view only loses information: a `where` answer stays or becomes unknown | `fold/select/01` |
 | `result.unread` | `LatestBy.maxHeads_view`, `Acc.select_unread`, `Count.select_unread`, `latestOf_unread`, `collectOf_unread` | A fold does not guess. It counts the records whose test is unknown and the selected records it cannot read. | `fold/view/04`, `fold/select/*`, `spec/run/02`, `spec/run/03` |
 | `result.full` | `Acc.select_full` | when every test answers and every record is readable to the fold, nothing is unread and the result is the plain fold | `fold/select/03` |
@@ -110,14 +110,17 @@ It applies admission to `prev`, then computes per-thing states over admitted rec
   `erases` names an id erases every form of it, whatever that record's kind.
   A form that arrives erased with no such record behind it counts as
   withheld.
-* **Admit.** The reader refuses a record when a held `prev` target shares no thing with it (`prev-unrelated`).
+* **Admit.** The reader refuses a record when a held `prev` target is of a different thing (`prev-unrelated`).
   It also refuses the record when the store forbids replacement of a held target (`prev-not-permitted`).
   Unknown targets do not cause refusal. The rule reads only envelopes;
   step 2 allows everything, and step 3 supplies standing.
-* **Per thing.** A record about several things lives in each. A record about nothing anchors its own thing, named by its id.
-  Unrelated records about nothing never fork each other.
-  A revision names the original id in `about`.
-  Each thing's state is LatestBy over the records about it.
+  A reader does not check `of-missing` or roots: a held record with `prev` and no `of` is of its own id.
+* **Per thing.** A record is of exactly one thing: what `of` names, read as written, or without `of` its own id.
+  A reader never resolves `of` through another record.
+  A root, with no `of` and no `prev`, starts the thing named by its id; unrelated roots never fork each other.
+  A revision names the root's id in `of`.
+  Each thing's state is LatestBy over the records of it.
+  `about` only mentions things and never makes a head.
 
 | Law | Theorem | Says | Vectors |
 |---|---|---|---|
@@ -125,15 +128,18 @@ It applies admission to `prev`, then computes per-thing states over admitted rec
 | `settle.keeps` | `settle_keeps` | a payload any place holds is kept unless erased | `realm/01`, `02` |
 | `settle.erased` | `settle_erased` | once a record naming it in `erases` is held, every form of its target is erased | `realm/03`, `09` |
 | `admit.set` | `admit_same`, `refusalOf_none` | admission depends only on the set; a record is refused exactly when it isn't entitled to its `prev` | `realm/04` |
-| `admit.no-cross` | `admit_no_cross` | Each held `prev` target shares a thing with its admitted successor and permits replacement. Readers admit unknown targets because they cannot judge them. | `realm/04`, `08` |
-| `admit.late` | `perThing_cannot_follow_admit` | Admission isn't monotone in arrival. A record admitted while its `prev` target is unknown is refused when the target arrives about another thing, and the records it superseded are current again. No step from the admitted records' per-thing state follows that, so a caching reader keeps what such a revision supersedes. | (arrival, not a set: none) |
-| `admit.grows` | `admit_append_unnamed`, `stateIn_late_unnamed` | When no held record names the arriving record in `prev`, every earlier admission stands, and each thing's state is the cached one, stepped by the arrival if it is admitted and about that thing. | (arrival, not a set: none) |
+| `admit.no-cross` | `admit_no_cross`, `admit_same_thing` | Each held `prev` target is of its admitted successor's thing and permits replacement, so `prev` never crosses things. Readers admit unknown targets because they cannot judge them. | `realm/04`, `08`, `10`, `11` |
+| `admit.late` | `perThing_cannot_follow_admit` | Admission isn't monotone in arrival. A record admitted while its `prev` target is unknown is refused when the target arrives of another thing, and the records it superseded are current again. No step from the admitted records' per-thing state follows that, so a caching reader keeps what such a revision supersedes. | (arrival, not a set: none) |
+| `admit.grows` | `admit_append_unnamed`, `stateIn_late_unnamed` | When no held record names the arriving record in `prev`, every earlier admission stands, and each thing's state is the cached one, stepped by the arrival if it is admitted and of that thing. | (arrival, not a set: none) |
+| `thing.one` | `isOf_iff`, `isOf_unique`, `stateIn_heads_thing`, `heads_one_thing` | A record is of exactly one thing, what `of` names or else its own id. A thing's heads are records of it, so a record heads at most one thing. | `realm/06`, `11`, `fold/latest-by/15` |
 | `thing.local` | `stateIn_local`, `perThing_set_decides` | For a fixed admitted set, a thing's state depends only on its records. The set decides per thing. | `realm/04`–`08`, `fold/latest-by/*` |
-| `thing.slice` | `stateIn_slice`, `slice_needs_erasers`, `slice_needs_targets` | A reader holding part of the set gets a thing's state exactly when its part is a slice. A slice holds every form of the records about the thing, every record that erases one of them, and every record one of them names in `prev`. Only the envelopes of the last two are read. Neither addition can be dropped. | (a part of a set: none yet) |
+| `thing.mentions` | `stateIn_about`, `thingsOf_about` | Changing only what records mention leaves the things and each thing's state: the same `prev` bookkeeping and the same heads, each with its new `about`. | `realm/05`, `10`, `fold/latest-by/14`, `spec/run/05`, `15` |
+| `thing.slice` | `stateIn_slice`, `slice_needs_erasers`, `slice_needs_targets` | A reader holding part of the set gets a thing's state exactly when its part is a slice. A slice holds every form of the records of the thing, every record that erases one of them, and every record one of them names in `prev`. Only the envelopes of the last two are read. Neither addition can be dropped. | (a part of a set: none yet) |
 | `view.no-resurrection` (things) | `admit_view`, `stateIn_view`, `stateIn_no_false_resurrection` | With an envelope-only admission rule, a view admits the same records and keeps each thing's heads in view form. A superseded record never becomes current within that thing. | `fold/view/*`, `spec/run/03` |
 
 Writing checks `prev` too: you can only replace what you hold. `emit` refuses an unheld `prev` target outside the batch (`prev-unknown`).
-It also refuses a target with no shared thing (`prev-unrelated`).
+It refuses an `of` naming a held record that is not a root (`of-not-root`).
+It also refuses a `prev` target of a different thing (`prev-unrelated`).
 
 ## The spec (`model/Laws/Spec.lean`, `model/Laws/Parse.lean`)
 
@@ -144,15 +150,16 @@ against, and the refusals in the order they are checked. These are its laws.
 It has three answers.
 A map holds when every test holds. An `env.<field>` test reads the written envelope and always answers.
 A payload-field test answers unknown when the reader lacks the payload.
-A record about nothing has an empty `env.about`, though it anchors a thing
-named by its own id. `about`, `prev`, `under` and `erases` are sets; `under` has at most one member.
+`env.of` reads `of` as written, so a root, of its own id, has no `env.of`.
+`about`, `prev`, `under` and `erases` are sets; `of` and `under` have at most one member.
 `is` tests membership, `not` tests nonmembership, and `present` tests whether the set holds anything. Time tests read `emitted` and `occurred` by meaning.
 `is` asks for equal spans, regardless of spelling.
 `at-least` and `below` compare starts; absent `occurred` passes neither.
 
-`from` chooses by thing: `"about": "t"` takes records about `t`.
-A record about nothing belongs to its own id's thing.
-Thus `"about": "r:X"` takes X and its revisions.
+`from` chooses by thing or by mention: `"of": "t"` takes the records of `t`.
+A root is of its own id's thing, so `"of": "r:X"` takes X and its revisions.
+`"about": "t"` takes the records whose `about` names `t`, as written.
+A source with both takes the records that pass both.
 
 Accumulating slots select, then fold.
 A numeric fold (sum, min, max) counts a selected record as unread when its payload is not held.
@@ -181,13 +188,13 @@ pinned by the vectors rather than proved.
 |---|---|---|---|
 | `where.complements` | `Op.not_is`, `Op.absent_present`, `Op.atLeast_below`, `Op.atLeast_below_time` | `not` complements `is`; `absent` complements `present`. With a held safe whole value and a numeric bound, exactly one of `at-least` and `below` holds. Present times obey the corresponding time law. | `spec/run/06`, `07` |
 | `where.typed` | `Op.ordered_like_only`, `parseOp_ok_iff`, `parseArg_ok_iff`, `parseBound_ok_iff` | `at-least` and `below` compare like numeric or time values only. A test parses exactly when its argument fits its field (`Op.Fits`). Rendering preserves the written test. | `spec/run/07`, `spec/parse/22`–`37` |
-| `where.fields` | `Cond.text_is`, `Cond.about_is`, `Cond.id_is`, `Cond.set_present`, `Cond.emitted_is`, `Cond.emitted_atLeast`, `Cond.emitted_below` | `kind` and `observer` read as text. `about`, `prev`, `under` and `erases` test members (`is`) and nonemptiness (`present`). `emitted` reads as its own instant. `occurred` is `where.time`'s | `spec/run/08`, `09` |
+| `where.fields` | `Cond.text_is`, `Cond.about_is`, `Cond.of_is`, `Cond.id_is`, `Cond.set_present`, `Cond.emitted_is`, `Cond.emitted_atLeast`, `Cond.emitted_below` | `kind` and `observer` read as text. `about`, `of`, `prev`, `under` and `erases` test members (`is`) and nonemptiness (`present`); `of` as written, absent on a root. `emitted` reads as its own instant. `occurred` is `where.time`'s | `spec/run/08`, `09` |
 | `where.time` | `Cond.occurred_is`, `Cond.occurred_atLeast`, `Cond.occurred_below`, `Cond.occurred_missing`, `Cond.time_meaning`, `Op.time_arg_meaning` | Envelope-time tests read meaning, not record or argument spelling. `is` compares spans. `at-least` and `below` compare starts. A record without `occurred` passes neither bound. | `spec/run/06`, `08` |
 | `where.total` | `Cond.eval_here`, `Cond.eval_envelope` | a test answers for every record whose payload is here, and an envelope test for every record, withheld or not | every `spec/run` vector |
 | `where.set` | `Cond.all_perm` | the tests of a `where` map can come in any order | (by construction) |
 | `view.refines` (where) | `Cond.eval_view`, `Cond.all_view`, `Tri.and_refines` | under a view a test, and a `where` map, keeps its answer or becomes unknown | `spec/run/02` |
 | `spec.select` | `Spec.select_view`, `Source.takes_view`, `Spec.mem_select` | selection reads only envelopes, so a view selects the same records. `Spec.select` holds exactly the input records the spec takes; `Spec.run` does not call it. | `spec/run/*` |
-| `spec.from-thing` | `Source.takes_about` | `from`'s `about` takes exactly the records about the thing, and a record about nothing is about its own id and nothing else | `spec/run/09` |
+| `spec.from-thing` | `Source.takes_of`, `Source.takes_about` | `from`'s `of` takes exactly the records of the thing, a root by its own id. `from`'s `about` is a mention test: it takes exactly the records whose `about` names the thing, as written. | `spec/run/09`, `14` |
 | `spec.set` | `Slot.set_decides`, `Spec.set_decides` | Every slot of every spec gives the same value for the same distinct-id set, with each id consumed once. | `spec/run/*` |
 | `spec.after-supersession` | `latestOf_heads`, `collectOf_heads`, `Spec.view_state` | A slot over heads returns only heads retained in at least one thing, selected by its source, and passing every test. If the store's replacement rule reads only envelopes, a view keeps each thing's heads. Each head then shows only what the view shows. | `spec/run/03`, `04`, `08` |
 | `spec.parse` | `Spec.ofJson_fits`, `Spec.ofJson_toJson`, `Spec.reparse`, `Spec.parsed_iff`, `Spec.ofJson_repeat`, `Json.repeatAt_none` | The parser gives exactly fitting specs, each with a source. Parsed forms parse back to themselves. Repeated keys are refused at `Json.repeatAt`'s path. Specs without repeats never receive that refusal. | `spec/parse/*` |
@@ -197,8 +204,8 @@ pinned by the vectors rather than proved.
 | Law | Theorem | Says | Vectors |
 |---|---|---|---|
 | `batch.meaning` | `Meaning.unique` | An acyclic batch has at most one meaning. This does not prove resolver correctness. | `batch/01`–`03` |
-| `batch.refuse` | (by construction) | Duplicate, unknown and cyclic labels are refused. So are drafts refused by `write`, unheld `prev` targets and targets with no shared thing. | `batch/10`–`17` |
-| `batch.refuse-order` | `envelopeKeysProblem_set`, `firstRefusal_set`, `writeProblem_codes` | Across the batch: shape, then labels, then writing, then `prev-unknown`, then `prev-unrelated`. Raw shape checks every envelope's keys before any draft value, label or salt is decoded. Shape depends only on keys, and writing's priority only on the refusal set; stage order is by construction, pinned by raw-input rotations. | `batch/15`, `16`, `18`–`22` |
+| `batch.refuse` | (by construction) | Duplicate, unknown and cyclic labels are refused. So are drafts refused by `write`, unheld `prev` targets, an `of` naming a held record that is not a root, and `prev` targets of another thing. | `batch/10`–`17`, `27`–`31` |
+| `batch.refuse-order` | `envelopeKeysProblem_set`, `firstRefusal_set`, `writeProblem_codes` | Across the batch: shape, then labels, then writing, then `prev-unknown`, then `of-not-root`, then `prev-unrelated`. Raw shape checks every envelope's keys before any draft value, label or salt is decoded. Shape depends only on keys, and writing's priority only on the refusal set; stage order is by construction, pinned by raw-input rotations. | `batch/15`, `16`, `18`–`22` |
 
 `gen` checks batch vectors across draft rotations and reversed `prev` sets.
 Accepted variants must give the same records, one per draft, satisfying `Meaning`.
@@ -229,6 +236,7 @@ The public boundary is `read`: it checks the base, then the text.
 | `record.erasure` | `erase_keeps_id`, `erase_idem` | forgetting the opening never changes the id | `record/08`, every `erased_line` |
 | `record.commit` | `opening_checks` | a record's own salt and payload open its commitment | every stored record vector |
 | `record.sets` | `id_sets`, `canonSet_eq` | reordering or repeating `about`, `prev` or `erases` never changes the id | `record/02`, `03`, `11` |
+| `record.of` | `Env.problem_of` | `of` holds at most one typed reference and is left out when absent, so a record without it keeps its bytes and id. Only a root leaves it out: an envelope the writer accepts with `prev` states `of`. | `record/14`, `41`, `44`, `batch/27` |
 | `record.member-order` | `canon_member_order` | reordering an object's members never changes its canonical bytes | `record/04` |
 | UTF-16 order | `lexLt_trans`, `lexLt_total`, `utf16_inj` | member and set order is a strict total order on distinct strings | every record vector |
 | `record.unicode` | `ofUtf16?_eq_some_iff`, `ofUtf16?_utf16`, `ofUtf16?_lone_high`, `ofUtf16?_lone_high_end`, `ofUtf16?_lone_low` | UTF-16 code units read as text exactly when some text writes them. A string's own code units read back as that string, so no string the model canonicalizes or hashes holds a lone surrogate. A high surrogate without a low one after it, and a low one without a high one before it, are no text. | `record/d2-lone-high`, `record/d2-lone-low`, `record/d2-low-then-high`, `record/d2-high-then-escape`, `record/d2-member-name`, `record/d2-paired-escape` |

@@ -7,7 +7,8 @@ import { base32, base32Decode, fixedBytes, canonical, checkEnvelopeKeys, seal, w
 import { readVector } from "../answers.mjs";
 import { parseSpecText } from "./spec.mjs";
 import { resolveBatch } from "./batch.mjs";
-import { heads, latest, sum, min, max } from "./fold.mjs";
+import { heads, latest, latestBy, sum, min, max } from "./fold.mjs";
+import { admit } from "./realm.mjs";
 import { parse, edit, diff, apply, baseProblem, render } from "./lens.mjs";
 import { lensEdit } from "./scenario.mjs";
 import { check as checkLens } from "./check-lens.mjs";
@@ -15,23 +16,39 @@ import { runSpec } from "./spec.mjs";
 import { step } from "./scenario.mjs";
 
 const id = (n) => `r:${base32(Uint8Array.from({ length: 32 }, () => n))}`;
-const record = (n, about, prev = []) => ({
-  id: id(n), kind: "note", about, prev, emitted: `2020-01-01T00:00:0${n}Z`, n,
+const record = (n, of, prev = []) => ({
+  id: id(n), kind: "note", ...(of !== undefined && { of }), prev, emitted: `2020-01-01T00:00:0${n}Z`, n,
 });
 const spec = { from: [{ store: "." }], fold: { count: { count: true } } };
 
 test("latest uses the union of per-thing heads", () => {
-  const a = record(1, ["task:a", "task:b"]);
-  const b = record(2, ["task:a"], [a.id]);
-  assert.deepEqual(heads([a, b]).map((r) => r.id), [b.id, a.id]);
-  assert.deepEqual(latest([a, b]), { winner: b.id, others: [a.id] });
+  const a = record(1, "task:a");
+  const b = record(2, "task:b");
+  const c = record(3, "task:a", [a.id]);
+  assert.deepEqual(heads([a, b, c]).map((r) => r.id), [c.id, b.id]);
+  assert.deepEqual(latest([a, b, c]), { winner: c.id, others: [b.id] });
   assert.deepEqual(latest([]), { winner: null, others: [] });
 });
 
+// D8: one thing per record, `of` as written or the record's own id; `about`
+// only mentions. A record about two things heads neither; a revision without
+// `of` is of its own id, so it heads that and leaves its target's thing alone.
+test("a record is of one thing, and about never makes a head", () => {
+  const a = { ...record(1), about: ["task:a", "task:b"] };
+  const b = { ...record(2, a.id, [a.id]), about: ["task:a"] };
+  const c = { ...record(3, undefined, [a.id]), about: ["task:b"] };
+  assert.deepEqual(Object.keys(latestBy([a, b])), [a.id]);
+  assert.deepEqual(latestBy([a, b])[a.id].heads, [b.id]);
+  assert.deepEqual(Object.keys(latestBy([a, c])).sort(), [a.id, c.id].sort());
+  assert.deepEqual(heads([a, b, c]).map((r) => r.id), [c.id, b.id]);
+  // The reader refuses c: its prev names a held record of another thing.
+  assert.deepEqual(admit([a, b, c]).refused, [{ id: c.id, code: "prev-unrelated" }]);
+});
+
 test("spec and scenario admit once against all settled records", () => {
-  const a = record(1, ["task:a"]);
-  const b = record(2, ["task:b"], [a.id]);
-  const c = record(3, ["task:a"], [b.id]);
+  const a = record(1, "task:a");
+  const b = record(2, "task:b", [a.id]);
+  const c = record(3, "task:a", [b.id]);
   const records = [a, b, c];
   assert.deepEqual(runSpec(spec, records).count, { value: 1, unread: 0 });
   const result = step(spec, "task:a", records);
@@ -111,6 +128,33 @@ test("canonical UTC instants and envelope key priority", () => {
   assert.deepEqual(resolveBatch([{ ...draft, env: { ...env, about: ["@missing"] } }], []), { refused: "envelope-field-unknown" });
 });
 
+// D8: `of` is a known envelope key, so only a truly unknown key is a shape
+// refusal, and that still comes before `of`'s value is read. Its value is one
+// typed reference as text: a list holding one would pass a pattern test as
+// its string form, so it is refused by type.
+test("of is a known envelope key, checked by value after the shape", () => {
+  const root = { ...writerEnv, of: "t:x" };
+  assert.equal(problem(root), null);
+  assert.deepEqual(Object.keys(JSON.parse(seal(root, writerSalt, {}, writerSeed).line).env).sort(), ["emitted", "kind", "observer", "of"]);
+  assert.notEqual(seal(root, writerSalt, {}, writerSeed).id, seal(writerEnv, writerSalt, {}, writerSeed).id);
+  for (const of of [5, ["t:x"], null, "", "x", "@label"]) {
+    assert.equal(problem({ ...writerEnv, of }), "of-not-typed", JSON.stringify(of));
+    assert.throws(() => seal({ ...writerEnv, of, extra: 1 }, writerSalt, {}, writerSeed), { message: "envelope-field-unknown" });
+  }
+  const guarded = { ...writerEnv, get of() { throw new Error("value read"); }, extra: 1 };
+  assert.throws(() => seal(guarded, writerSalt, {}, writerSeed), { message: "envelope-field-unknown" });
+  // Order: about, then of, then prev; of-missing after erases.
+  assert.equal(problem({ ...writerEnv, about: ["x"], of: "x" }), "about-not-typed");
+  assert.equal(problem({ ...writerEnv, of: "x", prev: ["x"] }), "of-not-typed");
+  assert.equal(problem({ ...writerEnv, prev: [id(1)], erases: ["x"] }), "erases-not-record-id");
+  assert.equal(problem({ ...writerEnv, prev: [id(1)] }), "of-missing");
+  assert.equal(problem({ ...writerEnv, of: id(1), prev: [id(1)] }), null);
+  // A batch: of-missing is a writer code, ranked before the salt.
+  const draft = (env, salt = base32(writerSalt)) => ({ env, salt, payload: {} });
+  assert.deepEqual(resolveBatch([draft({ ...writerEnv, prev: [id(1)] }, base32(new Uint8Array(15)))], [{ id: id(1), prev: [] }]), { refused: "of-missing" });
+  assert.deepEqual(resolveBatch([draft({ ...writerEnv, of: "@nobody" })], []), { refused: "label-unknown" });
+});
+
 test("raw shape precedes every variant value, batch label and seed", () => {
   const unread = { get kind() { throw new Error("value read"); } };
   const unknown = { ...writerEnv, extra: true };
@@ -175,7 +219,7 @@ test("native canonicalization still handles all 4000 standards independently of 
 });
 
 test("numeric folds read safe whole values only", () => {
-  const records = [1.0, 1.5, 2 ** 53, "2", true].map((n, i) => ({ ...record(i + 1, ["task:a"]), n }));
+  const records = [1.0, 1.5, 2 ** 53, "2", true].map((n, i) => ({ ...record(i + 1, "task:a"), n }));
   for (const fold of [sum, min, max]) assert.deepEqual(fold(records), { value: 1, unread: 4 });
 });
 
@@ -253,7 +297,7 @@ test("lone surrogates are refused by name before hashing, in values, member name
       assert.throws(() => commitOf(writerSalt, payload), refused);
     }
     for (const env of [{ ...writerEnv, kind: s }, { ...writerEnv, observer: "o:" + s }, { ...writerEnv, about: ["t:" + s] },
-      { ...writerEnv, occurred: s }, { ...writerEnv, under: s }, { ...writerEnv, prev: [s] }, { ...writerEnv, erases: [s] }]) {
+      { ...writerEnv, of: "t:" + s }, { ...writerEnv, occurred: s }, { ...writerEnv, under: s }, { ...writerEnv, prev: [s] }, { ...writerEnv, erases: [s] }]) {
       assert.throws(() => seal(env, writerSalt, {}, writerSeed), refused);
       assert.throws(() => writeText(env, writerSalt, "{}", writerSeed), refused);
       assert.throws(() => idOf(env, "h:x"), refused);
@@ -262,7 +306,7 @@ test("lone surrogates are refused by name before hashing, in values, member name
     }
     assert.deepEqual(resolveBatch([{ env: writerEnv, salt: base32(writerSalt), payload: { a: [s] } }], []), { refused: "string-not-unicode" });
     assert.deepEqual(resolveBatch([{ label: "@" + s, env: writerEnv, salt: base32(writerSalt), payload: {} }], []), { refused: "string-not-unicode" });
-    assert.deepEqual(resolveBatch([{ env: writerEnv, salt: base32(writerSalt), payload: {} }], [{ id: id(1), about: ["t:" + s] }]), { refused: "string-not-unicode" });
+    assert.deepEqual(resolveBatch([{ env: writerEnv, salt: base32(writerSalt), payload: {} }], [{ id: id(1), of: "t:" + s, prev: [] }]), { refused: "string-not-unicode" });
     // A vector is Unicode throughout, the members no implementation reads included.
     for (const vector of [{ layer: "fold/count", input: { orders: [[]] }, expect: s }, { layer: "x", input: {}, note: { [s]: 0 } }]) {
       assert.throws(() => readVector(JSON.stringify(vector)), /lone surrogate/);
@@ -318,7 +362,7 @@ test("a number past binary64's range is the writer's number refusal, in its usua
   const draft = (payload, env = writerEnv) => ({ env, salt: base32(writerSalt), payload });
   assert.deepEqual(resolveBatch([draft({ n: Infinity })], []), { refused: "number-out-of-range" });
   assert.deepEqual(resolveBatch([draft(-Infinity), draft({}, { ...writerEnv, kind: "" })], []), { refused: "kind-empty" });
-  assert.deepEqual(resolveBatch([draft(Infinity, { ...writerEnv, prev: [id(9)] })], []), { refused: "number-out-of-range" });
+  assert.deepEqual(resolveBatch([draft(Infinity, { ...writerEnv, of: id(9), prev: [id(9)] })], []), { refused: "number-out-of-range" });
 });
 
 // D4: a fixture's signing seed is exactly 32 bytes, read once the record is written.

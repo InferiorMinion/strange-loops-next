@@ -15,14 +15,16 @@ hold into one set:
   place can blank a payload by claiming erasure, and erasure sticks once the
   erasing record is held.
 * **Admit.** `prev` is succession within a thing. A record whose `prev` names
-  a held record it shares no thing with (`prev-unrelated`), or one the store's
+  a held record of a different thing (`prev-unrelated`), or one the store's
   rule says it may not replace (`prev-not-permitted`), is refused. The rule is
   a parameter that reads only envelopes; step 2 allows everything.
-* **Per thing.** Each thing's state is LatestBy over the records about it,
-  over everything the reader holds, before any vertex selects. A record about
-  several things lives in each. A record about nothing anchors a thing of its
-  own, named by its id; a revision of it is about that id. Supersession is a
-  fact about the store, not about the question.
+* **Per thing.** A record is an emit of exactly one thing, its envelope's
+  fact: what `of` names, read as written, or without `of` the record's own id.
+  A root, with no `of` and no `prev`, starts a thing named by its id; a
+  revision of it states that id in `of`. Each thing's state is LatestBy over
+  the records of it, over everything the reader holds, before any vertex
+  selects. `about` only mentions things and never makes a head. Supersession
+  is a fact about the store, not about the question.
 -/
 
 namespace Loops
@@ -59,8 +61,8 @@ def Forms (xs : List Record) : Prop :=
 def EnvOnly (may : Record → Record → Bool) : Prop :=
   ∀ a a' b b', SameEnvelope a a' → SameEnvelope b b' → may a b = may a' b'
 
-/-- Every held record `r` names in `prev` shares a thing with it, and the
-store's rule lets `r` replace it. -/
+/-- Every held record `r` names in `prev` is of `r`'s thing, and the store's
+rule lets `r` replace it. -/
 def entitled (may : Record → Record → Bool) (xs : List Record) (r : Record) : Bool :=
   r.prev.all fun p => xs.all fun q => q.id != p || (shares r q && may r q)
 

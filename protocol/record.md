@@ -13,7 +13,8 @@ vectors in `vectors/record/`.
 | `observer` | yes | a typed reference (`prefix:value`), usually a lineage id `sl:…` |
 | `emitted` | yes | the observer's now: a canonical UTC instant |
 | `occurred` | no | the claimed past: a span, below |
-| `about` | no | a set of typed references |
+| `about` | no | a set of typed references: the things it mentions |
+| `of` | no | a typed reference: the one thing it is an emit of |
 | `prev` | no | a set of record ids this one replaces |
 | `under` | no | the record id of the grant it acts on |
 | `erases` | no | a set of record ids whose payloads this one erases |
@@ -30,26 +31,34 @@ vectors in `vectors/record/`.
 * **`occurred`** is a span of time. Its grammar is below.
 * **Sets** (`about`, `prev`, `erases`) have one canonical form: sorted by UTF-16 code
   units, repeats removed, and left out when empty.
+* **`of`** holds one typed reference, a record id or a natural key such as `task:42`.
+  Like `occurred` and `under`, it is left out when absent, so a record without it keeps its bytes and id.
+  Only a root leaves it out: a root has no `of` and no `prev`.
+  A record with `prev` states `of` (`of-missing`).
 
 The envelope reader refuses fields outside this table.
 Fields the core does not read belong in the payload; otherwise the id would silently omit them.
 
 The envelope reader uses these refusal codes: `envelope-field-unknown`, `kind-empty`,
 `observer-not-typed`, `emitted-not-rfc3339`, `occurred-not-span`,
-`about-not-typed`, `prev-not-record-id`, `under-not-record-id`,
-`erases-not-record-id`.
+`about-not-typed`, `of-not-typed`, `prev-not-record-id`, `under-not-record-id`,
+`erases-not-record-id`, `of-missing`.
 It checks them in that order.
+`of-missing` comes last: it reads `prev` and `of` together, after each has its own check.
 Raw shape comes first: inspect all envelope keys before decoding any envelope value, label or salt.
 An unknown key gives one top-level `envelope-field-unknown` refusal, including when another envelope has malformed values.
 Text comes second: every string and member name is Unicode scalar values.
 A lone UTF-16 surrogate, in a value or a member name, is refused with `string-not-unicode`.
 This check follows raw shape and precedes every check from `kind-empty` on, including the salt.
-For a batch, the stages are shape, then labels, then writing, then `prev-unknown`, then `prev-unrelated`.
+For a batch, the stages are shape, then labels, then writing, then `prev-unknown`, then `of-not-root`, then `prev-unrelated`.
 A batch given as values that can hold a lone surrogate checks text after shape and before labels.
 The typed writer starts at `kind-empty`; its envelope type cannot contain unknown fields.
 Several equivalent envelope variants remain valid when every variant passes shape checks.
 
 The reader settles forms before admission checks `prev`.
+Admission refuses a record when a held `prev` target is of a different thing (`prev-unrelated`).
+A reader does not check `of-missing` or roots on what it holds.
+A record with `prev` and no `of` is of its own id, so a held `prev` target is of another thing and admission refuses the record.
 A held record applies `erases` even when admission refuses its `prev`.
 The reader applies `erases` without reading the eraser's payload.
 This rule does not establish signature validity or authority.
@@ -63,8 +72,8 @@ This array order does not change head content order.
 Any record may erase, whatever its kind.
 The envelope field alone carries the meaning.
 Every reader applies it without needing the eraser's payload. A revision can erase what it
-replaces (`prev: [r:X], erases: [r:X]`). Targets don't go in `about`:
-`about: [r:X]` names the thing X anchors, which holds X's revisions too.
+replaces (`of: r:X, prev: [r:X], erases: [r:X]`).
+Targets don't go in `about`: `about: [r:X]` only mentions X.
 
 Writing checks the envelope, then salt length (`salt-not-16-bytes`) and repeated payload members (`member-duplicate`).
 It then checks nonfinite or out-of-range payload numbers (`number-out-of-range`).
@@ -72,10 +81,31 @@ Every number must have magnitude at most 2^53 − 1, whole or not.
 A number spelling past binary64's range is such a number: it stays a number until this last check.
 No reader refuses it earlier or under another name.
 A batch writes each record through the same checks.
+A draft in a batch may name another draft by its label in `about`, `of` or `prev`.
+The writer then checks what each record names, across the whole batch.
+A `prev` target must be in the batch or the store (`prev-unknown`).
+An `of` that names a record the writer holds, in the batch or the store, must name a root (`of-not-root`).
+A `prev` target must be of the record's thing (`prev-unrelated`).
+A reader checks only the last, against the records it holds, as admission above.
 
 The whole order, for a record given as an envelope, a salt and a payload:
 `envelope-field-unknown`, `string-not-unicode`, the envelope codes from `kind-empty`,
 `salt-not-16-bytes`, `member-duplicate`, `number-out-of-range`.
+
+## Things
+
+A record is an emit of exactly one thing.
+That thing is what `of` names, read as written, or, without `of`, the record's own id.
+A root starts the thing named by its id; a revision of it states that id in `of`.
+A natural key in `of` names a thing before any record of it is held.
+Two writers who emit of the same key emit of one thing.
+A reader never resolves `of` through another record, so a record's thing is a fact of its own envelope.
+`latest-by`, per-thing state, admission and whole-view heads read this thing.
+
+`about` names the things a record mentions.
+It never makes a head and never says what a record is an emit of.
+`where` and `collect` read it, so everything said about a thing is still a fold.
+A link between two things is a record whose `about` names both.
 
 ## Occurred
 

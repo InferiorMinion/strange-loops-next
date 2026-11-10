@@ -2,8 +2,9 @@
 //
 //   node design/rethink/ledger-drafts.mjs | loops emit -
 //
-// Each decision is about nothing, so it anchors its own thing: revising one later is
-// `loops emit decision --prev <id> ...`, and `loops about <id>` shows where it stands.
+// Each decision has no `of` and no `prev`, so it is the root of its own thing: revising one
+// later is `loops emit decision --prev <id> ...`, which fills in `of: <id>`, and
+// `loops of <id>` shows where it stands.
 // The page still builds from ledger.json; this is the way out of it, not yet the way in.
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";

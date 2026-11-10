@@ -1,0 +1,22 @@
+{
+  "vector": "43-of-before-prev",
+  "layer": "record",
+  "laws": ["record.refuse"],
+  "source": "model",
+  "input": {
+    "envs": [
+      {
+        "kind": "note",
+        "observer": "sl:u11o5kditce56otma2ksbsnff7n6t0ftgbrmt4sp0j5d1riusfr0",
+        "emitted": "2026-10-21T09:30:00Z",
+        "of": "auth",
+        "prev": ["topic:auth"]
+      }
+    ],
+    "salt": "oru4dgv3j8h34kf6j9k9fhqr40",
+    "payload_text": "{}"
+  },
+  "expect": {
+    "refused": "of-not-typed"
+  }
+}

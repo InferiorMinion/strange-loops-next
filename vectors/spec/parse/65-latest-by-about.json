@@ -1,0 +1,26 @@
+{
+  "vector": "65-latest-by-about",
+  "layer": "spec/parse",
+  "laws": ["spec.parse"],
+  "source": "model",
+  "input": {
+    "spec": {
+      "vertex": "x",
+      "from": [
+        {
+          "store": "."
+        }
+      ],
+      "fold": {
+        "c": {
+          "latest-by": "about",
+          "follow": "prev"
+        }
+      }
+    }
+  },
+  "expect": {
+    "refused": "fold-argument",
+    "path": "fold.c.latest-by"
+  }
+}

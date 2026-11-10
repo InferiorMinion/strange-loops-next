@@ -43,7 +43,8 @@ function reading(field, r) {
   switch (field) {
     case "kind": case "observer": return { type: "text", v: r[field] };
     case "about": case "prev": case "erases": return { type: "set", members: r[field] ?? [] };
-    case "under": return { type: "set", members: r.under === undefined ? [] : [].concat(r.under) };
+    // `of` and `under` hold at most one; `of` is read as written, so a root holds none.
+    case "of": case "under": return { type: "set", members: r[field] === undefined ? [] : [].concat(r[field]) };
     case "emitted": return { type: "time", span: occurredSpan(r.emitted) };
     case "occurred": return { type: "time", span: r.occurred === undefined ? null : occurredSpan(r.occurred) };
     default: throw new Error(`where-invalid: env.${field}`);

@@ -28,7 +28,7 @@ async function* jsonFiles(dir) {
 test('generation is deterministic, varied, balanced, and independent of scheduling', () => {
   const corpus = FAMILIES.flatMap(f => Array.from({ length: 8 }, (_, i) => generate('stable', i, f)));
   assert.equal(createHash('sha256').update(JSON.stringify(corpus)).digest('hex'),
-    'f48cb5fda49b8a2dd2b61f01da5e7b056ef43ad6ec803cfda0e92fc7b053fa39');
+    'd23db9990cfcf5284a6f7cba6f69d8acfb2c945f37f520e6f12bb047be3206e3');
   const layers = new Set();
   for (const family of FAMILIES) {
     const seen = new Set();
@@ -106,6 +106,7 @@ test('scheduled numeric records reach each reader without dependencies', () => {
     for (const r of records) {
       assert.match(r.id, /^r:[0-9a-v]{51}[0g]$/);
       assert.deepEqual(r.about, ['t:numeric']);
+      assert.equal(r.of, 't:numeric');
       assert.deepEqual(r.prev, []);
       assert.equal(r.shown, 'here');
       assert.equal(r.under, undefined); assert.equal(r.erases, undefined);
@@ -119,19 +120,41 @@ test('scheduled numeric records reach each reader without dependencies', () => {
 });
 
 test('scheduled batch references point to held records', () => {
-  for (const index of [4, 5]) {
+  for (const index of [4, 5, 6, 7]) {
     let input;
     for (let seed = 0; seed < 100; seed++) {
       const vector = generate(seed, index, 'batch');
-      if (vector.fuzz.nearMiss === null) { input = vector.input; break; }
+      if (vector.fuzz.nearMiss === (index === 7 ? 'of-not-root-held' : null)) { input = vector.input; break; }
     }
     assert.ok(input);
-    const held = input.held[0], draft = input.drafts[0];
-    assert.match(held.id, /^r:[0-9a-v]{51}[0g]$/);
-    assert.deepEqual(held.about, draft.env.about);
-    if (index === 4) assert.deepEqual(draft.env.prev, [held.id]);
-    else assert.equal(draft.env.under, held.id);
+    const [root, revision] = input.held, draft = input.drafts[0];
+    assert.match(root.id, /^r:[0-9a-v]{51}[0g]$/);
+    assert.deepEqual(root, { id: root.id, prev: [] });
+    if (index >= 6) assert.deepEqual(revision, { id: revision.id, of: root.id, prev: [root.id] });
+    else assert.equal(input.held.length, 1);
+    if (index === 4) assert.deepEqual([draft.env.of, draft.env.prev], [root.id, [root.id]]);
+    if (index === 5) assert.equal(draft.env.under, root.id);
+    if (index === 6) assert.deepEqual([draft.env.of, draft.env.prev], [root.id, [revision.id]]);
+    if (index === 7) assert.equal(draft.env.of, revision.id);
+    // Every other draft states the first draft's thing: its `of`, or the first draft, a root.
+    for (const d of input.drafts.slice(1)) assert.equal(d.env.of, draft.env.of ?? '@d0');
   }
+});
+
+test('generated records carry one thing each, and batches state of with prev', () => {
+  let ofs = 0, roots = 0, crossing = 0, notRoot = 0, missing = 0, unrelated = 0;
+  for (let i = 0; i < 400; i++) {
+    for (const r of generate('of', i, 'realm').input.forms) {
+      if (typeof r.of === 'string') ofs++;
+      if (r.of === undefined && !r.prev.length) roots++;
+      if (r.of === undefined && r.prev.length) crossing++;
+    }
+    const batch = generate('of', i, 'batch');
+    const nearMiss = batch.fuzz.nearMiss;
+    notRoot += nearMiss === 'of-not-root'; missing += nearMiss === 'of-missing'; unrelated += nearMiss === 'prev-unrelated';
+    if (nearMiss === null) for (const d of batch.input.drafts) if (d.env.prev.length) assert.equal(typeof d.env.of, 'string');
+  }
+  for (const n of [ofs, roots, crossing, notRoot, missing, unrelated]) assert.ok(n > 0);
 });
 
 test('structured equality ignores object order and prototypes, but keeps arrays and strings exact', () => {
@@ -187,15 +210,17 @@ test('official gap17 vectors agree', async () => {
   }
 });
 
+// D8: a record is of one thing, and about only mentions. A prev across things
+// leaves the other thing's head standing in the folds; admission refuses it.
 test('adapters align per-thing heads and admission boundaries', async () => {
-  const a = { id: `r:${'a'.repeat(51)}0`, kind: 'note', observer: 'o:x', about: ['t:x', 't:y'],
+  const a = { id: `r:${'a'.repeat(51)}0`, kind: 'note', observer: 'o:x', about: ['t:x', 't:y'], of: 't:y',
     prev: [], emitted: '2024-01-01T00:00:00Z', value: '', n: 9 };
-  const b = { ...a, id: `r:${'b'.repeat(51)}0`, about: ['t:x'], prev: [a.id], n: 1 };
+  const b = { ...a, id: `r:${'b'.repeat(51)}0`, about: ['t:y'], of: 't:x', prev: [a.id], n: 1 };
   const orders = [[a, b], [b, a]];
   const vectors = ['fold/heads', 'fold/view'].map(layer => ({ layer, input: { orders } }));
   vectors.push({ layer: 'fold/latest', input: { orders } });
   vectors.push({ layer: 'spec/run', input: { spec: { vertex: 'v', from: [{ store: 's:local' }], fold: { total: { count: true } } },
-    orders: [[{ ...a, about: ['t:x'] }, { ...b, about: ['t:y'] }]] } });
+    orders: [[{ ...a, of: 't:x' }, { ...b, of: 't:y' }]] } });
   const responses = await batchVectors(vectors);
   for (let i = 0; i < vectors.length; i++) {
     assert.equal(assess(vectors[i], responses[i]).status, 'match', inspect(responses[i], { depth: null }));

@@ -51,7 +51,7 @@ private def scenario (name thing : String) (spj : Json) (pool : List Record)
 private def countSpec : Json := Gen.SpecVectors.fromOf (.obj [("store", .str ".")])
 private def r (id : RecordId) (thing : String) (t : Nat) (value : String) (prev : List RecordId := [])
     (ok : Reads t := by decide) : Record :=
-  { Gen.RealmVectors.r id "note" [thing] t prev ok with value }
+  { Gen.RealmVectors.r id "note" (some thing) t prev (ok := ok) with value }
 
 private def admissionCase : Except String J := do
   let a := r (fixtureId 52) "thing:A" 100 "base"

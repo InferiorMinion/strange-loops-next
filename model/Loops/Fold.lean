@@ -21,7 +21,7 @@ def Count.fold (n : Nat) (xs : List Record) : Nat := xs.foldl Count.step n
 /-! ## LatestBy
 
 LatestBy keeps the records nothing names in `prev` (the heads), newest first,
-and every id some `prev` names. It runs over the records about one thing: the
+and every id some `prev` names. It runs over the records of one thing: the
 winner is the newest head, and any other heads are a fork, shown as a conflict.
 -/
 
@@ -59,19 +59,21 @@ def LatestBy.others (s : LatestBy) : List Record := s.heads.drop 1
 
 /-! ## Whole-reader heads -/
 
-/-- A record names its things or anchors its own id when about is empty. -/
-def Record.things (r : Record) : List String := if r.about.isEmpty then [idText r.id] else r.about
+/-- The one thing a record is an emit of: what `of` names, read as written,
+or without `of` the record's own id. `about` plays no part. -/
+def Record.thing (r : Record) : String := r.of.getD (idText r.id)
 
-def Record.isAbout (r : Record) (t : String) : Bool := r.things.contains t
+def Record.isOf (r : Record) (t : String) : Bool := r.thing == t
 
-def shares (a b : Record) : Bool := a.things.any b.things.contains
+/-- Two records are of the same thing. -/
+def shares (a b : Record) : Bool := a.thing == b.thing
 
-/-- Every thing the records are about, each once, in canonical order. -/
-def thingsOf (xs : List Record) : List String := canonSet (xs.flatMap Record.things)
+/-- Every thing the records are of, each once, in canonical order. -/
+def thingsOf (xs : List Record) : List String := canonSet (xs.map Record.thing)
 
-/-- A thing's state: LatestBy over the records about it. -/
+/-- A thing's state: LatestBy over the records of it. -/
 def stateIn (t : String) (xs : List Record) : LatestBy :=
-  LatestBy.fold .empty (xs.filter (·.isAbout t))
+  LatestBy.fold .empty (xs.filter (·.isOf t))
 
 def perThing (xs : List Record) : List (String × LatestBy) :=
   (thingsOf xs).map fun t => (t, stateIn t xs)

@@ -19,7 +19,7 @@
       ],
       "fold": {
         "by-topic": {
-          "latest-by": "about",
+          "latest-by": "of",
           "follow": "prev"
         }
       },
@@ -45,7 +45,7 @@
       ],
       "fold": {
         "by-topic": {
-          "latest-by": "about",
+          "latest-by": "of",
           "follow": "prev"
         }
       }

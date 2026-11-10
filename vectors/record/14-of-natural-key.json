@@ -1,0 +1,36 @@
+{
+  "vector": "14-of-natural-key",
+  "layer": "record",
+  "laws": ["record.id", "record.of"],
+  "source": "model",
+  "input": {
+    "envs": [
+      {
+        "kind": "note",
+        "observer": "sl:u11o5kditce56otma2ksbsnff7n6t0ftgbrmt4sp0j5d1riusfr0",
+        "emitted": "2026-10-21T09:30:00Z",
+        "about": ["topic:auth"],
+        "of": "task:auth-flow"
+      }
+    ],
+    "payloads": [
+      {
+        "body": "start the auth flow"
+      }
+    ],
+    "salt": "i1msdch2eha121jun3bal5gh9o",
+    "seed": "9f08h2p00frdgijchip196fmah9l5mj1mu6fb126m5g1sk1ok1t0"
+  },
+  "expect": {
+    "env_canonical": "{\"about\":[\"topic:auth\"],\"emitted\":\"2026-10-21T09:30:00Z\",\"kind\":\"note\",\"observer\":\"sl:u11o5kditce56otma2ksbsnff7n6t0ftgbrmt4sp0j5d1riusfr0\",\"of\":\"task:auth-flow\"}",
+    "payload_canonical": "{\"body\":\"start the auth flow\"}",
+    "commit": "h:2m0hhd9o5sm3l467p5f8pn9gg93crdnup2a8vhk1h81v1btvdbng",
+    "id_preimage": "{\"commit\":\"h:2m0hhd9o5sm3l467p5f8pn9gg93crdnup2a8vhk1h81v1btvdbng\",\"env\":{\"about\":[\"topic:auth\"],\"emitted\":\"2026-10-21T09:30:00Z\",\"kind\":\"note\",\"observer\":\"sl:u11o5kditce56otma2ksbsnff7n6t0ftgbrmt4sp0j5d1riusfr0\",\"of\":\"task:auth-flow\"}}",
+    "id": "r:mt7eid2tq0njilntc36mme4co20t121kbo03ifmiaoa61g32cj10",
+    "signing_input": "loops/record/v1:r:mt7eid2tq0njilntc36mme4co20t121kbo03ifmiaoa61g32cj10",
+    "key": "k:ovcj4qlctbgluf826r7ll53hlfshn31ulq0tue2alhbkil6k16qg",
+    "ed25519": "1r5d0pjaib9n0ls3nq73smbrr2hlgtkm1n2110oq6m9fkb5diset8fl3mgohmiurevb9t89okclis359g0a3fqbs9ps4pbbrt1pcu38",
+    "line": "{\"env\":{\"about\":[\"topic:auth\"],\"emitted\":\"2026-10-21T09:30:00Z\",\"kind\":\"note\",\"observer\":\"sl:u11o5kditce56otma2ksbsnff7n6t0ftgbrmt4sp0j5d1riusfr0\",\"of\":\"task:auth-flow\"},\"id\":\"r:mt7eid2tq0njilntc36mme4co20t121kbo03ifmiaoa61g32cj10\",\"payload\":{\"body\":\"start the auth flow\"},\"salt\":\"i1msdch2eha121jun3bal5gh9o\",\"sig\":{\"ed25519\":\"1r5d0pjaib9n0ls3nq73smbrr2hlgtkm1n2110oq6m9fkb5diset8fl3mgohmiurevb9t89okclis359g0a3fqbs9ps4pbbrt1pcu38\",\"key\":\"k:ovcj4qlctbgluf826r7ll53hlfshn31ulq0tue2alhbkil6k16qg\"}}",
+    "erased_line": "{\"commit\":\"h:2m0hhd9o5sm3l467p5f8pn9gg93crdnup2a8vhk1h81v1btvdbng\",\"env\":{\"about\":[\"topic:auth\"],\"emitted\":\"2026-10-21T09:30:00Z\",\"kind\":\"note\",\"observer\":\"sl:u11o5kditce56otma2ksbsnff7n6t0ftgbrmt4sp0j5d1riusfr0\",\"of\":\"task:auth-flow\"},\"id\":\"r:mt7eid2tq0njilntc36mme4co20t121kbo03ifmiaoa61g32cj10\",\"sig\":{\"ed25519\":\"1r5d0pjaib9n0ls3nq73smbrr2hlgtkm1n2110oq6m9fkb5diset8fl3mgohmiurevb9t89okclis359g0a3fqbs9ps4pbbrt1pcu38\",\"key\":\"k:ovcj4qlctbgluf826r7ll53hlfshn31ulq0tue2alhbkil6k16qg\"}}"
+  }
+}

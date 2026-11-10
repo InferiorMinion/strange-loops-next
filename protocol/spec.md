@@ -24,22 +24,25 @@ spec, as layer 0 refuses one in a payload.
 |---|---|---|
 | `store` | yes | the store, as the realm names it: text, not empty |
 | `kind` | no | the kinds taken: an array of at least one, each text that isn't empty |
-| `about` | no | the thing taken: a typed reference (`prefix:value`) |
+| `about` | no | a thing mentioned: a typed reference (`prefix:value`) |
+| `of` | no | the thing taken: a typed reference |
 
-A source checks both kind and thing.
+A source checks kind, mention and thing.
 A supplied `kind` must include the record's kind.
-A supplied `about` must name a thing the record belongs to. The
-spec takes a record when any of its sources does.
+A supplied `about` must be in the record's `about`, as written.
+A supplied `of` must be the record's thing.
+A source with both takes the records that are of its `of` and mention its `about`.
+The spec takes a record when any of its sources does.
 
 For direct spec evaluation, the caller resolves store names outside the runner.
 The runner receives records and does not look up stores.
-Each source tests only `kind` and `about` on those records.
+Each source tests only `kind`, `about` and `of` on those records.
 The direct spec and scenario vectors do not test store resolution, missing stores, or per-source routing.
 
-`about` here names the thing.
-A record about nothing anchors the thing named by its id.
-Thus `"about": "r:X"` takes X and every record about X. (`env.about` in `where` reads the field as written, which
-is empty on X.)
+A record's thing is what its `of` names, or without `of` its own id ([`record.md`](record.md)).
+Thus `"of": "r:X"` takes the root X and every record of X.
+(`env.of` in `where` reads the field as written, which is absent on X.)
+`"about": "r:X"` takes the records that mention X, and not X itself unless it mentions itself.
 
 ## Slots
 
@@ -50,7 +53,7 @@ fold type:
 |---|---|
 | `count` | `true` |
 | `sum`, `min`, `max` | the payload field it reads: text, not empty |
-| `latest-by` | `"about"` |
+| `latest-by` | `"of"`; any other argument, `"about"` included, is refused |
 | `collect` | `true` |
 
 and optionally:
@@ -65,16 +68,14 @@ and optionally:
 Any other key is refused.
 
 Settle forms before admission, then run heads and all slots over admitted records.
-For each slot, count each unread record id once, even if it heads several things.
+For each slot, count each unread record id once.
 For `collect`, count unread candidates before the limit.
 Apply the limit only to the ordered list of matching records.
 
-A record belongs to each thing in its `about` set.
-When that set is empty, it belongs to the thing named by its own id.
+A record belongs to exactly one thing, its `of` or its own id.
+`about` plays no part in heads.
 Compute heads separately for each thing, using only its records.
-A successor can replace a head in one thing but not another.
 For a whole-reader view, combine these heads and keep each id once.
-Count, sum, min, and max do not copy records for each membership.
 `latest` selects the newest head in this combined view as its winner.
 It returns the other heads in content order.
 It does not use global succession state.
@@ -88,7 +89,7 @@ The safe input range does not limit the sum accumulator.
 ## `where`
 
 A `where` map is an object of at least one field, each naming an object of
-at least one test: an operator and its argument. An envelope field starts `env.` and names `kind`, `observer`, `about`, `prev`, `under`, `erases`, `emitted` or `occurred`.
+at least one test: an operator and its argument. An envelope field starts `env.` and names `kind`, `observer`, `about`, `of`, `prev`, `under`, `erases`, `emitted` or `occurred`.
 A payload field has a nonempty name that does not start `env.`.
 
 | Operator | Argument |
@@ -103,7 +104,7 @@ match:
 | Field | Value |
 |---|---|
 | `env.kind` | text, not empty |
-| `env.observer`, `env.about` | a typed reference |
+| `env.observer`, `env.about`, `env.of` | a typed reference |
 | `env.prev`, `env.under`, `env.erases` | a record id |
 | `env.emitted`, `env.occurred` | a time in `occurred`'s grammar ([`record.md`](record.md)) |
 | a payload field | text, a whole number, or a boolean |
@@ -111,6 +112,7 @@ match:
 [`laws.md`](laws.md) defines test meaning.
 A map holds when every test holds.
 A set field holds a value when a member equals that value.
+`env.of` and `env.under` hold at most one value; on a root, `env.of` holds none.
 Time tests read spans, not spellings.
 
 For payload tests, read JSON numbers using the layer 0 binary64 rule.
@@ -150,8 +152,8 @@ Checks run in this order, and the first that fails is the refusal:
 5. **`from`**: `from-missing` when it is absent or an empty array; `from-invalid`
    at `from` when it isn't an array. Check each source in order.
    Refuse a nonobject (`from-invalid` at `from`) or an unknown key (`unknown-key` at `from.<key>`).
-   Then check `store`, `kind` and `about`, regardless of written order.
-   These use `from-invalid` at `from.store`, `from.kind` and `from.about`.
+   Then check `store`, `kind`, `about` and `of`, regardless of written order.
+   These use `from-invalid` at `from.store`, `from.kind`, `from.about` and `from.of`.
 6. **`fold`**: `fold-invalid` at `fold` when it isn't an object. Then each
    slot in the order written, at `fold.<name>`:
    1. its name is empty, or it isn't an object: `fold-invalid`;
@@ -176,7 +178,7 @@ These are the only codes.
 
 `spec/parse` vectors show accepted specs in parsed form.
 They keep `vertex` and `from`.
-Each source has `store`, then supplied `kind` and `about`.
+Each source has `store`, then supplied `kind`, `about` and `of`.
 Each `fold` slot keeps its fold type, applicable `follow`, supplied `limit` and written `where`.
 Latest-by always writes `follow`.
 Times keep their spelling. Carried keys and `note` are dropped. An accepted spec's parsed form parses back to itself.

@@ -34,9 +34,10 @@ test('collect limits are positive safe whole numbers', () => {
 
 test('latest-by retains things with no heads and a null winner', () => {
   const id = `r:${'0'.repeat(52)}`;
-  for (const about of [[], ['t:x']]) {
-    const out = latestBy([{ id, about, prev: [id] }]);
-    assert.deepEqual({ ...out }, { [about[0] ?? id]: { heads: [], winner: null, others: [] } });
+  // A record's thing is its `of`, or its own id; `about` never names one.
+  for (const of of [undefined, 't:x']) {
+    const out = latestBy([{ id, about: ['t:y'], ...(of && { of }), prev: [id] }]);
+    assert.deepEqual({ ...out }, { [of ?? id]: { heads: [], winner: null, others: [] } });
   }
   assert.deepEqual({ ...latestBy([]) }, {});
 });
@@ -87,7 +88,7 @@ test('fold, spec, realm and scenario checkers reject wrong exact sums', async ()
     }
     const ids = [`r:${'0'.repeat(52)}`, `r:${'1'.repeat(51)}0`, `r:${'2'.repeat(51)}0`];
     const records = ids.map((id, i) => ({ id, kind: 'note', observer: 'o:x', emitted: `2024-01-01T00:00:0${i}Z`,
-      about: ['t:x'], prev: [], shown: 'here', value: '9007199254740993', n: [Number.MAX_SAFE_INTEGER, 2, 'UNSAFE_INPUT'][i] }));
+      of: 't:x', prev: [], shown: 'here', value: '9007199254740993', n: [Number.MAX_SAFE_INTEGER, 2, 'UNSAFE_INPUT'][i] }));
     const spec = { ...sourceSpec, fold: { total: { sum: 'n' } } };
     const sum = { value: 'EXACT_SUM', unread: 1 };
     const settled = ids.map(id => ({ id, shown: 'here' }));

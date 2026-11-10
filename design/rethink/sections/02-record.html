@@ -11,7 +11,8 @@
         <dt>kind</dt><dd>a label, not a type</dd>
         <dt>emitted</dt><dd>stamped instant, never set by hand</dd>
         <dt>occurred?</dt><dd>claimed span; can be coarse</dd>
-        <dt>about?</dt><dd>the things it is about: a set, usually one</dd>
+        <dt>about?</dt><dd>the things it mentions: a set</dd>
+        <dt>of?</dt><dd>the one thing it is an emit of; a root leaves it out</dd>
         <dt>prev?</dt><dd>the records this one replaces: a set, usually one</dd>
         <dt>under?</dt><dd>the grant it acts on</dd>
         <dt>erases?</dt><dd>record ids whose payloads it erases</dd>
@@ -45,7 +46,8 @@
       <tr><td><code>kind</code></td><td>selection</td><td><span class="pill p-ok">keep</span></td></tr>
       <tr><td><code>emitted</code></td><td>content order</td><td><span class="pill p-ok">keep</span></td></tr>
       <tr><td><code>occurred?</code></td><td>content order</td><td><span class="pill p-ok">keep</span></td></tr>
-      <tr><td><code>about?</code></td><td>selection</td><td><span class="pill p-ok">keep</span></td></tr>
+      <tr><td><code>about?</code></td><td>selection: a mention test</td><td><span class="pill p-ok">keep</span></td></tr>
+      <tr><td><code>of?</code></td><td>per-thing state, heads and admission: the thing a record is an emit of</td><td><span class="pill p-ok">keep</span></td></tr>
       <tr><td><code>prev?</code></td><td>Latest and LatestBy follow chains to their heads instead of trusting clocks; a set, so one record can merge a fork</td><td><span class="pill p-lean">keep</span></td></tr>
       <tr><td><code>under?</code></td><td>admission (the grant check)</td><td><span class="pill p-ok">keep</span></td></tr>
       <tr><td><code>erases?</code></td><td>settling payload forms</td><td><span class="pill p-ok">keep</span></td></tr>
@@ -165,6 +167,7 @@
 
   <details class="unfold"><summary>The <code>about</code> field and thing identity</summary><div class="body">
     <p><code>about</code> is promoted from a payload <code>ref</code> to an envelope field because composition depends on it: salience groups by thing across three stores.</p>
+    <p><code>about</code> only mentions. The thing a record is an emit of is a separate field, <code>of</code> (D8a): one typed reference, a record id or a natural key, read as written. A root has neither <code>of</code> nor <code>prev</code> and starts the thing named by its own id; a record with <code>prev</code> states <code>of</code>. Heads, <code>latest-by</code> and admission run over <code>of</code>; <code>about</code> never makes a head (D8b).</p>
     <p>The hard part is thing identity across stores. The same essay shows up as a feed GUID in RSS, a URL with tracking parameters in Safari, and a post id in likes. Use a typed natural key where the world supplies one. Normalize it per prefix. Use <code>same-as</code> records, folded at read, where identity needs judgment. Worked through in <a href="#things" data-tab="things">Things</a>.</p>
   </div></details>
 </section>

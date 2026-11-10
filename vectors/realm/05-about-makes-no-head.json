@@ -1,5 +1,5 @@
 {
-  "vector": "05-about-is-a-set",
+  "vector": "05-about-makes-no-head",
   "layer": "realm",
   "laws": ["thing.local"],
   "source": "model",
@@ -10,6 +10,7 @@
         "kind": "status",
         "observer": "sl:kyle",
         "about": ["svc:auth", "svc:billing"],
+        "of": "svc:auth",
         "value": "",
         "prev": [],
         "emitted": "2026-10-01T00:00:01Z",
@@ -20,7 +21,8 @@
         "id": "r:00000000000000000000000000000000000000000000000001p0",
         "kind": "status",
         "observer": "sl:kyle",
-        "about": ["svc:auth"],
+        "about": [],
+        "of": "svc:auth",
         "value": "",
         "prev": ["r:00000000000000000000000000000000000000000000000001og"],
         "emitted": "2026-10-01T00:00:02Z",
@@ -45,11 +47,6 @@
       "svc:auth": {
         "heads": ["r:00000000000000000000000000000000000000000000000001p0"],
         "winner": "r:00000000000000000000000000000000000000000000000001p0",
-        "others": []
-      },
-      "svc:billing": {
-        "heads": ["r:00000000000000000000000000000000000000000000000001og"],
-        "winner": "r:00000000000000000000000000000000000000000000000001og",
         "others": []
       }
     },

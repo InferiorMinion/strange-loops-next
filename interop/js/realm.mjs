@@ -29,19 +29,18 @@ export function settle(forms) {
   }).sort(byId);
 }
 
-// A record's things: what it is about, or, about nothing, its own id.
-const thingsOf = (r) => (r.about?.length ? r.about : [r.id]);
-
-// A record whose prev names a held record it shares no thing with is
-// refused (prev-unrelated). A prev naming a record not held is admitted: the
-// reader can't judge it. The store's rule (prev-not-permitted) is step 3's;
-// here it allows everything.
+// A record whose prev names a held record of a different thing is refused
+// (prev-unrelated). Each record's thing is its own envelope's fact, `of` as
+// written or its own id, never resolved through another record; so a record
+// with prev and no `of` is of its own id and its prev crosses things. A prev
+// naming a record not held is admitted: the reader can't judge it. The
+// store's rule (prev-not-permitted) is step 3's; here it allows everything.
 export function admit(records) {
-  const things = new Map(records.map((r) => [r.id, thingsOf(r)]));
+  const things = new Map(records.map((r) => [r.id, F.thingOf(r)]));
   const admitted = [], refused = [];
   for (const r of records) {
-    const mine = thingsOf(r);
-    const unrelated = (r.prev ?? []).some((p) => things.has(p) && !things.get(p).some((t) => mine.includes(t)));
+    const mine = F.thingOf(r);
+    const unrelated = (r.prev ?? []).some((p) => things.has(p) && things.get(p) !== mine);
     if (unrelated) refused.push({ id: r.id, code: "prev-unrelated" });
     else admitted.push(r);
   }

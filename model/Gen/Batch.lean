@@ -33,7 +33,8 @@ def cites := draft none "batch-c"
   { kind := "cites", observer := kyle, emitted := at0, about := ["@d", "@e"] }
   (.obj [])
 def revise := draft (some "@d2") "batch-d2"
-  { kind := "decision", observer := kyle, emitted := at0, about := ["topic:auth"], prev := ["@d"] }
+  { kind := "decision", observer := kyle, emitted := at0, about := ["topic:auth"], of := some "@d",
+    prev := ["@d"] }
   (.obj [("choice", .str "passkeys, with a recovery code")])
 -- a decision already in the store, about the same topic
 def heldAuth : Stored :=
@@ -42,19 +43,50 @@ def heldAuth : Stored :=
       about := ["topic:auth"] }
     (saltFor "held-auth") (.obj [("choice", .str "device flow")])
 def heldAuthId : String := heldAuth.id H
+-- a revision of it, also in the store: not a root
+def heldRevision : Stored :=
+  make
+    { kind := "decision", observer := kyle, emitted := "2026-10-23T10:00:00Z",
+      about := ["topic:auth"], of := some heldAuthId, prev := [heldAuthId] }
+    (saltFor "held-revision") (.obj [("choice", .str "device flow, with a fallback")])
+def heldRevisionId : String := heldRevision.id H
 
-/-- What the store holds besides the batch: each id and its `about`. -/
-def held : List (String × List String) := [(heldAuthId, ["topic:auth"]), (r1Id, [])]
+/-- What the store holds besides the batch: each id with its `of` and `prev`. -/
+def held : List (String × Held) :=
+  [(heldAuthId, {}), (heldRevisionId, { of := some heldAuthId, prev := [heldAuthId] }), (r1Id, {})]
 
 def outside := draft none "batch-o"
   { kind := "decision", observer := kyle, emitted := at0, about := ["@d2", "topic:auth"],
-    prev := [heldAuthId] }
+    of := some heldAuthId, prev := [heldAuthId] }
   (.obj [("choice", .str "passkeys")])
 def unknownPrev := draft none "batch-u"
-  { kind := "decision", observer := kyle, emitted := at0, about := ["topic:auth"], prev := [grantId] }
+  { kind := "decision", observer := kyle, emitted := at0, about := ["topic:auth"], of := some grantId,
+    prev := [grantId] }
   (.obj [])
 def unrelated := draft none "batch-n"
-  { kind := "note", observer := kyle, emitted := at0, about := ["topic:cache"], prev := ["@d"] }
+  { kind := "note", observer := kyle, emitted := at0, about := ["topic:cache"], of := some "topic:cache",
+    prev := ["@d"] }
+  (.obj [])
+-- `of` names a record the writer holds that is not a root: in the store, and
+-- by label in the batch
+def ofHeldRevision := draft none "batch-r"
+  { kind := "decision", observer := kyle, emitted := at0, of := some heldRevisionId,
+    prev := [heldRevisionId] }
+  (.obj [])
+def ofLabelRevision := draft none "batch-rl"
+  { kind := "decision", observer := kyle, emitted := at0, of := some "@d2", prev := ["@d2"] }
+  (.obj [])
+-- a record of `@d` that names no `prev`: a second branch that joins it
+def branch := draft none "batch-br"
+  { kind := "decision", observer := kyle, emitted := at0, of := some "@d" }
+  (.obj [("choice", .str "security keys")])
+-- a revision of the revision: still of the root
+def reviseAgain := draft none "batch-d3"
+  { kind := "decision", observer := kyle, emitted := at0, of := some "@d", prev := ["@d2"] }
+  (.obj [("choice", .str "passkeys, with two recovery codes")])
+-- `prev` without `of`
+def noOf := draft none "batch-no"
+  { kind := "decision", observer := kyle, emitted := at0, prev := ["@d"] }
   (.obj [])
 
 -- The bad envelope refuses before the out-of-range payload, in every draft order.
@@ -67,26 +99,26 @@ def bigNumber := draft none "batch-big"
 def overflowNumber := draft none "batch-overflow"
   { kind := "estimate", observer := kyle, emitted := at0, about := ["topic:auth"] }
   (.obj [("n", .number (Number.ofScientific false 1 999)), ("low", .number (Number.ofScientific true 1 999))])
--- one `prev` the writer holds but about another thing, one it doesn't hold
+-- one `prev` the writer holds but of another thing, one it doesn't hold
 def bothPrev := draft none "batch-p"
-  { kind := "note", observer := kyle, emitted := at0, about := ["topic:cache"],
+  { kind := "note", observer := kyle, emitted := at0, about := ["topic:cache"], of := some "topic:cache",
     prev := [heldAuthId, grantId] }
   (.obj [])
 
 -- a revision that erases the record it replaces, and one naming a label in
--- `erases`, which only `about` and `prev` may use
+-- `erases`, which only `about`, `of` and `prev` may use
 def eraseHeld := draft none "batch-x"
   { kind := "decision", observer := kyle, emitted := at0, about := ["topic:auth"],
-    prev := [heldAuthId], erases := [heldAuthId] }
+    of := some heldAuthId, prev := [heldAuthId], erases := [heldAuthId] }
   (.obj [("choice", .str "passkeys")])
 def eraseLabel := draft none "batch-xl"
   { kind := "note", observer := kyle, emitted := at0, about := ["topic:auth"], erases := ["@d"] }
   (.obj [])
 
 def cycleA := draft (some "@a") "batch-a"
-  { kind := "note", observer := kyle, emitted := at0, prev := ["@b"] } (.obj [])
+  { kind := "note", observer := kyle, emitted := at0, of := some "@b", prev := ["@b"] } (.obj [])
 def cycleB := draft (some "@b") "batch-b"
-  { kind := "note", observer := kyle, emitted := at0, prev := ["@a"] } (.obj [])
+  { kind := "note", observer := kyle, emitted := at0, of := some "@a", prev := ["@a"] } (.obj [])
 
 structure Case where
   name : String
@@ -99,7 +131,7 @@ def cases : List Case := [
   ⟨"03-revise-and-erase", ["batch.meaning"], [eraseHeld]⟩,
   ⟨"04-held-self-anchor", ["batch.meaning"],
     [draft none "batch-anchor"
-      { kind := "note", observer := kyle, emitted := at0, about := [r1Id], prev := [r1Id] }
+      { kind := "note", observer := kyle, emitted := at0, of := some r1Id, prev := [r1Id] }
       (.obj [])]⟩,
   ⟨"05-large-number-out-of-range", ["batch.refuse", "write.checked"], [bigNumber]⟩,
   ⟨"10-unknown-label", ["batch.refuse"], [cites]⟩,
@@ -112,7 +144,14 @@ def cases : List Case := [
   ⟨"17-label-in-erases", ["batch.refuse", "write.checked"], [decide1, eraseLabel]⟩,
   ⟨"23-overflow-out-of-range", ["batch.refuse", "write.overflow"], [decide1, overflowNumber]⟩,
   ⟨"24-overflow-after-envelope", ["batch.refuse", "write.overflow"], [overflowNumber, badKind]⟩,
-  ⟨"25-overflow-before-prev", ["batch.refuse", "write.overflow"], [overflowNumber, unknownPrev]⟩
+  ⟨"25-overflow-before-prev", ["batch.refuse", "write.overflow"], [overflowNumber, unknownPrev]⟩,
+  ⟨"26-label-in-of", ["batch.meaning"], [decide1, branch]⟩,
+  ⟨"27-of-missing", ["batch.refuse", "write.checked"], [decide1, noOf]⟩,
+  ⟨"28-of-not-root-held", ["batch.refuse"], [ofHeldRevision]⟩,
+  ⟨"29-of-not-root-label", ["batch.refuse"], [decide1, revise, ofLabelRevision]⟩,
+  ⟨"30-prev-unknown-before-of-not-root", ["batch.refuse"], [ofHeldRevision, unknownPrev]⟩,
+  ⟨"31-of-not-root-before-prev-unrelated", ["batch.refuse"], [decide1, unrelated, ofHeldRevision]⟩,
+  ⟨"32-chain-of-root", ["batch.meaning"], [decide1, revise, reviseAgain]⟩
 ]
 
 def jDraft (d : Draft) : J :=
@@ -141,6 +180,12 @@ def variants (ds : List Draft) : List (List Draft) :=
   let rev := ds.map fun d => { d with env := { d.env with prev := d.env.prev.reverse } }
   rotations ds ++ rotations rev
 
+/-- A held record: its id, its `of` when it has one, and its `prev`. -/
+def jHeld : String × Held → J
+  | (i, h) => .obj ([("id", .str i)] ++ (match h.of with
+      | some o => [("of", J.str o)]
+      | none => []) ++ [("prev", .arr (h.prev.map .str))])
+
 def batchVector (c : Case) : Except String J := do
   let resolve := fun ds => (resolveBatch H (held.lookup ·) ds).map (·.map Written.stored)
   let expect ← match resolve c.drafts with
@@ -163,7 +208,7 @@ def batchVector (c : Case) : Except String J := do
             throw s!"batch/{c.name}: a reordering was refused for {e}, not {why}"
       pure (J.obj [("refused", .str why)])
   return vector c.name "batch" c.laws
-    (.obj [("held", .arr (held.map fun (i, about) => .obj [("id", .str i), ("about", .arr (about.map .str))])),
+    (.obj [("held", .arr (held.map jHeld)),
       ("drafts", .arr (c.drafts.map jDraft))]) expect
 
 /-- Raw inputs exercise the shape stage that typed drafts cannot represent. -/

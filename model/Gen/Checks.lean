@@ -37,7 +37,7 @@ def canonicalTextChecks : IO Unit := do
         ensure (recordId ("r:" ++ s) == accepted) s!"R1 envelope id, case {i}"
         ensure ((Read.recordId "id" (.str ("r:" ++ s))).isOk == accepted) s!"R1 fixture id, case {i}"
         let e : Env := { kind := "note", observer := "o:test", emitted := "2026-10-21T00:00:00Z" }
-        for (bad, code) in [({ e with prev := ["r:" ++ s] }, "prev-not-record-id"),
+        for (bad, code) in [({ e with of := some "t:x", prev := ["r:" ++ s] }, "prev-not-record-id"),
             ({ e with under := some ("r:" ++ s) }, "under-not-record-id"),
             ({ e with erases := ["r:" ++ s] }, "erases-not-record-id")] do
           ensure (bad.problem == if accepted then none else some code) s!"R1 {code}, case {i}"
@@ -341,11 +341,20 @@ def main (args : List String) : IO Unit := do
   ensure (Lens.parse (Lens.render [sect]) == some [sect]) "valid lens control fails"
   ensure ((Lens.parse (Lens.render [⟨[], []⟩])).isNone) "empty section id survives"
   ensure ((Lens.parse (Lens.render [sect, sect])).isNone) "duplicate section id survives"
-  let a := { base with id := fixtureId 11, about := ["t:a", "t:b"] }
-  let b := { base with id := fixtureId 12, about := ["t:a"], prev := [fixtureId 11] }
+  for of in ["untyped", "t:"] do
+    ensure (refused (Read.record "record" (.obj (kvs ++ [("of", .str of)])))) "untyped of survives"
+  ensure (!(refused (Read.record "record" (.obj (kvs ++ [("of", .str "t:a")]))))) "typed of control fails"
+  -- `about` makes no head: a record that mentions two things is a head of its
+  -- one thing, and its successor there supersedes it everywhere
+  let a := { base with id := fixtureId 11, of := some "t:a", about := ["t:a", "t:b"] }
+  let b := { base with id := fixtureId 12, of := some "t:a", prev := [fixtureId 11] }
   let hs := wholeHeads [a, b]
-  ensure ((hs.map (·.id)) == [fixtureId 12, fixtureId 11]) "global supersession removes another thing's head"
-  ensure ((wholeHeads [a]).length == 1) "multi-thing head appears twice"
+  ensure ((hs.map (·.id)) == [fixtureId 12]) "a superseded record that mentions another thing stays a head"
+  ensure ((wholeHeads [a]).length == 1) "a record that mentions two things heads more than once"
   ensure (Latest.winner (Latest.fold [a, b]) == some b) "latest misses newest whole-view head"
-  ensure (Latest.others (Latest.fold [a, b]) == [a]) "latest misses whole-view conflict"
+  ensure (Latest.others (Latest.fold [a, b]) == []) "about makes a whole-view conflict"
+  -- heads are per thing: a `prev` naming a record of another thing supersedes nothing
+  let c := { base with id := fixtureId 13, of := some "t:b", prev := [fixtureId 11] }
+  ensure (((wholeHeads [a, c]).map (·.id)) == [fixtureId 13, fixtureId 11])
+    "global supersession removes another thing's head"
   IO.println s!"runtime checks pass; {count} RFC binary64 bit patterns pass"

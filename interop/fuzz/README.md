@@ -17,7 +17,7 @@ node interop/fuzz/run.mjs --seed ci-1 --n 28 --out /tmp/fuzz-ci
 node interop/fuzz/run.mjs --rust --seed phase2-20261029 --n 5000 --out /tmp/fuzz-large
 node interop/fuzz/run.mjs --seed campaign-1 --n 1000 --family record --no-shrink
 node interop/fuzz/run.mjs --rust --replay /tmp/fuzz-large/mismatches/000000.json --out /tmp/fuzz-replay
-node interop/fuzz/run.mjs --rust --seed d1-d6-1 --n 5600 --shrink-trials 80 --out /tmp/fuzz-d1-d6-1
+node interop/fuzz/run.mjs --rust --seed d8ab-1 --n 5600 --shrink-trials 80 --out /tmp/fuzz-d8ab-1
 node interop/fuzz/run.mjs --rust --replay vectors/lens/section/d1-duplicate-base-id.json --out /tmp/fuzz-duplicate-base
 ```
 
@@ -25,7 +25,8 @@ An explicit output directory must be empty.
 Without `--out`, the runner creates an artifact directory under the system temporary directory.
 It prints that path with the summary.
 Exit codes are 0 for agreement, 1 for disagreements, and 2 for infrastructure or CLI errors.
-[REPORT.md](REPORT.md) records the campaign after the D1–D6 rulings, which finds no mismatch.
+[REPORT.md](REPORT.md) records the campaign after D8a and D8b, which finds no mismatch.
+Earlier campaigns' counts are historical: the generator changed, so the same seeds now generate different inputs.
 It marks earlier campaign results as historical, including the 42 duplicate-base lens mismatches D1 settles.
 
 `--n` is the total case count, not a count per family.
@@ -96,19 +97,23 @@ Reader IDs name logical records; the harness does not claim that those IDs hash 
 The record and batch writers compute actual commitments and record IDs.
 
 Records favor shared things, chains, forks, missing payloads, erasers, standing references, and tied times.
+A record names its thing in `of`: a root leaves it out, others name a natural key or an earlier record's thing.
+Most revisions state their target's thing; a few name another, or leave `of` out, which admission refuses.
+`about` only mentions things; specs choose by `from.of`, `from.about`, both, or neither.
 Arrival orders retain the same logical records.
 Realm forms retain the same envelope and held payload for each ID.
 Record variants reorder JSON members and repeat set members.
 Named record boundaries test uppercase IDs, each character `w` through `z`, and nonzero ID and salt padding bits.
 They test offsets, second 60, trailing-zero fractions, and ten-digit fractions in `emitted` and every `occurred` instant position.
 Another case tests an unknown envelope key with an empty kind.
+Five more carry the D8 `of` boundaries: an untyped `of`, a `prev` without `of`, and its order against `about`, `prev` and `erases`.
 Twelve more carry the D2, D3 and D5 boundaries.
 A lone surrogate travels as a payload text, alone, in a member name, after an unknown key, and before a bad kind or salt.
 A number past binary64's range travels as text too, alone, under a bad kind, and beside a repeated member.
 Four cases list variants that disagree: a refused first, two refused differently, and a refused envelope or payload later.
 The last two are malformed input, which every engine must refuse to answer.
 These scheduled cases cannot be replaced by random mutations.
-Other named cases exercise wrong types, bad IDs, integer bounds, EDTF, repeated members, salt lengths, and unresolved labels.
+Other named cases exercise wrong types, bad IDs, integer bounds, EDTF, repeated members, salt lengths, unresolved labels, an untyped or missing `of`, and specs with `"latest-by": "about"` or an untyped `from.of`.
 A deliberate self-label cycle also carries a near-miss label.
 Most generated cases pass the model's input decoder.
 
@@ -117,7 +122,8 @@ Scheduled cases combine safe integer limits with cancellation to test exact sums
 The record boundary cases also test the writer's number limit.
 Lens cases include escaped fences, empty IDs, repeated edited IDs, and duplicate base IDs.
 Duplicate bases are domain-boundary probes, not valid-base law tests.
-Batch cases include held predecessors and standing references.
+Batch cases include held predecessors, standing references, and held revisions that are not roots.
+Some batches break one `of` rule: `of-missing`, `of-not-root` (by label or held), or `prev-unrelated`.
 This is not exhaustive numeric or wire validation.
 
 ## Answers and refusals

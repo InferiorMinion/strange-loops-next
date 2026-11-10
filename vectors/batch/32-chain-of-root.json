@@ -1,0 +1,82 @@
+{
+  "vector": "32-chain-of-root",
+  "layer": "batch",
+  "laws": ["batch.meaning"],
+  "source": "model",
+  "input": {
+    "held": [
+      {
+        "id": "r:tsant02u7bhefv6nom5tukci31agdh8q5sonp4s3h4dhkfbrgli0",
+        "prev": []
+      },
+      {
+        "id": "r:l3c6scqhfqu3bfmj288git5kimd1e3ik809q8pv8p2637qi48kc0",
+        "of": "r:tsant02u7bhefv6nom5tukci31agdh8q5sonp4s3h4dhkfbrgli0",
+        "prev": ["r:tsant02u7bhefv6nom5tukci31agdh8q5sonp4s3h4dhkfbrgli0"]
+      },
+      {
+        "id": "r:iivodlg66vgkad2knrdqob3e4obh28sea6omq5kk0u25t925276g",
+        "prev": []
+      }
+    ],
+    "drafts": [
+      {
+        "label": "@d",
+        "env": {
+          "kind": "decision",
+          "observer": "sl:u11o5kditce56otma2ksbsnff7n6t0ftgbrmt4sp0j5d1riusfr0",
+          "emitted": "2026-10-24T09:00:00Z",
+          "about": ["topic:auth"]
+        },
+        "salt": "5kgkopd2lk254u63bdk1m5m954",
+        "payload": {
+          "choice": "passkeys"
+        }
+      },
+      {
+        "label": "@d2",
+        "env": {
+          "kind": "decision",
+          "observer": "sl:u11o5kditce56otma2ksbsnff7n6t0ftgbrmt4sp0j5d1riusfr0",
+          "emitted": "2026-10-24T09:00:00Z",
+          "about": ["topic:auth"],
+          "of": "@d",
+          "prev": ["@d"]
+        },
+        "salt": "hs9cb3sb8vndmgt05snhfbohqo",
+        "payload": {
+          "choice": "passkeys, with a recovery code"
+        }
+      },
+      {
+        "env": {
+          "kind": "decision",
+          "observer": "sl:u11o5kditce56otma2ksbsnff7n6t0ftgbrmt4sp0j5d1riusfr0",
+          "emitted": "2026-10-24T09:00:00Z",
+          "of": "@d",
+          "prev": ["@d2"]
+        },
+        "salt": "kqoa161dvcnlt6pbv1b9khvbqk",
+        "payload": {
+          "choice": "passkeys, with two recovery codes"
+        }
+      }
+    ]
+  },
+  "expect": {
+    "records": [
+      {
+        "id": "r:rmqpc5kprek9hrtnnooilbs0agfe9acu0qf5hsrnb5gss8qrppbg",
+        "env_canonical": "{\"about\":[\"topic:auth\"],\"emitted\":\"2026-10-24T09:00:00Z\",\"kind\":\"decision\",\"observer\":\"sl:u11o5kditce56otma2ksbsnff7n6t0ftgbrmt4sp0j5d1riusfr0\"}"
+      },
+      {
+        "id": "r:bldjv97hvcf9e97ksabp9usb66s0j96co8v2m4srg0l867aeo63g",
+        "env_canonical": "{\"about\":[\"topic:auth\"],\"emitted\":\"2026-10-24T09:00:00Z\",\"kind\":\"decision\",\"observer\":\"sl:u11o5kditce56otma2ksbsnff7n6t0ftgbrmt4sp0j5d1riusfr0\",\"of\":\"r:rmqpc5kprek9hrtnnooilbs0agfe9acu0qf5hsrnb5gss8qrppbg\",\"prev\":[\"r:rmqpc5kprek9hrtnnooilbs0agfe9acu0qf5hsrnb5gss8qrppbg\"]}"
+      },
+      {
+        "id": "r:dn84oam7801u2iomggmd077m8spu2musi7psplmedjop12bi1gug",
+        "env_canonical": "{\"emitted\":\"2026-10-24T09:00:00Z\",\"kind\":\"decision\",\"observer\":\"sl:u11o5kditce56otma2ksbsnff7n6t0ftgbrmt4sp0j5d1riusfr0\",\"of\":\"r:rmqpc5kprek9hrtnnooilbs0agfe9acu0qf5hsrnb5gss8qrppbg\",\"prev\":[\"r:bldjv97hvcf9e97ksabp9usb66s0j96co8v2m4srg0l867aeo63g\"]}"
+      }
+    ]
+  }
+}

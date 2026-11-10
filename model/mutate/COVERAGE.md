@@ -7,6 +7,7 @@ Use `node model/mutate/run.mjs --list` for current source paths.
 The runner tests check every current replacement site.
 The round-two fixes retain 187 original entries and eight guard mutations: 195 entries.
 The D1 and D2 rulings add six entries for the new library definitions: 201 entries total.
+D8 retargets ten entries at `of` and the one thing it names, and adds nine: 210 entries total.
 The raw-reader ordering mutations target library definitions under `Loops`.
 The cheap runner uses those fourteen replacements and the four former D6 survivors.
 It requires runtime failures after successful builds.
@@ -41,13 +42,14 @@ The catalogue includes existing entries without definition metadata.
 
 - `Loops.isLabel`: covered by `wide-batch-003`
 - `Loops.subst`: covered by `finish-batch-subst`
+- `Loops.substOpt`: covered by `d8-subst-of-skipped`
 - `Loops.substEnv`: excluded: It composes substitutions and constructs an envelope. No direct eligible operation.
 - `Loops.Draft.refs`: covered by `wide-batch-004`
 - `Loops.Draft.commit`: excluded: It delegates to commitOf. No direct eligible operation.
 - `Loops.Draft.ready`: covered by `wide-batch-005`
 - `Loops.resolveRounds`: covered by `wide-batch-006`
-- `Loops.envThings`: covered by `finish-batch-envthings`
-- `Loops.checkPrev`: covered by `finish-batch-checkprev`
+- `Loops.envThing`: covered by `finish-batch-envthings`
+- `Loops.checkPrev`: covered by `finish-batch-checkprev`, `d8-of-not-root-skipped`, `d8-unrelated-ignores-target-of`
 - `Loops.resolveBatch`: covered by `wide-batch-007`
 
 ## model/Loops/Envelope.lean
@@ -56,7 +58,7 @@ The catalogue includes existing entries without definition metadata.
 - `Loops.isLowerAlnum`: covered by `wide-envelope-008`
 - `Loops.typedRef`: covered by `wide-envelope-009`
 - `Loops.recordId`: covered by `wide-envelope-010`
-- `Loops.Env.problem`: covered by `wide-envelope-011`
+- `Loops.Env.problem`: covered by `wide-envelope-011`, `d8-of-not-typed-skipped`, `d8-of-missing-skipped`
 - `Loops.envelopeKeysProblem`: covered by `step1-envelope-keys-remove`
 
 ## model/Loops/Families.lean
@@ -193,7 +195,7 @@ The catalogue includes existing entries without definition metadata.
 - `Loops.Field.name`: covered by `finish-spec-field-name`
 - `Loops.Field.onEnvelope`: covered by `finish-spec-field-onenvelope`
 - `Loops.Field.type`: covered by `wide-spec-054`
-- `Loops.Field.read`: covered by `wide-spec-055`
+- `Loops.Field.read`: covered by `wide-spec-055`, `d8-env-of-reads-thing`
 - `Loops.Arg.matches`: covered by `finish-spec-arg-matches`
 - `Loops.Item.atLeast`: covered by `spec-atleast-time-strict`
 - `Loops.Item.below`: covered by `spec-below-time-inclusive`, `spec-below-number-inclusive`
@@ -211,7 +213,7 @@ The catalogue includes existing entries without definition metadata.
 - `Loops.latestOf`: covered by `spec-unread-duplicates`, `spec-drop-head-choice`
 - `Loops.collectOf`: covered by `spec-drop-collect-choice`, `spec-collect-unknown-yes`
 - `Loops.Slot.run`: covered by `wide-spec-062`
-- `Loops.Source.takes`: covered by `spec-source-all-any`
+- `Loops.Source.takes`: covered by `spec-source-all-any`, `d8-source-of-by-about`
 - `Loops.Spec.takes`: covered by `wide-spec-063`
 - `Loops.Spec.select`: covered by `wide-spec-064`
 - `Loops.Spec.run`: covered by `extra-spec-spec-run`
@@ -238,6 +240,7 @@ The catalogue includes existing entries without definition metadata.
 - `Loops.sourceStore`: covered by `coverage-spec-sourcestore`
 - `Loops.sourceKinds`: covered by `coverage-spec-sourcekinds`
 - `Loops.sourceAbout`: covered by `wide-spec-070`
+- `Loops.sourceOf`: covered by `d8-source-of-typed`
 - `Loops.parseSource`: covered by `finish-spec-parsesource`
 - `Loops.Json.repeatAt`: covered by `finish-spec-json-repeatat`
 - `Loops.Json.repeatIn`: covered by `coverage-spec-json-repeatin`
@@ -275,8 +278,8 @@ The catalogue includes existing entries without definition metadata.
 
 ## model/Loops/Things.lean
 
-- `Loops.Record.things`: covered by `things-no-self-anchor`
-- `Loops.Record.isAbout`: covered by `wide-things-083`
+- `Loops.Record.thing`: covered by `things-no-self-anchor`, `d8-thing-ignores-of`
+- `Loops.Record.isOf`: covered by `wide-things-083`
 - `Loops.shares`: covered by `wide-things-084`
 - `Loops.thingsOf`: covered by `extra-things-thingsof`
 - `Loops.idsOf`: covered by `finish-things-idsof`

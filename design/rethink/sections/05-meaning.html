@@ -53,7 +53,8 @@
     <tbody>
       <tr><td>kind</td><td><code>"kind": ["decision"]</code></td></tr>
       <tr><td>observer</td><td><code>"observer": ["sl:7f"]</code> (resolved from a name when written)</td></tr>
-      <tr><td>thing</td><td><code>"about": "url:example.com/x"</code></td></tr>
+      <tr><td>thing</td><td><code>"of": "url:example.com/x"</code></td></tr>
+      <tr><td>mention</td><td><code>"about": "url:example.com/x"</code></td></tr>
       <tr><td>ticks from a vertex</td><td><code>"ticks": ["review"]</code></td></tr>
       <tr><td>another vertex's state</td><td><code>"admitted-by": "auth"</code>: admission without special machinery</td></tr>
     </tbody>
@@ -68,7 +69,7 @@
         <tr><td>Compact state; the step is commutative</td><td>The state retains per-thing heads and referenced ids. The answer comes from that state.</td></tr>
       </tbody>
     </table></div>
-    <p>Both families have set-invariance laws under their stated premises. Accumulating folds consume each id once. LatestBy retains heads and all referenced ids, not just the current answer. Its cached state accepts late records. Heads apply per thing; a record remains if any thing retains it. Modifiers shape the final answer. Content order chooses among heads, not arrival order.</p>
+    <p>Both families have set-invariance laws under their stated premises. Accumulating folds consume each id once. LatestBy retains heads and all referenced ids, not just the current answer. Its cached state accepts late records. Heads apply per thing, and a record is of exactly one thing; it remains if its thing retains it. Modifiers shape the final answer. Content order chooses among heads, not arrival order.</p>
   </div></details>
   <details class="unfold"><summary>Boundaries: content vs operational</summary><div class="body">
     <p>In the earlier prototype, a boundary fired "when a record of kind X <i>arrives</i>": receipt order in disguise.</p>

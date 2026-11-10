@@ -29,8 +29,9 @@ store string is preserved but does not cause I/O during pure execution.
   order. It checks erasures against original forms, including discarded and
   subsequently refused ones, then admits once against original held records.
 - Spec execution does not silently settle or globally deduplicate arbitrary
-  input. Latest-by's unread count deduplicates ids across things; raw
-  following collect counts unknown forms after newest-first processing.
+  input. A record is of one thing, so an id reaches two things only through
+  raw forms that disagree on `of`; latest-by's unread count still
+  deduplicates ids across things. Raw following collect counts unknown forms after newest-first processing.
   The distinct-id theorem interpretation requires its stated addressed-input
   premise. Limits restrict known matches, not unread totals.
 - Spec's outer recursive duplicate check includes ignored metadata before
@@ -40,6 +41,12 @@ store string is preserved but does not cause I/O during pure execution.
   retains previous-round mappings, first label/held lookup, raw labels,
   mapping/draft order, and the model's global refusal rank. The adapter does
   not claim unique meaning for arbitrary raw drafts.
+- `of` is read as written (D8). A reader never resolves it through another
+  record and never checks that it names a root; a record whose `of` names a
+  revision is of that text. Only a writer refuses `of-not-root`, and only
+  against what its `held` lookup gives: the fixture's `held` entries in the
+  evaluator, stored envelopes in the place. A record id the writer doesn't
+  hold, like a natural key, passes.
 - Lens laws retain their validity and success premises.
   No-op and put-get require distinct base ids.
   Put-get also requires the same ordered ids.
