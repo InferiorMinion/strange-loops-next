@@ -4,16 +4,16 @@
 
 The tree has three implementations: Lean, JavaScript, and Rust.
 Step 1 applies the six settled rulings before records exist.
-All three implement the settled decisions D1–D6.
-The law index has 82 entries, 673 theorems, and 6 boundary witnesses.
+All three implement the settled decisions D1–D6, and D8a and D8b.
+The law index has 85 entries, 706 theorems, and 6 boundary witnesses.
 See [the law index](design/laws/laws.json) and [proof and boundary data](design/laws/).
 These proofs apply only under their stated premises.
 
-The tree has 374 JSON fixtures: 362 generated fixtures and 12 standard fixtures.
-Lean replays 353 generated fixtures; 9 occurred fixtures use separate checks.
+The tree has 398 JSON fixtures: 386 generated fixtures and 12 standard fixtures.
+Lean replays 377 generated fixtures; 9 occurred fixtures use separate checks.
 Rust checks every fixture, six JCS byte pairs, 4,000 binary64 cases, and 128 SUPERCOP signing cases with ed25519-dalek.
-Rust passes 136 tests; JavaScript passes 5,447 vector checks and 24 regression tests.
-The fuzz suite passes 45 tests.
+Rust passes 149 tests; JavaScript passes 5,587 vector checks and 26 regression tests.
+The fuzz suite passes 47 tests.
 See [vectors](vectors/README.md), [Rust boundaries](rust/GAPS.md), and [the mutation report](model/mutate/REPORT.md).
 These checks provide bounded evidence, not complete JCS or cryptographic correctness.
 They do not certify browser accessibility, external links, or official ASD dictionary compliance.
@@ -24,10 +24,12 @@ The writer accepts values with magnitude at most 2^53 − 1, including fractions
 Numeric folds read safe whole values only.
 Raw constructors and theorem premises retain separate domains.
 
-The D1–D6 sequential gates pass on Node 25.9; the Node 22 runs of Step 1 are not repeated.
-The `d1-d6-1` campaign checks 5,600 cases, 800 per family, in 62.48 seconds.
-It reports 4,107 matches, 1,124 protocol refusals, 369 shared decoder refusals, and no mismatch.
+The gates pass on Node 25.9; the Node 22 runs of Step 1 are not repeated.
+The `d8ab-1` campaign checks 5,600 cases, 800 per family, in 65.32 seconds.
+It reports 3,954 matches, 1,258 protocol refusals, 388 shared decoder refusals, and no mismatch.
 Decoder refusals are not agreement.
+The generator carries `of` since D8, so the same seeds now generate different inputs; earlier campaigns' counts are historical.
+The `d1-d6-1` campaign found no mismatch either.
 The 42 duplicate-base lens mismatches of the `step1-3` campaign are the class D1 settles.
 `interop/fuzz/summarize.py` derives these counts from tracked summaries.
 See [the campaign report](interop/fuzz/REPORT.md) for the scripts and current and historical results.
@@ -40,7 +42,7 @@ The runner exits 1 for assertion exceptions; no timeout or infrastructure failur
 The four D6 helper survivors now fail the build at their lemmas; the two scoped-equivalence survivors remain.
 All-envelope shape checks now belong to each library.
 Six deliberate per-envelope faults failed the respective vector layers in Step 1; that probe is not repeated here.
-The cheap runner kills 32 of 32 mutants: each compiles and then fails runtime checks.
+The cheap runner kills 33 of 33 mutants: each compiles and then fails runtime checks.
 Build rejections are not semantic proof kills.
 Survival does not prove equivalence.
 See [the mutation report](model/mutate/REPORT.md) for outcomes, restoration checks, and limits.
@@ -48,9 +50,9 @@ See [the mutation report](model/mutate/REPORT.md) for outcomes, restoration chec
 ## Step 2: the first product slice
 
 `loops-place` and the `loops` CLI emit, read and fold for one person, signed, over `.loops/`.
-Stored lines match the model's record vectors byte for byte; 11 tests drive the place and the binary.
+Stored lines match the model's record vectors byte for byte; 13 tests drive the place and the binary.
 The layout, the CLI and their refusal codes are a working proposal, not protocol.
-[`rust/PLACE.md`](rust/PLACE.md) lists what is implemented and the eight choices made on the way.
+[`rust/PLACE.md`](rust/PLACE.md) lists what is implemented and the nine choices made on the way.
 Two of them need the model: what a place is has no law, and a payload reaches a fold only as `value`, `n` and top-level fields.
 
 ## Decisions for the human
@@ -126,7 +128,8 @@ Never round or cap current model outputs.
 
 ### D8: Items, mentions and declared keys
 
-Kyle ruled this on 2026-11-10; nothing here is built or modelled yet.
+Kyle ruled this on 2026-11-10.
+D8a and D8b are built across the model, vectors, JavaScript and Rust; D8c is not built.
 It changes the settled envelope, so it lands as R1–R6 and D1–D6 did: model, vectors, JavaScript, Rust, then protocol and pages.
 **Finding:** Two apps built on the product slice hit one wall on 2026-11-10.
 The orchestration dry run is in [Scenarios](design/rethink/sections/13-scenarios.html), step 8; margins-claude's `work` app is described in its notes on merge request !12.
@@ -203,6 +206,26 @@ A writer refuses a payload key it did not declare only in a store declared stric
 Elsewhere the key is written, the keyed fold does not read it, and a whole-record fold, a `where` test or a lens still can.
 Making it count takes a new emit that declares it, since the declaration is in the id.
 
+**Built, 2026-11-10: D8a and D8b.**
+The model gives each record one thing, `of` or its own id, and makes `about` a mention only.
+Its laws are restated over the thing, and `thing.one`, `thing.mentions` and `record.of` join the index.
+The vectors are regenerated; JavaScript and Rust agree on every one, and the `d8ab-1` campaign finds no mismatch.
+D8c, declared keys, is not built, and the keyed fold's slice law is not stated.
+**Kyle's choices, confirmed 2026-11-10:**
+- **Spec:** the spec says `"latest-by": "of"`. `from.of` selects a thing's records; `from.about` is a mention test.
+- **Filling in `of`:** only the single-record `emit --prev` path fills `of` in, from the record it replaces.
+  `emit -` fills nothing in: a changeset states `of` itself.
+- **Unheld target:** the CLI refuses `prev-unknown` itself when a revision's target is not held, since it has nothing to fill `of` in from.
+  On that path only, this precedes the writer's other checks.
+- **Export:** `export --about` is a mention filter and `export --of` filters by thing.
+- **Verb:** the verb that shows a thing is `loops of <thing>`, renamed from `loops about <thing>`.
+**Implementer choices, not yet confirmed by Kyle:**
+- The codes `of-not-typed`, `of-missing` and `of-not-root`, and their places: `of-not-typed` right after `about-not-typed`, `of-missing` last of the envelope checks, and `of-not-root` between `prev-unknown` and `prev-unrelated`, all three across the whole batch.
+- `"latest-by": "about"` is refused with `fold-argument`; there is no compatibility path.
+- A reader polices neither `of-missing` nor roots. A held record with `prev` and no `of` is of its own id, so its `prev` crosses things and admission refuses it.
+- `from.about` and `from.of` in one source mean both.
+- A held entry in a batch vector is `{"id", "of"?, "prev"}`.
+
 ### Retained boundaries
 
 These boundaries trace existing domains and premises; they do not create new protocol choices.
@@ -247,7 +270,7 @@ Each step extends the model laws, computes protocol vectors, then implements Rus
 | --- | --- | --- |
 | 0, done | The Lean spike: Count and LatestBy, one lens combinator, 23 vectors | The first laws are proved |
 | 1, done | Protocol and vectors for layer 0: canonical bytes, salt and commitment, id, signature | The model and the JS writer agree on every vector; Rust checks all fixture families and external standards |
-| 2 | Emit, read, fold for one person: JSONL segment, JSON spec, the two fold families, `"follow": "prev"`, a signing key, signing by default. `about` takes ids and natural keys only. | It does the old CLI's workable job, signed |
+| 2 | Emit, read, fold for one person: JSONL segment, JSON spec, the two fold families, `"follow": "prev"`, a signing key, signing by default. `of` names a record's one thing, an id or a natural key; `about` only mentions. D8a and D8b are built; D8c is not. | It does the old CLI's workable job, signed |
 | 3 | Standing: declarations, admission, stances, grants, presence key, retire through; then name tables and `resolve-by` | A strict store rejects visibly; a steward's changeset takes effect |
 | 4 | Ticks: content and witness, boundaries, markers | A content tick recomputes to the same hash on two machines |
 | 5 | Sharing: the git layout, then segment-list sync | Two clones converge |
