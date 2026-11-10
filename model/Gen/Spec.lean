@@ -157,7 +157,14 @@ def parseCases : List (String × Json) := [
   ("gap08-fractional-bound", slotOf (o [("count", .bool true),
     ("where", o [("est", o [("at-least", .number (Number.ofScientific false 15 (-1)))])])])),
   ("gap08-whole-bound", slotOf (o [("count", .bool true),
-    ("where", o [("est", o [("below", .int 2)])])]))
+    ("where", o [("est", o [("below", .int 2)])])])),
+  -- D3: a number past binary64's range is refused where any number out of range is
+  ("d3-overflow-bound", slotOf (o [("count", .bool true),
+    ("where", o [("est", o [("at-least", .number (Number.ofScientific false 1 999))])])])),
+  ("d3-overflow-argument", slotOf (o [("count", .bool true),
+    ("where", o [("est", o [("is", .number (Number.ofScientific true 1 999))])])])),
+  ("d3-overflow-limit", slotOf (o [("collect", .bool true),
+    ("limit", .number (Number.ofScientific false 1 999))]))
 ] ++ [(-9007199254740992 : Int), -9007199254740991, 9007199254740991, 9007199254740992].flatMap fun i =>
   ["is", "not", "at-least", "below"].map fun op =>
     (s!"gap08-{op}-{i}", slotOf (o [("count", .bool true), ("where", o [("est", o [(op, .int i)])])]))

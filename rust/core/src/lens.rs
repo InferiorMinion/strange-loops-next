@@ -196,6 +196,50 @@ pub fn normalize(text: &[String]) -> Option<Vec<String>> {
     parse(text).map(|sections| render(&sections))
 }
 
+/// A base the public boundary refuses. Lean: `Loops.Lens.baseProblem`, model/Loops/Lens.lean.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum BaseError {
+    /// Two base sections share an identifier, so an edit names no single section.
+    IdDuplicate,
+}
+impl BaseError {
+    /// Returns the exact wire code for this refusal.
+    #[must_use]
+    pub fn code(self) -> &'static str {
+        match self {
+            Self::IdDuplicate => "base-id-duplicate",
+        }
+    }
+}
+impl std::fmt::Display for BaseError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.code())
+    }
+}
+impl std::error::Error for BaseError {}
+
+/// Checks that base identifiers are distinct. Lean: `Loops.Lens.baseProblem`, model/Loops/Lens.lean.
+/// The raw functions above do not check and keep their first-match behavior.
+#[must_use]
+pub fn base_problem(base: &[Section]) -> Option<BaseError> {
+    base.iter()
+        .enumerate()
+        .any(|(i, section)| base[..i].iter().any(|earlier| earlier.id == section.id))
+        .then_some(BaseError::IdDuplicate)
+}
+
+/// Reads an edited text against a checked base. Lean: `Loops.Lens.read`, model/Loops/Lens.lean.
+/// The base is checked before the text is parsed. `Ok(None)` is the text's own refusal.
+///
+/// # Errors
+/// Returns [`BaseError`] when the base repeats an identifier, whatever the text says.
+pub fn read(base: &[Section], text: &[String]) -> Result<Option<Vec<Outcome>>, BaseError> {
+    match base_problem(base) {
+        Some(why) => Err(why),
+        None => Ok(edit(base, text)),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -209,6 +253,54 @@ mod tests {
 
     fn lines(values: &[&str]) -> Vec<String> {
         values.iter().map(|s| (*s).into()).collect()
+    }
+
+    #[test]
+    fn public_base_boundary_precedes_the_text() {
+        let (one, two, other) = (
+            section("a", &["one"]),
+            section("a", &["two"]),
+            section("b", &["B"]),
+        );
+        for base in [
+            vec![one.clone(), two.clone()],
+            vec![one.clone(), other.clone(), two.clone()],
+            vec![one.clone(), one.clone()],
+        ] {
+            assert_eq!(base_problem(&base), Some(BaseError::IdDuplicate));
+            for text in [
+                render(std::slice::from_ref(&one)),
+                render(&base),
+                vec![],
+                lines(&["::: a", "unclosed"]),
+                lines(&["stray"]),
+            ] {
+                assert_eq!(read(&base, &text), Err(BaseError::IdDuplicate), "{text:?}");
+            }
+        }
+        assert_eq!(BaseError::IdDuplicate.to_string(), "base-id-duplicate");
+        for base in [vec![], vec![one.clone()], vec![one.clone(), other]] {
+            assert_eq!(base_problem(&base), None);
+            for text in [
+                render(std::slice::from_ref(&two)),
+                render(&base),
+                vec![],
+                lines(&["stray"]),
+            ] {
+                assert_eq!(read(&base, &text), Ok(edit(&base, &text)));
+            }
+        }
+        // The raw core keeps the first section with an id.
+        let twice = [one.clone(), two.clone()];
+        assert_eq!(lookup("a", &twice), Some(one.body.as_slice()));
+        assert_eq!(diff(&twice, std::slice::from_ref(&one)), vec![]);
+        assert_eq!(
+            diff(&twice, std::slice::from_ref(&two)),
+            vec![Outcome::Accepted {
+                id: "a".into(),
+                body: two.body.clone()
+            }]
+        );
     }
 
     #[test]

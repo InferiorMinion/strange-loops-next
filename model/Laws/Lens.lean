@@ -295,4 +295,33 @@ theorem absence_not_edit (base : List Section) (id : Line) :
     apply base [.absent id] = base := by
   simp [apply, acceptedBody]
 
+/-! ## The public base boundary -/
+
+/-- The boundary accepts exactly the bases with distinct ids. -/
+theorem baseProblem_none (base : List Section) : baseProblem base = none ↔ (ids base).Nodup := by
+  unfold baseProblem
+  split <;> simp_all
+
+/-- Precedence: a repeated base id is refused whatever the text is, malformed or not. -/
+theorem read_base_first {base : List Section} (hb : ¬(ids base).Nodup) (text : List Line) :
+    read base text = .error "base-id-duplicate" := by
+  simp [read, baseProblem, hb]
+
+/-- An accepted read is the raw edit, over a base with distinct ids. -/
+theorem read_ok {base : List Section} {text : List Line} {r : Option (List Outcome)}
+    (h : read base text = .ok r) : (ids base).Nodup ∧ r = edit base text := by
+  unfold read at h
+  split at h
+  · cases h
+  · rename_i hn
+    cases h
+    exact ⟨(baseProblem_none base).1 hn, rfl⟩
+
+/-- Put-get at the boundary: the caller no longer owes the distinct-base premise. -/
+theorem read_put_get {base edited : List Section} {text : List Line} {r : Option (List Outcome)}
+    (h : read base text = .ok r) (hp : parse text = some edited) (he : ids edited = ids base) :
+    r.map (fun os => render (apply base os)) = normalize text := by
+  obtain ⟨hb, rfl⟩ := read_ok h
+  exact put_get_text hb hp he
+
 end Loops.Lens

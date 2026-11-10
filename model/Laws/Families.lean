@@ -351,4 +351,21 @@ theorem LatestBy.maxHeads_view {f : Record → Record} (hf : View f) {xs : List 
   simp only [OverHeads.fold, LatestBy.maxHeads, LatestBy.view hf hx, filter_map, length_map]
   rfl
 
+/-! ## Concrete helpers (D6)
+
+These pin three concrete accumulators. The generic laws above hold for any
+commuting step and any `readable`; they do not say which step or predicate
+these helpers have. -/
+
+/-- An unreadable field leaves the sum as it was. -/
+theorem Sum.on_step_missing {field : String} {r : Record} (s : Int) (h : r.num field = none) :
+    (Sum.on field).step s r = s := by
+  simp [Sum.on, h]
+
+/-- Max reads a record exactly when its `n` is a held safe whole number. -/
+theorem Max.acc_readable (r : Record) : Max.acc.readable r = (r.num "n").isSome := rfl
+
+/-- Min reads a record exactly when its `n` is a held safe whole number. -/
+theorem Min.acc_readable (r : Record) : Min.acc.readable r = (r.num "n").isSome := rfl
+
 end Loops

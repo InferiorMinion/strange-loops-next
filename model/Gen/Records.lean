@@ -120,6 +120,99 @@ def refusedVector (name : String) (env : Env) (payload : Json := .obj [])
         ("salt", .str (base32 salt)), ("payload_text", .str (rawText payload))]),
       ("expect", .obj [("refused", .str why)])]
 
+/-! ## The answer for a record input
+
+`run` and `gen` both ask this. It lives here so that the vectors whose point
+is the input as written (text payloads, several variants) take their `expect`
+from the same function that later rereads them. -/
+
+open Gen.Read in
+/-- Raw envelope key refusals cross the fixture adapter as protocol refusals. -/
+def envelopeOutcome (out : Dec J) : Dec J :=
+  match out with
+  | .error "envelope-field-unknown" => .ok (.obj [("refused", .str "envelope-field-unknown")])
+  | other => other
+
+/-- The refusal of a record input's text payload, if the protocol has one for it. -/
+def payloadTextRefusal (kvs : List (String × Json)) : Option String :=
+  match kvs.lookup "payload_text" with
+  | some (.str t) => Gen.Read.textRefusal t
+  | _ => none
+
+open Gen.Read in
+/-- `record`: one record written, or a text, raw shape or typed writer refusal.
+The envelope comes in the writer's form, perhaps several ways (sets in other
+orders, repeats), and the payload as JSON, perhaps several ways (members in
+other orders), or as text when it repeats a member name or carries an escape.
+
+The stages, in order:
+
+1. Every envelope's raw keys (`envelope-field-unknown`).
+2. A text payload with a lone surrogate (`string-not-unicode`), before any
+   envelope value, the salt or the payload's members are looked at.
+3. The first envelope and the first payload are written. Their refusal is the
+   answer, whatever the other variants are.
+4. Once those are written, every other variant must name the same record, and
+   every other payload must be writable: a refused payload can share a
+   commitment with a written one (a repeated member renders as its first, a
+   nonfinite number as `null`), where a refused envelope never shares an id.
+   A variant that fails is a fault in the input, not an answer.
+5. Only then is the seed read. It is exactly 32 bytes; none is padded or cut. -/
+def recordAnswerDecoded (input : Json) : Dec J := do
+  let kvs ← members? "input" ["envs", "payloads", "payload_text", "salt", "seed"] input
+  let shaped := Gen.Read.envs "input.envs" (← req "input" kvs "envs")
+  if let .error "envelope-field-unknown" := shaped then throw "envelope-field-unknown"
+  if let some why := payloadTextRefusal kvs then return .obj [("refused", .str why)]
+  let envs ← shaped
+  let payloads ← match kvs.lookup "payloads", kvs.lookup "payload_text" with
+    | some ps, none => list "input.payloads" ps
+    | none, some t => do
+      match parseJson (← text "input.payload_text" t) with
+      | .ok j => pure [j]
+      | .error e => bad "input.payload_text" e
+    | _, _ => bad "input" "takes one of \"payloads\" and \"payload_text\""
+  let salt ← bytes "input.salt" (← req "input" kvs "salt")
+  let some e := envs.head? | bad "input.envs" "no envelope given"
+  let some payload := payloads.head? | bad "input.payloads" "no payload given"
+  match write e salt payload with
+  | .error why => pure (.obj [("refused", .str why)])
+  | .ok w =>
+    let r := w.stored
+    let id := r.id H
+    for (e', i) in envs.zip (List.range envs.length) do
+      if idOf H e' (r.commit H) != id then bad (idx "input.envs" i) "names another record than input.envs[0]"
+    for (p, i) in payloads.zip (List.range payloads.length) do
+      if let some why := writeProblem e salt p then
+        bad (idx "input.payloads" i) s!"is refused ({why}) where input.payloads[0] is written"
+      if commitOf H salt p != r.commit H then bad (idx "input.payloads" i) "commits to another payload than input.payloads[0]"
+    let seed ← bytes "input.seed" (← req "input" kvs "seed")
+    if seed.length != 32 then bad "input.seed" s!"holds {seed.length} bytes; a signing seed is exactly 32"
+    pure (.obj [
+      ("env_canonical", .str e.toJson.canon),
+      ("payload_canonical", .str payload.canon),
+      ("commit", .str (r.commit H)),
+      ("id_preimage", .str (idPreimage e (r.commit H))),
+      ("id", .str id),
+      ("signing_input", .str ("loops/record/v1:" ++ id)),
+      ("key", .str (keyText seed)),
+      ("ed25519", .str (base32 (Ed25519.sign seed (signingInput id)))),
+      ("line", .str (storedJson e salt payload seed).canon),
+      ("erased_line", .str (erasedJson e salt payload seed).canon)])
+
+def recordAnswer (input : Json) : Gen.Read.Dec J := envelopeOutcome (recordAnswerDecoded input)
+
+/-- A vector whose answer is computed from its input as written. `want` is the
+refusal the case is there to pin, or `none` for a record that is written. -/
+def answeredVector (name : String) (laws : List String) (input : J) (want : Option String) :
+    Except String J := do
+  let raw ← (Gen.Read.parseJson (input.render 0)).mapError (s!"record/{name}: input does not read back: " ++ ·)
+  let expect ← (recordAnswer raw).mapError (s!"record/{name}: no answer: " ++ ·)
+  let got := match expect with
+    | .obj [("refused", .str why)] => some why
+    | _ => none
+  if got != want then throw s!"record/{name}: expected {want}, the model answers {got}"
+  return vector name "record" laws input expect
+
 /-! ## Cases -/
 
 def note (emitted : String := "2026-10-21T09:30:00Z") : Env :=
@@ -247,6 +340,82 @@ def refusedPayloads : List (String × Json) := [
 about a payload from its commitment. -/
 def shortSalt : List UInt8 := (saltFor "30-salt-short").take 15
 
+/-! ## Inputs as written: text payloads and variants (D2, D3, D5) -/
+
+def rawNote : J := envInput note
+
+def withExtra (j : J) : J := match j with
+  | .obj kvs => .obj (("extra", .null) :: kvs)
+  | other => other
+
+/-- A record input whose payload is text. -/
+def textInput (name : String) (text : String) (env : J := rawNote)
+    (salt : List UInt8 := saltFor name) (seed : Bool := false) : J :=
+  .obj ([("envs", .arr [env]), ("salt", .str (base32 salt)), ("payload_text", .str text)] ++
+    if seed then [("seed", J.str (base32 (seedFor "kyle")))] else [])
+
+/-- A record input listing variants. -/
+def variantInput (name : String) (envs : List J) (payloads : List J) : J :=
+  .obj [("envs", .arr envs), ("payloads", .arr payloads), ("salt", .str (base32 (saltFor name)))]
+
+def overflow (negative : Bool := false) : J := .number (Number.ofScientific negative 1 999)
+
+/-- Lone surrogates in a text payload, wherever they stand, and what they precede and follow. -/
+def unicodeCases : List (String × J × String) :=
+  let t (name text : String) := (name, textInput name text, notUnicode)
+  [ t "d2-lone-high" "{\"body\":\"\\ud800\"}",
+    t "d2-lone-low" "{\"body\":\"\\udc00\"}",
+    t "d2-low-then-high" "{\"body\":\"\\udc00\\ud800\"}",
+    t "d2-high-then-text" "{\"body\":\"\\ud83dx\"}",
+    t "d2-high-then-escape" "{\"body\":\"\\ud83d\\u0041\"}",
+    t "d2-high-then-pair" "{\"body\":\"\\ud83d\\ud83d\\ude00\"}",
+    t "d2-member-name" "{\"\\udc00\":1}",
+    t "d2-nested" "[{\"a\":[\"\\ud800\"]}]",
+    t "d2-before-member-duplicate" "{\"a\":1,\"a\":2,\"b\":\"\\ud800\"}",
+    t "d2-before-number" "{\"n\":1e999,\"b\":\"\\ud800\"}",
+    ("d2-before-salt", textInput "d2-before-salt" "\"\\ud800\"" (salt := shortSalt), notUnicode),
+    ("d2-before-kind", textInput "d2-before-kind" "\"\\ud800\"" (env := envInput { note with kind := "" }), notUnicode),
+    ("d2-shape-first", textInput "d2-shape-first" "\"\\ud800\"" (env := withExtra rawNote), "envelope-field-unknown") ]
+
+/-- A number past binary64's range: the writer's number check refuses it, in its usual place. -/
+def overflowCases : List (String × J × String) :=
+  let t (name text code : String) := (name, textInput name text, code)
+  [ t "d3-overflow" "{\"n\":1e999}" "number-out-of-range",
+    t "d3-overflow-negative" "[-1e999]" "number-out-of-range",
+    t "d3-overflow-exponent" "{\"deep\":[{\"n\":1.5E+400}]}" "number-out-of-range",
+    ("d3-overflow-value", variantInput "d3-overflow-value" [rawNote] [.obj [("n", overflow)]], "number-out-of-range"),
+    ("d3-overflow-value-negative", variantInput "d3-overflow-value-negative" [rawNote] [.arr [overflow true]],
+      "number-out-of-range"),
+    t "d3-member-duplicate-first" "{\"a\":1e999,\"a\":2}" "member-duplicate",
+    ("d3-salt-first", textInput "d3-salt-first" "1e999" (salt := shortSalt), "salt-not-16-bytes"),
+    ("d3-kind-first", textInput "d3-kind-first" "1e999" (env := envInput { note with kind := "" }), "kind-empty"),
+    ("d3-shape-first", textInput "d3-shape-first" "1e999" (env := withExtra rawNote), "envelope-field-unknown") ]
+
+/-- Variants that don't agree: the first envelope and first payload decide. -/
+def variantCases : List (String × J × String) :=
+  let noKind := envInput { note with kind := "" }
+  let untyped := envInput { note with observer := "kyle" }
+  let big : J := .number (Number.ofScientific false 9007199254740992 0)
+  let v (name : String) (envs payloads : List J) (code : String) :=
+    (name, variantInput name envs payloads, code)
+  [ v "d5-refused-then-written" [noKind, rawNote] [.obj []] "kind-empty",
+    v "d5-differently-refused-0" [untyped, noKind] [.obj []] "observer-not-typed",
+    v "d5-differently-refused-1" [noKind, untyped] [.obj []] "kind-empty",
+    v "d5-payload-refused-then-written" [rawNote] [big, .int 1] "number-out-of-range",
+    v "d5-first-pair" [rawNote, noKind] [big, .int 1] "number-out-of-range",
+    v "d5-envelope-before-payload" [noKind, rawNote] [big, .int 1] "kind-empty" ]
+
+def writtenVectors : Except String (List (String × J)) := do
+  let unicode ← unicodeCases.mapM fun (n, input, code) => do
+    pure (n, ← answeredVector n ["record.unicode", "record.refuse"] input (some code))
+  let paired ← answeredVector "d2-paired-escape" ["record.unicode", "record.canonical"]
+    (textInput "d2-paired-escape" "{\"body\":\"\\ud83d\\ude00\",\"\\ud83d\\ude00\":\"\\u00e9\"}" (seed := true)) none
+  let overflows ← overflowCases.mapM fun (n, input, code) => do
+    pure (n, ← answeredVector n ["write.overflow", "record.refuse"] input (some code))
+  let variants ← variantCases.mapM fun (n, input, code) => do
+    pure (n, ← answeredVector n ["record.refuse"] input (some code))
+  return unicode ++ [("d2-paired-escape", paired)] ++ overflows ++ variants
+
 /-! ## Standards the reference code must meet before it writes anything -/
 
 def selfCheck : Except String Unit := do
@@ -323,6 +492,6 @@ def vectors : Except String (List (String × J)) := do
     rawCase "r6-single-unknown-missing-kind" [.obj [("extra", .null)]],
     rawCase "r6-single-unknown-kind-number" [.obj [("kind", .int 7), ("extra", .null)]]]
   return stored ++ refused ++ payloads ++ [("30-salt-short", salt), ("37-empty-salt-envelope-first", envelopeFirst),
-    unknown false, unknown true, twoUnknown false, twoUnknown true] ++ competing ++ singleton
+    unknown false, unknown true, twoUnknown false, twoUnknown true] ++ competing ++ singleton ++ (← writtenVectors)
 
 end Gen.Records

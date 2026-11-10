@@ -109,6 +109,7 @@ Readers can admit unknown targets because they cannot judge them.
 `expect.records` gives ids and canonical envelopes in draft order, with labels replaced by ids.
 Alternatively, `expect.refused` gives the first refusal.
 Shape checks run first across every raw envelope, before any draft value: `envelope-field-unknown`.
+A payload number past binary64's range is a writer refusal, `number-out-of-range`, ranked with the others.
 Label checks follow: `label-duplicate`, `label-unknown`, then `label-cycle`.
 Next come writer codes from `kind-empty`, in `protocol/record.md` order across every draft.
 Finally, `prev-unknown` and `prev-unrelated` run across the whole batch.
@@ -163,7 +164,8 @@ In `08-order`, `expect["oldest-first"]` lists texts ordered by span, per `protoc
 ## `lens/section`
 
 `input.base` supplies base sections; `input.text` supplies edited lines.
-`expect` is either `{"parsed": null, "refused": true}` or the parsed document and its normal form.
+A base that repeats an id gives `{"refused": "base-id-duplicate"}`, whatever the text is.
+Otherwise `expect` is either `{"parsed": null, "refused": true}` or the parsed document and its normal form.
 It also gives `accepted`, `unknown` and `absent` outcomes, plus the applied base.
 Render roundtrip requires nonempty, distinct ids.
 Put-get additionally requires distinct base ids and the exact same ordered id list in the edit.
@@ -177,9 +179,22 @@ Put-get additionally requires distinct base ids and the exact same ordered id li
 The two stored lines show forms before and after erasure.
 The signed message uses the exact prefix `loops/record/v1:`.
 
-A refused vector's `expect.refused` names the shape or writer refusal from `protocol/record.md`.
+A refused vector's `expect.refused` names the shape, text or writer refusal from `protocol/record.md`.
 `payload_text` preserves repeated member names in JSON text.
 Use a parser that detects repeated names.
+`payload_text` also carries a lone surrogate as a `\u` escape, which a vector cannot hold otherwise.
+Such text refuses with `string-not-unicode` after raw shape and before every value check.
+A `payload_text` that is not JSON is malformed input, not a refusal.
+A number such as `1e999`, in `payloads` or in `payload_text`, is past binary64's range.
+It refuses with `number-out-of-range` where the writer checks numbers.
+
+The first envelope and the first payload decide the answer.
+If writing them is refused, `expect.refused` is that refusal, whatever the other variants are.
+Once they are written, every other variant must name the same record and every other payload must be writable.
+An input that breaks this is malformed: no implementation answers it.
+`seed` is read only once the record is written.
+It is exactly 32 bytes; a seed of another length is malformed input, never padded or cut.
+This seed rule belongs to these fixtures, not to the record protocol.
 Writers cap every number's magnitude at 2^53 − 1, whole or not.
 Numeric readers separately require safe whole values.
 JS and Rust sums use unbounded integers; future bounded ports must refuse overflow.

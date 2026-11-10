@@ -3,10 +3,13 @@ import assert from "node:assert/strict";
 import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { base32, base32Decode, fixedBytes, canonical, checkEnvelopeKeys, seal, writeText, writeRecord, problem, validEmitted, occurredSpan, signId, verifyId } from "./loops.mjs";
+import { base32, base32Decode, fixedBytes, canonical, checkEnvelopeKeys, seal, writeText, writeRecord, problem, validEmitted, occurredSpan, signId, verifyId, commitOf, idOf, parse as parseText, wellFormed, unicodeProblem } from "./loops.mjs";
+import { readVector } from "../answers.mjs";
+import { parseSpecText } from "./spec.mjs";
 import { resolveBatch } from "./batch.mjs";
 import { heads, latest, sum, min, max } from "./fold.mjs";
-import { parse } from "./lens.mjs";
+import { parse, edit, diff, apply, baseProblem, render } from "./lens.mjs";
+import { lensEdit } from "./scenario.mjs";
 import { check as checkLens } from "./check-lens.mjs";
 import { runSpec } from "./spec.mjs";
 import { step } from "./scenario.mjs";
@@ -196,4 +199,169 @@ test("lens checker reports an unexpected null and checks the next vector", () =>
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
+});
+
+// D1: the public base boundary.
+test("lens refuses a base that repeats an id before it reads the text", () => {
+  const one = { id: "a", body: ["one"] }, two = { id: "a", body: ["two"] }, other = { id: "b", body: ["B"] };
+  for (const base of [[one, two], [one, other, two], [one, one]]) {
+    assert.equal(baseProblem(base), "base-id-duplicate");
+    for (const text of [render([one]), render(base), [], ["::: a", "unclosed"], ["stray"]]) {
+      assert.deepEqual(edit(base, text), { refused: "base-id-duplicate" });
+    }
+    assert.throws(() => lensEdit({ base, text: render([one]) }), /base-id-duplicate/);
+  }
+  for (const base of [[], [one], [one, other]]) {
+    assert.equal(baseProblem(base), null);
+    assert.deepEqual(edit(base, ["stray"]), { parsed: null, refused: true });
+    const parsed = [two];
+    assert.deepEqual(edit(base, render(parsed)), {
+      parsed, normalized: render(parsed), outcomes: diff(base, parsed), applied: apply(base, diff(base, parsed)),
+    });
+  }
+  // The raw functions don't check, and take the first section with an id, as the model does.
+  assert.deepEqual(diff([one, two], [two]), [{ accepted: "a", body: ["two"] }]);
+  assert.deepEqual(diff([one, two], [one]), []);
+  assert.deepEqual(diff([{ id: "a", body: [] }, { id: "a", body: [""] }], [{ id: "a", body: [] }]), []);
+});
+
+// D2: a lone surrogate is no text, in any API that reaches a hash.
+const HIGH = "\ud83d", LOW = "\ude00";
+const LONE = [HIGH, LOW, LOW + HIGH, HIGH + "x", "x" + HIGH, HIGH + HIGH + LOW, HIGH + LOW + LOW];
+test("lone surrogates are refused by name before hashing, in values, member names and envelopes", () => {
+  for (const s of ["", "plain", "雪" + HIGH + LOW, "\ud7ff\ue000\uffff", "\udbff\udfff"]) {
+    assert.equal(wellFormed(s), true, JSON.stringify(s));
+    assert.equal(wellFormed(s), s.isWellFormed());
+    assert.equal(unicodeProblem({ [s]: [s] }), null);
+    assert.equal(seal(writerEnv, writerSalt, { [s]: [s] }, writerSeed).id,
+      writeText(writerEnv, writerSalt, JSON.stringify({ [s]: [s] }), writerSeed).id);
+  }
+  const refused = { message: "string-not-unicode" };
+  for (const s of LONE) {
+    assert.equal(wellFormed(s), false, JSON.stringify(s));
+    assert.equal(s.isWellFormed(), false);
+    for (const payload of [s, [s], { a: s }, { [s]: 1 }, { deep: [{ [s]: null }] }]) {
+      assert.equal(unicodeProblem(payload), "string-not-unicode");
+      assert.throws(() => seal(writerEnv, writerSalt, payload, writerSeed), refused);
+      // JSON.stringify writes the surrogate as an escape; the raw code unit is refused the same way.
+      for (const text of [JSON.stringify(payload), JSON.stringify(payload).replace(/\\u(d[89a-f][0-9a-f]{2})/g, (_, h) => String.fromCharCode(parseInt(h, 16)))]) {
+        assert.throws(() => writeText(writerEnv, writerSalt, text, writerSeed), refused);
+        assert.throws(() => parseText(text), refused);
+      }
+      // Nothing reaches a hash another way.
+      assert.throws(() => canonical(payload), refused);
+      assert.throws(() => commitOf(writerSalt, payload), refused);
+    }
+    for (const env of [{ ...writerEnv, kind: s }, { ...writerEnv, observer: "o:" + s }, { ...writerEnv, about: ["t:" + s] },
+      { ...writerEnv, occurred: s }, { ...writerEnv, under: s }, { ...writerEnv, prev: [s] }, { ...writerEnv, erases: [s] }]) {
+      assert.throws(() => seal(env, writerSalt, {}, writerSeed), refused);
+      assert.throws(() => writeText(env, writerSalt, "{}", writerSeed), refused);
+      assert.throws(() => idOf(env, "h:x"), refused);
+      const draft = { env, salt: base32(writerSalt), payload: {} };
+      assert.deepEqual(resolveBatch([draft], []), { refused: "string-not-unicode" });
+    }
+    assert.deepEqual(resolveBatch([{ env: writerEnv, salt: base32(writerSalt), payload: { a: [s] } }], []), { refused: "string-not-unicode" });
+    assert.deepEqual(resolveBatch([{ label: "@" + s, env: writerEnv, salt: base32(writerSalt), payload: {} }], []), { refused: "string-not-unicode" });
+    assert.deepEqual(resolveBatch([{ env: writerEnv, salt: base32(writerSalt), payload: {} }], [{ id: id(1), about: ["t:" + s] }]), { refused: "string-not-unicode" });
+    // A vector is Unicode throughout, the members no implementation reads included.
+    for (const vector of [{ layer: "fold/count", input: { orders: [[]] }, expect: s }, { layer: "x", input: {}, note: { [s]: 0 } }]) {
+      assert.throws(() => readVector(JSON.stringify(vector)), /lone surrogate/);
+    }
+    assert.throws(() => parseSpecText(JSON.stringify({ vertex: s, from: [{ store: "." }] })), refused);
+  }
+  assert.deepEqual(readVector('{"layer":"x","input":{},"expect":"\\ud83d\\ude00"}').expect, HIGH + LOW);
+});
+
+test("a lone surrogate follows raw shape and precedes every value check", () => {
+  const refused = { message: "string-not-unicode" };
+  const lone = '"\\ud800"', repeated = '{"a":1,"a":2,"b":"\\udc00"}';
+  for (const text of [lone, repeated, '{"n":1e999,"b":"\\ud800"}']) {
+    assert.throws(() => writeText(writerEnv, writerSalt, text, writerSeed), refused);
+    assert.throws(() => writeText({ ...writerEnv, kind: "" }, writerSalt, text, writerSeed), refused);
+    assert.throws(() => writeText(writerEnv, new Uint8Array(15), text, writerSeed), refused);
+    assert.throws(() => writeText(writerEnv, () => { throw new Error("salt read"); }, text, writerSeed), refused);
+    assert.throws(() => writeText({ ...writerEnv, extra: 1 }, writerSalt, text, writerSeed), { message: "envelope-field-unknown" });
+  }
+  assert.throws(() => seal({ ...writerEnv, kind: "", extra: 1 }, writerSalt, "\ud800", writerSeed), { message: "envelope-field-unknown" });
+  assert.throws(() => seal({ ...writerEnv, kind: "" }, new Uint8Array(15), ["\ud800"], writerSeed), refused);
+  const draft = { env: { ...writerEnv, extra: 1 }, salt: base32(writerSalt), payload: "\ud800" };
+  assert.deepEqual(resolveBatch([draft], []), { refused: "envelope-field-unknown" });
+  assert.deepEqual(resolveBatch([{ ...draft, env: writerEnv, label: "@a" }, { ...draft, env: writerEnv, label: "@a" }], []),
+    { refused: "string-not-unicode" });
+  // Syntax first: text that is not JSON has no refusal code, wherever the surrogate or repeat stands.
+  for (const text of ['{"a" "\\ud800"}', '{"a":"\\ud800"', '"\\ud800', '["\\ud800",]', '"\\ud800" 1', '{"a":1,"a":2,"b" 3}', '"\\ud83d\\uZZZZ"']) {
+    assert.throws(() => parseText(text), (e) => !/^[a-z0-9-]+$/.test(e.message), text);
+    assert.throws(() => writeText(writerEnv, writerSalt, text, writerSeed), (e) => !/^[a-z0-9-]+$/.test(e.message), text);
+  }
+  assert.throws(() => parseText('["\\ud800\\n", "\\udc00"]'), refused);
+  assert.throws(() => parseText('{"a":1,"a":2}'), { message: "member-duplicate" });
+  assert.equal(parseText('"\\ud83d\\ude00"'), "😀");
+});
+
+// D3: overflow stays a number until the writer's number check.
+test("a number past binary64's range is the writer's number refusal, in its usual place", () => {
+  const out = { message: "number-out-of-range" };
+  for (const text of ["1e999", "-1e999", '{"n":[1.5E+400]}']) {
+    assert.throws(() => writeText(writerEnv, writerSalt, text, writerSeed), out);
+    assert.throws(() => writeText({ ...writerEnv, kind: "" }, writerSalt, text, writerSeed), { message: "kind-empty" });
+    assert.throws(() => writeText(writerEnv, new Uint8Array(15), text, writerSeed), { message: "salt-not-16-bytes" });
+    assert.throws(() => writeText({ ...writerEnv, extra: 1 }, writerSalt, text, writerSeed), { message: "envelope-field-unknown" });
+  }
+  assert.throws(() => writeText(writerEnv, writerSalt, '{"n":1e999,"n":0}', writerSeed), { message: "member-duplicate" });
+  // A record input's value, written back as text, overflows again rather than becoming null.
+  const input = { envs: [writerEnv], salt: base32(writerSalt), seed: base32(writerSeed) };
+  for (const payload of [Infinity, -Infinity, { n: [Infinity] }, NaN]) {
+    for (const writer of ["seal", "writeText"]) {
+      assert.throws(() => writeRecord({ ...input, payloads: [payload] }, { writer }), out);
+    }
+  }
+  const draft = (payload, env = writerEnv) => ({ env, salt: base32(writerSalt), payload });
+  assert.deepEqual(resolveBatch([draft({ n: Infinity })], []), { refused: "number-out-of-range" });
+  assert.deepEqual(resolveBatch([draft(-Infinity), draft({}, { ...writerEnv, kind: "" })], []), { refused: "kind-empty" });
+  assert.deepEqual(resolveBatch([draft(Infinity, { ...writerEnv, prev: [id(9)] })], []), { refused: "number-out-of-range" });
+});
+
+// D4: a fixture's signing seed is exactly 32 bytes, read once the record is written.
+test("a signing seed is exactly 32 bytes and is read last", () => {
+  const input = { envs: [writerEnv], payloads: [{}], salt: base32(writerSalt) };
+  assert.equal(writeRecord({ ...input, seed: base32(writerSeed) }).id, seal(writerEnv, writerSalt, {}, writerSeed).id);
+  for (const seed of [base32(new Uint8Array(31)), base32(new Uint8Array(33)), "", base32(new Uint8Array(32)).slice(0, -1) + "1", "!", undefined]) {
+    for (const writer of ["seal", "writeText"]) {
+      assert.throws(() => writeRecord({ ...input, seed }, { writer }), (e) => !/^[a-z0-9-]+$/.test(e.message), String(seed));
+      assert.throws(() => writeRecord({ ...input, envs: [{ ...writerEnv, kind: "" }], seed }, { writer }), { message: "kind-empty" });
+    }
+  }
+  for (const n of [0, 31, 33, 64]) {
+    assert.throws(() => signId(new Uint8Array(n), id(1)), /exactly 32 bytes/);
+    assert.throws(() => seal(writerEnv, writerSalt, {}, new Uint8Array(n)), /exactly 32 bytes/);
+  }
+});
+
+// D5: the first envelope and first payload decide; a later variant never answers.
+test("a record input's first variant decides, and later variants must agree once it is written", () => {
+  const noKind = { ...writerEnv, kind: "" }, untyped = { ...writerEnv, observer: "nobody" };
+  const input = (envs, payloads) => ({ envs, payloads, salt: base32(writerSalt), seed: base32(writerSeed) });
+  const fault = (e) => /^record input: /.test(e.message);
+  for (const writer of ["seal", "writeText"]) {
+    assert.throws(() => writeRecord(input([noKind, writerEnv], [{}]), { writer }), { message: "kind-empty" });
+    assert.throws(() => writeRecord(input([noKind, untyped], [{}]), { writer }), { message: "kind-empty" });
+    assert.throws(() => writeRecord(input([untyped, noKind], [{}]), { writer }), { message: "observer-not-typed" });
+    assert.throws(() => writeRecord(input([writerEnv, noKind], [2 ** 53, {}]), { writer }), { message: "number-out-of-range" });
+    assert.throws(() => writeRecord(input([noKind, writerEnv], [2 ** 53, {}]), { writer }), { message: "kind-empty" });
+    for (const [envs, payloads] of [[[writerEnv, noKind], [{}]], [[writerEnv, untyped], [{}]],
+      [[writerEnv, { ...writerEnv, kind: "other" }], [{}]], [[writerEnv], [{}, 2 ** 53]], [[writerEnv], [null, Infinity]],
+      [[writerEnv], [{ a: 1 }, { a: 2 }]], [[writerEnv], [{ a: 1 }, { a: "\ud800" }]],
+      [[writerEnv, { ...writerEnv, about: ["t:\ud800"] }], [{}]]]) {
+      assert.throws(() => writeRecord(input(envs, payloads), { writer }), fault, JSON.stringify([envs, payloads]));
+    }
+    const agreed = input([{ ...writerEnv, about: ["t:a", "t:b"] }, { ...writerEnv, about: ["t:b", "t:a", "t:b"] }],
+      [{ a: 1, b: 2 }, { b: 2, a: 1 }]);
+    assert.equal(writeRecord(agreed, { writer }).id, writeRecord(agreed).id);
+  }
+  // A repeated member survives only in the text; the caller that kept it passes it on.
+  const texts = ['{"a":1}', '{"a":1,"a":2}'];
+  const repeated = input([writerEnv], [{ a: 1 }, { a: 2 }]);
+  assert.throws(() => writeRecord(repeated, { writer: "writeText", payloadTexts: texts }),
+    /payloads\[1\] is refused \(member-duplicate\) where payloads\[0\] is written/);
+  assert.throws(() => writeRecord(repeated, { writer: "writeText", payloadTexts: texts.toReversed() }), { message: "member-duplicate" });
 });

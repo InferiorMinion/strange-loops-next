@@ -3,7 +3,7 @@
 // over records per protocol/laws.md, reusing the folds and where-tests.
 // Written from protocol/ and vectors/README.md. No dependencies.
 
-import { occurredSpan, problem } from "./loops.mjs";
+import { occurredSpan, problem, wellFormed, NOT_UNICODE } from "./loops.mjs";
 import { answer, held, YES, UNKNOWN } from "./where.mjs";
 import * as F from "./fold.mjs";
 import { admit } from "./realm.mjs";
@@ -17,7 +17,10 @@ export const isObject = (n) => n !== null && typeof n === "object" && Array.isAr
 export const isArray = (n) => n !== null && typeof n === "object" && Array.isArray(n.items);
 
 export function readJson(text) {
-  let i = 0;
+  let i = 0, lone = false;
+  // A lone surrogate is no text. This reader has no refusal of its own for
+  // it: once the text is known to be JSON, it is a fault like any other.
+  const string = (s) => { if (!wellFormed(s)) lone = true; return s; };
   const ws = () => { while (" \t\n\r".includes(text[i]) && i < text.length) i++; };
   const token = (re) => { re.lastIndex = i; const m = re.exec(text); if (!m) throw new Error(`bad JSON at ${i}`); i = re.lastIndex; return m[0]; };
   const STR = /"(?:[^"\\\u0000-\u001f]|\\.)*"/y, NUM = /-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?/y;
@@ -28,7 +31,7 @@ export function readJson(text) {
       i++; const members = [];
       ws(); if (text[i] === "}") { i++; return { members }; }
       for (;;) {
-        ws(); const k = JSON.parse(token(STR));
+        ws(); const k = string(JSON.parse(token(STR)));
         ws(); token(/:/y);
         members.push([k, value()]);
         ws();
@@ -41,12 +44,13 @@ export function readJson(text) {
       ws(); if (text[i] === "]") { i++; return { items }; }
       for (;;) { items.push(value()); ws(); if (text[i] === ",") { i++; continue; } token(/\]/y); return { items }; }
     }
-    if (c === '"') return JSON.parse(token(STR));
+    if (c === '"') return string(JSON.parse(token(STR)));
     if (c === "t" || c === "f" || c === "n") return JSON.parse(token(/true|false|null/y));
     return Number(token(NUM));
   }
   const v = value(); ws();
   if (i !== text.length) throw new Error(`bad JSON at ${i}`);
+  if (lone) throw new Error(NOT_UNICODE);
   return v;
 }
 

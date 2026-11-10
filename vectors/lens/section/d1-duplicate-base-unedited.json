@@ -1,0 +1,22 @@
+{
+  "vector": "d1-duplicate-base-unedited",
+  "layer": "lens/section",
+  "laws": ["lens.base-distinct"],
+  "source": "model",
+  "input": {
+    "base": [
+      {
+        "id": "a",
+        "body": ["one"]
+      },
+      {
+        "id": "a",
+        "body": ["two"]
+      }
+    ],
+    "text": ["::: a", "one", ":::", "::: a", "two", ":::"]
+  },
+  "expect": {
+    "refused": "base-id-duplicate"
+  }
+}

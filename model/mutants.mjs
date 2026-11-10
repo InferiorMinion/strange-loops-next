@@ -8,7 +8,7 @@ const model = dirname(fileURLToPath(import.meta.url));
 const root = dirname(model);
 // Both runners use the same replacement sites. This runner builds only runtime checks.
 const catalogue = JSON.parse(readFileSync(join(model, "mutate/mutants.json"), "utf8"));
-const guardMutants = ["step1-base32-reencode","step1-fraction-final-zero","step1-seconds-bound","step1-zone-only-z","step1-envelope-keys-remove","step1-envelope-keys-after-value","step1-draft-keys-after-values","step1-record-keys-after-values"].map(id => {
+const guardMutants = ["step1-base32-reencode","step1-fraction-final-zero","step1-seconds-bound","step1-zone-only-z","step1-envelope-keys-remove","step1-envelope-keys-after-value","step1-draft-keys-after-values","step1-record-keys-after-values","d1-base-problem-remove","d1-read-text-first","d2-lone-low-accepted","d2-lone-high-accepted","d2-low-surrogate-range","d2-high-surrogate-range","wide-families-013","wide-spec-064","extra-families-max-acc","extra-families-min-acc"].map(id => {
   const m = catalogue.find(m => m.id === id);
   if (!m) throw new Error(`missing guard mutant: ${id}`);
   return [m.id, m.file.includes("/") ? m.file : `Loops/${m.file}`, m.before, m.after];
@@ -19,6 +19,16 @@ const mutants = [
   ["integer bound", "Loops/Record.lean", 'if -(2^53 - 1) ≤ i ∧ i ≤ 2^53 - 1 then some i else none', 'some i'],
   ["fraction as zero", "Loops/Record.lean", '    | _ => none\n  else none\n\n/-- Withhold', '    | some (.number _) => some 0\n    | _ => none\n  else none\n\n/-- Withhold'],
   ["global heads", "Loops/Fold.lean", 'orderHeads ((perThing xs).flatMap fun ts => ts.2.heads)', '(LatestBy.fold .empty xs).heads'],
+  // D2, D4 and D5 at the record adapter gen and run share.
+  ["text refusal before values", "Gen/Records.lean", 'if let some why := payloadTextRefusal kvs then', 'if let some why := (none : Option String) then'],
+  ["text refusal after shape", "Gen/Records.lean", '  if let .error "envelope-field-unknown" := shaped then throw "envelope-field-unknown"\n', ''],
+  ["text refusal needs JSON", "Gen/Read.lean", '  | .ok _, .error _ => some notUnicode\n  | _, _ => none', '  | _, .error (what, _) => if what == notUnicode then some what else none\n  | _, _ => none'],
+  ["text refusal reads the text", "Gen/Read.lean", '  | .ok _, .error _ => some notUnicode\n  | _, _ => none', '  | _, _ => none'],
+  ["seed of 32 bytes", "Gen/Records.lean", '    if seed.length != 32 then bad "input.seed" s!"holds {seed.length} bytes; a signing seed is exactly 32"\n', ''],
+  ["seed after writing", "Gen/Records.lean", '  let salt ← bytes "input.salt" (← req "input" kvs "salt")\n', '  let salt ← bytes "input.salt" (← req "input" kvs "salt")\n  let _ ← bytes "input.seed" (← req "input" kvs "seed")\n'],
+  ["later envelope variant agrees", "Gen/Records.lean", 'if idOf H e\' (r.commit H) != id then', 'if false then'],
+  ["later payload variant writable", "Gen/Records.lean", 'writeProblem e salt p then', 'writeProblem e salt payload then'],
+  ["first variant decides", "Gen/Records.lean", '  | .error why => pure (.obj [("refused", .str why)])\n  | .ok w =>\n    let r := w.stored\n    let id := r.id H', '  | .error why => pure (.obj [("refused", .str ((firstRefusal ((envs.filterMap (·.problem)) ++ [why])).getD why))])\n  | .ok w =>\n    let r := w.stored\n    let id := r.id H'],
   ...guardMutants,
 ];
 const work = mkdtempSync(join(tmpdir(), "loops-model-mutants-"));

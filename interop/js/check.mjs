@@ -10,6 +10,7 @@
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { readVector } from "../answers.mjs";
+import { jsonSourceAt } from "../json-source.mjs";
 import { gunzipSync } from "node:zlib";
 import * as L from "./loops.mjs";
 import { tally, jsonFiles } from "./tally.mjs";
@@ -34,23 +35,32 @@ function exact() {
 function checkRecord(dir) {
   const t = exact();
   for (const file of jsonFiles(join(dir, "record"))) {
-    const v = readVector(readFileSync(file, "utf8"));
+    const raw = readFileSync(file, "utf8");
+    const v = readVector(raw);
     t.files++;
     const n = `record/${v.vector}`;
     const envs = v.input.envs;
+    // Each payload variant as the vector writes it: JSON.parse would drop a
+    // repeated member, and its text is what the text writer is for.
+    const payloadTexts = v.input.payloads?.map((_, i) => jsonSourceAt(raw, ["input", "payloads", i]));
     if (v.expect.refused) {
-      for (const writer of v.input.payloads ? ["seal", "writeText"] : ["writeText"]) {
+      // By value, from the vector's own text, and from text made of the value.
+      const ways = v.input.payloads
+        ? [["seal", {}], ["writeText", { payloadTexts }], ["writeText of value", {}]]
+        : [["writeText", {}]];
+      for (const [way, more] of ways) {
         let got = null;
-        try { L.writeRecord(v.input, { writer }); }
+        try { L.writeRecord(v.input, { writer: way === "seal" ? "seal" : "writeText", ...more }); }
         catch (e) { got = e.message; }
-        t.expect(`${n} ${writer} refused`, got, v.expect.refused);
+        t.expect(`${n} ${way} refused`, got, v.expect.refused);
       }
       continue;
     }
     const salt = L.base32Decode(v.input.salt);
-    const r = L.writeRecord(v.input);
+    const payload = v.input.payloads ? v.input.payloads[0] : L.parse(v.input.payload_text);
+    const r = L.writeRecord(v.input, { writer: v.input.payloads ? "seal" : "writeText" });
     t.expect(`${n} env`, L.canonical(L.envJson(envs[0])), v.expect.env_canonical);
-    t.expect(`${n} payload`, L.canonical(v.input.payloads[0]), v.expect.payload_canonical);
+    t.expect(`${n} payload`, L.canonical(payload), v.expect.payload_canonical);
     t.expect(`${n} commit`, r.commit, v.expect.commit);
     t.expect(`${n} id preimage`, L.idPreimage(envs[0], r.commit), v.expect.id_preimage);
     t.expect(`${n} id`, r.id, v.expect.id);
@@ -60,9 +70,9 @@ function checkRecord(dir) {
     t.expect(`${n} line`, r.line, v.expect.line);
     t.expect(`${n} erased line`, r.erasedLine, v.expect.erased_line);
     for (const [i, e] of envs.entries()) t.expect(`${n} env variant ${i}`, L.idOf(e, r.commit), v.expect.id);
-    for (const [i, p] of v.input.payloads.entries()) t.expect(`${n} payload variant ${i}`, L.commitOf(salt, p), v.expect.commit);
+    for (const [i, p] of (v.input.payloads ?? []).entries()) t.expect(`${n} payload variant ${i}`, L.commitOf(salt, p), v.expect.commit);
     // The same record, its payload read from text by the strict parser.
-    t.expect(`${n} from text`, L.writeRecord(v.input, { writer: "writeText" }).id, v.expect.id);
+    t.expect(`${n} from text`, L.writeRecord(v.input, { writer: "writeText", payloadTexts }).id, v.expect.id);
   }
   return t;
 }

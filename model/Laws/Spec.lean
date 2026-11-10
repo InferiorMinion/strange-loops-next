@@ -288,6 +288,12 @@ theorem Spec.takes_view {f : Record → Record} (hf : View f) (sp : Spec) (r : R
     sp.takes (f r) = sp.takes r := by
   simp [Spec.takes, Source.takes_view hf]
 
+/-- Selection contains exactly the input records the spec takes (D6).
+`Spec.run` does not call `Spec.select`; this pins the helper alone. -/
+theorem Spec.mem_select (sp : Spec) (xs : List Record) (r : Record) :
+    r ∈ sp.select xs ↔ r ∈ xs ∧ sp.takes r = true := by
+  simp [Spec.select]
+
 /-- Selection reads only envelopes: a view selects the same records. -/
 theorem Spec.select_view {f : Record → Record} (hf : View f) (sp : Spec) (xs : List Record) :
     sp.select (xs.map f) = (sp.select xs).map f := by

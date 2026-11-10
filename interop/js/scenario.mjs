@@ -34,7 +34,10 @@ export function step(spec, thing, forms) {
 }
 
 // The lens edit: the base rendered, the edited text read back against it.
+// A base that repeats an id is a fault in the scenario, not an answer.
 export function lensEdit({ base, text }) {
+  const why = Lens.baseProblem(base);
+  if (why) throw new Error(`lens base is refused (${why})`);
   const parsed = Lens.parse(text);
   const outcomes = parsed === null ? null : Lens.diff(base, parsed);
   return { rendered: Lens.render(base), outcomes, applied: outcomes && Lens.apply(base, outcomes) };

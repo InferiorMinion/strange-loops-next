@@ -6,15 +6,15 @@ use serde_json::{Value, json};
 use std::fs;
 
 const FAMILIES: &[(&str, usize)] = &[
-    ("record", 90),
+    ("record", 119),
     ("occurred", 9),
     ("byte-text", 5),
     ("fold", 48),
-    ("spec", 110),
+    ("spec", 113),
     ("realm", 15),
     ("scenario", 5),
-    ("lens", 16),
-    ("batch", 24),
+    ("lens", 21),
+    ("batch", 27),
     ("standard", 12),
 ];
 
@@ -83,12 +83,51 @@ fn occurred_answer(vector: &Value) -> Value {
     }
 }
 
+/// The inputs that carry a number past binary64's range (D3). The public
+/// strict decoder refuses them; `evaluate` decodes each as its layer reads it.
+const OVERFLOWING: [&str; 8] = [
+    "batch/23-overflow-out-of-range",
+    "batch/24-overflow-after-envelope",
+    "batch/25-overflow-before-prev",
+    "record/d3-overflow-value",
+    "record/d3-overflow-value-negative",
+    "spec/d3-overflow-argument",
+    "spec/d3-overflow-bound",
+    "spec/d3-overflow-limit",
+];
+
+/// Every answer `answers` lists for a vector the strict decoder reads, against
+/// its `expect`. False when the strict decoder refuses the vector.
+fn every_listed_answer(
+    source: &str,
+    file: &std::path::Path,
+    want: &Json,
+    failures: &mut Vec<String>,
+) -> bool {
+    let Ok(raw) = loops_eval::parse_json(source) else {
+        return false;
+    };
+    let Json::Str(layer) = member(&raw, "layer") else {
+        panic!("layer")
+    };
+    if let Ok(answers) = loops_eval::answers(layer, member(&raw, "input")) {
+        assert!(!answers.is_empty(), "{}", file.display());
+        for (i, answer) in answers.iter().enumerate() {
+            if answer.canon() != want.canon() {
+                failures.push(format!("{}: order/variant {i} differs", file.display()));
+            }
+        }
+    }
+    true
+}
+
 #[test]
 fn every_registered_json_and_every_arrival_order() {
     let root = root();
     let mut checked = 0;
     let mut seen = Vec::new();
     let mut failures = Vec::new();
+    let mut overflowing = Vec::new();
     for entry in fs::read_dir(&root).expect("vectors") {
         let path = entry.expect("family").path();
         if !path.is_dir() {
@@ -156,17 +195,11 @@ fn every_registered_json_and_every_arrival_order() {
                         )),
                         Err(error) => failures.push(format!("{file:?}: {error}")),
                     }
-                    let raw = loops_eval::parse_json(&source).expect("raw vector");
-                    let Json::Str(layer) = member(&raw, "layer") else {
-                        panic!("layer")
-                    };
-                    if let Ok(answers) = loops_eval::answers(layer, member(&raw, "input")) {
-                        assert!(!answers.is_empty(), "{file:?}");
-                        for (i, answer) in answers.iter().enumerate() {
-                            if answer.canon() != want.canon() {
-                                failures.push(format!("{file:?}: order/variant {i} differs"));
-                            }
-                        }
+                    if !every_listed_answer(&source, &file, &want, &mut failures) {
+                        overflowing.push(format!(
+                            "{family}/{}",
+                            file.file_stem().expect("stem").to_str().expect("UTF8")
+                        ));
                     }
                 }
                 checked += 1;
@@ -177,7 +210,12 @@ fn every_registered_json_and_every_arrival_order() {
     for (family, _) in FAMILIES {
         assert!(seen.iter().any(|s| s == family), "missing {family}");
     }
-    assert_eq!(checked, 334);
+    assert_eq!(checked, 374);
+    overflowing.sort();
+    assert_eq!(
+        overflowing, OVERFLOWING,
+        "only these inputs hold a number the strict decoder refuses"
+    );
     assert_eq!(checked, json_files(&root).len(), "unconsumed JSON");
     assert_eq!(
         failures,

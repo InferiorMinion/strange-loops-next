@@ -268,6 +268,29 @@ export function generate(seed, index, family) {
       nearMiss = `shape-multi-record-${slot}`; scheduled = true;
     }
     if (scheduled && slot < 28) input.envs = [clean];
+    // D2, D3 and D5: text payloads and variants that disagree. Each has a
+    // fixed slot. The lone surrogate and the overflow travel as text, since a
+    // JSON writer would drop the one and write null for the other.
+    if (slot >= 44 && slot < 56) {
+      const d = slot - 44, noKind = { ...clone(clean), kind: '' }, untyped = { ...clone(clean), observer: 'nobody' };
+      const lone = d % 2 ? '{"a":1,"a":2,"k\\udc00":0}' : '["\\ud83d"]';
+      const text = (envs, payload) => { input.envs = envs; delete input.payloads; input.payload_text = payload; };
+      nearMiss = ['text-lone-high', 'text-lone-low-key', 'text-lone-after-shape', 'text-lone-before-kind',
+        'text-lone-before-salt', 'text-overflow', 'text-overflow-after-kind', 'text-overflow-after-repeat',
+        'variants-refused-first', 'variants-differently-refused', 'variants-refused-later', 'variants-payload-refused-later'][d];
+      scheduled = true;
+      if (d === 0 || d === 1) text([clean], lone);
+      if (d === 2) text([{ ...clone(clean), extra: true }], lone);
+      if (d === 3) text([noKind], lone);
+      if (d === 4) { text([clean], lone); input.salt = base32(rng.bytes(15)); }
+      if (d === 5) text([clean], '{"n":[1e999,-1E400]}');
+      if (d === 6) text([noKind], '1e999');
+      if (d === 7) text([clean], '{"n":1e999,"n":0}');
+      if (d === 8) { input.envs = [noKind, clean]; input.payloads = [null]; }
+      if (d === 9) { input.envs = [untyped, noKind]; input.payloads = [null]; }
+      if (d === 10) { input.envs = [clean, noKind]; input.payloads = [null]; }
+      if (d === 11) { input.envs = [clean]; input.payloads = [1, Number.MAX_SAFE_INTEGER + 1]; }
+    }
   }
   // A separate one-in-eight draw probes an independent input boundary.
   if (!scheduled && rng.int(8) === 0) {

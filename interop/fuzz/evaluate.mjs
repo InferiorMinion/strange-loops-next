@@ -13,6 +13,7 @@ const WRITE_CODES = new Set([
   'kind-empty', 'observer-not-typed', 'emitted-not-rfc3339', 'occurred-not-span',
   'about-not-typed', 'prev-not-record-id', 'under-not-record-id', 'erases-not-record-id',
   'salt-not-16-bytes', 'member-duplicate', 'number-out-of-range',
+  'string-not-unicode', 'envelope-field-unknown',
 ]);
 const folds = {
   'fold/count': rs => F.count(rs).value,
@@ -32,20 +33,20 @@ function specNode(vector, rawText) {
   const input = S.readJson(rawText).members.find(([k]) => k === 'input')[1];
   return input.members.find(([k]) => k === 'spec')[1];
 }
-function lensAnswer({ base, text }) {
-  const parsed = Lens.parse(text);
-  if (parsed === null) return { parsed: null, refused: true };
-  const outcomes = Lens.diff(base, parsed);
-  return { parsed, normalized: Lens.render(parsed), outcomes, applied: Lens.apply(base, outcomes) };
-}
-function recordAnswer(input, envIndex = 0) {
-  const env = input.envs[envIndex];
+// The public base boundary answers in the vectors' own form.
+const lensAnswer = ({ base, text }) => Lens.edit(base, text);
+// The record input contract is the library's: the first envelope and first
+// payload decide, later variants must agree once those are written, and the
+// seed is read last. Text refusals and raw shape are answers; any other error
+// is a fault in the input, which Lean reports as a decoder refusal.
+function recordAnswer(input, payloadTexts) {
+  const env = input.envs[0];
+  const fromText = input.payload_text !== undefined || payloadTexts !== undefined;
   let r, payload;
   try {
-    payload = input.payload_text === undefined ? input.payloads[0] : undefined;
-    const writerInput = { ...input, seed: input.seed ?? L.base32(new Uint8Array(32)) };
-    r = L.writeRecord(writerInput, { envIndex, writer: input.payload_text === undefined ? "seal" : "writeText" });
-    if (input.payload_text !== undefined) payload = L.parse(input.payload_text);
+    r = L.writeRecord(input, { writer: fromText ? "writeText" : "seal", payloadTexts });
+    payload = input.payload_text !== undefined ? L.parse(input.payload_text)
+      : payloadTexts ? L.parse(payloadTexts[0]) : input.payloads[0];
   } catch (error) {
     if (!WRITE_CODES.has(error.message)) throw error;
     return { refused: error.message };
@@ -68,22 +69,11 @@ export function evaluateJS(vector, rawText) {
       catch { return false; }
     }) }];
     case 'record': {
-      try {
-        return input.envs.flatMap((_, envIndex) =>
-          (input.payloads ?? [null]).map((payload, i) => {
-            // Keep siblings in the library input; only the selected envelope
-            // goes to the writer. Shape errors escape the Cartesian expansion.
-            const variant = { ...input };
-            if (rawText !== undefined && input.payload_text === undefined && input.payloads) {
-              variant.payload_text = jsonSourceAt(rawText, ['input', 'payloads', i]);
-              delete variant.payloads;
-            } else if (input.payloads) variant.payloads = [payload];
-            return recordAnswer(variant, envIndex);
-          }));
-      } catch (error) {
-        if (error.message === 'envelope-field-unknown') return [{ refused: error.message }];
-        throw error;
-      }
+      // One answer, as Lean gives: the variants are checked, not answered.
+      // The raw text keeps each payload's repeated members for the library.
+      const payloadTexts = rawText !== undefined && input.payload_text === undefined && Array.isArray(input.payloads)
+        ? input.payloads.map((_, i) => jsonSourceAt(rawText, ['input', 'payloads', i])) : undefined;
+      return [recordAnswer(input, payloadTexts)];
     }
     case 'lens/section': return [lensAnswer(input)];
     case 'spec/parse': return [S.parseNode(specNode(vector, rawText))];

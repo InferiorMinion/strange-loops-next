@@ -43,7 +43,7 @@ With the model's SHA-256, an id written from bytes equals the id written from th
 | `heads.whole-view` | `mem_wholeHeads`, `wholeHeads_sorted`, `wholeHeads_distinct` | every head belongs to some thing; heads occur once per id in content order | `fold/heads/gap15-partial-and-anchor`, `fold/view/gap15-partial-and-anchor`, `fold/latest/gap16-newest-union-head` |
 | `latest.newest` | `Latest.winner_newest`, `Latest.others_ordered` | Latest chooses the newest whole-reader head; its other heads stay in content order | `fold/latest/01-chain`, `fold/latest/gap16-newest-union-head` |
 | `latest.one-thing` | `Latest.oneThing` | Latest equals global LatestBy when every record names exactly the same single thing | `fold/latest/01-chain` |
-| `numeric.safe-whole` | `Record.num_safe`, `Record.num_number` | numeric slots read only safe-whole values; nonwhole values count as unread | `spec/run/gap14-field-types` |
+| `numeric.safe-whole` | `Record.num_safe`, `Record.num_number`, `Sum.on_step_missing`, `Max.acc_readable`, `Min.acc_readable` | numeric slots read only safe-whole values; nonwhole values count as unread. An unreadable field leaves `Sum.on`'s sum as it was. `Max.acc` and `Min.acc` read a record exactly when its `n` is a held safe whole number. | `spec/run/gap14-field-types` |
 | `sum.perm` | `Sum.perm` | arrival order doesn't change a sum | `fold/sum/01`, `02` |
 | `sum.repeats` | `Sum.repeats` | a repeated delivery is added again, which is why the read path hands each id over once | `fold/sum/03` |
 | `extrema.set` | `Max.set_decides`, `Min.set_decides` | Min and Max depend only on the set of records | `fold/extrema/*` |
@@ -186,7 +186,7 @@ pinned by the vectors rather than proved.
 | `where.total` | `Cond.eval_here`, `Cond.eval_envelope` | a test answers for every record whose payload is here, and an envelope test for every record, withheld or not | every `spec/run` vector |
 | `where.set` | `Cond.all_perm` | the tests of a `where` map can come in any order | (by construction) |
 | `view.refines` (where) | `Cond.eval_view`, `Cond.all_view`, `Tri.and_refines` | under a view a test, and a `where` map, keeps its answer or becomes unknown | `spec/run/02` |
-| `spec.select` | `Spec.select_view`, `Source.takes_view` | selection reads only envelopes, so a view selects the same records | `spec/run/*` |
+| `spec.select` | `Spec.select_view`, `Source.takes_view`, `Spec.mem_select` | selection reads only envelopes, so a view selects the same records. `Spec.select` holds exactly the input records the spec takes; `Spec.run` does not call it. | `spec/run/*` |
 | `spec.from-thing` | `Source.takes_about` | `from`'s `about` takes exactly the records about the thing, and a record about nothing is about its own id and nothing else | `spec/run/09` |
 | `spec.set` | `Slot.set_decides`, `Spec.set_decides` | Every slot of every spec gives the same value for the same distinct-id set, with each id consumed once. | `spec/run/*` |
 | `spec.after-supersession` | `latestOf_heads`, `collectOf_heads`, `Spec.view_state` | A slot over heads returns only heads retained in at least one thing, selected by its source, and passing every test. If the store's replacement rule reads only envelopes, a view keeps each thing's heads. Each head then shows only what the view shows. | `spec/run/03`, `04`, `08` |
@@ -217,6 +217,10 @@ Refused variants must give the same code. What isn't proved yet is that `resolve
 | `lens.absence-not-edit` | `absence_not_edit` | a dropped section leaves that section in the state as it was; the other sections' accepted edits still apply | `lens/section/06` |
 | normal form | `normalize_idem` | normalizing twice is normalizing once | every lens vector |
 | `lens.refuse` | `parse_valid` | malformed text, empty section ids and repeated section ids are refused | `lens/section/07`–`09` |
+| `lens.base-distinct` | `baseProblem_none`, `read_base_first`, `read_ok`, `read_put_get` | The public reader refuses a base that repeats an id with `base-id-duplicate`, before it reads the text and whatever the text says. What it accepts is the raw edit over distinct base ids, so put-get needs no promise about the base from the caller. | `lens/section/d1-duplicate-base-id`, `lens/section/d1-duplicate-base-unedited`, `lens/section/d1-duplicate-base-apart`, `lens/section/d1-duplicate-base-before-text`, `lens/section/d1-duplicate-base-empty-text` |
+
+`lookup` takes the first section with an id; that raw behavior is unchanged and unchecked.
+The public boundary is `read`: it checks the base, then the text.
 
 ## Record (`model/Laws/Record.lean`)
 
@@ -227,9 +231,11 @@ Refused variants must give the same code. What isn't proved yet is that `resolve
 | `record.sets` | `id_sets`, `canonSet_eq` | reordering or repeating `about`, `prev` or `erases` never changes the id | `record/02`, `03`, `11` |
 | `record.member-order` | `canon_member_order` | reordering an object's members never changes its canonical bytes | `record/04` |
 | UTF-16 order | `lexLt_trans`, `lexLt_total`, `utf16_inj` | member and set order is a strict total order on distinct strings | every record vector |
-| `record.refuse` | (by construction) | Bad envelopes, salt lengths, repeated members, nonfinite and out-of-range numbers receive named refusals. Raw unknown envelope keys refuse before `kind-empty`. | `record/20`–`34`, `record/r6-unknown-field`, `record/r6-unknown-before-kind` |
+| `record.unicode` | `ofUtf16?_eq_some_iff`, `ofUtf16?_utf16`, `ofUtf16?_lone_high`, `ofUtf16?_lone_high_end`, `ofUtf16?_lone_low` | UTF-16 code units read as text exactly when some text writes them. A string's own code units read back as that string, so no string the model canonicalizes or hashes holds a lone surrogate. A high surrogate without a low one after it, and a low one without a high one before it, are no text. | `record/d2-lone-high`, `record/d2-lone-low`, `record/d2-low-then-high`, `record/d2-high-then-escape`, `record/d2-member-name`, `record/d2-paired-escape` |
+| `record.refuse` | (by construction) | Bad envelopes, salt lengths, repeated members, nonfinite and out-of-range numbers receive named refusals. Raw unknown envelope keys refuse before `kind-empty`. A payload text that is JSON but holds a lone surrogate refuses with `string-not-unicode`, after raw shape and before every value check. A record input's first envelope and first payload decide its refusal. | `record/20`–`34`, `record/r6-unknown-field`, `record/r6-unknown-before-kind`, `record/d2-before-kind`, `record/d2-before-member-duplicate`, `record/d2-shape-first`, `record/d5-refused-then-written`, `record/d5-differently-refused-0`, `record/d5-differently-refused-1`, `record/d5-first-pair` |
 | `write.checked` | `writeProblem_none`, `Written` | `write` succeeds exactly when every check passes, and what it returns carries the proof; a batch writes through it | `record/*`, `batch/15`, `17` |
 | `write.member-order` | `Written.commit_member_order` | a written payload's commitment doesn't depend on the order of its members: `write` established the distinct names `record.member-order` needs | `record/04` |
+| `write.overflow` | `Number.finite_of_inRange`, `writeProblem_nonfinite`, `writeProblem_range_last` | A number past binary64's range is nonfinite, and no nonfinite number is in the writer's range. Under a good envelope and salt the writer refuses it with `number-out-of-range`. That refusal is the last: it speaks only when the envelope, the salt and the member names pass. | `record/d3-overflow`, `record/d3-overflow-value`, `record/d3-member-duplicate-first`, `record/d3-salt-first`, `record/d3-kind-first`, `record/d3-shape-first`, `batch/23`–`25`, `spec/parse/d3-overflow-bound`, `spec/parse/d3-overflow-limit` |
 
 ## Occurred (`model/Laws/Time.lean`)
 

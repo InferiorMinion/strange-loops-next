@@ -1,0 +1,20 @@
+{
+  "vector": "d2-low-then-high",
+  "layer": "record",
+  "laws": ["record.unicode", "record.refuse"],
+  "source": "model",
+  "input": {
+    "envs": [
+      {
+        "kind": "note",
+        "observer": "sl:u11o5kditce56otma2ksbsnff7n6t0ftgbrmt4sp0j5d1riusfr0",
+        "emitted": "2026-10-21T09:30:00Z"
+      }
+    ],
+    "salt": "1nep755gak4rkb1iq3umpfo7l0",
+    "payload_text": "{\"body\":\"\\udc00\\ud800\"}"
+  },
+  "expect": {
+    "refused": "string-not-unicode"
+  }
+}

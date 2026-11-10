@@ -29,10 +29,13 @@ evaluate(text: &str) -> Result<loops::json::Json, loops_eval::Error>
 `loops-place` and `loops-cli` sit outside this boundary; see `PLACE.md`.
 
 `Error` is a concrete error implementing `Display` and `std::error::Error`.
-Family helpers are private. `answers` retains every order/variant answer;
+Family helpers are private. `answers` retains every arrival-order answer;
 `evaluate` refuses empty or differing answer sets instead of choosing one.
-Writer refusals are successful answers containing `refused`; JSON and fixture
-decoding refusals are errors.
+A record input gives one answer: its first envelope and first payload decide,
+and a later variant that disagrees once they are written is an error.
+Writer refusals are successful answers containing `refused`; so are a text
+payload's lone surrogate (`string-not-unicode`) and a lens base that repeats
+an id (`base-id-duplicate`). JSON and fixture decoding refusals are errors.
 
 `loops-eval --batch DIR` recursively sorts `.json` paths and emits one JSONL
 object per file, with `file` and exactly one of `expect` or `error`.
@@ -46,7 +49,10 @@ failures exit nonzero, whereas decoding errors are per-file `error` rows.
 Every input numeric lexeme is parsed directly once as finite binary64.
 Safe-whole values (including `1.0`) normalize to `Json::Int`; other finite
 values remain `Json::Number`. NaN, infinities, overflow to infinity, invalid
-RFC 8259 grammar, and unpaired Unicode surrogates are refused. Canonical zero
+RFC 8259 grammar, and unpaired Unicode surrogates are refused by `parse_json`.
+`evaluate` decodes each layer's input as that layer reads numbers: overflow in
+a record's or batch's payload reaches the writer's `number-out-of-range`, and
+overflow in a spec reaches the spec parser (see `GAPS.md`). Canonical zero
 has no minus sign. Number formatting uses native Rust shortest printing with
 ECMAScript notation; the 4,000-row external standard is the compatibility gate.
 
@@ -85,8 +91,9 @@ Whole-view head unions retain records superseded on one thing but current on ano
 The generated `scenario/phase2-thing-state` pin distinguishes both heads and winner
 from whole-view state across every rotation.
 
-Lens edited sections reject repeated and empty ids and pair by id. Duplicate
-base ids retain the model's first-match behavior. Explicit line arrays are
+Lens edited sections reject repeated and empty ids and pair by id. `lens::read`
+refuses a base that repeats an id before it reads the text; the raw functions
+retain the model's first-match behavior. Explicit line arrays are
 not resplit or newline-normalized: carriage returns and trailing empty
 strings are meaningful. LF splitting at a text-to-lines boundary retains both.
 
@@ -97,20 +104,23 @@ There is no deferred-family or skipped-file allowlist:
 
 | Family | JSON files |
 | --- | ---: |
-| record | 82 |
+| record | 119 |
 | occurred | 9 |
 | byte-text | 5 |
 | fold | 48 |
-| spec | 110 |
+| spec | 113 |
 | realm | 15 |
 | scenario | 5 |
-| lens | 16 |
-| batch | 13 |
+| lens | 21 |
+| batch | 27 |
 | standard | 12 |
-| **Total** | **315** |
+| **Total** | **374** |
 
-All seven evaluator families are checked against immutable fixture answers,
-including every listed arrival order or Cartesian variant. Occurred fixtures
+All evaluator families are checked against immutable fixture answers,
+including every listed arrival order. A record's variants are checked against
+its first envelope and payload, not answered one by one. Eight inputs carry a
+number past binary64's range; the registry lists them, since the public strict
+decoder refuses their text and only `evaluate` reads them. Occurred fixtures
 are tested separately. Standards consume all six JCS input/output pairs,
 comparing canonical **bytes**, plus every one of 4,000 IEEE-hex/canonical
 number rows and 128 gzip SUPERCOP rows. Number roundtrips retain bits except

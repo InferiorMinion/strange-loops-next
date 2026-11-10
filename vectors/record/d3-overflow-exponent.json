@@ -1,0 +1,20 @@
+{
+  "vector": "d3-overflow-exponent",
+  "layer": "record",
+  "laws": ["write.overflow", "record.refuse"],
+  "source": "model",
+  "input": {
+    "envs": [
+      {
+        "kind": "note",
+        "observer": "sl:u11o5kditce56otma2ksbsnff7n6t0ftgbrmt4sp0j5d1riusfr0",
+        "emitted": "2026-10-21T09:30:00Z"
+      }
+    ],
+    "salt": "itonca8h5m03014dr7tq8gsun0",
+    "payload_text": "{\"deep\":[{\"n\":1.5E+400}]}"
+  },
+  "expect": {
+    "refused": "number-out-of-range"
+  }
+}

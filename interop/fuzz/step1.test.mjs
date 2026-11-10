@@ -28,7 +28,7 @@ test('named record boundaries remain scheduled across seeds', () => {
       if (i === 6) { assert.throws(() => evaluateJS(v)); continue; }
       const expected = i < 6 ? 'prev-not-record-id' : i < 11 ? 'emitted-not-rfc3339'
         : i < 27 ? 'occurred-not-span' : 'envelope-field-unknown';
-      assert.deepEqual(evaluateJS(v), Array(i === 27 ? 1 : 2).fill({ refused: expected }), name);
+      assert.deepEqual(evaluateJS(v), [{ refused: expected }], name);
       if (i === 27) { assert.equal(env.kind, ''); assert.equal(env.extra, true); }
     }
   }
@@ -85,4 +85,25 @@ test('valid generated records include fractional instants and occurred forms', (
   assert.ok(intervals.some(env => env.occurred.includes('T') && !env.occurred.endsWith('/..')));
   assert.ok(intervals.some(env => env.occurred.includes('T') && env.occurred.endsWith('/..')));
   for (const env of intervals) assert.ok(occurredSpan(env.occurred), env.occurred);
+});
+
+test('D2, D3 and D5 record boundaries are scheduled and answered as ruled', () => {
+  const want = [
+    ['text-lone-high', 'string-not-unicode'], ['text-lone-low-key', 'string-not-unicode'],
+    ['text-lone-after-shape', 'envelope-field-unknown'], ['text-lone-before-kind', 'string-not-unicode'],
+    ['text-lone-before-salt', 'string-not-unicode'], ['text-overflow', 'number-out-of-range'],
+    ['text-overflow-after-kind', 'kind-empty'], ['text-overflow-after-repeat', 'member-duplicate'],
+    ['variants-refused-first', 'kind-empty'], ['variants-differently-refused', 'observer-not-typed'],
+    ['variants-refused-later', null], ['variants-payload-refused-later', null],
+  ];
+  for (const seed of ['a', 'b', 'c']) {
+    for (const [d, [name, refused]] of want.entries()) {
+      const v = generate(seed, 44 + d, 'record');
+      assert.equal(v.fuzz.nearMiss, name);
+      // The case survives the transport: its text is what the engines read.
+      assert.deepEqual(JSON.parse(JSON.stringify(v)), v, name);
+      if (refused) assert.deepEqual(evaluateJS(v, JSON.stringify(v)), [{ refused }], name);
+      else assert.throws(() => evaluateJS(v, JSON.stringify(v)), /record input: (envs|payloads)\[1\]/, name);
+    }
+  }
 });

@@ -1,0 +1,27 @@
+{
+  "vector": "d5-differently-refused-1",
+  "layer": "record",
+  "laws": ["record.refuse"],
+  "source": "model",
+  "input": {
+    "envs": [
+      {
+        "kind": "",
+        "observer": "sl:u11o5kditce56otma2ksbsnff7n6t0ftgbrmt4sp0j5d1riusfr0",
+        "emitted": "2026-10-21T09:30:00Z"
+      },
+      {
+        "kind": "note",
+        "observer": "kyle",
+        "emitted": "2026-10-21T09:30:00Z"
+      }
+    ],
+    "payloads": [
+      {}
+    ],
+    "salt": "5l0b8biduj6fjtkckgrtb645ms"
+  },
+  "expect": {
+    "refused": "kind-empty"
+  }
+}

@@ -47,9 +47,17 @@ test('raw record replay preserves duplicate payload members', { timeout: 120000 
     assert.deepEqual(evaluateJS(vector, structured), evaluateJS(vector));
     const multiple = { ...vector, input: { ...vector.input, payloads: [{ x: 1 }, { x: 2 }] } };
     const multipleRaw = JSON.stringify(multiple).replace('{"x":2}', '{"x":2,"x":3}');
-    const answers = evaluateJS(JSON.parse(multipleRaw), multipleRaw);
-    assert.deepEqual(answers[0], evaluateJS(vector)[0]);
-    assert.deepEqual(answers[1], { refused: 'member-duplicate' });
+    // D5: the first payload decides. A later variant that is refused is a fault
+    // in the input, never an answer; first, its refusal is the answer.
+    assert.throws(() => evaluateJS(JSON.parse(multipleRaw), multipleRaw),
+      /payloads\[1\] is refused \(member-duplicate\) where payloads\[0\] is written/);
+    const [faulted] = await batchVectors([JSON.parse(multipleRaw)], { rawText: multipleRaw });
+    assert.match(faulted.error, /input\.payloads\[1\]: is refused \(member-duplicate\)/);
+    const first = { ...vector, input: { ...vector.input, payloads: [{ x: 2 }, { x: 1 }] } };
+    const firstRaw = JSON.stringify(first).replace('{"x":2}', '{"x":2,"x":3}');
+    assert.deepEqual(evaluateJS(JSON.parse(firstRaw), firstRaw), [{ refused: 'member-duplicate' }]);
+    const [refusedFirst] = await batchVectors([JSON.parse(firstRaw)], { rawText: firstRaw });
+    assert.deepEqual(refusedFirst.expect, { refused: 'member-duplicate' });
     const explicit = { ...vector, input: { ...vector.input, payload_text: '{"x":1,"x":2}' } };
     assert.deepEqual(evaluateJS(explicit, JSON.stringify(explicit)), evaluateJS(explicit));
   } finally {

@@ -4,6 +4,16 @@
    "states":
    "∀ (start start_1 : Nat), start = start_1 → ∀ (stop stop_1 : Nat), stop = stop_1 → ∀ (step step_1 : Nat) (e_step : step = step_1) (step_pos : 0 < step), [start:stop:step] = [start_1:stop_1:step_1]",
    "module": "Laws.IdSource"},
+  "Loops.writeProblem_range_last":
+  {"uses": ["Loops.Env.problem_ne_range"],
+   "states":
+   "∀ {env : Loops.Env} {salt : List UInt8} {payload : Loops.Json}, Loops.writeProblem env salt payload = some \"number-out-of-range\" → env.problem = none ∧ salt.length = 16 ∧ payload.keysDistinct = true ∧ payload.inRange = false",
+   "module": "Laws.Write"},
+  "Loops.writeProblem_nonfinite":
+  {"uses": ["Loops.Number.finite_of_inRange"],
+   "states":
+   "∀ {env : Loops.Env} {salt : List UInt8} {n : Loops.Number}, env.problem = none → salt.length = 16 → n.finite = false → Loops.writeProblem env salt (Loops.Json.number n) = some \"number-out-of-range\"",
+   "module": "Laws.Write"},
   "Loops.writeProblem_none":
   {"uses": [],
    "states":
@@ -51,6 +61,16 @@
   {"uses": ["Loops.utf16_inj_list"],
    "states": "∀ {a b : String}, Loops.utf16 a = Loops.utf16 b → a = b",
    "module": "Laws.Record"},
+  "Loops.utf16Char_ofNat_pair":
+  {"uses": ["Loops.toNat_ofNat_valid"],
+   "states":
+   "∀ {u l : Nat}, Loops.highSurrogate u = true → Loops.lowSurrogate l = true → Loops.utf16Char (Char.ofNat (65536 + (u - 55296) * 1024 + (l - 56320))) = [u, l]",
+   "module": "Laws.Record"},
+  "Loops.utf16Char_ofNat_bmp":
+  {"uses": ["Loops.toNat_ofNat_valid"],
+   "states":
+   "∀ {u : Nat}, Loops.highSurrogate u = false → Loops.lowSurrogate u = false → ¬65536 ≤ u → Loops.utf16Char (Char.ofNat u) = [u]",
+   "module": "Laws.Record"},
   "Loops.utf16Char_cons":
   {"uses": ["Loops.char_valid"],
    "states":
@@ -65,6 +85,11 @@
   {"uses": [],
    "states": "∀ (bs : List UInt8), Loops.unbase32 (Loops.base32 bs) = some bs",
    "module": "Laws.Base32"},
+  "Loops.toNat_ofNat_valid":
+  {"uses": [],
+   "states":
+   "∀ {n : Nat}, n < 55296 ∨ 57343 < n ∧ n < 1114112 → (Char.ofNat n).toNat = n",
+   "module": "Laws.Record"},
   "Loops.things_view":
   {"uses":
    ["Loops.SameEnvelope.about", "Loops.SameEnvelope.id", "Loops.View.envelope"],
@@ -186,7 +211,7 @@
    "∀ {xs : List Loops.Record}, Loops.Addressed xs → ∀ {t : String} {r : Loops.Record}, r ∈ (Loops.stateIn t xs).heads → Loops.HeadOf xs t r",
    "module": "Laws.Spec"},
   "Loops.speaks_view":
-  {"uses": ["Loops.anchors_view", "Loops.binds_view"],
+  {"uses": ["Loops.binds_view", "Loops.root_view"],
    "states":
    "∀ {f : Loops.Record → Loops.Record}, Loops.View f → ∀ (xs : List Loops.Signed) (L k : String), Loops.Speaks (List.map (Loops.Signed.through f) xs) L k ↔ Loops.Speaks xs L k",
    "module": "Laws.Keys"},
@@ -196,34 +221,24 @@
    "∀ {xs ys : List Loops.Signed}, (∀ (s : Loops.Signed), s ∈ xs ↔ s ∈ ys) → ∀ (L k : String), Loops.Speaks xs L k ↔ Loops.Speaks ys L k",
    "module": "Laws.Keys"},
   "Loops.speaks_needs_binding":
-  {"uses": ["Loops.speaks_cases"],
+  {"uses": [],
    "states":
-   "∀ {xs : List Loops.Signed} {L k : String}, (∀ (a : Loops.Signed), a ∈ xs → a.anchors L = true → a.key ≠ k) → (∀ (b : Loops.Signed), b ∈ xs → b.binds L k = true → ¬Loops.Speaks xs L b.key) → ¬Loops.Speaks xs L k",
+   "∀ {xs : List Loops.Signed} {L k : String}, ¬Loops.Root xs L k → (∀ (b : Loops.Signed), b ∈ xs → b.binds L k = true → ¬Loops.Root xs L b.key) → ¬Loops.Speaks xs L k",
    "module": "Laws.Keys"},
   "Loops.speaks_grows":
-  {"uses": [],
+  {"uses": ["Loops.root_grows"],
    "states":
    "∀ {xs ys : List Loops.Signed} {L k : String}, (∀ (s : Loops.Signed), s ∈ xs → s ∈ ys) → Loops.Speaks xs L k → Loops.Speaks ys L k",
-   "module": "Laws.Keys"},
-  "Loops.speaks_cases":
-  {"uses": [],
-   "states":
-   "∀ {xs : List Loops.Signed} {L k : String}, Loops.Speaks xs L k → (∃ a, a ∈ xs ∧ a.anchors L = true ∧ a.key = k) ∨ ∃ b, b ∈ xs ∧ b.binds L k = true ∧ Loops.Speaks xs L b.key",
    "module": "Laws.Keys"},
   "Loops.speaks_anchored":
   {"uses": [],
    "states":
    "∀ {xs : List Loops.Signed} {L k : String}, Loops.Speaks xs L k → ∃ a, a ∈ xs ∧ a.anchors L = true",
    "module": "Laws.Keys"},
-  "Loops.speakers_sound":
-  {"uses": ["Loops.speakersIn_sound"],
+  "Loops.speakers_iff":
+  {"uses": ["Loops.roots_iff"],
    "states":
-   "∀ {xs : List Loops.Signed} {L k : String}, k ∈ Loops.speakers xs L → Loops.Speaks xs L k",
-   "module": "Laws.Keys"},
-  "Loops.speakersIn_sound":
-  {"uses": [],
-   "states":
-   "∀ {xs : List Loops.Signed} {L : String} (n : Nat) {k : String}, k ∈ Loops.speakersIn xs L n → Loops.Speaks xs L k",
+   "∀ {xs : List Loops.Signed} {L k : String}, k ∈ Loops.speakers xs L ↔ Loops.Speaks xs L k",
    "module": "Laws.Keys"},
   "Loops.sorted_insertRecs":
   {"uses":
@@ -340,6 +355,21 @@
   {"uses": ["Loops.idsOf_sorted", "Loops.pick_id"],
    "states": "∀ (xs : List Loops.Record), Loops.Distinct (Loops.settle xs)",
    "module": "Laws.Things"},
+  "Loops.roots_iff":
+  {"uses": [],
+   "states":
+   "∀ {xs : List Loops.Signed} {L k : String}, k ∈ Loops.roots xs L ↔ Loops.Root xs L k",
+   "module": "Laws.Keys"},
+  "Loops.root_view":
+  {"uses": ["Loops.anchors_view"],
+   "states":
+   "∀ {f : Loops.Record → Loops.Record}, Loops.View f → ∀ (xs : List Loops.Signed) (L k : String), Loops.Root (List.map (Loops.Signed.through f) xs) L k ↔ Loops.Root xs L k",
+   "module": "Laws.Keys"},
+  "Loops.root_grows":
+  {"uses": [],
+   "states":
+   "∀ {xs ys : List Loops.Signed} {L k : String}, (∀ (s : Loops.Signed), s ∈ xs → s ∈ ys) → Loops.Root xs L k → Loops.Root ys L k",
+   "module": "Laws.Keys"},
   "Loops.refuse_ne_ok":
   {"uses": [],
    "states":
@@ -595,6 +625,78 @@
    "states":
    "∀ {t : String} {xs : List Loops.Record}, Loops.Addressed xs → Loops.OneThing t xs → ∀ {r : Loops.Record}, r ∈ Loops.wholeHeads xs ↔ r ∈ (Loops.LatestBy.empty.fold xs).heads",
    "module": "Laws.Things"},
+  "Loops.ofUtf16?_utf16":
+  {"uses": ["Loops.ofUtf16?_complete"],
+   "states": "∀ (s : String), Loops.ofUtf16? (Loops.utf16 s) = some s.toList",
+   "module": "Laws.Record"},
+  "Loops.ofUtf16?_sound":
+  {"uses":
+   ["Loops.ofUtf16?.induct_unfolding",
+    "Loops.utf16Char_ofNat_bmp",
+    "Loops.utf16Char_ofNat_pair"],
+   "states":
+   "∀ {us : List Nat} {cs : List Char}, Loops.ofUtf16? us = some cs → List.flatMap Loops.utf16Char cs = us",
+   "module": "Laws.Record"},
+  "Loops.ofUtf16?_lone_low":
+  {"uses": ["Loops.ofUtf16?.eq_def"],
+   "states":
+   "∀ {u : Nat} (us : List Nat), Loops.lowSurrogate u = true → Loops.ofUtf16? (u :: us) = none",
+   "module": "Laws.Record"},
+  "Loops.ofUtf16?_lone_high_end":
+  {"uses": ["Loops.ofUtf16?.eq_def"],
+   "states":
+   "∀ {u : Nat}, Loops.highSurrogate u = true → Loops.ofUtf16? [u] = none",
+   "module": "Laws.Record"},
+  "Loops.ofUtf16?_lone_high":
+  {"uses": ["Loops.ofUtf16?.eq_def"],
+   "states":
+   "∀ {u l : Nat} (us : List Nat), Loops.highSurrogate u = true → Loops.lowSurrogate l = false → Loops.ofUtf16? (u :: l :: us) = none",
+   "module": "Laws.Record"},
+  "Loops.ofUtf16?_eq_some_iff":
+  {"uses": ["Loops.ofUtf16?_complete", "Loops.ofUtf16?_sound"],
+   "states":
+   "∀ {us : List Nat} {cs : List Char}, Loops.ofUtf16? us = some cs ↔ List.flatMap Loops.utf16Char cs = us",
+   "module": "Laws.Record"},
+  "Loops.ofUtf16?_complete":
+  {"uses": ["Loops.char_valid", "Loops.ofUtf16?.eq_def"],
+   "states":
+   "∀ (cs : List Char), Loops.ofUtf16? (List.flatMap Loops.utf16Char cs) = some cs",
+   "module": "Laws.Record"},
+  "Loops.ofUtf16?.match_3.congr_eq_2":
+  {"uses": [],
+   "states":
+   "∀ (motive : List Nat → Sort u_1) (x : List Nat) (h_1 : Unit → motive []) (h_2 : (u : Nat) → (us : List Nat) → motive (u :: us)) (u : Nat) (us : List Nat), x = u :: us → (match x with | [] => h_1 () | u :: us => h_2 u us) ≍ h_2 u us",
+   "module": "Laws.Record"},
+  "Loops.ofUtf16?.match_3.congr_eq_1":
+  {"uses": [],
+   "states":
+   "∀ (motive : List Nat → Sort u_1) (x : List Nat) (h_1 : Unit → motive []) (h_2 : (u : Nat) → (us : List Nat) → motive (u :: us)), x = [] → (match x with | [] => h_1 () | u :: us => h_2 u us) ≍ h_1 ()",
+   "module": "Laws.Record"},
+  "Loops.ofUtf16?.match_1.congr_eq_2":
+  {"uses": [],
+   "states":
+   "∀ (motive : List Nat → Sort u_1) (us : List Nat) (h_1 : (l : Nat) → (rest : List Nat) → motive (l :: rest)) (h_2 : Unit → motive []), us = [] → (match us with | l :: rest => h_1 l rest | [] => h_2 ()) ≍ h_2 ()",
+   "module": "Laws.Record"},
+  "Loops.ofUtf16?.match_1.congr_eq_1":
+  {"uses": [],
+   "states":
+   "∀ (motive : List Nat → Sort u_1) (us : List Nat) (h_1 : (l : Nat) → (rest : List Nat) → motive (l :: rest)) (h_2 : Unit → motive []) (l : Nat) (rest : List Nat), us = l :: rest → (match us with | l :: rest => h_1 l rest | [] => h_2 ()) ≍ h_1 l rest",
+   "module": "Laws.Record"},
+  "Loops.ofUtf16?.induct_unfolding":
+  {"uses":
+   ["Loops.ofUtf16?.eq_def",
+    "Loops.ofUtf16?.match_1.congr_eq_1",
+    "Loops.ofUtf16?.match_1.congr_eq_2",
+    "Loops.ofUtf16?.match_3.congr_eq_1",
+    "Loops.ofUtf16?.match_3.congr_eq_2"],
+   "states":
+   "∀ (motive : List Nat → Option (List Char) → Prop), motive [] (some []) → (∀ (u : Nat), Loops.highSurrogate u = true → ∀ (l : Nat) (rest : List Nat), Loops.lowSurrogate l = true → motive rest (Loops.ofUtf16? rest) → motive (u :: l :: rest) (Option.map (fun x => Char.ofNat (65536 + (u - 55296) * 1024 + (l - 56320)) :: x) (Loops.ofUtf16? rest))) → (∀ (u : Nat), Loops.highSurrogate u = true → ∀ (l : Nat) (rest : List Nat), ¬Loops.lowSurrogate l = true → motive (u :: l :: rest) none) → (∀ (u : Nat), Loops.highSurrogate u = true → motive [u] none) → (∀ (u : Nat) (us : List Nat), ¬Loops.highSurrogate u = true → (Loops.lowSurrogate u || decide (65536 ≤ u)) = true → motive (u :: us) none) → (∀ (u : Nat) (us : List Nat), ¬Loops.highSurrogate u = true → ¬(Loops.lowSurrogate u || decide (65536 ≤ u)) = true → motive us (Loops.ofUtf16? us) → motive (u :: us) (Option.map (fun x => Char.ofNat u :: x) (Loops.ofUtf16? us))) → ∀ (a : List Nat), motive a (Loops.ofUtf16? a)",
+   "module": "Laws.Record"},
+  "Loops.ofUtf16?.eq_def":
+  {"uses": [],
+   "states":
+   "∀ (x : List Nat), Loops.ofUtf16? x = match x with | [] => some [] | u :: us => if Loops.highSurrogate u = true then match us with | l :: rest => if Loops.lowSurrogate l = true then Option.map (fun x => Char.ofNat (65536 + (u - 55296) * 1024 + (l - 56320)) :: x) (Loops.ofUtf16? rest) else none | [] => none else if (Loops.lowSurrogate u || decide (65536 ≤ u)) = true then none else Option.map (fun x => Char.ofNat u :: x) (Loops.ofUtf16? us)",
+   "module": "Laws.Record"},
   "Loops.occurred_qualified_start":
   {"uses":
    ["Loops.halves_append",
@@ -1253,6 +1355,11 @@
    "states":
    "∀ (n : Nat) (s : String), Loops.byteText n s = true ↔ ∃ bs, bs.length = n ∧ Loops.base32 bs = s",
    "module": "Laws.Base32"},
+  "Loops.bound_binds_nothing":
+  {"uses": ["Loops.speaks_grows"],
+   "states":
+   "∀ {xs : List Loops.Signed} {L : String} {s : Loops.Signed}, ¬Loops.Root (s :: xs) L s.key → ∀ (k : String), Loops.Speaks (s :: xs) L k ↔ Loops.Speaks xs L k",
+   "module": "Laws.Keys"},
   "Loops.bitsBytes.eq_def":
   {"uses": [],
    "states":
@@ -1558,6 +1665,11 @@
    "states":
    "∀ {xs ys : List Loops.Record}, xs.Perm ys → ∀ (s : Int), Loops.Sum.fold s xs = Loops.Sum.fold s ys",
    "module": "Laws.Numeric"},
+  "Loops.Sum.on_step_missing":
+  {"uses": [],
+   "states":
+   "∀ {field : String} {r : Loops.Record} (s : Int), r.num field = none → (Loops.Sum.on field).step s r = s",
+   "module": "Laws.Families"},
   "Loops.Sum.fold_eq":
   {"uses": [],
    "states":
@@ -1698,11 +1810,11 @@
    "states":
    "∀ {vertex : String} {sources : List Loops.Source} {slots : List Loops.Slot} {vertex_1 : String} {sources_1 : List Loops.Source} {slots_1 : List Loops.Slot}, { vertex := vertex, sources := sources, slots := slots } = { vertex := vertex_1, sources := sources_1, slots := slots_1 } → vertex = vertex_1 ∧ sources = sources_1 ∧ slots = slots_1",
    "module": "Loops.Spec"},
-  "Loops.Speaks.brecOn":
+  "Loops.Spec.mem_select":
   {"uses": [],
    "states":
-   "∀ {xs : List Loops.Signed} {L : String} {motive : (a : String) → Loops.Speaks xs L a → Prop} {a : String} (t : Loops.Speaks xs L a), (∀ (a : String) (t : Loops.Speaks xs L a), Loops.Speaks.below t → motive a t) → motive a t",
-   "module": "Loops.Keys"},
+   "∀ (sp : Loops.Spec) (xs : List Loops.Record) (r : Loops.Record), r ∈ sp.select xs ↔ r ∈ xs ∧ sp.takes r = true",
+   "module": "Laws.Spec"},
   "Loops.Span.ok":
   {"uses": [],
    "states":
@@ -2180,6 +2292,10 @@
    "states":
    "∀ {bits bits_1 : UInt64}, { bits := bits } = { bits := bits_1 } → bits = bits_1",
    "module": "Loops.Number"},
+  "Loops.Number.finite_of_inRange":
+  {"uses": [],
+   "states": "∀ {n : Loops.Number}, n.inRange = true → n.finite = true",
+   "module": "Laws.Write"},
   "Loops.Newer.trans":
   {"uses": ["Loops.Span.before_trans"],
    "states":
@@ -2218,6 +2334,11 @@
    "states":
    "∀ (s : Option Int) (xs ys : List Loops.Record), Loops.Min.fold (Loops.Min.fold s xs) ys = Loops.Min.fold s (xs ++ ys)",
    "module": "Laws.Numeric"},
+  "Loops.Min.acc_readable":
+  {"uses": [],
+   "states":
+   "∀ (r : Loops.Record), Loops.Min.acc.readable r = (r.num \"n\").isSome",
+   "module": "Laws.Families"},
   "Loops.Min.acc_fold":
   {"uses": [],
    "states":
@@ -2264,6 +2385,11 @@
    "states":
    "∀ (s : Option Int) (xs ys : List Loops.Record), Loops.Max.fold (Loops.Max.fold s xs) ys = Loops.Max.fold s (xs ++ ys)",
    "module": "Laws.Numeric"},
+  "Loops.Max.acc_readable":
+  {"uses": [],
+   "states":
+   "∀ (r : Loops.Record), Loops.Max.acc.readable r = (r.num \"n\").isSome",
+   "module": "Laws.Families"},
   "Loops.Max.acc_fold":
   {"uses": [],
    "states":
@@ -2278,6 +2404,21 @@
   {"uses": [],
    "states":
    "∀ (l : Loops.Lens.Line), Loops.Lens.unescape (Loops.Lens.escape l) = l",
+   "module": "Laws.Lens"},
+  "Loops.Lens.read_put_get":
+  {"uses": ["Loops.Lens.put_get_text", "Loops.Lens.read_ok"],
+   "states":
+   "∀ {base edited : List Loops.Lens.Section} {text : List Loops.Lens.Line} {r : Option (List Loops.Lens.Outcome)}, Loops.Lens.read base text = Except.ok r → Loops.Lens.parse text = some edited → Loops.Lens.ids edited = Loops.Lens.ids base → Option.map (fun os => Loops.Lens.render (Loops.Lens.apply base os)) r = Loops.Lens.normalize text",
+   "module": "Laws.Lens"},
+  "Loops.Lens.read_ok":
+  {"uses": ["Loops.Lens.baseProblem_none"],
+   "states":
+   "∀ {base : List Loops.Lens.Section} {text : List Loops.Lens.Line} {r : Option (List Loops.Lens.Outcome)}, Loops.Lens.read base text = Except.ok r → (Loops.Lens.ids base).Nodup ∧ r = Loops.Lens.edit base text",
+   "module": "Laws.Lens"},
+  "Loops.Lens.read_base_first":
+  {"uses": [],
+   "states":
+   "∀ {base : List Loops.Lens.Section}, ¬(Loops.Lens.ids base).Nodup → ∀ (text : List Loops.Lens.Line), Loops.Lens.read base text = Except.error \"base-id-duplicate\"",
    "module": "Laws.Lens"},
   "Loops.Lens.put_get_text":
   {"uses": ["Loops.Lens.put_get"],
@@ -2380,6 +2521,11 @@
   {"uses": ["Loops.Lens.lookup_of_mem"],
    "states":
    "∀ {base : List Loops.Lens.Section}, (Loops.Lens.ids base).Nodup → Loops.Lens.diff base base = []",
+   "module": "Laws.Lens"},
+  "Loops.Lens.baseProblem_none":
+  {"uses": [],
+   "states":
+   "∀ (base : List Loops.Lens.Section), Loops.Lens.baseProblem base = none ↔ (Loops.Lens.ids base).Nodup",
    "module": "Laws.Lens"},
   "Loops.Lens.apply_diff":
   {"uses":
@@ -2813,6 +2959,11 @@
   {"uses": [],
    "states": "∀ {i i_1 : Int}, Loops.Json.int i = Loops.Json.int i_1 → i = i_1",
    "module": "Loops.Json"},
+  "Loops.Json.inRange.eq_def":
+  {"uses": ["Loops.Json.brecOn.eq"],
+   "states":
+   "∀ (x : Loops.Json), x.inRange = match x with | Loops.Json.int i => decide (-Loops.maxExact ≤ i) && decide (i ≤ Loops.maxExact) | Loops.Json.number n => n.inRange | Loops.Json.arr xs => Loops.Json.allInRange xs | Loops.Json.obj kvs => Loops.Json.membersInRange kvs | x => true",
+   "module": "Laws.Write"},
   "Loops.Json.canonMembers.eq_def":
   {"uses": ["Loops.Json.brecOn_2.eq"],
    "states":
@@ -3106,6 +3257,10 @@
   {"uses": [],
    "states": "sizeOf Loops.EnvField.about = 1",
    "module": "Loops.Spec"},
+  "Loops.Env.problem_ne_range":
+  {"uses": [],
+   "states": "∀ {e : Loops.Env}, e.problem ≠ some \"number-out-of-range\"",
+   "module": "Laws.Write"},
   "Loops.Env.problem_codes":
   {"uses": [],
    "states":

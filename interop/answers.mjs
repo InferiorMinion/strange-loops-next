@@ -22,9 +22,20 @@ export function parseOutputJson(text) {
   });
 }
 
+// A lone surrogate, in a string or a member name, at any depth.
+function loneSurrogate(v) {
+  if (typeof v === 'string') return !v.isWellFormed();
+  if (Array.isArray(v)) return v.some(loneSurrogate);
+  if (v !== null && typeof v === 'object') return Object.entries(v).some(([k, x]) => !k.isWellFormed() || loneSurrogate(x));
+  return false;
+}
+
 // Inputs still use binary64 JSON numbers. Only the expected answer is exact.
+// A vector is JSON text of Unicode scalar values throughout, ignored members
+// included: JSON.parse reads a lone surrogate, so it is refused here.
 export function readVector(text) {
   const vector = JSON.parse(text);
+  if (loneSurrogate(vector)) throw new Error('the vector holds a lone surrogate');
   if (Object.hasOwn(vector, 'expect')) vector.expect = parseOutputJson(jsonSourceAt(text, ['expect']));
   return vector;
 }

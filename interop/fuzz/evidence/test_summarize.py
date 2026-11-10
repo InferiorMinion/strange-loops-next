@@ -13,12 +13,21 @@ spec.loader.exec_module(summarize)
 class EvidenceTest(unittest.TestCase):
     def test_retained_artifacts(self):
         result = summarize.report()
-        self.assertEqual(list(result['campaigns']), ['step1-3'])
+        self.assertEqual(list(result['campaigns']), ['d1-d6-1', 'step1-3'])
+        settled = result['campaigns']['d1-d6-1']
+        self.assertEqual(settled['totals'], {'cases': 5600, 'match': 4107, 'protocol-refusal': 1124,
+                                             'decoder-refusal': 369, 'mismatch': 0})
+        self.assertEqual(settled['families']['lens'], {'cases': 800, 'match': 571, 'protocol-refusal': 229,
+                                                       'decoder-refusal': 0, 'mismatch': 0})
         campaign = result['campaigns']['step1-3']
         self.assertEqual(campaign['totals']['cases'], 5600)
         self.assertEqual(campaign['totals']['mismatch'], 42)
         self.assertEqual(campaign['families']['lens']['mismatch'], 42)
-        self.assertEqual(list(result['mutations']), ['mutations-fixes2'])
+        self.assertEqual(list(result['mutations']), ['mutations-d1-d6', 'mutations-fixes2'])
+        current = result['mutations']['mutations-d1-d6']
+        self.assertEqual(current['total'], 201)
+        self.assertEqual(current['outcomes'], {'error': 15, 'killed-by-vector': 27, 'rejected-by-build': 157, 'survived': 2})
+        self.assertEqual(current['survivors'], ['finish-json-hexdigit', 'last-spec-tests-conds'])
         mutation = result['mutations']['mutations-fixes2']
         self.assertEqual(mutation['total'], 195)
         self.assertEqual(mutation['outcomes'], {'error': 16, 'killed-by-vector': 27, 'rejected-by-build': 146, 'survived': 6})
