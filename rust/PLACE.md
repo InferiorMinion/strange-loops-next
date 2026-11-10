@@ -14,15 +14,15 @@ written down here so they can be changed on purpose.
 ```
 loops init                          make .loops/ here
 loops emit <kind> [field=text | field:=json]... ["message"]
-      [--about <thing>]... [--prev <id>]... [--erases <id>]...
+      [--of <thing>] [--about <thing>]... [--prev <id>]... [--erases <id>]...
       [--occurred <when>] [--under <id>]
 loops emit -                        drafts as JSONL on stdin: one changeset
 loops get <id>                      one record
-loops about <thing>                 a thing's winner, its other heads, how many records
+loops about <thing>                 a thing's winner, its other heads, how many records are of it
 loops read <vertex>                 fold .loops/vertices/<vertex>.json
 loops fold <spec.json | ->          fold a spec given as a file
 loops erase <id>... ["why"]         emit an erasure, and drop the openings held here
-loops export [--kind <k>] [--about <thing>]
+loops export [--kind <k>] [--of <thing>] [--about <thing>]
 loops import [<file> | -]
 loops check                         verify every segment and line
 loops whoami
@@ -34,10 +34,19 @@ loops whoami
   `.git`; exit 0 ok, 1 refused with its code, 2 usage, and 3 when the file
   system or the system's randomness fails.
 * Every write goes through `batch::resolve_batch`, so one record and a
-  labelled changeset meet the same checks, `prev-unknown` and
-  `prev-unrelated` included. A changeset writes nothing unless every draft is taken.
-* An id can be given by any prefix that names one held record.
-* A revision written without `--about` is about what it replaces, when its `prev` targets all hold the same things.
+  labelled changeset meet the same checks, `prev-unknown`, `of-not-root` and
+  `prev-unrelated` included. The batch check reads a held record's `of` and
+  `prev` from its stored envelope (`Held::writer_view`). A changeset writes
+  nothing unless every draft is taken.
+* An id can be given by any prefix that names one held record, in `--prev`,
+  `--erases`, `--under`, `--of` and `about`. A thing with a colon that is not
+  `r:` is a natural key, taken as typed.
+* A record is of one thing (D8): `--of` names it, and a record without it is
+  a root, its own thing. `--about` only mentions: it never makes a head, and
+  `loops about`, `latest-by` and the heads read the thing, not the mention.
+  `export --of` takes the records of a thing and `export --about` those that
+  mention it, as a spec's `from.of` and `from.about` do.
+* A revision written without `--of` is of what it replaces; see choice 9.
 * Every answer is JSON or an id. Lenses are a later step, so `--json` is accepted and changes nothing.
 
 ## On disk
@@ -98,6 +107,16 @@ held. A segment whose name is not the hash of its bytes is listed as altered.
    `erases`, which every reader applies, and rewrites the local segments that
    held the opening. Other copies, and git history, keep the opening until
    they purge too.
+9. **`emit` fills in `of` for a revision; the protocol never infers it.**
+   Every record with `prev` states `of` (`of-missing`). A revision written
+   with `--prev` and no `--of` is given, at write time, the thing of what it
+   replaces: the target's `of`, or its id when it is a root. The value is
+   written into the envelope, and nothing reads it in later. When the CLI
+   can't fill it in, the batch's own checks say why: a target this store
+   doesn't hold is `prev-unknown`, and targets of different things are
+   `prev-unrelated`. This replaces the earlier "a revision without `--about`
+   is about what it replaces". `emit -` fills nothing in: a changeset states
+   `of` itself, and may use a label there.
 
 ## Checked by
 
@@ -105,9 +124,12 @@ held. A segment whose name is not the hash of its bytes is listed as altered.
 the model's `line` and `erased_line` byte for byte, then requires each changed
 line to be refused by the check that covers the change. `rust/place/tests/dir.rs`
 covers changesets, union in either order, purge with and without an eraser,
-a torn last line and an altered segment. `rust/cli/tests/walk.rs` drives the
-binary: emit, revise, fork, fold, erase; a labelled changeset and its
-refusals; two stores converging; exit codes. Expected answers come from the
+a torn last line, an altered segment, and the batch check's view of held
+records (`of-not-root`, and `about` making no head). `rust/cli/tests/walk.rs`
+drives the binary: emit, revise, fork, fold, erase; a labelled changeset and its
+refusals; `of` filled in for a revision, `--of`, and `of-not-root` and
+`prev-unrelated` against the store; a mention making no head; two stores
+converging; exit codes. Expected answers come from the
 vectors or from the walk's own statements, not from the code.
 
 Not checked: nothing in the model says what a place is, so there is no law
@@ -120,6 +142,6 @@ loops init
 node design/rethink/ledger-drafts.mjs | loops emit -
 ```
 
-writes the decision ledger as one signed changeset of 53 records, each
-anchoring its own thing. It is not committed: the first store in this repo
+writes the decision ledger as one signed changeset of 53 records, each a
+root and so its own thing. It is not committed: the first store in this repo
 should be signed by its owner's key, not a session's.
