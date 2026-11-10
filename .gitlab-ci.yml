@@ -2,38 +2,58 @@
 #
 # strange-loops-next is primary on GitLab from 2026-11-08, so merge requests are
 # checked here. Keep the two files in step: a gate added to one belongs in the other.
-# GitLab runs the same gates with two economies GitHub does not have: the model
-# mutants run only when their inputs change (model-mutants below), and the model
-# gate runs in a prebuilt image (ci/Dockerfile) instead of installing toolchains.
+# GitLab runs the same gates with three economies GitHub does not have: the model
+# mutants run only when their inputs change (model-mutants below), the model gate
+# runs in a prebuilt image (ci/Dockerfile) instead of installing toolchains, and
+# main does not re-run the gates for a merge request merge whose pipeline already
+# passed on the same tree (merge-check below). GitHub runs every gate on every push.
 #
 # Every job is tagged `homelab` (the Docker executor). The instance's other runner,
 # osxcompute-primary, is a macOS shell executor that also takes untagged jobs and
 # ignores `image:`, so an untagged job could run there without its toolchain.
 
 # What the CI image is built from. A pipeline whose changes touch these builds
-# the image first; on a branch it is tagged with the branch, so a merge request
-# never replaces the image main uses.
+# the image first; off main it is tagged with the commit, so a merge request
+# never replaces the image main uses, and main can take the very image a merge
+# request was tested with.
 .image-inputs: &image-inputs
   - ci/Dockerfile
   - model/lean-toolchain
 
+# Main skips the gates for a tested merge. That is sound only with the project
+# settings it relies on: merge method "merge commit with semi-linear history"
+# (GitLab merges a branch only when it already contains main, so the merge
+# commit's tree is the branch head's tree), "pipelines must succeed" with
+# skipped pipelines not counting, and no one allowed to push to main. The title
+# and trailer below only route the pipeline; merge-check then proves the claim
+# from the commit graph and the API, and if it can't, the full gate runs anyway.
+# A changed merge commit template or project path stops the routing matching,
+# so main runs the full gate.
 workflow:
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
       changes: *image-inputs
       variables:
-        CI_IMAGE: $CI_REGISTRY_IMAGE/ci:$CI_COMMIT_REF_SLUG
+        CI_IMAGE: $CI_REGISTRY_IMAGE/ci:$CI_COMMIT_SHA
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     - if: $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS
       when: never
-    # Only main writes the caches; every other pipeline reads them.
+    # A merge request merged into main. Only main writes the caches.
+    - if: >-
+        $CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+        && $CI_COMMIT_TITLE =~ /^Merge branch '.+' into 'main'$/
+        && $CI_COMMIT_MESSAGE =~ /\nSee merge request kaygee\/strange-loops-next!\d+\s*$/
+      variables:
+        MERGED_MR: "true"
+        CACHE_POLICY: pull-push
+    # Any other main pipeline (web, scheduled, a child full gate) runs every gate.
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
       variables:
         CACHE_POLICY: pull-push
     - if: $CI_COMMIT_BRANCH
       changes: *image-inputs
       variables:
-        CI_IMAGE: $CI_REGISTRY_IMAGE/ci:$CI_COMMIT_REF_SLUG
+        CI_IMAGE: $CI_REGISTRY_IMAGE/ci:$CI_COMMIT_SHA
     - if: $CI_COMMIT_BRANCH
 
 variables:
@@ -46,6 +66,11 @@ default:
 
 stages: [image, check]
 
+# Every gate is left out of a tested merge's pipeline on main.
+.not-merged: &not-merged
+  if: $MERGED_MR
+  when: never
+
 # Kaniko builds without a Docker daemon or a privileged container.
 ci-image:
   stage: image
@@ -53,6 +78,7 @@ ci-image:
     name: gcr.io/kaniko-project/executor:v1.23.2-debug
     entrypoint: [""]
   rules:
+    - *not-merged
     - changes: *image-inputs
   script:
     - >-
@@ -68,9 +94,8 @@ ci-image:
       --snapshot-mode=redo
       --compressed-caching=false
 
-rust:
+.rust:
   stage: check
-  needs: []
   image: rust:1-bookworm
   variables:
     CARGO_HOME: $CI_PROJECT_DIR/.cargo-home
@@ -81,6 +106,13 @@ rust:
   before_script:
     - rustup component add rustfmt clippy
     - export PATH="$CARGO_HOME/bin:$PATH"
+
+rust:
+  extends: .rust
+  needs: []
+  rules:
+    - *not-merged
+    - when: on_success
   script:
     - cd rust
     - cargo fmt --all --check
@@ -103,6 +135,9 @@ rust:
 
 model:
   extends: .model
+  rules:
+    - *not-merged
+    - when: on_success
   script:
     # Proofs check
     - (cd model && lake build --wfail)
@@ -150,6 +185,7 @@ model-mutants:
     paths: [model/.lake]
     policy: pull
   rules:
+    - *not-merged
     - changes:
         - model/**/*
         - vectors/standard/es6-numbers.txt
@@ -162,6 +198,9 @@ interop:
   stage: check
   needs: []
   image: node:22-bookworm
+  rules:
+    - *not-merged
+    - when: on_success
   script:
     # The JS implementation agrees on every vector
     - node interop/js/check.mjs vectors
@@ -172,6 +211,9 @@ design:
   stage: check
   needs: []
   image: node:22-bookworm
+  rules:
+    - *not-merged
+    - when: on_success
   script:
     # The design pages are a pure render of design/, protocol/ and vectors/
     - node design/build.mjs
@@ -179,3 +221,112 @@ design:
     - test -z "$(git status --porcelain -- out)"
     # The design build refuses every mutant it should
     - node design/mutants.mjs
+
+# A tested merge's pipeline on main: check the claim, then only keep main's
+# image and caches current. These jobs are not interruptible, so a quick second
+# merge cannot cancel the first one's image promotion.
+#
+# merge-check passes only if this commit is a merge of exactly the previous
+# main and a branch that already contained it, has that branch head's tree,
+# GitLab records it as the merge of a merge request with that head, and the
+# latest merge request pipeline on that head passed. Then every gate has run
+# on this tree.
+merge-check:
+  stage: image
+  image: node:22-bookworm
+  interruptible: false
+  variables:
+    GIT_DEPTH: "0"
+  rules:
+    - if: $MERGED_MR
+  script:
+    - |
+      fail() { echo "merge-check: $*; the full gate runs instead (full-gate)" >&2; exit 1; }
+      set -- $(git rev-list --parents -n 1 HEAD)
+      [ $# -eq 3 ] || fail "$CI_COMMIT_SHA has $(($# - 1)) parents, not 2"
+      base=$2 head=$3
+      [ "$base" = "$CI_COMMIT_BEFORE_SHA" ] || fail "first parent $base is not the previous main $CI_COMMIT_BEFORE_SHA"
+      git merge-base --is-ancestor "$base" "$head" || fail "the merged head $head does not contain main $base"
+      [ "$(git rev-parse 'HEAD^{tree}')" = "$(git rev-parse "$head^{tree}")" ] || fail "the tree differs from the merged head $head"
+      get() { curl -sSf -H "JOB-TOKEN: $CI_JOB_TOKEN" -o "$1" "$CI_API_V4_URL/projects/$CI_PROJECT_ID/$2" || fail "cannot read $2"; }
+      # GitLab marks the merge request merged just after it moves main.
+      for wait in 0 10 20 30; do
+        sleep $wait
+        get mrs.json "repository/commits/$CI_COMMIT_SHA/merge_requests"
+        mr=$(node -p "(require('./mrs.json').find(m => m.state === 'merged' && m.merge_commit_sha === '$CI_COMMIT_SHA'
+          && m.sha === '$head' && m.target_branch === '$CI_DEFAULT_BRANCH') || {}).iid")
+        [ "$mr" != undefined ] && break
+      done
+      [ "$mr" != undefined ] || fail "no merge request into main was merged as $CI_COMMIT_SHA from $head"
+      get pipelines.json "pipelines?sha=$head&source=merge_request_event&per_page=1"
+      status=$(node -p 'const p = require("./pipelines.json"); p.length ? `${p[0].id} ${p[0].status}` : "none"')
+      [ "${status#* }" = success ] || fail "the latest merge request pipeline on $head is: $status"
+      echo "merge-check: !$mr merged $head, whose pipeline ${status% *} passed, and this is its tree"
+      echo "MR_HEAD_SHA=$head" > merge.env
+  artifacts:
+    reports:
+      dotenv: merge.env
+
+# When the merge changed the image inputs, the merge request pipeline built
+# ci:<head sha> and ran the model gate in it. Main takes that image, not a
+# rebuild (a rebuild would fetch a newer stable Rust and elan).
+ci-image-promote:
+  stage: image
+  needs: [merge-check]
+  image:
+    name: gcr.io/go-containerregistry/crane/debug:v0.20.3
+    entrypoint: [""]
+  interruptible: false
+  variables:
+    GIT_STRATEGY: none
+  rules:
+    - if: $MERGED_MR
+      changes: *image-inputs
+  script:
+    - crane auth login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
+    - crane tag "$CI_REGISTRY_IMAGE/ci:$MR_HEAD_SHA" main
+
+# Refresh the caches the gates read. These build what the gates build and
+# assert nothing.
+rust-cache:
+  extends: .rust
+  needs: [merge-check]
+  interruptible: false
+  rules:
+    - if: $MERGED_MR
+  script:
+    - cd rust
+    - cargo clippy --workspace --all-targets --all-features
+    - cargo test --workspace --no-run
+    - cargo doc --workspace --no-deps
+    - cargo build -p loops-eval --bin loops-eval
+
+model-cache:
+  extends: .model
+  needs:
+    - merge-check
+    - job: ci-image-promote
+      optional: true
+  interruptible: false
+  rules:
+    - if: $MERGED_MR
+  script:
+    - (cd model && lake build && lake build proofs boundaries)
+
+# If merge-check or the promotion fails, run every gate on main after all, in a
+# child pipeline that writes the caches and rebuilds ci:main if it must. The
+# pipeline is still marked failed, so the failure is seen.
+full-gate:
+  stage: check
+  needs:
+    - merge-check
+    - job: ci-image-promote
+      optional: true
+  rules:
+    - if: $MERGED_MR
+      when: on_failure
+  variables:
+    MERGED_MR: ""
+  trigger:
+    include: .gitlab-ci.yml
+    strategy: depend
