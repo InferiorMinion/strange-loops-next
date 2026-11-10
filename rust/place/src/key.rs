@@ -1,4 +1,4 @@
-//! A device's signing key, and the randomness a writer needs.
+//! A signing key, and the randomness a writer needs.
 use ed25519_dalek::{Signer, SigningKey};
 use loops::base32;
 use std::fmt;

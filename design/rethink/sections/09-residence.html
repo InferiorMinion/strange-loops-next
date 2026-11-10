@@ -16,7 +16,7 @@
 ~/.config/loops/places.json                 per machine, never shared
 ~/.config/loops/keys/                       the file signer; the OS keychain otherwise
 ~/.cache/loops/index.db                     derived, disposable</pre>
-  <p>Discovery walks up to the nearest <code>.loops/</code>, the way git finds <code>.git</code>. Zero-config is <code>.loops/</code> alone, JSONL, no <code>places.json</code>. First run creates a device label per write place in the segment path. It keeps two writers out of one file. Exactly one device key signs each segment. In a git place a segment file closes once committed. The next write opens a new file. A writer on two branches adds two files instead of forking one. A store whose places are all SQLite can be a single <code>store.db</code> holding the same things.</p>
+  <p>Discovery walks up to the nearest <code>.loops/</code>, the way git finds <code>.git</code>. Zero-config is <code>.loops/</code> alone, JSONL, no <code>places.json</code>. First run creates a device label per write place in the segment path. It keeps two writers out of one file. Exactly one key signs each segment. In a git place a segment file closes once committed. The next write opens a new file. A writer on two branches adds two files instead of forking one. A store whose places are all SQLite can be a single <code>store.db</code> holding the same things.</p>
 
   <h3>Defining a store</h3>
   <p>The old <code>.vertex</code> file did four jobs at once. Each now has its own home:</p>

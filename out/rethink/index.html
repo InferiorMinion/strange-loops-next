@@ -1957,7 +1957,7 @@ loops emit dispute --about r:x2 --about r:x3                                    
 ~/.config/loops/places.json                 per machine, never shared
 ~/.config/loops/keys/                       the file signer; the OS keychain otherwise
 ~/.cache/loops/index.db                     derived, disposable</pre>
-  <p>Discovery walks up to the nearest <code>.loops/</code>, the way git finds <code>.git</code>. Zero-config is <code>.loops/</code> alone, JSONL, no <code>places.json</code>. First run creates a device label per write place in the segment path. It keeps two writers out of one file. Exactly one device key signs each segment. In a git place a segment file closes once committed. The next write opens a new file. A writer on two branches adds two files instead of forking one. A store whose places are all SQLite can be a single <code>store.db</code> holding the same things.</p>
+  <p>Discovery walks up to the nearest <code>.loops/</code>, the way git finds <code>.git</code>. Zero-config is <code>.loops/</code> alone, JSONL, no <code>places.json</code>. First run creates a device label per write place in the segment path. It keeps two writers out of one file. Exactly one key signs each segment. In a git place a segment file closes once committed. The next write opens a new file. A writer on two branches adds two files instead of forking one. A store whose places are all SQLite can be a single <code>store.db</code> holding the same things.</p>
 
   <h3>Defining a store</h3>
   <p>The old <code>.vertex</code> file did four jobs at once. Each now has its own home:</p>
@@ -2335,18 +2335,19 @@ loops emit dispute --about r:x2 --about r:x3                                    
   <p>One store, three writers: you, an agent seat working with you, and a second person who joins and later leaves. Each step says whether the design so far <b>holds</b> or <b>breaks</b>.</p>
   <ol class="steps">
     <li><div class="stack">
-      <p><b>You start.</b> One record of kind <code>lineage-anchor</code>, whose observer is the key that signed it. Its hash is your <code>sl:</code> id, and that key is your root.</p>
+      <p><b>You start.</b> One record of kind <code>lineage-anchor</code>, whose observer is the key that signed it. Its hash is your <code>sl:</code> id, and that key is your <b>root key</b>.</p>
+      <p>The lineage is the anchor, not the key. One anchor, copied into every store, is the same you in each. The same key signing a second anchor starts a second lineage.</p>
       <p><b>Holds</b>, with one decision inside it: the root needs nothing from the payload, so erasing or withholding the anchor's payload never changes who you are. Your name and email are separate records about the lineage.</p>
     </div></li>
     <li><div class="stack">
-      <p><b>You write from the workbench.</b> A <code>key-binding</code> record, observer your lineage, about the workbench's device key. Records the device key signs with <code>observer: sl:you</code> are now your word.</p>
-      <p><b>Breaks</b> the four-tier key scheme, in a useful way. Who may sign a binding? If any bound key may, a stolen device key can bind more keys, and two keys can each try to end the other. If only the root may, stratum 1 has no recursion at all: the speakers are the root, plus what the root bound.</p>
-      <p>So: <b>two tiers.</b> The root signs every record that changes standing. Device keys sign everything else. "Presence" stops being a third key and becomes what the root is: the key that asks for you before it signs. This is the review's "two key tiers, not four".</p>
+      <p><b>You write from the workbench.</b> A <code>key-binding</code> record, observer your lineage, about the workbench's key. That makes it a <b>bound key</b>, and records it signs with <code>observer: sl:you</code> are now your word.</p>
+      <p><b>Breaks</b> the four-tier key scheme, in a useful way. Who may sign a binding? If any bound key may, a stolen bound key can bind more keys, and two keys can each try to end the other. If only the root may, stratum 1 has no recursion at all: the speakers are the root, plus what the root bound.</p>
+      <p>So: <b>two tiers.</b> The root key signs every record that changes standing. Bound keys sign everything else. The names say what a key does, not where it sits: a root key is on some device too. "Presence" stops being a third key and becomes what the root is: the key that asks for you before it signs. This is the review's "two key tiers, not four".</p>
     </div></li>
     <li><div class="stack">
       <p><b>An agent works with you.</b> It is not a key of yours. The seat has its own lineage and its own root, and your root signs a <code>grant</code> naming it, with a scope. Its records carry <code>under</code>, pointing at the grant.</p>
-      <p><b>Holds.</b> The agent's key is worth little because the grant, not the key, is what makes its records count, and you end the grant without touching its key. Session keys can come later as device keys of the seat; nothing needs them yet.</p>
-      <p><b>The honest limit stays:</b> an agent running as your OS user can read a device key kept in a file, and sign ordinary records as you. It can't change standing unless it can also reach the root. Where your root lives is the real decision, below.</p>
+      <p><b>Holds.</b> The agent's key is worth little because the grant, not the key, is what makes its records count, and you end the grant without touching its key. Session keys can come later as bound keys of the seat; nothing needs them yet.</p>
+      <p><b>The honest limit stays:</b> an agent running as your OS user can read a bound key kept in a file, and sign ordinary records as you. It can't change standing unless it can also reach the root. Where your root lives is the real decision, below.</p>
     </div></li>
     <li><div class="stack">
       <p><b>The store gets a steward.</b> A <code>store-anchor</code> names the lineages that may change the store's standing. Solo, that is you.</p>
@@ -2361,7 +2362,7 @@ loops emit dispute --about r:x2 --about r:x3                                    
       <p><b>Holds.</b> This half of standing is small, and the draft model proves its stratum 1.</p>
     </div></li>
     <li><div class="stack">
-      <p><b>The second person leaves, and a device is lost.</b> Both are "retire through": a cut by what was held, never by time, since <code>emitted</code> can be backdated.</p>
+      <p><b>The second person leaves, and a bound key is lost.</b> Both are "retire through": a cut by what was held, never by time, since <code>emitted</code> can be backdated.</p>
       <p><b>Breaks</b> on what "through" means. The Sharing walk leaned on a segment being one writer's growing file, so "through r4" names a prefix. A store is a set. The first product slice closes a segment per changeset, <code>export | import</code> regroups lines, and an erasure rewrites a segment. There is no position to cut at that every replica agrees on.</p>
       <p>What every replica can agree on is a set of ids. A retirement has to <b>cover</b> the records it lets stand, and "a signed record that covers a set of ids" is a witness tick. The Sharing tab already said so: "a witness tick in miniature".</p>
     </div></li>
@@ -2370,7 +2371,7 @@ loops emit dispute --about r:x2 --about r:x3                                    
       <p><b>This settles the order</b> the review argued about. Standing is not one step. The growing half (anchors, bindings, stewards, grants, admission) can come now. Ticks come next. Retiring comes after, as a tick with a stance.</p>
     </div></li>
     <li><div class="stack">
-      <p><b>A retirement arrives late.</b> A replica that already counted the lost device's records must stop counting the ones outside the cover.</p>
+      <p><b>A retirement arrives late.</b> A replica that already counted the lost key's records must stop counting the ones outside the cover.</p>
       <p><b>Holds</b>, as a known shape: it is the same fact as a late <code>prev</code> target retracting an admission. The set still decides; a cached state can't follow it and must be rebuilt for that key's records. The review's law A fits here: the cut ends a key's standing after it and nothing before it, and grants the key signed before the cut stand.</p>
     </div></li>
   </ol>
@@ -2379,7 +2380,7 @@ loops emit dispute --about r:x2 --about r:x3                                    
   <div class="tbl"><table>
     <thead><tr><th>Was</th><th>Becomes</th><th>Why</th></tr></thead>
     <tbody>
-      <tr><td>Four key tiers: root, presence, device, session</td><td>Two: a root that signs standing, device keys that sign the rest</td><td>Stratum 1 loses its recursion; presence is what the root is</td></tr>
+      <tr><td>Four key tiers: root, presence, device, session</td><td>Two: a root key that signs standing, bound keys that sign the rest</td><td>Stratum 1 loses its recursion; presence is what the root is</td></tr>
       <tr><td>An agent's session key bound under your lineage</td><td>The seat is its own lineage; a grant makes its records count</td><td>Key binding and authority stay separate, as Observers asked</td></tr>
       <tr><td>Standing kept in payloads (<code>stewards</code>, a grant's subject)</td><td>Standing reads envelopes only</td><td>Erasing or withholding must never change who counts</td></tr>
       <tr><td>Retire through a position in a segment</td><td>Retire through a covered set: a tick</td><td>A store is a set; segments regroup and get rewritten</td></tr>
@@ -2412,13 +2413,44 @@ loops emit dispute --about r:x2 --about r:x3                                    
     </div>
   </details>
 
+  <details class="unfold"><summary>A lost key, before retiring exists</summary>
+    <div class="body">
+      <p>The split puts retiring after ticks. This walks what the gap costs: one store, you and a second person, and nothing that takes standing away.</p>
+      <ol class="steps">
+        <li><div class="stack">
+          <p><b>The workbench's bound key is lost.</b> You bind a new key with the root key and keep writing. Your lineage is untouched.</p>
+          <p><b>Holds.</b> This is the case two tiers makes cheap: losing a bound key never costs you who you are.</p>
+        </div></li>
+        <li><div class="stack">
+          <p><b>The lost key still speaks for you.</b> On every replica, for good: holding more never silences a key. Whoever has it writes ordinary records as you, and the second person's replica admits them.</p>
+          <p><b>Breaks</b>, as expected. It can't bind keys, sign grants or change the store's standing, so the damage is ordinary records and no more.</p>
+        </div></li>
+        <li><div class="stack">
+          <p><b>You say the key is lost.</b> An ordinary record about the key. It changes no admission. A lens can mark every record that key signed, and a person can dispute particular ones.</p>
+          <p><b>Holds</b>, as far as it goes. It can't say "lost after this point": a store is a set, and "after" is what a tick's cover will supply. So the mark falls on everything the key signed, your own earlier records included.</p>
+        </div></li>
+        <li><div class="stack">
+          <p><b>The root key is lost instead.</b> Whoever has it can bind keys and sign grants as you, and nothing you sign outranks it. The only answer is a new lineage, and the claim "this continues that" is one the thief can make too.</p>
+          <p><b>Breaks</b>, and retiring would not fully mend it: a root can't retire itself against a thief holding the same key. This is the case to prevent, which is why the root key stays off the workbench.</p>
+        </div></li>
+        <li><div class="stack">
+          <p><b>The second person leaves.</b> Policy only grows, so they stay a writer. The choice is to live with that or to start a new store and import the old records as history.</p>
+          <p><b>Breaks</b> for a team; it doesn't arise solo.</p>
+        </div></li>
+      </ol>
+      <p><b>What it shows.</b> For a solo store the gap costs one thing: a lost bound key can't be cut off, only marked. With the root key elsewhere that is tolerable. For a shared store it is not, since a departed writer can't be removed at all.</p>
+      <p><span class="pill p-lean">leaning</span> Keep the split, with one interim rule: no second writer on a store meant to last until retiring exists. And add one cheap thing to 3a: a kind for "this key is lost", ordinary now, which a later retirement can cite.</p>
+    </div>
+  </details>
+
   <h3>Decisions this needs from you</h3>
   <div class="q">
     <details class="unfold"><summary>Where does your root key live?</summary>
       <div class="body">
-        <p>The root signs every standing change, so it is the one key worth protecting. On the workbench it would be a file any process running as you can use, agents included. On a laptop keychain or a hardware key it asks for you, and binding the workbench's device key becomes one signed record carried over.</p>
+        <p>The root signs every standing change, so it is the one key worth protecting. On the workbench it would be a file any process running as you can use, agents included. On a laptop keychain or a hardware key it asks for you, and binding the workbench's key becomes one signed record carried over.</p>
         <p><span class="pill p-lean">leaning</span> Not on the workbench. Until a second machine runs <code>loops</code>, nothing canonical gets anchored there.</p>
-        <p><span class="pill p-lean">Kyle, 2026-11-10</span> Where a key is kept looks like the application's business, not the protocol's: a ladder from a 0600 file to the OS keychain to a vault. The root in particular is not kept on the workbench. Still open: whether it may be made there, and how the workbench gets its binding signed.</p>
+        <p><span class="pill p-lean">Kyle, 2026-11-10</span> Where a key is kept looks like the application's business, not the protocol's: a ladder from a 0600 file to the OS keychain to a vault. The root in particular is not kept on the workbench. Still open: how the workbench gets its binding signed.</p>
+        <p><span class="pill p-lean">leaning</span> Keeping can improve over time, but where a root key is made can't be undone for that lineage: with two tiers no binding replaces a root. So the anchor you mean to keep is made where its root key will stay, and the workbench gets a throwaway lineage until then.</p>
       </div>
     </details>
     <details class="unfold"><summary>Two tiers, with the root as presence?</summary>
@@ -2438,7 +2470,7 @@ loops emit dispute --about r:x2 --about r:x3                                    
       <div class="body">
         <p>3a (anchors, bindings, stewards, grants, admission), then ticks, then 3b (retiring). Until 3b exists, a lost key or a departed writer can only be handled by starting a new lineage or a new store, which is honest for a solo store and not for a team.</p>
         <p><span class="pill p-lean">leaning</span> Yes. It also means D7, the result encoding, gates retiring as well as ticks.</p>
-        <p><span class="pill p-next">to walk</span> Kyle leans yes too, and wants it walked before it is ruled.</p>
+        <p><span class="pill p-next">walked</span> Kyle leans yes too. The walk is above, under "A lost key, before retiring exists": the split holds for a solo store, with one interim rule for teams.</p>
       </div>
     </details>
   </div>
@@ -3573,7 +3605,7 @@ loops emit redaction --erases r:n9                                     # sl:dire
   </figure>
 
   <details class="unfold"><summary>1 · You highlight a passage</summary><div class="body">
-    <p>The extension writes your own observation, signed by your device key: not a collector's hearsay.</p>
+    <p>The extension writes your own observation, signed by a key bound to you: not a collector's hearsay.</p>
     <pre style="margin:0;font-family:var(--mono);font-size:13px;background:var(--sunk);padding:12px;border-radius:8px;overflow-x:auto">loops emit annotation quote="…the exact passage…" prefix="…" suffix="…" \
     body="the same argument as chapter 3" refs:='["r:a1"]' seen=h:9c2… \
     --about url:example.com/essay
@@ -4215,6 +4247,8 @@ witness observer="ci" vertex="decisions" key=… result="h:7a…" sig=…</pre>
         <tr><td><b>steward</b></td><td>An observer with standing over a store's declarations and policy.</td></tr>
         <tr><td><b>grant</b></td><td>Standing given ahead of time, with a scope. Agents act within it.</td></tr>
         <tr><td><b>presence</b></td><td>A person present, signing with a key behind Touch ID or similar, for acts that can't be undone. A grant is presence given ahead of time.</td></tr>
+        <tr><td><b>root key</b></td><td>The key that signed a lineage's anchor. It signs what changes standing: bindings, grants, stewards. One per lineage, and no binding replaces it.</td></tr>
+        <tr><td><b>bound key</b></td><td>A key the root key named in a <code>key-binding</code>. It signs ordinary records as the lineage and can't bind another key. Earlier text calls it a device key.</td></tr>
         <tr><td><b>seat</b></td><td>An identity shared by delegates who don't have their own yet.</td></tr>
       </tbody>
     </table></div>
@@ -4255,7 +4289,7 @@ witness observer="ci" vertex="decisions" key=… result="h:7a…" sig=…</pre>
         <tr><td><b>State</b></td><td>What a fold returns.</td></tr>
         <tr><td><b>AsOf</b></td><td>The cut, for both times.</td></tr>
         <tr><td><b>Checkpoint</b></td><td>A place's segment list as last seen. What's new since it is how watching works. Not "cursor": the editor already owns that word.</td></tr>
-        <tr><td><b>Signer</b></td><td>The trait for anything that signs: a device key, the keychain, a file.</td></tr>
+        <tr><td><b>Signer</b></td><td>The trait for anything that signs: a key in a file, the keychain, a hardware key.</td></tr>
         <tr><td><b>Place</b></td><td>The trait for storage: list, get by id, what's new since a checkpoint, a blob by hash. <code>loops-dir</code> is the one built in.</td></tr>
         <tr><td><b>Lens</b></td><td>The trait for render and parse; the core does the diff.</td></tr>
         <tr><td><b>Refusal</b></td><td>An error with a code from a closed set, and the field it concerns.</td></tr>

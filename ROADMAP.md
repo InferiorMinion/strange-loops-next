@@ -163,7 +163,7 @@ Each step extends the model laws, computes protocol vectors, then implements Rus
 | --- | --- | --- |
 | 0, done | The Lean spike: Count and LatestBy, one lens combinator, 23 vectors | The first laws are proved |
 | 1, done | Protocol and vectors for layer 0: canonical bytes, salt and commitment, id, signature | The model and the JS writer agree on every vector; Rust checks all fixture families and external standards |
-| 2 | Emit, read, fold for one person: JSONL segment, JSON spec, the two fold families, `"follow": "prev"`, device key, signing by default. `about` takes ids and natural keys only. | It does the old CLI's workable job, signed |
+| 2 | Emit, read, fold for one person: JSONL segment, JSON spec, the two fold families, `"follow": "prev"`, a signing key, signing by default. `about` takes ids and natural keys only. | It does the old CLI's workable job, signed |
 | 3 | Standing: declarations, admission, stances, grants, presence key, retire through; then name tables and `resolve-by` | A strict store rejects visibly; a steward's changeset takes effect |
 | 4 | Ticks: content and witness, boundaries, markers | A content tick recomputes to the same hash on two machines |
 | 5 | Sharing: the git layout, then segment-list sync | Two clones converge |

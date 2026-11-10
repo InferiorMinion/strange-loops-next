@@ -94,7 +94,7 @@ fn digest(id: &str) -> Digest {
 }
 
 impl Line {
-    /// Signs a checked record with a device key.
+    /// Signs a checked record with a key.
     pub fn sign(written: &Written, key: &Key) -> Self {
         let stored = written.stored();
         let id = stored.id(&hash);

@@ -125,19 +125,19 @@ fn create_private(path: &Path) -> io::Result<fs::File> {
         .create_new(true)
         .open(path)
 }
-/// Whether a missing device key may be made now.
+/// Whether a missing signing key may be made now.
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Missing {
     Make,
     Refuse,
 }
-/// The device key: `LOOPS_KEY` as seed text, else the key file. The first
+/// The signing key: `LOOPS_KEY` as seed text, else the key file. The first
 /// write on a machine makes the file.
 #[expect(
     clippy::print_stderr,
     reason = "Making a key is said once, beside the answer."
 )]
-fn device_key(missing: Missing) -> Result<Key, Fail> {
+fn signing_key(missing: Missing) -> Result<Key, Fail> {
     if let Ok(seed) = env::var("LOOPS_KEY") {
         return Key::from_text(&seed).ok_or_else(|| usage("LOOPS_KEY is not a 32-byte seed"));
     }
@@ -153,14 +153,14 @@ fn device_key(missing: Missing) -> Result<Key, Fail> {
             let mut file = create_private(&path)?;
             writeln!(file, "{}", key.text())?;
             eprintln!(
-                "loops: made device key {} at {}",
+                "loops: made signing key {} at {}",
                 key.public(),
                 path.display()
             );
             Ok(key)
         }
         Err(error) if error.kind() == io::ErrorKind::NotFound => Err(usage(format!(
-            "no device key at {}; the first emit makes one",
+            "no signing key at {}; the first emit makes one",
             path.display()
         ))),
         Err(error) => Err(error.into()),
@@ -259,7 +259,7 @@ fn inherit_things(held: &Held, mut draft: batch::Draft) -> batch::Draft {
 fn emit(start: &Path, args: &[String]) -> Result<(), Fail> {
     let place = find_store(start)?;
     let held = place.read()?;
-    let key = device_key(Missing::Make)?;
+    let key = signing_key(Missing::Make)?;
     let now = clock::now().ok_or_else(|| Fail::System("the clock is outside 1970–9999".into()))?;
     if args == ["-"] {
         let mut input = String::new();
@@ -288,7 +288,7 @@ fn emit(start: &Path, args: &[String]) -> Result<(), Fail> {
 fn erase(start: &Path, args: &[String]) -> Result<(), Fail> {
     let place = find_store(start)?;
     let held = place.read()?;
-    let key = device_key(Missing::Make)?;
+    let key = signing_key(Missing::Make)?;
     let now = clock::now().ok_or_else(|| Fail::System("the clock is outside 1970–9999".into()))?;
     let mut ids = Vec::new();
     let mut why = None;
@@ -561,7 +561,7 @@ fn run(args: &[String]) -> Result<(), Fail> {
         "import" => import(&start, rest),
         "check" => check(&start),
         "whoami" => {
-            let key = device_key(Missing::Refuse)?;
+            let key = signing_key(Missing::Refuse)?;
             say(&object(vec![
                 ("key", text(key.public())),
                 ("observer", text(key.public())),

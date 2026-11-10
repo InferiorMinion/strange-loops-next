@@ -119,7 +119,7 @@ fn emit_revise_fork_fold_and_erase() {
         "Go, in the old repo",
     ]);
     assert!(first.starts_with("r:") && first.len() == 54);
-    // The first emit made the device key, and the record names it.
+    // The first emit made the signing key, and the record names it.
     let who = s.json(&["whoami"]);
     assert_eq!(text(&who, &["key"]), text(&who, &["observer"]));
     let got = s.json(&["get", &first[2..10]]);
