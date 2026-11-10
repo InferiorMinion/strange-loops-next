@@ -231,6 +231,7 @@
 
   <h3>8 · Orchestration: a request goes out, a tick comes back</h3>
   <p><span class="pill p-lean">proposal</span> Kyle's scenario, 2026-11-10. Work is asked for by emitting a record, not by filing an issue. An orchestrator plans it, hands tasks to short-lived sessions, and returns one covering record that unpacks down to each session's detail.</p>
+  <p>Cases already holds the vertex templates for this under "Task orchestration": a vertex per subagent, slice and orchestrator, each ticking at a boundary and covering its children's ticks. This step walks it with observers and stores, and tests it against what is built.</p>
   <div class="tbl"><table>
     <thead><tr><th>Who</th><th>What it is</th><th>What it writes</th></tr></thead>
     <tbody>
@@ -245,22 +246,23 @@
       <p><b>A request is emitted.</b> An ordinary record about the repo or the thing. It is not a tick: nothing is covered yet.</p>
     </div></li>
     <li><div class="stack">
-      <p><b>A vertex lists requests nobody has taken.</b> The orchestrator takes one by revising it. Two orchestrators taking the same request is a fork, and shows as one.</p>
+      <p><b>A vertex lists requests nobody has taken.</b> A request's arrival is its boundary. The orchestrator takes one by revising it. Two orchestrators taking the same request is a fork, and shows as one.</p>
     </div></li>
     <li><div class="stack">
       <p><b>The orchestrator plans.</b> One changeset: a plan and its tasks. Each assignment names a task and a session's key, so the plan tree and the launch tree are one tree.</p>
     </div></li>
     <li><div class="stack">
-      <p><b>Sessions work.</b> Each writes as its own key, <code>under</code> its assignment. A question goes up as a record about the task; the orchestrator answers it or passes it to you. Recall records the detail underneath.</p>
+      <p><b>Sessions work.</b> Each writes as its own key, <code>under</code> its assignment, and ends with a <code>task-complete</code> marker, which is its vertex's boundary. A question goes up as a record about the task; the orchestrator answers it or passes it to you. Recall records the detail underneath.</p>
     </div></li>
     <li><div class="stack">
-      <p><b>The orchestrator closes with a tick.</b> One signed record covering everything written under the request. Unpacking is walking the cover: goal, tasks, sessions, recall.</p>
+      <p><b>The ticks climb.</b> A session's tick is covered by its slice's, and the slices' by the orchestrator's, which ticks when all of them have and lands <code>into</code> the requester's store. Unpacking is walking the covers back down: goal, slices, sessions, recall.</p>
     </div></li>
   </ol>
   <p><b>Only two lineages are needed.</b> You and the orchestrator. A session is a key that writes as itself, which the model already counts as its own word. A session that grows into a lasting collaborator signs an anchor later, and its key becomes that lineage's root key.</p>
 
   <details class="unfold"><summary>The dry run: what today's CLI could and couldn't do</summary><div class="body">
     <p>Replayed with <code>loops</code> as merged on 2026-11-10: one open store, six keys, 25 records, using the day's real CI work as the content. Every line verified.</p>
+    <p>The slice reads no <code>boundary</code>, <code>ticks</code>, <code>param</code> or <code>into</code>, so the run could not use the Cases templates. It stood in plans, tasks and a closing summary as ordinary records about each other. Some of what broke is that stand-in showing why the design uses ticks.</p>
     <div class="tbl"><table>
       <thead><tr><th>Tried</th><th>Result</th><th>What it means</th></tr></thead>
       <tbody>
@@ -270,12 +272,12 @@
         <tr><td>A task board: latest status per task, and lists by status</td><td><span class="pill p-ok">holds</span></td><td>A session revising the orchestrator's task worked because admission lets anyone replace anything today.</td></tr>
         <tr><td>Everything one session wrote, everything under one assignment, everything heard about one key</td><td><span class="pill p-ok">holds</span></td><td>Three counts in one spec.</td></tr>
         <tr><td><code>under</code> pointing at an assignment</td><td><span class="pill p-lean">holds, unchecked</span></td><td><code>under</code> means "the grant it acts on" and nothing checks that yet. An assignment behaves like a small grant. Whether it is one is the delegation question.</td></tr>
-        <tr><td>Tasks about their plan</td><td><span class="pill p-sk">breaks</span></td><td>Each task became a rival for the plan's own state, and the "winner" of the request was whichever task was newest. <code>about</code> is doing two jobs: "this is the thing's state" and "this belongs to the thing".</td></tr>
+        <tr><td>Tasks about their plan</td><td><span class="pill p-sk">breaks</span></td><td>Each task became a rival for the plan's own state, and the "winner" of the request was whichever task was newest. <code>about</code> is doing two jobs: "this is the thing's state" and "this belongs to the thing". With ticks, a parent names its children as parameters and covers their ticks, and nothing needs to be about the plan.</td></tr>
         <tr><td>A task's status by asking about the task</td><td><span class="pill p-sk">breaks</span></td><td>A record about something else is not a thing under its own id. Asking about the task returned what was said about it, not its status.</td></tr>
         <tr><td>The closing record, about all 23 ids it covers</td><td><span class="pill p-sk">breaks</span></td><td>It became the winner of every thing it covered, and one line grew to 1.9 kB. A cover can't be <code>about</code>, and can't be a list.</td></tr>
         <tr><td>Unpacking the closing record</td><td><span class="pill p-lean">by hand</span></td><td>One <code>get</code> per id. No fold descends a level.</td></tr>
         <tr><td>Assigning a session before it had written</td><td><span class="pill p-lean">awkward</span></td><td>The orchestrator needs the key first. Whoever launches a session should make its key and hand it over.</td></tr>
-        <tr><td>Picking work up automatically</td><td><span class="pill p-sk">missing</span></td><td>Every fold was run by hand. Nothing watches a vertex and starts a session.</td></tr>
+        <tr><td>Picking work up automatically</td><td><span class="pill p-sk">missing</span></td><td>Every fold was run by hand. Nothing reads a boundary, and nothing starts a session when one fires.</td></tr>
         <tr><td>Files on disk</td><td><span class="pill p-lean">noted</span></td><td>25 records made 20 segment files. Recall's volume will make that hurt first.</td></tr>
       </tbody>
     </table></div>
@@ -283,9 +285,9 @@
 
   <details class="unfold"><summary>What it needs that doesn't exist</summary><div class="body">
     <ul>
-      <li><b>Ticks.</b> The closing record needs a compact cover and a checked result. That is D7, the result encoding, and it now blocks this as well as retiring.</li>
-      <li><b>A "belongs to" link that isn't <code>about</code>.</b> A task belongs to a plan without being the plan's state. Today the choices are <code>about</code>, which collides, or a payload field, which is unchecked and vanishes when the payload is withheld.</li>
-      <li><b>A trigger.</b> A vertex is a pure fold. Something outside the core must watch its result and act. That is where effects enter.</li>
+      <li><b>Ticks, and a runner for boundaries.</b> The spec grammar carries <code>boundary</code>, <code>ticks</code>, <code>param</code> and <code>into</code>, and nothing reads them. The tick itself waits on D7, the result encoding, which now blocks this as well as retiring.</li>
+      <li><b>Something that acts when a boundary fires.</b> The earlier prototype's boundary could carry a command to run, which is what made its cascades start work by themselves. Here a boundary says when a vertex ticks, and "a vertex never signs anything; the observer who ran it signs". So starting a session is an observer's act, and which observer watches which vertex is not designed.</li>
+      <li><b>Where a question or a note about a task goes.</b> Covers handle "belongs to" for work. A record that is only <i>about</i> a task still competes to be its state.</li>
       <li><b>Delegation, for strict stores.</b> In an open store an assignment is just context. In a store that admits only granted writers, the orchestrator's grant must let it sponsor sessions, and authority must only narrow on the way down.</li>
       <li><b>Covers across stores.</b> Preferences, tasks, recall and the repo are likely separate stores. A reader without one of them gets "unknown" for that branch.</li>
       <li><b>Who signs recall's capture.</b> Signed by recall, a transcript is recall's claim about a session. Signed by the session, it is the session's own word.</li>
