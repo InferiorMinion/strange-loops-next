@@ -27,11 +27,21 @@ theorem subst_congr {σ τ : String → Option String} : ∀ {ss : List String},
     · simp [hl, h s mem_cons_self hl]
     · simp [hl]
 
+theorem substOpt_congr {σ τ : String → Option String} {o : Option String}
+    (h : ∀ s ∈ o.toList, isLabel s = true → σ s = τ s) : substOpt σ o = substOpt τ o := by
+  cases o with
+  | none => rfl
+  | some s =>
+    by_cases hl : isLabel s = true
+    · simp [substOpt, hl, h s (by simp) hl]
+    · simp [substOpt, hl]
+
 theorem substEnv_congr {σ τ : String → Option String} {e : Env}
-    (h : ∀ s ∈ e.about ++ e.prev, isLabel s = true → σ s = τ s) :
+    (h : ∀ s ∈ e.about ++ e.of.toList ++ e.prev, isLabel s = true → σ s = τ s) :
     substEnv σ e = substEnv τ e := by
   simp only [substEnv]
-  rw [subst_congr fun s hs => h s (mem_append_left _ hs),
+  rw [subst_congr fun s hs => h s (mem_append_left _ (mem_append_left _ hs)),
+    substOpt_congr fun s hs => h s (mem_append_left _ (mem_append_right _ hs)),
     subst_congr fun s hs => h s (mem_append_right _ hs)]
 
 /-- Labels can be ranked so a record uses only labels ranked below its own. -/

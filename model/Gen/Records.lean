@@ -35,8 +35,8 @@ def envInput (e : Env) : J :=
   let set (k : String) (xs : List String) : List (String × J) :=
     if xs.isEmpty then [] else [(k, .arr (xs.map .str))]
   .obj ([("kind", .str e.kind), ("observer", .str e.observer), ("emitted", .str e.emitted)] ++
-    opt "occurred" e.occurred ++ set "about" e.about ++ set "prev" e.prev ++ opt "under" e.under ++
-    set "erases" e.erases)
+    opt "occurred" e.occurred ++ set "about" e.about ++ opt "of" e.of ++ set "prev" e.prev ++
+    opt "under" e.under ++ set "erases" e.erases)
 
 def textBytes (s : String) : List UInt8 := s.toUTF8.toList
 
@@ -232,7 +232,7 @@ def storedCases : List Case := [
     envs := [{
       kind := "decision", observer := wren, emitted := "2026-10-21T08:15:02.25Z",
       occurred := some "2026-10-17T09:14:03Z/2026-10-17T09:18:13Z", about := ["topic:auth", "url:https://example.com/x"],
-      prev := [r1Id], under := some grantId }],
+      of := some r1Id, prev := [r1Id], under := some grantId }],
     payloads := [.obj [("choice", .str "device flow"), ("why", .arr [.str "no browser on the box"])]],
     key := "wren" },
   { name := "03-sets-are-sets", laws := ["record.sets"],
@@ -275,13 +275,17 @@ def storedCases : List Case := [
     payloads := [.obj [("__proto__", .obj [("a", .int 1)]), ("b", .int 2)]] },
   { name := "11-erases", laws := ["record.id", "record.sets"],
     envs := [
-      { note with prev := [r1Id], erases := [r1Id, grantId] },
-      { note with prev := [r1Id], erases := [grantId, r1Id, grantId] }],
+      { note with of := some r1Id, prev := [r1Id], erases := [r1Id, grantId] },
+      { note with of := some r1Id, prev := [r1Id], erases := [grantId, r1Id, grantId] }],
     payloads := [.obj [("body", .str "hello, without the number")]] },
   { name := "12-negative-exact-boundary", laws := ["record.canonical"],
     envs := [note], payloads := [.int (-9007199254740991)] },
   { name := "13-nine-digit-fraction", laws := ["record.emitted"],
     envs := [note "2026-10-21T00:00:00.000000001Z"], payloads := [.obj []] },
+  -- `of` names a thing by a natural key; a root may state it
+  { name := "14-of-natural-key", laws := ["record.id", "record.of"],
+    envs := [{ note with of := some "task:auth-flow", about := ["topic:auth"] }],
+    payloads := [.obj [("body", .str "start the auth flow")]] },
   { name := "38-native-shortest-tie", laws := ["record.canonical"],
     envs := [note], payloads := [.obj [
       ("positive", .number ⟨0x43143ff3c1cb0959⟩),
@@ -301,7 +305,12 @@ def refusedCases : List (String × Env) := [
   ("33-erases-not-record", { note with erases := ["topic:auth"] }),
   ("34-occurred-duration", { note with occurred := some "2026-10-17T09:14/PT4M" }),
   ("35-observer-prefix-start", { note with observer := "1:x" }),
-  ("36-observer-prefix-tail", { note with observer := "a!:x" })] ++
+  ("36-observer-prefix-tail", { note with observer := "a!:x" }),
+  ("40-of-untyped", { note with of := some "auth" }),
+  ("41-of-missing", { note with prev := [r1Id] }),
+  ("42-about-before-of", { note with about := ["auth"], of := some "auth" }),
+  ("43-of-before-prev", { note with of := some "auth", prev := ["topic:auth"] }),
+  ("44-erases-before-of-missing", { note with prev := [r1Id], erases := ["topic:auth"] })] ++
   ["+00:00", "-00:00", "+01:00", "-23:59"].zipIdx.map (fun (z, i) =>
     (s!"r4-offset-{i}", note ("2026-10-21T00:00:00" ++ z))) ++
   ["2026-10-21T00:00:60Z", "2016-12-31T23:59:60Z", "2026-10-21T00:00:00.0Z",
