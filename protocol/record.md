@@ -81,7 +81,7 @@ Every number must have magnitude at most 2^53 − 1, whole or not.
 A number spelling past binary64's range is such a number: it stays a number until this last check.
 No reader refuses it earlier or under another name.
 A batch writes each record through the same checks.
-A draft in a batch may name another draft by its label in `about`, `of`, `prev` or `under`.
+A draft in a batch may name another draft by its label in `about`, `of` or `prev`.
 The writer then checks what each record names, across the whole batch.
 A `prev` target must be in the batch or the store (`prev-unknown`).
 An `of` that names a record the writer holds, in the batch or the store, must name a root (`of-not-root`).
