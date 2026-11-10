@@ -124,6 +124,50 @@ Raw JCS numeric rounding cannot preserve every `Int`.
 **Recommendation:** Define a separate versioned result codec using typed decimal integer strings under JCS.
 Never round or cap current model outputs.
 
+### D8: Items, mentions and declared keys
+
+This is an open human choice; nothing here is built or modelled.
+It changes the settled envelope, so it lands as R1–R6 and D1–D6 did: model, vectors, JavaScript, Rust, then protocol and pages.
+**Finding:** Two apps built on the product slice hit one wall on 2026-11-10.
+The orchestration dry run is in [Scenarios](design/rethink/sections/13-scenarios.html), step 8; margins-claude's `work` app is described in its notes on merge request !12.
+`about` does two jobs: "this record is an emit of this thing" and "this record mentions that thing".
+A task about its plan became a rival head of the plan.
+A record about something else was not a thing under its own id.
+A closing record about the 23 ids it covered became the winner of each.
+Restating a whole payload on every change lost a concurrent change to another field.
+The earlier systems (`tasked`, `ticked`) keyed a fold by a field and re-emitted only the changed key.
+
+The choice has three parts. D8a and D8b go together; D8c can follow.
+
+- **D8a, an item field.** One single-valued envelope field says which thing a record is an emit of.
+  A record without it is an emit of the thing its own id names, or, with `prev`, of what it replaces.
+  `latest-by` runs over this field; a thing's heads are records of it.
+  Every `prev` target must be an emit of the same thing.
+- **D8b, `about` is mention only.** `about` never makes a head.
+  `where` and `collect` still read it, so "everything said about X" stays a fold.
+  A link needs no new primitive: it is a thing whose `about` names both ends.
+- **D8c, declared keys.** An envelope field lists the payload keys an emit sets.
+  A keyed fold holds, for each key, the setters no descendant setter of that key replaces, over `prev`.
+  Different keys from one head merge; one key set twice from one head is a conflict the fold shows.
+  A key is unknown exactly when a live setter's payload is not held, as `where` answers.
+  A declared key absent from the payload is unset.
+  A record that declares no keys is read whole, as today.
+
+**Readings:** Put identity and keys in the envelope, or in the payload.
+In the payload, an erased or withheld emit can be placed only by `prev`, and a slice or a sync cannot be computed from envelopes.
+In the envelope, margins-claude's experiment (`sl-py/keyfold.py`, 240,000 key answers) found no wrong answer, and a slice of one thing is its envelopes plus its live setters' payloads.
+Without declared keys, a reader needs every payload in the chain, or answers wrongly when an unheld emit is taken to set nothing.
+**Effects:** Two new envelope fields enter the id; a record without them keeps its bytes and id.
+Records already about a thing stop making heads of it, so the `latest-by` vectors and the heads and slice laws are restated.
+`prev-unrelated` is restated over the item field.
+A record is an emit of one thing only; today one record can head several.
+An erased emit still shows which keys it changed, though not to what.
+The core starts to read a payload's top-level keys by name.
+`thing.slice` as proved covers whole-record folds only; the keyed fold needs its own slice law, argued and not yet stated in Lean.
+**Recommendation:** Take D8a and D8b now, in the envelope, before any store is kept.
+Take D8c as a second fold family beside whole-record `latest-by`, once D8a's shape is settled and its slice law is stated.
+**Left to the human:** the field names (`of` and `sets` are the working names), whether the item field takes natural keys as `about` does, and whether a writer must refuse a payload key it did not declare.
+
 ### Retained boundaries
 
 These boundaries trace existing domains and premises; they do not create new protocol choices.
@@ -156,7 +200,12 @@ These mechanical corrections do not add protocol choices.
 
 ## Build sequence
 
-Steps 0 and 1 are done. Steps 2–6 are proposals.
+Steps 0 and 1 are done. Step 2's first slice is merged. Steps 2–6 are proposals.
+**Order, as Kyle set it on 2026-11-10:** finish step 2 with D8, then step 4 (ticks), then step 3 (standing) together with step 5 (sharing).
+Standing matters once records cross between people: sharing through git repositories across teams, and over HTTP.
+Everything wanted before that runs on one machine under one trust root.
+Retiring still follows ticks, as the Trust walk found.
+The step numbers below are names, not the order.
 Each step extends the model laws, computes protocol vectors, then implements Rust.
 
 | Step | Builds | Done when |
