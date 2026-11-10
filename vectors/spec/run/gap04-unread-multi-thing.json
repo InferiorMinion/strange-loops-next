@@ -13,7 +13,7 @@
       ],
       "fold": {
         "by": {
-          "latest-by": "about",
+          "latest-by": "of",
           "follow": "prev",
           "where": {
             "status": {
@@ -39,6 +39,7 @@
           "kind": "task",
           "observer": "sl:kyle",
           "about": ["task:a", "task:b"],
+          "of": "task:a",
           "prev": [],
           "emitted": "2026-10-01T00:01:40Z",
           "occurred": "2026-10-01T00:01:40Z",

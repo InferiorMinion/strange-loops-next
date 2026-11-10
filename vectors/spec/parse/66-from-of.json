@@ -1,0 +1,40 @@
+{
+  "vector": "66-from-of",
+  "layer": "spec/parse",
+  "laws": ["spec.parse"],
+  "source": "model",
+  "input": {
+    "spec": {
+      "vertex": "x",
+      "from": [
+        {
+          "of": "r:00000000000000000000000000000000000000000000000001og",
+          "store": ".",
+          "kind": ["note"]
+        }
+      ],
+      "fold": {
+        "c": {
+          "count": true
+        }
+      }
+    }
+  },
+  "expect": {
+    "parsed": {
+      "vertex": "x",
+      "from": [
+        {
+          "store": ".",
+          "kind": ["note"],
+          "of": "r:00000000000000000000000000000000000000000000000001og"
+        }
+      ],
+      "fold": {
+        "c": {
+          "count": true
+        }
+      }
+    }
+  }
+}

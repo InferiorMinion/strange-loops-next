@@ -38,7 +38,7 @@ def jOutcome : Outcome → J
 def rec (id : RecordId) (thing : String) (occurred : Nat) (emitted : Nat := occurred)
     (prev : List RecordId := []) (value : String := s!"v{id}")
     (okO : Reads occurred := by decide) (okE : Reads emitted := by decide) : Record :=
-  { id, kind := "decision", observer := "sl:kyle", about := [thing], value, prev, occurred := some (claimAt occurred okO),
+  { id, kind := "decision", observer := "sl:kyle", of := some thing, value, prev, occurred := some (claimAt occurred okO),
     emitted := stampAt emitted okE }
 
 def r1 := rec (fixtureId 0x11) "topic:auth" 100
@@ -142,7 +142,7 @@ def latestByCases : List FoldCase := [
   ⟨"phase2-self-prev", ["latest-by.set", "thing.local"],
     [[rec (fixtureId 0x27) "topic:auth" 100 (prev := [fixtureId 0x27])]]⟩,
   ⟨"phase2-self-prev-anchor", ["latest-by.set", "thing.local"],
-    [[{ rec (fixtureId 0x28) "unused:x" 100 (prev := [fixtureId 0x28]) with about := [] }]]⟩,
+    [[{ rec (fixtureId 0x28) "unused:x" 100 (prev := [fixtureId 0x28]) with of := none }]]⟩,
   ⟨"01-one", ["latest-by.set"], [[r1]]⟩,
   ⟨"02-fork", ["latest-by.set", "latest-by.order"], rotations [r1, r3]⟩,
   ⟨"03-chain", ["latest-by.set"], [[r1, r2]]⟩,
@@ -159,9 +159,15 @@ def latestByCases : List FoldCase := [
   ⟨"gap15-memberships-and-anchor", ["latest-by.set"], rotations [
     { rec (fixtureId 0xc1) "task:a" 100 with about := ["task:a", "task:b"], n := 99 },
     { rec (fixtureId 0xc2) "task:a" 200 (prev := [fixtureId 0xc1]) with n := 1 },
-    { rec (fixtureId 0xc3) "unused:x" 250 with about := [], n := 2 },
+    { rec (fixtureId 0xc3) "unused:x" 250 with of := none, n := 2 },
     { rec (fixtureId 0xc4) "task:c" 300 with n := 3 },
-    { rec (fixtureId 0xc5) (idText (fixtureId 0xc3)) 350 (prev := [fixtureId 0xc3]) with n := 4 }]⟩
+    { rec (fixtureId 0xc5) (idText (fixtureId 0xc3)) 350 (prev := [fixtureId 0xc3]) with n := 4 }]⟩,
+  -- a newer record that mentions a thing is not a head of it
+  ⟨"14-about-makes-no-head", ["latest-by.set", "thing.local"], rotations [r1,
+    { rec (fixtureId 0x1a) "topic:other" 500 with about := ["topic:auth"] }]⟩,
+  -- `of` is read as written: a record of a revision's id is of that id
+  ⟨"15-of-read-as-written", ["latest-by.set", "thing.local"], rotations [r1, r2,
+    rec (fixtureId 0x1b) (idText (fixtureId 0x12)) 300]⟩
 ]
 
 def headsCases : List FoldCase := [
@@ -171,7 +177,7 @@ def headsCases : List FoldCase := [
   ⟨"gap15-partial-and-anchor", ["heads.set", "heads.whole-view"], rotations [
     { rec (fixtureId 0xc1) "task:a" 100 with about := ["task:a", "task:b"], n := 99 },
     { rec (fixtureId 0xc2) "task:a" 200 (prev := [fixtureId 0xc1]) with n := 1 },
-    { rec (fixtureId 0xc3) "unused:x" 250 with about := [], n := 2 },
+    { rec (fixtureId 0xc3) "unused:x" 250 with of := none, n := 2 },
     { rec (fixtureId 0xc4) (idText (fixtureId 0xc3)) 300 (prev := [fixtureId 0xc3]) with n := 3 }]⟩
 ]
 
@@ -202,7 +208,7 @@ def viewCases : List ViewCase := [
   ⟨"gap15-partial-and-anchor", ["view.no-resurrection", "heads.whole-view"],
     [{ rec (fixtureId 0xc1) "task:a" 100 with about := ["task:a", "task:b"], n := 99 },
       { rec (fixtureId 0xc2) "task:a" 200 (prev := [fixtureId 0xc1]) with n := 1 },
-      { rec (fixtureId 0xc3) "unused:x" 250 with about := [], n := 2 },
+      { rec (fixtureId 0xc3) "unused:x" 250 with of := none, n := 2 },
       { rec (fixtureId 0xc4) (idText (fixtureId 0xc3)) 300 (prev := [fixtureId 0xc3]) with n := 3 }], hideIds [fixtureId 0xc1]⟩
 ]
 

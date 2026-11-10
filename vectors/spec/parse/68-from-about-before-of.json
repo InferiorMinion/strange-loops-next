@@ -1,0 +1,27 @@
+{
+  "vector": "68-from-about-before-of",
+  "layer": "spec/parse",
+  "laws": ["spec.parse"],
+  "source": "model",
+  "input": {
+    "spec": {
+      "vertex": "x",
+      "from": [
+        {
+          "of": "loops",
+          "about": "loops",
+          "store": "."
+        }
+      ],
+      "fold": {
+        "c": {
+          "count": true
+        }
+      }
+    }
+  },
+  "expect": {
+    "refused": "from-invalid",
+    "path": "from.about"
+  }
+}

@@ -80,6 +80,10 @@ def ofLabelRevision := draft none "batch-rl"
 def branch := draft none "batch-br"
   { kind := "decision", observer := kyle, emitted := at0, of := some "@d" }
   (.obj [("choice", .str "security keys")])
+-- a revision of the revision: still of the root
+def reviseAgain := draft none "batch-d3"
+  { kind := "decision", observer := kyle, emitted := at0, of := some "@d", prev := ["@d2"] }
+  (.obj [("choice", .str "passkeys, with two recovery codes")])
 -- `prev` without `of`
 def noOf := draft none "batch-no"
   { kind := "decision", observer := kyle, emitted := at0, prev := ["@d"] }
@@ -146,7 +150,8 @@ def cases : List Case := [
   ⟨"28-of-not-root-held", ["batch.refuse"], [ofHeldRevision]⟩,
   ⟨"29-of-not-root-label", ["batch.refuse"], [decide1, revise, ofLabelRevision]⟩,
   ⟨"30-prev-unknown-before-of-not-root", ["batch.refuse"], [ofHeldRevision, unknownPrev]⟩,
-  ⟨"31-of-not-root-before-prev-unrelated", ["batch.refuse"], [decide1, unrelated, ofHeldRevision]⟩
+  ⟨"31-of-not-root-before-prev-unrelated", ["batch.refuse"], [decide1, unrelated, ofHeldRevision]⟩,
+  ⟨"32-chain-of-root", ["batch.meaning"], [decide1, revise, reviseAgain]⟩
 ]
 
 def jDraft (d : Draft) : J :=

@@ -14,7 +14,7 @@
       ],
       "fold": {
         "current": {
-          "latest-by": "about",
+          "latest-by": "of",
           "follow": "prev"
         },
         "decisions": {
@@ -29,7 +29,8 @@
         "kind": "decision",
         "observer": "sl:ada",
         "about": ["decision:auth", "decision:other"],
-        "value": "Other thing still current.",
+        "of": "decision:auth",
+        "value": "Other thing mentioned.",
         "prev": [],
         "emitted": "2026-10-01T00:03:20Z",
         "n": 0
@@ -38,7 +39,8 @@
         "id": "r:00000000000000000000000000000000000000000000000003q0",
         "kind": "decision",
         "observer": "sl:bo",
-        "about": ["decision:auth"],
+        "about": [],
+        "of": "decision:auth",
         "value": "Auth revised.",
         "prev": ["r:00000000000000000000000000000000000000000000000003pg"],
         "emitted": "2026-10-01T00:01:40Z",
@@ -80,7 +82,7 @@
       "base": [
         {
           "id": "decision:auth",
-          "body": ["Other thing still current."]
+          "body": ["Other thing mentioned."]
         }
       ],
       "text": ["::: decision:auth", "Auth revised.", ":::"]
@@ -102,12 +104,6 @@
           "current": {
             "things": {
               "decision:auth": [
-                {
-                  "id": "r:00000000000000000000000000000000000000000000000003pg",
-                  "shown": "here"
-                }
-              ],
-              "decision:other": [
                 {
                   "id": "r:00000000000000000000000000000000000000000000000003pg",
                   "shown": "here"
@@ -144,12 +140,6 @@
                   "id": "r:00000000000000000000000000000000000000000000000003q0",
                   "shown": "here"
                 }
-              ],
-              "decision:other": [
-                {
-                  "id": "r:00000000000000000000000000000000000000000000000003pg",
-                  "shown": "here"
-                }
               ]
             },
             "unread": 0
@@ -162,7 +152,7 @@
       }
     ],
     "lens": {
-      "rendered": ["::: decision:auth", "Other thing still current.", ":::"],
+      "rendered": ["::: decision:auth", "Other thing mentioned.", ":::"],
       "outcomes": [
         {
           "accepted": "decision:auth",

@@ -50,7 +50,10 @@ def jShown : Shown → J
 with no `value` or `n`. -/
 def jRecord (r : Record) : J :=
   let env := [("id", .str (idText r.id)), ("kind", .str r.kind), ("observer", .str r.observer),
-    ("about", .arr (r.about.map .str))]
+    ("about", .arr (r.about.map .str))] ++
+    (match r.of with
+      | some t => [("of", .str t)]
+      | none => [])
   let rest := [("prev", .arr (r.prev.map (.str ∘ idText)))] ++
     (match r.under with
       | some u => [("under", .str (idText u))]

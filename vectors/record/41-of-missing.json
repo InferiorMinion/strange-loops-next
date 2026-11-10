@@ -1,0 +1,21 @@
+{
+  "vector": "41-of-missing",
+  "layer": "record",
+  "laws": ["record.refuse"],
+  "source": "model",
+  "input": {
+    "envs": [
+      {
+        "kind": "note",
+        "observer": "sl:u11o5kditce56otma2ksbsnff7n6t0ftgbrmt4sp0j5d1riusfr0",
+        "emitted": "2026-10-21T09:30:00Z",
+        "prev": ["r:iivodlg66vgkad2knrdqob3e4obh28sea6omq5kk0u25t925276g"]
+      }
+    ],
+    "salt": "93v2c54io6p586snq92ev0j29o",
+    "payload_text": "{}"
+  },
+  "expect": {
+    "refused": "of-missing"
+  }
+}

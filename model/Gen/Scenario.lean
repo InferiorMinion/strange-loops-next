@@ -22,10 +22,10 @@ def o (kvs : List (String × Json)) : Json := .obj kvs
 def s (x : String) : Json := .str x
 def a (xs : List Json) : Json := .arr xs
 
-/-- A decision about `decision:auth`, at `t` seconds into 2026-10-01. -/
+/-- A decision of `decision:auth`, at `t` seconds into 2026-10-01. -/
 def decision (id : RecordId) (observer : String) (t : Nat) (value : String) (prev : List RecordId := [])
     (erases : List RecordId := []) (ok : Reads t := by decide) : Record :=
-  { id, kind := "decision", observer, about := ["decision:auth"], value, prev, erases,
+  { id, kind := "decision", observer, of := some "decision:auth", value, prev, erases,
     emitted := stampAt t ok }
 
 -- Ada writes a decision, then revises it; Bo, holding only the first, revises
@@ -43,7 +43,7 @@ def records : List Record := [dA, dB, dC, dM, dE, dF]
 def spec : Json := o [("vertex", s "decisions"),
   ("from", a [o [("store", s "team"), ("kind", a [s "decision"])]]),
   ("fold", o [
-    ("current", o [("latest-by", s "about"), ("follow", s "prev")]),
+    ("current", o [("latest-by", s "of"), ("follow", s "prev")]),
     ("decisions", o [("count", .bool true)])])]
 
 def upToE := [dA, dB, dC, dM, dE]
@@ -140,14 +140,15 @@ def exactSumVector : Except String J := do
       ("lens", .obj [("rendered", jl (render base)), ("outcomes", .arr (os.map jout)),
         ("applied", jsec (apply base os))])])
 
--- A superseded record remains a head only for its other thing.
--- Its later timestamp also exposes an incorrect whole-view winner.
+-- A superseded record that mentions another thing heads neither: `about`
+-- makes no head. Its later timestamp would expose a whole-view winner that
+-- still counted it.
 def thingStateVector : Except String J := do
   let name := "phase2-thing-state"
   let sp ← match Spec.ofJson spec with
     | .ok sp => pure sp
     | .error r => throw s!"scenario/{name}: spec refused {r.code} at {r.path}"
-  let first : Record := { decision (fixtureId 0xf3) "sl:ada" 200 "Other thing still current." with
+  let first : Record := { decision (fixtureId 0xf3) "sl:ada" 200 "Other thing mentioned." with
     about := ["decision:auth", "decision:other"] }
   let second := decision (fixtureId 0xf4) "sl:bo" 100 "Auth revised." [first.id]
   let records := [first, second]
@@ -165,14 +166,14 @@ def thingStateVector : Except String J := do
     if state.heads.map (·.id) != [second.id] || state.winner.map (·.id) != some second.id then
       throw s!"scenario/{name}: auth must have only the successor as head and winner"
     let other := stateIn "decision:other" admitted
-    if other.heads.map (·.id) != [first.id] || other.winner.map (·.id) != some first.id then
-      throw s!"scenario/{name}: the predecessor must remain the other thing's head and winner"
-    if (Latest.fold admitted).heads.map (·.id) != [first.id, second.id] then
-      throw s!"scenario/{name}: whole-view heads must retain the newer predecessor first"
+    if !other.heads.isEmpty then
+      throw s!"scenario/{name}: a thing the predecessor only mentions must have no head"
+    if (Latest.fold admitted).heads.map (·.id) != [second.id] then
+      throw s!"scenario/{name}: whole-view heads must be the successor alone"
     match (sp.run (settle forms)).lookup "current" with
     | some (.things ts unread) =>
-      if ts != [("decision:auth", [(second.id, .here)]), ("decision:other", [(first.id, .here)])] || unread != 0 then
-        throw s!"scenario/{name}: the spec must retain each thing's own head"
+      if ts != [("decision:auth", [(second.id, .here)])] || unread != 0 then
+        throw s!"scenario/{name}: the spec must give the one thing its own head"
     | _ => throw s!"scenario/{name}: expected a per-thing current slot"
   let base : List Section := [⟨"decision:auth".toList, [first.value.toList]⟩]
   let text := render [⟨"decision:auth".toList, [second.value.toList]⟩]
