@@ -43,7 +43,7 @@ def parseCases : List (String × Json) := [
     ("note", s "Decisions from notes; the latest per topic."),
     ("from", a [o [("store", s "notes"), ("kind", a [s "decision"])],
       o [("store", s "rfc@home"), ("kind", a [s "decision"])]]),
-    ("fold", o [("by-topic", o [("latest-by", s "about"), ("follow", s "prev")])]),
+    ("fold", o [("by-topic", o [("latest-by", s "of"), ("follow", s "prev")])]),
     ("boundary", a [o [("when", s "release")]])]),
   ("02-where-and-limit", o [("vertex", s "open-tasks"),
     ("from", a [o [("store", s "."), ("kind", a [s "task"])]]),
@@ -104,7 +104,7 @@ def parseCases : List (String × Json) := [
   ("36-env-about-not-typed", whereOn "env.about" ("not", s "loops")),
   ("37-payload-is-null", whereOn "status" ("is", .null)),
   ("38-where-empty", slotOf (o [("count", .bool true), ("where", o [])])),
-  ("39-latest-by-without-follow", slotOf (o [("latest-by", s "about")])),
+  ("39-latest-by-without-follow", slotOf (o [("latest-by", s "of")])),
   ("40-repeated-operator", slotOf (o [("count", .bool true),
     ("where", o [("env.kind", o [("is", s "task"), ("is", s "note")])])])),
   ("41-repeated-key", o [("vertex", s "x"), ("vertex", s "y"), ("from", a [o [("store", s ".")]])]),
@@ -146,6 +146,15 @@ def parseCases : List (String × Json) := [
   ("63-repeat-under-empty-key", o [("", o [("x", .int 1), ("x", .int 2)]), ("vertex", s "x"),
     ("from", a [o [("store", s ".")]])]),
   ("64-slot-argument-before-where", slotOf (o [("count", .bool false), ("where", o [])])),
+  -- latest-by runs over `of`; the old spelling is an unknown argument
+  ("65-latest-by-about", slotOf (o [("latest-by", s "about"), ("follow", s "prev")])),
+  ("66-from-of", fromOf (o [("of", s (idText (fixtureId 0x71))), ("store", s "."), ("kind", a [s "note"])])),
+  ("67-from-of-not-typed", fromOf (o [("store", s "."), ("of", s "loops")])),
+  -- `from` checks about before of, however they are written
+  ("68-from-about-before-of", fromOf (o [("of", s "loops"), ("about", s "loops"), ("store", s ".")])),
+  ("69-env-of", whereOn "env.of" ("is", s "task:1")),
+  ("70-env-of-not-typed", whereOn "env.of" ("is", s "loops")),
+  ("71-env-of-ordered", whereOn "env.of" ("at-least", s "task:1")),
   ("gap03-repeat-key-before-value", o [("vertex", s "x"), ("vertex", o [("x", s "a"), ("x", s "b")]),
     ("from", a [o [("store", s ".")]])]),
   ("gap05-limit-zero", slotOf (o [("collect", .bool true), ("limit", .int 0)])),
@@ -189,7 +198,7 @@ def parseVector (name : String) (j : Json) : Except String J := do
 
 def task (id : RecordId) (thing : String) (occurred : Nat) (fields : List (String × Val))
     (prev : List RecordId := []) (ok : Reads occurred := by decide) : Record :=
-  { id, kind := "task", observer := "sl:kyle", about := [thing], value := "", prev, occurred := some (claimAt occurred ok),
+  { id, kind := "task", observer := "sl:kyle", of := some thing, value := "", prev, occurred := some (claimAt occurred ok),
     emitted := stampAt occurred ok, fields }
 
 -- task:1 opens, then closes; task:2 is open; task:3 is open but its payload is withheld
@@ -239,12 +248,13 @@ def boundSpec : Json := o [("vertex", s "estimates"),
     ("unblocked", o [("count", .bool true), ("where", o [("blocked", o [("absent", .bool true)])])])])]
 
 -- every envelope field, tested on records by several observers: a revision
--- by someone else, a record about two things (erased by another), one acting
--- under a grant, and one about nothing, dated a month before it was stamped
--- and withheld; payload `kind` differs from `env.kind`
+-- by someone else, a record that mentions two things (erased by another), one
+-- acting under a grant, and a root that mentions nothing, dated a month before
+-- it was stamped and withheld; payload `kind` differs from `env.kind`. Each
+-- record is of the first thing it mentions; the root, of its own id.
 def said (id : RecordId) (observer : String) (about : List String) (t : Nat)
     (ok : Reads t := by decide) : Record :=
-  { id, kind := "task", observer, about, value := "", prev := [], emitted := stampAt t ok }
+  { id, kind := "task", observer, about, of := about.head?, value := "", prev := [], emitted := stampAt t ok }
 
 def a1 : Record := { said (fixtureId 0x61) "sl:alice" ["task:1"] 100 with fields := [("kind", .str "chore")] }
 def a2 : Record := { said (fixtureId 0x62) "sl:bob" ["task:1"] 200 with prev := [fixtureId 0x61], fields := [("kind", .str "bug")] }
@@ -261,6 +271,9 @@ def envSpec : Json := o [("vertex", s "envelopes"),
     ("loops", o [("collect", .bool true), ("where", o [("env.about", o [("is", s "proj:loops")])])]),
     ("not-task-2", o [("collect", .bool true), ("where", o [("env.about", o [("not", s "task:2")])])]),
     ("about-nothing", o [("collect", .bool true), ("where", o [("env.about", o [("absent", .bool true)])])]),
+    ("of-task-1", o [("collect", .bool true), ("where", o [("env.of", o [("is", s "task:1")])])]),
+    ("of-loops", o [("count", .bool true), ("where", o [("env.of", o [("is", s "proj:loops")])])]),
+    ("without-of", o [("collect", .bool true), ("where", o [("env.of", o [("absent", .bool true)])])]),
     ("revisions", o [("collect", .bool true), ("where", o [("env.prev", o [("present", .bool true)])])]),
     ("revises-first", o [("count", .bool true), ("where", o [("env.prev", o [("is", s (idText (fixtureId 0x61)))])])]),
     ("granted", o [("collect", .bool true), ("where", o [("env.under", o [("is", s (idText (fixtureId 0x99)))])])]),
@@ -272,7 +285,7 @@ def envSpec : Json := o [("vertex", s "envelopes"),
       ("where", o [("env.emitted", o [("at-least", s "2026-10-01T00:04:00Z")])])]),
     ("emitted-is", o [("count", .bool true),
       ("where", o [("env.emitted", o [("is", s "2026-10-01T00:01:40Z")])])]),
-    ("alice-current", o [("latest-by", s "about"), ("follow", s "prev"),
+    ("alice-current", o [("latest-by", s "of"), ("follow", s "prev"),
       ("where", o [("env.observer", o [("is", s "sl:alice")])])]),
     ("alice-heads", o [("collect", .bool true), ("follow", s "prev"),
       ("where", o [("env.observer", o [("is", s "sl:alice")])])])])]
@@ -280,9 +293,9 @@ def envSpec : Json := o [("vertex", s "envelopes"),
 def taskSpec : Json := o [("vertex", s "tasks"),
   ("from", a [o [("store", s "."), ("kind", a [s "task"])]]),
   ("fold", o [
-    ("open", o [("latest-by", s "about"), ("follow", s "prev"),
+    ("open", o [("latest-by", s "of"), ("follow", s "prev"),
       ("where", o [("status", o [("is", s "open")])])]),
-    ("current", o [("latest-by", s "about"), ("follow", s "prev")]),
+    ("current", o [("latest-by", s "of"), ("follow", s "prev")]),
     ("newest", o [("collect", .bool true), ("follow", s "prev"), ("limit", .int 1)]),
     ("every", o [("collect", .bool true)]),
     ("observations", o [("count", .bool true)]),
@@ -297,17 +310,22 @@ def hiddenNumbersSpec : Json := o [("vertex", s "hidden-numbers"),
     ("sum", o [("sum", s "n")]), ("min", o [("min", s "n")]),
     ("max", o [("max", s "n")])])]
 
--- a record about nothing anchors the thing named by its id: `from` takes it
--- and its revision, while `env.about` reads only what each envelope says
+-- a root names the thing its id names: `from.of` takes it and its revision,
+-- while `env.of` and `env.about` read only what each envelope says. `x4`
+-- mentions the root without being of it: `from.about` takes it and the
+-- revision, which mentions the root too, but not the root, which mentions
+-- nothing.
 def x1 : Record := { said (fixtureId 0x71) "sl:alice" [] 100 with kind := "note" }
 def x2 : Record := { said (fixtureId 0x72) "sl:bob" [idText (fixtureId 0x71)] 200 with kind := "note", prev := [fixtureId 0x71] }
 def x3 : Record := { said (fixtureId 0x73) "sl:bob" ["task:1"] 300 with kind := "note" }
+def x4 : Record := { said (fixtureId 0x74) "sl:carol" ["task:1", idText (fixtureId 0x71)] 400 with kind := "note" }
 
-def anchorSpec : Json := o [("vertex", s "anchored"),
-  ("from", a [o [("store", s "."), ("about", s (idText (fixtureId 0x71)))]]),
+def rootSpec (source : String × Json) : Json := o [("vertex", s "rooted"),
+  ("from", a [o [("store", s "."), source]]),
   ("fold", o [
     ("all", o [("collect", .bool true)]),
-    ("current", o [("latest-by", s "about"), ("follow", s "prev")]),
+    ("current", o [("latest-by", s "of"), ("follow", s "prev")]),
+    ("of-root", o [("collect", .bool true), ("where", o [("env.of", o [("is", s (idText (fixtureId 0x71)))])])]),
     ("says-about", o [("collect", .bool true), ("where", o [("env.about", o [("is", s (idText (fixtureId 0x71)))])])])])]
 
 def readableExtremaSpec : Json := o [("vertex", s "extrema"),
@@ -337,7 +355,7 @@ def runCases : List RunCase := [
     [t1, t2.withhold, t3, n1]⟩,
   ⟨"04-kind-change", ["spec.set", "spec.after-supersession"], taskSpec,
     [t1, { task (fixtureId 0x46) "task:1" 300 [] (prev := [fixtureId 0x41]) with kind := "task-done" }, t3]⟩,
-  ⟨"05-about-is-a-set", ["spec.set", "thing.local"], taskSpec,
+  ⟨"05-about-makes-no-head", ["spec.set", "thing.local"], taskSpec,
     [{ t3 with about := ["task:2", "task:9"] }, task (fixtureId 0x47) "task:2" 400 [("status", .str "closed")] (prev := [fixtureId 0x43])]⟩,
   ⟨"06-times", ["spec.set", "where.time", "where.complements", "where.total"], timeSpec,
     [e1, e2, e3, e4, e5, e6, e7, e8]⟩,
@@ -346,10 +364,16 @@ def runCases : List RunCase := [
       task (fixtureId 0x4a) "task:6" 195 [("est", .str "5")]]⟩,
   ⟨"08-envelope-fields", ["spec.set", "where.fields", "where.time", "where.total",
       "spec.after-supersession"], envSpec, [a1, a2, a3, a4, a5, a6]⟩,
-  ⟨"09-from-about-anchor", ["spec.set", "spec.from-thing", "where.fields"], anchorSpec, [x1, x2, x3]⟩,
+  ⟨"09-from-of-root", ["spec.set", "spec.from-thing", "where.fields"],
+    rootSpec ("of", s (idText (fixtureId 0x71))), [x1, x2, x3, x4]⟩,
+  ⟨"14-from-about-mentions", ["spec.set", "spec.from-thing", "where.fields"],
+    rootSpec ("about", s (idText (fixtureId 0x71))), [x1, x2, x3, x4]⟩,
+  -- a record about a thing, newer than the thing's head, is not a head of it
+  ⟨"15-about-makes-no-head", ["spec.set", "thing.local"], taskSpec,
+    [t1, { task (fixtureId 0x4b) "task:1" 500 [("status", .str "open")] with of := none, about := ["task:1"] }]⟩,
   ⟨"gap04-unread-multi-thing", ["result.unread"],
     o [("vertex", s "x"), ("from", a [o [("store", s ".")]]), ("fold", o [
-      ("by", o [("latest-by", s "about"), ("follow", s "prev"),
+      ("by", o [("latest-by", s "of"), ("follow", s "prev"),
         ("where", o [("status", o [("is", s "open")])])]),
       ("collect", o [("collect", .bool true), ("follow", s "prev"),
         ("where", o [("status", o [("is", s "open")])])])])],
@@ -392,8 +416,6 @@ def runCases : List RunCase := [
       task (fixtureId 0xe6) "task:6" 150 [("est", .bool true)], task (fixtureId 0xe7) "task:7" 160 [],
       (task (fixtureId 0xe8) "task:8" 170 [("est", .int 7)]).withhold,
       task (fixtureId 0xe9) "task:9" 180 [("est", .number (Number.ofScientific false 9007199254740992 0))]]⟩,
-  ⟨"10-unread-shared-head", ["spec.set", "result.unread", "thing.local"], taskSpec,
-    [({ t3 with about := ["task:2", "task:9"] }).withhold]⟩,
   ⟨"11-hidden-numbers", ["spec.set", "result.unread"], hiddenNumbersSpec,
     [(task (fixtureId 0x76) "task:6" 100 []).withhold, (task (fixtureId 0x77) "task:7" 200 []).erase]⟩,
   ⟨"12-readable-extrema", ["spec.set", "result.unread"], readableExtremaSpec,

@@ -315,7 +315,8 @@ def Slot.Fits (s : Slot) : Prop :=
   s.name.isEmpty = false ∧ s.type.Fits ∧ (s.tests = [] ∨ s.tests.Fits)
 
 def Source.Fits (s : Source) : Prop :=
-  s.store.isEmpty = false ∧ (∀ k ∈ s.kinds, k.isEmpty = false) ∧ ∀ a ∈ s.about, typedRef a = true
+  s.store.isEmpty = false ∧ (∀ k ∈ s.kinds, k.isEmpty = false) ∧ (∀ a ∈ s.about, typedRef a = true) ∧
+    ∀ t ∈ s.of, typedRef t = true
 
 /-- A spec that could have been written: a vertex, at least one source, and
 slots named once, each fitting. -/
@@ -437,8 +438,8 @@ theorem parseSlot_toJson {s : Slot} (h : s.Fits) : parseSlot s.name s.toJson.2 =
 
 
 theorem Source.toJson_distinct (s : Source) : s.toJson.keysDistinct = true := by
-  rcases s with ⟨store, kinds, about⟩
-  cases kinds <;> cases about <;> simp [Source.toJson, Json.keysDistinct_obj, Json.keysDistinct_arr]
+  rcases s with ⟨store, kinds, about, of⟩
+  cases kinds <;> cases about <;> cases of <;> simp [Source.toJson, Json.keysDistinct_obj, Json.keysDistinct_arr]
 
 theorem parseKinds_toJson (path : String) {ks : List String} (hne : ks ≠ [])
     (h : ∀ k ∈ ks, k.isEmpty = false) : parseKinds path (.arr (ks.map .str)) = .ok ks := by
@@ -452,23 +453,21 @@ theorem parseKinds_toJson (path : String) {ks : List String} (hne : ks ≠ [])
   exact hm
 
 theorem parseSource_toJson {s : Source} (h : s.Fits) : parseSource s.toJson = .ok s := by
-  obtain ⟨hst, hks, hab⟩ := h
-  rcases s with ⟨store, kinds, about⟩
-  simp only at hst hks hab
+  obtain ⟨hst, hks, hab, hof⟩ := h
+  rcases s with ⟨store, kinds, about, of⟩
+  simp only at hst hks hab hof
+  have hA : ∀ a, about = some a → typedRef a = true := fun a e => hab a e
+  have hO : ∀ t, of = some t → typedRef t = true := fun t e => hof t e
   cases hk : kinds.isEmpty
   · have hp := parseKinds_toJson "from.kind" (by simpa using hk) hks
-    cases about with
-    | none => simp_all [Source.toJson, parseSource, sourceStore, sourceKinds, sourceAbout, checkKeys, sourceKeys, List.lookup, bind, Except.bind, pure, Except.pure]
-    | some a =>
-      have ha : typedRef a = true := hab a rfl
-      simp_all [Source.toJson, parseSource, sourceStore, sourceKinds, sourceAbout, checkKeys, sourceKeys, List.lookup, bind, Except.bind, pure, Except.pure]
+    cases about <;> cases of <;>
+      simp_all [Source.toJson, parseSource, sourceStore, sourceKinds, sourceAbout, sourceOf, checkKeys,
+        sourceKeys, List.lookup, bind, Except.bind, pure, Except.pure]
   · have h0 : kinds = [] := by simpa using hk
     subst h0
-    cases about with
-    | none => simp_all [Source.toJson, parseSource, sourceStore, sourceKinds, sourceAbout, checkKeys, sourceKeys, List.lookup, bind, Except.bind, pure, Except.pure]
-    | some a =>
-      have ha : typedRef a = true := hab a rfl
-      simp_all [Source.toJson, parseSource, sourceStore, sourceKinds, sourceAbout, checkKeys, sourceKeys, List.lookup, bind, Except.bind, pure, Except.pure]
+    cases about <;> cases of <;>
+      simp_all [Source.toJson, parseSource, sourceStore, sourceKinds, sourceAbout, sourceOf, checkKeys,
+        sourceKeys, List.lookup, bind, Except.bind, pure, Except.pure]
 
 theorem Spec.toJson_distinct {sp : Spec} (h : sp.Fits) : sp.toJson.keysDistinct = true := by
   obtain ⟨-, -, -, hn, hs⟩ := h
@@ -634,8 +633,8 @@ theorem parseSource_fits {j : Json} {s : Source} (h : parseSource j = .ok s) : s
   cases j with
   | obj kvs =>
     simp only [parseSource, Except.bind_eq_ok, Except.pure_eq_ok] at h
-    obtain ⟨_, -, store, hst, kinds, hk, about, ha, rfl⟩ := h
-    refine ⟨?_, ?_, ?_⟩
+    obtain ⟨_, -, store, hst, kinds, hk, about, ha, of, ho, rfl⟩ := h
+    refine ⟨?_, ?_, ?_, ?_⟩
     · unfold sourceStore at hst
       split at hst
       · split at hst
@@ -656,6 +655,16 @@ theorem parseSource_fits {j : Json} {s : Source} (h : parseSource j = .ok s) : s
         · rename_i hr; simp only [Except.pure_eq_ok, Option.some.injEq] at ha; subst ha; exact hr
         · exact absurd ha refuse_ne_ok
       · exact absurd ha refuse_ne_ok
+    · intro t hm
+      have hm : of = some t := hm
+      subst hm
+      unfold sourceOf at ho
+      split at ho
+      · simp [Except.pure_eq_ok] at ho
+      · split at ho
+        · rename_i hr; simp only [Except.pure_eq_ok, Option.some.injEq] at ho; subst ho; exact hr
+        · exact absurd ho refuse_ne_ok
+      · exact absurd ho refuse_ne_ok
   | _ => exact absurd h refuse_ne_ok
 
 /-- Whatever the parser accepts could have been written: it fits. -/

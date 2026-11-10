@@ -25,12 +25,14 @@ the closed vocabulary with an optional `where`.
   successor is of another kind, or no longer matches, or is withheld.
   When the store's rule for who may replace whom reads only envelopes, a view
   preserves each thing's heads. Each head shows only what the view shows.
-* **`from` chooses by thing.** `"about": "t"` takes the records about `t`,
-  so `"about": "r:X"` takes X, the record about nothing that anchors it, as
-  well as its revisions. `env.about` tests the field as written, which holds
-  nothing on that record.
+* **`from` chooses by thing or by mention.** `"of": "t"` takes the records
+  of thing `t`, so `"of": "r:X"` takes the root X, whose thing is its own id,
+  as well as its revisions. `"about": "t"` takes the records whose `about`
+  names `t`, as written; it never makes a head. `env.of` and `env.about` test
+  the fields as written, so `env.of` holds nothing on a root.
 * `about`, `prev`, `under` and `erases` are sets, so a test on one asks
-  whether it holds a value, and `present` whether it holds any.
+  whether it holds a value, and `present` whether it holds any. `of` and
+  `under` hold at most one.
 * **Arguments** must be what layer 0 would accept in their field, since
   nothing else can match; a payload field takes text, a number or a boolean.
 * **The spec is explicit.** No key repeats; no name, field or kind is
@@ -54,6 +56,7 @@ inductive EnvField where
   | kind
   | observer
   | about
+  | of
   | prev
   | under
   | erases
@@ -61,12 +64,13 @@ inductive EnvField where
   | occurred
   deriving Repr, DecidableEq
 
-def EnvField.all : List EnvField := [.kind, .observer, .about, .prev, .under, .erases, .emitted, .occurred]
+def EnvField.all : List EnvField := [.kind, .observer, .about, .of, .prev, .under, .erases, .emitted, .occurred]
 
 def EnvField.name : EnvField → String
   | .kind => "kind"
   | .observer => "observer"
   | .about => "about"
+  | .of => "of"
   | .prev => "prev"
   | .under => "under"
   | .erases => "erases"
@@ -78,7 +82,7 @@ only what layer 0 would accept in that field, since nothing else can match. -/
 inductive FieldType where
   /-- Text that isn't empty: `kind`. -/
   | text
-  /-- Typed references, `prefix:value`: `observer`, `about`. -/
+  /-- Typed references, `prefix:value`: `observer`, `about`, `of`. -/
   | refs
   /-- Record ids: `prev`, `under`, `erases`. -/
   | ids
@@ -90,7 +94,7 @@ inductive FieldType where
 
 def EnvField.type : EnvField → FieldType
   | .kind => .text
-  | .observer | .about => .refs
+  | .observer | .about | .of => .refs
   | .prev | .under | .erases => .ids
   | .emitted | .occurred => .time
 
@@ -155,6 +159,7 @@ def Field.read : Field → Record → Option (List Item)
   | .env .kind, r => some [.val (.str r.kind)]
   | .env .observer, r => some [.val (.str r.observer)]
   | .env .about, r => some (r.about.map (.val ∘ .str))
+  | .env .of, r => some (r.of.toList.map (.val ∘ .str))
   | .env .prev, r => some (r.prev.map (.val ∘ .str ∘ idText))
   | .env .under, r => some (r.under.toList.map (.val ∘ .str ∘ idText))
   | .env .erases, r => some (r.erases.map (.val ∘ .str ∘ idText))
@@ -217,7 +222,7 @@ inductive FoldType where
   | sum (field : String)
   | min (field : String)
   | max (field : String)
-  /-- Per thing, following `prev`; Latest is a thing's newest head. -/
+  /-- Per thing, by `of`, following `prev`; Latest is a thing's newest head. -/
   | latestBy
   /-- Every selected record newest first, or only the heads when following
   `prev`; at most `limit` of them. -/
@@ -304,6 +309,7 @@ structure Source where
   store : String
   kinds : List String := []
   about : Option String := none
+  of : Option String := none
   deriving Repr, DecidableEq
 
 structure Spec where
@@ -312,10 +318,10 @@ structure Spec where
   slots : List Slot := []
   deriving Repr, DecidableEq
 
-/-- Selection reads only the envelope: the kind, and the thing, which for a
-record about nothing is its own id. -/
+/-- Selection reads only the envelope: the kind, what `about` mentions, as
+written, and the thing, which for a record without `of` is its own id. -/
 def Source.takes (s : Source) (r : Record) : Bool :=
-  (s.kinds.isEmpty || s.kinds.contains r.kind) && s.about.all r.isOf
+  (s.kinds.isEmpty || s.kinds.contains r.kind) && s.about.all r.about.contains && s.of.all r.isOf
 
 def Spec.takes (sp : Spec) (r : Record) : Bool := sp.sources.any (·.takes r)
 
@@ -343,7 +349,7 @@ def refuse {α : Type} (code path : String) : Parse α := throw ⟨code, path⟩
 
 /-- What a test on a field of this type may compare against, by layer 0's
 own checks: text that isn't empty for `kind`, a typed reference for
-`observer` and `about`, a record id for ids, a time in `occurred`'s grammar
+`observer`, `about` and `of`, a record id for ids, a time in `occurred`'s grammar
 for times; text, a number or a boolean for a payload field. -/
 def parseArg (ty : FieldType) (path : String) : Json → Parse Arg
   | .str s => match ty with
@@ -399,7 +405,7 @@ def parseWhere (path : String) : Json → Parse Tests
 
 def foldTypes : List String := ["count", "sum", "min", "max", "latest-by", "collect"]
 def slotKeys : List String := foldTypes ++ ["where", "follow", "limit", "note"]
-def sourceKeys : List String := ["store", "kind", "about"]
+def sourceKeys : List String := ["store", "kind", "about", "of"]
 def specKeys : List String :=
   ["vertex", "note", "from", "fold", "ticks", "order", "resolve", "window", "boundary",
     "param", "covers", "into", "bundle"]
@@ -445,7 +451,7 @@ def foldType (path t : String) (follow : Bool) (limit : Option Nat) (arg : Json)
   | "sum", f => FoldType.sum <$> fieldArg p f
   | "min", f => FoldType.min <$> fieldArg p f
   | "max", f => FoldType.max <$> fieldArg p f
-  | "latest-by", .str "about" => pure .latestBy
+  | "latest-by", .str "of" => pure .latestBy
   | "collect", .bool true => pure (.collect follow limit)
   | _, _ => refuse "fold-argument" p
 
@@ -491,15 +497,21 @@ def sourceAbout : Option Json → Parse (Option String)
   | some (.str a) => if typedRef a then pure (some a) else refuse "from-invalid" "from.about"
   | some _ => refuse "from-invalid" "from.about"
 
+def sourceOf : Option Json → Parse (Option String)
+  | none => pure none
+  | some (.str a) => if typedRef a then pure (some a) else refuse "from-invalid" "from.of"
+  | some _ => refuse "from-invalid" "from.of"
+
 /-- One entry of `from`: checked in a fixed order, keys, `store`, `kind`,
-then `about`, however it is written. -/
+`about`, then `of`, however it is written. -/
 def parseSource : Json → Parse Source
   | .obj kvs => do
     checkKeys sourceKeys (some "from") kvs
     let store ← sourceStore (kvs.lookup "store")
     let kinds ← sourceKinds (kvs.lookup "kind")
     let about ← sourceAbout (kvs.lookup "about")
-    pure ⟨store, kinds, about⟩
+    let of ← sourceOf (kvs.lookup "of")
+    pure ⟨store, kinds, about, of⟩
   | _ => refuse "from-invalid" "from"
 
 mutual
@@ -586,7 +598,7 @@ def Slot.toJson (s : Slot) : String × Json :=
     | .sum f => [("sum", .str f)]
     | .min f => [("min", .str f)]
     | .max f => [("max", .str f)]
-    | .latestBy => [("latest-by", .str "about"), ("follow", .str "prev")]
+    | .latestBy => [("latest-by", .str "of"), ("follow", .str "prev")]
     | .collect follow limit =>
       [("collect", .bool true)] ++ (if follow then [("follow", .str "prev")] else []) ++
         (match limit with
@@ -599,6 +611,9 @@ def Source.toJson (s : Source) : Json :=
     (if s.kinds.isEmpty then [] else [("kind", .arr (s.kinds.map .str))]) ++
     (match s.about with
       | some a => [("about", .str a)]
+      | none => []) ++
+    (match s.of with
+      | some t => [("of", .str t)]
       | none => []))
 
 def Spec.toJson (sp : Spec) : Json :=

@@ -10,8 +10,9 @@ import Laws.Things
   Present times obey the corresponding time law.
   They compare like with like: numbers with numbers, times with times.
 * **Each field reads as what it holds.** `kind` and `observer` as their
-  text, a set as its members, `emitted` as its own instant. `from` reads
-  `about` by thing: a record about nothing is about its own id.
+  text, a set as its members, `emitted` as its own instant, `of` as
+  written. `from.of` reads the thing: a record without `of` is of its own id.
+  `from.about` reads `about` as written.
 * **Times read as what they say.** A time test reads the span, not the record's or argument's spelling.
   `at-least` and `below` compare starts.
   A record without `occurred` passes neither.
@@ -91,7 +92,7 @@ theorem Cond.text_is (t : String) (r : Record) :
       rw [this]; simp [h]
   simp [Cond.eval, Field.read, Op.test, Arg.matches, e]
 
-/-- A test on `env.about` asks whether the record is about a thing. -/
+/-- A test on `env.about` asks whether the record mentions a thing. -/
 theorem Cond.about_is (t : String) (r : Record) :
     Cond.eval ⟨.env .about, .is (.val (.str t))⟩ r = .ofBool (r.about.contains t) := by
   simp only [Cond.eval, Field.read, Op.test]
@@ -99,6 +100,17 @@ theorem Cond.about_is (t : String) (r : Record) :
   cases h : r.about.contains t <;> simp_all [Arg.matches]
   intro x hx e
   exact h (e ▸ hx)
+
+/-- A test on `env.of` reads the field as written: `is` asks whether `of`
+names that thing, and `present` whether there is an `of`, which a root has
+not. -/
+theorem Cond.of_is (t : String) (r : Record) :
+    Cond.eval ⟨.env .of, .is (.val (.str t))⟩ r = .ofBool (r.of.toList.contains t) ∧
+    Cond.eval ⟨.env .of, .present⟩ r = .ofBool r.of.isSome := by
+  have h := Cond.about_is t { r with about := r.of.toList }
+  simp only [Cond.eval, Field.read] at h ⊢
+  refine ⟨h, ?_⟩
+  cases r.of <;> simp [Op.test]
 
 /-- `is` on `prev`, `under` or `erases` asks whether the set holds the id. -/
 theorem Cond.id_is (i : String) (r : Record) :
@@ -241,7 +253,7 @@ theorem Cond.eval_view {f : Record → Record} (hf : View f) (c : Cond) (r : Rec
   cases fld with
   | env f =>
     exact Or.inr (by
-      cases f <;> simp [Cond.eval, Field.read, he.kind, he.observer, he.about, he.prev, he.under,
+      cases f <;> simp [Cond.eval, Field.read, he.kind, he.observer, he.about, he.of, he.prev, he.under,
         he.erases, he.emitted, he.occurred])
   | payload n =>
     rcases hf.hides r with e | e
@@ -273,13 +285,18 @@ theorem Source.takes_view {f : Record → Record} (hf : View f) (s : Source) (r 
     s.takes (f r) = s.takes r := by
   have he := hf.envelope r
   have ha : (f r).isOf = r.isOf := funext (isOf_view hf r)
-  simp [Source.takes, he.kind, ha]
+  simp [Source.takes, he.kind, he.about, ha]
 
-/-- `from` reads `about` by thing.
-An entry naming a thing takes exactly its records.
-A record about nothing belongs only to the thing named by its own id. -/
+/-- `from.about` is a mention test: it takes the records whose `about` names
+the thing, as written, and nothing else. -/
 theorem Source.takes_about (store t : String) (r : Record) :
-    (Source.mk store [] (some t)).takes r = (r.thing == t) := by
+    (Source.mk store [] (some t) none).takes r = r.about.contains t := by
+  simp [Source.takes]
+
+/-- `from.of` takes exactly the records of the thing: those whose `of` names
+it and, with no `of`, the record whose id it is. -/
+theorem Source.takes_of (store t : String) (r : Record) :
+    (Source.mk store [] none (some t)).takes r = (r.thing == t) := by
   simp [Source.takes, Record.isOf]
 
 theorem Spec.takes_view {f : Record → Record} (hf : View f) (sp : Spec) (r : Record) :
@@ -377,7 +394,7 @@ theorem Spec.view_state {f : Record → Record} (hf : View f) {may : Record → 
     simp only [Function.comp]
     rw [stateIn_view hf t (admit_distinct may hx).addressed]
 
-/-- A head of thing `t`: held, about `t`, and named in no `prev` of a record about `t`. -/
+/-- A head of thing `t`: held, of `t`, and named in no `prev` of a record of `t`. -/
 def HeadOf (xs : List Record) (t : String) (r : Record) : Prop :=
   r ∈ xs ∧ r.isOf t ∧ ¬ ∃ q ∈ xs, q.isOf t ∧ r.id ∈ q.prev
 
