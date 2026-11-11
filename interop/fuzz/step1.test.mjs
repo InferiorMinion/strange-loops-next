@@ -61,7 +61,7 @@ test('envelope shape boundaries remain scheduled across seeds and refuse by name
   for (const seed of ['a', 'b', 'c', 'd']) {
     for (const [family, cases] of [['record', record], ['batch', batch]]) {
       for (const [slot, name, refused] of cases) {
-        const v = generate(seed, 64 + slot, family);
+        const v = generate(seed, 256 + slot, family);
         assert.equal(v.fuzz.nearMiss, name);
         const text = JSON.stringify(v);
         const [answer] = evaluateJS(JSON.parse(text), text);

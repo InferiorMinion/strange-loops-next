@@ -362,9 +362,10 @@ export function generate(seed, index, family) {
     }
     // Issue #1: an envelope that is not an object, a field left out or of the
     // wrong JSON type, and a salt that is not base32hex text. Each has a fixed
-    // slot; slot 40 stays unscheduled for the valid-record checks.
+    // slot in one cycle of 64 in every four, so the other cycles keep their
+    // random records; slot 40 stays unscheduled for the valid-record checks.
     const shapeSlots = [37, 38, 39, 41, 42, 43, 56, 57, 58, 59, 60, 61, 62, 63];
-    if (shapeSlots.includes(slot)) {
+    if (index % 256 < 64 && shapeSlots.includes(slot)) {
       const d = shapeSlots.indexOf(slot), target = `r:${'0'.repeat(52)}`;
       const without = (k) => { const env = clone(clean); delete env[k]; return env; };
       nearMiss = ['not-object', 'not-object-variant', 'not-object-array', 'missing-kind', 'missing-observer',
