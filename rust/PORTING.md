@@ -131,9 +131,9 @@ There is no deferred-family or skipped-file allowlist:
 | realm | 16 |
 | scenario | 5 |
 | lens | 21 |
-| batch | 54 |
+| batch | 56 |
 | standard | 12 |
-| **Total** | **467** |
+| **Total** | **469** |
 
 All evaluator families are checked against immutable fixture answers,
 including every listed arrival order. A record's variants are checked against
