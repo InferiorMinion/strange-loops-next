@@ -389,12 +389,19 @@ theorem wholeHeads_set_decides {xs ys : List Record} (hx : Addressed xs) (hy : A
     (fun a ha b hb => hy a (mem_filter.1 ha).1 b (mem_filter.1 hb).1)
     fun r => by simp only [mem_filter, h]
 
-/-- An accumulating fold over the whole-reader heads depends only on the set
-held. Any fold does, commuting or not: the heads are the same list. -/
+/-- Any answer worked out from the whole-reader heads depends only on the set
+held: the heads are the same list, so the answer needs no commuting step. -/
+theorem wholeHeads_answer_set_decides {α} (answer : List Record → α) {xs ys : List Record}
+    (hx : Addressed xs) (hy : Addressed ys) (h : ∀ r, r ∈ xs ↔ r ∈ ys) :
+    answer (wholeHeads xs) = answer (wholeHeads ys) := by
+  rw [wholeHeads_set_decides hx hy h]
+
+/-- So an accumulating fold over the whole-reader heads depends only on the set
+held. Its commuting step plays no part. -/
 theorem Acc.followed_set_decides {σ} (f : Acc σ) (ev : Record → Tri) {xs ys : List Record}
     (hx : Addressed xs) (hy : Addressed ys) (h : ∀ r, r ∈ xs ↔ r ∈ ys) :
-    f.select ev (wholeHeads xs) = f.select ev (wholeHeads ys) := by
-  rw [wholeHeads_set_decides hx hy h]
+    f.select ev (wholeHeads xs) = f.select ev (wholeHeads ys) :=
+  wholeHeads_answer_set_decides (f.select ev) hx hy h
 
 /-- With each input id supplied once, every slot gives the same value for the same record set. -/
 theorem Slot.set_decides (s : Slot) (sel : Record → Bool) {xs ys : List Record}
