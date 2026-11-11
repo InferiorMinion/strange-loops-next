@@ -6,6 +6,7 @@ import Laws.Families
 import Laws.Spec
 import Laws.Slice
 import Laws.SpecSlice
+import Laws.By
 import Laws.Keys
 import Laws.Parse
 import Laws.Batch

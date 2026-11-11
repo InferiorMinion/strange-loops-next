@@ -527,15 +527,24 @@ def runCases : List RunCase := [
 def jShownIds (hs : List (RecordId × Shown)) : J :=
   .arr (hs.map fun (i, sh) => .obj [("id", .str (idText i)), ("shown", jShown sh)])
 
-def jSlot : SlotValue → J
+/-- What one group holds: what the slot holds without `by`. -/
+def jGroup : GroupValue → J
   | .nat r => .obj [("value", .num r.value), ("unread", .num r.unread)]
   | .int r => .obj [("value", .int r.value), ("unread", .num r.unread)]
   | .opt r => .obj [("value", match r.value with
       | some v => .int v
       | none => .null), ("unread", .num r.unread)]
   | .heads hs u => .obj [("heads", jShownIds hs), ("unread", .num u)]
+
+def jSlot : SlotValue → J
+  | .nat r => jGroup (.nat r)
+  | .int r => jGroup (.int r)
+  | .opt r => jGroup (.opt r)
+  | .heads hs u => jGroup (.heads hs u)
   | .things ts u => .obj [("things", .obj (ts.map fun (t, hs) => (t, jShownIds hs))),
       ("unread", .num u)]
+  | .groups gs u m => .obj [("groups", .obj (gs.map fun (g, v) => (g, jGroup v))),
+      ("unread", .num u), ("ungrouped", .num m)]
 
 def rotations (xs : List Record) : List (List Record) :=
   (List.range xs.length).map fun i => xs.drop i ++ xs.take i
