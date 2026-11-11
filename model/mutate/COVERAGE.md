@@ -8,6 +8,7 @@ The runner tests check every current replacement site.
 The round-two fixes retain 187 original entries and eight guard mutations: 195 entries.
 The D1 and D2 rulings add six entries for the new library definitions: 201 entries total.
 D8 retargets ten entries at `of` and the one thing it names, and adds nine: 210 entries total.
+Issue #1 retargets four entries at the shape stage and labels in `under`, and adds ten: 220 entries total.
 The raw-reader ordering mutations target library definitions under `Loops`.
 The cheap runner uses those fourteen replacements and the four former D6 survivors.
 It requires runtime failures after successful builds.
@@ -43,8 +44,8 @@ The catalogue includes existing entries without definition metadata.
 - `Loops.isLabel`: covered by `wide-batch-003`
 - `Loops.subst`: covered by `finish-batch-subst`
 - `Loops.substOpt`: covered by `d8-subst-of-skipped`
-- `Loops.substEnv`: excluded: It composes substitutions and constructs an envelope. No direct eligible operation.
-- `Loops.Draft.refs`: covered by `wide-batch-004`
+- `Loops.substEnv`: covered by `under-subst-skipped`
+- `Loops.Draft.refs`: covered by `wide-batch-004`, `under-refs-skipped`
 - `Loops.Draft.commit`: excluded: It delegates to commitOf. No direct eligible operation.
 - `Loops.Draft.ready`: covered by `wide-batch-005`
 - `Loops.resolveRounds`: covered by `wide-batch-006`
@@ -60,6 +61,16 @@ The catalogue includes existing entries without definition metadata.
 - `Loops.recordId`: covered by `wide-envelope-010`
 - `Loops.Env.problem`: covered by `wide-envelope-011`, `d8-of-not-typed-skipped`, `d8-of-missing-skipped`
 - `Loops.envelopeKeysProblem`: covered by `step1-envelope-keys-remove`
+- `Loops.envelopesShapeProblem`: covered by `shape-not-object-skipped`, `shape-not-object-before-unknown`
+- `Loops.draftEnvs`: covered by `shape-draft-without-env-passes`
+- `Loops.unreadable`: excluded: It is a fixed text. `read-wrong-type-accepted` replaces it at its use.
+
+## model/Loops/Read.lean
+
+- `Loops.Read.textOr`: covered by `read-wrong-type-accepted`
+- `Loops.Read.textsOr`: covered by `read-wrong-set-empty`
+- `Loops.Read.decodeValues`: covered by `read-missing-kind-filled`
+- `Loops.Read.salt`: covered by `read-salt-not-text-filled`, `read-salt-not-base32-filled`
 
 ## model/Loops/Families.lean
 

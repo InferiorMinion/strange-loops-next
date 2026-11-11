@@ -1,5 +1,35 @@
 # Lean model mutation report
 
+## Issue #1 and labels in `under`: the changed entries only
+
+The catalogue has 220 entries: issue #1 retargets four and adds ten.
+The full catalogue is not rerun; the D8a and D8b snapshot below remains the last full run, over 210 entries.
+Only the fourteen changed entries run, with `--only`, in the working tree at `6691065`'s model:
+
+| Mutation | Outcome |
+|---|---|
+| `wide-batch-004` (retargeted) | rejected-by-build |
+| `step1-envelope-keys-after-value` (retargeted) | error |
+| `step1-draft-keys-after-values` (retargeted) | error |
+| `step1-record-keys-after-values` (retargeted) | error |
+| `shape-not-object-skipped` | rejected-by-build |
+| `shape-not-object-before-unknown` | error |
+| `shape-draft-without-env-passes` | error |
+| `read-wrong-type-accepted` | error |
+| `read-wrong-set-empty` | error |
+| `read-missing-kind-filled` | error |
+| `read-salt-not-text-filled` | error |
+| `read-salt-not-base32-filled` | error |
+| `under-subst-skipped` | rejected-by-build |
+| `under-refs-skipped` | rejected-by-build |
+
+Every error is a generator assertion at the case the entry targets.
+The reader entries stop at the `record/shape-*` vector whose refusal they remove, such as `record/shape-kind-number: no answer`.
+`shape-draft-without-env-passes` stops at `batch/55-env-missing-before-label-value`, and the order entries at the R6 self-checks.
+`step1-envelope-keys-after-value` first survived that run: a mistyped `kind` no longer fails decoding, so its old self-check passed.
+A self-check that shape precedes a repeated envelope member now stops it; rerun alone at `fb16fc6`, it is an error again, as in the D8 run.
+The cheap runner, which is rerun at `fb16fc6` with two retargeted sites, kills 33 of 33 mutants.
+
 ## D8a and D8b snapshot: `11784e5`
 
 The Node 25.9 run completes all 210 catalogue entries with a 240-second command timeout.
