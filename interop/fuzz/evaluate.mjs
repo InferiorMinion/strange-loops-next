@@ -26,6 +26,12 @@ const folds = {
   'fold/select': (rs, input) => ({ count: F.count(rs, input), sum: F.sum(rs, input) }),
 };
 
+// Whether an object node, as `S.readJson` reads one, repeats a member name.
+const repeats = (node) => {
+  const names = (node?.members ?? []).map(([key]) => key);
+  return new Set(names).size !== names.length;
+};
+
 // The raw vector keeps spec member order, including integer-like member names.
 function specNode(vector, rawText) {
   if (vector.input.spec_text !== undefined) return S.readJson(vector.input.spec_text);
@@ -73,6 +79,20 @@ export function evaluateJS(vector, rawText) {
       // The raw text keeps each payload's repeated members for the library.
       const payloadTexts = rawText !== undefined && input.payload_text === undefined && Array.isArray(input.payloads)
         ? input.payloads.map((_, i) => jsonSourceAt(rawText, ['input', 'payloads', i])) : undefined;
+      // A repeated envelope member is malformed input, after raw shape and a
+      // text payload's lone surrogate, as in Lean. A value cannot hold it.
+      if (rawText !== undefined) {
+        const envs = S.readJson(jsonSourceAt(rawText, ['input', 'envs']));
+        if ((envs.items ?? []).some(repeats)) {
+          try { L.checkEnvelopeShapes(input.envs); }
+          catch (error) { if (WRITE_CODES.has(error.message)) return [{ refused: error.message }]; throw error; }
+          if (typeof input.payload_text === 'string') {
+            try { L.parse(input.payload_text); }
+            catch (error) { if (error.message === L.NOT_UNICODE) return [{ refused: error.message }]; }
+          }
+          throw new Error('record input: an envelope repeats a member');
+        }
+      }
       return [recordAnswer(input, payloadTexts)];
     }
     case 'lens/section': return [lensAnswer(input)];
@@ -98,6 +118,14 @@ export function evaluateJS(vector, rawText) {
         catch (error) {
           if (error.message.startsWith('envelope-')) return [{ refused: error.message }];
           throw error;
+        }
+        // After shape: a draft or a draft's envelope that repeats a member,
+        // two `env` members included, is malformed input, as in Lean.
+        for (const draft of drafts.items) {
+          if (!draft?.members) continue;
+          if (repeats(draft) || draft.members.some(([key, env]) => key === 'env' && repeats(env))) {
+            throw new Error('batch input: a draft repeats a member');
+          }
         }
       }
       return [resolveBatch(input.drafts, input.held)];
@@ -150,7 +178,11 @@ function comparison(outcomes) {
 }
 
 // A Lean wrapper keeps the two-way API. Rust mode accepts { lean, rust } wrappers.
-// Decoder refusals are not protocol answers. Typed JS APIs have no fixture decoder.
+// Decoder refusals are not protocol answers. Typed JS APIs have no fixture decoder,
+// except the record and batch inputs, whose contract says what is malformed: there
+// JS must also report malformed input (throw) where Lean does, or it is a mismatch.
+const MALFORMED_HELD = new Set(['record', 'batch']);
+
 export function assess(vector, response, { rawText, js = evaluateJS } = {}) {
   const bundled = response && Object.hasOwn(response, 'lean');
   const responses = { lean: bundled ? response.lean : response };
@@ -165,8 +197,18 @@ export function assess(vector, response, { rawText, js = evaluateJS } = {}) {
     if (hasError) result[`${name}Error`] = r.error;
     else result[name] = r.expect;
   }
-  if (outcomes.lean.status === 'decoder-refusal') {
+  if (outcomes.lean.status === 'decoder-refusal' && !MALFORMED_HELD.has(vector.layer)) {
     outcomes.js = { status: 'not-called' };
+  } else if (outcomes.lean.status === 'decoder-refusal') {
+    try {
+      const answers = js(vector, rawText);
+      result.jsAnswers = answers;
+      result.js = answers?.[0];
+      outcomes.js = { status: 'answered', answers };
+    } catch (error) {
+      result.jsError = error.message;
+      outcomes.js = { status: 'decoder-refusal' };
+    }
   } else {
     let answers;
     try { answers = js(vector, rawText); }
@@ -184,7 +226,8 @@ export function assess(vector, response, { rawText, js = evaluateJS } = {}) {
     }
   }
   result.comparison = comparison(outcomes);
-  if (Object.values(responses).every(r => Object.hasOwn(r, 'error'))) {
+  if (Object.values(responses).every(r => Object.hasOwn(r, 'error'))
+    && ['not-called', 'decoder-refusal'].includes(outcomes.js.status)) {
     result.status = 'decoder-refusal';
     result.diagnostic = responses.lean.error;
     result.diagnostics = Object.fromEntries(Object.entries(responses).map(([name, r]) => [name, r.error]));

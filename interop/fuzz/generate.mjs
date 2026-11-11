@@ -286,10 +286,11 @@ export function generate(seed, index, family) {
   // Issue #1 and labels in `under`, each in a fixed slot: a draft whose
   // envelope is not an object or is left out, a field left out or of the
   // wrong type, a salt that is not text, and labels standing in `under`.
-  if (family === 'batch' && index % 64 >= 24 && index % 64 < 33) {
+  if (family === 'batch' && index % 64 >= 24 && index % 64 < 35) {
     const slot = index % 64 - 24, ds = input.drafts, last = ds.at(-1);
     nearMiss = ['env-not-object', 'env-missing', 'kind-missing', 'about-text', 'salt-number',
-      'label-in-under', 'under-label-unknown', 'under-label-cycle', 'label-in-erases'][slot];
+      'label-in-under', 'under-label-unknown', 'under-label-cycle', 'label-in-erases',
+      'draft-member-unknown', 'draft-member-unknown-after-shape'][slot];
     scheduled = true;
     // Undo the random label cycle and `of` faults above, so the slot alone decides.
     ds[0].env.about = ds[0].env.about.filter(a => a !== '@d0');
@@ -311,6 +312,9 @@ export function generate(seed, index, family) {
     // under the last closes a cycle; a single draft stands under itself.
     if (slot === 7) ds[0].env.under = `@d${ds.length - 1}`;
     if (slot === 8) last.env.erases = ['@d0'];
+    // An unknown draft member is malformed input, after the shape stage.
+    if (slot === 9 || slot === 10) last.extra = 0;
+    if (slot === 10) ds[0].env.extra = true;
   }
   if (family === 'record') {
     const slot = index % 64;
@@ -365,6 +369,13 @@ export function generate(seed, index, family) {
     // slot in one cycle of 64 in every four, so the other cycles keep their
     // random records; slot 40 stays unscheduled for the valid-record checks.
     const shapeSlots = [37, 38, 39, 41, 42, 43, 56, 57, 58, 59, 60, 61, 62, 63];
+    // No envelope to write is malformed input; a text payload's lone surrogate comes first.
+    if (index % 256 >= 64 && index % 256 < 128 && (slot === 37 || slot === 38)) {
+      nearMiss = slot === 37 ? 'no-envelope' : 'no-envelope-lone';
+      scheduled = true;
+      input.envs = [];
+      if (slot === 38) { delete input.payloads; input.payload_text = '["\\ud800"]'; }
+    }
     if (index % 256 < 64 && shapeSlots.includes(slot)) {
       const d = shapeSlots.indexOf(slot), target = `r:${'0'.repeat(52)}`;
       const without = (k) => { const env = clone(clean); delete env[k]; return env; };
