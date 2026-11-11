@@ -92,12 +92,13 @@ Collect returns records newest first in `heads`.
 Each record carries its held form; `unread` counts records whose payload tests cannot answer.
 Count each unread id once per slot.
 
-Latest-by and collect with `"follow": "prev"` read heads.
+Latest-by, and collect, count, sum, min and max with `"follow": "prev"`, read heads.
 Supersession runs per thing over the admitted set before selection.
 `from` and envelope tests choose heads; payload tests then filter them.
 `from.of` takes the records of a thing; `from.about` takes the records whose `about` names it, as written.
 `env.of` tests `of` as written, so a record without `of` holds nothing there.
-Collect without `follow` takes every selected record, superseded or not.
+Collect, count, sum, min and max without `follow` take every selected record, superseded or not.
+With it, every head of a forked thing counts; count counts an erased or withheld head by its envelope, and sum, min and max count it unread (`spec/run/16`–`18`).
 Collect counts unread candidates before applying its limit.
 
 ## `batch`

@@ -24,6 +24,9 @@ import Laws.Things
   envelopes, so a view selects the same records.
 * **The set decides, for every spec.** Supply each input id once.
   Every slot then gives the same value for the same record set.
+* **Following `prev`, count, sum, min and max fold the heads.** They read
+  the whole-reader heads, each id once, selected as latest-by selects. The
+  set decides through each thing's heads, without the commuting step.
 * **Selection comes after supersession.** Slots over heads return only
   records that remain heads of at least one thing.
   Each returned head passes `from` and every `where` test.
