@@ -314,7 +314,9 @@ def taskSpec : Json := o [("vertex", s "tasks"),
     ("observations", o [("count", .bool true)]),
     ("open-observations", o [("count", .bool true), ("where", o [("status", o [("is", s "open")])])]),
     ("est", o [("sum", s "est")]),
-    ("blocked", o [("count", .bool true), ("where", o [("blocked", o [("present", .bool true)])])])])]
+    ("blocked", o [("count", .bool true), ("where", o [("blocked", o [("present", .bool true)])])]),
+    ("open-now", o [("count", .bool true), ("follow", s "prev"), ("where", o [("status", o [("is", s "open")])])]),
+    ("est-now", o [("sum", s "est"), ("follow", s "prev")])])]
 
 -- Hidden payloads must not supply numbers, even though their placeholder is zero.
 def hiddenNumbersSpec : Json := o [("vertex", s "hidden-numbers"),
