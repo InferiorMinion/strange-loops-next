@@ -530,6 +530,10 @@ def selfCheck : Except String Unit := do
     match Gen.Read.env "env" (.obj (fields ++ [("extra", .null)])) with
     | .error "envelope-field-unknown" => pure ()
     | _ => throw "R6 raw keys must precede envelope values"
+  -- A repeated member is malformed input only once shape has passed.
+  match Gen.Read.env "env" (.obj [("kind", .str "a"), ("kind", .str "b"), ("extra", .null)]) with
+  | .error "envelope-field-unknown" => pure ()
+  | _ => throw "R6 raw keys must precede repeated envelope members"
   for envs in [[Json.int 7, unknown], [unknown, .int 7],
       [.obj [("kind", .int 7)], unknown], [unknown, .obj [("kind", .int 7)]]] do
     match Gen.Read.envs "envs" (.arr envs) with

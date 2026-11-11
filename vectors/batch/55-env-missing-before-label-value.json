@@ -1,7 +1,7 @@
 {
   "vector": "55-env-missing-before-label-value",
   "layer": "batch",
-  "laws": ["batch.shape", "batch.refuse", "batch.refuse-order"],
+  "laws": ["record.shape", "batch.refuse", "batch.refuse-order"],
   "source": "model",
   "input": {
     "held": [

@@ -328,7 +328,7 @@ def shapeVectors : Except String (List (String × J)) := do
     for i in List.range ds.length do
       let got ← (rawAnswer (ds.drop i ++ ds.take i)).mapError (s!"batch/{name}: no answer: " ++ ·)
       if got != some code then throw s!"batch/{name}: rotation {i} gives {got}, not {code}"
-    pure (name, vector name "batch" ["batch.shape", "batch.refuse", "batch.refuse-order"]
+    pure (name, vector name "batch" ["record.shape", "batch.refuse", "batch.refuse-order"]
       (.obj [("held", .arr (held.map jHeld)), ("drafts", .arr ds)]) (.obj [("refused", .str code)]))
 
 def vectors : Except String (List (String × J)) := do
