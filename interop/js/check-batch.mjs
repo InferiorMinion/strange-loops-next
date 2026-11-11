@@ -14,11 +14,16 @@ const orders = (n) => {
   return go([...Array(n).keys()]);
 };
 
-// A draft with the named sets of its envelope reversed.
-const reversed = (d, keys) => ({
-  ...d,
-  env: Object.fromEntries(Object.entries(d.env).map(([k, v]) => [k, keys.includes(k) ? [...v].reverse() : v])),
-});
+// A draft with the named sets of its envelope reversed. An envelope that is
+// not an object, or a set that is not an array, stays as written.
+const reversed = (d, keys) => {
+  if (d.env === null || typeof d.env !== "object" || Array.isArray(d.env)) return d;
+  return {
+    ...d,
+    env: Object.fromEntries(Object.entries(d.env).map(([k, v]) =>
+      [k, keys.includes(k) && Array.isArray(v) ? [...v].reverse() : v])),
+  };
+};
 
 const variants = { "as given": [], "prev reversed": ["prev"], "about reversed": ["about"], "both reversed": ["prev", "about"] };
 

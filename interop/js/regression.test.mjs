@@ -81,6 +81,46 @@ test("record input delegates the active envelope and checks only siblings", () =
   }
 });
 
+test("an envelope's shape refuses by name: not an object, a field left out or of the wrong type", () => {
+  const salt = base32(writerSalt), seed = base32(writerSeed);
+  const refused = (envs, more = {}) => {
+    try { writeRecord({ envs, payloads: [{}], salt, seed, ...more }); return null; }
+    catch (e) { return e.message; }
+  };
+  for (const env of [7, null, "note", [writerEnv]]) {
+    assert.equal(refused([env]), "envelope-not-object");
+    assert.equal(refused([writerEnv, env]), "envelope-not-object");
+    assert.equal(refused([env, { ...writerEnv, extra: 1 }]), "envelope-field-unknown");
+    assert.equal(refused([{ ...writerEnv, extra: 1 }, env]), "envelope-field-unknown");
+  }
+  const { kind: _k, ...noKind } = writerEnv;
+  assert.equal(refused([noKind]), "kind-empty");
+  assert.equal(refused([{ ...noKind, observer: 7 }]), "kind-empty");
+  const fields = { kind: "kind-empty", observer: "observer-not-typed", emitted: "emitted-not-rfc3339",
+    occurred: "occurred-not-span", about: "about-not-typed", of: "of-not-typed", prev: "prev-not-record-id",
+    under: "under-not-record-id", erases: "erases-not-record-id" };
+  for (const [k, code] of Object.entries(fields)) {
+    for (const v of [7, null, true, {}, [7]]) assert.equal(refused([{ ...writerEnv, [k]: v }]), code, `${k}: ${JSON.stringify(v)}`);
+  }
+  // A salt that is not base32hex text is a salt that is not 16 bytes.
+  for (const s of [undefined, 7, "!"]) assert.equal(refused([writerEnv], { salt: s }), "salt-not-16-bytes");
+  assert.equal(refused([noKind], { salt: 7 }), "kind-empty");
+});
+
+test("a label may stand in under, and takes part in cycles", () => {
+  const salt = base32(writerSalt);
+  const d = (label, env) => ({ ...(label && { label }), env: { ...writerEnv, ...env }, salt, payload: { label } });
+  const { records } = resolveBatch([d("@g", { kind: "grant" }), d(null, { under: "@g" })], []);
+  assert.equal(JSON.parse(records[1].env_canonical).under, records[0].id);
+  assert.deepEqual(resolveBatch([d(null, { under: "@nowhere" })], []), { refused: "label-unknown" });
+  assert.deepEqual(resolveBatch([d("@a", { under: "@b" }), d("@b", { under: "@a" })], []), { refused: "label-cycle" });
+  assert.deepEqual(resolveBatch([d("@s", { under: "@s" })], []), { refused: "label-cycle" });
+  // erases still takes no label: one there is no record id
+  assert.deepEqual(resolveBatch([d("@g", {}), d(null, { erases: ["@g"] })], []), { refused: "erases-not-record-id" });
+  // a draft's envelope left out or not an object is a shape refusal, before labels
+  assert.deepEqual(resolveBatch([d("@a", {}), d("@a", {}), { salt, payload: null }], []), { refused: "envelope-not-object" });
+});
+
 test("base32hex exact image, width and byte order", () => {
   const alphabet = "0123456789abcdefghijklmnopqrstuv";
   for (const [n, pad] of [[16, 2], [32, 4], [64, 3]]) {
