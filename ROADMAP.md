@@ -14,7 +14,7 @@ These proofs apply only under their stated premises.
 The tree has 498 JSON fixtures: 486 generated fixtures and 12 standard fixtures.
 Lean replays 477 generated fixtures; 9 occurred fixtures use separate checks.
 Rust checks every fixture, six JCS byte pairs, 4,000 binary64 cases, and 128 SUPERCOP signing cases with ed25519-dalek.
-Rust passes 152 tests; JavaScript passes 6,065 vector checks and 33 regression and law tests.
+Rust passes 153 tests; JavaScript passes 6,065 vector checks and 33 regression and law tests.
 The fuzz suite passes 52 tests.
 See [vectors](vectors/README.md), [Rust boundaries](rust/GAPS.md), and [the mutation report](model/mutate/REPORT.md).
 These checks provide bounded evidence, not complete JCS or cryptographic correctness.
@@ -251,6 +251,11 @@ An envelope that is not an object is refused with a new code, `envelope-not-obje
 A required field left out, or any field of the wrong JSON type, is refused with that field's existing code, in that field's place.
 The model reads such a field as empty text, which every field's own check refuses (`unreadable_refused`).
 The same change brings the batch up to the settled ledger entry "A label may stand in `under`": a draft may name another by label in `about`, `of`, `prev` or `under`, never in `erases`, and labels in `under` take part in cycles.
+**Kyle's choice, confirmed 2026-11-11:** `loops emit -` reads a changeset line's envelope fields through the core's reader, as `Read.envOf` does.
+A field left out or of the wrong JSON type gets the field's own code, in the writer's order across the whole changeset, so another line's label refusal outranks it.
+`draft-shape` stays for a line's own shape only: a line that is not a JSON object, or a label that is not text; an unknown member stays `draft-field-unknown` and a repeated one `member-duplicate`.
+The CLI fills in `observer` and `emitted` only when a line leaves them out; one given mistyped gets its code, and `observer-unbound` now judges only a typed observer.
+A line's salt is read as the core reads one, so one that is not base32hex text is `salt-not-16-bytes` in its place.
 **The reviewer's direction, not yet confirmed by Kyle:**
 - One new code, `envelope-not-object`; every other shape fault folds into an existing code, extending "A malformed value uses the field's existing refusal code".
 **Implementer choices, not yet confirmed by Kyle:**
@@ -262,7 +267,6 @@ The same change brings the batch up to the settled ledger entry "A label may sta
 - A salt left out, not text, or not canonical base32hex is `salt-not-16-bytes`, in that check's place.
 - A batch draft that is not an object, an unknown draft member, a label that is not text, a draft without a payload, and a repeated envelope member name stay malformed input, with no code.
 - In JavaScript, a repeated envelope or draft member is seen only from raw text, in the fuzz adapter; the value APIs (`resolveBatch`, `writeRecord`, `seal`, `writeText`) cannot see one (`interop/js/README.md`).
-- The CLI's own changeset lines still refuse a mistyped field with `draft-shape`, not the core's field code.
 - A writer checks no `under` target beyond its shape: whether it names a held grant is left to standing (step 3), so `under` adds no batch refusal besides `label-unknown` and `label-cycle`.
 
 ### Retained boundaries
