@@ -17,7 +17,10 @@ the closed vocabulary with an optional `where`.
 * **Times** (`env.emitted`, `env.occurred`) are tested by what they read as:
   `is` asks for the same span, however it is spelled, and `at-least` and
   `below` compare starts. A record without `occurred` passes neither.
-* **Accumulating slots** (count, sum, min, max) select, then fold.
+* **Accumulating slots** (count, sum, min, max) select, then fold. With
+  `"follow": "prev"` they fold the whole-reader heads instead of every
+  record: each thing's heads, each id once, as latest-by and collect with
+  `follow` read them, selected as those slots select.
 * **Slots over heads** (latest-by, collect) read each thing's state, which
   supersession has already settled over everything the reader holds
   (`Loops.Things`); `from` and the envelope tests then choose heads, and the
@@ -38,7 +41,8 @@ the closed vocabulary with an optional `where`.
 * **The spec is explicit.** No key repeats; no name, field or kind is
   empty; a `from` entry that writes `kind` names at least one, a `where`
   names at least one field, and latest-by writes `"follow": "prev"`;
-  collect without it takes every selected record, superseded or not.
+  collect, count, sum, min and max without it take every selected record,
+  superseded or not.
 
 `protocol/spec.md` is the grammar this parser implements.
 
@@ -218,10 +222,12 @@ def Cond.all (cs : List Cond) (r : Record) : Tri :=
 
 /-- A fold type from the closed vocabulary. -/
 inductive FoldType where
-  | count
-  | sum (field : String)
-  | min (field : String)
-  | max (field : String)
+  /-- Count, Sum, Min and Max fold every selected record, or with `follow`
+  only the current ones: the whole-reader heads, each id once. -/
+  | count (follow : Bool)
+  | sum (field : String) (follow : Bool)
+  | min (field : String) (follow : Bool)
+  | max (field : String) (follow : Bool)
   /-- Per thing, by `of`, following `prev`; Latest is a thing's newest head. -/
   | latestBy
   /-- Every selected record newest first, or only the heads when following
@@ -289,15 +295,22 @@ def collectOf (sel : Record → Bool) (cs : List Cond) (follow : Bool) (limit : 
   .heads (shownIds (limitTo limit (hs.filter (payTest cs · == .yes))))
     (hs.filter (payTest cs · == .unknown)).length
 
-/-- Accumulating slots select with `from` and `where`, then fold. -/
+/-- What an accumulating slot folds: every record the reader holds, or with
+`follow` the whole-reader heads, which `wholeHeads` combines from each
+thing's heads, keeping each id once. -/
+def accPool (follow : Bool) (xs : List Record) : List Record :=
+  if follow then wholeHeads xs else xs
+
+/-- Accumulating slots select with `from` and `where`, then fold, over every
+record or, following `prev`, over the heads. -/
 def Slot.run (s : Slot) (sel : Record → Bool) (xs : List Record) : SlotValue :=
   let cs := s.tests.conds
   let ev := fun r => if sel r then Cond.all cs r else Tri.no
   match s.type with
-  | .count => .nat (Count.acc.select ev xs)
-  | .sum f => .int ((Sum.on f).select ev xs)
-  | .min f => .opt ((Min.on f).select ev xs)
-  | .max f => .opt ((Max.on f).select ev xs)
+  | .count follow => .nat (Count.acc.select ev (accPool follow xs))
+  | .sum f follow => .int ((Sum.on f).select ev (accPool follow xs))
+  | .min f follow => .opt ((Min.on f).select ev (accPool follow xs))
+  | .max f follow => .opt ((Max.on f).select ev (accPool follow xs))
   | .latestBy => latestOf sel cs xs
   | .collect follow limit => collectOf sel cs follow limit xs
 
@@ -427,12 +440,10 @@ def slotType (path : String) (kvs : List (String × Json)) : Parse (String × Js
   | [p] => pure p
   | _ => refuse "fold-type" path
 
-/-- `follow`: `"prev"`, on collect or latest-by, and always written on latest-by. -/
+/-- `follow`: `"prev"`, on any fold type, and always written on latest-by. -/
 def slotFollow (path t : String) : Option Json → Parse Bool
   | none => if t = "latest-by" then refuse "follow-missing" s!"{path}.follow" else pure false
-  | some (.str "prev") =>
-    if t = "collect" || t = "latest-by" then pure true
-    else refuse "follow-invalid" s!"{path}.follow"
+  | some (.str "prev") => pure true
   | some _ => refuse "follow-invalid" s!"{path}.follow"
 
 /-- `limit`: a positive whole number, on collect only. -/
@@ -447,10 +458,10 @@ def slotLimit (path t : String) : Option Json → Parse (Option Nat)
 def foldType (path t : String) (follow : Bool) (limit : Option Nat) (arg : Json) : Parse FoldType :=
   let p := s!"{path}.{t}"
   match t, arg with
-  | "count", .bool true => pure .count
-  | "sum", f => FoldType.sum <$> fieldArg p f
-  | "min", f => FoldType.min <$> fieldArg p f
-  | "max", f => FoldType.max <$> fieldArg p f
+  | "count", .bool true => pure (.count follow)
+  | "sum", f => (FoldType.sum · follow) <$> fieldArg p f
+  | "min", f => (FoldType.min · follow) <$> fieldArg p f
+  | "max", f => (FoldType.max · follow) <$> fieldArg p f
   | "latest-by", .str "of" => pure .latestBy
   | "collect", .bool true => pure (.collect follow limit)
   | _, _ => refuse "fold-argument" p
@@ -592,15 +603,19 @@ def Op.toJson : Op → String × Json
 /-- A `where` map as written. -/
 def Tests.toJson (ts : Tests) : Json := .obj (ts.map fun (f, os) => (f.name, .obj (os.map Op.toJson)))
 
+/-- `follow` as written: present when the slot follows `prev`. -/
+def followJson (follow : Bool) : List (String × Json) :=
+  if follow then [("follow", .str "prev")] else []
+
 def Slot.toJson (s : Slot) : String × Json :=
   let type : List (String × Json) := match s.type with
-    | .count => [("count", .bool true)]
-    | .sum f => [("sum", .str f)]
-    | .min f => [("min", .str f)]
-    | .max f => [("max", .str f)]
+    | .count follow => [("count", .bool true)] ++ followJson follow
+    | .sum f follow => [("sum", .str f)] ++ followJson follow
+    | .min f follow => [("min", .str f)] ++ followJson follow
+    | .max f follow => [("max", .str f)] ++ followJson follow
     | .latestBy => [("latest-by", .str "of"), ("follow", .str "prev")]
     | .collect follow limit =>
-      [("collect", .bool true)] ++ (if follow then [("follow", .str "prev")] else []) ++
+      [("collect", .bool true)] ++ followJson follow ++
         (match limit with
           | some k => [("limit", .int k)]
           | none => [])

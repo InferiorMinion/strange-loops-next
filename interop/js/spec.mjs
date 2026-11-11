@@ -160,7 +160,8 @@ function slotOf(name, n) {
   const [type] = types;
   const [follow, limit, where] = ["follow", "limit", "where"].map((k) => get(n, k));
   if (type === "latest-by" && follow === undefined) refuse("follow-missing", [...at, "follow"]);
-  if (follow !== undefined && (follow !== "prev" || (type !== "collect" && type !== "latest-by"))) refuse("follow-invalid", [...at, "follow"]);
+  // Every fold type may follow prev; latest-by must.
+  if (follow !== undefined && follow !== "prev") refuse("follow-invalid", [...at, "follow"]);
   if (limit !== undefined && (!(Number.isSafeInteger(limit) && limit >= 1) || type !== "collect")) refuse("limit-invalid", [...at, "limit"]);
   if (!ARGUMENT[type](get(n, type))) refuse("fold-argument", [...at, type]);
   const slot = { [type]: get(n, type) };
@@ -268,22 +269,28 @@ function latestBy(states, spec, slot) {
 }
 
 // Accumulating slots select, then fold the records `from` takes. Slots over
-// heads (latest-by, collect following prev) supersede over every record held,
-// then choose among the heads, so selection never brings back what was
-// superseded. Collect without follow takes every selected record.
-function runSlot(slot, spec, { records, taken, states }) {
+// heads (latest-by, and collect, count, sum, min and max following prev)
+// supersede over every record held, then choose among the heads, so selection
+// never brings back what was superseded. Without follow they take every
+// selected record.
+function runSlot(slot, spec, { taken, current, states }) {
   const where = slot.where;
-  if ("count" in slot) return F.count(taken, { where });
-  for (const type of ["sum", "min", "max"]) if (type in slot) return F[type](taken, { where, field: slot[type] });
+  const pool = slot.follow === "prev" ? current : taken;
+  if ("count" in slot) return F.count(pool, { where });
+  for (const type of ["sum", "min", "max"]) if (type in slot) return F[type](pool, { where, field: slot[type] });
   if ("latest-by" in slot) return latestBy(states, spec, slot);
-  if (slot.follow === "prev") return collect(F.heads(records).filter((r) => takes(spec, r)), slot);
-  return collect(taken, slot);
+  return collect(pool, slot);
 }
 
-// Every slot's value, by name.
+// Every slot's value, by name. `current` is the whole-reader heads `from`
+// takes: each thing's heads, each id once (a record heads one thing).
 export function runSpec(spec, records) {
   records = admit(records).admitted;
-  const ctx = { records, taken: records.filter((r) => takes(spec, r)), states: F.states(records) };
+  const ctx = {
+    taken: records.filter((r) => takes(spec, r)),
+    current: F.heads(records).filter((r) => takes(spec, r)),
+    states: F.states(records),
+  };
   const out = Object.create(null);
   for (const [name, slot] of Object.entries(spec.fold)) out[name] = runSlot(slot, spec, ctx);
   return out;

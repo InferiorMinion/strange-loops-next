@@ -8,6 +8,7 @@ The runner tests check every current replacement site.
 The round-two fixes retain 187 original entries and eight guard mutations: 195 entries.
 The D1 and D2 rulings add six entries for the new library definitions: 201 entries total.
 D8 retargets ten entries at `of` and the one thing it names, and adds nine: 210 entries total.
+Following `prev` on count, sum, min and max retargets two entries (`wide-spec-069`, `coverage-spec-slotfollow`) and adds nine: 219 entries total.
 The raw-reader ordering mutations target library definitions under `Loops`.
 The cheap runner uses those fourteen replacements and the four former D6 survivors.
 It requires runtime failures after successful builds.
@@ -212,7 +213,8 @@ The catalogue includes existing entries without definition metadata.
 - `Loops.payTest`: covered by `wide-spec-061`
 - `Loops.latestOf`: covered by `spec-unread-duplicates`, `spec-drop-head-choice`
 - `Loops.collectOf`: covered by `spec-drop-collect-choice`, `spec-collect-unknown-yes`
-- `Loops.Slot.run`: covered by `wide-spec-062`
+- `Loops.accPool`: covered by `follow-pool-every`, `follow-pool-heads-always`
+- `Loops.Slot.run`: covered by `wide-spec-062`, `follow-count-every`, `follow-max-every`, `follow-count-envelope-first`, `follow-count-unknown-first`
 - `Loops.Source.takes`: covered by `spec-source-all-any`, `d8-source-of-by-about`
 - `Loops.Spec.takes`: covered by `wide-spec-063`
 - `Loops.Spec.select`: covered by `wide-spec-064`
@@ -233,7 +235,7 @@ The catalogue includes existing entries without definition metadata.
 - `Loops.slotType`: covered by `finish-spec-slottype`
 - `Loops.slotFollow`: covered by `coverage-spec-slotfollow`
 - `Loops.slotLimit`: covered by `wide-spec-068`
-- `Loops.foldType`: covered by `wide-spec-069`
+- `Loops.foldType`: covered by `wide-spec-069`, `follow-sum-parse-dropped`
 - `Loops.slotTests`: covered by `coverage-spec-slottests`
 - `Loops.parseSlot`: covered by `coverage-spec-parseslot`
 - `Loops.parseKinds`: covered by `coverage-spec-parsekinds`
@@ -254,7 +256,8 @@ The catalogue includes existing entries without definition metadata.
 - `Loops.Arg.toJson`: covered by `finish-spec-arg-tojson`
 - `Loops.Op.toJson`: covered by `wide-spec-076`
 - `Loops.Tests.toJson`: covered by `extra-spec-tests-tojson`
-- `Loops.Slot.toJson`: covered by `finish-spec-slot-tojson`
+- `Loops.followJson`: covered by `follow-json-inverted`
+- `Loops.Slot.toJson`: covered by `finish-spec-slot-tojson`, `follow-count-not-written`
 - `Loops.Source.toJson`: covered by `finish-spec-source-tojson`
 - `Loops.Spec.toJson`: covered by `extra-spec-spec-tojson`
 

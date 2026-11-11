@@ -194,8 +194,8 @@ fn low_level_parsers_do_not_add_boundary_checks() {
     );
     assert_eq!(
         spec::fold_type("p", "count", true, Some(0_u64.into()), &Json::Bool(true))
-            .expect("raw fold ignores follow and limit"),
-        FoldType::Count
+            .expect("raw fold keeps follow and ignores limit"),
+        FoldType::Count { follow: true }
     );
     assert!(!spec::slot_follow("p", "unknown", None).expect("raw no follow"));
     assert_eq!(
@@ -249,20 +249,27 @@ fn low_level_parsers_do_not_add_boundary_checks() {
             "{raw}"
         );
     }
-    for raw in ["null", "false", r#""next""#] {
+    // Any fold type may follow prev; any other value is refused on each.
+    for t in ["count", "sum", "min", "max", "latest-by", "collect"] {
         assert!(
-            spec::slot_follow("p", "collect", Some(&json(raw))).is_err(),
-            "{raw}"
+            spec::slot_follow("p", t, Some(&json(r#""prev""#))).expect("prev"),
+            "{t}"
         );
+        for raw in ["null", "false", r#""next""#] {
+            assert!(
+                spec::slot_follow("p", t, Some(&json(raw))).is_err(),
+                "{t} {raw}"
+            );
+        }
     }
 }
 
 #[test]
 fn serialization_retains_spelling_orders_and_only_runtime_members() {
-    let input = r#"{"note":{"anything":true},"vertex":"x","from":[{"of":"task:two","about":"task:one","kind":["task","task"],"store":"."},{"store":"other"}],"fold":{"z":{"where":{"env.occurred":{"below":"2026-10-01T01:00:00Z","is":"2026-09"},"env.kind":{"not":"draft"}},"limit":2,"follow":"prev","collect":true,"note":"drop"},"a":{"sum":"n"},"b":{"min":"n"},"c":{"max":"n"},"d":{"count":true},"e":{"follow":"prev","latest-by":"of"}},"ticks":[],"order":{},"resolve":true,"window":null,"boundary":[],"param":0,"covers":{},"into":false,"bundle":[]}"#;
+    let input = r#"{"note":{"anything":true},"vertex":"x","from":[{"of":"task:two","about":"task:one","kind":["task","task"],"store":"."},{"store":"other"}],"fold":{"z":{"where":{"env.occurred":{"below":"2026-10-01T01:00:00Z","is":"2026-09"},"env.kind":{"not":"draft"}},"limit":2,"follow":"prev","collect":true,"note":"drop"},"a":{"sum":"n"},"b":{"min":"n"},"c":{"max":"n"},"d":{"count":true},"e":{"follow":"prev","latest-by":"of"},"f":{"follow":"prev","max":"n"}},"ticks":[],"order":{},"resolve":true,"window":null,"boundary":[],"param":0,"covers":{},"into":false,"bundle":[]}"#;
     let sp = spec(input);
     let expected = json(
-        r#"{"vertex":"x","from":[{"store":".","kind":["task","task"],"about":"task:one","of":"task:two"},{"store":"other"}],"fold":{"z":{"collect":true,"follow":"prev","limit":2,"where":{"env.occurred":{"below":"2026-10-01T01:00:00Z","is":"2026-09"},"env.kind":{"not":"draft"}}},"a":{"sum":"n"},"b":{"min":"n"},"c":{"max":"n"},"d":{"count":true},"e":{"latest-by":"of","follow":"prev"}}}"#,
+        r#"{"vertex":"x","from":[{"store":".","kind":["task","task"],"about":"task:one","of":"task:two"},{"store":"other"}],"fold":{"z":{"collect":true,"follow":"prev","limit":2,"where":{"env.occurred":{"below":"2026-10-01T01:00:00Z","is":"2026-09"},"env.kind":{"not":"draft"}}},"a":{"sum":"n"},"b":{"min":"n"},"c":{"max":"n"},"d":{"count":true},"e":{"latest-by":"of","follow":"prev"},"f":{"max":"n","follow":"prev"}}}"#,
     );
     assert_eq!(sp.to_json(), expected);
     assert_eq!(Spec::of_json(&expected).expect("round trip"), sp);

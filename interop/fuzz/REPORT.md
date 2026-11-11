@@ -2,12 +2,53 @@
 
 ## Scope
 
-This report covers the JS, Lean, and Rust campaign after D8a and D8b.
-It also preserves the D1–D6 campaign, the Step-1 campaign and earlier two-way campaigns as historical findings.
-Their counts are historical: the generator changed with D8, so the same seeds now generate different inputs.
+This report covers the JS, Lean, and Rust campaign after `follow` on count, sum, min and max (issue #3).
+It also preserves the D8a and D8b campaign, the D1–D6 campaign, the Step-1 campaign and earlier two-way campaigns as historical findings.
+Their counts are historical: the generator changed with D8 and again with `follow`, so the same seeds now generate different inputs.
 The harness covers record, fold, spec, realm, scenario, batch, and lens inputs.
 
-## D8a and D8b three-way campaign
+## Follow on count, sum, min and max: three-way campaign
+
+Source commit: `ae80223`, after the merge of `main` at `2829f5f`. Its JavaScript and Rust evaluators are those of `908ec25` and `dbcfce1`; its model adds proofs and vectors since.
+Node 25.9 checks 5,600 cases with seed `follow-2`: 800 cases per family.
+The run uses 88 chunks and takes 64.03 seconds.
+Exit 0: no implementation disagrees on any case.
+The retained [summary](evidence/follow-2/summary.json) supports these counts.
+Run `python3 interop/fuzz/summarize.py report` from the repository root.
+
+| Family | Cases | Match | Protocol refusal | Shared decoder refusal | Mismatch |
+|---|---:|---:|---:|---:|---:|
+| record | 800 | 158 | 600 | 42 | 0 |
+| fold | 800 | 709 | 0 | 91 | 0 |
+| spec | 800 | 702 | 56 | 42 | 0 |
+| realm | 800 | 713 | 0 | 87 | 0 |
+| scenario | 800 | 694 | 0 | 106 | 0 |
+| batch | 800 | 375 | 425 | 0 | 0 |
+| lens | 800 | 557 | 243 | 0 | 0 |
+| Total | 5,600 | 3,908 | 1,324 | 368 | 0 |
+
+All 368 decoder refusals occur in both Lean and Rust.
+They are not protocol agreement.
+No reduction runs, because no mismatch exists.
+The [mismatch list](evidence/follow-2/d1-mismatches.json) keeps the historical D1 example and holds no case.
+
+Every generated spec now has eight slots that follow `prev`: a count, a count with a payload test, a sum, a min and a max over `n`, a sum over a payload field with an envelope test, a sum over `n` with a payload test, and a max over `n` with a payload and an envelope test.
+They run in the spec and scenario families over the records the generator already makes: revisions, forks, erased and withheld heads, records of natural keys and refused revisions.
+Over 512 spec cases of seed `follow`, 190 run cases hold a revision, 90 a fork and 52 an erased head (`fuzz.test.mjs`).
+A quarter of the spec parse near misses set one of those slots' `follow` to `"next"` or `true`, which every implementation refuses with `follow-invalid`.
+The generator changed, so this campaign's counts are not comparable with D8's.
+
+Raw logs and per-case files are not committed.
+
+```sh
+node interop/fuzz/run.mjs --rust --seed follow-2 --n 5600 --shrink-trials 80 --out /tmp/fuzz-follow-2
+python3 interop/fuzz/summarize.py campaign /tmp/fuzz-follow-2 follow-2
+```
+
+## HISTORICAL D8a and D8b three-way campaign
+
+This campaign predates `follow` on count, sum, min and max.
+Its counts come from the generator of that time; seed `d8ab-1` now generates different inputs.
 
 Source commit: `b9f4389`; its model, JavaScript and Rust evaluator are those of `11784e5`.
 Node 25.9 checks 5,600 cases with seed `d8ab-1`: 800 cases per family.

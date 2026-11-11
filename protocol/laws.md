@@ -79,7 +79,7 @@ Over-head proofs use cached LatestBy state, not merely a cached answer.
 | `heads.why` | `Max.cannot_follow_prev` | Max's scalar state cannot maintain the maximum over changing heads | `fold/heads/01`, `02` |
 | `view.no-resurrection` | `LatestBy.view`, `LatestBy.map_fold`, `LatestBy.view_head_ids`, `LatestBy.no_false_resurrection` | A view keeps each thing's head ids. A record superseded within a thing is never current there. Any map that keeps each record's id, `prev` and place in content order keeps the heads, each mapped. | `fold/view/*` |
 | `view.refines` | `Where.eval_view` | a view only loses information: a `where` answer stays or becomes unknown | `fold/select/01` |
-| `result.unread` | `LatestBy.maxHeads_view`, `Acc.select_unread`, `Count.select_unread`, `latestOf_unread`, `collectOf_unread` | A fold does not guess. It counts the records whose test is unknown and the selected records it cannot read. | `fold/view/04`, `fold/select/*`, `spec/run/02`, `spec/run/03` |
+| `result.unread` | `LatestBy.maxHeads_view`, `Acc.select_unread`, `Count.select_unread`, `latestOf_unread`, `collectOf_unread`, `Count.followed_unread` | A fold does not guess. It counts the records whose test is unknown and the selected records it cannot read. | `fold/view/04`, `fold/select/*`, `spec/run/02`, `spec/run/03` |
 | `result.full` | `Acc.select_full` | when every test answers and every record is readable to the fold, nothing is unread and the result is the plain fold | `fold/select/03` |
 | `select.set` | `Acc.select_set_decides` | what is read and what is unread depend only on the set | `fold/select/*` |
 
@@ -87,6 +87,7 @@ Count can read every selected record.
 Latest-by counts each head once when its payload tests are unknown, after the source and envelope tests select it.
 Collect counts each unknown record once, before its limit.
 It counts heads when it follows replacements, and all records otherwise.
+Count, sum, min and max count each unknown chosen head once when they follow replacements, as latest-by does.
 Max over heads counts each head whose `n` field lacks a readable safe whole value.
 Numeric folds count hidden, missing, nonnumeric, nonwhole and unsafe whole values as unread.
 
@@ -196,9 +197,15 @@ pinned by the vectors rather than proved.
 | `spec.select` | `Spec.select_view`, `Source.takes_view`, `Spec.mem_select` | selection reads only envelopes, so a view selects the same records. `Spec.select` holds exactly the input records the spec takes; `Spec.run` does not call it. | `spec/run/*` |
 | `spec.from-thing` | `Source.takes_of`, `Source.takes_about` | `from`'s `of` takes exactly the records of the thing, a root by its own id. `from`'s `about` is a mention test: it takes exactly the records whose `about` names the thing, as written. | `spec/run/09`, `14` |
 | `spec.set` | `Slot.set_decides`, `Spec.set_decides` | Every slot of every spec gives the same value for the same distinct-id set, with each id consumed once. | `spec/run/*` |
+| `spec.follow` | `wholeHeads_overHeads`, `wholeHeads_set_decides`, `wholeHeads_answer_set_decides`, `Acc.followed_set_decides`, `mem_accPool_follow`, `accPool_follow_heads`, `select_as_latest`, `Count.followed_unread` | Count, sum, min and max that follow `prev` fold the whole-reader heads: every head of every thing, each id once, and no superseded record. The heads are each thing's LatestBy heads (`heads.set`), so any answer worked out from them depends only on the set held, and the accumulating form needs no commuting step (`acc.set`). They choose heads as latest-by does, and count each chosen head whose payload tests are unknown once. | `spec/run/16`–`20` |
 | `spec.after-supersession` | `latestOf_heads`, `collectOf_heads`, `Spec.view_state` | A slot over heads returns only heads retained in at least one thing, selected by its source, and passing every test. If the store's replacement rule reads only envelopes, a view keeps each thing's heads. Each head then shows only what the view shows. | `spec/run/03`, `04`, `08` |
-| `spec.slice` | `Spec.run_slice`, `spec_slice_needs_successors`, `spec_slice_needs_their_targets` | A reader holding part of the set gets a spec's whole answer when its part is a slice for the spec. A spec slice holds every form of the records the spec takes, every record that erases one of them, every record one of them names in `prev`, every record that names one of them in `prev`, and every record such a successor names in `prev`. Only the taken records are read whole; the envelopes of the rest are enough. Neither of the last two can be dropped. | (a part of a set: none yet) |
+| `spec.slice` | `Spec.run_slice`, `followed_slice`, `spec_slice_needs_successors`, `spec_slice_needs_their_targets` | A reader holding part of the set gets a spec's whole answer when its part is a slice for the spec. A spec slice holds every form of the records the spec takes, every record that erases one of them, every record one of them names in `prev`, every record that names one of them in `prev`, and every record such a successor names in `prev`. Only the taken records are read whole; the envelopes of the rest are enough. Neither of the last two can be dropped. | (a part of a set: none yet) |
 | `spec.parse` | `Spec.ofJson_fits`, `Spec.ofJson_toJson`, `Spec.reparse`, `Spec.parsed_iff`, `Spec.ofJson_repeat`, `Json.repeatAt_none` | The parser gives exactly fitting specs, each with a source. Parsed forms parse back to themselves. Repeated keys are refused at `Json.repeatAt`'s path. Specs without repeats never receive that refusal. | `spec/parse/*` |
+
+`heads.why` still holds with `spec.follow`.
+A followed max is not a scalar accumulator that a late record steps: each answer is worked out again from the per-thing LatestBy state, which is the over-heads family's state.
+Its law is `heads.set`'s. An incremental reader caches each thing's LatestBy state, onto which `heads.late` folds a late record per thing; a cached maximum alone would not do.
+No law yet states the whole-view slot incrementally, and `admit.late` still bounds what a caching reader may drop.
 
 ## A batch with labels (`model/Laws/Batch.lean`)
 

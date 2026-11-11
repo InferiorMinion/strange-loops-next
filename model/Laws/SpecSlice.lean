@@ -429,6 +429,33 @@ theorem collectOf_slice (hm : EnvOnly may) (hF : Forms W) (h : SpecSlice sp S W)
   unfold collectOf
   simp only [hp]
 
+/-- The whole-reader heads the spec takes are the same set in the slice and
+in the whole: a taken record is current in one exactly when in the other. -/
+theorem wholeHeads_taken_slice (hm : EnvOnly may) (hF : Forms W) (h : SpecSlice sp S W)
+    (r : Record) :
+    r ∈ (wholeHeads (realm may S)).filter sp.takes ↔
+      r ∈ (wholeHeads (realm may W)).filter sp.takes := by
+  simp only [mem_filter, mem_wholeHeads (realm_addressed may S),
+    mem_wholeHeads (realm_addressed may W)]
+  constructor
+  · rintro ⟨⟨t, -, hr⟩, ht⟩
+    have hw := (heads_taken hm hF h t ht).1 hr
+    exact ⟨⟨t, head_thing (realm_addressed may W) hw, hw⟩, ht⟩
+  · rintro ⟨⟨t, -, hw⟩, ht⟩
+    have hr := (heads_taken hm hF h t ht).2 hw
+    exact ⟨⟨t, head_thing (realm_addressed may S) hr, hr⟩, ht⟩
+
+/-- An accumulating slot that follows `prev` gives the same value over the slice. -/
+theorem followed_slice (hm : EnvOnly may) (hF : Forms W) (h : SpecSlice sp S W) {σ} (f : Acc σ)
+    (cs : List Cond) :
+    f.select (fun r => if sp.takes r then Cond.all cs r else Tri.no) (wholeHeads (realm may S)) =
+      f.select (fun r => if sp.takes r then Cond.all cs r else Tri.no) (wholeHeads (realm may W)) := by
+  have hno : ∀ r, sp.takes r = false →
+      (fun r => if sp.takes r then Cond.all cs r else Tri.no) r = .no := fun r hr => by simp [hr]
+  rw [← f.select_filter _ sp.takes hno, ← f.select_filter _ sp.takes hno (wholeHeads (realm may W))]
+  exact Acc.select_set_decides _ _ ((wholeHeads_distinct (realm_addressed may S)).filter _)
+    ((wholeHeads_distinct (realm_addressed may W)).filter _) (wholeHeads_taken_slice hm hF h)
+
 /-- Every slot gives the same value over the slice. -/
 theorem Slot.run_slice (hm : EnvOnly may) (hF : Forms W) (h : SpecSlice sp S W) (s : Slot) :
     s.run sp.takes (realm may S) = s.run sp.takes (realm may W) := by
@@ -450,10 +477,11 @@ theorem Slot.run_slice (hm : EnvOnly may) (hF : Forms W) (h : SpecSlice sp S W) 
   unfold Slot.run
   split
   all_goals dsimp only
-  · rw [acc]
-  · rw [acc]
-  · rw [acc]
-  · rw [acc]
+  iterate 4
+    simp only [accPool]
+    split
+    · rw [followed_slice hm hF h]
+    · rw [acc]
   · exact latestOf_slice hm hF h _
   · exact collectOf_slice hm hF h _ _ _
 

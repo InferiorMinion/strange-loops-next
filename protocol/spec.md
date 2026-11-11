@@ -60,7 +60,7 @@ and optionally:
 
 | Key | Holds | On |
 |---|---|---|
-| `follow` | `"prev"` | `collect`, and always written on `latest-by` |
+| `follow` | `"prev"` | any; always written on `latest-by` |
 | `limit` | a whole number, at least 1 | `collect` |
 | `where` | a `where` map, below | any |
 | `note` | any value: carried, not read | any |
@@ -79,6 +79,17 @@ For a whole-reader view, combine these heads and keep each id once.
 `latest` selects the newest head in this combined view as its winner.
 It returns the other heads in content order.
 It does not use global succession state.
+
+Without `follow`, `count`, `sum`, `min`, `max` and `collect` read every record `from` takes, superseded or not.
+With `"follow": "prev"` they read only the current records: the heads of the whole-reader view above, which are the heads `latest-by` reads.
+Their result keeps its shape: `count`, `sum`, `min` and `max` still give a `value` and `unread`.
+A slot over heads selects as `latest-by` does.
+`from` and the envelope tests choose heads; the payload tests then filter them.
+A chosen head whose payload tests answer unknown is unread, once.
+Every head of a forked thing is current, so each one counts.
+An erased or withheld head is still current, and only its envelope is held.
+`count` counts it, since counting reads no payload; a payload test on it answers unknown, and the head is unread.
+`sum`, `min` and `max` cannot read its field, so it is unread to them.
 
 Sum, min, and max read only safe whole values from the named payload field.
 Read each number using the layer 0 binary64 rule first.
@@ -160,8 +171,9 @@ Checks run in this order, and the first that fails is the refusal:
    2. an unknown key: `unknown-key` at `fold.<name>.<key>`;
    3. not exactly one fold type: `fold-type`;
    4. `follow`: `follow-missing` on latest-by without it, `follow-invalid`
-      when it isn't `"prev"` or the fold type isn't collect or latest-by;
-      at `fold.<name>.follow`;
+      when it isn't `"prev"`, on any fold type; at `fold.<name>.follow`.
+      This check stays after the fold type and before `limit` and the
+      argument, so `{"sum": "", "follow": "next"}` is refused at `follow`;
    5. `limit`: `limit-invalid` when it isn't a whole number of at least 1,
       or the fold type isn't collect; at `fold.<name>.limit`;
    6. the fold type's argument: `fold-argument` at `fold.<name>.<type>`;
@@ -179,7 +191,7 @@ These are the only codes.
 `spec/parse` vectors show accepted specs in parsed form.
 They keep `vertex` and `from`.
 Each source has `store`, then supplied `kind`, `about` and `of`.
-Each `fold` slot keeps its fold type, applicable `follow`, supplied `limit` and written `where`.
+Each `fold` slot keeps its fold type, its `follow` as written, supplied `limit` and written `where`.
 Latest-by always writes `follow`.
 Times keep their spelling. Carried keys and `note` are dropped. An accepted spec's parsed form parses back to itself.
 The parser gives exactly the specs that fit (`spec.parse` in [`laws.md`](laws.md)). That is a law

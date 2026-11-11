@@ -1,0 +1,26 @@
+{
+  "vector": "77-argument-after-follow",
+  "layer": "spec/parse",
+  "laws": ["spec.parse"],
+  "source": "model",
+  "input": {
+    "spec": {
+      "vertex": "x",
+      "from": [
+        {
+          "store": "."
+        }
+      ],
+      "fold": {
+        "c": {
+          "min": "",
+          "follow": "prev"
+        }
+      }
+    }
+  },
+  "expect": {
+    "refused": "fold-argument",
+    "path": "fold.c.min"
+  }
+}

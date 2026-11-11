@@ -659,8 +659,8 @@
   {
     "id": "wide-spec-069",
     "file": "Spec.lean",
-    "before": "| \"count\", .bool true => pure .count",
-    "after": "| \"count\", .bool _ => pure .count",
+    "before": "| \"count\", .bool true => pure (.count follow)",
+    "after": "| \"count\", .bool _ => pure (.count follow)",
     "reason": "Change this selection or check.",
     "definition": "Loops.foldType"
   },
@@ -819,9 +819,9 @@
   {
     "id": "coverage-spec-slotfollow",
     "file": "Spec.lean",
-    "before": "if t = \"collect\" || t = \"latest-by\" then pure true",
-    "after": "if t = \"collect\" && t = \"latest-by\" then pure true",
-    "reason": "Require both fold types.",
+    "before": "| some (.str \"prev\") => pure true",
+    "after": "| some (.str \"prev\") =>\n    if t = \"collect\" || t = \"latest-by\" then pure true else refuse \"follow-invalid\" s!\"{path}.follow\"",
+    "reason": "Accept follow only on collect and latest-by, as before.",
     "definition": "Loops.slotFollow"
   },
   {
@@ -1647,5 +1647,77 @@
     "after": "| .env .of, r => some [.val (.str r.thing)]",
     "reason": "Read env.of as the thing, not as written.",
     "definition": "Loops.Field.read"
+  },
+  {
+    "id": "follow-pool-every",
+    "file": "Spec.lean",
+    "before": "if follow then wholeHeads xs else xs",
+    "after": "if follow then xs else xs",
+    "reason": "Fold every record when following prev.",
+    "definition": "Loops.accPool"
+  },
+  {
+    "id": "follow-pool-heads-always",
+    "file": "Spec.lean",
+    "before": "if follow then wholeHeads xs else xs",
+    "after": "if follow then wholeHeads xs else wholeHeads xs",
+    "reason": "Fold the heads even without follow.",
+    "definition": "Loops.accPool"
+  },
+  {
+    "id": "follow-count-every",
+    "file": "Spec.lean",
+    "before": "| .count follow => .nat (Count.acc.select ev (accPool follow xs))",
+    "after": "| .count follow => .nat (Count.acc.select ev (accPool (follow && false) xs))",
+    "reason": "Count every record when following prev.",
+    "definition": "Loops.Slot.run"
+  },
+  {
+    "id": "follow-max-every",
+    "file": "Spec.lean",
+    "before": "| .max f follow => .opt ((Max.on f).select ev (accPool follow xs))",
+    "after": "| .max f follow => .opt ((Max.on f).select ev (accPool (follow && false) xs))",
+    "reason": "Take the maximum over every record when following prev.",
+    "definition": "Loops.Slot.run"
+  },
+  {
+    "id": "follow-sum-parse-dropped",
+    "file": "Spec.lean",
+    "before": "| \"sum\", f => (FoldType.sum · follow) <$> fieldArg p f",
+    "after": "| \"sum\", f => (FoldType.sum · false) <$> fieldArg p f",
+    "reason": "Parse sum without its follow.",
+    "definition": "Loops.foldType"
+  },
+  {
+    "id": "follow-count-not-written",
+    "file": "Spec.lean",
+    "before": "| .count follow => [(\"count\", .bool true)] ++ followJson follow",
+    "after": "| .count follow => [(\"count\", .bool true)]",
+    "reason": "Leave follow out of a count's parsed form.",
+    "definition": "Loops.Slot.toJson"
+  },
+  {
+    "id": "follow-json-inverted",
+    "file": "Spec.lean",
+    "before": "if follow then [(\"follow\", .str \"prev\")] else []",
+    "after": "if !follow then [(\"follow\", .str \"prev\")] else []",
+    "reason": "Write follow on the slots that do not follow.",
+    "definition": "Loops.followJson"
+  },
+  {
+    "id": "follow-count-envelope-first",
+    "file": "Spec.lean",
+    "before": "| .count follow => .nat (Count.acc.select ev (accPool follow xs))",
+    "after": "| .count follow => .nat (Count.acc.select ev (accPool follow (xs.filter fun r => !follow || ev r != .no)))",
+    "reason": "Choose by from and where before working out the heads, when following prev.",
+    "definition": "Loops.Slot.run"
+  },
+  {
+    "id": "follow-count-unknown-first",
+    "file": "Spec.lean",
+    "before": "| .count follow => .nat (Count.acc.select ev (accPool follow xs))",
+    "after": "| .count follow => .nat (Count.acc.select (fun r => if follow && sel r && payTest cs r == .unknown then .unknown else ev r) (accPool follow xs))",
+    "reason": "Let an unknown payload test outrank a failing envelope test, when following prev.",
+    "definition": "Loops.Slot.run"
   }
 ]

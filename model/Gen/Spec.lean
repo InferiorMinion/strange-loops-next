@@ -155,6 +155,19 @@ def parseCases : List (String × Json) := [
   ("69-env-of", whereOn "env.of" ("is", s "task:1")),
   ("70-env-of-not-typed", whereOn "env.of" ("is", s "loops")),
   ("71-env-of-ordered", whereOn "env.of" ("at-least", s "task:1")),
+  -- count, sum, min and max may follow `prev`; the parsed form keeps it as written
+  ("72-follow-on-count", slotOf (o [("count", .bool true), ("follow", s "prev"),
+    ("where", o [("status", o [("is", s "open")])])])),
+  ("73-follow-on-extrema", o [("vertex", s "x"), ("from", a [o [("store", s ".")]]),
+    ("fold", o [("lo", o [("min", s "est"), ("follow", s "prev")]),
+      ("hi", o [("follow", s "prev"), ("max", s "est")])])]),
+  -- any other value is refused as on collect, and before the fold's argument
+  ("74-follow-not-prev-on-count", slotOf (o [("count", .bool true), ("follow", s "next")])),
+  ("75-follow-not-text-on-max", slotOf (o [("max", s "est"), ("follow", .bool true)])),
+  ("76-follow-before-argument", slotOf (o [("sum", s ""), ("follow", s "head")])),
+  ("77-argument-after-follow", slotOf (o [("min", s ""), ("follow", s "prev")])),
+  -- limit stays collect's, following or not
+  ("78-limit-on-followed-count", slotOf (o [("count", .bool true), ("follow", s "prev"), ("limit", .int 2)])),
   ("gap03-repeat-key-before-value", o [("vertex", s "x"), ("vertex", o [("x", s "a"), ("x", s "b")]),
     ("from", a [o [("store", s ".")]])]),
   ("gap05-limit-zero", slotOf (o [("collect", .bool true), ("limit", .int 0)])),
@@ -301,7 +314,9 @@ def taskSpec : Json := o [("vertex", s "tasks"),
     ("observations", o [("count", .bool true)]),
     ("open-observations", o [("count", .bool true), ("where", o [("status", o [("is", s "open")])])]),
     ("est", o [("sum", s "est")]),
-    ("blocked", o [("count", .bool true), ("where", o [("blocked", o [("present", .bool true)])])])])]
+    ("blocked", o [("count", .bool true), ("where", o [("blocked", o [("present", .bool true)])])]),
+    ("open-now", o [("count", .bool true), ("follow", s "prev"), ("where", o [("status", o [("is", s "open")])])]),
+    ("est-now", o [("sum", s "est"), ("follow", s "prev")])])]
 
 -- Hidden payloads must not supply numbers, even though their placeholder is zero.
 def hiddenNumbersSpec : Json := o [("vertex", s "hidden-numbers"),
@@ -337,6 +352,82 @@ def sourceUnionSpec : Json := o [("vertex", s "union"),
     o [("store", s "."), ("kind", a [s "note"])]]),
   ("fold", o [("c", o [("count", .bool true)])])]
 
+-- Count, sum, min and max following `prev` fold the whole-reader heads.
+-- task:1 opens and closes; task:2's estimate is revised down; task:3's head is
+-- withheld; a note of task:2 is a second head there, which `from` does not
+-- take; task:4 mentions task:1 and is no head of it.
+def c1 := task (fixtureId 0x81) "task:1" 100 [("status", .str "open"), ("est", .int 3)]
+def c2 := task (fixtureId 0x82) "task:1" 200 [("status", .str "closed"), ("est", .int 3)] (prev := [fixtureId 0x81])
+def c3 := task (fixtureId 0x83) "task:2" 150 [("status", .str "open"), ("est", .int 9)]
+def c4 := task (fixtureId 0x84) "task:2" 250 [("status", .str "open"), ("est", .int 8)] (prev := [fixtureId 0x83])
+def c5 := (task (fixtureId 0x85) "task:3" 160 [("status", .str "open"), ("est", .int 7)]).withhold
+def c6 : Record := { task (fixtureId 0x86) "task:2" 170 [("est", .int 50)] with kind := "note" }
+def c7 : Record := { task (fixtureId 0x87) "task:4" 180 [("status", .str "open"), ("est", .int 2)] with about := ["task:1"] }
+
+def followSpec : Json := o [("vertex", s "current"),
+  ("from", a [o [("store", s "."), ("kind", a [s "task"])]]),
+  ("fold", o [
+    ("current", o [("count", .bool true), ("follow", s "prev")]),
+    ("every", o [("count", .bool true)]),
+    ("open", o [("count", .bool true), ("follow", s "prev"), ("where", o [("status", o [("is", s "open")])])]),
+    ("open-every", o [("count", .bool true), ("where", o [("status", o [("is", s "open")])])]),
+    ("by-kyle", o [("count", .bool true), ("follow", s "prev"),
+      ("where", o [("env.observer", o [("is", s "sl:kyle")])])]),
+    ("est", o [("sum", s "est"), ("follow", s "prev")]),
+    ("est-every", o [("sum", s "est")]),
+    ("lo", o [("min", s "est"), ("follow", s "prev")]),
+    ("hi", o [("max", s "est"), ("follow", s "prev")]),
+    ("hi-every", o [("max", s "est")]),
+    ("current-heads", o [("collect", .bool true), ("follow", s "prev")])])]
+
+-- a fork: two revisions of task:5's root, by two observers; both are current
+def k0 := task (fixtureId 0x88) "task:5" 100 [("status", .str "open"), ("est", .int 4)]
+def k1 : Record := { task (fixtureId 0x89) "task:5" 200 [("status", .str "open"), ("est", .int 6)] (prev := [fixtureId 0x88]) with observer := "sl:alice" }
+def k2 : Record := { task (fixtureId 0x8a) "task:5" 210 [("status", .str "closed"), ("est", .int 1)] (prev := [fixtureId 0x88]) with observer := "sl:bob" }
+
+-- an erased head: task:6's revision is erased by a record of its own; the
+-- revision still supersedes the root, and only its envelope is held
+def g0 := task (fixtureId 0x8b) "task:6" 100 [("status", .str "open"), ("est", .int 4)]
+def g1 := (task (fixtureId 0x8c) "task:6" 200 [("status", .str "open"), ("est", .int 10)] (prev := [fixtureId 0x8b])).erase
+def g2 : Record := { said (fixtureId 0x8d) "sl:kyle" [] 300 with kind := "erasure", erases := [fixtureId 0x8c] }
+
+def followHeadsSpec : Json := o [("vertex", s "current"),
+  ("from", a [o [("store", s "."), ("kind", a [s "task"])]]),
+  ("fold", o [
+    ("current", o [("count", .bool true), ("follow", s "prev")]),
+    ("open", o [("count", .bool true), ("follow", s "prev"), ("where", o [("status", o [("is", s "open")])])]),
+    ("est", o [("sum", s "est"), ("follow", s "prev")]),
+    ("lo", o [("min", s "est"), ("follow", s "prev")]),
+    ("hi", o [("max", s "est"), ("follow", s "prev")]),
+    ("est-every", o [("sum", s "est")]),
+    ("heads", o [("latest-by", s "of"), ("follow", s "prev")])])]
+
+-- two independent current heads: one held and closed, one withheld. A
+-- followed numeric slot with a payload test filters out the first and counts
+-- the second unread once, not once for its test and again for its field.
+def p1 := task (fixtureId 0x8e) "task:7" 100 [("status", .str "closed"), ("est", .int 99)]
+def p2 := (task (fixtureId 0x8f) "task:8" 110 [("status", .str "open"), ("est", .int 5)]).withhold
+
+def followTestSpec : Json := o [("vertex", s "open-estimates"),
+  ("from", a [o [("store", s "."), ("kind", a [s "task"])]]),
+  ("fold", o [
+    ("est", o [("sum", s "est"), ("follow", s "prev"), ("where", o [("status", o [("is", s "open")])])]),
+    ("lo", o [("min", s "est"), ("follow", s "prev"), ("where", o [("status", o [("is", s "open")])])]),
+    ("hi", o [("max", s "est"), ("follow", s "prev"), ("where", o [("status", o [("is", s "open")])])])])]
+
+-- Alice's open task is replaced by Bob's withheld revision. Supersession comes
+-- first, so the current record is Bob's: its envelope test fails, and the
+-- unknown payload test never counts. Filtering by envelope first would bring
+-- Alice's back; counting the payload before the envelope would read one unread.
+def v1 : Record := { task (fixtureId 0x90) "task:1" 100 [("status", .str "open")] with observer := "sl:alice" }
+def v2 : Record := { (task (fixtureId 0x91) "task:1" 200 [("status", .str "open")] (prev := [fixtureId 0x90])).withhold with observer := "sl:bob" }
+
+def followEnvSpec : Json := o [("vertex", s "alice-open"),
+  ("from", a [o [("store", s "."), ("kind", a [s "task"])]]),
+  ("fold", o [
+    ("alice-open", o [("count", .bool true), ("follow", s "prev"),
+      ("where", o [("status", o [("is", s "open")]), ("env.observer", o [("is", s "sl:alice")])])])])]
+
 structure RunCase where
   name : String
   laws : List String
@@ -371,6 +462,15 @@ def runCases : List RunCase := [
   -- a record about a thing, newer than the thing's head, is not a head of it
   ⟨"15-about-makes-no-head", ["spec.set", "thing.local"], taskSpec,
     [t1, { task (fixtureId 0x4b) "task:1" 500 [("status", .str "open")] with of := none, about := ["task:1"] }]⟩,
+  ⟨"16-follow-current", ["spec.set", "spec.follow", "result.unread"], followSpec,
+    [c1, c2, c3, c4, c5, c6, c7]⟩,
+  -- both heads of a forked thing count
+  ⟨"17-follow-fork", ["spec.set", "spec.follow"], followHeadsSpec, [k0, k1, k2]⟩,
+  -- count counts an erased head's held envelope; sum, min and max count it unread
+  ⟨"18-follow-erased-head", ["spec.set", "spec.follow", "result.unread"], followHeadsSpec, [g0, g1, g2]⟩,
+  ⟨"19-follow-payload-test", ["spec.set", "spec.follow", "result.unread"], followTestSpec, [p1, p2]⟩,
+  ⟨"20-follow-envelope-after-supersession", ["spec.set", "spec.follow", "spec.after-supersession"],
+    followEnvSpec, [v1, v2]⟩,
   ⟨"gap04-unread-multi-thing", ["result.unread"],
     o [("vertex", s "x"), ("from", a [o [("store", s ".")]]), ("fold", o [
       ("by", o [("latest-by", s "of"), ("follow", s "prev"),
