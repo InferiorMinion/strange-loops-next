@@ -433,15 +433,15 @@ header.top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--g
       <dl>
         <dt>Purpose</dt><dd>Hold one answer.</dd>
         <dt>State</dt><dd>A name, one fold, and optionally <code>where</code>, <code>follow</code> and <code>limit</code>.</dd>
-        <dt>Principle</dt><dd>With each id supplied once, the same record set gives every slot the same value. A slot over heads returns only records that remain heads of at least one thing.</dd>
+        <dt>Principle</dt><dd>With each id supplied once, the same record set gives every slot the same value. A slot over heads returns only records that remain heads of at least one thing, and a count, sum, min or max over heads folds every current record and nothing else.</dd>
       </dl>
-      <p class="laws"><a href="../laws/#law-spec-set"><code>spec.set</code></a> <a href="../laws/#law-spec-after-supersession"><code>spec.after-supersession</code></a></p>
+      <p class="laws"><a href="../laws/#law-spec-set"><code>spec.set</code></a> <a href="../laws/#law-spec-after-supersession"><code>spec.after-supersession</code></a> <a href="../laws/#law-spec-follow"><code>spec.follow</code></a></p>
     </article>
     <article class="card" id="noun-fold">
       <div class="card-h"><h3>fold</h3><span class="chip proved">proved</span></div>
       <dl>
         <dt>Purpose</dt><dd>Turn a set of records into state.</dd>
-        <dt>State</dt><dd>One of six: <code>count</code>, <code>sum</code>, <code>min</code>, <code>max</code>, <code>latest-by</code>, <code>collect</code>. The first four accumulate. Latest-by runs over heads. Collect runs over heads when it follows <code>prev</code>; otherwise it reads every selected record.</dd>
+        <dt>State</dt><dd>One of six: <code>count</code>, <code>sum</code>, <code>min</code>, <code>max</code>, <code>latest-by</code>, <code>collect</code>. The first four accumulate. Latest-by runs over heads. The others run over heads when they follow <code>prev</code>; otherwise they read every selected record.</dd>
         <dt>Principle</dt><dd>The read path hands each id over once. Commuting accumulators accept a new record incrementally. Over-head proofs use cached LatestBy state, not just a cached answer.</dd>
       </dl>
       <p class="laws"><a href="../laws/#law-acc-set"><code>acc.set</code></a> <a href="../laws/#law-heads-set"><code>heads.set</code></a> <a href="../laws/#law-latest-by-converge"><code>latest-by.converge</code></a></p>

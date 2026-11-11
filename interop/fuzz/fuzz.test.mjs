@@ -28,7 +28,7 @@ async function* jsonFiles(dir) {
 test('generation is deterministic, varied, balanced, and independent of scheduling', () => {
   const corpus = FAMILIES.flatMap(f => Array.from({ length: 8 }, (_, i) => generate('stable', i, f)));
   assert.equal(createHash('sha256').update(JSON.stringify(corpus)).digest('hex'),
-    'd23db9990cfcf5284a6f7cba6f69d8acfb2c945f37f520e6f12bb047be3206e3');
+    'd0b65bb63930db91066c05d6df4fd0cfc147f8c8190d3c1946121b18500adbc2');
   const layers = new Set();
   for (const family of FAMILIES) {
     const seen = new Set();
@@ -68,6 +68,28 @@ test('raw numeric folds use readable records and specs use settled forms', () =>
       if (erased.has(r.id)) assert.equal(Object.hasOwn(r, 'n'), false);
     }
   }
+});
+
+test('specs fold over heads with count, sum, min and max, over revised, forked and erased records', () => {
+  let revised = 0, forked = 0, erasedHead = 0, refused = 0;
+  for (let i = 0; i < 512; i++) {
+    const spec = generate('follow', i, 'spec');
+    if (spec.fuzz.nearMiss === 'follow-not-prev') {
+      refused++;
+      assert.ok(['now', 'now-total', 'now-least', 'now-greatest'].some(k => spec.input.spec.fold[k].follow !== 'prev'));
+      continue;
+    }
+    if (spec.input.spec_text) continue;
+    for (const k of ['now', 'now-flagged', 'now-total', 'now-least', 'now-greatest', 'now-score', 'now-flagged-total', 'now-flagged-greatest']) {
+      assert.equal(spec.input.spec.fold[k].follow, 'prev', k);
+    }
+    if (spec.layer !== 'spec/run') continue;
+    const rs = spec.input.orders[0], named = rs.flatMap(r => r.prev);
+    revised += named.some(id => rs.some(r => r.id === id));
+    forked += named.length !== new Set(named).size;
+    erasedHead += rs.some(r => r.shown === 'erased' && !named.includes(r.id));
+  }
+  assert.ok(revised > 50 && forked > 10 && erasedHead > 10 && refused > 5, `${revised} ${forked} ${erasedHead} ${refused}`);
 });
 
 test('scheduled lens boundaries retain their intended inputs', () => {

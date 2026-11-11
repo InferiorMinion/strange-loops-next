@@ -1,0 +1,95 @@
+{
+  "vector": "20-follow-envelope-after-supersession",
+  "layer": "spec/run",
+  "laws": ["spec.set", "spec.follow", "spec.after-supersession"],
+  "source": "model",
+  "input": {
+    "spec": {
+      "vertex": "alice-open",
+      "from": [
+        {
+          "store": ".",
+          "kind": ["task"]
+        }
+      ],
+      "fold": {
+        "alice-open": {
+          "count": true,
+          "follow": "prev",
+          "where": {
+            "status": {
+              "is": "open"
+            },
+            "env.observer": {
+              "is": "sl:alice"
+            }
+          }
+        }
+      }
+    },
+    "orders": [
+      [
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000280",
+          "kind": "task",
+          "observer": "sl:alice",
+          "about": [],
+          "of": "task:1",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:01:40Z",
+          "occurred": "2026-10-01T00:01:40Z",
+          "n": 0,
+          "fields": {
+            "status": "open"
+          }
+        },
+        {
+          "id": "r:000000000000000000000000000000000000000000000000028g",
+          "kind": "task",
+          "observer": "sl:bob",
+          "about": [],
+          "of": "task:1",
+          "prev": ["r:0000000000000000000000000000000000000000000000000280"],
+          "emitted": "2026-10-01T00:03:20Z",
+          "occurred": "2026-10-01T00:03:20Z",
+          "shown": "withheld"
+        }
+      ],
+      [
+        {
+          "id": "r:000000000000000000000000000000000000000000000000028g",
+          "kind": "task",
+          "observer": "sl:bob",
+          "about": [],
+          "of": "task:1",
+          "prev": ["r:0000000000000000000000000000000000000000000000000280"],
+          "emitted": "2026-10-01T00:03:20Z",
+          "occurred": "2026-10-01T00:03:20Z",
+          "shown": "withheld"
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000280",
+          "kind": "task",
+          "observer": "sl:alice",
+          "about": [],
+          "of": "task:1",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:01:40Z",
+          "occurred": "2026-10-01T00:01:40Z",
+          "n": 0,
+          "fields": {
+            "status": "open"
+          }
+        }
+      ]
+    ]
+  },
+  "expect": {
+    "alice-open": {
+      "value": 0,
+      "unread": 0
+    }
+  }
+}

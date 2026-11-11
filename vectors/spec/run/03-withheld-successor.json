@@ -55,6 +55,19 @@
               "present": true
             }
           }
+        },
+        "open-now": {
+          "count": true,
+          "follow": "prev",
+          "where": {
+            "status": {
+              "is": "open"
+            }
+          }
+        },
+        "est-now": {
+          "sum": "est",
+          "follow": "prev"
         }
       }
     },
@@ -362,6 +375,14 @@
     },
     "blocked": {
       "value": 1,
+      "unread": 1
+    },
+    "open-now": {
+      "value": 1,
+      "unread": 1
+    },
+    "est-now": {
+      "value": 5,
       "unread": 1
     }
   }

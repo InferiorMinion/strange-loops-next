@@ -1,0 +1,26 @@
+{
+  "vector": "76-follow-before-argument",
+  "layer": "spec/parse",
+  "laws": ["spec.parse"],
+  "source": "model",
+  "input": {
+    "spec": {
+      "vertex": "x",
+      "from": [
+        {
+          "store": "."
+        }
+      ],
+      "fold": {
+        "c": {
+          "sum": "",
+          "follow": "head"
+        }
+      }
+    }
+  },
+  "expect": {
+    "refused": "follow-invalid",
+    "path": "fold.c.follow"
+  }
+}

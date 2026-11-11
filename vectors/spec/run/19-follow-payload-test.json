@@ -1,0 +1,120 @@
+{
+  "vector": "19-follow-payload-test",
+  "layer": "spec/run",
+  "laws": ["spec.set", "spec.follow", "result.unread"],
+  "source": "model",
+  "input": {
+    "spec": {
+      "vertex": "open-estimates",
+      "from": [
+        {
+          "store": ".",
+          "kind": ["task"]
+        }
+      ],
+      "fold": {
+        "est": {
+          "sum": "est",
+          "follow": "prev",
+          "where": {
+            "status": {
+              "is": "open"
+            }
+          }
+        },
+        "lo": {
+          "min": "est",
+          "follow": "prev",
+          "where": {
+            "status": {
+              "is": "open"
+            }
+          }
+        },
+        "hi": {
+          "max": "est",
+          "follow": "prev",
+          "where": {
+            "status": {
+              "is": "open"
+            }
+          }
+        }
+      }
+    },
+    "orders": [
+      [
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000270",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:7",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:01:40Z",
+          "occurred": "2026-10-01T00:01:40Z",
+          "n": 0,
+          "fields": {
+            "status": "closed",
+            "est": 99
+          }
+        },
+        {
+          "id": "r:000000000000000000000000000000000000000000000000027g",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:8",
+          "prev": [],
+          "emitted": "2026-10-01T00:01:50Z",
+          "occurred": "2026-10-01T00:01:50Z",
+          "shown": "withheld"
+        }
+      ],
+      [
+        {
+          "id": "r:000000000000000000000000000000000000000000000000027g",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:8",
+          "prev": [],
+          "emitted": "2026-10-01T00:01:50Z",
+          "occurred": "2026-10-01T00:01:50Z",
+          "shown": "withheld"
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000270",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:7",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:01:40Z",
+          "occurred": "2026-10-01T00:01:40Z",
+          "n": 0,
+          "fields": {
+            "status": "closed",
+            "est": 99
+          }
+        }
+      ]
+    ]
+  },
+  "expect": {
+    "est": {
+      "value": 0,
+      "unread": 1
+    },
+    "lo": {
+      "value": null,
+      "unread": 1
+    },
+    "hi": {
+      "value": null,
+      "unread": 1
+    }
+  }
+}

@@ -13,7 +13,10 @@ spec.loader.exec_module(summarize)
 class EvidenceTest(unittest.TestCase):
     def test_retained_artifacts(self):
         result = summarize.report()
-        self.assertEqual(list(result['campaigns']), ['d1-d6-1', 'd8ab-1', 'shape-under-1', 'shape-under-2', 'step1-3'])
+        self.assertEqual(list(result['campaigns']), ['d1-d6-1', 'd8ab-1', 'follow-2', 'shape-under-1', 'shape-under-2', 'step1-3'])
+        follow = result['campaigns']['follow-2']
+        self.assertEqual(follow['totals'], {'cases': 5600, 'match': 3908, 'protocol-refusal': 1324,
+                                            'decoder-refusal': 368, 'mismatch': 0})
         newest = result['campaigns']['shape-under-2']
         self.assertEqual(newest['totals'], {'cases': 5600, 'match': 3785, 'protocol-refusal': 1401,
                                             'decoder-refusal': 414, 'mismatch': 0})

@@ -105,6 +105,62 @@ const SPEC: &str = r#"{"vertex":"decisions","from":[{"store":".","kind":["decisi
   "weight":{"sum":"n"},
   "current":{"latest-by":"of","follow":"prev"}}}"#;
 
+const FOLLOW: &str = r#"{"vertex":"now","from":[{"store":".","kind":["task"]}],"fold":{
+  "all":{"count":true},
+  "now":{"count":true,"follow":"prev"},
+  "open":{"count":true,"follow":"prev","where":{"status":{"is":"open"}}},
+  "est":{"sum":"n","follow":"prev"}}}"#;
+
+/// A slot's value and unread count.
+fn tally(slots: &Json, slot: &str) -> (Json, Json) {
+    (
+        at(slots, &[slot, "value"]).clone(),
+        at(slots, &[slot, "unread"]).clone(),
+    )
+}
+
+#[test]
+fn count_and_sum_follow_the_heads() {
+    let s = Store::new("now");
+    let n = |v: i64, u: i64| (Json::Int(v.into()), Json::Int(u.into()));
+    let first = s.ok(&[
+        "emit",
+        "task",
+        "--of",
+        "task:1",
+        "status=open",
+        "n:=3",
+        "Open",
+    ]);
+    // Two revisions of the first: a fork, and both heads are current.
+    s.ok(&[
+        "emit",
+        "task",
+        "--prev",
+        &first,
+        "status=open",
+        "n:=5",
+        "Bigger",
+    ]);
+    let fork = s.ok(&[
+        "emit",
+        "task",
+        "--prev",
+        &first,
+        "status=done",
+        "n:=1",
+        "Done",
+    ]);
+    let slots = parse_json(&s.ok_with(&["fold", "-"], FOLLOW)).expect("JSON");
+    let got = ["all", "now", "open", "est"].map(|k| tally(&slots, k));
+    assert_eq!(got, [n(3, 0), n(2, 0), n(1, 0), n(6, 0)]);
+    // An erased head is still current: counted by its envelope, unread to a sum.
+    s.json(&["erase", &fork[2..12], "not ours to say"]);
+    let slots = parse_json(&s.ok_with(&["fold", "-"], FOLLOW)).expect("JSON");
+    let got = ["all", "now", "open", "est"].map(|k| tally(&slots, k));
+    assert_eq!(got, [n(3, 0), n(2, 0), n(1, 1), n(5, 1)]);
+}
+
 #[test]
 fn emit_revise_fork_fold_and_erase() {
     let s = Store::new("decision");

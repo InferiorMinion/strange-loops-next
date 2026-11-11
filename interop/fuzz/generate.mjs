@@ -41,6 +41,15 @@ function spec(rng, rs) {
       heads: { 'latest-by': 'of', follow: 'prev' },
       items: { collect: true, follow: 'prev', limit: 1 + rng.int(4) },
       chosen: { count: true, where: { n: { 'at-least': rng.int(5) - 2 } } },
+      // Following prev, count, sum, min and max fold the whole view's heads.
+      now: { count: true, follow: 'prev' },
+      'now-flagged': { count: true, follow: 'prev', where: { flag: { is: true } } },
+      'now-total': { sum: 'n', follow: 'prev' },
+      'now-least': { min: 'n', follow: 'prev' },
+      'now-greatest': { max: 'n', follow: 'prev' },
+      'now-score': { sum: 'score', follow: 'prev', where: { 'env.kind': { not: 'erase' } } },
+      'now-flagged-total': { sum: 'n', follow: 'prev', where: { flag: { is: true } } },
+      'now-flagged-greatest': { max: 'n', follow: 'prev', where: { flag: { is: true }, 'env.kind': { is: 'note' } } },
     },
   };
 }
@@ -439,11 +448,12 @@ export function generate(seed, index, family) {
       }
       case 'spec':
         if (layer === 'spec/parse') {
-          const choice = rng.int(3);
-          nearMiss = ['spec-repeat', 'latest-by-about', 'from-of-untyped'][choice];
+          const choice = rng.int(4);
+          nearMiss = ['spec-repeat', 'latest-by-about', 'from-of-untyped', 'follow-not-prev'][choice];
           if (choice === 0) input = { spec_text: '{"vertex":"a","vertex":"b","from":[{"store":"s:x"}]}' };
           if (choice === 1) input.spec.fold.heads['latest-by'] = 'about';
           if (choice === 2) input.spec.from[0].of = 'item';
+          if (choice === 3) input.spec.fold[rng.pick(['now', 'now-total', 'now-least', 'now-greatest'])].follow = rng.pick(['next', true]);
         } else { nearMiss = 'bad-edtf'; input.spec.fold.chosen.where = { 'env.occurred': { is: '2024-13' } }; }
         break;
       case 'fold':
