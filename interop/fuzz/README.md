@@ -17,7 +17,7 @@ node interop/fuzz/run.mjs --seed ci-1 --n 28 --out /tmp/fuzz-ci
 node interop/fuzz/run.mjs --rust --seed phase2-20261029 --n 5000 --out /tmp/fuzz-large
 node interop/fuzz/run.mjs --seed campaign-1 --n 1000 --family record --no-shrink
 node interop/fuzz/run.mjs --rust --replay /tmp/fuzz-large/mismatches/000000.json --out /tmp/fuzz-replay
-node interop/fuzz/run.mjs --rust --seed d8ab-1 --n 5600 --shrink-trials 80 --out /tmp/fuzz-d8ab-1
+node interop/fuzz/run.mjs --rust --seed follow-1 --n 5600 --shrink-trials 80 --out /tmp/fuzz-follow-1
 node interop/fuzz/run.mjs --rust --replay vectors/lens/section/d1-duplicate-base-id.json --out /tmp/fuzz-duplicate-base
 ```
 
@@ -25,7 +25,7 @@ An explicit output directory must be empty.
 Without `--out`, the runner creates an artifact directory under the system temporary directory.
 It prints that path with the summary.
 Exit codes are 0 for agreement, 1 for disagreements, and 2 for infrastructure or CLI errors.
-[REPORT.md](REPORT.md) records the campaign after D8a and D8b, which finds no mismatch.
+[REPORT.md](REPORT.md) records the campaign after `follow` on count, sum, min and max, which finds no mismatch.
 Earlier campaigns' counts are historical: the generator changed, so the same seeds now generate different inputs.
 It marks earlier campaign results as historical, including the 42 duplicate-base lens mismatches D1 settles.
 
@@ -100,6 +100,7 @@ Records favor shared things, chains, forks, missing payloads, erasers, standing 
 A record names its thing in `of`: a root leaves it out, others name a natural key or an earlier record's thing.
 Most revisions state their target's thing; a few name another, or leave `of` out, which admission refuses.
 `about` only mentions things; specs choose by `from.of`, `from.about`, both, or neither.
+Every spec has count, sum, min and max slots that follow `prev`, beside the ones that do not.
 Arrival orders retain the same logical records.
 Realm forms retain the same envelope and held payload for each ID.
 Record variants reorder JSON members and repeat set members.
@@ -113,7 +114,7 @@ A number past binary64's range travels as text too, alone, under a bad kind, and
 Four cases list variants that disagree: a refused first, two refused differently, and a refused envelope or payload later.
 The last two are malformed input, which every engine must refuse to answer.
 These scheduled cases cannot be replaced by random mutations.
-Other named cases exercise wrong types, bad IDs, integer bounds, EDTF, repeated members, salt lengths, unresolved labels, an untyped or missing `of`, and specs with `"latest-by": "about"` or an untyped `from.of`.
+Other named cases exercise wrong types, bad IDs, integer bounds, EDTF, repeated members, salt lengths, unresolved labels, an untyped or missing `of`, and specs with `"latest-by": "about"`, an untyped `from.of`, or a `follow` that is not `"prev"` on count, sum, min or max.
 A deliberate self-label cycle also carries a near-miss label.
 Most generated cases pass the model's input decoder.
 
