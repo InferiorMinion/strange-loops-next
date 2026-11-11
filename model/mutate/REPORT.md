@@ -3,8 +3,8 @@
 ## Follow on count, sum, min and max: targeted run
 
 The full catalogue is not rerun for issue #3.
-Node 25.9 runs only the nine entries the change adds or retargets, with `--only` and the default 180-second timeout.
-The seven new entries mutate `accPool`, two followed slots in `Slot.run`, `foldType`, `Slot.toJson` and `followJson`.
+Node 25.9 runs only the eleven entries the change adds or retargets, with `--only` and the default 180-second timeout.
+The nine new entries mutate `accPool`, four followed counts and maxima in `Slot.run`, `foldType`, `Slot.toJson` and `followJson`.
 `wide-spec-069` and `coverage-spec-slotfollow` are retargeted at the new grammar.
 
 | Entry | Outcome | Where |
@@ -18,6 +18,13 @@ The seven new entries mutate `accPool`, two followed slots in `Slot.run`, `foldT
 | `follow-sum-parse-dropped` | rejected by build | `Laws/Parse.lean`: `parseSlot_toJson` |
 | `follow-count-not-written` | rejected by build | `Laws/Parse.lean`: `parseSlot_toJson` |
 | `follow-json-inverted` | rejected by build | `Laws/Parse.lean`: `parseSlot_toJson` |
+| `follow-count-envelope-first` | rejected by build | `Laws/Spec.lean`: `Slot.set_decides` |
+| `follow-count-unknown-first` | rejected by build | `Laws/SpecSlice.lean`: `Slot.run_slice` |
+
+The last two are the wrong orders review asked about: choosing by `from` and `where` before working out the heads, and letting an unknown payload test outrank a failing envelope test.
+Both are rejected by build because the proofs match the slot's form, not because a law fails, so each was also applied by hand, with only the generator built (`lake build gen`, then `lake exe gen`).
+`follow-count-envelope-first` changes `spec/run/01`, `02`, `04`, `05`, `16` and `20`.
+`follow-count-unknown-first` changes only `spec/run/20`, which pins a failing envelope test after supersession.
 
 The first run of `follow-count-every` and `follow-max-every` failed only the unused-variable lint, which is no kill; both now keep `follow` referenced (`follow && false`), and the rerun kills them by vector.
 Each build rejection was read in its log and fails at the named proof, not at a lint.

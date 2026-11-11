@@ -1703,5 +1703,21 @@
     "after": "if !follow then [(\"follow\", .str \"prev\")] else []",
     "reason": "Write follow on the slots that do not follow.",
     "definition": "Loops.followJson"
+  },
+  {
+    "id": "follow-count-envelope-first",
+    "file": "Spec.lean",
+    "before": "| .count follow => .nat (Count.acc.select ev (accPool follow xs))",
+    "after": "| .count follow => .nat (Count.acc.select ev (accPool follow (xs.filter fun r => !follow || ev r != .no)))",
+    "reason": "Choose by from and where before working out the heads, when following prev.",
+    "definition": "Loops.Slot.run"
+  },
+  {
+    "id": "follow-count-unknown-first",
+    "file": "Spec.lean",
+    "before": "| .count follow => .nat (Count.acc.select ev (accPool follow xs))",
+    "after": "| .count follow => .nat (Count.acc.select (fun r => if follow && sel r && payTest cs r == .unknown then .unknown else ev r) (accPool follow xs))",
+    "reason": "Let an unknown payload test outrank a failing envelope test, when following prev.",
+    "definition": "Loops.Slot.run"
   }
 ]
