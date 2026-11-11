@@ -5,7 +5,7 @@
 mod draft;
 
 use loops::{
-    batch,
+    batch, envelope,
     json::Json,
     record::{Record, Shown, id_text},
     spec::Spec,
@@ -169,8 +169,14 @@ fn signing_key(missing: Missing) -> Result<Key, Fail> {
 }
 /// Nothing yet binds a key to an observer, so the only observer this key can
 /// honestly write as is itself. Lineages and key bindings (step 3) widen this.
+/// An observer that is not a typed reference at all, left mistyped in a
+/// changeset line among them, is the writer's to refuse with its own code,
+/// `observer-not-typed`, so it is not judged here.
 fn bound(key: &Key, drafts: &[batch::Draft]) -> Result<(), Fail> {
-    match drafts.iter().find(|d| d.env.observer != key.public()) {
+    match drafts
+        .iter()
+        .find(|d| envelope::typed_ref(&d.env.observer) && d.env.observer != key.public())
+    {
         Some(draft) => Err(refused(format!(
             "observer-unbound: {} is not this key",
             draft.env.observer
