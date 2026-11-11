@@ -6,14 +6,14 @@ The tree has three implementations: Lean, JavaScript, and Rust.
 Step 1 applies the six settled rulings before records exist.
 All three implement the settled decisions D1–D6, and D8a and D8b.
 All three let count, sum, min and max follow `prev` (issue #3).
-The law index has 86 entries, 720 theorems, and 6 boundary witnesses.
+The law index has 87 entries, 757 theorems, and 6 boundary witnesses.
 See [the law index](design/laws/laws.json) and [proof and boundary data](design/laws/).
 These proofs apply only under their stated premises.
 
-The tree has 408 JSON fixtures: 396 generated fixtures and 12 standard fixtures.
-Lean replays 387 generated fixtures; 9 occurred fixtures use separate checks.
+The tree has 410 JSON fixtures: 398 generated fixtures and 12 standard fixtures.
+Lean replays 389 generated fixtures; 9 occurred fixtures use separate checks.
 Rust checks every fixture, six JCS byte pairs, 4,000 binary64 cases, and 128 SUPERCOP signing cases with ed25519-dalek.
-Rust passes 150 tests; JavaScript passes 5,610 vector checks and 26 regression tests.
+Rust passes 150 tests; JavaScript passes 5,614 vector checks and 29 regression and law tests.
 The fuzz suite passes 48 tests.
 See [vectors](vectors/README.md), [Rust boundaries](rust/GAPS.md), and [the mutation report](model/mutate/REPORT.md).
 These checks provide bounded evidence, not complete JCS or cryptographic correctness.
@@ -26,8 +26,8 @@ Numeric folds read safe whole values only.
 Raw constructors and theorem premises retain separate domains.
 
 The gates pass on Node 25.9; the Node 22 runs of Step 1 are not repeated.
-The `follow-1` campaign checks 5,600 cases, 800 per family, in 72.64 seconds.
-It reports 3,916 matches, 1,283 protocol refusals, 401 shared decoder refusals, and no mismatch.
+The `follow-2` campaign checks 5,600 cases, 800 per family, in 64.03 seconds.
+It reports 3,908 matches, 1,324 protocol refusals, 368 shared decoder refusals, and no mismatch.
 Decoder refusals are not agreement.
 The generator carries `of` since D8, and followed count, sum, min and max slots since issue #3, so the same seeds now generate different inputs; earlier campaigns' counts are historical.
 The `d8ab-1` and `d1-d6-1` campaigns found no mismatch either.
@@ -36,7 +36,8 @@ The 42 duplicate-base lens mismatches of the `step1-3` campaign are the class D1
 See [the campaign report](interop/fuzz/REPORT.md) for the scripts and current and historical results.
 The CI seed `ci-1` checks 28 three-way cases without mismatches.
 
-The mutation catalogue has 210 entries, including six for the D1 and D2 definitions and nine for D8's `of`.
+The mutation catalogue has 219 entries, including six for the D1 and D2 definitions, nine for D8's `of` and nine for `follow` on count, sum, min and max.
+Only the eleven `follow` entries were run, by `--only`; the counts below are the last full run, over 210 entries.
 Ten earlier entries are retargeted at `of` and the one thing it names.
 It retires the redundant positive-offset guard under R4 and the entry for the deleted `stripZeros` family.
 The full run reports 165 build rejections, 28 vector differences, 15 generator assertion exceptions, and 2 survivors.

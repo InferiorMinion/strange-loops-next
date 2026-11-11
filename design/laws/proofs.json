@@ -37,6 +37,15 @@
    "states":
    "∀ {a b : Loops.Record}, Loops.SameEnvelope a b → a.withhold = b.withhold",
    "module": "Laws.Things"},
+  "Loops.wholeHeads_taken_slice":
+  {"uses":
+   ["Loops.head_thing",
+    "Loops.heads_taken",
+    "Loops.mem_wholeHeads",
+    "Loops.realm_addressed"],
+   "states":
+   "∀ {sp : Loops.Spec} {S W : List Loops.Record} {may : Loops.Record → Loops.Record → Bool}, Loops.EnvOnly may → Loops.Forms W → Loops.SpecSlice sp S W → ∀ (r : Loops.Record), r ∈ List.filter sp.takes (Loops.wholeHeads (Loops.realm may S)) ↔ r ∈ List.filter sp.takes (Loops.wholeHeads (Loops.realm may W))",
+   "module": "Laws.SpecSlice"},
   "Loops.wholeHeads_sorted":
   {"uses": ["Loops.orderHeads_sorted", "Loops.perHeads_addressed"],
    "states":
@@ -70,6 +79,11 @@
    "states":
    "∀ {xs : List Loops.Record}, Loops.Addressed xs → Loops.Distinct (Loops.wholeHeads xs)",
    "module": "Laws.Things"},
+  "Loops.wholeHeads_answer_set_decides":
+  {"uses": ["Loops.wholeHeads_set_decides"],
+   "states":
+   "∀ {α : Sort u_1} (answer : List Loops.Record → α) {xs ys : List Loops.Record}, Loops.Addressed xs → Loops.Addressed ys → (∀ (r : Loops.Record), r ∈ xs ↔ r ∈ ys) → answer (Loops.wholeHeads xs) = answer (Loops.wholeHeads ys)",
+   "module": "Laws.Spec"},
   "Loops.utf16_inj_list":
   {"uses": ["Loops.utf16Char_cons"],
    "states":
@@ -1323,6 +1337,17 @@
    "states":
    "∀ (x : Nat) (x_1 : List Int), Loops.fracScaled x x_1 = match x, x_1 with | x, [] => 0 | 0, head :: tail => 0 | n.succ, d :: ds => d * 10 ^ n + Loops.fracScaled n ds",
    "module": "Laws.Time"},
+  "Loops.followed_slice":
+  {"uses":
+   ["Loops.Acc.select_filter",
+    "Loops.Acc.select_set_decides",
+    "Loops.Distinct.filter",
+    "Loops.realm_addressed",
+    "Loops.wholeHeads_distinct",
+    "Loops.wholeHeads_taken_slice"],
+   "states":
+   "∀ {sp : Loops.Spec} {S W : List Loops.Record} {may : Loops.Record → Loops.Record → Bool}, Loops.EnvOnly may → Loops.Forms W → Loops.SpecSlice sp S W → ∀ {σ : Type} (f : Loops.Acc σ) (cs : List Loops.Cond), f.select (fun r => if sp.takes r = true then Loops.Cond.all cs r else Loops.Tri.no) (Loops.wholeHeads (Loops.realm may S)) = f.select (fun r => if sp.takes r = true then Loops.Cond.all cs r else Loops.Tri.no) (Loops.wholeHeads (Loops.realm may W))",
+   "module": "Laws.SpecSlice"},
   "Loops.fold_digits_acc":
   {"uses": [],
    "states":
@@ -2311,6 +2336,7 @@
     "Loops.Distinct.filter",
     "Loops.admit_distinct",
     "Loops.collectOf_slice",
+    "Loops.followed_slice",
     "Loops.latestOf_slice",
     "Loops.realm_taken",
     "Loops.settle_distinct"],
@@ -4051,7 +4077,7 @@
    "∀ {σ : Type} (f : Loops.Acc σ) {xs ys : List Loops.Record} (r : Loops.Record), Loops.Distinct (xs ++ [r]) → Loops.Distinct ys → (∀ (q : Loops.Record), q ∈ ys ↔ q ∈ xs ∨ q = r) → f.step (f.fold xs) r = f.fold ys",
    "module": "Laws.Families"},
   "Loops.Acc.followed_set_decides":
-  {"uses": ["Loops.wholeHeads_set_decides"],
+  {"uses": ["Loops.wholeHeads_answer_set_decides"],
    "states":
    "∀ {σ : Type} (f : Loops.Acc σ) (ev : Loops.Record → Loops.Tri) {xs ys : List Loops.Record}, Loops.Addressed xs → Loops.Addressed ys → (∀ (r : Loops.Record), r ∈ xs ↔ r ∈ ys) → f.select ev (Loops.wholeHeads xs) = f.select ev (Loops.wholeHeads ys)",
    "module": "Laws.Spec"},
