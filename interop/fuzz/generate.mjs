@@ -283,6 +283,35 @@ export function generate(seed, index, family) {
     nearMiss = `shape-${['duplicate-label', 'unknown-label', 'cycle-label', 'malformed-value', 'malformed-salt'][bad]}-${slot < 5 ? 'last' : 'first'}`;
     scheduled = true;
   }
+  // Issue #1 and labels in `under`, each in a fixed slot: a draft whose
+  // envelope is not an object or is left out, a field left out or of the
+  // wrong type, a salt that is not text, and labels standing in `under`.
+  if (family === 'batch' && index % 64 >= 24 && index % 64 < 33) {
+    const slot = index % 64 - 24, ds = input.drafts, last = ds.at(-1);
+    nearMiss = ['env-not-object', 'env-missing', 'kind-missing', 'about-text', 'salt-number',
+      'label-in-under', 'under-label-unknown', 'under-label-cycle', 'label-in-erases'][slot];
+    scheduled = true;
+    // Undo the random label cycle and `of` faults above, so the slot alone decides.
+    ds[0].env.about = ds[0].env.about.filter(a => a !== '@d0');
+    for (const d of ds.slice(1)) d.env.of = ds[0].env.of ?? '@d0';
+    if (slot === 0) last.env = rng.pick([7, null, 'note', [clone(last.env)]]);
+    if (slot === 1) delete last.env;
+    if (slot === 2) delete last.env.kind;
+    if (slot === 3) last.env.about = 'topic:auth';
+    if (slot === 4) last.salt = rng.pick([7, null]);
+    // A grant written beside the record acting on it: the first draft is a
+    // root, so a later one may stand under it by label.
+    if (slot === 5) {
+      ds.push({ label: '@acting', env: { ...clone(ds[0].env), of: undefined, prev: [], under: '@d0' }, salt: ds[0].salt,
+        payload: { acting: true } });
+      delete ds.at(-1).env.of;
+    }
+    if (slot === 6) last.env.under = '@nowhere';
+    // Every later draft reaches the first through `prev`, so the first standing
+    // under the last closes a cycle; a single draft stands under itself.
+    if (slot === 7) ds[0].env.under = `@d${ds.length - 1}`;
+    if (slot === 8) last.env.erases = ['@d0'];
+  }
   if (family === 'record') {
     const slot = index % 64;
     const badTimes = [
@@ -330,6 +359,26 @@ export function generate(seed, index, family) {
       scheduled = true;
       input.envs = [[{ ...root, of: 'item' }, { ...root, prev: [target] }, { ...root, about: ['item'], of: 'item' },
         { ...root, of: 'item', prev: ['t:item'] }, { ...root, prev: [target], erases: ['t:item'] }][d]];
+    }
+    // Issue #1: an envelope that is not an object, a field left out or of the
+    // wrong JSON type, and a salt that is not base32hex text. Each has a fixed
+    // slot; slot 40 stays unscheduled for the valid-record checks.
+    const shapeSlots = [37, 38, 39, 41, 42, 43, 56, 57, 58, 59, 60, 61, 62, 63];
+    if (shapeSlots.includes(slot)) {
+      const d = shapeSlots.indexOf(slot), target = `r:${'0'.repeat(52)}`;
+      const without = (k) => { const env = clone(clean); delete env[k]; return env; };
+      nearMiss = ['not-object', 'not-object-variant', 'not-object-array', 'missing-kind', 'missing-observer',
+        'missing-emitted', 'observer-number', 'about-text', 'about-member-number', 'of-number', 'prev-text',
+        'under-number', 'erases-null', 'salt-not-text'][d];
+      scheduled = true;
+      input.envs = [[rng.pick([7, null, 'note', true])], [clean, null], [[clean]], [without('kind')],
+        [without('observer')], [without('emitted')], [{ ...clean, observer: 17 }], [{ ...clean, about: 't:x' }],
+        [{ ...clean, about: ['t:x', 7] }], [{ ...clean, of: 7 }], [{ ...clean, of: 't:x', prev: target }],
+        [{ ...clean, under: 7 }], [{ ...clean, erases: null }], [clean]][d];
+      if (d === 13) {
+        const salt = rng.pick([7, null, ['00'], undefined]);
+        if (salt === undefined) delete input.salt; else input.salt = salt;
+      }
     }
     // D2, D3 and D5: text payloads and variants that disagree. Each has a
     // fixed slot. The lone surrogate and the overflow travel as text, since a

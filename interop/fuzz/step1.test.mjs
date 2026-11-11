@@ -25,8 +25,8 @@ test('named record boundaries remain scheduled across seeds', () => {
       assert.equal(v.fuzz.nearMiss, name);
       assert.equal(v.input.envs.length, 1);
       const env = v.input.envs[0];
-      if (i === 6) { assert.throws(() => evaluateJS(v)); continue; }
-      const expected = i < 6 ? 'prev-not-record-id' : i < 11 ? 'emitted-not-rfc3339'
+      // A salt that is not canonical base32hex reads as no bytes (issue #1).
+      const expected = i < 6 ? 'prev-not-record-id' : i === 6 ? 'salt-not-16-bytes' : i < 11 ? 'emitted-not-rfc3339'
         : i < 27 ? 'occurred-not-span' : 'envelope-field-unknown';
       assert.deepEqual(evaluateJS(v), [{ refused: expected }], name);
       if (i === 27) { assert.equal(env.kind, ''); assert.equal(env.extra, true); }
@@ -42,6 +42,34 @@ test('named of boundaries remain scheduled across seeds', () => {
       const v = generate(seed, 32 + i, 'record');
       assert.equal(v.fuzz.nearMiss, name);
       assert.deepEqual(evaluateJS(v), [{ refused: expected }], name);
+    }
+  }
+});
+
+test('envelope shape boundaries remain scheduled across seeds and refuse by name', () => {
+  const record = [[37, 'not-object', 'envelope-not-object'], [38, 'not-object-variant', 'envelope-not-object'],
+    [39, 'not-object-array', 'envelope-not-object'], [41, 'missing-kind', 'kind-empty'],
+    [42, 'missing-observer', 'observer-not-typed'], [43, 'missing-emitted', 'emitted-not-rfc3339'],
+    [56, 'observer-number', 'observer-not-typed'], [57, 'about-text', 'about-not-typed'],
+    [58, 'about-member-number', 'about-not-typed'], [59, 'of-number', 'of-not-typed'],
+    [60, 'prev-text', 'prev-not-record-id'], [61, 'under-number', 'under-not-record-id'],
+    [62, 'erases-null', 'erases-not-record-id'], [63, 'salt-not-text', 'salt-not-16-bytes']];
+  const batch = [[24, 'env-not-object', 'envelope-not-object'], [25, 'env-missing', 'envelope-not-object'],
+    [26, 'kind-missing', 'kind-empty'], [27, 'about-text', 'about-not-typed'], [28, 'salt-number', 'salt-not-16-bytes'],
+    [29, 'label-in-under', null], [30, 'under-label-unknown', 'label-unknown'],
+    [31, 'under-label-cycle', 'label-cycle'], [32, 'label-in-erases', 'erases-not-record-id']];
+  for (const seed of ['a', 'b', 'c', 'd']) {
+    for (const [family, cases] of [['record', record], ['batch', batch]]) {
+      for (const [slot, name, refused] of cases) {
+        const v = generate(seed, 64 + slot, family);
+        assert.equal(v.fuzz.nearMiss, name);
+        const text = JSON.stringify(v);
+        const [answer] = evaluateJS(JSON.parse(text), text);
+        if (refused) { assert.deepEqual(answer, { refused }, `${family} ${name}`); continue; }
+        // A label in `under` resolves to the id of the draft it names.
+        const acting = v.input.drafts.findIndex(d => d.env.under === '@d0');
+        assert.equal(JSON.parse(answer.records[acting].env_canonical).under, answer.records[0].id);
+      }
     }
   }
 });

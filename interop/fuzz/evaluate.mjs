@@ -13,7 +13,7 @@ const WRITE_CODES = new Set([
   'kind-empty', 'observer-not-typed', 'emitted-not-rfc3339', 'occurred-not-span',
   'about-not-typed', 'of-not-typed', 'prev-not-record-id', 'under-not-record-id', 'erases-not-record-id',
   'of-missing', 'salt-not-16-bytes', 'member-duplicate', 'number-out-of-range',
-  'string-not-unicode', 'envelope-field-unknown',
+  'string-not-unicode', 'envelope-field-unknown', 'envelope-not-object',
 ]);
 const folds = {
   'fold/count': rs => F.count(rs).value,
@@ -84,15 +84,19 @@ export function evaluateJS(vector, rawText) {
       return input.orders.map(rs => S.runSpec(parsed.parsed, rs));
     }
     case 'batch': {
-      // JSON.parse keeps only the last repeated env; shape checks need every occurrence.
+      // JSON.parse keeps only the last repeated env; shape checks need every
+      // occurrence. A draft object with none has an envelope that is not an object.
       if (rawText !== undefined) {
         const drafts = S.readJson(jsonSourceAt(rawText, ['input', 'drafts']));
-        const envs = drafts.items.flatMap(draft => (draft?.members ?? [])
-          .filter(([key]) => key === 'env')
-          .map(([, env]) => Object.fromEntries((env?.members ?? []).map(([key]) => [key, null]))));
-        try { L.checkEnvelopeKeys(envs); }
+        const envs = drafts.items.flatMap(draft => {
+          if (!draft?.members) return [];
+          const found = draft.members.filter(([key]) => key === 'env')
+            .map(([, env]) => env?.members ? Object.fromEntries(env.members.map(([key]) => [key, null])) : null);
+          return found.length ? found : [null];
+        });
+        try { L.checkEnvelopeShapes(envs); }
         catch (error) {
-          if (error.message === 'envelope-field-unknown') return [{ refused: error.message }];
+          if (error.message.startsWith('envelope-')) return [{ refused: error.message }];
           throw error;
         }
       }
