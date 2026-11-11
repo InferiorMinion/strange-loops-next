@@ -41,7 +41,7 @@ The CI seed `ci-1` checks 28 three-way cases without mismatches.
 The mutation catalogue has 229 entries, including six for the D1 and D2 definitions, nine for D8's `of`, nine for `follow` on count, sum, min and max, and ten for issue #1's shapes and labels in `under`.
 Ten earlier entries are retargeted at `of` and the one thing it names, two at the `follow` grammar, and four at the shape stage and labels in `under`.
 It retires the redundant positive-offset guard under R4 and the entry for the deleted `stripZeros` family.
-The last full run covers the 210 entries before issue #1 and `follow`; the entries each change added or retargeted were run alone with `--only`.
+The last full run covers the 210 entries before issue #1 and `follow`. After the merge, the 25 entries the two changes add or retarget, run alone with `--only`, give 17 build rejections, three vector differences and five generator assertions, and no survivor.
 The full run reports 165 build rejections, 28 vector differences, 15 generator assertion exceptions, and 2 survivors.
 The runner exits 1 for assertion exceptions; no timeout or infrastructure failure occurs.
 Of the nine D8 entries, six fail the build, two change batch vectors, and one stops at a generator assertion.

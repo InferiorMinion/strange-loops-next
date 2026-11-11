@@ -1,5 +1,14 @@
 # Lean model mutation report
 
+## After the merge of `main`: both changes' entries, at `849d4da`
+
+The catalogue has 229 entries: 210, then ten for issue #1 and nine for `follow`, with six earlier entries retargeted between them.
+The full catalogue is not rerun. Node 25.9 runs the 25 entries the two changes add or retarget, with `--only`, five or fewer at a time.
+The fourteen issue #1 entries give nine build rejections and five generator assertions, as in their review-round run below.
+The eleven `follow` entries give eight build rejections and three vector differences (`wide-spec-069`, `follow-count-every`, `follow-max-every`), as in their run below.
+No entry survives, and every run restores the baseline build.
+The cheap runner, rerun on the merged tree, kills 33 of 33 mutants.
+
 ## Issue #1 and labels in `under`: the changed entries only
 
 ### After the review round, at `ee0b9d3`
