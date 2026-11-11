@@ -10,9 +10,9 @@ import Laws.Record
   returns carries the same proof.
 * **Shape.** Raw shape across envelopes, an unknown key and then an envelope
   that is not an object, depends only on which envelopes there are
-  (`envelopesShapeProblem_perm`, `draftsShapeProblem_perm`). A field the
-  reader can't read is refused by every field's check (`unreadable_refused`),
-  so a missing or mistyped field gets its own code.
+  (`envelopesShapeProblem_perm`, `draftsShapeProblem_perm`). The empty text
+  the reader puts in place of a field it can't read fails every field's check
+  (`unreadable_refused`); `Laws.Read` carries it to the refusal.
 * **Only a root leaves `of` out.** An envelope `write` accepts with `prev`
   states `of` (`Env.problem_of`).
 * **Closed codes.** Every refusal `writeProblem` gives is in `writeCodes`, so
@@ -69,8 +69,10 @@ theorem draftsShapeProblem_perm {xs ys : List Json} (h : xs.Perm ys) :
     draftsShapeProblem xs = draftsShapeProblem ys :=
   envelopesShapeProblem_perm (h.flatMap_right _)
 
-/-- What the reader reads for a field it can't read is refused by every field's
-own check, so a missing or mistyped field gets that field's code. -/
+/-- The empty text the reader puts in place of a field it can't read fails
+every field's own check. That the reader puts it there, and that an envelope
+holding it is refused, are `Laws.Read`'s; which code is reported, and the
+order, are pinned by the vectors. -/
 theorem unreadable_refused :
     unreadable.isEmpty = true ∧ typedRef unreadable = false ∧ validEmitted unreadable = false ∧
       occurredSpan? unreadable = none ∧ recordId unreadable = false := by

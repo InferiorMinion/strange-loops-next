@@ -968,7 +968,7 @@ html:not(.js) .unpremise,html:not(.js) .poke{display:none}
       </li>
       <li class="q-law" id="law-record-shape" data-shape="exactness">
         <p class="q-s">Every envelope shape has a named refusal. An envelope that is not an object is refused with <code>envelope-not-object</code>, after any unknown key and before every value. A required field left out, or a field of the wrong JSON type, is refused with that field's own code, in its place. A salt that is not base32hex text is refused with <code>salt-not-16-bytes</code>.</p>
-        <p class="law-scope">The reader reads such a field as empty text, which every field's check refuses. A repeated envelope member name is malformed input, with no code.</p>
+        <p class="law-scope">Proved: the reader reads such a field as empty text, an envelope holding it is refused, and no accepted or stored record holds it, though it can be hashed on the way to a refusal. Pinned by the vectors: which code it gets and its place in the order, and the order of the shape stage. A repeated envelope member name is malformed input, with no code.</p>
         <p class="q-f"><span class="q-shape"><span class="mk" aria-hidden="true">⇔</span>Exactness</span><code>record.shape</code><span class="q-go"><a href="../evidence/#law-record-shape">Evidence</a></span></p>
       </li>
       <li class="q-law" id="law-record-unicode" data-shape="exactness">
