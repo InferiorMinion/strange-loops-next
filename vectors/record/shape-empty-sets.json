@@ -1,0 +1,58 @@
+{
+  "vector": "shape-empty-sets",
+  "layer": "record",
+  "laws": ["record.shape", "record.sets"],
+  "source": "model",
+  "input": {
+    "envs": [
+      {
+        "kind": "note",
+        "observer": "sl:u11o5kditce56otma2ksbsnff7n6t0ftgbrmt4sp0j5d1riusfr0",
+        "emitted": "2026-10-21T09:30:00Z"
+      },
+      {
+        "kind": "note",
+        "observer": "sl:u11o5kditce56otma2ksbsnff7n6t0ftgbrmt4sp0j5d1riusfr0",
+        "emitted": "2026-10-21T09:30:00Z",
+        "about": []
+      },
+      {
+        "kind": "note",
+        "observer": "sl:u11o5kditce56otma2ksbsnff7n6t0ftgbrmt4sp0j5d1riusfr0",
+        "emitted": "2026-10-21T09:30:00Z",
+        "prev": []
+      },
+      {
+        "kind": "note",
+        "observer": "sl:u11o5kditce56otma2ksbsnff7n6t0ftgbrmt4sp0j5d1riusfr0",
+        "emitted": "2026-10-21T09:30:00Z",
+        "erases": []
+      },
+      {
+        "kind": "note",
+        "observer": "sl:u11o5kditce56otma2ksbsnff7n6t0ftgbrmt4sp0j5d1riusfr0",
+        "emitted": "2026-10-21T09:30:00Z",
+        "about": [],
+        "prev": [],
+        "erases": []
+      }
+    ],
+    "payloads": [
+      {}
+    ],
+    "salt": "fs3j62ime3jka2qqosu19175ss",
+    "seed": "9f08h2p00frdgijchip196fmah9l5mj1mu6fb126m5g1sk1ok1t0"
+  },
+  "expect": {
+    "env_canonical": "{\"emitted\":\"2026-10-21T09:30:00Z\",\"kind\":\"note\",\"observer\":\"sl:u11o5kditce56otma2ksbsnff7n6t0ftgbrmt4sp0j5d1riusfr0\"}",
+    "payload_canonical": "{}",
+    "commit": "h:gfm3v4softbur8eupmbmv8pl1kmkhqa3o86k1da6e19q7dd7j8gg",
+    "id_preimage": "{\"commit\":\"h:gfm3v4softbur8eupmbmv8pl1kmkhqa3o86k1da6e19q7dd7j8gg\",\"env\":{\"emitted\":\"2026-10-21T09:30:00Z\",\"kind\":\"note\",\"observer\":\"sl:u11o5kditce56otma2ksbsnff7n6t0ftgbrmt4sp0j5d1riusfr0\"}}",
+    "id": "r:u66bn6fbqqbdletoi3oks503073olcmmfad7pp2ep38qg867prm0",
+    "signing_input": "loops/record/v1:r:u66bn6fbqqbdletoi3oks503073olcmmfad7pp2ep38qg867prm0",
+    "key": "k:ovcj4qlctbgluf826r7ll53hlfshn31ulq0tue2alhbkil6k16qg",
+    "ed25519": "la07bdo779e8bcerl37hdbvo3g1ch84g7kkdref3ptcdrcqn0bampagt7b6tk3ic70bnult21thrb46rk46ivhp5mqd29ls332r6c18",
+    "line": "{\"env\":{\"emitted\":\"2026-10-21T09:30:00Z\",\"kind\":\"note\",\"observer\":\"sl:u11o5kditce56otma2ksbsnff7n6t0ftgbrmt4sp0j5d1riusfr0\"},\"id\":\"r:u66bn6fbqqbdletoi3oks503073olcmmfad7pp2ep38qg867prm0\",\"payload\":{},\"salt\":\"fs3j62ime3jka2qqosu19175ss\",\"sig\":{\"ed25519\":\"la07bdo779e8bcerl37hdbvo3g1ch84g7kkdref3ptcdrcqn0bampagt7b6tk3ic70bnult21thrb46rk46ivhp5mqd29ls332r6c18\",\"key\":\"k:ovcj4qlctbgluf826r7ll53hlfshn31ulq0tue2alhbkil6k16qg\"}}",
+    "erased_line": "{\"commit\":\"h:gfm3v4softbur8eupmbmv8pl1kmkhqa3o86k1da6e19q7dd7j8gg\",\"env\":{\"emitted\":\"2026-10-21T09:30:00Z\",\"kind\":\"note\",\"observer\":\"sl:u11o5kditce56otma2ksbsnff7n6t0ftgbrmt4sp0j5d1riusfr0\"},\"id\":\"r:u66bn6fbqqbdletoi3oks503073olcmmfad7pp2ep38qg867prm0\",\"sig\":{\"ed25519\":\"la07bdo779e8bcerl37hdbvo3g1ch84g7kkdref3ptcdrcqn0bampagt7b6tk3ic70bnult21thrb46rk46ivhp5mqd29ls332r6c18\",\"key\":\"k:ovcj4qlctbgluf826r7ll53hlfshn31ulq0tue2alhbkil6k16qg\"}}"
+  }
+}
