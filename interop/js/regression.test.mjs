@@ -107,6 +107,30 @@ test("an envelope's shape refuses by name: not an object, a field left out or of
   assert.equal(refused([noKind], { salt: 7 }), "kind-empty");
 });
 
+test("an unknown draft member is malformed input, after the shape stage", () => {
+  const env = { kind: "note", observer: "o:t", emitted: "2026-10-21T00:00:00Z" };
+  const salt = "0".repeat(26);
+  const good = { env, salt, payload: null };
+  assert.ok(resolveBatch([good], []).records);
+  assert.throws(() => resolveBatch([{ ...good, extra: 0 }], []), /^Error: batch input: a draft has an unknown member$/);
+  assert.deepEqual(resolveBatch([{ ...good, extra: 0 }, { ...good, env: { ...env, extra: 1 } }], []), { refused: "envelope-field-unknown" });
+  assert.deepEqual(resolveBatch([{ ...good, extra: 0 }, { ...good, env: 7 }], []), { refused: "envelope-not-object" });
+});
+
+test("a record input with no envelope or no payload is malformed input", () => {
+  const env = { kind: "note", observer: "o:t", emitted: "2026-10-21T00:00:00Z" };
+  const salt = "0".repeat(26), seed = base32(writerSeed);
+  for (const writer of ["seal", "writeText"]) {
+    assert.throws(() => writeRecord({ envs: [], payloads: [null], salt, seed }, { writer }), /record input: no envelope given/);
+    assert.throws(() => writeRecord({ envs: [env], payloads: [], salt, seed }, { writer }), /record input: no payload given/);
+    // Raw shape still comes first.
+    assert.throws(() => writeRecord({ envs: [{ ...env, extra: 1 }], payloads: [], salt, seed }, { writer }), /^Error: envelope-field-unknown$/);
+  }
+  // A text payload's lone surrogate comes before it, as in Lean.
+  assert.throws(() => writeRecord({ envs: [], payload_text: '"\\ud800"', salt, seed }, { writer: "writeText" }), /^Error: string-not-unicode$/);
+  assert.throws(() => writeRecord({ envs: [], payload_text: "null", salt, seed }, { writer: "writeText" }), /no envelope given/);
+});
+
 test("a label may stand in under, and takes part in cycles", () => {
   const salt = base32(writerSalt);
   const d = (label, env) => ({ ...(label && { label }), env: { ...writerEnv, ...env }, salt, payload: { label } });

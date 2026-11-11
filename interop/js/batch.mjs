@@ -7,6 +7,9 @@ import {
   unicodeProblem, NOT_UNICODE,
 } from "./loops.mjs";
 
+// A draft's members (`Read.draftValues`, model/Loops/Read.lean).
+const DRAFT_KEYS = new Set(["label", "env", "salt", "payload"]);
+
 const isLabel = (s) => typeof s === "string" && s.startsWith("@");
 const labelsOf = (d) => [...(d.env.about ?? []), d.env.of, ...(d.env.prev ?? []), d.env.under].filter(isLabel);
 
@@ -66,8 +69,10 @@ const isRoot = (h) => h.of === undefined && !h.prev.length;
 // lone surrogates, labels (duplicate, unknown, cycle), writing from kind-empty, then
 // prev-unknown, of-not-root, then prev-unrelated (vectors/README.md, Batch).
 // Each stage looks at the whole batch, so no draft order changes the answer.
-// A draft that is not an object, has a label that is not text or has no
-// payload is malformed input, which throws rather than refuses.
+// A draft that is not an object, has an unknown member, has a label that is
+// not text or has no payload is malformed input, which throws rather than
+// refuses. A repeated member cannot reach this value API; a caller holding
+// the raw text checks it (see README.md, Raw text).
 export function resolveBatch(raw, held) {
   // The library checks every envelope's shape before labels or values: an
   // unknown key in any, then any that is not an object or is left out.
@@ -76,6 +81,8 @@ export function resolveBatch(raw, held) {
   catch (e) { if (e.message.startsWith("envelope-")) return { refused: e.message }; throw e; }
   if (objects.length !== raw.length) throw new Error("batch input: a draft is not an object");
   for (const d of raw) {
+    // After the shape stage, so an unknown envelope key or a nonobject envelope keeps priority.
+    if (Reflect.ownKeys(d).some((k) => !DRAFT_KEYS.has(k))) throw new Error("batch input: a draft has an unknown member");
     if (d.label !== undefined && typeof d.label !== "string") throw new Error("batch input: a label is not text");
     if (!Object.hasOwn(d, "payload")) throw new Error("batch input: a draft has no payload");
   }

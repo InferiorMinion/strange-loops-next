@@ -27,6 +27,11 @@ The fuzz adapter re-reads raw text and passes those occurrences to the library s
 This rule has adapter tests, but protocol vectors do not cover it.
 This handling does not add a duplicate-member refusal for envelopes.
 
+A repeated member in a draft or an envelope, two `env` members included, is malformed input in all three, after raw shape.
+JavaScript sees it only where it holds the raw text: the fuzz adapter (`interop/fuzz/evaluate.mjs`) checks it there, for batch and record inputs.
+The value APIs `resolveBatch`, `writeRecord`, `seal` and `writeText` take JavaScript values and have no raw path: given a value parsed by `JSON.parse`, they see only the last of a repeated member and may accept the input.
+The vector checkers (`check.mjs`, `check-batch.mjs`) use these value APIs; no vector carries a repeated envelope or draft member, since a vector's JSON can't be relied on to keep one.
+
 ## Record inputs
 
 `writeRecord` reads a record input as the vectors give one.

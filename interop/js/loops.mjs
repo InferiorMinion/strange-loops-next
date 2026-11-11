@@ -433,8 +433,19 @@ export function writeRecord(input, { envIndex = 0, payloadIndex = 0, writer = "s
   const env = input.envs[envIndex];
   checkEnvelopeKeys(siblings);
   if (siblings.some(notObject) && !unknownEnvelopeKeys(env)) throw new Error("envelope-not-object");
-  const salt = () => readSalt(input.salt);
+  // No envelope or no payload to write is a fault in the input, as in Lean,
+  // where only a text payload's lone surrogate comes before it.
   const fault = (what) => { throw new Error(`record input: ${what}`); };
+  const hasEnv = envIndex < input.envs.length;
+  const hasPayload = input.payload_text !== undefined || payloadIndex < (input.payloads?.length ?? 0);
+  if (!hasEnv || !hasPayload) {
+    if (hasEnv) checkEnvelopeShapes([env]);
+    if (typeof input.payload_text === "string") {
+      try { parse(input.payload_text); } catch (e) { if (e.message === NOT_UNICODE) throw e; }
+    }
+    fault(hasEnv ? "no payload given" : "no envelope given");
+  }
+  const salt = () => readSalt(input.salt);
   const seed = ({ salt, commit, id }) => {
     input.envs.forEach((e, i) => {
       if (i === envIndex) return;
