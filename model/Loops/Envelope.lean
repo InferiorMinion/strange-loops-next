@@ -104,7 +104,10 @@ def draftsShapeProblem (raw : List Json) : Option String :=
 required field left out, a field holding the wrong JSON type, or a member of a
 set that is not text. It is empty text, which the field's own check refuses
 (`unreadable_refused`), so the refusal is the field's own code, in the field's
-place in the order. It never reaches an id: `write` refuses it first. -/
+place in the order. It can be hashed on the way to a refusal: resolving a
+batch's labels computes a labelled draft's id before writing checks it, and a
+record input compares a later variant's id with the first's. It never reaches
+an accepted or stored record (`Written.no_unreadable`). -/
 def unreadable : String := ""
 
 /-- Why a typed envelope is refused, if it is. -/

@@ -1691,10 +1691,10 @@
   {
     "id": "read-missing-kind-filled",
     "file": "Loops/Read.lean",
-    "before": "kind := ((field \"kind\").map textOr).getD unreadable",
-    "after": "kind := ((field \"kind\").map textOr).getD \"note\"",
+    "before": "kind := ((kvs.lookup \"kind\").map textOr).getD unreadable",
+    "after": "kind := ((kvs.lookup \"kind\").map textOr).getD \"note\"",
     "reason": "Fill in a missing kind.",
-    "definition": "Loops.Read.decodeValues"
+    "definition": "Loops.Read.envOf"
   },
   {
     "id": "read-salt-not-text-filled",

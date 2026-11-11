@@ -4,6 +4,11 @@
    "states":
    "∀ (start start_1 : Nat), start = start_1 → ∀ (stop stop_1 : Nat), stop = stop_1 → ∀ (step step_1 : Nat) (e_step : step = step_1) (step_pos : 0 < step), [start:stop:step] = [start_1:stop_1:step_1]",
    "module": "Laws.IdSource"},
+  "Loops.writeProblem_salt":
+  {"uses": [],
+   "states":
+   "∀ {env : Loops.Env} {salt : List UInt8} {payload : Loops.Json}, env.problem = none → salt.length ≠ 16 → Loops.writeProblem env salt payload = some \"salt-not-16-bytes\"",
+   "module": "Laws.Read"},
   "Loops.writeProblem_range_last":
   {"uses": ["Loops.Env.problem_ne_range"],
    "states":
@@ -1507,6 +1512,12 @@
    "states":
    "∀ (self : Loops.Written), Loops.Writable self.env self.salt self.payload",
    "module": "Loops.Stored"},
+  "Loops.Written.no_unreadable":
+  {"uses":
+   ["Loops.Env.problem_unreadable", "Loops.Writable.env", "Loops.Written.ok"],
+   "states":
+   "∀ (w : Loops.Written), ¬(w.env.kind = Loops.unreadable ∨ w.env.observer = Loops.unreadable ∨ w.env.emitted = Loops.unreadable ∨ w.env.occurred = some Loops.unreadable ∨ Loops.unreadable ∈ w.env.about ∨ w.env.of = some Loops.unreadable ∨ Loops.unreadable ∈ w.env.prev ∨ w.env.under = some Loops.unreadable ∨ Loops.unreadable ∈ w.env.erases)",
+   "module": "Laws.Read"},
   "Loops.Written.mk.sizeOf_spec":
   {"uses": [],
    "states":
@@ -2239,6 +2250,34 @@
    "states":
    "∀ {id : Loops.RecordId} {kind observer : String} {about : List String} {of : Option String} {value : String} {prev : List Loops.RecordId} {under : Option Loops.RecordId} {occurred : Option Loops.Claim} {emitted : Loops.Stamp} {erases : List Loops.RecordId} {n : Int} {nNumber : Option Loops.Number} {fields : List (String × Loops.Val)} {shown : Loops.Shown} {id_1 : Loops.RecordId} {kind_1 observer_1 : String} {about_1 : List String} {of_1 : Option String} {value_1 : String} {prev_1 : List Loops.RecordId} {under_1 : Option Loops.RecordId} {occurred_1 : Option Loops.Claim} {emitted_1 : Loops.Stamp} {erases_1 : List Loops.RecordId} {n_1 : Int} {nNumber_1 : Option Loops.Number} {fields_1 : List (String × Loops.Val)} {shown_1 : Loops.Shown}, { id := id, kind := kind, observer := observer, about := about, of := of, value := value, prev := prev, under := under, occurred := occurred, emitted := emitted, erases := erases, n := n, nNumber := nNumber, fields := fields, shown := shown } = { id := id_1, kind := kind_1, observer := observer_1, about := about_1, of := of_1, value := value_1, prev := prev_1, under := under_1, occurred := occurred_1, emitted := emitted_1, erases := erases_1, n := n_1, nNumber := nNumber_1, fields := fields_1, shown := shown_1 } → id = id_1 ∧ kind = kind_1 ∧ observer = observer_1 ∧ about = about_1 ∧ of = of_1 ∧ value = value_1 ∧ prev = prev_1 ∧ under = under_1 ∧ occurred = occurred_1 ∧ emitted = emitted_1 ∧ erases = erases_1 ∧ n = n_1 ∧ nNumber = nNumber_1 ∧ fields = fields_1 ∧ shown = shown_1",
    "module": "Loops.Record"},
+  "Loops.Read.textOr_unreadable":
+  {"uses": ["Loops.Json.str.injEq"],
+   "states":
+   "∀ {j : Loops.Json}, (∀ (s : String), j ≠ Loops.Json.str s) → Loops.Read.textOr j = Loops.unreadable",
+   "module": "Laws.Read"},
+  "Loops.Read.salt_length":
+  {"uses": [],
+   "states":
+   "∀ {j : Option Loops.Json}, (Loops.Read.salt j).length = 16 → ∃ s bs, j = some (Loops.Json.str s) ∧ Loops.unbase32 s = some bs ∧ bs.length = 16",
+   "module": "Laws.Read"},
+  "Loops.Read.envOf_set_mistyped":
+  {"uses":
+   ["Loops.Env.problem_unreadable",
+    "Loops.Json.arr.injEq",
+    "Loops.Read.textOr_unreadable"],
+   "states":
+   "∀ {kvs : List (String × Loops.Json)} {k : String} {j : Loops.Json}, k ∈ [\"about\", \"prev\", \"erases\"] → List.lookup k kvs = some j → ((∀ (xs : List Loops.Json), j ≠ Loops.Json.arr xs) ∨ ∃ xs x, j = Loops.Json.arr xs ∧ x ∈ xs ∧ ∀ (s : String), x ≠ Loops.Json.str s) → (Loops.Read.envOf kvs).problem ≠ none",
+   "module": "Laws.Read"},
+  "Loops.Read.envOf_mistyped":
+  {"uses": ["Loops.Env.problem_unreadable", "Loops.Read.textOr_unreadable"],
+   "states":
+   "∀ {kvs : List (String × Loops.Json)} {k : String} {j : Loops.Json}, k ∈ [\"kind\", \"observer\", \"emitted\", \"occurred\", \"of\", \"under\"] → List.lookup k kvs = some j → (∀ (s : String), j ≠ Loops.Json.str s) → (Loops.Read.envOf kvs).problem ≠ none",
+   "module": "Laws.Read"},
+  "Loops.Read.envOf_missing":
+  {"uses": ["Loops.Env.problem_unreadable"],
+   "states":
+   "∀ {kvs : List (String × Loops.Json)}, List.lookup \"kind\" kvs = none ∨ List.lookup \"observer\" kvs = none ∨ List.lookup \"emitted\" kvs = none → (Loops.Read.envOf kvs).problem ≠ none",
+   "module": "Laws.Read"},
   "Loops.OverHeads.set_decides":
   {"uses": ["Loops.LatestBy.set_decides"],
    "states":
@@ -3350,6 +3389,11 @@
   {"uses": [],
    "states": "sizeOf Loops.EnvField.about = 1",
    "module": "Loops.Spec"},
+  "Loops.Env.problem_unreadable":
+  {"uses": ["Loops.unreadable_refused"],
+   "states":
+   "∀ {e : Loops.Env}, e.kind = Loops.unreadable ∨ e.observer = Loops.unreadable ∨ e.emitted = Loops.unreadable ∨ e.occurred = some Loops.unreadable ∨ Loops.unreadable ∈ e.about ∨ e.of = some Loops.unreadable ∨ Loops.unreadable ∈ e.prev ∨ e.under = some Loops.unreadable ∨ Loops.unreadable ∈ e.erases → e.problem ≠ none",
+   "module": "Laws.Read"},
   "Loops.Env.problem_of":
   {"uses": [],
    "states":

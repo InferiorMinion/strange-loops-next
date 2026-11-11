@@ -69,7 +69,7 @@ The catalogue includes existing entries without definition metadata.
 
 - `Loops.Read.textOr`: covered by `read-wrong-type-accepted`
 - `Loops.Read.textsOr`: covered by `read-wrong-set-empty`
-- `Loops.Read.decodeValues`: covered by `read-missing-kind-filled`
+- `Loops.Read.envOf`: covered by `read-missing-kind-filled`
 - `Loops.Read.salt`: covered by `read-salt-not-text-filled`, `read-salt-not-base32-filled`
 
 ## model/Loops/Families.lean

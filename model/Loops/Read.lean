@@ -95,21 +95,24 @@ JSON type, reads as `unreadable`, which that field's own check refuses: the
 refusal is the field's code, in the field's place (`Env.problem`). Raw shape is
 checked before this, so the envelope is an object here; a repeated member name
 is still malformed input. -/
+def envOf (kvs : List (String × Json)) : Env :=
+  { kind := ((kvs.lookup "kind").map textOr).getD unreadable,
+    observer := ((kvs.lookup "observer").map textOr).getD unreadable,
+    emitted := ((kvs.lookup "emitted").map textOr).getD unreadable,
+    occurred := (kvs.lookup "occurred").map textOr,
+    about := ((kvs.lookup "about").map textsOr).getD [],
+    of := (kvs.lookup "of").map textOr,
+    prev := ((kvs.lookup "prev").map textsOr).getD [],
+    under := (kvs.lookup "under").map textOr,
+    erases := ((kvs.lookup "erases").map textsOr).getD [] }
+
+/-- The envelope `envOf` reads from an object's members, once `object` has
+checked that no name repeats. -/
 private def decodeValues (path : String) (j : Json) : Dec Env := do
   let kvs ← match j with
     | .obj _ => object path j
     | _ => throw "envelope-not-object"
-  let field (k : String) : Option Json := kvs.lookup k
-  pure
-    { kind := ((field "kind").map textOr).getD unreadable,
-      observer := ((field "observer").map textOr).getD unreadable,
-      emitted := ((field "emitted").map textOr).getD unreadable,
-      occurred := (field "occurred").map textOr,
-      about := ((field "about").map textsOr).getD [],
-      of := (field "of").map textOr,
-      prev := ((field "prev").map textsOr).getD [],
-      under := (field "under").map textOr,
-      erases := ((field "erases").map textsOr).getD [] }
+  pure (envOf kvs)
 
 /-- Read one envelope. Raw shape precedes duplicate and value decoding. -/
 def readOne (path : String) (j : Json) : Dec Env := do

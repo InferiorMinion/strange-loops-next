@@ -507,7 +507,21 @@ def shapeCases : List (String × J × String) :=
       (payload := .inr "{\"a\":1,\"a\":2}"), "salt-not-16-bytes"),
     ("shape-salt-before-number", shapeInput "shape-salt-before-number" [rawNote] none (payload := .inr "1e999"),
       "salt-not-16-bytes"),
-    ("shape-first-variant-decides", shapeInput "shape-first-variant-decides" [without "kind", rawNote], "kind-empty") ]
+    ("shape-first-variant-decides", shapeInput "shape-first-variant-decides" [without "kind", rawNote], "kind-empty"),
+    -- `null` is a value of the wrong type, not a field left out
+    one "shape-about-null" (w "about" .null) "about-not-typed",
+    one "shape-prev-null" (w "prev" .null withOf) "prev-not-record-id",
+    one "shape-under-null" (w "under" .null) "under-not-record-id",
+    ("shape-salt-null", shapeInput "shape-salt-null" [rawNote] (some .null), "salt-not-16-bytes"),
+    -- a set member that is an array is not text, whatever it holds
+    one "shape-about-nested" (w "about" (.arr [.arr [.str "@missing"]])) "about-not-typed" ]
+
+/-- Empty sets are the canonical form of leaving them out: the same record. -/
+def emptySetsInput : J :=
+  let w (k : String) (base : J := rawNote) := noteWith k (some (.arr [])) base
+  .obj [("envs", .arr [rawNote, w "about", w "prev", w "erases", w "erases" (w "prev" (w "about"))]),
+    ("payloads", .arr [.obj []]), ("salt", .str (base32 (saltFor "shape-empty-sets"))),
+    ("seed", .str (base32 (seedFor "kyle")))]
 
 def writtenVectors : Except String (List (String × J)) := do
   let unicode ← unicodeCases.mapM fun (n, input, code) => do
@@ -520,7 +534,9 @@ def writtenVectors : Except String (List (String × J)) := do
     pure (n, ← answeredVector n ["record.refuse"] input (some code))
   let shapes ← shapeCases.mapM fun (n, input, code) => do
     pure (n, ← answeredVector n ["record.shape", "record.refuse"] input (some code))
-  return unicode ++ [("d2-paired-escape", paired)] ++ overflows ++ variants ++ shapes
+  let emptySets ← answeredVector "shape-empty-sets" ["record.shape", "record.sets"] emptySetsInput none
+  return unicode ++ [("d2-paired-escape", paired)] ++ overflows ++ variants ++ shapes ++
+    [("shape-empty-sets", emptySets)]
 
 /-! ## Standards the reference code must meet before it writes anything -/
 

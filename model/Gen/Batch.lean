@@ -142,6 +142,17 @@ def mixedA := draft (some "@ma") "batch-ma"
 def mixedB := draft (some "@mb") "batch-mb"
   { kind := "grant", observer := kyle, emitted := at0, under := some "@ma" } (.obj [])
 
+-- A chain through `under`: `@c` acts under `@m`, which acts under the grant
+-- `@g`. `@c`'s id covers `@m`'s, which covers `@g`'s. Listed dependents first.
+def chainG := draft (some "@g") "batch-chain-g"
+  { kind := "grant", observer := kyle, emitted := at0 } (.obj [("to", .str wren)])
+def chainM := draft (some "@m") "batch-chain-m"
+  { kind := "grant", observer := wren, emitted := at0, under := some "@g" } (.obj [("to", .str kyle)])
+def chainC := draft (some "@c") "batch-chain-c"
+  { kind := "note", observer := kyle, emitted := at0, under := some "@m" } (.obj [("body", .str "acting")])
+def chainCAbout := draft (some "@c") "batch-chain-ca"
+  { kind := "note", observer := kyle, emitted := at0, about := ["@m"] } (.obj [("body", .str "about it")])
+
 structure Case where
   name : String
   laws : List String
@@ -179,8 +190,24 @@ def cases : List Case := [
   ⟨"35-under-cycle", ["batch.refuse"], [underA, underB]⟩,
   ⟨"36-under-self", ["batch.refuse"], [underSelf]⟩,
   ⟨"37-cycle-through-under-and-prev", ["batch.refuse"], [mixedA, mixedB]⟩,
-  ⟨"38-under-label-before-write", ["batch.refuse", "batch.refuse-order"], [underUnknown, badKind]⟩
+  ⟨"38-under-label-before-write", ["batch.refuse", "batch.refuse-order"], [underUnknown, badKind]⟩,
+  ⟨"65-chain-under", ["batch.meaning"], [chainC, chainM, chainG]⟩,
+  ⟨"66-chain-under-then-about", ["batch.meaning"], [chainCAbout, chainM, chainG]⟩
 ]
+
+/-- In the chains, `@c` names the id of `@m`'s envelope with `@g`'s id in place
+of its label, which is `@m`'s record: computed here apart from the resolver. -/
+def chainCheck (c : Case) : Except String Unit := do
+  let ws ← (resolveBatch H (held.lookup ·) c.drafts).mapError (s!"batch/{c.name}: " ++ ·)
+  let rs := ws.map Written.stored
+  let some g := rs[2]? | throw s!"batch/{c.name}: no grant"
+  let some m := rs[1]? | throw s!"batch/{c.name}: no middle"
+  let some cr := rs[0]? | throw s!"batch/{c.name}: no last"
+  let mEnv : Env := { chainM.env with under := some (g.id H) }
+  let mId := idOf H mEnv (chainM.commit H)
+  if m.id H != mId then throw s!"batch/{c.name}: @m is not its substituted envelope's id"
+  if !(cr.env.under == some mId || cr.env.about == [mId]) then
+    throw s!"batch/{c.name}: @c does not name @m's id"
 
 def jDraft (d : Draft) : J :=
   .obj ((match d.label with
@@ -311,7 +338,22 @@ def shapeCases : List (String × List J × String) :=
     ("54-not-object-before-label-value", [setMember "label" (some (.int 7)) d, setMember "env" (some .null) e],
       "envelope-not-object"),
     ("55-env-missing-before-label-value", [setMember "label" (some (.int 7)) d, setMember "env" none e],
-      "envelope-not-object") ]
+      "envelope-not-object"),
+    -- labels are found only among a set's text members, never inside one
+    ("56-nested-label-not-found", [setEnv "about" (some (.arr [.arr [.str "@missing"]])) e], "about-not-typed"),
+    -- a label beside an unreadable member is still a label, checked first
+    ("57-label-beside-null-unknown",
+      [setEnv "prev" (some (.arr [.str "@a", .null])) (setEnv "of" (some (.str "@a")) e)], "label-unknown"),
+    ("58-label-beside-null-known",
+      [d, setEnv "prev" (some (.arr [.str "@d", .null])) (setEnv "of" (some (.str "@d")) e)], "prev-not-record-id"),
+    ("59-cycle-beside-unreadable", [setEnv "about" (some (.arr [.str "@e", .int 7])) e], "label-cycle"),
+    -- `erases` takes no label, beside an unreadable member or not
+    ("60-erases-label-beside-null", [d, setEnv "erases" (some (.arr [.str "@missing", .null])) e],
+      "erases-not-record-id"),
+    ("61-about-null", [d, setEnv "about" (some .null) e], "about-not-typed"),
+    ("62-prev-null", [d, setEnv "prev" (some .null) (setEnv "of" (some (.str "@d")) e)], "prev-not-record-id"),
+    ("63-under-null", [d, setEnv "under" (some .null) e], "under-not-record-id"),
+    ("64-salt-null", [d, setMember "salt" (some .null) e], "salt-not-16-bytes") ]
 
 /-- The model's answer for drafts as written: a refusal code, or `none` when
 the batch is written. A decoding error is a fault in the case. -/
@@ -332,6 +374,8 @@ def shapeVectors : Except String (List (String × J)) := do
       (.obj [("held", .arr (held.map jHeld)), ("drafts", .arr ds)]) (.obj [("refused", .str code)]))
 
 def vectors : Except String (List (String × J)) := do
+  for c in cases do
+    if c.name.startsWith "65-" || c.name.startsWith "66-" then chainCheck c
   return (← cases.mapM fun c => do pure (c.name, ← batchVector c)) ++ (← rawVectors) ++ (← shapeVectors)
 
 end Gen.BatchVectors
