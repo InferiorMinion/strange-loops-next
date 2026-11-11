@@ -402,6 +402,32 @@ def followHeadsSpec : Json := o [("vertex", s "current"),
     ("est-every", o [("sum", s "est")]),
     ("heads", o [("latest-by", s "of"), ("follow", s "prev")])])]
 
+-- two independent current heads: one held and closed, one withheld. A
+-- followed numeric slot with a payload test filters out the first and counts
+-- the second unread once, not once for its test and again for its field.
+def p1 := task (fixtureId 0x8e) "task:7" 100 [("status", .str "closed"), ("est", .int 99)]
+def p2 := (task (fixtureId 0x8f) "task:8" 110 [("status", .str "open"), ("est", .int 5)]).withhold
+
+def followTestSpec : Json := o [("vertex", s "open-estimates"),
+  ("from", a [o [("store", s "."), ("kind", a [s "task"])]]),
+  ("fold", o [
+    ("est", o [("sum", s "est"), ("follow", s "prev"), ("where", o [("status", o [("is", s "open")])])]),
+    ("lo", o [("min", s "est"), ("follow", s "prev"), ("where", o [("status", o [("is", s "open")])])]),
+    ("hi", o [("max", s "est"), ("follow", s "prev"), ("where", o [("status", o [("is", s "open")])])])])]
+
+-- Alice's open task is replaced by Bob's withheld revision. Supersession comes
+-- first, so the current record is Bob's: its envelope test fails, and the
+-- unknown payload test never counts. Filtering by envelope first would bring
+-- Alice's back; counting the payload before the envelope would read one unread.
+def v1 : Record := { task (fixtureId 0x90) "task:1" 100 [("status", .str "open")] with observer := "sl:alice" }
+def v2 : Record := { (task (fixtureId 0x91) "task:1" 200 [("status", .str "open")] (prev := [fixtureId 0x90])).withhold with observer := "sl:bob" }
+
+def followEnvSpec : Json := o [("vertex", s "alice-open"),
+  ("from", a [o [("store", s "."), ("kind", a [s "task"])]]),
+  ("fold", o [
+    ("alice-open", o [("count", .bool true), ("follow", s "prev"),
+      ("where", o [("status", o [("is", s "open")]), ("env.observer", o [("is", s "sl:alice")])])])])]
+
 structure RunCase where
   name : String
   laws : List String
@@ -442,6 +468,9 @@ def runCases : List RunCase := [
   ⟨"17-follow-fork", ["spec.set", "spec.follow"], followHeadsSpec, [k0, k1, k2]⟩,
   -- count counts an erased head's held envelope; sum, min and max count it unread
   ⟨"18-follow-erased-head", ["spec.set", "spec.follow", "result.unread"], followHeadsSpec, [g0, g1, g2]⟩,
+  ⟨"19-follow-payload-test", ["spec.set", "spec.follow", "result.unread"], followTestSpec, [p1, p2]⟩,
+  ⟨"20-follow-envelope-after-supersession", ["spec.set", "spec.follow", "spec.after-supersession"],
+    followEnvSpec, [v1, v2]⟩,
   ⟨"gap04-unread-multi-thing", ["result.unread"],
     o [("vertex", s "x"), ("from", a [o [("store", s ".")]]), ("fold", o [
       ("by", o [("latest-by", s "of"), ("follow", s "prev"),
