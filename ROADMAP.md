@@ -6,15 +6,15 @@ The tree has three implementations: Lean, JavaScript, and Rust.
 Step 1 applies the six settled rulings before records exist.
 All three implement the settled decisions D1–D6, and D8a and D8b.
 All three refuse every envelope shape by name (issue #1) and let a label stand in `under`.
-The law index has 86 entries, 709 theorems, and 6 boundary witnesses.
+The law index has 86 entries, 717 theorems, and 6 boundary witnesses.
 See [the law index](design/laws/laws.json) and [proof and boundary data](design/laws/).
 These proofs apply only under their stated premises.
 
-The tree has 469 JSON fixtures: 457 generated fixtures and 12 standard fixtures.
-Lean replays 448 generated fixtures; 9 occurred fixtures use separate checks.
+The tree has 486 JSON fixtures: 474 generated fixtures and 12 standard fixtures.
+Lean replays 465 generated fixtures; 9 occurred fixtures use separate checks.
 Rust checks every fixture, six JCS byte pairs, 4,000 binary64 cases, and 128 SUPERCOP signing cases with ed25519-dalek.
-Rust passes 150 tests; JavaScript passes 5,898 vector checks and 28 regression tests.
-The fuzz suite passes 48 tests.
+Rust passes 151 tests; JavaScript passes 6,038 vector checks and 30 regression tests.
+The fuzz suite passes 51 tests.
 See [vectors](vectors/README.md), [Rust boundaries](rust/GAPS.md), and [the mutation report](model/mutate/REPORT.md).
 These checks provide bounded evidence, not complete JCS or cryptographic correctness.
 They do not certify browser accessibility, external links, or official ASD dictionary compliance.
@@ -26,11 +26,12 @@ Numeric folds read safe whole values only.
 Raw constructors and theorem premises retain separate domains.
 
 The gates pass on Node 25.9; the Node 22 runs of Step 1 are not repeated.
-The `shape-under-1` campaign checks 5,600 cases, 800 per family, in 65.04 seconds.
-It reports 3,803 matches, 1,391 protocol refusals, 406 shared decoder refusals, and no mismatch.
-Decoder refusals are not agreement.
+The `shape-under-2` campaign checks 5,600 cases, 800 per family, in 75.05 seconds.
+It reports 3,785 matches, 1,401 protocol refusals, 414 shared decoder refusals, and no mismatch.
+Decoder refusals are not agreement; for record and batch inputs JavaScript must now also report them as malformed.
+The `shape-under-1` campaign, before the review round, found no mismatch either; its harness did not call JavaScript on malformed input.
 The generator carries issue #1's shapes and labels in `under`, so the same seeds now generate different inputs; earlier campaigns' counts are historical.
-The `d8ab-1` and `d1-d6-1` campaigns found no mismatch either.
+The `d8ab-1` and `d1-d6-1` campaigns found no mismatch.
 The 42 duplicate-base lens mismatches of the `step1-3` campaign are the class D1 settles.
 `interop/fuzz/summarize.py` derives these counts from tracked summaries.
 See [the campaign report](interop/fuzz/REPORT.md) for the scripts and current and historical results.
@@ -39,7 +40,7 @@ The CI seed `ci-1` checks 28 three-way cases without mismatches.
 The mutation catalogue has 220 entries, including six for the D1 and D2 definitions, nine for D8's `of`, and ten for issue #1's shapes and labels in `under`.
 Ten earlier entries are retargeted at `of` and the one thing it names, and four at the shape stage and labels in `under`.
 It retires the redundant positive-offset guard under R4 and the entry for the deleted `stripZeros` family.
-The last full run covers the 210 entries before issue #1; the fourteen new and retargeted entries, run alone, give four build rejections and ten generator assertions.
+The last full run covers the 210 entries before issue #1; the fourteen new and retargeted entries, run alone after the review round, give nine build rejections and five generator assertions.
 The full run reports 165 build rejections, 28 vector differences, 15 generator assertion exceptions, and 2 survivors.
 The runner exits 1 for assertion exceptions; no timeout or infrastructure failure occurs.
 Of the nine D8 entries, six fail the build, two change batch vectors, and one stops at a generator assertion.
@@ -247,6 +248,8 @@ The same change brings the batch up to the settled ledger entry "A label may sta
 - A set that is not an array is refused with its code; so is a set with a member that is not text, and a label beside such a member is still a label, so labels are checked first.
 - A salt left out, not text, or not canonical base32hex is `salt-not-16-bytes`, in that check's place.
 - A batch draft that is not an object, an unknown draft member, a label that is not text, a draft without a payload, and a repeated envelope member name stay malformed input, with no code.
+- In JavaScript, a repeated envelope or draft member is seen only from raw text, in the fuzz adapter; the value APIs (`resolveBatch`, `writeRecord`, `seal`, `writeText`) cannot see one (`interop/js/README.md`).
+- The CLI's own changeset lines still refuse a mistyped field with `draft-shape`, not the core's field code.
 - A writer checks no `under` target beyond its shape: whether it names a held grant is left to standing (step 3), so `under` adds no batch refusal besides `label-unknown` and `label-cycle`.
 
 ### Retained boundaries

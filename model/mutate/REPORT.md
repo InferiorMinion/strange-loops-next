@@ -2,6 +2,16 @@
 
 ## Issue #1 and labels in `under`: the changed entries only
 
+### After the review round, at `ee0b9d3`
+
+The same fourteen entries, rerun alone, after `Laws.Read` and one retargeted site (`read-missing-kind-filled` now names `Read.envOf`):
+nine are rejected by the build and five stop at a generator assertion.
+The five reader entries (`read-wrong-type-accepted`, `read-wrong-set-empty`, `read-missing-kind-filled`, `read-salt-not-text-filled`, `read-salt-not-base32-filled`) now fail the build at `Laws/Read.lean`, where they were generator assertions.
+The other nine keep the outcomes below.
+The cheap runner, rerun at `ee0b9d3`, kills 33 of 33 mutants.
+
+### First run
+
 The catalogue has 220 entries: issue #1 retargets four and adds ten.
 The full catalogue is not rerun; the D8a and D8b snapshot below remains the last full run, over 210 entries.
 Only the fourteen changed entries run, with `--only`, in the working tree at `6691065`'s model:
