@@ -28,7 +28,7 @@ async function* jsonFiles(dir) {
 test('generation is deterministic, varied, balanced, and independent of scheduling', () => {
   const corpus = FAMILIES.flatMap(f => Array.from({ length: 8 }, (_, i) => generate('stable', i, f)));
   assert.equal(createHash('sha256').update(JSON.stringify(corpus)).digest('hex'),
-    '2a2a7252d320dcd2319ce191edf9d3b737e827112a7f6f27dea97ab026b9d6a2');
+    'd0b65bb63930db91066c05d6df4fd0cfc147f8c8190d3c1946121b18500adbc2');
   const layers = new Set();
   for (const family of FAMILIES) {
     const seen = new Set();
@@ -80,7 +80,7 @@ test('specs fold over heads with count, sum, min and max, over revised, forked a
       continue;
     }
     if (spec.input.spec_text) continue;
-    for (const k of ['now', 'now-flagged', 'now-total', 'now-least', 'now-greatest', 'now-score']) {
+    for (const k of ['now', 'now-flagged', 'now-total', 'now-least', 'now-greatest', 'now-score', 'now-flagged-total', 'now-flagged-greatest']) {
       assert.equal(spec.input.spec.fold[k].follow, 'prev', k);
     }
     if (spec.layer !== 'spec/run') continue;

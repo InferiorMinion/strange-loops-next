@@ -8,6 +8,7 @@
 
 import test from "node:test";
 import assert from "node:assert/strict";
+import { isDeepStrictEqual } from "node:util";
 import { base32 } from "./loops.mjs";
 import { parseSpec, runSpec, takes } from "./spec.mjs";
 import { settle } from "./realm.mjs";
@@ -62,15 +63,24 @@ test("a successor's other prev target decides whether it replaces", () => {
 // keep the sweep honest: it must meet specs that leave records out, and each
 // kind that the generator can exercise must matter at least once.
 test("a spec slice answers as the whole, over generated specs and stores", () => {
-  const seen = { pairs: 0, partial: 0, erasers: 0, targets: 0, successors: 0 };
+  const seen = { pairs: 0, partial: 0, erasers: 0, targets: 0, successors: 0, followed: 0, followedMatters: 0 };
+  // The slots that follow prev and accumulate: count, sum, min and max.
+  const followedOf = (spec) => Object.entries(spec.fold)
+    .filter(([, s]) => s.follow === "prev" && ["count", "sum", "min", "max"].some((t) => t in s)).map(([n]) => n);
   const check = (spec, forms) => {
     const want = answer(spec, forms), { part, left } = slice(spec, forms);
     assert.deepEqual(answer(spec, part), want);
     seen.pairs += 1;
     seen.partial += left > 0;
+    const followed = followedOf(spec);
+    seen.followed += followed.length > 0;
+    let matters = false;
     for (const drop of ["erasers", "targets", "successors"]) {
-      try { assert.deepEqual(answer(spec, slice(spec, forms, drop).part), want); } catch { seen[drop] += 1; }
+      const got = answer(spec, slice(spec, forms, drop).part);
+      try { assert.deepEqual(got, want); } catch { seen[drop] += 1; }
+      matters ||= followed.some((n) => !isDeepStrictEqual(got[n], want[n]));
     }
+    seen.followedMatters += matters;
   };
   for (let i = 0; i < 1500; i++) {
     for (const family of ["spec", "scenario"]) {
@@ -92,4 +102,8 @@ test("a spec slice answers as the whole, over generated specs and stores", () =>
   assert.ok(seen.pairs > 500, JSON.stringify(seen));
   assert.ok(seen.partial > 50, JSON.stringify(seen));
   for (const kind of ["erasers", "targets", "successors"]) assert.ok(seen[kind] > 0, JSON.stringify(seen));
+  // Followed count, sum, min and max are among the slots the slice answers for,
+  // and dropping a kind changes one of them at least once.
+  assert.ok(seen.followed > 500 && seen.followedMatters > 0, JSON.stringify(seen));
+  console.log(`spec-slice sweep: ${JSON.stringify(seen)}`);
 });

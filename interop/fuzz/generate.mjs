@@ -48,6 +48,8 @@ function spec(rng, rs) {
       'now-least': { min: 'n', follow: 'prev' },
       'now-greatest': { max: 'n', follow: 'prev' },
       'now-score': { sum: 'score', follow: 'prev', where: { 'env.kind': { not: 'erase' } } },
+      'now-flagged-total': { sum: 'n', follow: 'prev', where: { flag: { is: true } } },
+      'now-flagged-greatest': { max: 'n', follow: 'prev', where: { flag: { is: true }, 'env.kind': { is: 'note' } } },
     },
   };
 }
