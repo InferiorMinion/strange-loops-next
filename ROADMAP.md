@@ -206,7 +206,7 @@ Issue #5 corrects the proposal: convexity is sufficient but not exact, and on a 
 The exact law is *witnessed*: every held setter of a key that is dead for that key has a setter of that key above it through held records (`witnessed_iff`, in margins-claude's `lean/Convex.lean`).
 Either law is about a slice read alone; a slice merged into an older holding is step 5's question.
 margins-claude will state the law over the model once D8a is modelled.
-Whether a writer's tool also names in `prev` the still-live records it partly replaces, which makes the live setters alone a slice, is open with D8c.
+Kyle agreed on 2026-11-11 (issue #5): the model states *witnessed*, with convex as a corollary, and a writer's tool fills in the anchor, as it fills in `of`: an emit that sets a key names in `prev` every record its writer holds that sets that key and is still a live setter of some key. Then the live setters alone are a slice. A slice law is about a slice read alone; merging slices is step 5's question.
 **Kyle's choices, 2026-11-10,** following margins-claude's reasoning on merge request !13:
 - **Names:** the item field is `of` and the declaration is `sets`. A record *of* the task, against a record *about* it; `sets`, like `erases`, is a verb for what the record does.
 - **Natural keys:** `of` takes a record id or a natural key, as `about` does.
@@ -235,7 +235,7 @@ D8c, declared keys, is not built, and the keyed fold's slice law is not stated.
   On that path only, this precedes the writer's other checks.
 - **Export:** `export --about` is a mention filter and `export --of` filters by thing.
 - **Verb:** the verb that shows a thing is `loops of <thing>`, renamed from `loops about <thing>`.
-**Implementer choices, not yet confirmed by Kyle:**
+**Implementer choices, confirmed by Kyle 2026-11-11** (there are no stores yet beyond iteration tests, so the missing compatibility path costs nothing):
 - The codes `of-not-typed`, `of-missing` and `of-not-root`, and their places: `of-not-typed` right after `about-not-typed`, `of-missing` last of the envelope checks, and `of-not-root` between `prev-unknown` and `prev-unrelated`, all three across the whole batch.
 - `"latest-by": "about"` is refused with `fold-argument`; there is no compatibility path.
 - A reader polices neither `of-missing` nor roots. A held record with `prev` and no `of` is of its own id, so its `prev` crosses things and admission refuses it.
