@@ -7,7 +7,7 @@ use sha2::{Digest, Sha256};
 /// Computes complete batch answers after strict fixture decoding.
 pub(crate) fn answers(layer: &str, input: &Json) -> Result<Vec<Json>, String> {
     match answers_decoded(layer, input) {
-        Err(e) if e == "envelope-field-unknown" => {
+        Err(e) if loops::envelope::SHAPE_CODES.contains(&e.as_str()) => {
             Ok(vec![Json::Obj(vec![("refused".into(), Json::Str(e))])])
         }
         other => other,
@@ -77,6 +77,7 @@ mod tests {
     }
     use crate::parse;
     use loops::json::Json;
+    use loops::stored;
 
     #[test]
     fn shape_preflight_precedes_all_draft_and_held_values() {
@@ -184,25 +185,71 @@ mod tests {
 
     #[test]
     fn draft_and_envelope_shapes_precede_writer_checks() {
+        // The draft's own shape stays malformed input.
         for input in [
             r#"{"env":{},"salt":"","payload":null,"extra":0}"#,
             r#"{"label":"@a","label":"@b","env":{},"salt":"","payload":null}"#,
-            r#"{"env":{"kind":"","observer":"","emitted":""},"salt":3,"payload":null}"#,
+            r#"{"label":7,"env":{},"salt":"","payload":null}"#,
             r#"{"env":{"kind":"","observer":"","emitted":""},"salt":""}"#,
         ] {
             assert!(draft("draft", &parse(input)).is_err(), "{input}");
         }
-        for input in [
-            r#"{"kind":"","observer":"","emitted":"","under":null}"#,
-            r#"{"kind":"","observer":"","emitted":"","about":null}"#,
-            r#"{"kind":"","observer":"","emitted":"","prev":[3]}"#,
-            r#"{"kind":"","observer":"","emitted":"","erases":{}}"#,
-            r#"{"kind":"","kind":"x","observer":"","emitted":""}"#,
-        ] {
-            assert!(env("env", &parse(input)).is_err(), "{input}");
+        // A salt that is not base32hex text reads as no bytes.
+        for salt in ["3", "\"!\"", "null"] {
+            let input = format!(r#"{{"env":{{}},"salt":{salt},"payload":null}}"#);
+            assert_eq!(
+                draft("draft", &parse(&input)).expect("salt").salt,
+                Vec::<u8>::new()
+            );
         }
-        let invalid = parse(r#"{"kind":"","observer":"","emitted":"","about":0,"under":0}"#);
-        assert_eq!(env("env", &invalid), Err("env.under: expected text".into()));
+        // An envelope that is not an object is a shape refusal.
+        for input in [r#"{"env":7,"payload":null}"#, r#"{"payload":null}"#] {
+            assert_eq!(
+                draft("draft", &parse(input)),
+                Err("envelope-not-object".into())
+            );
+        }
+        // A repeated envelope member is still malformed input.
+        assert!(
+            env(
+                "env",
+                &parse(r#"{"kind":"","kind":"x","observer":"","emitted":""}"#)
+            )
+            .is_err()
+        );
+        // A field of the wrong JSON type is refused by the field's own check.
+        for (input, code) in [
+            (
+                r#"{"kind":"note","observer":"o:t","emitted":"2026-10-21T00:00:00Z","under":null}"#,
+                stored::Error::UnderNotRecordId,
+            ),
+            (
+                r#"{"kind":"note","observer":"o:t","emitted":"2026-10-21T00:00:00Z","about":null}"#,
+                stored::Error::AboutNotTyped,
+            ),
+            (
+                r#"{"kind":"note","observer":"o:t","emitted":"2026-10-21T00:00:00Z","prev":[3]}"#,
+                stored::Error::PrevNotRecordId,
+            ),
+            (
+                r#"{"kind":"note","observer":"o:t","emitted":"2026-10-21T00:00:00Z","erases":{}}"#,
+                stored::Error::ErasesNotRecordId,
+            ),
+            (
+                r#"{"kind":"note","observer":"o:t","emitted":"2026-10-21T00:00:00Z","about":0,"under":0}"#,
+                stored::Error::AboutNotTyped,
+            ),
+            (
+                r#"{"observer":7,"emitted":"2026-10-21T00:00:00Z"}"#,
+                stored::Error::KindEmpty,
+            ),
+        ] {
+            assert_eq!(
+                env("env", &parse(input)).expect(input).problem(),
+                Some(code),
+                "{input}"
+            );
+        }
         let raw = parse(r#"{"kind":"","observer":"","emitted":""}"#);
         assert!(
             env("env", &raw).is_ok(),

@@ -2,7 +2,7 @@
 use crate::envelope::Env;
 use crate::json::Json;
 use crate::number::Nat;
-use crate::read::{bytes, members, optional, required, text};
+use crate::read::{members, optional, required, text};
 use crate::stored::{self, Stored, Written};
 use num_bigint::BigUint;
 use std::fmt;
@@ -11,9 +11,9 @@ use std::fmt;
 /// A draft holds an unchecked record and an optional batch label.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Draft {
-    /// The optional name that other drafts can use in about, of or prev.
+    /// The optional name that other drafts can use in about, of, prev or under.
     pub label: Option<String>,
-    /// The unchecked envelope, which can contain labels in about, of and prev.
+    /// The unchecked envelope, which can contain labels in about, of, prev and under.
     pub env: Env,
     /// The bytes that open the payload commitment.
     pub salt: Vec<u8>,
@@ -21,35 +21,53 @@ pub struct Draft {
     pub payload: Json,
 }
 
+/// Lean: `Loops.Read.draftValues`, model/Loops/Read.lean.
+/// A salt that is not base32hex text reads as no bytes, which the writer
+/// refuses as `salt-not-16-bytes`.
 fn read_values(path: &str, j: &Json) -> Result<Draft, crate::read::Error> {
     let kvs = members(path, &["label", "env", "salt", "payload"], j)?;
     Ok(Draft {
         label: optional(kvs, "label")
             .map(|v| text(&format!("{path}.label"), v).map(str::to_owned))
             .transpose()?,
-        env: crate::envelope::decode_values(&format!("{path}.env"), required(path, kvs, "env")?)?,
-        salt: bytes(&format!("{path}.salt"), required(path, kvs, "salt")?)?,
+        env: crate::envelope::decode_values(
+            &format!("{path}.env"),
+            optional(kvs, "env").unwrap_or(&Json::Null),
+        )?,
+        salt: crate::envelope::read_salt(optional(kvs, "salt")),
         payload: required(path, kvs, "payload")?.clone(),
     })
 }
 
-fn check_draft_keys<'a>(
+/// Lean: `Loops.draftsShapeProblem`, model/Loops/Envelope.lean.
+/// Every occurrence of each draft's `env` member; a draft object without one
+/// has an envelope that is not an object. A draft that is not an object is
+/// left for the value decoder, which refuses it as malformed input.
+fn check_draft_shapes<'a>(
     drafts: impl IntoIterator<Item = &'a Json>,
 ) -> Result<(), crate::read::Error> {
-    crate::envelope::check_all_keys(
-        drafts
-            .into_iter()
-            .filter_map(|draft| {
-                if let Json::Obj(fields) = draft {
-                    Some(fields)
-                } else {
-                    None
-                }
-            })
-            .flatten()
-            .filter_map(|(key, value)| (key == "env").then_some(value)),
-    )
-    .map_err(|e| crate::read::Error::from(e.to_string()))
+    let envs: Vec<&Json> = drafts
+        .into_iter()
+        .filter_map(|draft| {
+            if let Json::Obj(fields) = draft {
+                Some(fields)
+            } else {
+                None
+            }
+        })
+        .flat_map(|fields| {
+            let envs: Vec<&Json> = fields
+                .iter()
+                .filter_map(|(key, value)| (key == "env").then_some(value))
+                .collect();
+            if envs.is_empty() {
+                vec![&Json::Null]
+            } else {
+                envs
+            }
+        })
+        .collect();
+    crate::envelope::check_all_shapes(envs).map_err(|e| crate::read::Error::from(e.to_string()))
 }
 
 /// Checks every raw draft env occurrence, then reads the intervening input,
@@ -63,7 +81,7 @@ pub fn read_all<T>(
     before_values: impl FnOnce() -> Result<T, crate::read::Error>,
 ) -> Result<(T, Vec<Draft>), crate::read::Error> {
     let raw = crate::read::list(path, j)?;
-    check_draft_keys(raw)?;
+    check_draft_shapes(raw)?;
     let before = before_values()?;
     let drafts = raw
         .iter()
@@ -78,7 +96,7 @@ pub fn read_all<T>(
 /// # Errors
 /// Returns a raw input error for invalid keys, shapes or values.
 pub fn read(path: &str, j: &Json) -> Result<Draft, crate::read::Error> {
-    check_draft_keys([j])?;
+    check_draft_shapes([j])?;
     read_values(path, j)
 }
 
@@ -173,12 +191,14 @@ pub fn subst_opt(
 }
 
 /// Lean: `Loops.substEnv`, model/Loops/Batch.lean.
-/// Replaces labels in about, of and prev only; all other envelope fields keep their original values.
+/// Replaces labels in about, of, prev and under only; all other envelope
+/// fields, `erases` among them, keep their original values.
 pub fn subst_env(env: &Env, mapping: impl Fn(&str) -> Option<String>) -> Option<Env> {
     Some(Env {
         about: subst(&env.about, &mapping)?,
         of: subst_opt(env.of.as_ref(), &mapping)?,
         prev: subst(&env.prev, &mapping)?,
+        under: subst_opt(env.under.as_ref(), &mapping)?,
         ..env.clone()
     })
 }
@@ -192,13 +212,14 @@ fn lookup<'a>(mapping: &'a [(String, String)], label: &str) -> Option<&'a str> {
 
 impl Draft {
     /// Lean: `Loops.Draft.refs`, model/Loops/Batch.lean.
-    /// Lists labels from about, then of, then prev, with their order and repeats unchanged.
+    /// Lists labels from about, then of, then prev, then under, with their order and repeats unchanged.
     pub fn refs(&self) -> Vec<String> {
         self.env
             .about
             .iter()
             .chain(&self.env.of)
             .chain(&self.env.prev)
+            .chain(&self.env.under)
             .filter(|s| is_label(s))
             .cloned()
             .collect()
@@ -411,7 +432,11 @@ mod tests {
     #[test]
     fn raw_draft_shape_precedes_labels_and_intervening_input() {
         let unknown = Json::Obj(vec![("extra".into(), Json::Null)]);
-        let malformed = Json::Obj(vec![("label".into(), Json::Null)]);
+        // A malformed label beside an envelope that passes shape.
+        let malformed = Json::Obj(vec![
+            ("label".into(), Json::Null),
+            ("env".into(), Json::Obj(vec![])),
+        ]);
         // Both env occurrences must survive, in either order.
         for envs in [[unknown.clone(), Json::Null], [Json::Null, unknown]] {
             let repeated = Json::Obj(vec![
@@ -435,12 +460,42 @@ mod tests {
                 assert!(!called.get());
             }
         }
-        let result = read_all("drafts", &Json::Arr(vec![malformed]), || {
+        let result = read_all("drafts", &Json::Arr(vec![malformed.clone()]), || {
             Err::<(), _>(crate::read::Error::from("held values".to_owned()))
         });
         assert_eq!(
             result.expect_err("held before draft values").to_string(),
             "held values"
+        );
+        // A draft without an envelope, or with one that is not an object, is a
+        // shape refusal, before held input and draft values; an unknown key wins.
+        let no_env = Json::Obj(vec![("label".into(), Json::Null)]);
+        let not_object = Json::Obj(vec![("env".into(), Json::Int(7_i64.into()))]);
+        for drafts in [
+            vec![no_env.clone()],
+            vec![malformed.clone(), not_object.clone()],
+            vec![not_object, malformed],
+        ] {
+            let called = Cell::new(false);
+            let result = read_all("drafts", &Json::Arr(drafts), || {
+                called.set(true);
+                Ok(())
+            });
+            assert_eq!(
+                result.expect_err("shape").to_string(),
+                "envelope-not-object"
+            );
+            assert!(!called.get());
+        }
+        let with_unknown = Json::Obj(vec![(
+            "env".into(),
+            Json::Obj(vec![("extra".into(), Json::Null)]),
+        )]);
+        assert_eq!(
+            read_all("drafts", &Json::Arr(vec![no_env, with_unknown]), || Ok(()))
+                .expect_err("shape")
+                .to_string(),
+            "envelope-field-unknown"
         );
     }
 
@@ -513,18 +568,22 @@ mod tests {
         d.env.observer = "@observer".into();
         d.env.emitted = "@emitted".into();
         d.env.occurred = Some("@occurred".into());
-        d.env.under = Some("@under".into());
+        d.env.under = Some("@a".into());
         d.env.erases = texts(&["@erases"]);
         d.payload = Json::Str("@payload".into());
-        assert_eq!(d.refs(), texts(&["@a", "@a", "@a", "@a"]));
+        assert_eq!(d.refs(), texts(&["@a", "@a", "@a", "@a", "@a"]));
         let mut expected = d.env.clone();
         expected.about = texts(&["x:one", "r:resolved", "r:resolved"]);
         expected.of = Some("r:resolved".into());
         expected.prev = texts(&["r:resolved"]);
+        expected.under = Some("r:resolved".into());
         assert_eq!(subst_env(&d.env, mapping), Some(expected));
         d.env.of = Some("@missing".into());
         assert_eq!(subst_env(&d.env, mapping), None);
         d.env.of = Some("@a".into());
+        d.env.under = Some("@missing".into());
+        assert_eq!(subst_env(&d.env, mapping), None);
+        d.env.under = Some("@a".into());
         assert_eq!(
             d.commit(&hash),
             stored::commit_of(&hash, &d.salt, &d.payload)
@@ -675,10 +734,25 @@ mod tests {
         d.env.kind = "@not-a-reference".into();
         d.payload = Json::Str("@not-a-reference".into());
         assert!(resolve_batch(&hash, &no_held, &[d.clone()]).is_ok());
+        // A label may stand in `under`: one no draft gives is unknown, one
+        // reaching back to its own draft is a cycle, and one given resolves.
         d.env.under = Some("@not-a-reference".into());
         assert_eq!(
             resolve_batch(&hash, &no_held, &[d.clone()]),
-            Err(Error::Write(stored::Error::UnderNotRecordId))
+            Err(Error::LabelUnknown)
+        );
+        let mut grant = draft(Some("@g"));
+        grant.env.under = Some("@g".into());
+        assert_eq!(
+            resolve_batch(&hash, &no_held, &[grant.clone()]),
+            Err(Error::LabelCycle)
+        );
+        grant.env.under = None;
+        d.env.under = Some("@g".into());
+        let written = resolve_batch(&hash, &no_held, &[d.clone(), grant]).expect("under label");
+        assert_eq!(
+            written[0].stored().env.under,
+            Some(written[1].stored().id(&hash))
         );
         d.env.under = None;
         d.env.erases = texts(&["@not-a-reference"]);
