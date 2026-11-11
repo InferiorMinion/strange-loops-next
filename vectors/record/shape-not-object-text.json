@@ -1,0 +1,16 @@
+{
+  "vector": "shape-not-object-text",
+  "layer": "record",
+  "laws": ["record.shape", "record.refuse"],
+  "source": "model",
+  "input": {
+    "envs": ["note"],
+    "salt": "fhjtlui89fd0tij3tbi71jivp8",
+    "payloads": [
+      {}
+    ]
+  },
+  "expect": {
+    "refused": "envelope-not-object"
+  }
+}

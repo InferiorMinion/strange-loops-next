@@ -1,0 +1,22 @@
+{
+  "vector": "shape-observer-number",
+  "layer": "record",
+  "laws": ["record.shape", "record.refuse"],
+  "source": "model",
+  "input": {
+    "envs": [
+      {
+        "kind": "note",
+        "emitted": "2026-10-21T09:30:00Z",
+        "observer": 7
+      }
+    ],
+    "salt": "uqobjtgc71t4hd8h2u5jeq36bk",
+    "payloads": [
+      {}
+    ]
+  },
+  "expect": {
+    "refused": "observer-not-typed"
+  }
+}

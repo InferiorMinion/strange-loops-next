@@ -1,0 +1,40 @@
+{
+  "vector": "53-salt-before-prev-unknown",
+  "layer": "batch",
+  "laws": ["batch.shape", "batch.refuse", "batch.refuse-order"],
+  "source": "model",
+  "input": {
+    "held": [
+      {
+        "id": "r:tsant02u7bhefv6nom5tukci31agdh8q5sonp4s3h4dhkfbrgli0",
+        "prev": []
+      },
+      {
+        "id": "r:l3c6scqhfqu3bfmj288git5kimd1e3ik809q8pv8p2637qi48kc0",
+        "of": "r:tsant02u7bhefv6nom5tukci31agdh8q5sonp4s3h4dhkfbrgli0",
+        "prev": ["r:tsant02u7bhefv6nom5tukci31agdh8q5sonp4s3h4dhkfbrgli0"]
+      },
+      {
+        "id": "r:iivodlg66vgkad2knrdqob3e4obh28sea6omq5kk0u25t925276g",
+        "prev": []
+      }
+    ],
+    "drafts": [
+      {
+        "env": {
+          "kind": "decision",
+          "observer": "sl:u11o5kditce56otma2ksbsnff7n6t0ftgbrmt4sp0j5d1riusfr0",
+          "emitted": "2026-10-24T09:00:00Z",
+          "about": ["topic:auth"],
+          "of": "r:68nif1f1orpffet0hj8pag8kbm2g6oquc10v6mesb1osq0pkbkdg",
+          "prev": ["r:68nif1f1orpffet0hj8pag8kbm2g6oquc10v6mesb1osq0pkbkdg"]
+        },
+        "payload": {},
+        "salt": "!"
+      }
+    ]
+  },
+  "expect": {
+    "refused": "salt-not-16-bytes"
+  }
+}

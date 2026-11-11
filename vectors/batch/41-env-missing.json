@@ -1,0 +1,48 @@
+{
+  "vector": "41-env-missing",
+  "layer": "batch",
+  "laws": ["batch.shape", "batch.refuse", "batch.refuse-order"],
+  "source": "model",
+  "input": {
+    "held": [
+      {
+        "id": "r:tsant02u7bhefv6nom5tukci31agdh8q5sonp4s3h4dhkfbrgli0",
+        "prev": []
+      },
+      {
+        "id": "r:l3c6scqhfqu3bfmj288git5kimd1e3ik809q8pv8p2637qi48kc0",
+        "of": "r:tsant02u7bhefv6nom5tukci31agdh8q5sonp4s3h4dhkfbrgli0",
+        "prev": ["r:tsant02u7bhefv6nom5tukci31agdh8q5sonp4s3h4dhkfbrgli0"]
+      },
+      {
+        "id": "r:iivodlg66vgkad2knrdqob3e4obh28sea6omq5kk0u25t925276g",
+        "prev": []
+      }
+    ],
+    "drafts": [
+      {
+        "label": "@d",
+        "env": {
+          "kind": "decision",
+          "observer": "sl:u11o5kditce56otma2ksbsnff7n6t0ftgbrmt4sp0j5d1riusfr0",
+          "emitted": "2026-10-24T09:00:00Z",
+          "about": ["topic:auth"]
+        },
+        "salt": "5kgkopd2lk254u63bdk1m5m954",
+        "payload": {
+          "choice": "passkeys"
+        }
+      },
+      {
+        "label": "@e",
+        "salt": "7ll354fh8cg4fqgvn0e9mcu0ls",
+        "payload": {
+          "source": "url:https://example.com/passkeys"
+        }
+      }
+    ]
+  },
+  "expect": {
+    "refused": "envelope-not-object"
+  }
+}
