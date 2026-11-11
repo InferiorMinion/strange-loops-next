@@ -305,7 +305,13 @@ def shapeCases : List (String × List J × String) :=
     ("50-salt-missing", [d, setMember "salt" none e], "salt-not-16-bytes"),
     ("51-salt-number", [d, setMember "salt" (some (.int 7)) e], "salt-not-16-bytes"),
     ("52-kind-before-salt", [setMember "salt" none d, setEnv "kind" none e], "kind-empty"),
-    ("53-salt-before-prev-unknown", [setMember "salt" (some (.str "!")) (jDraft unknownPrev)], "salt-not-16-bytes") ]
+    ("53-salt-before-prev-unknown", [setMember "salt" (some (.str "!")) (jDraft unknownPrev)], "salt-not-16-bytes"),
+    -- Shape comes before any draft is decoded, so it wins over a draft that is
+    -- malformed input, as `20-shape-before-label-values` pins for unknown keys.
+    ("54-not-object-before-label-value", [setMember "label" (some (.int 7)) d, setMember "env" (some .null) e],
+      "envelope-not-object"),
+    ("55-env-missing-before-label-value", [setMember "label" (some (.int 7)) d, setMember "env" none e],
+      "envelope-not-object") ]
 
 /-- The model's answer for drafts as written: a refusal code, or `none` when
 the batch is written. A decoding error is a fault in the case. -/

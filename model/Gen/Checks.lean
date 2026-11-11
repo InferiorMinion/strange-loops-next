@@ -119,6 +119,9 @@ def canonicalTextChecks : IO Unit := do
     for ds in [[.obj [("env", raw)]], [.obj [("env", goodEnv)], .obj [("env", raw)]]] do
       ensure (shapeIs "envelope-not-object" (Gen.Read.drafts "drafts" (.arr ds)))
         "a draft's nonobject envelope is not a shape refusal"
+  ensure (shapeIs "envelope-field-unknown"
+      (Read.env "env" (.obj [("kind", .str "a"), ("kind", .str "b"), ("extra", .null)])))
+    "a repeated envelope member hides an unknown key"
   ensure (shapeIs "envelope-not-object" (Gen.Read.drafts "drafts" (.arr [.obj [("salt", .int 7)]])))
     "a draft without an envelope is not a shape refusal"
   ensure (shapeIs "envelope-field-unknown" (Gen.Read.drafts "drafts" (.arr [.obj [], .obj [("env", unknown)]])))
