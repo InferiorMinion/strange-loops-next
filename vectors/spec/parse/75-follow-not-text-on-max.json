@@ -1,0 +1,26 @@
+{
+  "vector": "75-follow-not-text-on-max",
+  "layer": "spec/parse",
+  "laws": ["spec.parse"],
+  "source": "model",
+  "input": {
+    "spec": {
+      "vertex": "x",
+      "from": [
+        {
+          "store": "."
+        }
+      ],
+      "fold": {
+        "c": {
+          "max": "est",
+          "follow": true
+        }
+      }
+    }
+  },
+  "expect": {
+    "refused": "follow-invalid",
+    "path": "fold.c.follow"
+  }
+}

@@ -1,0 +1,46 @@
+{
+  "vector": "73-follow-on-extrema",
+  "layer": "spec/parse",
+  "laws": ["spec.parse"],
+  "source": "model",
+  "input": {
+    "spec": {
+      "vertex": "x",
+      "from": [
+        {
+          "store": "."
+        }
+      ],
+      "fold": {
+        "lo": {
+          "min": "est",
+          "follow": "prev"
+        },
+        "hi": {
+          "follow": "prev",
+          "max": "est"
+        }
+      }
+    }
+  },
+  "expect": {
+    "parsed": {
+      "vertex": "x",
+      "from": [
+        {
+          "store": "."
+        }
+      ],
+      "fold": {
+        "lo": {
+          "min": "est",
+          "follow": "prev"
+        },
+        "hi": {
+          "max": "est",
+          "follow": "prev"
+        }
+      }
+    }
+  }
+}
