@@ -2,12 +2,50 @@
 
 ## Scope
 
-This report covers the JS, Lean, and Rust campaign after issue #1's envelope shape refusals and labels in `under`.
-It also preserves the D8a and D8b campaign, the D1–D6 campaign, the Step-1 campaign and earlier two-way campaigns as historical findings.
+This report covers the JS, Lean, and Rust campaign after issue #1's envelope shape refusals and labels in `under`, and its review round.
+It also preserves the first issue #1 campaign, the D8a and D8b campaign, the D1–D6 campaign, the Step-1 campaign and earlier two-way campaigns as historical findings.
 Their counts are historical: the generator changed with D8 and again with issue #1, so the same seeds now generate different inputs.
 The harness covers record, fold, spec, realm, scenario, batch, and lens inputs.
 
-## Envelope shape and `under` labels three-way campaign
+## Envelope shape and `under` labels, second three-way campaign
+
+Source commit: `ee0b9d3`.
+Node 25.9 checks 5,600 cases with seed `shape-under-2`: 800 cases per family.
+The run uses 88 chunks and takes 75.05 seconds.
+Exit 0: no implementation disagrees on any case.
+The retained [summary](evidence/shape-under-2/summary.json) supports these counts.
+Run `python3 interop/fuzz/summarize.py report` from the repository root.
+
+| Family | Cases | Match | Protocol refusal | Shared decoder refusal | Mismatch |
+|---|---:|---:|---:|---:|---:|
+| record | 800 | 123 | 650 | 27 | 0 |
+| fold | 800 | 693 | 0 | 107 | 0 |
+| spec | 800 | 687 | 57 | 56 | 0 |
+| realm | 800 | 692 | 0 | 108 | 0 |
+| scenario | 800 | 696 | 0 | 104 | 0 |
+| batch | 800 | 329 | 459 | 12 | 0 |
+| lens | 800 | 565 | 235 | 0 | 0 |
+| Total | 5,600 | 3,785 | 1,401 | 414 | 0 |
+
+All 414 decoder refusals occur in both Lean and Rust.
+For the record and batch families, JavaScript is now called on them too and must also report malformed input, by throwing; an answer is a mismatch.
+So the 27 record and 12 batch decoder refusals are all three agreeing that the input is malformed, which is still not protocol agreement.
+The other families' JavaScript APIs have no input contract and are not called on a decoder refusal.
+No reduction runs, because no mismatch exists.
+The [mismatch list](evidence/shape-under-2/d1-mismatches.json) keeps the historical D1 example and holds no case.
+
+The generator adds an unknown draft member, alone and beside an unknown envelope key, and a record input with no envelope, alone and beside a text payload's lone surrogate.
+A repeated envelope or draft member cannot travel as a generated JSON value; adapter tests check it from raw text.
+The first campaign, `shape-under-1`, could not find JavaScript's three gaps: the harness did not call JavaScript when Lean reported malformed input, and the generator made none of these inputs.
+
+```sh
+node interop/fuzz/run.mjs --rust --seed shape-under-2 --n 5600 --shrink-trials 80 --out /tmp/fuzz-shape-under-2
+python3 interop/fuzz/summarize.py campaign /tmp/fuzz-shape-under-2 shape-under-2
+```
+
+## HISTORICAL envelope shape and `under` labels three-way campaign
+
+This campaign predates the second review round: its generator and harness changed after it.
 
 Source commit: `2a3ba3a`; its model is that of `fb16fc6`, JavaScript that of `655cff1`, and the Rust evaluator that of `f6314ef`.
 Node 25.9 checks 5,600 cases with seed `shape-under-1`: 800 cases per family.

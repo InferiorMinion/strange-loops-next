@@ -17,7 +17,7 @@ node interop/fuzz/run.mjs --seed ci-1 --n 28 --out /tmp/fuzz-ci
 node interop/fuzz/run.mjs --rust --seed phase2-20261029 --n 5000 --out /tmp/fuzz-large
 node interop/fuzz/run.mjs --seed campaign-1 --n 1000 --family record --no-shrink
 node interop/fuzz/run.mjs --rust --replay /tmp/fuzz-large/mismatches/000000.json --out /tmp/fuzz-replay
-node interop/fuzz/run.mjs --rust --seed shape-under-1 --n 5600 --shrink-trials 80 --out /tmp/fuzz-shape-under-1
+node interop/fuzz/run.mjs --rust --seed shape-under-2 --n 5600 --shrink-trials 80 --out /tmp/fuzz-shape-under-2
 node interop/fuzz/run.mjs --rust --replay vectors/lens/section/d1-duplicate-base-id.json --out /tmp/fuzz-duplicate-base
 ```
 
@@ -158,7 +158,8 @@ Artifacts encode those integers as `{"$integer":"decimal digits"}`.
 | `decoder-refusal` | Every enabled engine rejects the fixture input; diagnostics can differ |
 | `mismatch` | Answers differ, only one engine rejects input, or JS throws after Lean decodes |
 
-A Lean decoder refusal does not invoke JS, even if Rust accepts the fixture.
+A Lean decoder refusal does not invoke JS, even if Rust accepts the fixture, except for record and batch inputs.
+There JS is called and must also report malformed input by throwing; an answer from JS is a mismatch.
 Typed JS APIs do not provide the model's fixture decoder.
 If Lean accepts and Rust refuses, the harness also records the JS answers or exception.
 A shared Lean/Rust decoder refusal remains a decoder refusal, not protocol agreement.
