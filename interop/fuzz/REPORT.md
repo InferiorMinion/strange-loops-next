@@ -7,6 +7,40 @@ It also preserves the two issue #1 campaigns, the `follow-2` campaign, the D8a a
 Their counts are historical: the generator changed with D8, with issue #1 and with `follow`, so the same seeds now generate different inputs.
 The harness covers record, fold, spec, realm, scenario, batch, and lens inputs.
 
+## Merged generator: three-way campaign
+
+Source commit: `4eee07c`, the merge of `main` at `3238976` into the issue #1 branch.
+Node 25.9 checks 5,600 cases with seed `shape-follow-1`: 800 cases per family.
+The run uses 88 chunks and takes 67.65 seconds.
+Exit 0: no implementation disagrees on any case.
+The retained [summary](evidence/shape-follow-1/summary.json) supports these counts.
+Run `python3 interop/fuzz/summarize.py report` from the repository root.
+
+| Family | Cases | Match | Protocol refusal | Shared decoder refusal | Mismatch |
+|---|---:|---:|---:|---:|---:|
+| record | 800 | 114 | 659 | 27 | 0 |
+| fold | 800 | 709 | 0 | 91 | 0 |
+| spec | 800 | 692 | 59 | 49 | 0 |
+| realm | 800 | 712 | 0 | 88 | 0 |
+| scenario | 800 | 708 | 0 | 92 | 0 |
+| batch | 800 | 307 | 481 | 12 | 0 |
+| lens | 800 | 565 | 235 | 0 | 0 |
+| Total | 5,600 | 3,807 | 1,434 | 359 | 0 |
+
+All 359 decoder refusals occur in both Lean and Rust.
+For the record and batch families JavaScript is called on them too and throws, so the 27 record and 12 batch ones are all three agreeing that the input is malformed; that is still not protocol agreement.
+No reduction runs, because no mismatch exists.
+The [mismatch list](evidence/shape-follow-1/d1-mismatches.json) keeps the historical D1 example and holds no case.
+
+The merged generator carries both changes: issue #1's record and batch shape slots and labels in `under`, and the eight followed count, sum, min and max slots in every spec with the `follow` parse near miss.
+Neither change schedules the other's families, so the two sets of slots do not overlap.
+It differs from the generators of `shape-under-2` and `follow-2`, whose counts are historical.
+
+```sh
+node interop/fuzz/run.mjs --rust --seed shape-follow-1 --n 5600 --shrink-trials 80 --out /tmp/fuzz-shape-follow-1
+python3 interop/fuzz/summarize.py campaign /tmp/fuzz-shape-follow-1 shape-follow-1
+```
+
 ## HISTORICAL envelope shape and `under` labels, second three-way campaign
 
 This campaign predates the merge with `follow` on count, sum, min and max; the merged generator differs from its.

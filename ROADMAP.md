@@ -27,7 +27,9 @@ Numeric folds read safe whole values only.
 Raw constructors and theorem premises retain separate domains.
 
 The gates pass on Node 25.9; the Node 22 runs of Step 1 are not repeated.
-The `shape-under-2` and `follow-2` campaigns each checked 5,600 cases before the merge and found no mismatch.
+The `shape-follow-1` campaign, over the merged generator, checks 5,600 cases, 800 per family, in 67.65 seconds.
+It reports 3,807 matches, 1,434 protocol refusals, 359 shared decoder refusals, and no mismatch.
+The `shape-under-2` and `follow-2` campaigns, each over its own branch's generator, found no mismatch either.
 Decoder refusals are not agreement; for record and batch inputs JavaScript must also report them as malformed.
 The generator carries issue #1's shapes and labels in `under`, and followed count, sum, min and max slots, so the same seeds now generate different inputs; earlier campaigns' counts are historical.
 The `d8ab-1` and `d1-d6-1` campaigns found no mismatch.
