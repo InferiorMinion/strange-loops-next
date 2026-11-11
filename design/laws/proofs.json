@@ -231,6 +231,16 @@
    "states":
    "∀ (m : Loops.Record → List String) (t : String) {xs : List Loops.Record}, Loops.Addressed xs → Loops.stateIn t (List.map (Loops.mentioning m) xs) = { named := (Loops.stateIn t xs).named, heads := List.map (Loops.mentioning m) (Loops.stateIn t xs).heads }",
    "module": "Laws.Things"},
+  "Loops.spec_slice_needs_their_targets":
+  {"uses": [],
+   "states":
+   "Loops.ss.spec.run (Loops.settle [Loops.ss.a, Loops.ss.c]) ≠ Loops.ss.spec.run (Loops.settle [Loops.ss.a, Loops.ss.b, Loops.ss.c])",
+   "module": "Laws.SpecSlice"},
+  "Loops.spec_slice_needs_successors":
+  {"uses": [],
+   "states":
+   "Loops.ss.spec.run (Loops.settle [Loops.ss.a]) ≠ Loops.ss.spec.run (Loops.settle [Loops.ss.a, Loops.ss.d])",
+   "module": "Laws.SpecSlice"},
   "Loops.speaks_view":
   {"uses": ["Loops.binds_view", "Loops.root_view"],
    "states":
@@ -336,6 +346,17 @@
    "states":
    "∀ {a a' b b' : Loops.Record}, Loops.SameEnvelope a a' → Loops.SameEnvelope b b' → Loops.shares a b = Loops.shares a' b'",
    "module": "Laws.Slice"},
+  "Loops.settle_taken":
+  {"uses":
+   ["Loops.Spec.takes_env",
+    "Loops.SpecSlice.sub",
+    "Loops.SpecSlice.taken",
+    "Loops.mem_idsOf",
+    "Loops.pick_form",
+    "Loops.pick_taken"],
+   "states":
+   "∀ {sp : Loops.Spec} {S W : List Loops.Record}, Loops.Forms W → Loops.SpecSlice sp S W → ∀ {r : Loops.Record}, sp.takes r = true → (r ∈ Loops.settle S ↔ r ∈ Loops.settle W)",
+   "module": "Laws.SpecSlice"},
   "Loops.settle_slice_env":
   {"uses":
    ["Loops.SameEnvelope.id",
@@ -362,6 +383,20 @@
    "states":
    "∀ {xs : List Loops.Record} {a : Loops.Record}, a ∈ xs → a.shown = Loops.Shown.here → Loops.erasedIn xs a.id = false → ∃ r, r ∈ Loops.settle xs ∧ r.id = a.id ∧ r.shown = Loops.Shown.here",
    "module": "Laws.Things"},
+  "Loops.settle_has":
+  {"uses":
+   ["Loops.SameEnvelope.trans",
+    "Loops.mem_idsOf",
+    "Loops.pick_form",
+    "Loops.pick_some"],
+   "states":
+   "∀ {xs : List Loops.Record}, Loops.Forms xs → ∀ {a : Loops.Record}, a ∈ xs → ∃ r, r ∈ Loops.settle xs ∧ Loops.SameEnvelope r a",
+   "module": "Laws.SpecSlice"},
+  "Loops.settle_form":
+  {"uses": ["Loops.pick_form"],
+   "states":
+   "∀ {xs : List Loops.Record} {r : Loops.Record}, r ∈ Loops.settle xs → ∃ a, a ∈ xs ∧ Loops.SameEnvelope r a",
+   "module": "Laws.SpecSlice"},
   "Loops.settle_erased":
   {"uses": ["Loops.pick_id"],
    "states":
@@ -391,6 +426,23 @@
    "states":
    "∀ {xs ys : List Loops.Signed} {L k : String}, (∀ (s : Loops.Signed), s ∈ xs → s ∈ ys) → Loops.Root xs L k → Loops.Root ys L k",
    "module": "Laws.Keys"},
+  "Loops.replaced_taken":
+  {"uses":
+   ["Loops.SameEnvelope.id",
+    "Loops.SameEnvelope.prev",
+    "Loops.SameEnvelope.symm",
+    "Loops.SameEnvelope.trans",
+    "Loops.Spec.takes_env",
+    "Loops.SpecSlice.sub",
+    "Loops.SpecSlice.successors",
+    "Loops.SpecSlice.theirs",
+    "Loops.admit_part",
+    "Loops.isOf_env",
+    "Loops.mem_admit",
+    "Loops.settle_form"],
+   "states":
+   "∀ {sp : Loops.Spec} {S W : List Loops.Record} {may : Loops.Record → Loops.Record → Bool}, Loops.EnvOnly may → Loops.Forms W → Loops.SpecSlice sp S W → ∀ {r : Loops.Record}, r ∈ Loops.realm may W → sp.takes r = true → ∀ (t : String), (∃ q, q ∈ Loops.realm may S ∧ q.isOf t = true ∧ r.id ∈ q.prev) ↔ ∃ q, q ∈ Loops.realm may W ∧ q.isOf t = true ∧ r.id ∈ q.prev",
+   "module": "Laws.SpecSlice"},
   "Loops.refuse_ne_ok":
   {"uses": [],
    "states":
@@ -401,6 +453,28 @@
    "states":
    "∀ (may : Loops.Record → Loops.Record → Bool) (xs : List Loops.Record) (r : Loops.Record), Loops.refusalOf may xs r = none ↔ Loops.entitled may xs r = true",
    "module": "Laws.Things"},
+  "Loops.realm_taken":
+  {"uses":
+   ["Loops.SameEnvelope.prev",
+    "Loops.SameEnvelope.refl",
+    "Loops.Spec.takes_env",
+    "Loops.SpecSlice.sub",
+    "Loops.SpecSlice.targets",
+    "Loops.entitled_part",
+    "Loops.mem_admit",
+    "Loops.settle_form",
+    "Loops.settle_taken"],
+   "states":
+   "∀ {sp : Loops.Spec} {S W : List Loops.Record} {may : Loops.Record → Loops.Record → Bool}, Loops.EnvOnly may → Loops.Forms W → Loops.SpecSlice sp S W → ∀ {r : Loops.Record}, sp.takes r = true → (r ∈ Loops.realm may S ↔ r ∈ Loops.realm may W)",
+   "module": "Laws.SpecSlice"},
+  "Loops.realm_addressed":
+  {"uses":
+   ["Loops.Distinct.addressed",
+    "Loops.admit_distinct",
+    "Loops.settle_distinct"],
+   "states":
+   "∀ (may : Loops.Record → Loops.Record → Bool) (xs : List Loops.Record), Loops.Addressed (Loops.realm may xs)",
+   "module": "Laws.SpecSlice"},
   "Loops.radixValue_lt_iff":
   {"uses": ["Loops.radixValue_bound"],
    "states":
@@ -457,6 +531,16 @@
    "states":
    "∀ {cs : List Char} {a b : Loops.Moment}, Loops.point? cs = some (a, b) → a.Canonical ∧ b.Canonical",
    "module": "Laws.Time"},
+  "Loops.pick_taken":
+  {"uses":
+   ["Loops.Spec.takes_env",
+    "Loops.SpecSlice.erasers",
+    "Loops.SpecSlice.sub",
+    "Loops.SpecSlice.taken",
+    "Loops.baseForm_eq"],
+   "states":
+   "∀ {sp : Loops.Spec} {S W : List Loops.Record}, Loops.Forms W → Loops.SpecSlice sp S W → ∀ {a : Loops.Record}, a ∈ W → sp.takes a = true → Loops.pick S a.id = Loops.pick W a.id",
+   "module": "Laws.SpecSlice"},
   "Loops.pick_some":
   {"uses": ["Loops.baseForm_some"],
    "states":
@@ -506,6 +590,16 @@
    "states":
    "∀ {xs : List Loops.Record}, Loops.Addressed xs → ∀ {r : Loops.Record}, r ∈ Loops.perHeads xs → r ∈ xs",
    "module": "Laws.Things"},
+  "Loops.perHeads_slice":
+  {"uses":
+   ["Loops.chosen_takes",
+    "Loops.head_thing",
+    "Loops.heads_taken",
+    "Loops.mem_perHeads",
+    "Loops.realm_addressed"],
+   "states":
+   "∀ {sp : Loops.Spec} {S W : List Loops.Record} {may : Loops.Record → Loops.Record → Bool}, Loops.EnvOnly may → Loops.Forms W → Loops.SpecSlice sp S W → ∀ (cs : List Loops.Cond) (r : Loops.Record), r ∈ List.filter (Loops.chosen sp.takes cs) (Loops.perHeads (Loops.realm may S)) ↔ r ∈ List.filter (Loops.chosen sp.takes cs) (Loops.perHeads (Loops.realm may W))",
+   "module": "Laws.SpecSlice"},
   "Loops.perHeads_addressed":
   {"uses": ["Loops.perHeads_sub"],
    "states":
@@ -757,6 +851,11 @@
    "states":
    "∀ {p q : List Char} {a a' b e : Loops.Moment}, ¬'/' ∈ p → ¬'/' ∈ q → q ≠ ['.', '.'] → Loops.point? p = some (a, a') → Loops.point? q = some (b, e) → a ≤ b → ∃ sp, Loops.occurredSpanOf (p ++ '/' :: q) = some sp ∧ sp.start = a ∧ sp.stop = some e",
    "module": "Laws.Time"},
+  "Loops.newest_ext":
+  {"uses": ["Loops.Newer.asymm", "Loops.Newer.irrefl"],
+   "states":
+   "∀ {xs ys : List Loops.Record}, List.Pairwise Loops.Newer xs → List.Pairwise Loops.Newer ys → (∀ (r : Loops.Record), r ∈ xs ↔ r ∈ ys) → xs = ys",
+   "module": "Laws.SpecSlice"},
   "Loops.newestFirst_unread":
   {"uses":
    ["Loops.idsOf_ext",
@@ -795,6 +894,14 @@
    "states":
    "∀ {xs : List Loops.Record}, Loops.Addressed xs → ∀ {r : Loops.Record}, r ∈ Loops.wholeHeads xs ↔ ∃ t, t ∈ Loops.thingsOf xs ∧ r ∈ (Loops.stateIn t xs).heads",
    "module": "Laws.Things"},
+  "Loops.mem_stateIn_heads":
+  {"uses":
+   ["Loops.Addressed.filter",
+    "Loops.LatestBy.Inv.heads_mem",
+    "Loops.LatestBy.inv_of"],
+   "states":
+   "∀ {xs : List Loops.Record}, Loops.Addressed xs → ∀ {t : String} {r : Loops.Record}, r ∈ (Loops.stateIn t xs).heads ↔ r ∈ xs ∧ r.isOf t = true ∧ ¬∃ q, q ∈ xs ∧ q.isOf t = true ∧ r.id ∈ q.prev",
+   "module": "Laws.SpecSlice"},
   "Loops.mem_sortBy":
   {"uses": ["Loops.sortBy_go"],
    "states":
@@ -971,6 +1078,18 @@
    "states":
    "∀ (sel : Loops.Record → Bool) (cs : List Loops.Cond) (xs : List Loops.Record) {ts : List (String × List (Loops.RecordId × Loops.Shown))} {u : Nat}, Loops.latestOf sel cs xs = Loops.SlotValue.things ts u → u = (Loops.idsOf (List.filter (fun r => Loops.chosen sel cs r && Loops.payTest cs r == Loops.Tri.unknown) (List.flatMap (fun x => x.snd.heads) (Loops.perThing xs)))).length",
    "module": "Laws.Spec"},
+  "Loops.latestOf_slice":
+  {"uses":
+   ["Loops.canon_ext",
+    "Loops.chosenHeads_slice",
+    "Loops.filterMap_filter_some",
+    "Loops.head_thing",
+    "Loops.idsOf_ext",
+    "Loops.latestOf_eq",
+    "Loops.realm_addressed"],
+   "states":
+   "∀ {sp : Loops.Spec} {S W : List Loops.Record} {may : Loops.Record → Loops.Record → Bool}, Loops.EnvOnly may → Loops.Forms W → Loops.SpecSlice sp S W → ∀ (cs : List Loops.Cond), Loops.latestOf sp.takes cs (Loops.realm may S) = Loops.latestOf sp.takes cs (Loops.realm may W)",
+   "module": "Laws.SpecSlice"},
   "Loops.latestOf_set_decides":
   {"uses": ["Loops.perThing_set_decides"],
    "states":
@@ -985,6 +1104,11 @@
    "states":
    "∀ (sel : Loops.Record → Bool) (cs : List Loops.Cond) {xs : List Loops.Record}, Loops.Addressed xs → ∀ {ts : List (String × List (Loops.RecordId × Loops.Shown))} {u : Nat}, Loops.latestOf sel cs xs = Loops.SlotValue.things ts u → ∀ {t : String} {ps : List (Loops.RecordId × Loops.Shown)}, (t, ps) ∈ ts → ∀ {p : Loops.RecordId × Loops.Shown}, p ∈ ps → ∃ r, Loops.HeadOf xs t r ∧ sel r = true ∧ Loops.Cond.all cs r = Loops.Tri.yes ∧ (r.id, r.shown) = p",
    "module": "Laws.Spec"},
+  "Loops.latestOf_eq":
+  {"uses": [],
+   "states":
+   "∀ (sel : Loops.Record → Bool) (cs : List Loops.Cond) (xs : List Loops.Record), Loops.latestOf sel cs xs = Loops.SlotValue.things (List.filterMap (fun t => match List.filter (fun x => Loops.payTest cs x == Loops.Tri.yes) (List.filter (Loops.chosen sel cs) (Loops.stateIn t xs).heads) with | [] => none | ks => some (t, Loops.shownIds ks)) (Loops.thingsOf xs)) (Loops.idsOf (List.flatMap (fun t => List.filter (fun x => Loops.payTest cs x == Loops.Tri.unknown) (List.filter (Loops.chosen sel cs) (Loops.stateIn t xs).heads)) (Loops.thingsOf xs))).length",
+   "module": "Laws.SpecSlice"},
   "Loops.keysDistinct_obj":
   {"uses": [],
    "states":
@@ -1123,11 +1247,25 @@
   {"uses": [],
    "states": "∀ (n : Loops.RecordId) (d : Nat), d ∈ Loops.idDigest n → d < 256",
    "module": "Laws.Id"},
+  "Loops.heads_taken":
+  {"uses":
+   ["Loops.mem_stateIn_heads",
+    "Loops.realm_addressed",
+    "Loops.realm_taken",
+    "Loops.replaced_taken"],
+   "states":
+   "∀ {sp : Loops.Spec} {S W : List Loops.Record} {may : Loops.Record → Loops.Record → Bool}, Loops.EnvOnly may → Loops.Forms W → Loops.SpecSlice sp S W → ∀ (t : String) {r : Loops.Record}, sp.takes r = true → (r ∈ (Loops.stateIn t (Loops.realm may S)).heads ↔ r ∈ (Loops.stateIn t (Loops.realm may W)).heads)",
+   "module": "Laws.SpecSlice"},
   "Loops.heads_one_thing":
   {"uses": ["Loops.stateIn_heads_thing"],
    "states":
    "∀ {xs : List Loops.Record}, Loops.Addressed xs → ∀ {t u : String} {r : Loops.Record}, r ∈ (Loops.stateIn t xs).heads → r ∈ (Loops.stateIn u xs).heads → t = u",
    "module": "Laws.Things"},
+  "Loops.head_thing":
+  {"uses": ["Loops.isOf_iff", "Loops.mem_canonSet", "Loops.mem_stateIn_heads"],
+   "states":
+   "∀ {xs : List Loops.Record}, Loops.Addressed xs → ∀ {t : String} {r : Loops.Record}, r ∈ (Loops.stateIn t xs).heads → t ∈ Loops.thingsOf xs",
+   "module": "Laws.SpecSlice"},
   "Loops.halves_of_not_mem":
   {"uses": ["Loops.dropWhile_slash", "Loops.takeWhile_slash"],
    "states": "∀ {cs : List Char}, ¬'/' ∈ cs → Loops.halves cs = (cs, none)",
@@ -1176,6 +1314,11 @@
    "states":
    "∀ {cs ds : List String}, (∀ (c : String), c ∈ cs ↔ c ∈ ds) → (∀ (c : String), c ∈ cs → c ∈ Loops.writeCodes) → Loops.firstRefusal cs = Loops.firstRefusal ds",
    "module": "Laws.Write"},
+  "Loops.filterMap_filter_some":
+  {"uses": [],
+   "states":
+   "∀ {α β : Type} (g : α → Option β) (l : List α), List.filterMap g (List.filter (fun a => (g a).isSome) l) = List.filterMap g l",
+   "module": "Laws.SpecSlice"},
   "Loops.fieldArg_ok":
   {"uses": ["Loops.Except.pure_eq_ok", "Loops.refuse_ne_ok"],
    "states":
@@ -1245,6 +1388,19 @@
    "states":
    "∀ {may : Loops.Record → Loops.Record → Bool}, Loops.EnvOnly may → ∀ {t : String} {S W : List Loops.Record}, Loops.Forms W → Loops.Slice t S W → ∀ {r : Loops.Record}, r ∈ Loops.settle W → r.isOf t = true → Loops.entitled may (Loops.settle S) r = Loops.entitled may (Loops.settle W) r",
    "module": "Laws.Slice"},
+  "Loops.entitled_part":
+  {"uses":
+   ["Loops.Forms.sub",
+    "Loops.SameEnvelope.id",
+    "Loops.SameEnvelope.prev",
+    "Loops.SameEnvelope.symm",
+    "Loops.SameEnvelope.trans",
+    "Loops.settle_form",
+    "Loops.settle_has",
+    "Loops.shares_env"],
+   "states":
+   "∀ {may : Loops.Record → Loops.Record → Bool}, Loops.EnvOnly may → ∀ {S W : List Loops.Record}, Loops.Forms W → (∀ (r : Loops.Record), r ∈ S → r ∈ W) → ∀ {r r' : Loops.Record}, Loops.SameEnvelope r r' → (∀ (q : Loops.Record), q ∈ W → q.id ∈ r.prev → q ∈ S) → Loops.entitled may (Loops.settle S) r = Loops.entitled may (Loops.settle W) r'",
+   "module": "Laws.SpecSlice"},
   "Loops.entitled_congr":
   {"uses": [],
    "states":
@@ -1318,6 +1474,18 @@
    "states":
    "∀ (sel : Loops.Record → Bool) (cs : List Loops.Cond) (follow : Bool) (limit : Option Nat) {xs : List Loops.Record}, Loops.Addressed xs → ∀ {hs : List (Loops.RecordId × Loops.Shown)} {u : Nat}, Loops.collectOf sel cs follow limit xs = Loops.SlotValue.heads hs u → u = (Loops.idsOf (List.filter (fun r => Loops.chosen sel cs r && Loops.payTest cs r == Loops.Tri.unknown) (if follow = true then List.flatMap (fun x => x.snd.heads) (Loops.perThing xs) else xs))).length",
    "module": "Laws.Spec"},
+  "Loops.collectOf_slice":
+  {"uses":
+   ["Loops.Addressed.filter",
+    "Loops.chosen_takes",
+    "Loops.newestFirst_eq",
+    "Loops.perHeads_addressed",
+    "Loops.perHeads_slice",
+    "Loops.realm_addressed",
+    "Loops.realm_taken"],
+   "states":
+   "∀ {sp : Loops.Spec} {S W : List Loops.Record} {may : Loops.Record → Loops.Record → Bool}, Loops.EnvOnly may → Loops.Forms W → Loops.SpecSlice sp S W → ∀ (cs : List Loops.Cond) (follow : Bool) (limit : Option Nat), Loops.collectOf sp.takes cs follow limit (Loops.realm may S) = Loops.collectOf sp.takes cs follow limit (Loops.realm may W)",
+   "module": "Laws.SpecSlice"},
   "Loops.collectOf_set_decides":
   {"uses":
    ["Loops.Addressed.filter",
@@ -1339,11 +1507,28 @@
    "states":
    "∀ (sel : Loops.Record → Bool) (cs : List Loops.Cond) (limit : Option Nat) {xs : List Loops.Record}, Loops.Addressed xs → ∀ {hs : List (Loops.RecordId × Loops.Shown)} {u : Nat}, Loops.collectOf sel cs true limit xs = Loops.SlotValue.heads hs u → ∀ {p : Loops.RecordId × Loops.Shown}, p ∈ hs → ∃ t r, Loops.HeadOf xs t r ∧ sel r = true ∧ Loops.Cond.all cs r = Loops.Tri.yes ∧ (r.id, r.shown) = p",
    "module": "Laws.Spec"},
+  "Loops.chosen_takes":
+  {"uses": [],
+   "states":
+   "∀ {sel : Loops.Record → Bool} {cs : List Loops.Cond} {r : Loops.Record}, Loops.chosen sel cs r = true → sel r = true",
+   "module": "Laws.SpecSlice"},
   "Loops.chosen_payTest_yes":
   {"uses": ["Loops.Cond.all_eq_yes"],
    "states":
    "∀ {sel : Loops.Record → Bool} {cs : List Loops.Cond} {r : Loops.Record}, Loops.chosen sel cs r = true ∧ (Loops.payTest cs r == Loops.Tri.yes) = true ↔ sel r = true ∧ Loops.Cond.all cs r = Loops.Tri.yes",
    "module": "Laws.Spec"},
+  "Loops.chosenHeads_slice":
+  {"uses":
+   ["Loops.Addressed.filter",
+    "Loops.LatestBy.Inv.heads_sorted",
+    "Loops.LatestBy.inv_of",
+    "Loops.chosen_takes",
+    "Loops.heads_taken",
+    "Loops.newest_ext",
+    "Loops.realm_addressed"],
+   "states":
+   "∀ {sp : Loops.Spec} {S W : List Loops.Record} {may : Loops.Record → Loops.Record → Bool}, Loops.EnvOnly may → Loops.Forms W → Loops.SpecSlice sp S W → ∀ (cs : List Loops.Cond) (t : String), List.filter (Loops.chosen sp.takes cs) (Loops.stateIn t (Loops.realm may S)).heads = List.filter (Loops.chosen sp.takes cs) (Loops.stateIn t (Loops.realm may W)).heads",
+   "module": "Laws.SpecSlice"},
   "Loops.char_valid":
   {"uses": [],
    "states":
@@ -1359,6 +1544,11 @@
    "states":
    "∀ {kvs kvs' : List (String × Loops.Json)}, kvs.Perm kvs' → (List.map (fun x => x.fst) kvs).Nodup → (Loops.Json.obj kvs).canon = (Loops.Json.obj kvs').canon",
    "module": "Laws.Record"},
+  "Loops.canon_ext":
+  {"uses": ["Loops.lexLt_asymm", "Loops.lexLt_irrefl", "Loops.sortBy_sorted"],
+   "states":
+   "∀ {xs ys l l' : List String}, l.Sublist (Loops.canonSet xs) → l'.Sublist (Loops.canonSet ys) → (∀ (s : String), s ∈ l ↔ s ∈ l') → l = l'",
+   "module": "Laws.SpecSlice"},
   "Loops.canonSet_eq":
   {"uses": ["Loops.mem_sortBy", "Loops.sortBy_ext", "Loops.utf16_inj"],
    "states":
@@ -1472,6 +1662,18 @@
    "states":
    "∀ (may : Loops.Record → Loops.Record → Bool) {xs ys : List Loops.Record}, (∀ (q : Loops.Record), q ∈ xs ↔ q ∈ ys) → ∀ (r : Loops.Record), r ∈ Loops.admit may xs ↔ r ∈ Loops.admit may ys",
    "module": "Laws.Things"},
+  "Loops.admit_part":
+  {"uses":
+   ["Loops.Forms.sub",
+    "Loops.SameEnvelope.prev",
+    "Loops.SameEnvelope.symm",
+    "Loops.SameEnvelope.trans",
+    "Loops.entitled_part",
+    "Loops.mem_admit",
+    "Loops.settle_has"],
+   "states":
+   "∀ {may : Loops.Record → Loops.Record → Bool}, Loops.EnvOnly may → ∀ {S W : List Loops.Record}, Loops.Forms W → (∀ (r : Loops.Record), r ∈ S → r ∈ W) → ∀ {a : Loops.Record}, a ∈ S → (∀ (q : Loops.Record), q ∈ W → q.id ∈ a.prev → q ∈ S) → ((∃ r, r ∈ Loops.realm may S ∧ Loops.SameEnvelope r a) ↔ ∃ r, r ∈ Loops.realm may W ∧ Loops.SameEnvelope r a)",
+   "module": "Laws.SpecSlice"},
   "Loops.admit_no_cross":
   {"uses": ["Loops.mem_admit"],
    "states":
@@ -1760,6 +1962,36 @@
    "states":
    "∀ {text : String} {moment : Loops.Moment} {ok : Loops.instant? text.toList = some moment} {text_1 : String} {moment_1 : Loops.Moment} {ok_1 : Loops.instant? text_1.toList = some moment_1}, { text := text, moment := moment, ok := ok } = { text := text_1, moment := moment_1, ok := ok_1 } → text = text_1 ∧ moment = moment_1",
    "module": "Loops.Occurred"},
+  "Loops.SpecSlice.theirs":
+  {"uses": [],
+   "states":
+   "∀ {sp : Loops.Spec} {S W : List Loops.Record}, Loops.SpecSlice sp S W → ∀ (r : Loops.Record), r ∈ W → sp.takes r = true → ∀ (s : Loops.Record), s ∈ W → r.id ∈ s.prev → ∀ (q : Loops.Record), q ∈ W → q.id ∈ s.prev → q ∈ S",
+   "module": "Laws.SpecSlice"},
+  "Loops.SpecSlice.targets":
+  {"uses": [],
+   "states":
+   "∀ {sp : Loops.Spec} {S W : List Loops.Record}, Loops.SpecSlice sp S W → ∀ (r : Loops.Record), r ∈ W → sp.takes r = true → ∀ (q : Loops.Record), q ∈ W → q.id ∈ r.prev → q ∈ S",
+   "module": "Laws.SpecSlice"},
+  "Loops.SpecSlice.taken":
+  {"uses": [],
+   "states":
+   "∀ {sp : Loops.Spec} {S W : List Loops.Record}, Loops.SpecSlice sp S W → ∀ (r : Loops.Record), r ∈ W → sp.takes r = true → r ∈ S",
+   "module": "Laws.SpecSlice"},
+  "Loops.SpecSlice.successors":
+  {"uses": [],
+   "states":
+   "∀ {sp : Loops.Spec} {S W : List Loops.Record}, Loops.SpecSlice sp S W → ∀ (r : Loops.Record), r ∈ W → sp.takes r = true → ∀ (s : Loops.Record), s ∈ W → r.id ∈ s.prev → s ∈ S",
+   "module": "Laws.SpecSlice"},
+  "Loops.SpecSlice.sub":
+  {"uses": [],
+   "states":
+   "∀ {sp : Loops.Spec} {S W : List Loops.Record}, Loops.SpecSlice sp S W → ∀ (r : Loops.Record), r ∈ S → r ∈ W",
+   "module": "Laws.SpecSlice"},
+  "Loops.SpecSlice.erasers":
+  {"uses": [],
+   "states":
+   "∀ {sp : Loops.Spec} {S W : List Loops.Record}, Loops.SpecSlice sp S W → ∀ (r : Loops.Record), r ∈ W → sp.takes r = true → ∀ (e : Loops.Record), e ∈ W → e.erases.contains r.id = true → e ∈ S",
+   "module": "Laws.SpecSlice"},
   "Loops.Spec.view_state":
   {"uses":
    ["Loops.Distinct.addressed",
@@ -1783,6 +2015,12 @@
    "states":
    "∀ {f : Loops.Record → Loops.Record}, Loops.View f → ∀ (sp : Loops.Spec) (r : Loops.Record), sp.takes (f r) = sp.takes r",
    "module": "Laws.Spec"},
+  "Loops.Spec.takes_env":
+  {"uses":
+   ["Loops.SameEnvelope.about", "Loops.SameEnvelope.kind", "Loops.isOf_env"],
+   "states":
+   "∀ (sp : Loops.Spec) {a b : Loops.Record}, Loops.SameEnvelope a b → sp.takes a = sp.takes b",
+   "module": "Laws.SpecSlice"},
   "Loops.Spec.set_decides":
   {"uses":
    ["Loops.Slot.set_decides", "Loops.admit_distinct", "Loops.admit_same"],
@@ -1794,6 +2032,11 @@
    "states":
    "∀ {f : Loops.Record → Loops.Record}, Loops.View f → ∀ (sp : Loops.Spec) (xs : List Loops.Record), sp.select (List.map f xs) = List.map f (sp.select xs)",
    "module": "Laws.Spec"},
+  "Loops.Spec.run_slice":
+  {"uses": ["Loops.Slot.run_slice"],
+   "states":
+   "∀ {sp : Loops.Spec} {S W : List Loops.Record} {may : Loops.Record → Loops.Record → Bool}, Loops.EnvOnly may → Loops.Forms W → Loops.SpecSlice sp S W → sp.run (Loops.settle S) may = sp.run (Loops.settle W) may",
+   "module": "Laws.SpecSlice"},
   "Loops.Spec.reparse":
   {"uses": ["Loops.Spec.ofJson_fits", "Loops.Spec.ofJson_toJson"],
    "states":
@@ -2023,6 +2266,19 @@
    "states":
    "∀ (s : Loops.Slot) (sel : Loops.Record → Bool) {xs ys : List Loops.Record}, Loops.Distinct xs → Loops.Distinct ys → (∀ (r : Loops.Record), r ∈ xs ↔ r ∈ ys) → s.run sel xs = s.run sel ys",
    "module": "Laws.Spec"},
+  "Loops.Slot.run_slice":
+  {"uses":
+   ["Loops.Acc.select_filter",
+    "Loops.Acc.select_set_decides",
+    "Loops.Distinct.filter",
+    "Loops.admit_distinct",
+    "Loops.collectOf_slice",
+    "Loops.latestOf_slice",
+    "Loops.realm_taken",
+    "Loops.settle_distinct"],
+   "states":
+   "∀ {sp : Loops.Spec} {S W : List Loops.Record} {may : Loops.Record → Loops.Record → Bool}, Loops.EnvOnly may → Loops.Forms W → Loops.SpecSlice sp S W → ∀ (s : Loops.Slot), s.run sp.takes (Loops.realm may S) = s.run sp.takes (Loops.realm may W)",
+   "module": "Laws.SpecSlice"},
   "Loops.Slot.mk.sizeOf_spec":
   {"uses": [],
    "states":
@@ -3150,6 +3406,11 @@
    "states":
    "∀ {of : Option String} {prev : List String} {of_1 : Option String} {prev_1 : List String}, { of := of, prev := prev } = { of := of_1, prev := prev_1 } → of = of_1 ∧ prev = prev_1",
    "module": "Loops.Batch"},
+  "Loops.Forms.sub":
+  {"uses": [],
+   "states":
+   "∀ {S W : List Loops.Record}, Loops.Forms W → (∀ (r : Loops.Record), r ∈ S → r ∈ W) → Loops.Forms S",
+   "module": "Laws.SpecSlice"},
   "Loops.FoldType.sum.sizeOf_spec":
   {"uses": [],
    "states":
@@ -3681,6 +3942,11 @@
    "states":
    "∀ {σ : Type} (f : Loops.Acc σ) (ev : Loops.Record → Loops.Tri) {xs : List Loops.Record}, (∀ (r : Loops.Record), r ∈ xs → ev r ≠ Loops.Tri.unknown) → (∀ (r : Loops.Record), r ∈ xs → f.readable r = true) → f.select ev xs = { value := f.fold (List.filter (fun x => ev x == Loops.Tri.yes) xs), unread := 0 }",
    "module": "Laws.Families"},
+  "Loops.Acc.select_filter":
+  {"uses": [],
+   "states":
+   "∀ {σ : Type} (f : Loops.Acc σ) (ev : Loops.Record → Loops.Tri) (p : Loops.Record → Bool), (∀ (r : Loops.Record), p r = false → ev r = Loops.Tri.no) → ∀ (xs : List Loops.Record), f.select ev (List.filter p xs) = f.select ev xs",
+   "module": "Laws.SpecSlice"},
   "Loops.Acc.perm":
   {"uses": ["Loops.Acc.comm"],
    "states":
