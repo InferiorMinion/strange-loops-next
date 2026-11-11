@@ -64,18 +64,48 @@ def envelopeKeysProblem (kvs : List (String × Json)) : Option String :=
   if kvs.all (fun (k, _) => ["kind", "observer", "emitted", "occurred", "about", "of", "prev", "under", "erases"].contains k)
   then none else some "envelope-field-unknown"
 
-/-- Check every raw envelope before decoding any envelope value.
-Malformed shells stay for the decoder; an unknown key in any object wins. -/
+/-- Check every raw envelope's keys before decoding any envelope value.
+An unknown key in any object wins, whatever the other envelopes are. -/
 def envelopesKeysProblem (raw : List Json) : Option String :=
   envelopeKeysProblem (raw.flatMap fun j => match j with
     | .obj kvs => kvs
     | _ => [])
 
-/-- Inspect only each draft's envelope keys, not its label, salt or values. -/
-def draftsKeysProblem (raw : List Json) : Option String :=
-  envelopesKeysProblem (raw.flatMap fun j => match j with
-    | .obj kvs => kvs.filterMap fun (k, v) => if k == "env" then some v else none
-    | _ => [])
+/-- The codes of raw shape, in the order they are checked. -/
+def shapeCodes : List String := ["envelope-field-unknown", "envelope-not-object"]
+
+def Json.isObj : Json → Bool
+  | .obj _ => true
+  | _ => false
+
+/-- Raw shape across every envelope: an unknown key in any object first, then
+any envelope that is not an object (`envelope-not-object`). Both come before
+any envelope value, label or salt is decoded. -/
+def envelopesShapeProblem (raw : List Json) : Option String :=
+  match envelopesKeysProblem raw with
+  | some why => some why
+  | none => if raw.all Json.isObj then none else some "envelope-not-object"
+
+/-- Each draft's envelopes, every occurrence of its `env` member. A draft object
+without one has an envelope that is not an object, which `null` stands for here.
+A draft that is not an object has none: it is malformed input, not a shape refusal. -/
+def draftEnvs (raw : List Json) : List Json :=
+  raw.flatMap fun j => match j with
+    | .obj kvs => match kvs.filterMap fun (k, v) => if k == "env" then some v else none with
+      | [] => [.null]
+      | envs => envs
+    | _ => []
+
+/-- Inspect only each draft's envelope shape, not its label, salt or values. -/
+def draftsShapeProblem (raw : List Json) : Option String :=
+  envelopesShapeProblem (draftEnvs raw)
+
+/-- What the reader reads for a field it can't read as its JSON type: a
+required field left out, a field holding the wrong JSON type, or a member of a
+set that is not text. It is empty text, which the field's own check refuses
+(`unreadable_refused`), so the refusal is the field's own code, in the field's
+place in the order. It never reaches an id: `write` refuses it first. -/
+def unreadable : String := ""
 
 /-- Why a typed envelope is refused, if it is. -/
 def Env.problem (e : Env) : Option String :=

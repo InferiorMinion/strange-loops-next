@@ -100,6 +100,43 @@ def canonicalTextChecks : IO Unit := do
     ensure (match Read.envs "envs" (.arr es) with
       | .error why => why == "envelope-field-unknown" | _ => false)
       "R6 all-envelope preflight must precede value decoding"
+  -- Issue #1: an envelope that is not an object refuses after unknown keys and
+  -- before any value; a field left out or of the wrong JSON type refuses with
+  -- the field's own code.
+  ensure (shapeCodes == ["envelope-field-unknown", "envelope-not-object"]) "shape codes changed order"
+  ensure (shapeCodes.all (!writeCodes.contains ·)) "raw shape leaked into typed writer codes"
+  let shapeIs {α : Type} (code : String) (r : Except String α) : Bool := match r with
+    | .error why => why == code
+    | _ => false
+  for raw in [Json.int 7, .null, .str "note", .arr [goodEnv], .bool false] do
+    ensure (shapeIs "envelope-not-object" (Read.env "env" raw)) "a nonobject envelope is not refused by name"
+    for es in [[goodEnv, raw], [raw, goodEnv], [.obj [("kind", .int 7)], raw]] do
+      ensure (shapeIs "envelope-not-object" (Read.envs "envs" (.arr es)))
+        "a nonobject variant does not precede every value"
+    for es in [[unknown, raw], [raw, unknown]] do
+      ensure (shapeIs "envelope-field-unknown" (Read.envs "envs" (.arr es)))
+        "an unknown key does not precede a nonobject envelope"
+    for ds in [[.obj [("env", raw)]], [.obj [("env", goodEnv)], .obj [("env", raw)]]] do
+      ensure (shapeIs "envelope-not-object" (Gen.Read.drafts "drafts" (.arr ds)))
+        "a draft's nonobject envelope is not a shape refusal"
+  ensure (shapeIs "envelope-not-object" (Gen.Read.drafts "drafts" (.arr [.obj [("salt", .int 7)]])))
+    "a draft without an envelope is not a shape refusal"
+  ensure (shapeIs "envelope-field-unknown" (Gen.Read.drafts "drafts" (.arr [.obj [], .obj [("env", unknown)]])))
+    "an unknown key does not precede a draft without an envelope"
+  let set (k : String) (v : Option Json) : Json := match goodEnv with
+    | .obj kvs => .obj ((kvs.filter (·.1 != k)) ++ (v.map (k, ·)).toList)
+    | other => other
+  let fields := [("kind", "kind-empty", true), ("observer", "observer-not-typed", true),
+    ("emitted", "emitted-not-rfc3339", true), ("occurred", "occurred-not-span", false),
+    ("about", "about-not-typed", false), ("of", "of-not-typed", false), ("prev", "prev-not-record-id", false),
+    ("under", "under-not-record-id", false), ("erases", "erases-not-record-id", false)]
+  for (k, code, required) in fields do
+    let wrong := [Json.int 7, .null, .bool true, .obj [], .arr [.int 7]] ++
+      (if ["about", "prev", "erases"].contains k then [.str "r:x", .arr [.str "topic:a", .null]] else [.arr []])
+    for v in (if required then [none] else []) ++ wrong.map some do
+      ensure (match Read.env "env" (set k v) with
+        | .ok e => e.problem == some code
+        | .error _ => false) s!"{k} left out or mistyped is not refused with {code}"
   IO.println "R1/R4/R6 canonical text runtime checks pass"
 
 /-- The answer `Records.recordAnswer` gives a record input written as text. -/

@@ -76,6 +76,11 @@
    "states":
    "∀ {c d : Char} {r s : List Nat}, Loops.utf16Char c ++ r = Loops.utf16Char d ++ s → c = d ∧ r = s",
    "module": "Laws.Record"},
+  "Loops.unreadable_refused":
+  {"uses": [],
+   "states":
+   "Loops.unreadable.isEmpty = true ∧ Loops.typedRef Loops.unreadable = false ∧ Loops.validEmitted Loops.unreadable = false ∧ Loops.occurredSpan? Loops.unreadable = none ∧ Loops.recordId Loops.unreadable = false",
+   "module": "Laws.Write"},
   "Loops.unbase32_eq_some_iff":
   {"uses": ["Loops.unbase32_base32"],
    "states":
@@ -149,7 +154,7 @@
   "Loops.substEnv_congr":
   {"uses": ["Loops.substOpt_congr", "Loops.subst_congr"],
    "states":
-   "∀ {σ τ : String → Option String} {e : Loops.Env}, (∀ (s : String), s ∈ e.about ++ e.of.toList ++ e.prev → Loops.isLabel s = true → σ s = τ s) → Loops.substEnv σ e = Loops.substEnv τ e",
+   "∀ {σ τ : String → Option String} {e : Loops.Env}, (∀ (s : String), s ∈ e.about ++ e.of.toList ++ e.prev ++ e.under.toList → Loops.isLabel s = true → σ s = τ s) → Loops.substEnv σ e = Loops.substEnv τ e",
    "module": "Laws.Batch"},
   "Loops.subst.eq_def":
   {"uses": [],
@@ -1209,6 +1214,11 @@
    "states":
    "∀ {α β : Type} {f : α → β} {l : List α}, (List.map f l).Nodup → ∀ (a : α), a ∈ l → ∀ (b : α), b ∈ l → f a = f b → a = b",
    "module": "Laws.Record"},
+  "Loops.envelopesShapeProblem_perm":
+  {"uses": ["Loops.envelopeKeysProblem_set"],
+   "states":
+   "∀ {xs ys : List Loops.Json}, xs.Perm ys → Loops.envelopesShapeProblem xs = Loops.envelopesShapeProblem ys",
+   "module": "Laws.Write"},
   "Loops.envelopeKeysProblem_set":
   {"uses": [],
    "states":
@@ -1255,6 +1265,11 @@
    "states":
    "∀ {cs : List Char}, ¬'/' ∈ cs → List.dropWhile (fun x => x != '/') cs = []",
    "module": "Laws.Time"},
+  "Loops.draftsShapeProblem_perm":
+  {"uses": ["Loops.envelopesShapeProblem_perm"],
+   "states":
+   "∀ {xs ys : List Loops.Json}, xs.Perm ys → Loops.draftsShapeProblem xs = Loops.draftsShapeProblem ys",
+   "module": "Laws.Write"},
   "Loops.distinct_dedup":
   {"uses": ["Loops.dedup.eq_def", "Loops.mem_dedup_sub"],
    "states": "∀ (xs : List Loops.Record), Loops.Distinct (Loops.dedup xs)",

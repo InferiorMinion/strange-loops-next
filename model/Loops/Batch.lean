@@ -4,9 +4,12 @@ import Loops.Stored
 # A batch with labels
 
 `loops emit -` reads one changeset. A record in it may name another record of
-the same batch by a label, `@name`, in `about`, `of` or `prev`, before either
-has an id. A record's id covers its envelope, so a label must be replaced by the id
-it stands for before the record that uses it can be named.
+the same batch by a label, `@name`, in `about`, `of`, `prev` or `under`, before
+either has an id; `erases` takes no label. A record's id covers its envelope,
+so a label must be replaced by the id it stands for before the record that
+uses it can be named, and a label in `under` takes part in cycles as the
+others do. Writing checks no `under` target beyond its shape: whether it
+names a grant is standing's question.
 
 Each record is written through `write`, as a single record would be, so a
 batch can't store what writing one record would refuse. Writing also checks
@@ -53,10 +56,15 @@ def substOpt (σ : String → Option String) : Option String → Option (Option 
   | some s => some <$> if isLabel s then σ s else some s
 
 def substEnv (σ : String → Option String) (e : Env) : Option Env := do
-  pure { e with about := ← subst σ e.about, of := ← substOpt σ e.of, prev := ← subst σ e.prev }
+  let about ← subst σ e.about
+  let of ← substOpt σ e.of
+  let prev ← subst σ e.prev
+  let under ← substOpt σ e.under
+  pure { e with about, of, prev, under }
 
 /-- The labels a draft uses. -/
-def Draft.refs (d : Draft) : List String := (d.env.about ++ d.env.of.toList ++ d.env.prev).filter isLabel
+def Draft.refs (d : Draft) : List String :=
+  (d.env.about ++ d.env.of.toList ++ d.env.prev ++ d.env.under.toList).filter isLabel
 
 def Draft.commit (H : Hash) (d : Draft) : String := commitOf H d.salt d.payload
 

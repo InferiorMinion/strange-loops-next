@@ -8,6 +8,11 @@ import Laws.Record
   (`writeProblem_none`, in `Loops.Stored`), and what it returns carries the
   proof (`Written`). A batch writes through `write`, so every record it
   returns carries the same proof.
+* **Shape.** Raw shape across envelopes, an unknown key and then an envelope
+  that is not an object, depends only on which envelopes there are
+  (`envelopesShapeProblem_perm`, `draftsShapeProblem_perm`). A field the
+  reader can't read is refused by every field's check (`unreadable_refused`),
+  so a missing or mistyped field gets its own code.
 * **Only a root leaves `of` out.** An envelope `write` accepts with `prev`
   states `of` (`Env.problem_of`).
 * **Closed codes.** Every refusal `writeProblem` gives is in `writeCodes`, so
@@ -43,6 +48,33 @@ theorem envelopeKeysProblem_set {xs ys : List (String × Json)}
       subst k'
       exact hy (k, v') hm'
   simp only [envelopeKeysProblem, hall]
+
+/-- Raw shape across envelopes (`envelope-field-unknown`, then
+`envelope-not-object`) depends only on which envelopes there are, not on their order. -/
+theorem envelopesShapeProblem_perm {xs ys : List Json} (h : xs.Perm ys) :
+    envelopesShapeProblem xs = envelopesShapeProblem ys := by
+  have hk : envelopesKeysProblem xs = envelopesKeysProblem ys := by
+    unfold envelopesKeysProblem
+    apply envelopeKeysProblem_set
+    intro k
+    exact ((h.flatMap_right _).map Prod.fst).mem_iff
+  have ho : xs.all Json.isObj = ys.all Json.isObj := by
+    apply Bool.eq_iff_iff.mpr
+    simp only [List.all_eq_true]
+    exact ⟨fun hx j hj => hx j (h.mem_iff.2 hj), fun hy j hj => hy j (h.mem_iff.1 hj)⟩
+  simp only [envelopesShapeProblem, hk, ho]
+
+/-- A batch's raw shape does not depend on the order of its drafts. -/
+theorem draftsShapeProblem_perm {xs ys : List Json} (h : xs.Perm ys) :
+    draftsShapeProblem xs = draftsShapeProblem ys :=
+  envelopesShapeProblem_perm (h.flatMap_right _)
+
+/-- What the reader reads for a field it can't read is refused by every field's
+own check, so a missing or mistyped field gets that field's code. -/
+theorem unreadable_refused :
+    unreadable.isEmpty = true ∧ typedRef unreadable = false ∧ validEmitted unreadable = false ∧
+      occurredSpan? unreadable = none ∧ recordId unreadable = false := by
+  refine ⟨rfl, ?_, ?_, ?_, ?_⟩ <;> decide
 
 /-- Only a root leaves `of` out: an envelope `write` accepts with `prev` states `of`. -/
 theorem Env.problem_of {e : Env} (h : e.problem = none) (hp : e.prev ≠ []) : e.of.isSome = true := by
