@@ -2,7 +2,7 @@
 use crate::{
     envelope::typed_ref,
     families::{self, Result as FoldResult, Tri},
-    fold::LatestBy,
+    fold::{LatestBy, whole_heads},
     json::Json,
     number::{Int, Nat},
     record::{Digest, Record, Shown},
@@ -15,13 +15,31 @@ use crate::{
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum FoldType {
     /// Counts every selected record with a known test result.
-    Count,
+    Count {
+        /// Counts the whole-reader heads instead of all records.
+        follow: bool,
+    },
     /// Adds readable integers from the named payload field.
-    Sum(String),
+    Sum {
+        /// The payload field read.
+        field: String,
+        /// Adds over the whole-reader heads instead of all records.
+        follow: bool,
+    },
     /// Finds the smallest readable integer in the named payload field.
-    Min(String),
+    Min {
+        /// The payload field read.
+        field: String,
+        /// Reads the whole-reader heads instead of all records.
+        follow: bool,
+    },
     /// Finds the largest readable integer in the named payload field.
-    Max(String),
+    Max {
+        /// The payload field read.
+        field: String,
+        /// Reads the whole-reader heads instead of all records.
+        follow: bool,
+    },
     /// Reports selected current heads for each thing.
     LatestBy,
     /// Reports selected records newest first.
@@ -193,6 +211,17 @@ pub fn collect_of(
     }
 }
 
+/// Lean: `Loops.accPool`, model/Loops/Spec.lean.
+/// What an accumulating slot folds: every record, or following `prev` the
+/// whole-reader heads, each id once.
+#[expect(
+    clippy::fn_params_excessive_bools,
+    reason = "Lean accPool takes the explicit follow flag"
+)]
+pub fn acc_pool(follow: bool, xs: &[Record]) -> Vec<Record> {
+    if follow { whole_heads(xs) } else { xs.to_vec() }
+}
+
 impl Slot {
     /// Lean: `Loops.Slot.run`, model/Loops/Spec.lean.
     /// Runs one slot without admission, settlement, or duplicate-id removal.
@@ -200,10 +229,18 @@ impl Slot {
         let cs = self.tests.conds();
         let ev = |r: &Record| if sel(r) { Cond::all(&cs, r) } else { Tri::No };
         match &self.fold_type {
-            FoldType::Count => SlotValue::Nat(families::count_acc().select(ev, xs)),
-            FoldType::Sum(f) => SlotValue::Int(families::sum_on(f).select(ev, xs)),
-            FoldType::Min(f) => SlotValue::Opt(families::min_on(f).select(ev, xs)),
-            FoldType::Max(f) => SlotValue::Opt(families::max_on(f).select(ev, xs)),
+            FoldType::Count { follow } => {
+                SlotValue::Nat(families::count_acc().select(ev, &acc_pool(*follow, xs)))
+            }
+            FoldType::Sum { field, follow } => {
+                SlotValue::Int(families::sum_on(field).select(ev, &acc_pool(*follow, xs)))
+            }
+            FoldType::Min { field, follow } => {
+                SlotValue::Opt(families::min_on(field).select(ev, &acc_pool(*follow, xs)))
+            }
+            FoldType::Max { field, follow } => {
+                SlotValue::Opt(families::max_on(field).select(ev, &acc_pool(*follow, xs)))
+            }
             FoldType::LatestBy => latest_of(sel, &cs, xs),
             FoldType::Collect { follow, limit } => {
                 collect_of(sel, &cs, *follow, limit.as_ref(), xs)
@@ -214,20 +251,35 @@ impl Slot {
     /// Lean: `Loops.Slot.toJson`, model/Loops/Spec.lean.
     /// Encodes the fold before follow, limit, and optional where members.
     pub fn to_json(&self) -> (String, Json) {
+        let follow_json = |follow: bool| {
+            if follow {
+                vec![("follow".into(), Json::Str("prev".into()))]
+            } else {
+                Vec::new()
+            }
+        };
+        let with_follow = |kv: (String, Json), follow: bool| {
+            let mut out = vec![kv];
+            out.extend(follow_json(follow));
+            out
+        };
         let mut kvs = match &self.fold_type {
-            FoldType::Count => vec![("count".into(), Json::Bool(true))],
-            FoldType::Sum(f) => vec![("sum".into(), Json::Str(f.clone()))],
-            FoldType::Min(f) => vec![("min".into(), Json::Str(f.clone()))],
-            FoldType::Max(f) => vec![("max".into(), Json::Str(f.clone()))],
+            FoldType::Count { follow } => with_follow(("count".into(), Json::Bool(true)), *follow),
+            FoldType::Sum { field, follow } => {
+                with_follow(("sum".into(), Json::Str(field.clone())), *follow)
+            }
+            FoldType::Min { field, follow } => {
+                with_follow(("min".into(), Json::Str(field.clone())), *follow)
+            }
+            FoldType::Max { field, follow } => {
+                with_follow(("max".into(), Json::Str(field.clone())), *follow)
+            }
             FoldType::LatestBy => vec![
                 ("latest-by".into(), Json::Str("of".into())),
                 ("follow".into(), Json::Str("prev".into())),
             ],
             FoldType::Collect { follow, limit } => {
-                let mut out = vec![("collect".into(), Json::Bool(true))];
-                if *follow {
-                    out.push(("follow".into(), Json::Str("prev".into())));
-                }
+                let mut out = with_follow(("collect".into(), Json::Bool(true)), *follow);
                 if let Some(k) = limit {
                     out.push(("limit".into(), Json::Int(Int(k.0.clone().into()))));
                 }
@@ -480,10 +532,10 @@ pub fn slot_type<'a>(path: &str, kvs: &'a [(String, Json)]) -> Result<&'a (Strin
     }
 }
 /// Lean: `Loops.slotFollow`, model/Loops/Spec.lean.
-/// Parses the explicit prev link for head folds.
+/// Parses the explicit prev link, which any fold type may carry and latest-by must.
 ///
 /// # Errors
-/// Returns follow-missing on latest-by, or follow-invalid for an invalid link or fold.
+/// Returns follow-missing on latest-by, or follow-invalid for any value but `"prev"`.
 pub fn slot_follow(path: &str, t: &str, j: Option<&Json>) -> Result<bool, Refusal> {
     match j {
         None if t == "latest-by" => Err(refuse(
@@ -491,7 +543,7 @@ pub fn slot_follow(path: &str, t: &str, j: Option<&Json>) -> Result<bool, Refusa
             &format!("{path}.follow"),
         )),
         None => Ok(false),
-        Some(Json::Str(s)) if s == "prev" && (t == "collect" || t == "latest-by") => Ok(true),
+        Some(Json::Str(s)) if s == "prev" => Ok(true),
         Some(_) => Err(refuse(
             RefusalCode::FollowInvalid,
             &format!("{path}.follow"),
@@ -530,10 +582,10 @@ pub fn fold_type(
 ) -> Result<FoldType, Refusal> {
     let p = format!("{path}.{t}");
     match (t, arg) {
-        ("count", Json::Bool(true)) => Ok(FoldType::Count),
-        ("sum", f) => field_arg(&p, f).map(FoldType::Sum),
-        ("min", f) => field_arg(&p, f).map(FoldType::Min),
-        ("max", f) => field_arg(&p, f).map(FoldType::Max),
+        ("count", Json::Bool(true)) => Ok(FoldType::Count { follow }),
+        ("sum", f) => field_arg(&p, f).map(|field| FoldType::Sum { field, follow }),
+        ("min", f) => field_arg(&p, f).map(|field| FoldType::Min { field, follow }),
+        ("max", f) => field_arg(&p, f).map(|field| FoldType::Max { field, follow }),
         ("latest-by", Json::Str(s)) if s == "of" => Ok(FoldType::LatestBy),
         ("collect", Json::Bool(true)) => Ok(FoldType::Collect { follow, limit }),
         _ => Err(refuse(RefusalCode::FoldArgument, &p)),
