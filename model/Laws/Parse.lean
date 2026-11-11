@@ -307,7 +307,7 @@ def Tests.Fits (ts : Tests) : Prop :=
     ∀ t ∈ ts, t.1.Fits ∧ t.2 ≠ [] ∧ (t.2.map Op.key).Nodup ∧ ∀ op ∈ t.2, op.Fits t.1.type
 
 def FoldType.Fits : FoldType → Prop
-  | .sum f | .min f | .max f => f.isEmpty = false
+  | .sum f _ | .min f _ | .max f _ => f.isEmpty = false
   | .collect _ (some k) => 0 < k
   | _ => True
 
@@ -405,12 +405,16 @@ theorem Slot.toJson_distinct {s : Slot} (h : s.Fits) : s.toJson.2.keysDistinct =
   · have hw := Tests.toJson_distinct (ht.resolve_left (by simpa using he))
     cases type with
     | collect follow limit =>
-      cases follow <;> cases limit <;> simp [Slot.toJson, he, Json.keysDistinct_obj, hw]
-    | _ => simp [Slot.toJson, he, Json.keysDistinct_obj, hw]
+      cases follow <;> cases limit <;> simp [Slot.toJson, he, Json.keysDistinct_obj, hw, followJson]
+    | count follow | sum _ follow | min _ follow | max _ follow =>
+      cases follow <;> simp [Slot.toJson, he, Json.keysDistinct_obj, hw, followJson]
+    | latestBy => simp [Slot.toJson, he, Json.keysDistinct_obj, hw]
   · cases type with
     | collect follow limit =>
-      cases follow <;> cases limit <;> simp [Slot.toJson, he, Json.keysDistinct_obj]
-    | _ => simp [Slot.toJson, he, Json.keysDistinct_obj]
+      cases follow <;> cases limit <;> simp [Slot.toJson, he, Json.keysDistinct_obj, followJson]
+    | count follow | sum _ follow | min _ follow | max _ follow =>
+      cases follow <;> simp [Slot.toJson, he, Json.keysDistinct_obj, followJson]
+    | latestBy => simp [Slot.toJson, he, Json.keysDistinct_obj]
 
 theorem parseSlot_toJson {s : Slot} (h : s.Fits) : parseSlot s.name s.toJson.2 = .ok s := by
   obtain ⟨hn, hty, ht⟩ := h
@@ -422,19 +426,25 @@ theorem parseSlot_toJson {s : Slot} (h : s.Fits) : parseSlot s.name s.toJson.2 =
     cases type with
     | collect follow limit =>
       cases follow <;> cases limit <;>
-        simp_all [Slot.toJson, parseSlot, slotType, slotFollow, slotLimit, foldType, slotTests, checkKeys, slotKeys, foldTypes, List.lookup, bind, Except.bind, pure, Except.pure, FoldType.Fits]
-    | _ =>
+        simp_all [Slot.toJson, parseSlot, slotType, slotFollow, slotLimit, foldType, slotTests, checkKeys, slotKeys, foldTypes, List.lookup, bind, Except.bind, pure, Except.pure, FoldType.Fits, followJson]
+    | count follow | sum _ follow | min _ follow | max _ follow =>
+      cases follow <;>
       simp_all [Slot.toJson, parseSlot, slotType, slotFollow, slotLimit, foldType, slotTests, checkKeys, slotKeys, foldTypes, List.lookup, bind, Except.bind, pure,
-        Except.pure, FoldType.Fits, fieldArg, Functor.map, Except.map]
+        Except.pure, FoldType.Fits, fieldArg, Functor.map, Except.map, followJson]
+    | latestBy =>
+      simp_all [Slot.toJson, parseSlot, slotType, slotFollow, slotLimit, foldType, slotTests, checkKeys, slotKeys, foldTypes, List.lookup, bind, Except.bind, pure, Except.pure, FoldType.Fits]
   · have h0 : tests = [] := by simpa using he
     subst h0
     cases type with
     | collect follow limit =>
       cases follow <;> cases limit <;>
-        simp_all [Slot.toJson, parseSlot, slotType, slotFollow, slotLimit, foldType, slotTests, checkKeys, slotKeys, foldTypes, List.lookup, bind, Except.bind, pure, Except.pure, FoldType.Fits]
-    | _ =>
+        simp_all [Slot.toJson, parseSlot, slotType, slotFollow, slotLimit, foldType, slotTests, checkKeys, slotKeys, foldTypes, List.lookup, bind, Except.bind, pure, Except.pure, FoldType.Fits, followJson]
+    | count follow | sum _ follow | min _ follow | max _ follow =>
+      cases follow <;>
       simp_all [Slot.toJson, parseSlot, slotType, slotFollow, slotLimit, foldType, slotTests, checkKeys, slotKeys, foldTypes, List.lookup, bind, Except.bind, pure,
-        Except.pure, FoldType.Fits, fieldArg, Functor.map, Except.map]
+        Except.pure, FoldType.Fits, fieldArg, Functor.map, Except.map, followJson]
+    | latestBy =>
+      simp_all [Slot.toJson, parseSlot, slotType, slotFollow, slotLimit, foldType, slotTests, checkKeys, slotKeys, foldTypes, List.lookup, bind, Except.bind, pure, Except.pure, FoldType.Fits]
 
 
 theorem Source.toJson_distinct (s : Source) : s.toJson.keysDistinct = true := by

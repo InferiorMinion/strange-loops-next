@@ -42,6 +42,24 @@
    "states":
    "∀ {xs : List Loops.Record}, Loops.Addressed xs → List.Pairwise Loops.Newer (Loops.wholeHeads xs)",
    "module": "Laws.Things"},
+  "Loops.wholeHeads_set_decides":
+  {"uses":
+   ["Loops.OverHeads.set_decides",
+    "Loops.thingsOf_same",
+    "Loops.wholeHeads_overHeads"],
+   "states":
+   "∀ {xs ys : List Loops.Record}, Loops.Addressed xs → Loops.Addressed ys → (∀ (r : Loops.Record), r ∈ xs ↔ r ∈ ys) → Loops.wholeHeads xs = Loops.wholeHeads ys",
+   "module": "Laws.Spec"},
+  "Loops.wholeHeads_overHeads":
+  {"uses": [],
+   "states":
+   "∀ (xs : List Loops.Record), Loops.wholeHeads xs = Loops.orderHeads (List.flatMap (fun t => Loops.OverHeads.fold Loops.LatestBy.heads (List.filter (fun x => x.isOf t) xs)) (Loops.thingsOf xs))",
+   "module": "Laws.Spec"},
+  "Loops.wholeHeads_of_states":
+  {"uses": [],
+   "states":
+   "∀ {xs ys : List Loops.Record}, Loops.perThing xs = Loops.perThing ys → Loops.wholeHeads xs = Loops.wholeHeads ys",
+   "module": "Laws.Spec"},
   "Loops.wholeHeads_distinct":
   {"uses":
    ["Loops.Newer.irrefl",
@@ -376,6 +394,11 @@
   {"uses": ["Loops.idsOf_sorted", "Loops.pick_id"],
    "states": "∀ (xs : List Loops.Record), Loops.Distinct (Loops.settle xs)",
    "module": "Laws.Things"},
+  "Loops.select_as_latest":
+  {"uses": ["Loops.Cond.all_envelope_ne", "Loops.Cond.all_split"],
+   "states":
+   "∀ (sel : Loops.Record → Bool) (cs : List Loops.Cond) (r : Loops.Record), ((if sel r = true then Loops.Cond.all cs r else Loops.Tri.no) = Loops.Tri.yes ↔ Loops.chosen sel cs r = true ∧ Loops.payTest cs r = Loops.Tri.yes) ∧ ((if sel r = true then Loops.Cond.all cs r else Loops.Tri.no) = Loops.Tri.unknown ↔ Loops.chosen sel cs r = true ∧ Loops.payTest cs r = Loops.Tri.unknown)",
+   "module": "Laws.Spec"},
   "Loops.roots_iff":
   {"uses": [],
    "states":
@@ -897,6 +920,11 @@
    "states":
    "∀ {may : Loops.Record → Loops.Record → Bool} {xs : List Loops.Record} {r : Loops.Record}, r ∈ Loops.admit may xs ↔ r ∈ xs ∧ Loops.entitled may xs r = true",
    "module": "Laws.Things"},
+  "Loops.mem_accPool_follow":
+  {"uses": ["Loops.mem_wholeHeads", "Loops.stateIn_heads"],
+   "states":
+   "∀ {xs : List Loops.Record}, Loops.Addressed xs → ∀ {r : Loops.Record}, r ∈ Loops.accPool true xs → ∃ t, Loops.HeadOf xs t r",
+   "module": "Laws.Spec"},
   "Loops.mapM_ok_ne_nil":
   {"uses": ["Loops.mapM_ok_map"],
    "states":
@@ -1487,6 +1515,11 @@
    "states":
    "∀ (may : Loops.Record → Loops.Record → Bool) {xs : List Loops.Record} {r : Loops.Record}, (∀ (q : Loops.Record), q ∈ xs → ¬r.id ∈ q.prev) → Loops.admit may (xs ++ [r]) = Loops.admit may xs ++ if Loops.entitled may (xs ++ [r]) r = true then [r] else []",
    "module": "Laws.Things"},
+  "Loops.accPool_follow_heads":
+  {"uses": ["Loops.mem_wholeHeads", "Loops.wholeHeads_distinct"],
+   "states":
+   "∀ {xs : List Loops.Record}, Loops.Addressed xs → Loops.Distinct (Loops.accPool true xs) ∧ ∀ (t : String), t ∈ Loops.thingsOf xs → ∀ (r : Loops.Record), r ∈ (Loops.stateIn t xs).heads → r ∈ Loops.accPool true xs",
+   "module": "Laws.Spec"},
   "Loops.Written.ok":
   {"uses": [],
    "states":
@@ -1690,6 +1723,10 @@
   {"uses": [],
    "states":
    "∀ {a b : Loops.Tri}, a.and b = Loops.Tri.yes ↔ a = Loops.Tri.yes ∧ b = Loops.Tri.yes",
+   "module": "Laws.Spec"},
+  "Loops.Tri.and_assoc":
+  {"uses": [],
+   "states": "∀ (a b c : Loops.Tri), (a.and b).and c = a.and (b.and c)",
    "module": "Laws.Spec"},
   "Loops.Tests.toJson_distinct":
   {"uses": ["Loops.Json.keysDistinct_obj", "Loops.Op.toJson_distinct"],
@@ -2016,7 +2053,8 @@
    "module": "Laws.Parse"},
   "Loops.Slot.set_decides":
   {"uses":
-   ["Loops.Acc.select_set_decides",
+   ["Loops.Acc.followed_set_decides",
+    "Loops.Acc.select_set_decides",
     "Loops.Distinct.addressed",
     "Loops.collectOf_set_decides",
     "Loops.latestOf_set_decides"],
@@ -3153,47 +3191,47 @@
   "Loops.FoldType.sum.sizeOf_spec":
   {"uses": [],
    "states":
-   "∀ (field : String), sizeOf (Loops.FoldType.sum field) = 1 + sizeOf field",
+   "∀ (field : String) (follow : Bool), sizeOf (Loops.FoldType.sum field follow) = 1 + sizeOf field + sizeOf follow",
    "module": "Loops.Spec"},
   "Loops.FoldType.sum.injEq":
   {"uses": ["Loops.FoldType.sum.inj"],
    "states":
-   "∀ (field field_1 : String), (Loops.FoldType.sum field = Loops.FoldType.sum field_1) = (field = field_1)",
+   "∀ (field : String) (follow : Bool) (field_1 : String) (follow_1 : Bool), (Loops.FoldType.sum field follow = Loops.FoldType.sum field_1 follow_1) = (field = field_1 ∧ follow = follow_1)",
    "module": "Loops.Spec"},
   "Loops.FoldType.sum.inj":
   {"uses": [],
    "states":
-   "∀ {field field_1 : String}, Loops.FoldType.sum field = Loops.FoldType.sum field_1 → field = field_1",
+   "∀ {field : String} {follow : Bool} {field_1 : String} {follow_1 : Bool}, Loops.FoldType.sum field follow = Loops.FoldType.sum field_1 follow_1 → field = field_1 ∧ follow = follow_1",
    "module": "Loops.Spec"},
   "Loops.FoldType.min.sizeOf_spec":
   {"uses": [],
    "states":
-   "∀ (field : String), sizeOf (Loops.FoldType.min field) = 1 + sizeOf field",
+   "∀ (field : String) (follow : Bool), sizeOf (Loops.FoldType.min field follow) = 1 + sizeOf field + sizeOf follow",
    "module": "Loops.Spec"},
   "Loops.FoldType.min.injEq":
   {"uses": ["Loops.FoldType.min.inj"],
    "states":
-   "∀ (field field_1 : String), (Loops.FoldType.min field = Loops.FoldType.min field_1) = (field = field_1)",
+   "∀ (field : String) (follow : Bool) (field_1 : String) (follow_1 : Bool), (Loops.FoldType.min field follow = Loops.FoldType.min field_1 follow_1) = (field = field_1 ∧ follow = follow_1)",
    "module": "Loops.Spec"},
   "Loops.FoldType.min.inj":
   {"uses": [],
    "states":
-   "∀ {field field_1 : String}, Loops.FoldType.min field = Loops.FoldType.min field_1 → field = field_1",
+   "∀ {field : String} {follow : Bool} {field_1 : String} {follow_1 : Bool}, Loops.FoldType.min field follow = Loops.FoldType.min field_1 follow_1 → field = field_1 ∧ follow = follow_1",
    "module": "Loops.Spec"},
   "Loops.FoldType.max.sizeOf_spec":
   {"uses": [],
    "states":
-   "∀ (field : String), sizeOf (Loops.FoldType.max field) = 1 + sizeOf field",
+   "∀ (field : String) (follow : Bool), sizeOf (Loops.FoldType.max field follow) = 1 + sizeOf field + sizeOf follow",
    "module": "Loops.Spec"},
   "Loops.FoldType.max.injEq":
   {"uses": ["Loops.FoldType.max.inj"],
    "states":
-   "∀ (field field_1 : String), (Loops.FoldType.max field = Loops.FoldType.max field_1) = (field = field_1)",
+   "∀ (field : String) (follow : Bool) (field_1 : String) (follow_1 : Bool), (Loops.FoldType.max field follow = Loops.FoldType.max field_1 follow_1) = (field = field_1 ∧ follow = follow_1)",
    "module": "Loops.Spec"},
   "Loops.FoldType.max.inj":
   {"uses": [],
    "states":
-   "∀ {field field_1 : String}, Loops.FoldType.max field = Loops.FoldType.max field_1 → field = field_1",
+   "∀ {field : String} {follow : Bool} {field_1 : String} {follow_1 : Bool}, Loops.FoldType.max field follow = Loops.FoldType.max field_1 follow_1 → field = field_1 ∧ follow = follow_1",
    "module": "Loops.Spec"},
   "Loops.FoldType.latestBy.sizeOf_spec":
   {"uses": [],
@@ -3201,7 +3239,18 @@
    "module": "Loops.Spec"},
   "Loops.FoldType.count.sizeOf_spec":
   {"uses": [],
-   "states": "sizeOf Loops.FoldType.count = 1",
+   "states":
+   "∀ (follow : Bool), sizeOf (Loops.FoldType.count follow) = 1 + sizeOf follow",
+   "module": "Loops.Spec"},
+  "Loops.FoldType.count.injEq":
+  {"uses": ["Loops.FoldType.count.inj"],
+   "states":
+   "∀ (follow follow_1 : Bool), (Loops.FoldType.count follow = Loops.FoldType.count follow_1) = (follow = follow_1)",
+   "module": "Loops.Spec"},
+  "Loops.FoldType.count.inj":
+  {"uses": [],
+   "states":
+   "∀ {follow follow_1 : Bool}, Loops.FoldType.count follow = Loops.FoldType.count follow_1 → follow = follow_1",
    "module": "Loops.Spec"},
   "Loops.FoldType.collect.sizeOf_spec":
   {"uses": [],
@@ -3408,6 +3457,15 @@
    "states":
    "∀ {xs ys : List Loops.Record}, xs.Perm ys → ∀ (n : Nat), Loops.Count.fold n xs = Loops.Count.fold n ys",
    "module": "Laws.Fold"},
+  "Loops.Count.followed_unread":
+  {"uses":
+   ["Loops.Count.select_unread",
+    "Loops.idsOf_length",
+    "Loops.select_as_latest",
+    "Loops.wholeHeads_distinct"],
+   "states":
+   "∀ (sel : Loops.Record → Bool) (cs : List Loops.Cond) {xs : List Loops.Record}, Loops.Addressed xs → (Loops.Count.acc.select (fun r => if sel r = true then Loops.Cond.all cs r else Loops.Tri.no) (Loops.accPool true xs)).unread = (Loops.idsOf (List.filter (fun r => Loops.chosen sel cs r && Loops.payTest cs r == Loops.Tri.unknown) (Loops.wholeHeads xs))).length",
+   "module": "Laws.Spec"},
   "Loops.Count.fold_eq":
   {"uses": [],
    "states":
@@ -3529,6 +3587,11 @@
    "states":
    "∀ {f : Loops.Record → Loops.Record}, Loops.View f → ∀ (cs : List Loops.Cond) (r : Loops.Record), (Loops.Cond.all cs (f r)).Refines (Loops.Cond.all cs r)",
    "module": "Laws.Spec"},
+  "Loops.Cond.all_split":
+  {"uses": ["Loops.Cond.all_append", "Loops.Cond.all_perm"],
+   "states":
+   "∀ (cs : List Loops.Cond) (r : Loops.Record), Loops.Cond.all cs r = (Loops.Cond.all (List.filter (fun x => x.field.onEnvelope) cs) r).and (Loops.payTest cs r)",
+   "module": "Laws.Spec"},
   "Loops.Cond.all_perm":
   {"uses": ["Loops.Tri.and_left_comm"],
    "states":
@@ -3543,6 +3606,16 @@
   {"uses": ["Loops.Cond.eval_envelope", "Loops.Cond.eval_view"],
    "states":
    "∀ {f : Loops.Record → Loops.Record}, Loops.View f → ∀ {cs : List Loops.Cond}, (∀ (c : Loops.Cond), c ∈ cs → c.field.onEnvelope = true) → ∀ (r : Loops.Record), Loops.Cond.all cs (f r) = Loops.Cond.all cs r",
+   "module": "Laws.Spec"},
+  "Loops.Cond.all_envelope_ne":
+  {"uses": ["Loops.Cond.eval_envelope"],
+   "states":
+   "∀ (cs : List Loops.Cond) (r : Loops.Record), Loops.Cond.all (List.filter (fun x => x.field.onEnvelope) cs) r ≠ Loops.Tri.unknown",
+   "module": "Laws.Spec"},
+  "Loops.Cond.all_append":
+  {"uses": ["Loops.Tri.and_assoc"],
+   "states":
+   "∀ (cs ds : List Loops.Cond) (r : Loops.Record), Loops.Cond.all (cs ++ ds) r = (Loops.Cond.all cs r).and (Loops.Cond.all ds r)",
    "module": "Laws.Spec"},
   "Loops.Cond.about_is":
   {"uses": ["Loops.Val.str.injEq"],
@@ -3711,6 +3784,11 @@
    "states":
    "∀ {σ : Type} (f : Loops.Acc σ) {xs ys : List Loops.Record} (r : Loops.Record), Loops.Distinct (xs ++ [r]) → Loops.Distinct ys → (∀ (q : Loops.Record), q ∈ ys ↔ q ∈ xs ∨ q = r) → f.step (f.fold xs) r = f.fold ys",
    "module": "Laws.Families"},
+  "Loops.Acc.followed_set_decides":
+  {"uses": ["Loops.wholeHeads_set_decides"],
+   "states":
+   "∀ {σ : Type} (f : Loops.Acc σ) (ev : Loops.Record → Loops.Tri) {xs ys : List Loops.Record}, Loops.Addressed xs → Loops.Addressed ys → (∀ (r : Loops.Record), r ∈ xs ↔ r ∈ ys) → f.select ev (Loops.wholeHeads xs) = f.select ev (Loops.wholeHeads ys)",
+   "module": "Laws.Spec"},
   "Loops.Acc.comm":
   {"uses": [],
    "states":

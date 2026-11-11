@@ -357,6 +357,42 @@ theorem collectOf_set_decides (sel : Record → Bool) (cs : List Cond) (follow :
   unfold collectOf
   simp only [hp]
 
+/-! ## Accumulating slots that follow `prev`
+
+With `follow`, count, sum, min and max fold the whole-reader heads, which are
+worked out from each thing's LatestBy state. The set decides through the heads
+(`OverHeads.set_decides`, per thing): the proof never uses the commuting step,
+so it is `heads.set`'s, not `acc.set`'s. -/
+
+/-- The whole-reader heads are each thing's heads, as `OverHeads` works them
+out from that thing's records, combined and kept once per id. -/
+theorem wholeHeads_overHeads (xs : List Record) :
+    wholeHeads xs = orderHeads ((thingsOf xs).flatMap fun t =>
+      OverHeads.fold LatestBy.heads (xs.filter (·.isOf t))) := by
+  simp [wholeHeads, perThing, stateIn, OverHeads.fold, flatMap_map]
+
+/-- Two readers whose things have the same states have the same whole-reader heads. -/
+theorem wholeHeads_of_states {xs ys : List Record} (h : perThing xs = perThing ys) :
+    wholeHeads xs = wholeHeads ys := by
+  unfold wholeHeads; rw [h]
+
+/-- The whole-reader heads depend only on the set held. -/
+theorem wholeHeads_set_decides {xs ys : List Record} (hx : Addressed xs) (hy : Addressed ys)
+    (h : ∀ r, r ∈ xs ↔ r ∈ ys) : wholeHeads xs = wholeHeads ys := by
+  rw [wholeHeads_overHeads, wholeHeads_overHeads, thingsOf_same h]
+  refine congrArg (fun g => orderHeads (flatMap g _)) (funext fun t => ?_)
+  exact OverHeads.set_decides _
+    (fun a ha b hb => hx a (mem_filter.1 ha).1 b (mem_filter.1 hb).1)
+    (fun a ha b hb => hy a (mem_filter.1 ha).1 b (mem_filter.1 hb).1)
+    fun r => by simp only [mem_filter, h]
+
+/-- An accumulating fold over the whole-reader heads depends only on the set
+held. Any fold does, commuting or not: the heads are the same list. -/
+theorem Acc.followed_set_decides {σ} (f : Acc σ) (ev : Record → Tri) {xs ys : List Record}
+    (hx : Addressed xs) (hy : Addressed ys) (h : ∀ r, r ∈ xs ↔ r ∈ ys) :
+    f.select ev (wholeHeads xs) = f.select ev (wholeHeads ys) := by
+  rw [wholeHeads_set_decides hx hy h]
+
 /-- With each input id supplied once, every slot gives the same value for the same record set. -/
 theorem Slot.set_decides (s : Slot) (sel : Record → Bool) {xs ys : List Record}
     (hx : Distinct xs) (hy : Distinct ys) (h : ∀ r, r ∈ xs ↔ r ∈ ys) :
@@ -364,10 +400,11 @@ theorem Slot.set_decides (s : Slot) (sel : Record → Bool) {xs ys : List Record
   unfold Slot.run
   split
   all_goals dsimp only
-  · rw [Acc.select_set_decides _ _ hx hy h]
-  · rw [Acc.select_set_decides _ _ hx hy h]
-  · rw [Acc.select_set_decides _ _ hx hy h]
-  · rw [Acc.select_set_decides _ _ hx hy h]
+  iterate 4
+    simp only [accPool]
+    split
+    · exact congrArg _ (Acc.followed_set_decides _ _ hx.addressed hy.addressed h)
+    · exact congrArg _ (Acc.select_set_decides _ _ hx hy h)
   · exact latestOf_set_decides _ _ hx.addressed hy.addressed h
   · exact collectOf_set_decides _ _ _ _ hx.addressed hy.addressed h
 
@@ -597,5 +634,86 @@ theorem collectOf_heads (sel : Record → Bool) (cs : List Cond) (limit : Option
   obtain ⟨hsel, hcond⟩ := chosen_payTest_yes.1 ⟨hch, hpay⟩
   obtain ⟨t, ht⟩ := hpool q hq0
   exact ⟨t, q, ht, hsel, hcond, rfl⟩
+
+/-! ## Following `prev`: what an accumulating slot reads and leaves unread -/
+
+/-- Following `prev`, an accumulating slot reads only current records: each is
+a head of some thing. -/
+theorem mem_accPool_follow {xs : List Record} (hx : Addressed xs) {r : Record}
+    (h : r ∈ accPool true xs) : ∃ t, HeadOf xs t r := by
+  obtain ⟨t, -, ht⟩ := (mem_wholeHeads hx).1 h
+  exact ⟨t, stateIn_heads hx ht⟩
+
+/-- And it reads every head, each once by id. -/
+theorem accPool_follow_heads {xs : List Record} (hx : Addressed xs) :
+    Distinct (accPool true xs) ∧ ∀ t ∈ thingsOf xs, ∀ r ∈ (stateIn t xs).heads, r ∈ accPool true xs :=
+  ⟨wholeHeads_distinct hx, fun t ht _ hr => (mem_wholeHeads hx).2 ⟨t, ht, hr⟩⟩
+
+theorem Tri.and_assoc (a b c : Tri) : (a.and b).and c = a.and (b.and c) := by
+  cases a <;> cases b <;> cases c <;> rfl
+
+theorem Cond.all_append (cs ds : List Cond) (r : Record) :
+    Cond.all (cs ++ ds) r = (Cond.all cs r).and (Cond.all ds r) := by
+  induction cs with
+  | nil => cases h : Cond.all ds r <;> simp [Cond.all, Tri.and] at h ⊢ <;> exact h
+  | cons c cs ih =>
+    unfold Cond.all at ih ⊢
+    simp only [cons_append, foldr_cons, ih, Tri.and_assoc]
+
+/-- A `where` map's tests on the envelope always answer. -/
+theorem Cond.all_envelope_ne (cs : List Cond) (r : Record) :
+    Cond.all (cs.filter (·.field.onEnvelope)) r ≠ .unknown := by
+  generalize hds : cs.filter (·.field.onEnvelope) = ds
+  have h : ∀ c ∈ ds, c.eval r ≠ .unknown := fun c hc =>
+    Cond.eval_envelope c (by rw [← hds] at hc; simpa using (mem_filter.1 hc).2) r
+  clear hds
+  induction ds with
+  | nil => simp [Cond.all]
+  | cons c ds ih =>
+    have hc := h c mem_cons_self
+    have hd := ih fun d hd => h d (mem_cons_of_mem _ hd)
+    unfold Cond.all at hd ⊢
+    simp only [foldr_cons]
+    revert hc hd
+    cases c.eval r <;> cases foldr (fun c t => (c.eval r).and t) Tri.yes ds <;> decide
+
+/-- A `where` map is its envelope tests and its payload tests together. -/
+theorem Cond.all_split (cs : List Cond) (r : Record) :
+    Cond.all cs r = (Cond.all (cs.filter (·.field.onEnvelope)) r).and (payTest cs r) := by
+  unfold payTest
+  rw [← Cond.all_append]
+  exact Cond.all_perm (filter_append_perm _ cs).symm r
+
+/-- An accumulating slot that follows `prev` selects heads as latest-by does:
+`from` and the envelope tests choose a head, its payload tests filter it, and
+a head whose payload tests cannot answer is unknown. -/
+theorem select_as_latest (sel : Record → Bool) (cs : List Cond) (r : Record) :
+    ((if sel r then Cond.all cs r else Tri.no) = .yes ↔
+      chosen sel cs r = true ∧ payTest cs r = .yes) ∧
+    ((if sel r then Cond.all cs r else Tri.no) = .unknown ↔
+      chosen sel cs r = true ∧ payTest cs r = .unknown) := by
+  have he := Cond.all_envelope_ne cs r
+  unfold chosen
+  rw [Cond.all_split]
+  revert he
+  cases sel r <;> cases Cond.all (cs.filter (·.field.onEnvelope)) r <;> cases payTest cs r <;> decide
+
+/-- Count following `prev` counts each unknown chosen head once by id, as
+latest-by does. -/
+theorem Count.followed_unread (sel : Record → Bool) (cs : List Cond) {xs : List Record}
+    (hx : Addressed xs) :
+    (Count.acc.select (fun r => if sel r then Cond.all cs r else Tri.no) (accPool true xs)).unread =
+      (idsOf ((wholeHeads xs).filter fun r => chosen sel cs r && payTest cs r == .unknown)).length := by
+  rw [Count.select_unread]
+  have hd : Distinct ((wholeHeads xs).filter fun r => chosen sel cs r && payTest cs r == .unknown) :=
+    pairwise_map.2 ((pairwise_map.1 (wholeHeads_distinct hx)).sublist filter_sublist)
+  rw [idsOf_length hd]
+  simp only [accPool, ↓reduceIte]
+  congr 1
+  apply filter_congr
+  intro r _
+  have := (select_as_latest sel cs r).2
+  apply Bool.eq_iff_iff.2
+  simp only [beq_iff_eq, Bool.and_eq_true, this]
 
 end Loops
