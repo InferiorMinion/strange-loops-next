@@ -1668,7 +1668,7 @@
     "id": "follow-count-every",
     "file": "Spec.lean",
     "before": "| .count follow => .nat (Count.acc.select ev (accPool follow xs))",
-    "after": "| .count follow => .nat (Count.acc.select ev (accPool false xs))",
+    "after": "| .count follow => .nat (Count.acc.select ev (accPool (follow && false) xs))",
     "reason": "Count every record when following prev.",
     "definition": "Loops.Slot.run"
   },
@@ -1676,7 +1676,7 @@
     "id": "follow-max-every",
     "file": "Spec.lean",
     "before": "| .max f follow => .opt ((Max.on f).select ev (accPool follow xs))",
-    "after": "| .max f follow => .opt ((Max.on f).select ev (accPool false xs))",
+    "after": "| .max f follow => .opt ((Max.on f).select ev (accPool (follow && false) xs))",
     "reason": "Take the maximum over every record when following prev.",
     "definition": "Loops.Slot.run"
   },

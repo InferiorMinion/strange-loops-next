@@ -1,5 +1,29 @@
 # Lean model mutation report
 
+## Follow on count, sum, min and max: targeted run
+
+The full catalogue is not rerun for issue #3.
+Node 25.9 runs only the nine entries the change adds or retargets, with `--only` and the default 180-second timeout.
+The seven new entries mutate `accPool`, two followed slots in `Slot.run`, `foldType`, `Slot.toJson` and `followJson`.
+`wide-spec-069` and `coverage-spec-slotfollow` are retargeted at the new grammar.
+
+| Entry | Outcome | Where |
+|---|---|---|
+| `wide-spec-069` | killed by vector | `spec/parse/64` |
+| `coverage-spec-slotfollow` | rejected by build | `Laws/Parse.lean`: `parseSlot_toJson` no longer closes |
+| `follow-pool-every` | rejected by build | `Laws/Spec.lean`: `Slot.set_decides` no longer typechecks |
+| `follow-pool-heads-always` | rejected by build | `Laws/Spec.lean`: `Slot.set_decides` |
+| `follow-count-every` | killed by vector | `spec/run/01`–`05`, `16`–`18` |
+| `follow-max-every` | killed by vector | `spec/run/16`, `18` |
+| `follow-sum-parse-dropped` | rejected by build | `Laws/Parse.lean`: `parseSlot_toJson` |
+| `follow-count-not-written` | rejected by build | `Laws/Parse.lean`: `parseSlot_toJson` |
+| `follow-json-inverted` | rejected by build | `Laws/Parse.lean`: `parseSlot_toJson` |
+
+The first run of `follow-count-every` and `follow-max-every` failed only the unused-variable lint, which is no kill; both now keep `follow` referenced (`follow && false`), and the rerun kills them by vector.
+Each build rejection was read in its log and fails at the named proof, not at a lint.
+The runner restored the source and rebuilt the baseline after both runs.
+These results are not imported as evidence; the counts below are the last full run, over 210 entries.
+
 ## D8a and D8b snapshot: `11784e5`
 
 The Node 25.9 run completes all 210 catalogue entries with a 240-second command timeout.
