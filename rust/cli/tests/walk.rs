@@ -264,11 +264,34 @@ fn a_batch_is_one_changeset_and_labels_name_its_records() {
         text(&pair[0], &["id"])
     );
 
+    // A label in `under` names a record of the same changeset: a grant and a
+    // record acting under it, written together.
+    let out = parse_json(&s.ok_with(
+        &["emit", "-"],
+        "{\"kind\":\"note\",\"under\":\"@g\"}\n{\"label\":\"@g\",\"kind\":\"grant\"}\n",
+    ))
+    .expect("JSON");
+    let Json::Arr(acting) = at(&out, &["records"]) else {
+        panic!("records")
+    };
+    assert_eq!(
+        text(
+            &s.json(&["get", text(&acting[0], &["id"])]),
+            &["env", "under"]
+        ),
+        text(&acting[1], &["id"])
+    );
+
     // Nothing is written unless every draft is taken.
     let held = s.ok(&["export"]);
     for (bad, code) in [
         (r#"{"kind":"note","about":["@nobody"]}"#, "label-unknown"),
         (r#"{"kind":"note","of":"@nobody"}"#, "label-unknown"),
+        (r#"{"kind":"note","under":"@nobody"}"#, "label-unknown"),
+        (
+            r#"{"label":"@u","kind":"grant","under":"@u"}"#,
+            "label-cycle",
+        ),
         (r#"{"kind":"","payload":{}}"#, "kind-empty"),
         (
             r#"{"kind":"note","of":"thing:x","prev":["r:0000000000000000000000000000000000000000000000000000"]}"#,
@@ -299,7 +322,7 @@ fn a_batch_is_one_changeset_and_labels_name_its_records() {
         );
     }
     assert_eq!(s.ok(&["export"]), held);
-    assert_eq!(s.segments().len(), 2);
+    assert_eq!(s.segments().len(), 3);
 }
 
 #[test]

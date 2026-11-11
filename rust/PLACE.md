@@ -117,7 +117,8 @@ held. A segment whose name is not the hash of its bytes is listed as altered.
    from, and targets of different things are `prev-unrelated`. On this path
    only, these precede the writer's other checks. This replaces the earlier
    "a revision without `--about` is about what it replaces". `emit -` fills
-   nothing in: a changeset states `of` itself, and may use a label there.
+   nothing in: a changeset states `of` itself, and may use a label there,
+   as in `about`, `prev` and `under`.
    Kyle confirmed on 2026-11-10 that only the single-record path fills `of`
    in, that this path refuses `prev-unknown` itself, that `export --about`
    is a mention filter and `export --of` a thing filter, and that the verb

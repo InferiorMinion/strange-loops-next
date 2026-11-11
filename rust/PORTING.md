@@ -123,7 +123,7 @@ There is no deferred-family or skipped-file allowlist:
 
 | Family | JSON files |
 | --- | ---: |
-| record | 174 |
+| record | 180 |
 | occurred | 9 |
 | byte-text | 5 |
 | fold | 50 |
@@ -131,9 +131,9 @@ There is no deferred-family or skipped-file allowlist:
 | realm | 16 |
 | scenario | 5 |
 | lens | 21 |
-| batch | 56 |
+| batch | 67 |
 | standard | 12 |
-| **Total** | **469** |
+| **Total** | **486** |
 
 All evaluator families are checked against immutable fixture answers,
 including every listed arrival order. A record's variants are checked against
