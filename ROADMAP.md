@@ -5,15 +5,16 @@
 The tree has three implementations: Lean, JavaScript, and Rust.
 Step 1 applies the six settled rulings before records exist.
 All three implement the settled decisions D1–D6, and D8a and D8b.
-The law index has 85 entries, 706 theorems, and 6 boundary witnesses.
+All three refuse every envelope shape by name (issue #1) and let a label stand in `under`.
+The law index has 86 entries, 709 theorems, and 6 boundary witnesses.
 See [the law index](design/laws/laws.json) and [proof and boundary data](design/laws/).
 These proofs apply only under their stated premises.
 
-The tree has 398 JSON fixtures: 386 generated fixtures and 12 standard fixtures.
-Lean replays 377 generated fixtures; 9 occurred fixtures use separate checks.
+The tree has 469 JSON fixtures: 457 generated fixtures and 12 standard fixtures.
+Lean replays 448 generated fixtures; 9 occurred fixtures use separate checks.
 Rust checks every fixture, six JCS byte pairs, 4,000 binary64 cases, and 128 SUPERCOP signing cases with ed25519-dalek.
-Rust passes 149 tests; JavaScript passes 5,587 vector checks and 26 regression tests.
-The fuzz suite passes 47 tests.
+Rust passes 150 tests; JavaScript passes 5,898 vector checks and 28 regression tests.
+The fuzz suite passes 48 tests.
 See [vectors](vectors/README.md), [Rust boundaries](rust/GAPS.md), and [the mutation report](model/mutate/REPORT.md).
 These checks provide bounded evidence, not complete JCS or cryptographic correctness.
 They do not certify browser accessibility, external links, or official ASD dictionary compliance.
@@ -25,19 +26,20 @@ Numeric folds read safe whole values only.
 Raw constructors and theorem premises retain separate domains.
 
 The gates pass on Node 25.9; the Node 22 runs of Step 1 are not repeated.
-The `d8ab-1` campaign checks 5,600 cases, 800 per family, in 65.32 seconds.
-It reports 3,954 matches, 1,258 protocol refusals, 388 shared decoder refusals, and no mismatch.
+The `shape-under-1` campaign checks 5,600 cases, 800 per family, in 65.04 seconds.
+It reports 3,803 matches, 1,391 protocol refusals, 406 shared decoder refusals, and no mismatch.
 Decoder refusals are not agreement.
-The generator carries `of` since D8, so the same seeds now generate different inputs; earlier campaigns' counts are historical.
-The `d1-d6-1` campaign found no mismatch either.
+The generator carries issue #1's shapes and labels in `under`, so the same seeds now generate different inputs; earlier campaigns' counts are historical.
+The `d8ab-1` and `d1-d6-1` campaigns found no mismatch either.
 The 42 duplicate-base lens mismatches of the `step1-3` campaign are the class D1 settles.
 `interop/fuzz/summarize.py` derives these counts from tracked summaries.
 See [the campaign report](interop/fuzz/REPORT.md) for the scripts and current and historical results.
 The CI seed `ci-1` checks 28 three-way cases without mismatches.
 
-The mutation catalogue has 210 entries, including six for the D1 and D2 definitions and nine for D8's `of`.
-Ten earlier entries are retargeted at `of` and the one thing it names.
+The mutation catalogue has 220 entries, including six for the D1 and D2 definitions, nine for D8's `of`, and ten for issue #1's shapes and labels in `under`.
+Ten earlier entries are retargeted at `of` and the one thing it names, and four at the shape stage and labels in `under`.
 It retires the redundant positive-offset guard under R4 and the entry for the deleted `stripZeros` family.
+The last full run covers the 210 entries before issue #1; the fourteen new and retargeted entries, run alone, give four build rejections and ten generator assertions.
 The full run reports 165 build rejections, 28 vector differences, 15 generator assertion exceptions, and 2 survivors.
 The runner exits 1 for assertion exceptions; no timeout or infrastructure failure occurs.
 Of the nine D8 entries, six fail the build, two change batch vectors, and one stops at a generator assertion.
@@ -227,6 +229,25 @@ D8c, declared keys, is not built, and the keyed fold's slice law is not stated.
 - A reader polices neither `of-missing` nor roots. A held record with `prev` and no `of` is of its own id, so its `prev` crosses things and admission refuses it.
 - `from.about` and `from.of` in one source mean both.
 - A held entry in a batch vector is `{"id", "of"?, "prev"}`.
+
+### Issue #1: envelope shape refusals, and a label in `under`
+
+**Built, 2026-11-11.** Every envelope shape has a named refusal, as `protocol/spec.md` has for specs.
+An envelope that is not an object is refused with a new code, `envelope-not-object`.
+A required field left out, or any field of the wrong JSON type, is refused with that field's existing code, in that field's place.
+The model reads such a field as empty text, which every field's own check refuses (`unreadable_refused`).
+The same change brings the batch up to the settled ledger entry "A label may stand in `under`": a draft may name another by label in `about`, `of`, `prev` or `under`, never in `erases`, and labels in `under` take part in cycles.
+**The reviewer's direction, not yet confirmed by Kyle:**
+- One new code, `envelope-not-object`; every other shape fault folds into an existing code, extending "A malformed value uses the field's existing refusal code".
+**Implementer choices, not yet confirmed by Kyle:**
+- `envelope-not-object` is a shape check across every envelope: after `envelope-field-unknown`, before `string-not-unicode` and every value.
+  So a later record variant that is not an object refuses the input, as an unknown key does, though the first envelope decides value refusals (D5).
+- A batch draft object without `env` has an envelope that is not an object.
+- `null` is a value of the wrong type, not a field left out: `"occurred": null` is `occurred-not-span`.
+- A set that is not an array is refused with its code; so is a set with a member that is not text, and a label beside such a member is still a label, so labels are checked first.
+- A salt left out, not text, or not canonical base32hex is `salt-not-16-bytes`, in that check's place.
+- A batch draft that is not an object, an unknown draft member, a label that is not text, a draft without a payload, and a repeated envelope member name stay malformed input, with no code.
+- A writer checks no `under` target beyond its shape: whether it names a held grant is left to standing (step 3), so `under` adds no batch refusal besides `label-unknown` and `label-cycle`.
 
 ### Retained boundaries
 
