@@ -168,6 +168,37 @@ def parseCases : List (String × Json) := [
   ("77-argument-after-follow", slotOf (o [("min", s ""), ("follow", s "prev")])),
   -- limit stays collect's, following or not
   ("78-limit-on-followed-count", slotOf (o [("count", .bool true), ("follow", s "prev"), ("limit", .int 2)])),
+  -- `by`: the envelope's kind and observer, the members of `about` under a
+  -- typed-reference prefix, or a payload field; the parsed form keeps it as written
+  ("79-by-forms", o [("vertex", s "x"), ("from", a [o [("store", s ".")]]),
+    ("fold", o [
+      ("k", o [("by", s "env.kind"), ("count", .bool true)]),
+      ("o", o [("sum", s "est"), ("by", s "env.observer")]),
+      ("p", o [("min", s "est"), ("follow", s "prev"), ("by", s "env.about:project")]),
+      ("q", o [("max", s "est"), ("by", s "env.about:x-2")]),
+      ("s", o [("count", .bool true), ("follow", s "prev"), ("by", s "status"),
+        ("where", o [("status", o [("present", .bool true)])])]),
+      ("c", o [("collect", .bool true), ("limit", .int 3), ("by", s "model")])])]),
+  -- a bare name is a payload field, even one that looks like `about:`
+  ("80-by-payload-named-about", slotOf (o [("count", .bool true), ("by", s "about:project")])),
+  ("81-by-not-text", slotOf (o [("count", .bool true), ("by", .bool true)])),
+  ("82-by-empty", slotOf (o [("count", .bool true), ("by", s "")])),
+  ("83-by-env-other", slotOf (o [("count", .bool true), ("by", s "env.of")])),
+  ("84-by-env-about-alone", slotOf (o [("count", .bool true), ("by", s "env.about")])),
+  ("85-by-env-alone", slotOf (o [("count", .bool true), ("by", s "env.")])),
+  ("86-by-empty-prefix", slotOf (o [("count", .bool true), ("by", s "env.about:")])),
+  ("87-by-prefix-upper", slotOf (o [("count", .bool true), ("by", s "env.about:Project")])),
+  ("88-by-prefix-digit-first", slotOf (o [("count", .bool true), ("by", s "env.about:2x")])),
+  ("89-by-prefix-colon", slotOf (o [("count", .bool true), ("by", s "env.about:project:loops")])),
+  ("90-by-on-latest-by", slotOf (o [("latest-by", s "of"), ("follow", s "prev"), ("by", s "env.kind")])),
+  ("91-by-on-followed-collect", slotOf (o [("collect", .bool true), ("follow", s "prev"), ("by", s "status")])),
+  -- `by` is checked after `limit` and before the fold's argument and `where`
+  ("92-limit-before-by", slotOf (o [("count", .bool true), ("by", s ""), ("limit", .int 2)])),
+  ("93-by-before-argument", slotOf (o [("sum", s ""), ("by", s "env.of")])),
+  ("94-argument-after-by", slotOf (o [("sum", s ""), ("by", s "env.kind")])),
+  ("95-by-before-where", slotOf (o [("count", .bool true), ("by", .int 1),
+    ("where", o [("env.nope", o [("is", s "x")])])])),
+  ("96-follow-before-by", slotOf (o [("count", .bool true), ("by", s "env.about:"), ("follow", s "next")])),
   ("gap03-repeat-key-before-value", o [("vertex", s "x"), ("vertex", o [("x", s "a"), ("x", s "b")]),
     ("from", a [o [("store", s ".")]])]),
   ("gap05-limit-zero", slotOf (o [("collect", .bool true), ("limit", .int 0)])),
@@ -428,6 +459,106 @@ def followEnvSpec : Json := o [("vertex", s "alice-open"),
     ("alice-open", o [("count", .bool true), ("follow", s "prev"),
       ("where", o [("status", o [("is", s "open")]), ("env.observer", o [("is", s "sl:alice")])])])])]
 
+/-! ### `by` -/
+
+/-- A task with what it mentions and who said it. -/
+def tb (id : RecordId) (thing : String) (t : Nat) (observer : String) (about : List String)
+    (fields : List (String × Val)) (prev : List RecordId := []) (ok : Reads t := by decide) : Record :=
+  { task id thing t fields prev ok with observer, about }
+
+-- Six records over three observers. Alice's second task is withheld; Bob's
+-- note has no status and no project; Carol's estimate is text. `prio` holds a
+-- whole number, the text "1", a boolean, a fraction and a negative number.
+def b1 := tb (fixtureId 0x21) "task:1" 100 "sl:alice" ["project:loops"]
+  [("status", .str "open"), ("est", .int 3), ("prio", .int 1)]
+def b2 := tb (fixtureId 0x22) "task:2" 110 "sl:bob" ["project:loops", "project:siftd"]
+  [("status", .str "closed"), ("est", .int 5), ("prio", .bool true)]
+def b3 := (tb (fixtureId 0x23) "task:3" 120 "sl:alice" ["project:siftd"]
+  [("status", .str "open"), ("est", .int 7), ("prio", .int 1)]).withhold
+def b4 : Record := { tb (fixtureId 0x24) "task:4" 130 "sl:bob" []
+  [("est", .int 2), ("prio", .number (Number.ofScientific false 15 (-1)))] with kind := "note" }
+def b5 := tb (fixtureId 0x25) "task:5" 140 "sl:carol" ["project:loops", "host:a"]
+  [("status", .str "open"), ("est", .str "8"), ("prio", .str "1")]
+def b6 := tb (fixtureId 0x26) "task:6" 150 "sl:alice" ["host:b", "project:x-2"]
+  [("status", .str "open"), ("est", .int 4), ("prio", .int (-2))]
+
+def byKeysSpec : Json := o [("vertex", s "grouped"),
+  ("from", a [o [("store", s ".")]]),
+  ("fold", o [
+    ("per-kind", o [("count", .bool true), ("by", s "env.kind")]),
+    ("per-observer", o [("count", .bool true), ("by", s "env.observer")]),
+    ("est-per-observer", o [("sum", s "est"), ("by", s "env.observer")]),
+    ("per-status", o [("count", .bool true), ("by", s "status")]),
+    ("per-prio", o [("count", .bool true), ("by", s "prio")]),
+    ("open-per-observer", o [("count", .bool true), ("by", s "env.observer"),
+      ("where", o [("status", o [("is", s "open")])])]),
+    ("open-per-status", o [("count", .bool true), ("by", s "status"),
+      ("where", o [("status", o [("is", s "open")])])]),
+    ("open", o [("count", .bool true), ("where", o [("status", o [("is", s "open")])])])])]
+
+def byAboutSpec : Json := o [("vertex", s "per-project"),
+  ("from", a [o [("store", s ".")]]),
+  ("fold", o [
+    ("per-project", o [("count", .bool true), ("by", s "env.about:project")]),
+    ("est-per-project", o [("sum", s "est"), ("by", s "env.about:project")]),
+    ("lo-per-project", o [("min", s "est"), ("by", s "env.about:project")]),
+    ("hi-per-project", o [("max", s "est"), ("by", s "env.about:project")]),
+    ("open-per-project", o [("count", .bool true), ("by", s "env.about:project"),
+      ("where", o [("status", o [("is", s "open")])])]),
+    ("per-host", o [("count", .bool true), ("by", s "env.about:host")]),
+    ("every", o [("count", .bool true)])])]
+
+-- A revision whose `prev` names a record of another thing is refused, by
+-- admission over everything held. Grouped by project, the refused record would
+-- be alone in its group, where nothing refuses it.
+def y1 : Record := { tb (fixtureId 0x31) "task:1" 100 "sl:kyle" ["project:x"] [] with n := 5 }
+def y2 : Record := { tb (fixtureId 0x32) "task:2" 200 "sl:kyle" ["project:y"] [] [fixtureId 0x31] with n := 1 }
+
+def byAdmitSpec : Json := o [("vertex", s "admitted"),
+  ("from", a [o [("store", s ".")]]),
+  ("fold", o [
+    ("count", o [("count", .bool true), ("by", s "env.about:project")]),
+    ("sum", o [("sum", s "n"), ("by", s "env.about:project")]),
+    ("plain", o [("count", .bool true)])])]
+
+-- A task revised as it moves from project x to project y, a task forked in
+-- project x, an erased head and a withheld head. The whole view's heads come
+-- first: grouping before them would keep the moved task's old version current
+-- in x, where its successor is not.
+def m0 := tb (fixtureId 0x33) "task:1" 100 "sl:kyle" ["project:x"] [("status", .str "open"), ("est", .int 3)]
+def m1 := tb (fixtureId 0x34) "task:1" 200 "sl:kyle" ["project:y"] [("status", .str "open"), ("est", .int 4)] [fixtureId 0x33]
+def m2 := tb (fixtureId 0x35) "task:2" 110 "sl:kyle" ["project:x"] [("status", .str "open"), ("est", .int 6)]
+def m3 := tb (fixtureId 0x36) "task:2" 210 "sl:alice" ["project:x"] [("status", .str "closed"), ("est", .int 1)] [fixtureId 0x35]
+def m4 := tb (fixtureId 0x37) "task:2" 220 "sl:bob" ["project:x", "project:y"] [("status", .str "open"), ("est", .int 2)] [fixtureId 0x35]
+def m5 := (tb (fixtureId 0x38) "task:3" 120 "sl:kyle" ["project:y"] [("status", .str "open"), ("est", .int 9)]).erase
+def m6 := (tb (fixtureId 0x39) "task:4" 130 "sl:kyle" ["project:z"] [("status", .str "open"), ("est", .int 5)]).withhold
+
+def byFollowSpec : Json := o [("vertex", s "current-per-project"),
+  ("from", a [o [("store", s "."), ("kind", a [s "task"])]]),
+  ("fold", o [
+    ("current", o [("count", .bool true), ("follow", s "prev"), ("by", s "env.about:project")]),
+    ("open", o [("count", .bool true), ("follow", s "prev"), ("by", s "env.about:project"),
+      ("where", o [("status", o [("is", s "open")])])]),
+    ("open-by-observer", o [("count", .bool true), ("follow", s "prev"), ("by", s "env.observer"),
+      ("where", o [("status", o [("is", s "open")])])]),
+    ("est", o [("sum", s "est"), ("follow", s "prev"), ("by", s "env.about:project")]),
+    ("lo", o [("min", s "est"), ("follow", s "prev"), ("by", s "status")]),
+    ("hi", o [("max", s "est"), ("follow", s "prev"), ("by", s "status")]),
+    ("every", o [("count", .bool true), ("by", s "env.about:project")]),
+    ("current-plain", o [("count", .bool true), ("follow", s "prev")]),
+    ("open-plain", o [("count", .bool true), ("follow", s "prev"),
+      ("where", o [("status", o [("is", s "open")])])])])]
+
+-- Collect by a payload key: each group is collect's own result, newest
+-- first, and `limit` applies within each group.
+def byCollectSpec : Json := o [("vertex", s "recent-per-status"),
+  ("from", a [o [("store", s ".")]]),
+  ("fold", o [
+    ("recent", o [("collect", .bool true), ("limit", .int 1), ("by", s "status")]),
+    ("all", o [("collect", .bool true), ("by", s "status")]),
+    ("open-per-project", o [("collect", .bool true), ("by", s "env.about:project"),
+      ("where", o [("status", o [("is", s "open")])])])])]
+
 structure RunCase where
   name : String
   laws : List String
@@ -471,6 +602,24 @@ def runCases : List RunCase := [
   ⟨"19-follow-payload-test", ["spec.set", "spec.follow", "result.unread"], followTestSpec, [p1, p2]⟩,
   ⟨"20-follow-envelope-after-supersession", ["spec.set", "spec.follow", "spec.after-supersession"],
     followEnvSpec, [v1, v2]⟩,
+  -- `by` on the envelope and on payload fields, with a payload `where`; a
+  -- withheld record under each key form; a group only where something was
+  -- selected; text "1" and the number 1 share a group
+  ⟨"21-by-keys", ["spec.set", "by.set", "by.accounting", "by.partition", "result.unread"], byKeysSpec,
+    [b1, b2, b3, b4, b5, b6]⟩,
+  -- a record mentioning two projects counts in each, once; the withheld one
+  -- still has its envelope's key; one with no project is ungrouped
+  ⟨"22-by-about", ["spec.set", "by.set", "by.accounting", "result.unread"], byAboutSpec,
+    [b1, b2, b3, b4, b5, b6]⟩,
+  -- admission refuses a `prev` across things before any group is formed
+  ⟨"23-by-after-admission", ["spec.set", "by.after-admission", "by.partition"], byAdmitSpec, [y1, y2]⟩,
+  -- the whole view's heads come before any group: a move, a fork, an erased
+  -- head and a withheld one
+  ⟨"24-by-follow", ["spec.set", "spec.follow", "by.set", "by.after-admission", "by.accounting",
+      "by.partition", "result.unread"], byFollowSpec, [m0, m1, m2, m3, m4, m5, m6]⟩,
+  -- limit is per group
+  ⟨"25-by-collect", ["spec.set", "by.set", "by.accounting", "result.unread"], byCollectSpec,
+    [b1, b2, b3, b4, b5, b6]⟩,
   ⟨"gap04-unread-multi-thing", ["result.unread"],
     o [("vertex", s "x"), ("from", a [o [("store", s ".")]]), ("fold", o [
       ("by", o [("latest-by", s "of"), ("follow", s "prev"),

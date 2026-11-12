@@ -1,0 +1,109 @@
+{
+  "vector": "23-by-after-admission",
+  "layer": "spec/run",
+  "laws": ["spec.set", "by.after-admission", "by.partition"],
+  "source": "model",
+  "input": {
+    "spec": {
+      "vertex": "admitted",
+      "from": [
+        {
+          "store": "."
+        }
+      ],
+      "fold": {
+        "count": {
+          "count": true,
+          "by": "env.about:project"
+        },
+        "sum": {
+          "sum": "n",
+          "by": "env.about:project"
+        },
+        "plain": {
+          "count": true
+        }
+      }
+    },
+    "orders": [
+      [
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000og",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": ["project:x"],
+          "of": "task:1",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:01:40Z",
+          "occurred": "2026-10-01T00:01:40Z",
+          "n": 5
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000p0",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": ["project:y"],
+          "of": "task:2",
+          "value": "",
+          "prev": ["r:00000000000000000000000000000000000000000000000000og"],
+          "emitted": "2026-10-01T00:03:20Z",
+          "occurred": "2026-10-01T00:03:20Z",
+          "n": 1
+        }
+      ],
+      [
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000p0",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": ["project:y"],
+          "of": "task:2",
+          "value": "",
+          "prev": ["r:00000000000000000000000000000000000000000000000000og"],
+          "emitted": "2026-10-01T00:03:20Z",
+          "occurred": "2026-10-01T00:03:20Z",
+          "n": 1
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000og",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": ["project:x"],
+          "of": "task:1",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:01:40Z",
+          "occurred": "2026-10-01T00:01:40Z",
+          "n": 5
+        }
+      ]
+    ]
+  },
+  "expect": {
+    "count": {
+      "groups": {
+        "x": {
+          "value": 1,
+          "unread": 0
+        }
+      },
+      "unread": 0,
+      "ungrouped": 0
+    },
+    "sum": {
+      "groups": {
+        "x": {
+          "value": 5,
+          "unread": 0
+        }
+      },
+      "unread": 0,
+      "ungrouped": 0
+    },
+    "plain": {
+      "value": 1,
+      "unread": 0
+    }
+  }
+}

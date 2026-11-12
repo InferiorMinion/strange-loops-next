@@ -1,0 +1,94 @@
+{
+  "vector": "79-by-forms",
+  "layer": "spec/parse",
+  "laws": ["spec.parse"],
+  "source": "model",
+  "input": {
+    "spec": {
+      "vertex": "x",
+      "from": [
+        {
+          "store": "."
+        }
+      ],
+      "fold": {
+        "k": {
+          "by": "env.kind",
+          "count": true
+        },
+        "o": {
+          "sum": "est",
+          "by": "env.observer"
+        },
+        "p": {
+          "min": "est",
+          "follow": "prev",
+          "by": "env.about:project"
+        },
+        "q": {
+          "max": "est",
+          "by": "env.about:x-2"
+        },
+        "s": {
+          "count": true,
+          "follow": "prev",
+          "by": "status",
+          "where": {
+            "status": {
+              "present": true
+            }
+          }
+        },
+        "c": {
+          "collect": true,
+          "limit": 3,
+          "by": "model"
+        }
+      }
+    }
+  },
+  "expect": {
+    "parsed": {
+      "vertex": "x",
+      "from": [
+        {
+          "store": "."
+        }
+      ],
+      "fold": {
+        "k": {
+          "count": true,
+          "by": "env.kind"
+        },
+        "o": {
+          "sum": "est",
+          "by": "env.observer"
+        },
+        "p": {
+          "min": "est",
+          "follow": "prev",
+          "by": "env.about:project"
+        },
+        "q": {
+          "max": "est",
+          "by": "env.about:x-2"
+        },
+        "s": {
+          "count": true,
+          "follow": "prev",
+          "by": "status",
+          "where": {
+            "status": {
+              "present": true
+            }
+          }
+        },
+        "c": {
+          "collect": true,
+          "limit": 3,
+          "by": "model"
+        }
+      }
+    }
+  }
+}

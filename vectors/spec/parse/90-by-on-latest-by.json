@@ -1,0 +1,27 @@
+{
+  "vector": "90-by-on-latest-by",
+  "layer": "spec/parse",
+  "laws": ["spec.parse"],
+  "source": "model",
+  "input": {
+    "spec": {
+      "vertex": "x",
+      "from": [
+        {
+          "store": "."
+        }
+      ],
+      "fold": {
+        "c": {
+          "latest-by": "of",
+          "follow": "prev",
+          "by": "env.kind"
+        }
+      }
+    }
+  },
+  "expect": {
+    "refused": "by-invalid",
+    "path": "fold.c.by"
+  }
+}

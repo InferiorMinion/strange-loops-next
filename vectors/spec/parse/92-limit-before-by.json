@@ -1,0 +1,27 @@
+{
+  "vector": "92-limit-before-by",
+  "layer": "spec/parse",
+  "laws": ["spec.parse"],
+  "source": "model",
+  "input": {
+    "spec": {
+      "vertex": "x",
+      "from": [
+        {
+          "store": "."
+        }
+      ],
+      "fold": {
+        "c": {
+          "count": true,
+          "by": "",
+          "limit": 2
+        }
+      }
+    }
+  },
+  "expect": {
+    "refused": "limit-invalid",
+    "path": "fold.c.limit"
+  }
+}

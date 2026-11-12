@@ -16,7 +16,8 @@ private def outcomeJ : Outcome → J
   | .absent i => .obj [("absent", .str (String.ofList i))]
 
 private def scenario (name thing : String) (spj : Json) (pool : List Record)
-    (steps : List (String × List Record)) (base : List Section) (text : List Line) : Except String J := do
+    (steps : List (String × List Record)) (base : List Section) (text : List Line)
+    (laws : List String := []) : Except String J := do
   let sp ← match Spec.ofJson spj with
     | .ok sp => pure sp
     | .error r => throw s!"{r.code}: {r.path}"
@@ -46,7 +47,7 @@ private def scenario (name thing : String) (spj : Json) (pool : List Record)
   let expected : J := .obj [("steps", .arr results),
     ("lens", .obj [("rendered", lines (render base)), ("outcomes", .arr (os.map outcomeJ)),
       ("applied", sections (apply base os))])]
-  pure (vector name "scenario" [] input expected)
+  pure (vector name "scenario" laws input expected)
 
 private def countSpec : Json := Gen.SpecVectors.fromOf (.obj [("store", .str ".")])
 private def r (id : RecordId) (thing : String) (t : Nat) (value : String) (prev : List RecordId := [])
@@ -70,7 +71,27 @@ private def linesCase : Except String J := do
   scenario "gap11-line-adapter" "thing:A" countSpec [a, b]
     [("before", [a]), ("after", [a, b])] base (render changed)
 
+-- `by` settles once, over everything held: Y, in project y, erases X, in
+-- project x. Settling within each group would leave X's payload readable in x,
+-- where its eraser is not.
+private def byErasureCase : Except String J := do
+  let x : Record := { Gen.RealmVectors.r (fixtureId 0x3a) "task" (some "task:1") 100 (about := ["project:x"]) with
+    value := "five", n := 5 }
+  let y : Record := { Gen.RealmVectors.r (fixtureId 0x3b) "task" (some "task:2") 200 (about := ["project:y"]) with
+    value := "one", n := 1, erases := [fixtureId 0x3a] }
+  let spj : Json := .obj [("vertex", .str "per-project"), ("from", .arr [.obj [("store", .str ".")]]),
+    ("fold", .obj [
+      ("sum", .obj [("sum", .str "n"), ("by", .str "env.about:project")]),
+      ("current", .obj [("sum", .str "n"), ("follow", .str "prev"), ("by", .str "env.about:project")]),
+      ("count", .obj [("count", .bool true), ("by", .str "env.about:project")]),
+      ("plain", .obj [("sum", .str "n")])])]
+  let base : List Section := [⟨"task:1".toList, [x.value.toList]⟩]
+  scenario "by-01-erased-in-another-group" "task:1" spj [x, y]
+    [("before", [x]), ("after", [x, y]), ("withheld-x", [x.withhold, y])] base (render base)
+    ["spec.set", "by.after-admission", "by.accounting", "result.unread"]
+
 def vectors : Except String (List (String × J)) := do
-  return [("gap01-gap06-admission", ← admissionCase), ("gap11-line-adapter", ← linesCase)]
+  return [("gap01-gap06-admission", ← admissionCase), ("gap11-line-adapter", ← linesCase),
+    ("by-01-erased-in-another-group", ← byErasureCase)]
 
 end Gen.RulingVectors
