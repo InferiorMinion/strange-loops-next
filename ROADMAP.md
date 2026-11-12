@@ -269,6 +269,109 @@ D8c, declared keys, is not built, and the keyed fold's slice law is not stated.
 - `from.about` and `from.of` in one source mean both.
 - A held entry in a batch vector is `{"id", "of"?, "prev"}`.
 
+### D8c: declared keys, design note
+
+**Draft by margins-claude, 2026-11-11, for Kyle's rulings before any code.** Nothing here is built.
+Every choice that is Kyle's is marked **Open**; each gives a recommendation and the alternatives.
+The experiments and proofs are in the margins repo: `sl-py/keyfold.py`, `keyslice.py`, `keygap.py`, `keyanchor.py`, `keyslice_anchored.py` and `lean/Convex.lean`.
+
+**The problem.** Once an emit sets only some keys, a thing's state is the merge of its live setters, not one head's payload.
+`where`, `by`, the numeric folds and the slots that follow `prev` all read one record's payload.
+With anchored writers the head of a task is often the emit that last changed its title, so "count the open tasks" over heads is wrong.
+
+**Terms.** A record *sets* key `k` when `k` is in its `sets`, or when it has no `sets` (a whole-read emit, which sets every key).
+A setter of `k` is *live for `k`* when no admitted descendant of it over `prev` sets `k`.
+A record is *live* when it is live for some key.
+For a thing with only whole-read emits, the live records are its heads.
+
+#### 1. `sets` in the envelope
+
+- **Holds:** a set of top-level payload key names, canonical as `about` is (UTF-16 order, each once).
+- **Absent and empty** differ, as ruled: absent is read whole; empty sets nothing, a pure join.
+  **Open:** the canonical envelope writes `"sets": []`. Every other set field leaves an empty set out, so this is the one exception; the alternative is another way to write a join.
+- **Refusal:** one code, `sets-not-keys`, for a value that is not an array, a member that is not text, or an empty name (no spec could name it). It comes after `erases-not-record-id` and before `of-missing`. **Open:** the name and the place.
+- **No check against the payload.** A declared key the payload lacks is unset, as ruled; a payload that is not an object unsets every declared key.
+  The envelope stays checkable without its payload, which an erased record needs.
+  **Open:** the alternative refuses a non-object payload beside a non-empty `sets`.
+- **A root or a revision may declare anything.** A root with `sets` declares its keys like any other emit; no check compares one record's `sets` with another's.
+- Refusing an undeclared payload key is a strict store's rule (step 3).
+
+#### 2. The keyed fold
+
+**Recommendation:** a second value of `follow`, not a new fold type: `{"latest-by": "of", "follow": "keys"}`.
+`follow` already names how supersession is read. `"prev"` reads a thing as its heads; `"keys"` reads it as its live setters.
+Nothing built changes meaning, and `follow-invalid` already refuses any other value.
+**Open:** the alternative is a new fold type beside `latest-by`; the word `keys` is also open.
+
+The result, per thing, gives each declared key's live setters and the live whole-read emits:
+
+```json
+{"things": {"task:1": {"keys": {"status": [{"id": "r:B", "shown": "here"}],
+                                "title":  [{"id": "r:A", "shown": "withheld"}]},
+                       "whole": []}},
+ "unread": 0}
+```
+
+- Setters are newest first, as `latest-by` lists a fork's heads. More than one is two live setters of that key; the core declares no conflict.
+- A key is unknown exactly when a live setter's `shown` is not `here`. The fold returns ids, not values, as `latest-by` does.
+- `whole` lists the live whole-read emits. A key no listed setter declares is read from them.
+- **Open:** this shape.
+
+#### 3. How the other slots read a keyed thing
+
+**Recommendation:** `"follow": "keys"` is allowed on count, sum, min, max and collect, with or without `by`, and there the unit is the thing.
+Slots without `follow`, and slots with `"follow": "prev"`, keep reading records as written, each from its own payload.
+So both readings exist, a spec says which it wants, and an undeclared payload key stays readable by the record readings, as ruled.
+
+For a slot that follows `keys`:
+
+- **A payload field** is read from the field's live setters: the live records that declare it, or when none does, the live whole-read emits.
+- **`where`:** each test is asked of each of those setters. One answer from all of them is the answer. Different answers, or a setter whose payload is not held, is unknown, and the thing is unread.
+  The core compares test answers and never payload values, so agreement is not a conflict.
+- **count** counts the things selected. A thing forked across whole-read emits counts once here and twice under `"follow": "prev"`.
+- **sum, min, max:** a field with one live setter is read from it. With two it is unread. **Open:** two setters holding the same number could be read; that makes the core compare values, which D8 ruled out.
+- **`by` on a payload field:** the thing joins the group of each live setter's key, as a record that mentions two projects joins two groups. An unheld setter makes it unread; no setter, ungrouped.
+- **collect** lists the selected things' live records, newest first. With anchored writers this is the thing's slice.
+- **`from` and envelope tests:** a thing is selected when one of its live records is taken; its fields are then read from all its live setters. **Open:** the alternative selects setters one by one, and then a key whose setter is not taken reads as absent.
+- **Whole-read beside keyed:** a whole-read emit sets every key and is live for each until a descendant sets it. A later whole-read emit replaces everything under it.
+
+The alternatives to the whole recommendation: change what `"follow": "prev"` means (it changes built answers for forks), or leave the existing slots unable to read keyed things (then no spec can count open tasks once writers set keys).
+
+#### 4. The laws
+
+| Law | Says | State |
+|---|---|---|
+| *witnessed* | A part reads each key's live setters as the whole does exactly when every held setter that is dead for a key has a setter of that key above it through held records. | Proved abstractly (`witnessed_iff`). To port. |
+| convex | A part that is convex over `prev` and holds the live setters is witnessed. Not the other way. | Proved (`witnessed_of_convex`, `Named`). To port as the corollary. |
+| anchored | When every emit that sets `k` names every held live record that sets `k`, the live records alone are a witnessed part. | Proved (`anchored_slice`; `slice_reads` from the rule itself). To port. |
+| `Closed` | The anchored law needs a sender that holds what the writers of its records had seen. | Proved as a premise; found by experiment (55 wrong in 35,200 when the sender is missing records, none for a convex part). To port as a premise with its boundary witness. |
+| receiver's flag | A receiver can tell which of its own records a missing name might have replaced; the flag is sound and tight. | Proved (`flag_tight`). Step 5 uses it; not needed for D8c. |
+
+- These are stated over an abstract `prev` and `sets`. The model needs `sets` on the record, liveness per key, and the laws restated over `realm`, so behind settling and admission.
+- By experiment (`keyslice.py`, 35,200 pairs with `of` stated): the answer needs no record outside the thing; the sent members must be admitted ones; a live setter's eraser is needed for the shown state, not for the answer; a sender must not send a payload its own eraser took away.
+- **`spec.slice` over keyed things is not proved.** For a slot that follows `keys`, "current" becomes "live for a key", and the successors that matter are the setters of the same key. I expect the law to be: the slice of each selected thing, plus what `SpecSlice` already asks of records read as written. That is a conjecture until it is tested and stated.
+- A slice law is about a slice read alone, as ruled.
+
+#### 5. The writer
+
+- **The anchor rule,** as agreed on #5: an emit that sets a key names in `prev`, beside what it builds on, every record its writer holds that sets that key and is still live.
+  `loops emit` fills this in on the single-record path, as it fills in `of`.
+- **`emit -` fills nothing in:** a changeset states its own `prev`, as it states its own `of`. **Open:** the alternative fills anchors in for a changeset too.
+- **No refusal for an unanchored emit.** It reads correctly whole; only its slice is larger. **Open:** a writer could refuse it (`prev-not-anchored`), since it holds what it would need to check.
+- **A whole-read emit shares every key,** so it names every live record of the thing it holds, and is then the only live record.
+- **Cost.** `prev` names per record: 1.13 plain against 3.10 anchored with three replicas; 2.4 for one writer over 1,000 records, longest 5. The bound is about one name per key of the thing.
+  The names are in the id. A root that stays live for one key is named by every later setter of its other keys; restating that key lets it go.
+- **What it buys.** Over 300 events a thing's slice is about 8 records anchored, 59 for the cheapest witnessed part with plain writers, and 233 for the convex part.
+
+#### 6. Out of scope
+
+- Strict stores, where an undeclared payload key is refused: step 3.
+- Merging a slice into an older holding, and the causal context that makes it sound (`merge_reads`): step 5. It needs a per-writer sequence number or a set of seen ids, which the envelope does not have.
+- The caching reader for slots over heads or live setters, and what it must keep for a record with an unknown `prev`: step 4.
+- Whether two live setters conflict: a reading above the core.
+
+**Order of work, if the recommendations stand:** `sets` in the model with its refusal; liveness per key and `latest-by` following `keys`; vectors, JavaScript, Rust; then the other slots following `keys`; then the laws ported; then the anchor in `loops emit`.
+
 ### Issue #1: envelope shape refusals, and a label in `under`
 
 **Built, 2026-11-11.** Every envelope shape has a named refusal, as `protocol/spec.md` has for specs.
