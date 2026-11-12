@@ -104,6 +104,7 @@ A draft in a batch may name another draft by its label in `about`, `of`, `prev` 
 A label in `under` takes part in cycles as the others do, so a grant and a record acting under it can be written together.
 A draft's envelope that is not an object, or a draft without one, is refused with `envelope-not-object` in the shape stage.
 A draft that is not an object, an unknown draft member, a label that is not text and a draft without a payload are malformed input, with no refusal code.
+The shape stage reads the envelopes of every draft that is an object and keeps priority: a batch is malformed input only when no envelope refuses there.
 The writer then checks what each record names, across the whole batch.
 It checks no `under` target beyond its shape: whether it names a grant is standing's question.
 A `prev` target must be in the batch or the store (`prev-unknown`).
