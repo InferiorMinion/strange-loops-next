@@ -9,7 +9,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { isDeepStrictEqual } from "node:util";
-import { base32, occurredSpan } from "./loops.mjs";
+import { base32 } from "./loops.mjs";
 import { parseSpec, runSpec, takes } from "./spec.mjs";
 import { settle } from "./realm.mjs";
 import { formOf } from "./scenario.mjs";
@@ -59,11 +59,28 @@ test("a successor's other prev target decides whether it replaces", () => {
   assert.deepEqual(Object.keys(answer(tasks, slice(tasks, whole, "theirs").part).current.things), []);
 });
 
+// The case the sweep met: A, a task of t:x whose `occurred` is no span, is
+// superseded by C, a note of t:x; B is a task of its own. The whole and the
+// complete slice never order A. Without the successor C, A is current, is
+// ordered against B, and this reader refuses its time.
+test("a successor dropped from the slice can surface a record the whole never orders", () => {
+  const r = (n, kind, of, prev = [], occurred) =>
+    ({ id: id(n), kind, observer: "sl:x", about: [], ...(of && { of }), prev: prev.map(id), emitted: `2020-01-01T00:00:0${n}Z`, ...(occurred && { occurred }) });
+  const A = r(1, "task", "t:x", [], "2024-99"), B = r(2, "task"), C = r(3, "note", "t:x", [1]);
+  const spec = parseSpec({ vertex: "v", from: [{ store: ".", kind: ["task"] }],
+    fold: { current: { count: true, follow: "prev", by: "env.kind" } } }).parsed;
+  const whole = [A, B, C];
+  const want = answer(spec, whole);
+  assert.deepEqual(JSON.parse(JSON.stringify(want.current)), { groups: { task: { value: 1, unread: 0 } }, unread: 0, ungrouped: 0 });
+  assert.deepEqual(answer(spec, slice(spec, whole).part), want);
+  assert.throws(() => answer(spec, slice(spec, whole, "successors").part), /occurred-not-span/);
+});
+
 // The fuzz generator's spec runs and scenario steps. The counts at the end
 // keep the sweep honest: it must meet specs that leave records out, and each
 // kind that the generator can exercise must matter at least once.
 test("a spec slice answers as the whole, over generated specs and stores", () => {
-  const seen = { pairs: 0, partial: 0, erasers: 0, targets: 0, successors: 0, followed: 0, followedMatters: 0, grouped: 0, groupedMatters: 0 };
+  const seen = { pairs: 0, partial: 0, erasers: 0, targets: 0, successors: 0, followed: 0, followedMatters: 0, grouped: 0, groupedMatters: 0, threw: 0 };
   // The slots that follow prev and accumulate: count, sum, min and max.
   const followedOf = (spec) => Object.entries(spec.fold)
     .filter(([, s]) => s.follow === "prev" && ["count", "sum", "min", "max"].some((t) => t in s)).map(([n]) => n);
@@ -79,7 +96,11 @@ test("a spec slice answers as the whole, over generated specs and stores", () =>
     seen.grouped += grouped.length > 0;
     let matters = false, groupMatters = false;
     for (const drop of ["erasers", "targets", "successors"]) {
-      const got = answer(spec, slice(spec, forms, drop).part);
+      // A part without a kind may surface a record the whole never orders, such
+      // as a superseded one whose `occurred` is no span, which this reader
+      // refuses only when it compares it. That too is an answer that changed.
+      let got;
+      try { got = answer(spec, slice(spec, forms, drop).part); } catch { seen[drop] += 1; seen.threw += 1; continue; }
       try { assert.deepEqual(got, want); } catch { seen[drop] += 1; }
       matters ||= followed.some((n) => !isDeepStrictEqual(got[n], want[n]));
       groupMatters ||= grouped.some((n) => !isDeepStrictEqual(got[n], want[n]));
@@ -99,10 +120,7 @@ test("a spec slice answers as the whole, over generated specs and stores", () =>
           return input.steps.map((s) => s.forms.map((f) => formOf(pool.get(f.id), f.shown)));
         })() : [];
       for (const forms of stores) {
-        // An input this reader refuses is no store. A time that is no span is
-        // one, though a reader meets it only when it orders that record.
-        if (forms.some((f) => f.occurred !== undefined && occurredSpan(f.occurred) === null)) continue;
-        try { answer(spec, forms); } catch { continue; }
+        try { answer(spec, forms); } catch { continue; } // an input this reader refuses is no store
         check(spec, forms);
       }
     }
