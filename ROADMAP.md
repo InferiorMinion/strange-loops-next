@@ -303,29 +303,32 @@ For a thing with only whole-read emits, the live records are its heads.
 Nothing built changes meaning, and `follow-invalid` already refuses any other value.
 **Open:** the alternative is a new fold type beside `latest-by`; the word `keys` is also open.
 
-The result, per thing, gives each declared key's live setters and the live whole-read emits:
+The result, per thing, gives the live setters of each key some live record declares, and the live whole-read emits.
+Here `W` and `W2` are whole-read, `B` sets `status` from `W`, and `W2` is concurrent with `B`:
 
 ```json
-{"things": {"task:1": {"keys": {"status": [{"id": "r:B", "shown": "here"}],
-                                "title":  [{"id": "r:A", "shown": "withheld"}]},
-                       "whole": []}},
+{"things": {"task:1": {"keys": {"status": [{"id": "r:W2", "shown": "here"}, {"id": "r:B", "shown": "withheld"}]},
+                       "whole": [{"id": "r:W2", "shown": "here"}, {"id": "r:W", "shown": "here"}]}},
  "unread": 0}
 ```
 
 - Setters are newest first, as `latest-by` lists a fork's heads. More than one is two live setters of that key; the core declares no conflict.
 - A key is unknown exactly when a live setter's `shown` is not `here`. The fold returns ids, not values, as `latest-by` does.
-- `whole` lists the live whole-read emits. A key no listed setter declares is read from them.
+- `keys` has an entry for every key some live record declares, and under it all of that key's live setters, whole-read ones included: `W2` is live for `status` and `W` is not.
+- `whole` lists the live whole-read emits. A key with no entry is read from them, and every one of them is live for it: a whole-read emit that some setter of that key replaced would have an entry to show it, or be replaced by a whole-read emit and so not live at all.
 - **Open:** this shape.
 
 #### 3. How the other slots read a keyed thing
 
 **Recommendation:** `"follow": "keys"` is allowed on count, sum, min, max and collect, with or without `by`, and there the unit is the thing.
 Slots without `follow`, and slots with `"follow": "prev"`, keep reading records as written, each from its own payload.
-So both readings exist, a spec says which it wants, and an undeclared payload key stays readable by the record readings, as ruled.
+So both readings exist and a spec says which it wants.
+Kyle said of an undeclared payload key (2026-11-10) that the keyed fold does not read it and a whole-record fold, a `where` test or a lens still can.
+This note places that line: a slot that follows `keys` does not read it, and the record readings do.
 
 For a slot that follows `keys`:
 
-- **A payload field** is read from the field's live setters: the live records that declare it, or when none does, the live whole-read emits.
+- **A payload field** is read from the field's live setters, as the Terms define them: every live record that sets it, by declaring it or by being whole-read.
 - **`where`:** each test is asked of each of those setters. One answer from all of them is the answer. Different answers, or a setter whose payload is not held, is unknown, and the thing is unread.
   The core compares test answers and never payload values, so agreement is not a conflict.
 - **count** counts the things selected. A thing forked across whole-read emits counts once here and twice under `"follow": "prev"`.
