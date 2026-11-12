@@ -6,14 +6,15 @@ The tree has three implementations: Lean, JavaScript, and Rust.
 Step 1 applies the six settled rulings before records exist.
 All three implement the settled decisions D1–D6, and D8a and D8b.
 All three let count, sum, min and max follow `prev` (issue #3), and group count, sum, min, max and collect with `by` (issue #2).
-The law index has 91 entries, 815 theorems, and 6 boundary witnesses.
+The law index has 91 entries, 818 theorems, and 6 boundary witnesses.
 See [the law index](design/laws/laws.json) and [proof and boundary data](design/laws/).
 These proofs apply only under their stated premises.
 
-The tree has 434 JSON fixtures: 422 generated fixtures and 12 standard fixtures.
-Lean replays 413 generated fixtures; 9 occurred fixtures use separate checks.
+The tree has 438 JSON fixtures: 426 generated fixtures and 12 standard fixtures.
+Lean replays 417 generated fixtures; 9 occurred fixtures use separate checks.
 Rust checks every fixture, six JCS byte pairs, 4,000 binary64 cases, and 128 SUPERCOP signing cases with ed25519-dalek.
-Rust passes 150 tests; JavaScript passes 5,669 vector checks and 29 regression and law tests.
+Rust passes 151 tests; JavaScript passes 5,843 vector checks and 30 regression and law tests.
+Both also check that `spec/run` answers write their members, group and thing keys included, in the model's order.
 The fuzz suite passes 49 tests.
 See [vectors](vectors/README.md), [Rust boundaries](rust/GAPS.md), and [the mutation report](model/mutate/REPORT.md).
 These checks provide bounded evidence, not complete JCS or cryptographic correctness.
