@@ -66,6 +66,10 @@ function spec(rng, rs) {
       // A collect that follows prev groups its current records.
       'by-mention-now-items': { collect: true, follow: 'prev', by: 'env.about:t' },
       'by-flag-now-items': { collect: true, follow: 'prev', limit: 1 + rng.int(3), by: 'flag', where: { 'env.kind': { not: 'erase' } } },
+      // `rank` is a whole number as text, or as number text spelled several
+      // ways (`1.0`, `10e-1`), which must share the text's group.
+      'by-rank': { count: true, by: 'rank' },
+      'by-rank-items': { collect: true, by: 'rank' },
     },
   };
 }
@@ -341,6 +345,19 @@ export function generate(seed, index, family) {
     if (slot === 9 || slot === 10) last.extra = 0;
     if (slot === 10) ds[0].env.extra = true;
   }
+  // One draft's envelope is not an object, or left out, or the draft is not an
+  // object, beside another draft whose envelope has an unknown key, in both
+  // orders: the unknown key is refused, whichever comes first.
+  if (family === 'batch' && (index % 64 === 40 || index % 64 === 41)) {
+    const first = index % 64 === 40, d = input.drafts[0];
+    const unknown = { label: '@b', env: { ...clone(d.env), prev: [], extra: true }, salt: d.salt, payload: null };
+    const other = { label: '@a', env: rng.pick([7, null, 'note', [clone(d.env)]]), salt: d.salt, payload: null };
+    const choice = rng.int(3);
+    if (choice === 1) delete other.env;
+    input.drafts = first ? [choice === 2 ? 7 : other, unknown] : [unknown, choice === 2 ? 7 : other];
+    nearMiss = first ? 'not-object-before-unknown-draft' : 'unknown-before-not-object-draft';
+    scheduled = true;
+  }
   if (family === 'record') {
     const slot = index % 64;
     const badTimes = [
@@ -400,6 +417,14 @@ export function generate(seed, index, family) {
       scheduled = true;
       input.envs = [];
       if (slot === 38) { delete input.payloads; input.payload_text = '["\\ud800"]'; }
+    }
+    // A variant that is not an object beside one with an unknown key, in both
+    // orders: the unknown key is refused first, whichever comes first.
+    if (index % 256 >= 64 && (slot === 39 || slot === 41)) {
+      const other = rng.pick([7, null, 'note', true, [clone(clean)]]), unknown = { ...clone(clean), extra: true };
+      nearMiss = slot === 39 ? 'not-object-before-unknown-variant' : 'unknown-before-not-object-variant';
+      scheduled = true;
+      input.envs = slot === 39 ? [other, unknown] : [unknown, other];
     }
     if (index % 256 < 64 && shapeSlots.includes(slot)) {
       const d = shapeSlots.indexOf(slot), target = `r:${'0'.repeat(52)}`;
@@ -492,6 +517,20 @@ export function generate(seed, index, family) {
       case 'batch': nearMiss = 'label-unknown'; input.drafts[0].env.prev = ['@missing']; break;
       case 'lens': nearMiss = 'unclosed-section'; input.text = ['::: t:open', 'body']; break;
     }
+  }
+  // A spec run's held payloads get `rank` last, so every earlier draw stays as
+  // it was. It is left out, text, a number, or number text that the file
+  // writes as spelled: a whole number shares its text's group, a fraction has
+  // none. One record has one rank in every order.
+  if (layer === 'spec/run' && input.orders) {
+    const ranks = new Map();
+    for (const r of input.orders[0]) {
+      if (!r.fields) continue;
+      const k = rng.int(3), form = rng.int(4);
+      if (form) ranks.set(r.id, form === 1 ? String(k) : form === 2 ? k
+        : { $number: rng.pick([`${k}.0`, `${k * 10}e-1`, `${k}E0`, k ? `${k}.000` : '-0', `${k}.5`]) });
+    }
+    for (const order of input.orders) for (const r of order) if (ranks.has(r.id)) r.fields.rank = clone(ranks.get(r.id));
   }
   return { layer, input, fuzz: { seed: String(seed), index, family, nearMiss } };
 }

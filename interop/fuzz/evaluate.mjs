@@ -1,6 +1,7 @@
 // Adapters ask the public JS APIs the same questions as Gen.Run.
 import { jsonSourceAt } from '../json-source.mjs';
 import { equal } from '../answers.mjs';
+import { inputText } from './transport.mjs';
 import * as F from '../js/fold.mjs';
 import * as L from '../js/loops.mjs';
 import * as S from '../js/spec.mjs';
@@ -101,7 +102,8 @@ export function evaluateJS(vector, rawText) {
       const parsed = S.parseNode(specNode(vector, rawText));
       if (!parsed.parsed) return [parsed];
       // Both spec readers admit their input. Settlement belongs to realm/scenario.
-      return input.orders.map(rs => S.runSpec(parsed.parsed, rs));
+      // The orders are read as their file writes them, number spellings included.
+      return JSON.parse(inputText(input.orders)).map(rs => S.runSpec(parsed.parsed, rs));
     }
     case 'batch': {
       // JSON.parse keeps only the last repeated env; shape checks need every
