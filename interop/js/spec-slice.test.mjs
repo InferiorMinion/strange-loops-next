@@ -9,7 +9,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { isDeepStrictEqual } from "node:util";
-import { base32 } from "./loops.mjs";
+import { base32, occurredSpan } from "./loops.mjs";
 import { parseSpec, runSpec, takes } from "./spec.mjs";
 import { settle } from "./realm.mjs";
 import { formOf } from "./scenario.mjs";
@@ -63,24 +63,29 @@ test("a successor's other prev target decides whether it replaces", () => {
 // keep the sweep honest: it must meet specs that leave records out, and each
 // kind that the generator can exercise must matter at least once.
 test("a spec slice answers as the whole, over generated specs and stores", () => {
-  const seen = { pairs: 0, partial: 0, erasers: 0, targets: 0, successors: 0, followed: 0, followedMatters: 0 };
+  const seen = { pairs: 0, partial: 0, erasers: 0, targets: 0, successors: 0, followed: 0, followedMatters: 0, grouped: 0, groupedMatters: 0 };
   // The slots that follow prev and accumulate: count, sum, min and max.
   const followedOf = (spec) => Object.entries(spec.fold)
     .filter(([, s]) => s.follow === "prev" && ["count", "sum", "min", "max"].some((t) => t in s)).map(([n]) => n);
+  // The slots with `by`, followed or not.
+  const groupedOf = (spec) => Object.entries(spec.fold).filter(([, s]) => s.by !== undefined).map(([n]) => n);
   const check = (spec, forms) => {
     const want = answer(spec, forms), { part, left } = slice(spec, forms);
     assert.deepEqual(answer(spec, part), want);
     seen.pairs += 1;
     seen.partial += left > 0;
-    const followed = followedOf(spec);
+    const followed = followedOf(spec), grouped = groupedOf(spec);
     seen.followed += followed.length > 0;
-    let matters = false;
+    seen.grouped += grouped.length > 0;
+    let matters = false, groupMatters = false;
     for (const drop of ["erasers", "targets", "successors"]) {
       const got = answer(spec, slice(spec, forms, drop).part);
       try { assert.deepEqual(got, want); } catch { seen[drop] += 1; }
       matters ||= followed.some((n) => !isDeepStrictEqual(got[n], want[n]));
+      groupMatters ||= grouped.some((n) => !isDeepStrictEqual(got[n], want[n]));
     }
     seen.followedMatters += matters;
+    seen.groupedMatters += groupMatters;
   };
   for (let i = 0; i < 1500; i++) {
     for (const family of ["spec", "scenario"]) {
@@ -94,7 +99,10 @@ test("a spec slice answers as the whole, over generated specs and stores", () =>
           return input.steps.map((s) => s.forms.map((f) => formOf(pool.get(f.id), f.shown)));
         })() : [];
       for (const forms of stores) {
-        try { answer(spec, forms); } catch { continue; } // an input this reader refuses is no store
+        // An input this reader refuses is no store. A time that is no span is
+        // one, though a reader meets it only when it orders that record.
+        if (forms.some((f) => f.occurred !== undefined && occurredSpan(f.occurred) === null)) continue;
+        try { answer(spec, forms); } catch { continue; }
         check(spec, forms);
       }
     }
@@ -105,5 +113,7 @@ test("a spec slice answers as the whole, over generated specs and stores", () =>
   // Followed count, sum, min and max are among the slots the slice answers for,
   // and dropping a kind changes one of them at least once.
   assert.ok(seen.followed > 500 && seen.followedMatters > 0, JSON.stringify(seen));
+  // So are slots with `by`, plain and followed, and dropping a kind changes one.
+  assert.ok(seen.grouped > 500 && seen.groupedMatters > 0, JSON.stringify(seen));
   console.log(`spec-slice sweep: ${JSON.stringify(seen)}`);
 });
