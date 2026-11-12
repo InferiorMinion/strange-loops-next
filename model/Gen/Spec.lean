@@ -559,6 +559,73 @@ def byCollectSpec : Json := o [("vertex", s "recent-per-status"),
     ("open-per-project", o [("collect", .bool true), ("by", s "env.about:project"),
       ("where", o [("status", o [("is", s "open")])])])])]
 
+-- Keys in UTF-16 code-unit order: the empty text, "10" before "2", and
+-- U+10000 (a surrogate pair, D800 DC00) before U+E000.
+def kk (id : RecordId) (thing : String) (t : Nat) (k : Val) (ok : Reads t := by decide) : Record :=
+  tb id thing t "sl:kyle" [] [("k", k)] (ok := ok)
+def ko0 := kk (fixtureId 0x40) "task:k0" 100 (.str "2")
+def ko1 := kk (fixtureId 0x41) "task:k1" 101 (.str "")
+def ko2 := kk (fixtureId 0x42) "task:k2" 102 (.str "")
+def ko3 := kk (fixtureId 0x43) "task:k3" 103 (.str "10")
+def ko4 := kk (fixtureId 0x44) "task:k4" 104 (.str "𐀀")
+
+def byOrderSpec : Json := o [("vertex", s "key-order"), ("from", a [o [("store", s ".")]]),
+  ("fold", o [("per-k", o [("count", .bool true), ("by", s "k")])])]
+
+-- Numbers as a reader reads their spelling, and booleans with their text.
+def nk0 := kk (fixtureId 0xc0) "task:n0" 100 (.int 0)
+def nk1 := kk (fixtureId 0xc1) "task:n1" 101 (.int 1)
+def nk2 := kk (fixtureId 0xc2) "task:n2" 102 (.int 1000)
+def nk3 := kk (fixtureId 0xc3) "task:n3" 103 (.int 1000000000000000)
+def nk4 := kk (fixtureId 0xc4) "task:n4" 104 (.int 9007199254740991)
+def nk5 := kk (fixtureId 0xc5) "task:n5" 105 (.int (-9007199254740991))
+def nk6 := kk (fixtureId 0xc6) "task:n6" 106 (.int 9007199254740992)
+def nk7 := kk (fixtureId 0xc7) "task:n7" 107 (.int 9007199254740993)
+def nk8 := kk (fixtureId 0xc8) "task:n8" 108 (.bool false)
+def nk9 := kk (fixtureId 0xc9) "task:n9" 109 (.str "false")
+def nk10 := kk (fixtureId 0xca) "task:n10" 110 (.bool true)
+def nk11 := kk (fixtureId 0xcb) "task:n11" 111 (.str "true")
+def nk12 := kk (fixtureId 0xcc) "task:n12" 112 (.int 1)
+def numberRaw : List (RecordId × String × String) := [
+  (fixtureId 0xc0, "k", "-0"), (fixtureId 0xc1, "k", "1.0"), (fixtureId 0xc2, "k", "1e3"),
+  (fixtureId 0xc3, "k", "1e+15"), (fixtureId 0xc4, "k", "9007199254740991"),
+  (fixtureId 0xc5, "k", "-9007199254740991"), (fixtureId 0xc6, "k", "9007199254740992"),
+  (fixtureId 0xc7, "k", "9007199254740993")]
+
+def byNumbersSpec : Json := o [("vertex", s "number-keys"), ("from", a [o [("store", s ".")]]),
+  ("fold", o [("per-k", o [("count", .bool true), ("by", s "k")]),
+    ("plain", o [("count", .bool true)])])]
+
+-- A prefix is matched with its colon: `proj` takes `proj:x` once, however
+-- often it is mentioned, and `proj:z`, never `project:y`. A payload field
+-- named `about:x` is read from the payload, not from `about`.
+def pm := tb (fixtureId 0xd0) "task:p" 100 "sl:kyle" ["proj:x", "proj:x", "project:y", "proj:z"]
+  [("about:x", .str "payload")]
+def pn := tb (fixtureId 0xd1) "task:q" 110 "sl:kyle" ["x:mention"] [("about:x", .str "payload")]
+
+def byMentionsSpec : Json := o [("vertex", s "mentions"), ("from", a [o [("store", s ".")]]),
+  ("fold", o [("per-proj", o [("count", .bool true), ("by", s "env.about:proj")]),
+    ("per-project", o [("count", .bool true), ("by", s "env.about:project")]),
+    ("per-x", o [("count", .bool true), ("by", s "env.about:x")]),
+    ("per-about-x", o [("count", .bool true), ("by", s "about:x")])])]
+
+-- Collect with a limit of 1 per kind: three open tasks, two open notes, a
+-- closed task and a withheld task. The limit keeps the newest open record of
+-- each kind; the withheld one is unread at the top, whatever the limit.
+def lc (id : RecordId) (thing : String) (t : Nat) (kind status : String) (ok : Reads t := by decide) : Record :=
+  { tb id thing t "sl:kyle" [] [("status", .str status)] (ok := ok) with kind }
+def limitRecords : List Record :=
+  [lc (fixtureId 0xe0) "task:l0" 100 "task" "open", lc (fixtureId 0xe1) "task:l1" 110 "task" "open",
+    lc (fixtureId 0xe2) "task:l2" 120 "note" "open", lc (fixtureId 0xe3) "task:l3" 130 "task" "closed",
+    lc (fixtureId 0xe4) "task:l4" 140 "note" "open", lc (fixtureId 0xe5) "task:l5" 150 "task" "open",
+    (lc (fixtureId 0xe6) "task:l6" 160 "task" "open").withhold]
+
+def byLimitSpec : Json := o [("vertex", s "newest-open-per-kind"), ("from", a [o [("store", s ".")]]),
+  ("fold", o [("newest", o [("collect", .bool true), ("limit", .int 1), ("by", s "env.kind"),
+      ("where", o [("status", o [("is", s "open")])])]),
+    ("all", o [("collect", .bool true), ("by", s "env.kind"),
+      ("where", o [("status", o [("is", s "open")])])])])]
+
 structure RunCase where
   name : String
   laws : List String
@@ -620,6 +687,16 @@ def runCases : List RunCase := [
   -- limit is per group
   ⟨"25-by-collect", ["spec.set", "by.set", "by.accounting", "result.unread"], byCollectSpec,
     [b1, b2, b3, b4, b5, b6]⟩,
+  -- group keys in UTF-16 order, as every implementation must write them
+  ⟨"26-by-key-order", ["spec.set", "by.set"], byOrderSpec, [ko0, ko1, ko2, ko3, ko4]⟩,
+  -- raw number spellings become decimal keys or none; booleans share their text's group
+  ⟨"27-by-number-keys", ["spec.set", "by.accounting", "by.partition"], byNumbersSpec,
+    [nk0, nk1, nk2, nk3, nk4, nk5, nk6, nk7, nk8, nk9, nk10, nk11, nk12]⟩,
+  -- prefixes match with their colon, a repeated mention counts once, and a
+  -- bare `about:x` is a payload field
+  ⟨"28-by-mentions", ["spec.set", "by.accounting"], byMentionsSpec, [pm, pn]⟩,
+  -- collect's limit is per group, and the top-level unread does not depend on it
+  ⟨"29-by-collect-limit", ["spec.set", "by.accounting", "result.unread"], byLimitSpec, limitRecords⟩,
   ⟨"gap04-unread-multi-thing", ["result.unread"],
     o [("vertex", s "x"), ("from", a [o [("store", s ".")]]), ("fold", o [
       ("by", o [("latest-by", s "of"), ("follow", s "prev"),
@@ -695,6 +772,24 @@ def jSlot : SlotValue → J
   | .groups gs u m => .obj [("groups", .obj (gs.map fun (g, v) => (g, jGroup v))),
       ("unread", .num u), ("ungrouped", .num m)]
 
+/-- Payload fields a run vector writes as raw number text: record, field,
+spelling. The record holds what a reader reads the spelling as. -/
+def rawSpellings : String → List (RecordId × String × String)
+  | "27-by-number-keys" => numberRaw
+  | _ => []
+
+/-- A record as the input writes it, with any raw spellings in its fields. -/
+def jRecordRaw (raw : List (RecordId × String × String)) (r : Record) : J :=
+  match jRecord r with
+  | .obj kvs => .obj (kvs.map fun (k, v) =>
+      if k != "fields" then (k, v) else match v with
+        | .obj fs => (k, .obj (fs.map fun (f, x) =>
+            match raw.find? fun (i, g, _) => i == r.id && g == f with
+            | some (_, _, t) => (f, .raw t)
+            | none => (f, x)))
+        | x => (k, x))
+  | j => j
+
 def rotations (xs : List Record) : List (List Record) :=
   (List.range xs.length).map fun i => xs.drop i ++ xs.take i
 
@@ -708,7 +803,7 @@ def runVector (c : RunCase) : Except String J := do
   if !(results.all (·.render 0 == first.render 0)) then
     throw s!"spec/run/{c.name}: arrival orders disagree"
   return vector c.name "spec/run" c.laws
-    (.obj [("spec", Records.ofJson c.spec), ("orders", .arr (orders.map fun o => .arr (o.map jRecord)))])
+    (.obj [("spec", Records.ofJson c.spec), ("orders", .arr (orders.map fun o => .arr (o.map (jRecordRaw (rawSpellings c.name)))))])
     first
 
 def vectors : Except String (List (String × String × J)) := do
