@@ -1,0 +1,26 @@
+{
+  "vector": "94-argument-after-by",
+  "layer": "spec/parse",
+  "laws": ["spec.parse"],
+  "source": "model",
+  "input": {
+    "spec": {
+      "vertex": "x",
+      "from": [
+        {
+          "store": "."
+        }
+      ],
+      "fold": {
+        "c": {
+          "sum": "",
+          "by": "env.kind"
+        }
+      }
+    }
+  },
+  "expect": {
+    "refused": "fold-argument",
+    "path": "fold.c.sum"
+  }
+}

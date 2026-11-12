@@ -10,6 +10,7 @@ The D1 and D2 rulings add six entries for the new library definitions: 201 entri
 D8 retargets ten entries at `of` and the one thing it names, and adds nine: 210 entries total.
 Following `prev` on count, sum, min and max retargets two entries (`wide-spec-069`, `coverage-spec-slotfollow`) and adds nine: 219 entries total.
 Issue #1 retargets four entries at the shape stage and labels in `under`, and adds ten: 229 entries total with both.
+`by` adds seven: 236 entries total with all three.
 The raw-reader ordering mutations target library definitions under `Loops`.
 The cheap runner uses those fourteen replacements and the four former D6 survivors.
 It requires runtime failures after successful builds.
@@ -229,7 +230,12 @@ The catalogue includes existing entries without definition metadata.
 - `Loops.Source.takes`: covered by `spec-source-all-any`, `d8-source-of-by-about`
 - `Loops.Spec.takes`: covered by `wide-spec-063`
 - `Loops.Spec.select`: covered by `wide-spec-064`
-- `Loops.Spec.run`: covered by `extra-spec-spec-run`
+- `Loops.Spec.run`: covered by `extra-spec-spec-run`, `by-group-before-admit`
+- `Loops.Slot.grouped`: covered by `by-group-before-heads`
+- `Loops.groupKeys`: covered by `by-empty-groups-kept`
+- `Loops.inGroup`: covered by `by-unknown-in-group`
+- `Loops.By.keys`: covered by `by-membership-once`, `by-unreadable-ungrouped`
+- `Loops.slotBy`: covered by `by-on-latest-by` (retargeted from `by-on-followed-collect` when `by` came to followed collect)
 - `Loops.refuse`: excluded: It constructs a refusal. No direct eligible operation.
 - `Loops.parseArg`: covered by `coverage-spec-parsearg`
 - `Loops.parseBound`: covered by `coverage-spec-parsebound`

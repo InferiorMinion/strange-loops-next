@@ -1,5 +1,62 @@
 # Lean model mutation report
 
+## `by` on a followed collect: the `by` entries, at `9e07995`
+
+`by` now groups collect that follows `prev`, so `by-on-followed-collect` no longer names a wrong rule.
+It is retargeted at the one refusal left, as `by-on-latest-by` (`by` accepted on latest-by); the catalogue keeps 236 entries.
+Node 25.9 reruns the seven `by` entries alone, with `--only`, in runs of three and four.
+Six are rejected by build and `by-unreadable-ungrouped` is killed by `spec/run/21`, `24`, `25` and the new `30`.
+`by-on-latest-by` fails at `Laws/Parse.lean` (`parseSlot_toJson`); applied by hand with only the generator built, it changes `spec/parse/90`.
+`by-group-before-heads` now also covers the grouped followed collect: applied by hand, it changes `spec/run/24` and `30`.
+The other four build-rejected entries were not applied by hand again; their earlier hand applications below predate `spec/run/30`.
+The runner restored the baseline build after both runs, and its output under the ignored `rust/target/scratch` was deleted.
+
+## After the merge of `main` with issue #1: the `by` entries, at `8d39dbd`
+
+The catalogue has 236 entries: 229 on `main` and the seven `by` adds.
+The full catalogue is not rerun. Node 25.9 reruns the seven `by` entries alone, with `--only`, in runs of three and four, on the merged tree.
+The outcomes are those of the run below: six rejected by build and `by-unreadable-ungrouped` killed by `spec/run/21`, `24` and `25`.
+`by-empty-groups-kept` now first fails at `Laws/SpecSlice.lean` (`Slot.grouped_slice`) in the build's order; the rest fail at the same proofs as before.
+The hand applications below were not repeated: the merge changes neither `Loops/Spec.lean`, which they mutate, nor `Gen/Spec.lean`, which writes the spec vectors they change.
+The runner restored the baseline build after both runs, and its output under the ignored `rust/target/scratch` was deleted.
+
+## `by`: targeted run
+
+The full catalogue is not rerun for issue #2.
+Node 25.9 runs only the seven entries `by` adds, with `--only`, in two runs of three and four, and the default 180-second timeout.
+They mutate `Spec.run`, `Slot.grouped`, `groupKeys`, `inGroup`, `By.keys` twice and `slotBy`.
+
+| Entry | Wrong rule | Outcome | Where |
+|---|---|---|---|
+| `by-group-before-admit` | a grouped slot reads the records as held, not as admitted | rejected by build | `Laws/Spec.lean`: `Spec.set_decides` |
+| `by-group-before-heads` | each group works out heads from its own records | rejected by build | `Laws/Spec.lean`: `Slot.grouped_set_decides` |
+| `by-empty-groups-kept` | a group for every key read, selected or not | rejected by build | `Laws/By.lean`: `groupKeys_nonempty`, `By.memberships` |
+| `by-unknown-in-group` | an unknown `where` counts in its group as well as at the top | rejected by build | `Laws/By.lean`: `groupKeys_nonempty`, `By.memberships`; `Laws/SpecSlice.lean`: `Slot.grouped_slice` |
+| `by-membership-once` | a record with several keys joins only the first | rejected by build | `Laws/By.lean`: `By.keys_nodup` |
+| `by-unreadable-ungrouped` | a payload key on a withheld payload is ungrouped, not unread | killed by vector | `spec/run/21`, `24`, `25` |
+| `by-on-followed-collect` | `by` accepted on collect with `follow` | rejected by build | `Laws/Parse.lean`: `parseSlot_toJson`, `parseSlot_fits` |
+
+Build rejections are not kills.
+`by-empty-groups-kept` and `by-unknown-in-group` fail where a law fails: no empty groups, and the groups holding the selected records once per key.
+The other four fail because a proof matches the definition's form: grouping before admission or before the heads is still decided by the set, and taking one key keeps keys distinct.
+So all six were also applied by hand, with only the generator built (`lake build gen`, then `lake exe gen` into a copy of `vectors/`).
+Each changes vectors:
+
+| Entry | Vectors that change |
+|---|---|
+| `by-group-before-admit` | `spec/run/23` (the refused revision appears in group `y`) |
+| `by-group-before-heads` | `spec/run/24` (the moved task's old version stays current in `x`) |
+| `by-empty-groups-kept` | `spec/run/21`, `22`, `24`, `25` |
+| `by-unknown-in-group` | `spec/run/21`, `24` |
+| `by-membership-once` | `spec/run/22`, `24` |
+| `by-on-followed-collect` | `spec/parse/91` |
+
+`by-group-before-admit` does not model settling within a group: the runner's spec vectors hand records over settled.
+`scenario/by-01-erased-in-another-group` pins that case, settling forms first, and no catalogue entry mutates it.
+Each build rejection was read in its log and fails at the named proof, not at a lint.
+The runner restored the source and rebuilt the baseline after both runs; each hand application was reverted with `git checkout` and the generator rebuilt.
+Raw results and logs were kept under the ignored `rust/target/scratch` and deleted once this summary was written.
+
 ## After the merge of `main`: both changes' entries, at `849d4da`
 
 The catalogue has 229 entries: 210, then ten for issue #1 and nine for `follow`, with six earlier entries retargeted between them.

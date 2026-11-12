@@ -12,6 +12,13 @@ import { tally, jsonFiles, runAlone } from "./tally.mjs";
 // which JSON.parse would not.
 const specNode = (file) => S.readJson(readFileSync(file, "utf8")).members
   .find(([k]) => k === "input")[1].members.find(([k]) => k === "spec")[1];
+// A vector's expect as written, members in the order the vector writes them.
+const expectNode = (file) => S.readJson(readFileSync(file, "utf8")).members.find(([k]) => k === "expect")[1];
+
+// The member names of every object, in order, at every depth: what a
+// structural comparison cannot see.
+const order = (n) => S.isObject(n) ? n.members.map(([k, x]) => [k, order(x)])
+  : S.isArray(n) ? n.items.map(order) : null;
 
 export function check(dir) {
   const t = tally();
@@ -34,10 +41,13 @@ export function check(dir) {
     const { parsed, refused } = S.parseNode(specNode(file));
     if (!parsed) { t.failures.push(`${n}: spec refused, ${refused}`); continue; }
     if (!v.input.orders.length) t.failures.push(`${n}: no orders`);
-    for (const [i, order] of v.input.orders.entries()) {
+    const want = order(expectNode(file));
+    for (const [i, rs] of v.input.orders.entries()) {
       let got;
-      try { got = S.runSpec(parsed, order); } catch (e) { got = `threw ${e.message}`; }
+      try { got = S.runSpec(parsed, rs); } catch (e) { got = `threw ${e.message}`; }
       t.expect(`${n} order ${i}`, got, v.expect);
+      // and written in the model's member order, keyed groups and things included
+      if (typeof got !== "string") t.expect(`${n} order ${i} member order`, order(S.readJson(S.slotsText(got))), want);
     }
   }
   return t;

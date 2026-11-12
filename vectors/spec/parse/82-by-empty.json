@@ -1,0 +1,26 @@
+{
+  "vector": "82-by-empty",
+  "layer": "spec/parse",
+  "laws": ["spec.parse"],
+  "source": "model",
+  "input": {
+    "spec": {
+      "vertex": "x",
+      "from": [
+        {
+          "store": "."
+        }
+      ],
+      "fold": {
+        "c": {
+          "count": true,
+          "by": ""
+        }
+      }
+    }
+  },
+  "expect": {
+    "refused": "by-invalid",
+    "path": "fold.c.by"
+  }
+}

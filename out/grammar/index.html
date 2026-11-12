@@ -316,7 +316,7 @@ header.top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--g
 <main>
 <section class="wrap intro">
   <h1>Grammar</h1>
-  <p class="lede">Records in, folds and ticks out, lenses back to text. Thirteen nouns, twelve verbs and six layers, each a little higher off the ground and a little more temporary. Everything said is a record on the ground; everything above it is worked out, and can be thrown away and worked out again.</p>
+  <p class="lede">Records in, folds and ticks out, lenses back to text. Thirteen nouns, thirteen verbs and six layers, each a little higher off the ground and a little more temporary. Everything said is a record on the ground; everything above it is worked out, and can be thrown away and worked out again.</p>
   <p class="legend"><span class="chip proved">proved</span><span>a theorem in <code>model/Laws</code>, pinned by vectors</span><span class="chip settled">settled</span><span>decided in the design ledger, not built yet</span></p>
 </section>
 
@@ -432,10 +432,10 @@ header.top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--g
       <div class="card-h"><h3>slot</h3><span class="chip proved">proved</span></div>
       <dl>
         <dt>Purpose</dt><dd>Hold one answer.</dd>
-        <dt>State</dt><dd>A name, one fold, and optionally <code>where</code>, <code>follow</code> and <code>limit</code>.</dd>
-        <dt>Principle</dt><dd>With each id supplied once, the same record set gives every slot the same value. A slot over heads returns only records that remain heads of at least one thing, and a count, sum, min or max over heads folds every current record and nothing else.</dd>
+        <dt>State</dt><dd>A name, one fold, and optionally <code>where</code>, <code>follow</code>, <code>limit</code> and <code>by</code>.</dd>
+        <dt>Principle</dt><dd>With each id supplied once, the same record set gives every slot the same value. A slot over heads returns only records that remain heads of at least one thing, and a count, sum, min or max over heads folds every current record and nothing else. A slot with <code>by</code> splits what it selects into groups, each the slot's own answer over its records, and accounts for every selected record.</dd>
       </dl>
-      <p class="laws"><a href="../laws/#law-spec-set"><code>spec.set</code></a> <a href="../laws/#law-spec-after-supersession"><code>spec.after-supersession</code></a> <a href="../laws/#law-spec-follow"><code>spec.follow</code></a></p>
+      <p class="laws"><a href="../laws/#law-spec-set"><code>spec.set</code></a> <a href="../laws/#law-spec-after-supersession"><code>spec.after-supersession</code></a> <a href="../laws/#law-spec-follow"><code>spec.follow</code></a> <a href="../laws/#law-by-set"><code>by.set</code></a> <a href="../laws/#law-by-accounting"><code>by.accounting</code></a></p>
     </article>
     <article class="card" id="noun-fold">
       <div class="card-h"><h3>fold</h3><span class="chip proved">proved</span></div>
@@ -509,6 +509,7 @@ header.top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--g
       <div class="row"><div class="row-k"><b>test</b><span class="chip proved">proved</span></div><div class="row-v"><p>A <code>where</code> test answers yes, no, or, on a payload the reader lacks, unknown.</p><p class="laws"><a href="../laws/#law-where-total"><code>where.total</code></a> <a href="../laws/#law-view-refines-where"><code>view.refines</code></a></p></div></div>
       <div class="row"><div class="row-k"><b>fold</b><span class="chip proved">proved</span></div><div class="row-v"><p>Turn what was taken into a slot's value.</p><p class="laws"><a href="../laws/#law-acc-set"><code>acc.set</code></a> <a href="../laws/#law-heads-set"><code>heads.set</code></a></p></div></div>
       <div class="row"><div class="row-k"><b>follow</b><span class="chip proved">proved</span></div><div class="row-v"><p>Walk <code>prev</code> within a thing to its heads: what nothing of it replaces.</p><p class="laws"><a href="../laws/#law-latest-by-order"><code>latest-by.order</code></a> <a href="../laws/#law-thing-local"><code>thing.local</code></a></p></div></div>
+      <div class="row"><div class="row-k"><b>group</b><span class="chip proved">proved</span></div><div class="row-v"><p>Split what a slot selects by a key read from each record: its kind, its observer, what it mentions under a prefix, or a payload field. After settling, admission and the heads, never before.</p><p class="laws"><a href="../laws/#law-by-after-admission"><code>by.after-admission</code></a> <a href="../laws/#law-by-accounting"><code>by.accounting</code></a> <a href="../laws/#law-by-partition"><code>by.partition</code></a></p></div></div>
     </div>
     <h3>Text</h3>
     <div class="rows">
@@ -532,7 +533,7 @@ header.top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--g
       <div class="ref"><p class="ref-h"><b>Text</b> <span>after raw envelope shape, before every other check: a string or member name holding a lone surrogate</span></p><p class="codes"><code>string-not-unicode</code></p></div>
       <div class="ref"><p class="ref-h"><b>Writing</b> <span>after the envelope; a salt that is not base32hex text is not 16 bytes; number magnitudes must be at most 2^53 - 1, whole or not, and a number past binary64's range is out of range</span></p><p class="codes"><code>salt-not-16-bytes</code> <code>member-duplicate</code> <code>number-out-of-range</code></p></div>
       <div class="ref"><p class="ref-h"><b>Batch</b> <span>shape, then labels, then writing, then prev-unknown, then of-not-root, then prev-unrelated</span></p><p class="codes"><code>envelope-field-unknown</code> <code>envelope-not-object</code> <code>label-duplicate</code> <code>label-unknown</code> <code>label-cycle</code> <code>prev-unknown</code> <code>of-not-root</code> <code>prev-unrelated</code></p></div>
-      <div class="ref"><p class="ref-h"><b>Spec</b> <span>the grammar's check order</span></p><p class="codes"><code>member-duplicate</code> <code>spec-not-object</code> <code>unknown-key</code> <code>vertex-missing</code> <code>vertex-invalid</code> <code>from-missing</code> <code>from-invalid</code> <code>fold-invalid</code> <code>fold-type</code> <code>follow-missing</code> <code>follow-invalid</code> <code>limit-invalid</code> <code>fold-argument</code> <code>where-invalid</code></p></div>
+      <div class="ref"><p class="ref-h"><b>Spec</b> <span>the grammar's check order</span></p><p class="codes"><code>member-duplicate</code> <code>spec-not-object</code> <code>unknown-key</code> <code>vertex-missing</code> <code>vertex-invalid</code> <code>from-missing</code> <code>from-invalid</code> <code>fold-invalid</code> <code>fold-type</code> <code>follow-missing</code> <code>follow-invalid</code> <code>limit-invalid</code> <code>by-invalid</code> <code>fold-argument</code> <code>where-invalid</code></p></div>
       <div class="ref"><p class="ref-h"><b>Lens</b> <span>the base, before the text is read</span></p><p class="codes"><code>base-id-duplicate</code></p></div>
       <div class="ref is-settled"><p class="ref-h"><b>Not pinned yet</b> <span>named in the laws, no vector</span></p><p class="codes"><code>prev-not-permitted</code> <code>sum-overflow</code></p></div>
     </div>

@@ -81,6 +81,15 @@ def jSlot : SlotValue → J
       .obj [("id", .str (idText i)), ("shown", jShown sh)])), ("unread", .num u)]
   | .things ts u => .obj [("things", .obj (ts.map fun (t, hs) => (t, .arr (hs.map fun (i, sh) =>
       .obj [("id", .str (idText i)), ("shown", jShown sh)])))), ("unread", .num u)]
+  | .groups gs u m => .obj [("groups", .obj (gs.map fun (g, v) => (g, match v with
+      | .nat r => .obj [("value", .num r.value), ("unread", .num r.unread)]
+      | .int r => .obj [("value", .int r.value), ("unread", .num r.unread)]
+      | .opt r => .obj [("value", match r.value with
+          | some v => .int v
+          | none => .null), ("unread", .num r.unread)]
+      | .heads hs u => .obj [("heads", .arr (hs.map fun (i, sh) =>
+          .obj [("id", .str (idText i)), ("shown", jShown sh)])), ("unread", .num u)]))),
+      ("unread", .num u), ("ungrouped", .num m)]
 
 /-- What a reader holding `forms` makes of them: settled, admitted, the thing's state, the slots. -/
 def outcome (sp : Spec) (forms : List Record) : J :=

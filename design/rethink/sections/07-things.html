@@ -273,5 +273,6 @@ loops emit dispute --of r:s2 --prev r:s2                                        
   "from": [{ "store": "team", "kind": ["decision", "note"] }],
   "resolve": "identity",
   "fold": { "by-thing": { "collect": true, "by": "about", "weight-by": "tenure" } } }</pre>
+    <p><b>PROPOSED FUTURE syntax.</b> <code>resolve</code> and <code>weight-by</code> are not built. <code>by</code> is now built, in another spelling: <code>"by": "about"</code> here groups by every thing a record mentions, while the built grammar groups by the mentions under one typed-reference prefix, <code>"by": "env.about:&lt;prefix&gt;"</code>, and reads a bare name such as <code>about</code> as a payload field.</p>
   </div></details>
 </section>

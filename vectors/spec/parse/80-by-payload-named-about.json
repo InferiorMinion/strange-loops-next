@@ -1,0 +1,38 @@
+{
+  "vector": "80-by-payload-named-about",
+  "layer": "spec/parse",
+  "laws": ["spec.parse"],
+  "source": "model",
+  "input": {
+    "spec": {
+      "vertex": "x",
+      "from": [
+        {
+          "store": "."
+        }
+      ],
+      "fold": {
+        "c": {
+          "count": true,
+          "by": "about:project"
+        }
+      }
+    }
+  },
+  "expect": {
+    "parsed": {
+      "vertex": "x",
+      "from": [
+        {
+          "store": "."
+        }
+      ],
+      "fold": {
+        "c": {
+          "count": true,
+          "by": "about:project"
+        }
+      }
+    }
+  }
+}

@@ -59,28 +59,55 @@ test("a successor's other prev target decides whether it replaces", () => {
   assert.deepEqual(Object.keys(answer(tasks, slice(tasks, whole, "theirs").part).current.things), []);
 });
 
+// The case the sweep met: A, a task of t:x whose `occurred` is no span, is
+// superseded by C, a note of t:x; B is a task of its own. The whole and the
+// complete slice never order A. Without the successor C, A is current, is
+// ordered against B, and this reader refuses its time.
+test("a successor dropped from the slice can surface a record the whole never orders", () => {
+  const r = (n, kind, of, prev = [], occurred) =>
+    ({ id: id(n), kind, observer: "sl:x", about: [], ...(of && { of }), prev: prev.map(id), emitted: `2020-01-01T00:00:0${n}Z`, ...(occurred && { occurred }) });
+  const A = r(1, "task", "t:x", [], "2024-99"), B = r(2, "task"), C = r(3, "note", "t:x", [1]);
+  const spec = parseSpec({ vertex: "v", from: [{ store: ".", kind: ["task"] }],
+    fold: { current: { count: true, follow: "prev", by: "env.kind" } } }).parsed;
+  const whole = [A, B, C];
+  const want = answer(spec, whole);
+  assert.deepEqual(JSON.parse(JSON.stringify(want.current)), { groups: { task: { value: 1, unread: 0 } }, unread: 0, ungrouped: 0 });
+  assert.deepEqual(answer(spec, slice(spec, whole).part), want);
+  assert.throws(() => answer(spec, slice(spec, whole, "successors").part), /occurred-not-span/);
+});
+
 // The fuzz generator's spec runs and scenario steps. The counts at the end
 // keep the sweep honest: it must meet specs that leave records out, and each
 // kind that the generator can exercise must matter at least once.
 test("a spec slice answers as the whole, over generated specs and stores", () => {
-  const seen = { pairs: 0, partial: 0, erasers: 0, targets: 0, successors: 0, followed: 0, followedMatters: 0 };
+  const seen = { pairs: 0, partial: 0, erasers: 0, targets: 0, successors: 0, followed: 0, followedMatters: 0, grouped: 0, groupedMatters: 0, groupedHeads: 0, threw: 0 };
   // The slots that follow prev and accumulate: count, sum, min and max.
   const followedOf = (spec) => Object.entries(spec.fold)
     .filter(([, s]) => s.follow === "prev" && ["count", "sum", "min", "max"].some((t) => t in s)).map(([n]) => n);
+  // The slots with `by`, followed or not.
+  const groupedOf = (spec) => Object.entries(spec.fold).filter(([, s]) => s.by !== undefined).map(([n]) => n);
   const check = (spec, forms) => {
     const want = answer(spec, forms), { part, left } = slice(spec, forms);
     assert.deepEqual(answer(spec, part), want);
     seen.pairs += 1;
     seen.partial += left > 0;
-    const followed = followedOf(spec);
+    const followed = followedOf(spec), grouped = groupedOf(spec);
     seen.followed += followed.length > 0;
-    let matters = false;
+    seen.grouped += grouped.length > 0;
+    seen.groupedHeads += grouped.some((n) => "collect" in spec.fold[n] && spec.fold[n].follow === "prev");
+    let matters = false, groupMatters = false;
     for (const drop of ["erasers", "targets", "successors"]) {
-      const got = answer(spec, slice(spec, forms, drop).part);
+      // A part without a kind may surface a record the whole never orders, such
+      // as a superseded one whose `occurred` is no span, which this reader
+      // refuses only when it compares it. That too is an answer that changed.
+      let got;
+      try { got = answer(spec, slice(spec, forms, drop).part); } catch { seen[drop] += 1; seen.threw += 1; continue; }
       try { assert.deepEqual(got, want); } catch { seen[drop] += 1; }
       matters ||= followed.some((n) => !isDeepStrictEqual(got[n], want[n]));
+      groupMatters ||= grouped.some((n) => !isDeepStrictEqual(got[n], want[n]));
     }
     seen.followedMatters += matters;
+    seen.groupedMatters += groupMatters;
   };
   for (let i = 0; i < 1500; i++) {
     for (const family of ["spec", "scenario"]) {
@@ -105,5 +132,9 @@ test("a spec slice answers as the whole, over generated specs and stores", () =>
   // Followed count, sum, min and max are among the slots the slice answers for,
   // and dropping a kind changes one of them at least once.
   assert.ok(seen.followed > 500 && seen.followedMatters > 0, JSON.stringify(seen));
+  // So are slots with `by`, plain and followed, and dropping a kind changes one.
+  assert.ok(seen.grouped > 500 && seen.groupedMatters > 0, JSON.stringify(seen));
+  // Among them a collect that follows prev, grouped over the whole view's heads.
+  assert.ok(seen.groupedHeads > 500, JSON.stringify(seen));
   console.log(`spec-slice sweep: ${JSON.stringify(seen)}`);
 });

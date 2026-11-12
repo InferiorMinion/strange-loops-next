@@ -379,6 +379,8 @@ pub enum RefusalCode {
     LimitInvalid,
     /// A fold argument breaks its type's grammar.
     FoldArgument,
+    /// A `by` names nothing to group by, or its fold type takes none.
+    ByInvalid,
 }
 impl RefusalCode {
     /// Lean: `Loops.Refusal.code`, model/Loops/Spec.lean.
@@ -399,6 +401,7 @@ impl RefusalCode {
             Self::FollowInvalid => "follow-invalid",
             Self::LimitInvalid => "limit-invalid",
             Self::FoldArgument => "fold-argument",
+            Self::ByInvalid => "by-invalid",
         }
     }
 }

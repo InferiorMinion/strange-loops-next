@@ -403,11 +403,12 @@ theorem Acc.followed_set_decides {σ} (f : Acc σ) (ev : Record → Tri) {xs ys 
     f.select ev (wholeHeads xs) = f.select ev (wholeHeads ys) :=
   wholeHeads_answer_set_decides (f.select ev) hx hy h
 
-/-- With each input id supplied once, every slot gives the same value for the same record set. -/
-theorem Slot.set_decides (s : Slot) (sel : Record → Bool) {xs ys : List Record}
+/-- With each input id supplied once, a slot without `by` gives the same value
+for the same record set, whatever it selects by. -/
+theorem Slot.plain_set_decides (s : Slot) (sel : Record → Bool) {xs ys : List Record}
     (hx : Distinct xs) (hy : Distinct ys) (h : ∀ r, r ∈ xs ↔ r ∈ ys) :
-    s.run sel xs = s.run sel ys := by
-  unfold Slot.run
+    s.plain sel xs = s.plain sel ys := by
+  unfold Slot.plain
   split
   all_goals dsimp only
   iterate 4
@@ -417,6 +418,65 @@ theorem Slot.set_decides (s : Slot) (sel : Record → Bool) {xs ys : List Record
     · exact congrArg _ (Acc.select_set_decides _ _ hx hy h)
   · exact latestOf_set_decides _ _ hx.addressed hy.addressed h
   · exact collectOf_set_decides _ _ _ _ hx.addressed hy.addressed h
+
+/-! ## Grouping with `by` -/
+
+/-- What a slot reads holds each id once. -/
+theorem Slot.pool_distinct (s : Slot) {xs : List Record} (hx : Distinct xs) : Distinct (s.pool xs) := by
+  unfold Slot.pool
+  split <;> first
+    | exact hx
+    | (simp only [accPool]; split
+       · exact wholeHeads_distinct hx.addressed
+       · exact hx)
+
+/-- What a slot reads is a fact of the set held. -/
+theorem Slot.pool_set_decides (s : Slot) {xs ys : List Record} (hx : Distinct xs) (hy : Distinct ys)
+    (h : ∀ r, r ∈ xs ↔ r ∈ ys) (r : Record) : r ∈ s.pool xs ↔ r ∈ s.pool ys := by
+  unfold Slot.pool
+  split <;> first
+    | exact h r
+    | (simp only [accPool]; split
+       · rw [wholeHeads_set_decides hx.addressed hy.addressed h]
+       · exact h r)
+
+/-- Two lists holding each id once and the same records filter to lists of one length. -/
+theorem length_filter_same {xs ys : List Record} (hx : Distinct xs) (hy : Distinct ys)
+    (h : ∀ r, r ∈ xs ↔ r ∈ ys) (p : Record → Bool) : (xs.filter p).length = (ys.filter p).length :=
+  (((perm_ext_iff_of_nodup hx.nodup hy.nodup).2 h).filter p).length_eq
+
+/-- The groups' keys depend only on which records are read. -/
+theorem groupKeys_same (b : By) (ev : Record → Tri) {xs ys : List Record} (h : ∀ r, r ∈ xs ↔ r ∈ ys) :
+    groupKeys b ev xs = groupKeys b ev ys := by
+  unfold groupKeys
+  apply canonSet_eq
+  intro k
+  simp only [mem_flatMap, mem_filter, h]
+
+/-- **The set decides a grouped slot.** The group a record joins is a function
+of that record alone, and each group runs the slot without `by` over everything
+held, so each group's answer depends only on the set: through `acc.set` for the
+plain form and `heads.set` for the followed one (`Slot.plain_set_decides`). The
+keys, the unread and the ungrouped are counts of the same set. -/
+theorem Slot.grouped_set_decides (s : Slot) (b : By) (sel : Record → Bool) {xs ys : List Record}
+    (hx : Distinct xs) (hy : Distinct ys) (h : ∀ r, r ∈ xs ↔ r ∈ ys) :
+    s.grouped b sel xs = s.grouped b sel ys := by
+  have hp := s.pool_set_decides hx hy h
+  have hl := length_filter_same (s.pool_distinct hx) (s.pool_distinct hy) hp
+  unfold Slot.grouped
+  simp only [groupKeys_same b (s.ev sel) hp, hl]
+  congr 1
+  exact map_congr_left fun g _ => by
+    rw [Slot.plain_set_decides _ _ hx hy h]
+
+/-- With each input id supplied once, every slot gives the same value for the same record set. -/
+theorem Slot.set_decides (s : Slot) (sel : Record → Bool) {xs ys : List Record}
+    (hx : Distinct xs) (hy : Distinct ys) (h : ∀ r, r ∈ xs ↔ r ∈ ys) :
+    s.run sel xs = s.run sel ys := by
+  unfold Slot.run
+  split
+  · exact s.plain_set_decides sel hx hy h
+  · exact s.grouped_set_decides _ sel hx hy h
 
 /-- With each input id supplied once, the same record set gives the same spec result under any fixed replacement rule. -/
 theorem Spec.set_decides (sp : Spec) (may : Record → Record → Bool) {xs ys : List Record}

@@ -301,19 +301,24 @@ section Slots
 
 variable {sp : Spec} {S W : List Record} {may : Record → Record → Bool}
 
+/-! A slot reads with `sp.takes`, or, for one group of a slot with `by`, with a
+narrower selection: the records `sp.takes` takes that are selected and keyed
+into that group. So the lemmas below take any selection `sel` within
+`sp.takes`. -/
+
 /-- The chosen heads of each thing are the same list. -/
 theorem chosenHeads_slice (hm : EnvOnly may) (hF : Forms W) (h : SpecSlice sp S W)
-    (cs : List Cond) (t : String) :
-    (stateIn t (realm may S)).heads.filter (chosen sp.takes cs) =
-      (stateIn t (realm may W)).heads.filter (chosen sp.takes cs) := by
+    {sel : Record → Bool} (hsel : ∀ r, sel r = true → sp.takes r = true) (cs : List Cond) (t : String) :
+    (stateIn t (realm may S)).heads.filter (chosen sel cs) =
+      (stateIn t (realm may W)).heads.filter (chosen sel cs) := by
   apply newest_ext
   · exact ((LatestBy.inv_of ((realm_addressed may S).filter _)).heads_sorted).sublist filter_sublist
   · exact ((LatestBy.inv_of ((realm_addressed may W).filter _)).heads_sorted).sublist filter_sublist
   · intro r
     simp only [mem_filter]
     constructor
-    · rintro ⟨hr, hc⟩; exact ⟨(heads_taken hm hF h t (chosen_takes hc)).1 hr, hc⟩
-    · rintro ⟨hr, hc⟩; exact ⟨(heads_taken hm hF h t (chosen_takes hc)).2 hr, hc⟩
+    · rintro ⟨hr, hc⟩; exact ⟨(heads_taken hm hF h t (hsel _ (chosen_takes hc))).1 hr, hc⟩
+    · rintro ⟨hr, hc⟩; exact ⟨(heads_taken hm hF h t (hsel _ (chosen_takes hc))).2 hr, hc⟩
 
 /-- A thing with a head is one of the things held. -/
 theorem head_thing {xs : List Record} (hx : Addressed xs) {t : String} {r : Record}
@@ -323,16 +328,16 @@ theorem head_thing {xs : List Record} (hx : Addressed xs) {t : String} {r : Reco
 
 /-- The chosen current records, over every thing, are the same set. -/
 theorem perHeads_slice (hm : EnvOnly may) (hF : Forms W) (h : SpecSlice sp S W)
-    (cs : List Cond) (r : Record) :
-    r ∈ (perHeads (realm may S)).filter (chosen sp.takes cs) ↔
-      r ∈ (perHeads (realm may W)).filter (chosen sp.takes cs) := by
+    {sel : Record → Bool} (hsel : ∀ r, sel r = true → sp.takes r = true) (cs : List Cond) (r : Record) :
+    r ∈ (perHeads (realm may S)).filter (chosen sel cs) ↔
+      r ∈ (perHeads (realm may W)).filter (chosen sel cs) := by
   simp only [mem_filter, mem_perHeads]
   constructor
   · rintro ⟨⟨t, -, hr⟩, hc⟩
-    have hw := (heads_taken hm hF h t (chosen_takes hc)).1 hr
+    have hw := (heads_taken hm hF h t (hsel _ (chosen_takes hc))).1 hr
     exact ⟨⟨t, head_thing (realm_addressed may W) hw, hw⟩, hc⟩
   · rintro ⟨⟨t, -, hw⟩, hc⟩
-    have hr := (heads_taken hm hF h t (chosen_takes hc)).2 hw
+    have hr := (heads_taken hm hF h t (hsel _ (chosen_takes hc))).2 hw
     exact ⟨⟨t, head_thing (realm_addressed may S) hr, hr⟩, hc⟩
 
 /-- Latest-by, with the things written out. -/
@@ -348,27 +353,28 @@ theorem latestOf_eq (sel : Record → Bool) (cs : List Cond) (xs : List Record) 
   simp only [latestOf, perThing, filterMap_map, flatMap_map, Function.comp_def]
   rfl
 
-theorem latestOf_slice (hm : EnvOnly may) (hF : Forms W) (h : SpecSlice sp S W) (cs : List Cond) :
-    latestOf sp.takes cs (realm may S) = latestOf sp.takes cs (realm may W) := by
-  have H := chosenHeads_slice hm hF h cs
+theorem latestOf_slice (hm : EnvOnly may) (hF : Forms W) (h : SpecSlice sp S W)
+    {sel : Record → Bool} (hsel : ∀ r, sel r = true → sp.takes r = true) (cs : List Cond) :
+    latestOf sel cs (realm may S) = latestOf sel cs (realm may W) := by
+  have H := chosenHeads_slice hm hF h hsel cs
   have hS := realm_addressed may S
   have hW := realm_addressed may W
   rw [latestOf_eq, latestOf_eq]
   simp only [H]
   generalize hg : (fun t =>
-    match ((stateIn t (realm may W)).heads.filter (chosen sp.takes cs)).filter
+    match ((stateIn t (realm may W)).heads.filter (chosen sel cs)).filter
         (payTest cs · == .yes) with
     | [] => none
     | ks => some (t, shownIds ks)) = g
   have gsome : ∀ t, (g t).isSome = true → ∃ r,
-      r ∈ (stateIn t (realm may W)).heads.filter (chosen sp.takes cs) := by
+      r ∈ (stateIn t (realm may W)).heads.filter (chosen sel cs) := by
     intro t ht
     subst hg
     dsimp only at ht
     split at ht
     · cases ht
     · rename_i ks hks
-      cases hk : ((stateIn t (realm may W)).heads.filter (chosen sp.takes cs)).filter
+      cases hk : ((stateIn t (realm may W)).heads.filter (chosen sel cs)).filter
           (payTest cs · == .yes) with
       | nil => exact absurd hk (hks)
       | cons k _ =>
@@ -387,10 +393,10 @@ theorem latestOf_slice (hm : EnvOnly may) (hF : Forms W) (h : SpecSlice sp S W) 
       rw [← H] at hr
       exact ⟨head_thing hS (mem_filter.1 hr).1, ht⟩
   have unread : idsOf ((thingsOf (realm may S)).flatMap fun t =>
-        ((stateIn t (realm may W)).heads.filter (chosen sp.takes cs)).filter
+        ((stateIn t (realm may W)).heads.filter (chosen sel cs)).filter
           (payTest cs · == .unknown)) =
       idsOf ((thingsOf (realm may W)).flatMap fun t =>
-        ((stateIn t (realm may W)).heads.filter (chosen sp.takes cs)).filter
+        ((stateIn t (realm may W)).heads.filter (chosen sel cs)).filter
           (payTest cs · == .unknown)) := by
     apply idsOf_ext
     intro i
@@ -405,27 +411,28 @@ theorem latestOf_slice (hm : EnvOnly may) (hF : Forms W) (h : SpecSlice sp S W) 
   rw [← filterMap_filter_some g (thingsOf (realm may S)),
     ← filterMap_filter_some g (thingsOf (realm may W)), things, unread]
 
-theorem collectOf_slice (hm : EnvOnly may) (hF : Forms W) (h : SpecSlice sp S W) (cs : List Cond)
+theorem collectOf_slice (hm : EnvOnly may) (hF : Forms W) (h : SpecSlice sp S W)
+    {sel : Record → Bool} (hsel : ∀ r, sel r = true → sp.takes r = true) (cs : List Cond)
     (follow : Bool) (limit : Option Nat) :
-    collectOf sp.takes cs follow limit (realm may S) =
-      collectOf sp.takes cs follow limit (realm may W) := by
+    collectOf sel cs follow limit (realm may S) =
+      collectOf sel cs follow limit (realm may W) := by
   have hS := realm_addressed may S
   have hW := realm_addressed may W
   have hp : newestFirst ((if follow then (perThing (realm may S)).flatMap (·.2.heads)
-        else realm may S).filter (chosen sp.takes cs)) =
+        else realm may S).filter (chosen sel cs)) =
       newestFirst ((if follow then (perThing (realm may W)).flatMap (·.2.heads)
-        else realm may W).filter (chosen sp.takes cs)) := by
+        else realm may W).filter (chosen sel cs)) := by
     cases follow
     · simp only [Bool.false_eq_true, ↓reduceIte]
       apply newestFirst_eq (hS.filter _) (hW.filter _)
       intro r
       simp only [mem_filter]
       constructor
-      · rintro ⟨hr, hc⟩; exact ⟨(realm_taken hm hF h (chosen_takes hc)).1 hr, hc⟩
-      · rintro ⟨hr, hc⟩; exact ⟨(realm_taken hm hF h (chosen_takes hc)).2 hr, hc⟩
+      · rintro ⟨hr, hc⟩; exact ⟨(realm_taken hm hF h (hsel _ (chosen_takes hc))).1 hr, hc⟩
+      · rintro ⟨hr, hc⟩; exact ⟨(realm_taken hm hF h (hsel _ (chosen_takes hc))).2 hr, hc⟩
     · simp only [↓reduceIte]
       exact newestFirst_eq ((perHeads_addressed hS).filter _) ((perHeads_addressed hW).filter _)
-        (perHeads_slice hm hF h cs)
+        (perHeads_slice hm hF h hsel cs)
   unfold collectOf
   simp only [hp]
 
@@ -445,28 +452,39 @@ theorem wholeHeads_taken_slice (hm : EnvOnly may) (hF : Forms W) (h : SpecSlice 
     have hr := (heads_taken hm hF h t ht).2 hw
     exact ⟨⟨t, head_thing (realm_addressed may S) hr, hr⟩, ht⟩
 
+/-- A selection within what the spec takes refuses whatever the spec does not take. -/
+theorem ev_within {sel : Record → Bool} (hsel : ∀ r, sel r = true → sp.takes r = true) (cs : List Cond) :
+    ∀ r, sp.takes r = false → (fun r => if sel r then Cond.all cs r else Tri.no) r = .no := by
+  intro r hr
+  have : sel r = false := by
+    cases e : sel r
+    · rfl
+    · rw [hsel r e] at hr; cases hr
+  simp [this]
+
 /-- An accumulating slot that follows `prev` gives the same value over the slice. -/
-theorem followed_slice (hm : EnvOnly may) (hF : Forms W) (h : SpecSlice sp S W) {σ} (f : Acc σ)
+theorem followed_slice (hm : EnvOnly may) (hF : Forms W) (h : SpecSlice sp S W)
+    {sel : Record → Bool} (hsel : ∀ r, sel r = true → sp.takes r = true) {σ} (f : Acc σ)
     (cs : List Cond) :
-    f.select (fun r => if sp.takes r then Cond.all cs r else Tri.no) (wholeHeads (realm may S)) =
-      f.select (fun r => if sp.takes r then Cond.all cs r else Tri.no) (wholeHeads (realm may W)) := by
-  have hno : ∀ r, sp.takes r = false →
-      (fun r => if sp.takes r then Cond.all cs r else Tri.no) r = .no := fun r hr => by simp [hr]
+    f.select (fun r => if sel r then Cond.all cs r else Tri.no) (wholeHeads (realm may S)) =
+      f.select (fun r => if sel r then Cond.all cs r else Tri.no) (wholeHeads (realm may W)) := by
+  have hno := ev_within hsel cs
   rw [← f.select_filter _ sp.takes hno, ← f.select_filter _ sp.takes hno (wholeHeads (realm may W))]
   exact Acc.select_set_decides _ _ ((wholeHeads_distinct (realm_addressed may S)).filter _)
     ((wholeHeads_distinct (realm_addressed may W)).filter _) (wholeHeads_taken_slice hm hF h)
 
-/-- Every slot gives the same value over the slice. -/
-theorem Slot.run_slice (hm : EnvOnly may) (hF : Forms W) (h : SpecSlice sp S W) (s : Slot) :
-    s.run sp.takes (realm may S) = s.run sp.takes (realm may W) := by
+/-- A slot without `by` gives the same value over the slice, for any selection
+within what the spec takes. -/
+theorem Slot.plain_slice (hm : EnvOnly may) (hF : Forms W) (h : SpecSlice sp S W)
+    {sel : Record → Bool} (hsel : ∀ r, sel r = true → sp.takes r = true) (s : Slot) :
+    s.plain sel (realm may S) = s.plain sel (realm may W) := by
   have hS : Distinct (realm may S) := admit_distinct may (settle_distinct S)
   have hW : Distinct (realm may W) := admit_distinct may (settle_distinct W)
   have acc : ∀ {σ} (f : Acc σ) (cs : List Cond),
-      f.select (fun r => if sp.takes r then Cond.all cs r else Tri.no) (realm may S) =
-        f.select (fun r => if sp.takes r then Cond.all cs r else Tri.no) (realm may W) := by
+      f.select (fun r => if sel r then Cond.all cs r else Tri.no) (realm may S) =
+        f.select (fun r => if sel r then Cond.all cs r else Tri.no) (realm may W) := by
     intro σ f cs
-    have hno : ∀ r, sp.takes r = false →
-        (fun r => if sp.takes r then Cond.all cs r else Tri.no) r = .no := fun r hr => by simp [hr]
+    have hno := ev_within hsel cs
     rw [← f.select_filter _ sp.takes hno (realm may S), ← f.select_filter _ sp.takes hno (realm may W)]
     apply Acc.select_set_decides _ _ (hS.filter _) (hW.filter _)
     intro r
@@ -474,16 +492,101 @@ theorem Slot.run_slice (hm : EnvOnly may) (hF : Forms W) (h : SpecSlice sp S W) 
     constructor
     · rintro ⟨hr, ht⟩; exact ⟨(realm_taken hm hF h ht).1 hr, ht⟩
     · rintro ⟨hr, ht⟩; exact ⟨(realm_taken hm hF h ht).2 hr, ht⟩
-  unfold Slot.run
+  unfold Slot.plain
   split
   all_goals dsimp only
   iterate 4
     simp only [accPool]
     split
-    · rw [followed_slice hm hF h]
+    · rw [followed_slice hm hF h hsel]
     · rw [acc]
-  · exact latestOf_slice hm hF h _
-  · exact collectOf_slice hm hF h _ _ _
+  · exact latestOf_slice hm hF h hsel _
+  · exact collectOf_slice hm hF h hsel _ _ _
+
+/-- What a slot reads, among the records the spec takes, is the same in the
+slice and in the whole. -/
+theorem Slot.pool_slice (hm : EnvOnly may) (hF : Forms W) (h : SpecSlice sp S W) (s : Slot)
+    {r : Record} (ht : sp.takes r = true) :
+    r ∈ s.pool (realm may S) ↔ r ∈ s.pool (realm may W) := by
+  have hw := wholeHeads_taken_slice hm hF h r
+  simp only [mem_filter, ht, and_true] at hw
+  unfold Slot.pool
+  split <;> first
+    | exact realm_taken hm hF h ht
+    | (simp only [accPool]; split
+       · exact hw
+       · exact realm_taken hm hF h ht)
+
+/-- A record a slot selects, or cannot answer for, is one the spec takes. -/
+theorem Slot.ev_takes (s : Slot) {r : Record} (h : s.ev sp.takes r ≠ .no) : sp.takes r = true := by
+  unfold Slot.ev at h
+  cases e : sp.takes r
+  · simp [e] at h
+  · rfl
+
+/-- Counting what a slot reads, among the records it selects or cannot answer
+for, gives the same number in the slice and in the whole. -/
+theorem Slot.count_slice (hm : EnvOnly may) (hF : Forms W) (h : SpecSlice sp S W) (s : Slot)
+    (p : Record → Bool) (hp : ∀ r, p r = true → s.ev sp.takes r ≠ .no) :
+    ((s.pool (realm may S)).filter p).length = ((s.pool (realm may W)).filter p).length := by
+  have hS := s.pool_distinct (admit_distinct may (settle_distinct S))
+  have hW := s.pool_distinct (admit_distinct may (settle_distinct W))
+  have e : ∀ xs : List Record, xs.filter p = (xs.filter sp.takes).filter p := fun xs => by
+    rw [filter_filter]
+    apply filter_congr
+    intro r _
+    cases hr : p r
+    · simp
+    · simp [s.ev_takes (hp r hr)]
+  have dS : Distinct ((s.pool (realm may S)).filter sp.takes) :=
+    pairwise_map.2 ((pairwise_map.1 hS).sublist filter_sublist)
+  have dW : Distinct ((s.pool (realm may W)).filter sp.takes) :=
+    pairwise_map.2 ((pairwise_map.1 hW).sublist filter_sublist)
+  rw [e (s.pool (realm may S)), e (s.pool (realm may W))]
+  refine length_filter_same dS dW (fun r => ?_) p
+  simp only [mem_filter]
+  constructor
+  · rintro ⟨hr, ht⟩; exact ⟨(s.pool_slice hm hF h ht).1 hr, ht⟩
+  · rintro ⟨hr, ht⟩; exact ⟨(s.pool_slice hm hF h ht).2 hr, ht⟩
+
+/-- A slot with `by` gives the same value over the slice. Each group runs the
+slot without `by` with a selection within what the spec takes, a group's key
+reads only a taken record, and the keys, the unread and the ungrouped count
+taken records. -/
+theorem Slot.grouped_slice (hm : EnvOnly may) (hF : Forms W) (h : SpecSlice sp S W) (s : Slot)
+    (b : By) : s.grouped b sp.takes (realm may S) = s.grouped b sp.takes (realm may W) := by
+  have ne : ∀ r, s.ev sp.takes r = .yes → s.ev sp.takes r ≠ .no := fun r e => by rw [e]; decide
+  have keys : groupKeys b (s.ev sp.takes) (s.pool (realm may S)) =
+      groupKeys b (s.ev sp.takes) (s.pool (realm may W)) := by
+    unfold groupKeys
+    apply canonSet_eq
+    intro k
+    simp only [mem_flatMap, mem_filter, beq_iff_eq]
+    constructor
+    · rintro ⟨r, ⟨hr, he⟩, hk⟩
+      exact ⟨r, ⟨(s.pool_slice hm hF h (s.ev_takes (ne r he))).1 hr, he⟩, hk⟩
+    · rintro ⟨r, ⟨hr, he⟩, hk⟩
+      exact ⟨r, ⟨(s.pool_slice hm hF h (s.ev_takes (ne r he))).2 hr, he⟩, hk⟩
+  have c1 := s.count_slice hm hF h (s.ev sp.takes · == .unknown) fun r hr => by
+    simp only [beq_iff_eq] at hr; rw [hr]; decide
+  have c2 := s.count_slice hm hF h (fun r => s.ev sp.takes r == .yes && (b.keys r).isNone)
+    fun r hr => ne r (by simp only [Bool.and_eq_true, beq_iff_eq] at hr; exact hr.1)
+  have c3 := s.count_slice hm hF h (fun r => s.ev sp.takes r == .yes && b.keys r == some [])
+    fun r hr => ne r (by simp only [Bool.and_eq_true, beq_iff_eq] at hr; exact hr.1)
+  unfold Slot.grouped
+  simp only [keys, c1, c2, c3]
+  congr 1
+  exact map_congr_left fun g _ => by
+    rw [Slot.plain_slice hm hF h (sel := inGroup b (s.ev sp.takes) g)
+      (fun r hr => s.ev_takes (ne r (by simp only [inGroup, Bool.and_eq_true, beq_iff_eq] at hr; exact hr.1)))]
+
+/-- Every slot gives the same value over the slice. -/
+theorem Slot.run_slice (hm : EnvOnly may) (hF : Forms W) (h : SpecSlice sp S W) (s : Slot) :
+    s.run sp.takes (realm may S) = s.run sp.takes (realm may W) := by
+  unfold Slot.run
+  split
+  · exact s.plain_slice hm hF h (fun _ e => e)
+  · exact s.grouped_slice hm hF h _
 
 /-- **A spec slice answers for its spec.** Running the spec over the slice
 gives what running it over everything held gives: every slot, the values, the

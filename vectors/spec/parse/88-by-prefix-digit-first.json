@@ -1,0 +1,26 @@
+{
+  "vector": "88-by-prefix-digit-first",
+  "layer": "spec/parse",
+  "laws": ["spec.parse"],
+  "source": "model",
+  "input": {
+    "spec": {
+      "vertex": "x",
+      "from": [
+        {
+          "store": "."
+        }
+      ],
+      "fold": {
+        "c": {
+          "count": true,
+          "by": "env.about:2x"
+        }
+      }
+    }
+  },
+  "expect": {
+    "refused": "by-invalid",
+    "path": "fold.c.by"
+  }
+}

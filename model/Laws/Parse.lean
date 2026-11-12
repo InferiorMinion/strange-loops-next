@@ -311,8 +311,24 @@ def FoldType.Fits : FoldType → Prop
   | .collect _ (some k) => 0 < k
   | _ => True
 
+/-- What `by` may name: `env.kind`, `env.observer`, `env.about:` with a
+typed-reference prefix, or a payload field `where` could name. (A payload name
+that doesn't start `env.` never starts `env.about:`; the second half of its
+condition says so in the terms the parser reads.) -/
+def By.Fits : By → Prop
+  | .kind | .observer => True
+  | .about p => refPrefix p.toList = true
+  | .payload n => Field.Fits (.payload n) ∧ aboutPrefixOf n = none
+
+/-- The fold types `by` may group: count, sum, min, max and collect,
+following `prev` or not; every fold type but latest-by. -/
+def FoldType.Groups : FoldType → Prop
+  | .latestBy => False
+  | _ => True
+
 def Slot.Fits (s : Slot) : Prop :=
-  s.name.isEmpty = false ∧ s.type.Fits ∧ (s.tests = [] ∨ s.tests.Fits)
+  s.name.isEmpty = false ∧ s.type.Fits ∧ (s.tests = [] ∨ s.tests.Fits) ∧
+    ∀ b ∈ s.group, b.Fits ∧ s.type.Groups
 
 def Source.Fits (s : Source) : Prop :=
   s.store.isEmpty = false ∧ (∀ k ∈ s.kinds, k.isEmpty = false) ∧ (∀ a ∈ s.about, typedRef a = true) ∧
@@ -349,6 +365,52 @@ theorem Field.ofName_some {s : String} {f : Field} (h : Field.ofName s = some f)
       cases h
       exact ⟨rfl, by simpa using he, by simpa using hp⟩
 
+
+/-! ## `by` names -/
+
+theorem aboutPrefixOf_eq {s : String} {p : List Char} (h : aboutPrefixOf s = some p) :
+    s = "env.about:" ++ String.ofList p := by
+  unfold aboutPrefixOf at h
+  split at h
+  · rename_i q hq
+    cases h
+    apply String.toList_inj.1
+    simp [hq, String.toList_append]
+  · cases h
+
+theorem By.ofName_name {b : By} (h : b.Fits) : By.ofName b.name = some b := by
+  cases b with
+  | kind => decide +kernel
+  | observer => decide +kernel
+  | about p =>
+    have hp : aboutPrefixOf ("env.about:" ++ p) = some p.toList := by
+      simp [aboutPrefixOf, String.toList_append]
+    simp only [By.ofName, By.name, hp]
+    simp [show refPrefix p.toList = true from h]
+  | payload n =>
+    obtain ⟨hf, ha⟩ := h
+    have e := Field.ofName_name hf
+    simp only [Field.name] at e
+    simp only [By.ofName, By.name, ha, e]
+
+theorem By.ofName_some {s : String} {b : By} (h : By.ofName s = some b) : b.name = s ∧ b.Fits := by
+  unfold By.ofName at h
+  split at h
+  · rename_i p hp
+    split at h
+    · rename_i hr
+      cases h
+      refine ⟨?_, by simpa [By.Fits] using hr⟩
+      rw [aboutPrefixOf_eq hp]; rfl
+    · cases h
+  · rename_i hp
+    split at h
+    · rename_i e; cases h; exact ⟨(Field.ofName_some e).1, trivial⟩
+    · rename_i e; cases h; exact ⟨(Field.ofName_some e).1, trivial⟩
+    · rename_i n e; cases h
+      have := Field.ofName_some e
+      exact ⟨this.1, this.2, by rw [← this.1] at hp; exact hp⟩
+    · cases h
 
 /-! ## Rendering has distinct keys -/
 
@@ -399,53 +461,93 @@ theorem parseWhere_toJson (path : String) {ts : Tests} (h : ts.Fits) :
 
 
 theorem Slot.toJson_distinct {s : Slot} (h : s.Fits) : s.toJson.2.keysDistinct = true := by
-  obtain ⟨-, -, ht⟩ := h
-  rcases s with ⟨name, type, tests⟩
+  obtain ⟨-, -, ht, -⟩ := h
+  rcases s with ⟨name, type, tests, group⟩
   cases he : tests.isEmpty
   · have hw := Tests.toJson_distinct (ht.resolve_left (by simpa using he))
     cases type with
     | collect follow limit =>
-      cases follow <;> cases limit <;> simp [Slot.toJson, he, Json.keysDistinct_obj, hw, followJson]
+      cases follow <;> cases limit <;> cases group <;>
+        simp [Slot.toJson, he, Json.keysDistinct_obj, hw, followJson, byJson]
     | count follow | sum _ follow | min _ follow | max _ follow =>
-      cases follow <;> simp [Slot.toJson, he, Json.keysDistinct_obj, hw, followJson]
-    | latestBy => simp [Slot.toJson, he, Json.keysDistinct_obj, hw]
+      cases follow <;> cases group <;> simp [Slot.toJson, he, Json.keysDistinct_obj, hw, followJson, byJson]
+    | latestBy => cases group <;> simp [Slot.toJson, he, Json.keysDistinct_obj, hw, byJson]
   · cases type with
     | collect follow limit =>
-      cases follow <;> cases limit <;> simp [Slot.toJson, he, Json.keysDistinct_obj, followJson]
+      cases follow <;> cases limit <;> cases group <;>
+        simp [Slot.toJson, he, Json.keysDistinct_obj, followJson, byJson]
     | count follow | sum _ follow | min _ follow | max _ follow =>
-      cases follow <;> simp [Slot.toJson, he, Json.keysDistinct_obj, followJson]
-    | latestBy => simp [Slot.toJson, he, Json.keysDistinct_obj]
+      cases follow <;> cases group <;> simp [Slot.toJson, he, Json.keysDistinct_obj, followJson, byJson]
+    | latestBy => cases group <;> simp [Slot.toJson, he, Json.keysDistinct_obj, byJson]
+
+/-- A `by` as rendered parses back, unless the fold type takes none. -/
+theorem slotBy_name (path t : String) {b : By} (hb : b.Fits) :
+    slotBy path t (some (.str b.name)) =
+      if t = "latest-by" then refuse "by-invalid" s!"{path}.by"
+      else pure (some b) := by
+  simp only [slotBy, By.ofName_name hb]
 
 theorem parseSlot_toJson {s : Slot} (h : s.Fits) : parseSlot s.name s.toJson.2 = .ok s := by
-  obtain ⟨hn, hty, ht⟩ := h
-  rcases s with ⟨name, type, tests⟩
-  simp only at hn hty ht
-  cases he : tests.isEmpty
-  · have hw := parseWhere_toJson s!"{memberPath (some "fold") name}.where"
-      (ht.resolve_left (by simpa using he))
-    cases type with
-    | collect follow limit =>
-      cases follow <;> cases limit <;>
-        simp_all [Slot.toJson, parseSlot, slotType, slotFollow, slotLimit, foldType, slotTests, checkKeys, slotKeys, foldTypes, List.lookup, bind, Except.bind, pure, Except.pure, FoldType.Fits, followJson]
-    | count follow | sum _ follow | min _ follow | max _ follow =>
-      cases follow <;>
-      simp_all [Slot.toJson, parseSlot, slotType, slotFollow, slotLimit, foldType, slotTests, checkKeys, slotKeys, foldTypes, List.lookup, bind, Except.bind, pure,
-        Except.pure, FoldType.Fits, fieldArg, Functor.map, Except.map, followJson]
-    | latestBy =>
-      simp_all [Slot.toJson, parseSlot, slotType, slotFollow, slotLimit, foldType, slotTests, checkKeys, slotKeys, foldTypes, List.lookup, bind, Except.bind, pure, Except.pure, FoldType.Fits]
-  · have h0 : tests = [] := by simpa using he
-    subst h0
-    cases type with
-    | collect follow limit =>
-      cases follow <;> cases limit <;>
-        simp_all [Slot.toJson, parseSlot, slotType, slotFollow, slotLimit, foldType, slotTests, checkKeys, slotKeys, foldTypes, List.lookup, bind, Except.bind, pure, Except.pure, FoldType.Fits, followJson]
-    | count follow | sum _ follow | min _ follow | max _ follow =>
-      cases follow <;>
-      simp_all [Slot.toJson, parseSlot, slotType, slotFollow, slotLimit, foldType, slotTests, checkKeys, slotKeys, foldTypes, List.lookup, bind, Except.bind, pure,
-        Except.pure, FoldType.Fits, fieldArg, Functor.map, Except.map, followJson]
-    | latestBy =>
-      simp_all [Slot.toJson, parseSlot, slotType, slotFollow, slotLimit, foldType, slotTests, checkKeys, slotKeys, foldTypes, List.lookup, bind, Except.bind, pure, Except.pure, FoldType.Fits]
-
+  obtain ⟨hn, hty, ht, hg⟩ := h
+  rcases s with ⟨name, type, tests, group⟩
+  simp only at hn hty ht hg
+  have hgb : ∀ b, group = some b → b.Fits ∧ type.Groups := fun b e => hg b (by rw [e]; rfl)
+  cases group with
+  | none =>
+    cases he : tests.isEmpty
+    · have hw := parseWhere_toJson s!"{memberPath (some "fold") name}.where"
+        (ht.resolve_left (by simpa using he))
+      cases type with
+      | collect follow limit =>
+        cases follow <;> cases limit <;>
+          simp_all [Slot.toJson, parseSlot, slotType, slotFollow, slotLimit, slotBy, byJson, foldType, slotTests, checkKeys, slotKeys, foldTypes, List.lookup, bind, Except.bind, pure, Except.pure, FoldType.Fits, followJson]
+      | count follow | sum _ follow | min _ follow | max _ follow =>
+        cases follow <;>
+        simp_all [Slot.toJson, parseSlot, slotType, slotFollow, slotLimit, slotBy, byJson, foldType, slotTests, checkKeys, slotKeys, foldTypes, List.lookup, bind, Except.bind, pure,
+          Except.pure, FoldType.Fits, fieldArg, Functor.map, Except.map, followJson]
+      | latestBy =>
+        simp_all [Slot.toJson, parseSlot, slotType, slotFollow, slotLimit, slotBy, byJson, foldType, slotTests, checkKeys, slotKeys, foldTypes, List.lookup, bind, Except.bind, pure, Except.pure, FoldType.Fits]
+    · have h0 : tests = [] := by simpa using he
+      subst h0
+      cases type with
+      | collect follow limit =>
+        cases follow <;> cases limit <;>
+          simp_all [Slot.toJson, parseSlot, slotType, slotFollow, slotLimit, slotBy, byJson, foldType, slotTests, checkKeys, slotKeys, foldTypes, List.lookup, bind, Except.bind, pure, Except.pure, FoldType.Fits, followJson]
+      | count follow | sum _ follow | min _ follow | max _ follow =>
+        cases follow <;>
+        simp_all [Slot.toJson, parseSlot, slotType, slotFollow, slotLimit, slotBy, byJson, foldType, slotTests, checkKeys, slotKeys, foldTypes, List.lookup, bind, Except.bind, pure,
+          Except.pure, FoldType.Fits, fieldArg, Functor.map, Except.map, followJson]
+      | latestBy =>
+        simp_all [Slot.toJson, parseSlot, slotType, slotFollow, slotLimit, slotBy, byJson, foldType, slotTests, checkKeys, slotKeys, foldTypes, List.lookup, bind, Except.bind, pure, Except.pure, FoldType.Fits]
+  | some b =>
+    obtain ⟨hb, hgr⟩ := hgb b rfl
+    have hB : ∀ t, slotBy (memberPath (some "fold") name) t (some (.str b.name)) =
+        if t = "latest-by" then
+          refuse "by-invalid" s!"{memberPath (some "fold") name}.by"
+        else pure (some b) := fun t => slotBy_name _ t hb
+    cases he : tests.isEmpty
+    · have hw := parseWhere_toJson s!"{memberPath (some "fold") name}.where"
+        (ht.resolve_left (by simpa using he))
+      cases type with
+      | collect follow limit =>
+        cases follow <;> cases limit <;>
+          simp_all [Slot.toJson, parseSlot, slotType, slotFollow, slotLimit, byJson, foldType, slotTests, checkKeys, slotKeys, foldTypes, List.lookup, bind, Except.bind, pure, Except.pure, FoldType.Fits, FoldType.Groups, followJson]
+      | count follow | sum _ follow | min _ follow | max _ follow =>
+        cases follow <;>
+        simp_all [Slot.toJson, parseSlot, slotType, slotFollow, slotLimit, byJson, foldType, slotTests, checkKeys, slotKeys, foldTypes, List.lookup, bind, Except.bind, pure,
+          Except.pure, FoldType.Fits, fieldArg, Functor.map, Except.map, followJson]
+      | latestBy => exact absurd hgr id
+    · have h0 : tests = [] := by simpa using he
+      subst h0
+      cases type with
+      | collect follow limit =>
+        cases follow <;> cases limit <;>
+          simp_all [Slot.toJson, parseSlot, slotType, slotFollow, slotLimit, byJson, foldType, slotTests, checkKeys, slotKeys, foldTypes, List.lookup, bind, Except.bind, pure, Except.pure, FoldType.Fits, FoldType.Groups, followJson]
+      | count follow | sum _ follow | min _ follow | max _ follow =>
+        cases follow <;>
+        simp_all [Slot.toJson, parseSlot, slotType, slotFollow, slotLimit, byJson, foldType, slotTests, checkKeys, slotKeys, foldTypes, List.lookup, bind, Except.bind, pure,
+          Except.pure, FoldType.Fits, fieldArg, Functor.map, Except.map, followJson]
+      | latestBy => exact absurd hgr id
 
 theorem Source.toJson_distinct (s : Source) : s.toJson.keysDistinct = true := by
   rcases s with ⟨store, kinds, about, of⟩
@@ -605,6 +707,36 @@ theorem slotTests_fits {p : String} {o : Option Json} {ts : Tests} (h : slotTest
   | none => simp [slotTests, Except.pure_eq_ok] at h; exact .inl h
   | some w => exact .inr (parseWhere_fits h (hd w rfl))
 
+/-- A `by` the parser accepts fits, on a fold type that is not latest-by. -/
+theorem slotBy_fits {p t : String} {o : Option Json} {g : Option By}
+    (h : slotBy p t o = .ok g) :
+    ∀ b ∈ g, b.Fits ∧ ¬(t = "latest-by") := by
+  intro b hb
+  unfold slotBy at h
+  split at h
+  · simp only [Except.pure_eq_ok] at h; subst h; cases hb
+  · split at h
+    · rename_i b' hb'
+      split at h
+      · exact absurd h refuse_ne_ok
+      · rename_i hc
+        simp only [Except.pure_eq_ok] at h; subst h
+        cases hb
+        exact ⟨(By.ofName_some hb').2, hc⟩
+    · exact absurd h refuse_ne_ok
+  · exact absurd h refuse_ne_ok
+
+/-- The fold types the parser lets `by` group are the ones `by` may group. -/
+theorem foldType_groups {p t : String} {follow : Bool} {limit : Option Nat} {arg : Json} {ty : FoldType}
+    (h : foldType p t follow limit arg = .ok ty)
+    (hg : ¬(t = "latest-by")) : ty.Groups := by
+  unfold foldType at h
+  split at h <;> simp only [Except.pure_eq_ok, Except.map_eq_ok] at h
+  all_goals first
+    | (subst h; simp_all [FoldType.Groups])
+    | (obtain ⟨f, -, rfl⟩ := h; trivial)
+    | exact absurd h refuse_ne_ok
+
 theorem parseSlot_fits {n : String} {j : Json} {s : Slot} (h : parseSlot n j = .ok s)
     (hd : j.keysDistinct = true) : s.name = n ∧ s.Fits := by
   unfold parseSlot at h
@@ -614,14 +746,14 @@ theorem parseSlot_fits {n : String} {j : Json} {s : Slot} (h : parseSlot n j = .
     cases j with
     | obj kvs =>
       simp only [Except.bind_eq_ok] at h
-      obtain ⟨_, -, ⟨t, arg⟩, -, follow, -, limit, hl, type, hty, tests, htests, h⟩ := h
+      obtain ⟨_, -, ⟨t, arg⟩, -, follow, -, limit, hl, group, hg, type, hty, tests, htests, h⟩ := h
       simp only [Except.pure_eq_ok] at h
       subst h
       refine ⟨rfl, by simpa using hn, foldType_fits hty fun k hk => slotLimit_pos (hk ▸ hl),
-        slotTests_fits htests fun w hw => lookup_distinct hd hw⟩
+        slotTests_fits htests fun w hw => lookup_distinct hd hw, fun b hb => ?_⟩
+      have := slotBy_fits hg b hb
+      exact ⟨this.1, foldType_groups hty this.2⟩
     | _ => exact absurd h refuse_ne_ok
-
-
 theorem parseKinds_fits {p : String} {j : Json} {ks : List String} (h : parseKinds p j = .ok ks) :
     ∀ k ∈ ks, k.isEmpty = false := by
   cases j with

@@ -1,0 +1,42 @@
+{
+  "vector": "91-by-on-followed-collect",
+  "layer": "spec/parse",
+  "laws": ["spec.parse"],
+  "source": "model",
+  "input": {
+    "spec": {
+      "vertex": "x",
+      "from": [
+        {
+          "store": "."
+        }
+      ],
+      "fold": {
+        "c": {
+          "collect": true,
+          "follow": "prev",
+          "limit": 2,
+          "by": "status"
+        }
+      }
+    }
+  },
+  "expect": {
+    "parsed": {
+      "vertex": "x",
+      "from": [
+        {
+          "store": "."
+        }
+      ],
+      "fold": {
+        "c": {
+          "collect": true,
+          "follow": "prev",
+          "limit": 2,
+          "by": "status"
+        }
+      }
+    }
+  }
+}

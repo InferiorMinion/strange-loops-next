@@ -6,16 +6,17 @@ The tree has three implementations: Lean, JavaScript, and Rust.
 Step 1 applies the six settled rulings before records exist.
 All three implement the settled decisions D1–D6, and D8a and D8b.
 All three refuse every envelope shape by name (issue #1) and let a label stand in `under`.
-All three let count, sum, min and max follow `prev` (issue #3).
-The law index has 88 entries, 768 theorems, and 6 boundary witnesses.
+All three let count, sum, min and max follow `prev` (issue #3), and group count, sum, min, max and collect with `by` (issue #2).
+The law index has 92 entries, 829 theorems, and 6 boundary witnesses.
 See [the law index](design/laws/laws.json) and [proof and boundary data](design/laws/).
 These proofs apply only under their stated premises.
 
-The tree has 498 JSON fixtures: 486 generated fixtures and 12 standard fixtures.
-Lean replays 477 generated fixtures; 9 occurred fixtures use separate checks.
+The tree has 527 JSON fixtures: 515 generated fixtures and 12 standard fixtures.
+Lean replays 506 generated fixtures; 9 occurred fixtures use separate checks.
 Rust checks every fixture, six JCS byte pairs, 4,000 binary64 cases, and 128 SUPERCOP signing cases with ed25519-dalek.
-Rust passes 153 tests; JavaScript passes 6,065 vector checks and 33 regression and law tests.
-The fuzz suite passes 52 tests.
+Rust passes 154 tests; JavaScript passes 6,309 vector checks and 34 regression and law tests.
+Both also check that `spec/run` answers write their members, group and thing keys included, in the model's order.
+The fuzz suite passes 53 tests.
 See [vectors](vectors/README.md), [Rust boundaries](rust/GAPS.md), and [the mutation report](model/mutate/REPORT.md).
 These checks provide bounded evidence, not complete JCS or cryptographic correctness.
 They do not certify browser accessibility, external links, or official ASD dictionary compliance.
@@ -27,21 +28,22 @@ Numeric folds read safe whole values only.
 Raw constructors and theorem premises retain separate domains.
 
 The gates pass on Node 25.9; the Node 22 runs of Step 1 are not repeated.
-The `shape-follow-1` campaign, over the merged generator, checks 5,600 cases, 800 per family, in 67.65 seconds.
-It reports 3,807 matches, 1,434 protocol refusals, 359 shared decoder refusals, and no mismatch.
-The `shape-under-2` and `follow-2` campaigns, each over its own branch's generator, found no mismatch either.
+The `by-collect-1` campaign, over the final generator, checks 5,600 cases, 800 per family, in 87.11 seconds.
+It reports 3,801 matches, 1,421 protocol refusals, 378 shared decoder refusals, and no mismatch.
+The `by-shape-1`, `by-1`, `shape-follow-1`, `shape-under-2` and `follow-2` campaigns, each over an earlier generator, found no mismatch either.
 Decoder refusals are not agreement; for record and batch inputs JavaScript must also report them as malformed.
-The generator carries issue #1's shapes and labels in `under`, and followed count, sum, min and max slots, so the same seeds now generate different inputs; earlier campaigns' counts are historical.
+The generator carries issue #1's shapes and labels in `under`, followed count, sum, min and max slots, and grouped slots, so the same seeds now generate different inputs; earlier campaigns' counts are historical.
 The `d8ab-1` and `d1-d6-1` campaigns found no mismatch.
 The 42 duplicate-base lens mismatches of the `step1-3` campaign are the class D1 settles.
 `interop/fuzz/summarize.py` derives these counts from tracked summaries.
 See [the campaign report](interop/fuzz/REPORT.md) for the scripts and current and historical results.
 The CI seed `ci-1` checks 28 three-way cases without mismatches.
 
-The mutation catalogue has 229 entries, including six for the D1 and D2 definitions, nine for D8's `of`, nine for `follow` on count, sum, min and max, and ten for issue #1's shapes and labels in `under`.
+The mutation catalogue has 236 entries, including six for the D1 and D2 definitions, nine for D8's `of`, nine for `follow` on count, sum, min and max, ten for issue #1's shapes and labels in `under`, and seven for `by`.
 Ten earlier entries are retargeted at `of` and the one thing it names, two at the `follow` grammar, and four at the shape stage and labels in `under`.
 It retires the redundant positive-offset guard under R4 and the entry for the deleted `stripZeros` family.
 The last full run covers the 210 entries before issue #1 and `follow`. After the merge, the 25 entries the two changes add or retarget, run alone with `--only`, give 17 build rejections, three vector differences and five generator assertions, and no survivor.
+The seven `by` entries, rerun alone on the tree merged with issue #1, give six build rejections and one vector difference, and no survivor.
 The full run reports 165 build rejections, 28 vector differences, 15 generator assertion exceptions, and 2 survivors.
 The runner exits 1 for assertion exceptions; no timeout or infrastructure failure occurs.
 Of the nine D8 entries, six fail the build, two change batch vectors, and one stops at a generator assertion.
@@ -67,11 +69,29 @@ It selects as latest-by does, and its result keeps the shape of the same slot wi
 Every head of a forked thing counts; count counts an erased or withheld head by its envelope, and sum, min and max count it unread.
 Any other `follow` value is refused with `follow-invalid`, at the check that already refused it on collect; that check now accepts `"prev"` on every fold type.
 The law is `spec.follow`: the answer depends only on the set, through each thing's heads (`heads.set`), not `acc.set`. `heads.why` still holds.
-`by` (issue #2) is not built, and neither is a caching reader for these slots.
+A caching reader for these slots is not built.
 **Implementer choices, not yet confirmed by Kyle:**
 - The law's name, `spec.follow`, and its place in the spec table.
 - `follow` is a flag on each accumulating fold type, as on collect, not a slot-level field.
 - `"follow": "prev"` with `limit` on count is refused with `limit-invalid`, as before: `limit` stays collect's.
+
+**Built, 2026-11-11: `by` on count, sum, min, max and collect (issue #2).**
+`by` groups a slot by `env.kind`, `env.observer`, the members of `about` under a typed-reference prefix (`env.about:<prefix>`), or a payload field.
+It is allowed on count, sum, min, max and collect, following `prev` or not; on latest-by, or naming nothing to group by, it is `by-invalid` at `fold.<name>.by`, checked after `limit` and before the fold's argument.
+The result is `{"groups": {<key>: <result>}, "unread": n, "ungrouped": m}`, each `<result>` the slot's own shape.
+Settling, admission and the whole-reader heads come first, once, over everything held; each group is then the slot without `by` or `where` over the records selected into it.
+The laws are `by.set`, `by.after-admission`, `by.accounting` and `by.partition`; `spec.slice` covers grouped slots without a new premise.
+Ordering or top-N across groups, buckets and windows, `by` on latest-by, and keyed things (D8c) are not built.
+**Kyle's choices, confirmed 2026-11-11:**
+- The spelling `env.about:<prefix>`: it reuses `where`'s existing rule that `env.` names the envelope, so a bare name such as `about:project` is a payload field, and no second name is reserved.
+- Keys are text, so a text value and a number or boolean value that render alike share a group: the text `"1"` and the number 1, the text `"true"` and `true`.
+- A selected record with no key is counted in `ungrouped`: a missing field, no mention under the prefix, or a value that cannot be a key (a fraction, null, an array or an object). It is never dropped and never a refusal; only a payload the reader does not hold makes a key unread.
+- A record mentioning several things under the prefix counts in each.
+- `limit` applies per group; a top-N across groups is a later discussion (the earlier strange-loops had one, in a weather vertex example).
+- `by` is allowed on collect that follows `prev`, and refused only on latest-by.
+**Implementer choices, not yet confirmed by Kyle:**
+- Groups are written in UTF-16 order of their keys, the order canonical JSON and `thingsOf` use.
+- The four law names, and `by` checked before the fold's argument as the issue proposed.
 
 ## Decisions for the human
 
@@ -256,9 +276,9 @@ A field left out or of the wrong JSON type gets the field's own code, in the wri
 `draft-shape` stays for a line's own shape only: a line that is not a JSON object, or a label that is not text; an unknown member stays `draft-field-unknown` and a repeated one `member-duplicate`.
 The CLI fills in `observer` and `emitted` only when a line leaves them out; one given mistyped gets its code, and `observer-unbound` now judges only a typed observer.
 A line's salt is read as the core reads one, so one that is not base32hex text is `salt-not-16-bytes` in its place.
-**The reviewer's direction, not yet confirmed by Kyle:**
+**The reviewer's direction, confirmed by Kyle 2026-11-11 when approving !21:**
 - One new code, `envelope-not-object`; every other shape fault folds into an existing code, extending "A malformed value uses the field's existing refusal code".
-**Implementer choices, not yet confirmed by Kyle:**
+**Implementer choices, confirmed by Kyle 2026-11-11 when approving !21** (an untyped CLI observer is `observer-not-typed`, as above):
 - `envelope-not-object` is a shape check across every envelope: after `envelope-field-unknown`, before `string-not-unicode` and every value.
   So a later record variant that is not an object refuses the input, as an unknown key does, though the first envelope decides value refusals (D5).
 - A batch draft object without `env` has an envelope that is not an object.
@@ -266,6 +286,8 @@ A line's salt is read as the core reads one, so one that is not base32hex text i
 - A set that is not an array is refused with its code; so is a set with a member that is not text, and a label beside such a member is still a label, so labels are checked first.
 - A salt left out, not text, or not canonical base32hex is `salt-not-16-bytes`, in that check's place.
 - A batch draft that is not an object, an unknown draft member, a label that is not text, a draft without a payload, and a repeated envelope member name stay malformed input, with no code.
+
+**Implementer choices, not among those Kyle confirmed:**
 - In JavaScript, a repeated envelope or draft member is seen only from raw text, in the fuzz adapter; the value APIs (`resolveBatch`, `writeRecord`, `seal`, `writeText`) cannot see one (`interop/js/README.md`).
 - A writer checks no `under` target beyond its shape: whether it names a held grant is left to standing (step 3), so `under` adds no batch refusal besides `label-unknown` and `label-cycle`.
 
@@ -313,7 +335,7 @@ Each step extends the model laws, computes protocol vectors, then implements Rus
 | --- | --- | --- |
 | 0, done | The Lean spike: Count and LatestBy, one lens combinator, 23 vectors | The first laws are proved |
 | 1, done | Protocol and vectors for layer 0: canonical bytes, salt and commitment, id, signature | The model and the JS writer agree on every vector; Rust checks all fixture families and external standards |
-| 2 | Emit, read, fold for one person: JSONL segment, JSON spec, the two fold families, `"follow": "prev"`, a signing key, signing by default. `of` names a record's one thing, an id or a natural key; `about` only mentions. D8a and D8b are built; D8c is not. | It does the old CLI's workable job, signed |
+| 2 | Emit, read, fold for one person: JSONL segment, JSON spec, the two fold families, `"follow": "prev"`, `by`, a signing key, signing by default. `of` names a record's one thing, an id or a natural key; `about` only mentions. D8a and D8b are built; D8c is not. | It does the old CLI's workable job, signed |
 | 3 | Standing: declarations, admission, stances, grants, presence key, retire through; then name tables and `resolve-by` | A strict store rejects visibly; a steward's changeset takes effect |
 | 4 | Ticks: content and witness, boundaries, markers | A content tick recomputes to the same hash on two machines |
 | 5 | Sharing: the git layout, then segment-list sync | Two clones converge |

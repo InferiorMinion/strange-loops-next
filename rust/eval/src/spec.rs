@@ -6,7 +6,7 @@ use super::{
 use loops::{
     json::Json,
     record::{Digest, Shown, id_text},
-    spec::{SlotValue, Spec},
+    spec::{GroupValue, SlotValue, Spec},
 };
 
 fn integer(i: impl std::fmt::Display) -> Json {
@@ -37,24 +37,47 @@ pub(super) fn shown_ids(hs: Vec<(Digest, Shown)>) -> Json {
             .collect(),
     )
 }
-pub(super) fn slot(v: SlotValue) -> Json {
+/// What one group holds, written as its slot without `by` is.
+fn group(v: GroupValue) -> Json {
     let (key, value, unread) = match v {
-        SlotValue::Nat(r) => ("value", integer(r.value), r.unread),
-        SlotValue::Int(r) => ("value", Json::Int(r.value), r.unread),
-        SlotValue::Opt(r) => ("value", r.value.map_or(Json::Null, Json::Int), r.unread),
-        SlotValue::Heads { heads, unread } => ("heads", shown_ids(heads), unread),
-        SlotValue::Things { things, unread } => (
-            "things",
-            Json::Obj(
-                things
-                    .into_iter()
-                    .map(|(t, hs)| (t, shown_ids(hs)))
-                    .collect(),
-            ),
-            unread,
-        ),
+        GroupValue::Nat(r) => ("value", integer(r.value), r.unread),
+        GroupValue::Int(r) => ("value", Json::Int(r.value), r.unread),
+        GroupValue::Opt(r) => ("value", r.value.map_or(Json::Null, Json::Int), r.unread),
+        GroupValue::Heads { heads, unread } => ("heads", shown_ids(heads), unread),
     };
     object(vec![(key, value), ("unread", integer(unread))])
+}
+pub(super) fn slot(v: SlotValue) -> Json {
+    match v {
+        SlotValue::Nat(r) => group(GroupValue::Nat(r)),
+        SlotValue::Int(r) => group(GroupValue::Int(r)),
+        SlotValue::Opt(r) => group(GroupValue::Opt(r)),
+        SlotValue::Heads { heads, unread } => group(GroupValue::Heads { heads, unread }),
+        SlotValue::Things { things, unread } => object(vec![
+            (
+                "things",
+                Json::Obj(
+                    things
+                        .into_iter()
+                        .map(|(t, hs)| (t, shown_ids(hs)))
+                        .collect(),
+                ),
+            ),
+            ("unread", integer(unread)),
+        ]),
+        SlotValue::Groups {
+            groups,
+            unread,
+            ungrouped,
+        } => object(vec![
+            (
+                "groups",
+                Json::Obj(groups.into_iter().map(|(k, v)| (k, group(v))).collect()),
+            ),
+            ("unread", integer(unread)),
+            ("ungrouped", integer(ungrouped)),
+        ]),
+    }
 }
 pub(super) fn parsed(j: &Json) -> Result<Spec, String> {
     let sp = Spec::of_json(j).map_err(|e| e.to_string())?;

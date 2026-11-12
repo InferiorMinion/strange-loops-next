@@ -1,0 +1,740 @@
+{
+  "vector": "22-by-about",
+  "layer": "spec/run",
+  "laws": ["spec.set", "by.set", "by.accounting", "result.unread"],
+  "source": "model",
+  "input": {
+    "spec": {
+      "vertex": "per-project",
+      "from": [
+        {
+          "store": "."
+        }
+      ],
+      "fold": {
+        "per-project": {
+          "count": true,
+          "by": "env.about:project"
+        },
+        "est-per-project": {
+          "sum": "est",
+          "by": "env.about:project"
+        },
+        "lo-per-project": {
+          "min": "est",
+          "by": "env.about:project"
+        },
+        "hi-per-project": {
+          "max": "est",
+          "by": "env.about:project"
+        },
+        "open-per-project": {
+          "count": true,
+          "by": "env.about:project",
+          "where": {
+            "status": {
+              "is": "open"
+            }
+          }
+        },
+        "per-host": {
+          "count": true,
+          "by": "env.about:host"
+        },
+        "every": {
+          "count": true
+        }
+      }
+    },
+    "orders": [
+      [
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000gg",
+          "kind": "task",
+          "observer": "sl:alice",
+          "about": ["project:loops"],
+          "of": "task:1",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:01:40Z",
+          "occurred": "2026-10-01T00:01:40Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "est": 3,
+            "prio": 1
+          }
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000h0",
+          "kind": "task",
+          "observer": "sl:bob",
+          "about": ["project:loops", "project:siftd"],
+          "of": "task:2",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:01:50Z",
+          "occurred": "2026-10-01T00:01:50Z",
+          "n": 0,
+          "fields": {
+            "status": "closed",
+            "est": 5,
+            "prio": true
+          }
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000hg",
+          "kind": "task",
+          "observer": "sl:alice",
+          "about": ["project:siftd"],
+          "of": "task:3",
+          "prev": [],
+          "emitted": "2026-10-01T00:02:00Z",
+          "occurred": "2026-10-01T00:02:00Z",
+          "shown": "withheld"
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000i0",
+          "kind": "note",
+          "observer": "sl:bob",
+          "about": [],
+          "of": "task:4",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:02:10Z",
+          "occurred": "2026-10-01T00:02:10Z",
+          "n": 0,
+          "fields": {
+            "est": 2,
+            "prio": 1.5
+          }
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000ig",
+          "kind": "task",
+          "observer": "sl:carol",
+          "about": ["project:loops", "host:a"],
+          "of": "task:5",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:02:20Z",
+          "occurred": "2026-10-01T00:02:20Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "est": "8",
+            "prio": "1"
+          }
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000j0",
+          "kind": "task",
+          "observer": "sl:alice",
+          "about": ["host:b", "project:x-2"],
+          "of": "task:6",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:02:30Z",
+          "occurred": "2026-10-01T00:02:30Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "est": 4,
+            "prio": -2
+          }
+        }
+      ],
+      [
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000h0",
+          "kind": "task",
+          "observer": "sl:bob",
+          "about": ["project:loops", "project:siftd"],
+          "of": "task:2",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:01:50Z",
+          "occurred": "2026-10-01T00:01:50Z",
+          "n": 0,
+          "fields": {
+            "status": "closed",
+            "est": 5,
+            "prio": true
+          }
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000hg",
+          "kind": "task",
+          "observer": "sl:alice",
+          "about": ["project:siftd"],
+          "of": "task:3",
+          "prev": [],
+          "emitted": "2026-10-01T00:02:00Z",
+          "occurred": "2026-10-01T00:02:00Z",
+          "shown": "withheld"
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000i0",
+          "kind": "note",
+          "observer": "sl:bob",
+          "about": [],
+          "of": "task:4",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:02:10Z",
+          "occurred": "2026-10-01T00:02:10Z",
+          "n": 0,
+          "fields": {
+            "est": 2,
+            "prio": 1.5
+          }
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000ig",
+          "kind": "task",
+          "observer": "sl:carol",
+          "about": ["project:loops", "host:a"],
+          "of": "task:5",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:02:20Z",
+          "occurred": "2026-10-01T00:02:20Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "est": "8",
+            "prio": "1"
+          }
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000j0",
+          "kind": "task",
+          "observer": "sl:alice",
+          "about": ["host:b", "project:x-2"],
+          "of": "task:6",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:02:30Z",
+          "occurred": "2026-10-01T00:02:30Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "est": 4,
+            "prio": -2
+          }
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000gg",
+          "kind": "task",
+          "observer": "sl:alice",
+          "about": ["project:loops"],
+          "of": "task:1",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:01:40Z",
+          "occurred": "2026-10-01T00:01:40Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "est": 3,
+            "prio": 1
+          }
+        }
+      ],
+      [
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000hg",
+          "kind": "task",
+          "observer": "sl:alice",
+          "about": ["project:siftd"],
+          "of": "task:3",
+          "prev": [],
+          "emitted": "2026-10-01T00:02:00Z",
+          "occurred": "2026-10-01T00:02:00Z",
+          "shown": "withheld"
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000i0",
+          "kind": "note",
+          "observer": "sl:bob",
+          "about": [],
+          "of": "task:4",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:02:10Z",
+          "occurred": "2026-10-01T00:02:10Z",
+          "n": 0,
+          "fields": {
+            "est": 2,
+            "prio": 1.5
+          }
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000ig",
+          "kind": "task",
+          "observer": "sl:carol",
+          "about": ["project:loops", "host:a"],
+          "of": "task:5",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:02:20Z",
+          "occurred": "2026-10-01T00:02:20Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "est": "8",
+            "prio": "1"
+          }
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000j0",
+          "kind": "task",
+          "observer": "sl:alice",
+          "about": ["host:b", "project:x-2"],
+          "of": "task:6",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:02:30Z",
+          "occurred": "2026-10-01T00:02:30Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "est": 4,
+            "prio": -2
+          }
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000gg",
+          "kind": "task",
+          "observer": "sl:alice",
+          "about": ["project:loops"],
+          "of": "task:1",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:01:40Z",
+          "occurred": "2026-10-01T00:01:40Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "est": 3,
+            "prio": 1
+          }
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000h0",
+          "kind": "task",
+          "observer": "sl:bob",
+          "about": ["project:loops", "project:siftd"],
+          "of": "task:2",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:01:50Z",
+          "occurred": "2026-10-01T00:01:50Z",
+          "n": 0,
+          "fields": {
+            "status": "closed",
+            "est": 5,
+            "prio": true
+          }
+        }
+      ],
+      [
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000i0",
+          "kind": "note",
+          "observer": "sl:bob",
+          "about": [],
+          "of": "task:4",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:02:10Z",
+          "occurred": "2026-10-01T00:02:10Z",
+          "n": 0,
+          "fields": {
+            "est": 2,
+            "prio": 1.5
+          }
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000ig",
+          "kind": "task",
+          "observer": "sl:carol",
+          "about": ["project:loops", "host:a"],
+          "of": "task:5",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:02:20Z",
+          "occurred": "2026-10-01T00:02:20Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "est": "8",
+            "prio": "1"
+          }
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000j0",
+          "kind": "task",
+          "observer": "sl:alice",
+          "about": ["host:b", "project:x-2"],
+          "of": "task:6",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:02:30Z",
+          "occurred": "2026-10-01T00:02:30Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "est": 4,
+            "prio": -2
+          }
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000gg",
+          "kind": "task",
+          "observer": "sl:alice",
+          "about": ["project:loops"],
+          "of": "task:1",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:01:40Z",
+          "occurred": "2026-10-01T00:01:40Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "est": 3,
+            "prio": 1
+          }
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000h0",
+          "kind": "task",
+          "observer": "sl:bob",
+          "about": ["project:loops", "project:siftd"],
+          "of": "task:2",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:01:50Z",
+          "occurred": "2026-10-01T00:01:50Z",
+          "n": 0,
+          "fields": {
+            "status": "closed",
+            "est": 5,
+            "prio": true
+          }
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000hg",
+          "kind": "task",
+          "observer": "sl:alice",
+          "about": ["project:siftd"],
+          "of": "task:3",
+          "prev": [],
+          "emitted": "2026-10-01T00:02:00Z",
+          "occurred": "2026-10-01T00:02:00Z",
+          "shown": "withheld"
+        }
+      ],
+      [
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000ig",
+          "kind": "task",
+          "observer": "sl:carol",
+          "about": ["project:loops", "host:a"],
+          "of": "task:5",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:02:20Z",
+          "occurred": "2026-10-01T00:02:20Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "est": "8",
+            "prio": "1"
+          }
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000j0",
+          "kind": "task",
+          "observer": "sl:alice",
+          "about": ["host:b", "project:x-2"],
+          "of": "task:6",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:02:30Z",
+          "occurred": "2026-10-01T00:02:30Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "est": 4,
+            "prio": -2
+          }
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000gg",
+          "kind": "task",
+          "observer": "sl:alice",
+          "about": ["project:loops"],
+          "of": "task:1",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:01:40Z",
+          "occurred": "2026-10-01T00:01:40Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "est": 3,
+            "prio": 1
+          }
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000h0",
+          "kind": "task",
+          "observer": "sl:bob",
+          "about": ["project:loops", "project:siftd"],
+          "of": "task:2",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:01:50Z",
+          "occurred": "2026-10-01T00:01:50Z",
+          "n": 0,
+          "fields": {
+            "status": "closed",
+            "est": 5,
+            "prio": true
+          }
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000hg",
+          "kind": "task",
+          "observer": "sl:alice",
+          "about": ["project:siftd"],
+          "of": "task:3",
+          "prev": [],
+          "emitted": "2026-10-01T00:02:00Z",
+          "occurred": "2026-10-01T00:02:00Z",
+          "shown": "withheld"
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000i0",
+          "kind": "note",
+          "observer": "sl:bob",
+          "about": [],
+          "of": "task:4",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:02:10Z",
+          "occurred": "2026-10-01T00:02:10Z",
+          "n": 0,
+          "fields": {
+            "est": 2,
+            "prio": 1.5
+          }
+        }
+      ],
+      [
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000j0",
+          "kind": "task",
+          "observer": "sl:alice",
+          "about": ["host:b", "project:x-2"],
+          "of": "task:6",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:02:30Z",
+          "occurred": "2026-10-01T00:02:30Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "est": 4,
+            "prio": -2
+          }
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000gg",
+          "kind": "task",
+          "observer": "sl:alice",
+          "about": ["project:loops"],
+          "of": "task:1",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:01:40Z",
+          "occurred": "2026-10-01T00:01:40Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "est": 3,
+            "prio": 1
+          }
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000h0",
+          "kind": "task",
+          "observer": "sl:bob",
+          "about": ["project:loops", "project:siftd"],
+          "of": "task:2",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:01:50Z",
+          "occurred": "2026-10-01T00:01:50Z",
+          "n": 0,
+          "fields": {
+            "status": "closed",
+            "est": 5,
+            "prio": true
+          }
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000hg",
+          "kind": "task",
+          "observer": "sl:alice",
+          "about": ["project:siftd"],
+          "of": "task:3",
+          "prev": [],
+          "emitted": "2026-10-01T00:02:00Z",
+          "occurred": "2026-10-01T00:02:00Z",
+          "shown": "withheld"
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000i0",
+          "kind": "note",
+          "observer": "sl:bob",
+          "about": [],
+          "of": "task:4",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:02:10Z",
+          "occurred": "2026-10-01T00:02:10Z",
+          "n": 0,
+          "fields": {
+            "est": 2,
+            "prio": 1.5
+          }
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000ig",
+          "kind": "task",
+          "observer": "sl:carol",
+          "about": ["project:loops", "host:a"],
+          "of": "task:5",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:02:20Z",
+          "occurred": "2026-10-01T00:02:20Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "est": "8",
+            "prio": "1"
+          }
+        }
+      ]
+    ]
+  },
+  "expect": {
+    "per-project": {
+      "groups": {
+        "loops": {
+          "value": 3,
+          "unread": 0
+        },
+        "siftd": {
+          "value": 2,
+          "unread": 0
+        },
+        "x-2": {
+          "value": 1,
+          "unread": 0
+        }
+      },
+      "unread": 0,
+      "ungrouped": 1
+    },
+    "est-per-project": {
+      "groups": {
+        "loops": {
+          "value": 8,
+          "unread": 1
+        },
+        "siftd": {
+          "value": 5,
+          "unread": 1
+        },
+        "x-2": {
+          "value": 4,
+          "unread": 0
+        }
+      },
+      "unread": 0,
+      "ungrouped": 1
+    },
+    "lo-per-project": {
+      "groups": {
+        "loops": {
+          "value": 3,
+          "unread": 1
+        },
+        "siftd": {
+          "value": 5,
+          "unread": 1
+        },
+        "x-2": {
+          "value": 4,
+          "unread": 0
+        }
+      },
+      "unread": 0,
+      "ungrouped": 1
+    },
+    "hi-per-project": {
+      "groups": {
+        "loops": {
+          "value": 5,
+          "unread": 1
+        },
+        "siftd": {
+          "value": 5,
+          "unread": 1
+        },
+        "x-2": {
+          "value": 4,
+          "unread": 0
+        }
+      },
+      "unread": 0,
+      "ungrouped": 1
+    },
+    "open-per-project": {
+      "groups": {
+        "loops": {
+          "value": 2,
+          "unread": 0
+        },
+        "x-2": {
+          "value": 1,
+          "unread": 0
+        }
+      },
+      "unread": 1,
+      "ungrouped": 0
+    },
+    "per-host": {
+      "groups": {
+        "a": {
+          "value": 1,
+          "unread": 0
+        },
+        "b": {
+          "value": 1,
+          "unread": 0
+        }
+      },
+      "unread": 0,
+      "ungrouped": 4
+    },
+    "every": {
+      "value": 6,
+      "unread": 0
+    }
+  }
+}

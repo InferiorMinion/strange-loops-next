@@ -41,6 +41,10 @@ An input that breaks this throws an error that is not a refusal code.
 The seed is read last and is exactly 32 bytes.
 A caller that kept each payload's raw text passes it as `payloadTexts`, so a repeated member is seen.
 
+The readers (`runSpec`, the folds) do not check a held record's `occurred` on the way in.
+They read it only when they order that record, and throw `occurred-not-span` then.
+The Lean and Rust readers refuse such a record when they decode it, so an input JavaScript answers may be one they refuse; the fuzz harness counts those as decoder refusals, not agreement.
+
 ## Text
 
 `seal`, `writeText`, `canonical` and `resolveBatch` refuse a lone surrogate with `string-not-unicode`.

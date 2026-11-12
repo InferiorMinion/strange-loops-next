@@ -1,0 +1,146 @@
+{
+  "vector": "28-by-mentions",
+  "layer": "spec/run",
+  "laws": ["spec.set", "by.accounting"],
+  "source": "model",
+  "input": {
+    "spec": {
+      "vertex": "mentions",
+      "from": [
+        {
+          "store": "."
+        }
+      ],
+      "fold": {
+        "per-proj": {
+          "count": true,
+          "by": "env.about:proj"
+        },
+        "per-project": {
+          "count": true,
+          "by": "env.about:project"
+        },
+        "per-x": {
+          "count": true,
+          "by": "env.about:x"
+        },
+        "per-about-x": {
+          "count": true,
+          "by": "about:x"
+        }
+      }
+    },
+    "orders": [
+      [
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000380",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": ["proj:x", "proj:x", "project:y", "proj:z"],
+          "of": "task:p",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:01:40Z",
+          "occurred": "2026-10-01T00:01:40Z",
+          "n": 0,
+          "fields": {
+            "about:x": "payload"
+          }
+        },
+        {
+          "id": "r:000000000000000000000000000000000000000000000000038g",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": ["x:mention"],
+          "of": "task:q",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:01:50Z",
+          "occurred": "2026-10-01T00:01:50Z",
+          "n": 0,
+          "fields": {
+            "about:x": "payload"
+          }
+        }
+      ],
+      [
+        {
+          "id": "r:000000000000000000000000000000000000000000000000038g",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": ["x:mention"],
+          "of": "task:q",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:01:50Z",
+          "occurred": "2026-10-01T00:01:50Z",
+          "n": 0,
+          "fields": {
+            "about:x": "payload"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000380",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": ["proj:x", "proj:x", "project:y", "proj:z"],
+          "of": "task:p",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:01:40Z",
+          "occurred": "2026-10-01T00:01:40Z",
+          "n": 0,
+          "fields": {
+            "about:x": "payload"
+          }
+        }
+      ]
+    ]
+  },
+  "expect": {
+    "per-proj": {
+      "groups": {
+        "x": {
+          "value": 1,
+          "unread": 0
+        },
+        "z": {
+          "value": 1,
+          "unread": 0
+        }
+      },
+      "unread": 0,
+      "ungrouped": 1
+    },
+    "per-project": {
+      "groups": {
+        "y": {
+          "value": 1,
+          "unread": 0
+        }
+      },
+      "unread": 0,
+      "ungrouped": 1
+    },
+    "per-x": {
+      "groups": {
+        "mention": {
+          "value": 1,
+          "unread": 0
+        }
+      },
+      "unread": 0,
+      "ungrouped": 1
+    },
+    "per-about-x": {
+      "groups": {
+        "payload": {
+          "value": 2,
+          "unread": 0
+        }
+      },
+      "unread": 0,
+      "ungrouped": 0
+    }
+  }
+}

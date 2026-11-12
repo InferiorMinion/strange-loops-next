@@ -28,6 +28,10 @@ the closed vocabulary with an optional `where`.
   successor is of another kind, or no longer matches, or is withheld.
   When the store's rule for who may replace whom reads only envelopes, a view
   preserves each thing's heads. Each head shows only what the view shows.
+* **`by` groups** count, sum, min, max and collect, following `prev` or not, by an envelope field, by the members of `about` under a
+  typed-reference prefix, or by a payload field. Settling, admission and the
+  heads come first, over everything held; each group then runs the slot without
+  `by` over all of it, choosing only its own records.
 * **`from` chooses by thing or by mention.** `"of": "t"` takes the records
   of thing `t`, so `"of": "r:X"` takes the root X, whose thing is its own id,
   as well as its revisions. `"about": "t"` takes the records whose `about`
@@ -47,7 +51,7 @@ the closed vocabulary with an optional `where`.
 `protocol/spec.md` is the grammar this parser implements.
 
 Step 2 accepts these keys. `ticks`, `boundary` and the other spec keys are
-recognized and carried, not yet evaluated; `as`, `by`, `order`, `set` and
+recognized and carried, not yet evaluated; `as`, `order`, `set` and
 `weight-by` arrive with the steps that need them.
 -/
 
@@ -240,10 +244,89 @@ abbrev Tests := List (Field × List Op)
 
 def Tests.conds (ts : Tests) : List Cond := ts.flatMap fun (f, os) => os.map (Cond.mk f)
 
+/-! ## `by` -/
+
+/-- What `by` groups a slot's records by: an envelope field's text, the
+members of `about` with one typed-reference prefix, or a payload field's
+value. Written `env.kind`, `env.observer`, `env.about:<prefix>`, or the
+payload field's name, as `where` names fields. -/
+inductive By where
+  | kind
+  | observer
+  | about (pfx : String)
+  | payload (name : String)
+  deriving Repr, DecidableEq
+
+/-- A typed reference's prefix: a lower-case letter, then lower-case letters,
+digits and hyphens, as `typedRef` reads one. -/
+def refPrefix : List Char → Bool
+  | c :: cs => c.isLower && cs.all fun c => isLowerAlnum c || c == '-'
+  | [] => false
+
+/-- What follows `env.about:` in a `by`, if that is how it starts. -/
+def aboutPrefixOf (s : String) : Option (List Char) :=
+  match s.toList with
+  | 'e' :: 'n' :: 'v' :: '.' :: 'a' :: 'b' :: 'o' :: 'u' :: 't' :: ':' :: p => some p
+  | _ => none
+
+/-- A `by` as written: `env.about:` and a well-formed prefix, `env.kind`,
+`env.observer`, or a name `where` would read as a payload field. Any other
+`env.` name is none. -/
+def By.ofName (s : String) : Option By :=
+  match aboutPrefixOf s with
+  | some p => if refPrefix p then some (.about (String.ofList p)) else none
+  | none =>
+    match Field.ofName s with
+    | some (.env .kind) => some .kind
+    | some (.env .observer) => some .observer
+    | some (.payload n) => some (.payload n)
+    | _ => none
+
+def By.name : By → String
+  | .kind => "env.kind"
+  | .observer => "env.observer"
+  | .about p => "env.about:" ++ p
+  | .payload n => n
+
+/-- A payload value as a group key: text as written, a whole number in decimal
+(`-3`, `100`), a boolean as `true` or `false`. A value of another kind has no
+key. Keys are text, so the text `"3"` and the number 3 share a group. -/
+def Val.key : Val → Option String
+  | .str s => some s
+  | .int i => if -maxExact ≤ i ∧ i ≤ maxExact then some (toString i) else none
+  | .bool b => some (if b then "true" else "false")
+  | .number _ => none
+
+/-- A member of `about` under a typed-reference prefix: the reference without
+its prefix (`project:loops` under `project` is `loops`). -/
+def refUnder (pfx : String) (a : String) : Option String :=
+  if (pfx.toList ++ [':']).isPrefixOf a.toList then some (String.ofList (a.toList.drop (pfx.length + 1)))
+  else none
+
+/-- The groups a record joins, each once, or `none` when the key cannot be
+read: a payload field on a payload the reader does not hold. An empty list is a
+key readably absent: no member with the prefix, or a payload without the field
+or with a value that is no key. Only the record itself is read. -/
+def By.keys : By → Record → Option (List String)
+  | .kind, r => some [r.kind]
+  | .observer, r => some [r.observer]
+  | .about p, r => some (canonSet (r.about.filterMap (refUnder p)))
+  | .payload name, r => if r.shown = .here then some ((r.get name).bind Val.key).toList else none
+
 structure Slot where
   name : String
   type : FoldType
   tests : Tests := []
+  /-- `by`, when the slot groups. -/
+  group : Option By := none
+  deriving Repr, DecidableEq
+
+/-- What one group of a slot holds: what the slot holds without `by`. -/
+inductive GroupValue where
+  | nat (r : Result Nat)
+  | int (r : Result Int)
+  | opt (r : Result (Option Int))
+  | heads (hs : List (RecordId × Shown)) (unread : Nat)
   deriving Repr, DecidableEq
 
 /-- What a slot holds. Heads carry what the reader holds of each. -/
@@ -255,7 +338,21 @@ inductive SlotValue where
   | things (ts : List (String × List (RecordId × Shown))) (unread : Nat)
   /-- Collect: records newest first. -/
   | heads (hs : List (RecordId × Shown)) (unread : Nat)
+  /-- A slot with `by`: each group by its key, in canonical order, with what
+  the slot holds over it; the selected records whose `where` was unknown or
+  whose key could not be read; and those with no key. -/
+  | groups (gs : List (String × GroupValue)) (unread ungrouped : Nat)
   deriving Repr, DecidableEq
+
+/-- A slot's value as one group holds it. Latest-by takes no `by`, and a group
+holds no groups, so the last two are never asked for. -/
+def SlotValue.group : SlotValue → GroupValue
+  | .nat r => .nat r
+  | .int r => .int r
+  | .opt r => .opt r
+  | .heads hs u => .heads hs u
+  | .things _ u => .heads [] u
+  | .groups _ u _ => .heads [] u
 
 def Record.unlinked (r : Record) : Record := { r with prev := [] }
 
@@ -302,8 +399,8 @@ def accPool (follow : Bool) (xs : List Record) : List Record :=
   if follow then wholeHeads xs else xs
 
 /-- Accumulating slots select with `from` and `where`, then fold, over every
-record or, following `prev`, over the heads. -/
-def Slot.run (s : Slot) (sel : Record → Bool) (xs : List Record) : SlotValue :=
+record or, following `prev`, over the heads. This is a slot without `by`. -/
+def Slot.plain (s : Slot) (sel : Record → Bool) (xs : List Record) : SlotValue :=
   let cs := s.tests.conds
   let ev := fun r => if sel r then Cond.all cs r else Tri.no
   match s.type with
@@ -313,6 +410,46 @@ def Slot.run (s : Slot) (sel : Record → Bool) (xs : List Record) : SlotValue :
   | .max f follow => .opt ((Max.on f).select ev (accPool follow xs))
   | .latestBy => latestOf sel cs xs
   | .collect follow limit => collectOf sel cs follow limit xs
+
+/-- Whether a slot selects a record: `from` takes it and its `where` answers. -/
+def Slot.ev (s : Slot) (sel : Record → Bool) (r : Record) : Tri :=
+  if sel r then Cond.all s.tests.conds r else .no
+
+/-- What a slot reads: every record held, or following `prev` the whole-reader
+heads. Collect without `follow` reads every record, as count does. -/
+def Slot.pool (s : Slot) (xs : List Record) : List Record :=
+  match s.type with
+  | .count f | .sum _ f | .min _ f | .max _ f | .collect f _ => accPool f xs
+  | .latestBy => xs
+
+/-- Every group's key, in canonical order: each key of a selected record, once. -/
+def groupKeys (b : By) (ev : Record → Tri) (pool : List Record) : List String :=
+  canonSet ((pool.filter (ev · == .yes)).flatMap fun r => (b.keys r).getD [])
+
+/-- A record is in group `g` when the slot selects it and `g` is one of its keys. -/
+def inGroup (b : By) (ev : Record → Tri) (g : String) (r : Record) : Bool :=
+  ev r == .yes && ((b.keys r).getD []).contains g
+
+/-- A slot with `by`. Settling, admission and the whole-reader heads are
+worked out once, over everything held, before any group: each group runs the
+slot without `by` or `where` over all of it, choosing only the records selected
+into that group. A group therefore never settles, admits or finds heads on its
+own, and a group exists only where something was selected into it. A selected
+record whose `where` is unknown, or whose key cannot be read, is unread at the
+top; one with no key is ungrouped. -/
+def Slot.grouped (s : Slot) (b : By) (sel : Record → Bool) (xs : List Record) : SlotValue :=
+  let ev := s.ev sel
+  let pool := s.pool xs
+  let each : Slot := { s with tests := [], group := none }
+  .groups ((groupKeys b ev pool).map fun g => (g, (each.plain (inGroup b ev g) xs).group))
+    ((pool.filter (ev · == .unknown)).length + (pool.filter fun r => ev r == .yes && (b.keys r).isNone).length)
+    (pool.filter fun r => ev r == .yes && b.keys r == some []).length
+
+/-- A slot: grouped when it has `by`, plain otherwise. -/
+def Slot.run (s : Slot) (sel : Record → Bool) (xs : List Record) : SlotValue :=
+  match s.group with
+  | none => s.plain sel xs
+  | some b => s.grouped b sel xs
 
 /-! ## The spec -/
 
@@ -417,7 +554,7 @@ def parseWhere (path : String) : Json → Parse Tests
   | _ => refuse "where-invalid" path
 
 def foldTypes : List String := ["count", "sum", "min", "max", "latest-by", "collect"]
-def slotKeys : List String := foldTypes ++ ["where", "follow", "limit", "note"]
+def slotKeys : List String := foldTypes ++ ["where", "follow", "limit", "by", "note"]
 def sourceKeys : List String := ["store", "kind", "about", "of"]
 def specKeys : List String :=
   ["vertex", "note", "from", "fold", "ticks", "order", "resolve", "window", "boundary",
@@ -454,6 +591,18 @@ def slotLimit (path t : String) : Option Json → Parse (Option Nat)
     else refuse "limit-invalid" s!"{path}.limit"
   | some _ => refuse "limit-invalid" s!"{path}.limit"
 
+/-- `by`: text naming what to group by (`By.ofName`), on count, sum, min, max
+and collect, following `prev` or not; never on latest-by. -/
+def slotBy (path t : String) : Option Json → Parse (Option By)
+  | none => pure none
+  | some (.str s) =>
+    match By.ofName s with
+    | some b =>
+      if t = "latest-by" then refuse "by-invalid" s!"{path}.by"
+      else pure (some b)
+    | none => refuse "by-invalid" s!"{path}.by"
+  | some _ => refuse "by-invalid" s!"{path}.by"
+
 /-- The fold type with its argument. -/
 def foldType (path t : String) (follow : Bool) (limit : Option Nat) (arg : Json) : Parse FoldType :=
   let p := s!"{path}.{t}"
@@ -471,7 +620,7 @@ def slotTests (path : String) : Option Json → Parse Tests
   | some w => parseWhere s!"{path}.where" w
 
 /-- A slot: checked in order, its name, keys, one fold type, `follow`,
-`limit`, the fold type's argument, then `where`. -/
+`limit`, `by`, the fold type's argument, then `where`. -/
 def parseSlot (name : String) (j : Json) : Parse Slot :=
   let path := memberPath (some "fold") name
   if name.isEmpty then refuse "fold-invalid" path else
@@ -481,9 +630,10 @@ def parseSlot (name : String) (j : Json) : Parse Slot :=
     let (t, arg) ← slotType path kvs
     let follow ← slotFollow path t (kvs.lookup "follow")
     let limit ← slotLimit path t (kvs.lookup "limit")
+    let group ← slotBy path t (kvs.lookup "by")
     let type ← foldType path t follow limit arg
     let tests ← slotTests path (kvs.lookup "where")
-    pure ⟨name, type, tests⟩
+    pure ⟨name, type, tests, group⟩
   | _ => refuse "fold-invalid" path
 
 /-- Kinds `from` takes: at least one, each text that isn't empty, as layer 0
@@ -607,6 +757,11 @@ def Tests.toJson (ts : Tests) : Json := .obj (ts.map fun (f, os) => (f.name, .ob
 def followJson (follow : Bool) : List (String × Json) :=
   if follow then [("follow", .str "prev")] else []
 
+/-- `by` as written: present when the slot groups. -/
+def byJson : Option By → List (String × Json)
+  | some b => [("by", .str b.name)]
+  | none => []
+
 def Slot.toJson (s : Slot) : String × Json :=
   let type : List (String × Json) := match s.type with
     | .count follow => [("count", .bool true)] ++ followJson follow
@@ -619,7 +774,7 @@ def Slot.toJson (s : Slot) : String × Json :=
         (match limit with
           | some k => [("limit", .int k)]
           | none => [])
-  (s.name, .obj (type ++ if s.tests.isEmpty then [] else [("where", s.tests.toJson)]))
+  (s.name, .obj (type ++ byJson s.group ++ if s.tests.isEmpty then [] else [("where", s.tests.toJson)]))
 
 def Source.toJson (s : Source) : Json :=
   .obj ([("store", .str s.store)] ++

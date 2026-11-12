@@ -28,7 +28,7 @@ async function* jsonFiles(dir) {
 test('generation is deterministic, varied, balanced, and independent of scheduling', () => {
   const corpus = FAMILIES.flatMap(f => Array.from({ length: 8 }, (_, i) => generate('stable', i, f)));
   assert.equal(createHash('sha256').update(JSON.stringify(corpus)).digest('hex'),
-    'd0b65bb63930db91066c05d6df4fd0cfc147f8c8190d3c1946121b18500adbc2');
+    '7bbf4b60a7eba81c4e8dc14800b45f60276aa1880fde50235b8248ca0bc8f03f');
   const layers = new Set();
   for (const family of FAMILIES) {
     const seen = new Set();
@@ -72,7 +72,7 @@ test('raw numeric folds use readable records and specs use settled forms', () =>
 
 test('specs fold over heads with count, sum, min and max, over revised, forked and erased records', () => {
   let revised = 0, forked = 0, erasedHead = 0, refused = 0;
-  for (let i = 0; i < 512; i++) {
+  for (let i = 0; i < 1024; i++) {
     const spec = generate('follow', i, 'spec');
     if (spec.fuzz.nearMiss === 'follow-not-prev') {
       refused++;
@@ -90,6 +90,35 @@ test('specs fold over heads with count, sum, min and max, over revised, forked a
     erasedHead += rs.some(r => r.shown === 'erased' && !named.includes(r.id));
   }
   assert.ok(revised > 50 && forked > 10 && erasedHead > 10 && refused > 5, `${revised} ${forked} ${erasedHead} ${refused}`);
+});
+
+test('specs group by every by form, over revised, forked, erased and withheld records', async () => {
+  const { parseSpec, runSpec } = await import('../js/spec.mjs');
+  const seen = { refused: new Set(), nowItems: 0, twoMentions: 0, withheld: 0, revised: 0, groups: 0, ungrouped: 0, unread: 0 };
+  for (let i = 0; i < 512; i++) {
+    const spec = generate('by', i, 'spec');
+    if (spec.fuzz.nearMiss?.startsWith('by-')) {
+      seen.refused.add(spec.fuzz.nearMiss);
+      assert.equal(parseSpec(spec.input.spec).refused, 'by-invalid', spec.fuzz.nearMiss);
+      continue;
+    }
+    if (spec.layer !== 'spec/run') continue;
+    const rs = spec.input.orders[0], parsed = parseSpec(spec.input.spec).parsed;
+    seen.twoMentions += rs.some(r => r.about.filter(a => a.startsWith('t:')).length > 1);
+    seen.withheld += rs.some(r => r.shown === 'withheld');
+    seen.revised += rs.some(r => r.prev.length);
+    let out;
+    try { out = runSpec(parsed, rs); } catch { continue; }
+    // One key per record: the groups, the ungrouped and the unread are the selected records.
+    const { groups, unread, ungrouped } = out['by-kind'];
+    assert.equal(Object.values(groups).reduce((t, g) => t + g.value, 0) + ungrouped + unread, out.count.value + out.count.unread);
+    seen.groups += Object.keys(out['by-mention'].groups).length;
+    seen.ungrouped += out['by-missing'].ungrouped;
+    seen.unread += out['by-score-now'].unread;
+    seen.nowItems += Object.keys(out['by-mention-now-items'].groups).length > 0;
+  }
+  assert.equal(seen.refused.size, 4, [...seen.refused].join());
+  for (const k of ['twoMentions', 'withheld', 'revised', 'groups', 'ungrouped', 'unread', 'nowItems']) assert.ok(seen[k] > 10, `${k}: ${seen[k]}`);
 });
 
 test('scheduled lens boundaries retain their intended inputs', () => {

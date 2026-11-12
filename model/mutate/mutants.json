@@ -1799,5 +1799,61 @@
     "after": "| .count follow => .nat (Count.acc.select (fun r => if follow && sel r && payTest cs r == .unknown then .unknown else ev r) (accPool follow xs))",
     "reason": "Let an unknown payload test outrank a failing envelope test, when following prev.",
     "definition": "Loops.Slot.run"
+  },
+  {
+    "id": "by-group-before-admit",
+    "file": "Spec.lean",
+    "before": "sp.slots.map fun s => (s.name, s.run sp.takes ys)",
+    "after": "sp.slots.map fun s => (s.name, s.run sp.takes (if s.group.isSome then xs else ys))",
+    "reason": "Group before admission: a grouped slot reads the records as held, as admitting within each group would when a refused record's target is in another group.",
+    "definition": "Loops.Spec.run"
+  },
+  {
+    "id": "by-group-before-heads",
+    "file": "Spec.lean",
+    "before": "(g, (each.plain (inGroup b ev g) xs).group)",
+    "after": "(g, (each.plain (inGroup b ev g) (xs.filter (inGroup b ev g))).group)",
+    "reason": "Work out each group's heads from its own records, not from the whole view.",
+    "definition": "Loops.Slot.grouped"
+  },
+  {
+    "id": "by-empty-groups-kept",
+    "file": "Spec.lean",
+    "before": "canonSet ((pool.filter (ev · == .yes)).flatMap fun r => (b.keys r).getD [])",
+    "after": "canonSet (pool.flatMap fun r => (b.keys r).getD [])",
+    "reason": "Keep a group for every key read, selected or not, so a group may be empty.",
+    "definition": "Loops.groupKeys"
+  },
+  {
+    "id": "by-unknown-in-group",
+    "file": "Spec.lean",
+    "before": "ev r == .yes && ((b.keys r).getD []).contains g",
+    "after": "ev r != .no && ((b.keys r).getD []).contains g",
+    "reason": "Count a record whose where is unknown in its group as well as at the top.",
+    "definition": "Loops.inGroup"
+  },
+  {
+    "id": "by-membership-once",
+    "file": "Spec.lean",
+    "before": "| .about p, r => some (canonSet (r.about.filterMap (refUnder p)))",
+    "after": "| .about p, r => some ((canonSet (r.about.filterMap (refUnder p))).take 1)",
+    "reason": "Put a record mentioning several things under the prefix in only the first group.",
+    "definition": "Loops.By.keys"
+  },
+  {
+    "id": "by-unreadable-ungrouped",
+    "file": "Spec.lean",
+    "before": "| .payload name, r => if r.shown = .here then some ((r.get name).bind Val.key).toList else none",
+    "after": "| .payload name, r => if r.shown = .here then some ((r.get name).bind Val.key).toList else some []",
+    "reason": "Count a payload key the reader cannot read as ungrouped instead of unread.",
+    "definition": "Loops.By.keys"
+  },
+  {
+    "id": "by-on-latest-by",
+    "file": "Spec.lean",
+    "before": "if t = \"latest-by\" then refuse \"by-invalid\" s!\"{path}.by\"",
+    "after": "if t = \"latest-by\" ∧ false then refuse \"by-invalid\" s!\"{path}.by\"",
+    "reason": "Accept by on latest-by.",
+    "definition": "Loops.slotBy"
   }
 ]

@@ -99,6 +99,11 @@ Supersession runs per thing over the admitted set before selection.
 `env.of` tests `of` as written, so a record without `of` holds nothing there.
 Collect, count, sum, min and max without `follow` take every selected record, superseded or not.
 With it, every head of a forked thing counts; count counts an erased or withheld head by its envelope, and sum, min and max count it unread (`spec/run/16`–`18`).
+A slot with `by` gives `{"groups": {<key>: <result>}, "unread": n, "ungrouped": m}`, each `<result>` shaped as the slot without `by` (`spec/run/21`–`25`).
+Settling, admission and heads come first, over every record; each group is the slot without `by` or `where` over the records selected into it, so a collect's `limit` is per group.
+A `where` that answers unknown, or a payload key on a payload not held, adds to the top-level `unread`; a key readably absent adds to `ungrouped`; a record with two keys is in two groups.
+A whole number key is written in decimal and a boolean as `true` or `false`, so text `"1"` and the number 1 share group `1`.
+`scenario/by-01-erased-in-another-group` settles forms: an eraser in another group still erases.
 Collect counts unread candidates before applying its limit.
 
 ## `batch`

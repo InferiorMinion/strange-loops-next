@@ -10,9 +10,9 @@ const FAMILIES: &[(&str, usize)] = &[
     ("occurred", 9),
     ("byte-text", 5),
     ("fold", 50),
-    ("spec", 133),
+    ("spec", 161),
     ("realm", 16),
-    ("scenario", 5),
+    ("scenario", 6),
     ("lens", 21),
     ("batch", 67),
     ("standard", 12),
@@ -96,6 +96,30 @@ const OVERFLOWING: [&str; 8] = [
     "spec/d3-overflow-limit",
 ];
 
+/// The member names of every object, in order, at every depth: what the
+/// canonical comparison, which sorts members, cannot see.
+fn member_order(j: &Json) -> Vec<(String, Vec<String>)> {
+    fn walk(j: &Json, at: &str, out: &mut Vec<(String, Vec<String>)>) {
+        match j {
+            Json::Obj(kvs) => {
+                out.push((at.into(), kvs.iter().map(|(k, _)| k.clone()).collect()));
+                for (k, v) in kvs {
+                    walk(v, &format!("{at}.{k}"), out);
+                }
+            }
+            Json::Arr(xs) => {
+                for (i, x) in xs.iter().enumerate() {
+                    walk(x, &format!("{at}[{i}]"), out);
+                }
+            }
+            _ => {}
+        }
+    }
+    let mut out = Vec::new();
+    walk(j, "", &mut out);
+    out
+}
+
 /// Every answer `answers` lists for a vector the strict decoder reads, against
 /// its `expect`. False when the strict decoder refuses the vector.
 fn every_listed_answer(
@@ -115,6 +139,13 @@ fn every_listed_answer(
         for (i, answer) in answers.iter().enumerate() {
             if answer.canon() != want.canon() {
                 failures.push(format!("{}: order/variant {i} differs", file.display()));
+            }
+            // A spec's slots, and the groups and things in them, in the model's member order.
+            if layer == "spec/run" && member_order(answer) != member_order(member(&raw, "expect")) {
+                failures.push(format!(
+                    "{}: order {i} writes members in another order",
+                    file.display()
+                ));
             }
         }
     }
@@ -210,7 +241,7 @@ fn every_registered_json_and_every_arrival_order() {
     for (family, _) in FAMILIES {
         assert!(seen.iter().any(|s| s == family), "missing {family}");
     }
-    assert_eq!(checked, 498);
+    assert_eq!(checked, 527);
     overflowing.sort();
     assert_eq!(
         overflowing, OVERFLOWING,

@@ -18,6 +18,9 @@ inductive J where
   | str (s : String)
   | arr (xs : List J)
   | obj (kvs : List (String × J))
+  /-- A number as written, for an input that pins a reader's reading of a
+  spelling (`-0`, `1e3`); never an expected answer. -/
+  | raw (text : String)
   deriving Inhabited
 
 def hex4 (n : Nat) : String :=
@@ -46,6 +49,7 @@ partial def J.render (ind : Nat) : J → String
   -- as a spelling every reader overflows on, so the input stays what it was.
   | .number n => if n.finite then n.canon else if n.bits >>> 63 == 1 then "-1e999" else "1e999"
   | .str s => escape s
+  | .raw t => t
   | .arr [] => "[]"
   | .arr xs =>
     if xs.all J.scalar then "[" ++ ", ".intercalate (xs.map (J.render ind)) ++ "]"
