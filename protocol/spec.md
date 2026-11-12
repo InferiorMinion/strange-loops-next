@@ -62,6 +62,7 @@ and optionally:
 |---|---|---|
 | `follow` | `"prev"` | any; always written on `latest-by` |
 | `limit` | a whole number, at least 1 | `collect` |
+| `by` | what to group by, below | `count`, `sum`, `min`, `max`, following or not; `collect` without `follow` |
 | `where` | a `where` map, below | any |
 | `note` | any value: carried, not read | any |
 
@@ -90,6 +91,45 @@ Every head of a forked thing is current, so each one counts.
 An erased or withheld head is still current, and only its envelope is held.
 `count` counts it, since counting reads no payload; a payload test on it answers unknown, and the head is unread.
 `sum`, `min` and `max` cannot read its field, so it is unread to them.
+
+## `by`
+
+`by` groups a slot's records by a key read from each record alone.
+It is text, spelled as `where` spells fields: `env.` names the envelope, and any other name is a payload field.
+
+| `by` | A record's keys |
+|---|---|
+| `env.kind` | its kind |
+| `env.observer` | its observer, the whole typed reference |
+| `env.about:<prefix>` | each member of `about` that starts `<prefix>:`, without it (`project:loops` gives `loops`) |
+| a payload field | the field's value, when it is text, a whole number or a boolean |
+
+The prefix follows the typed-reference grammar: a lower-case letter, then lower-case letters, digits and hyphens.
+A payload field's name is one `where` accepts, so the bare name `about:project` is a payload field.
+A key is text. Text stays as written, a whole number is written in decimal (`-3`, `100`), and a boolean is `true` or `false`.
+So the text `"1"` and the number 1 share the group `1`.
+Any other value, such as `1.5`, has no key.
+
+A slot with `by` holds `{"groups": {<key>: <result>}, "unread": n, "ungrouped": m}`.
+Each `<result>` is what the slot holds without `by`, with its own `unread` (for example a `sum` over an unreadable value).
+Groups are written in UTF-16 code-unit order of their keys, the order canonical JSON gives object members.
+
+Grouping comes after settling, admission and, for a slot that follows `prev`, the heads of the whole-reader view.
+These are worked out once, over everything held. A group never settles, admits or finds heads on its own.
+Then the slot selects: `from` and `where`, as without `by`.
+Then each selected record joins a group for each of its keys.
+Each group is the slot without `by` or `where`, run over the records selected into it.
+So `limit` on `collect` applies within each group.
+
+- A record whose `where` answers no is in no group.
+- A record whose `where` answers unknown adds to the top-level `unread`. So does a selected record whose key cannot be read: a payload field on a payload the reader does not hold.
+- A selected record whose key is readably absent adds to `ungrouped`: it has no member with the prefix, or its payload lacks the field or holds a value with no key.
+- A record with several keys, such as one mentioning two projects, is in each of those groups, once in each.
+
+A group exists only where some record was selected into it, so there are no empty groups.
+Every selected record (every record whose `where` answers yes or unknown) is grouped, ungrouped or unread, exactly one of these.
+The groups hold each grouped record once per key, so the group sizes add up to memberships, not records.
+With one key per record, as every `by` but `env.about:<prefix>` gives, the counts of a grouped `count`, its `ungrouped` and its `unread` add up to the `value` and `unread` of the same count without `by`.
 
 Sum, min, and max read only safe whole values from the named payload field.
 Read each number using the layer 0 binary64 rule first.
@@ -176,8 +216,14 @@ Checks run in this order, and the first that fails is the refusal:
       argument, so `{"sum": "", "follow": "next"}` is refused at `follow`;
    5. `limit`: `limit-invalid` when it isn't a whole number of at least 1,
       or the fold type isn't collect; at `fold.<name>.limit`;
-   6. the fold type's argument: `fold-argument` at `fold.<name>.<type>`;
-   7. `where`, below.
+   6. `by`: `by-invalid` at `fold.<name>.by` when it isn't text, is empty,
+      starts `env.` but is none of `env.kind`, `env.observer` and
+      `env.about:<prefix>`, has an empty or malformed prefix, or is written
+      on latest-by or on collect with `follow`. This check stays after
+      `limit` and before the argument, so `{"sum": "", "by": "env.of"}` is
+      refused at `by`;
+   7. the fold type's argument: `fold-argument` at `fold.<name>.<type>`;
+   8. `where`, below.
 7. **`where`**: `where-invalid` throughout. At `fold.<name>.where` when it
    isn't an object or is empty. Check fields in written order, at `fold.<name>.where.<field>`.
    Refuse an invalid field name or tests that are not a nonempty object.
@@ -191,7 +237,7 @@ These are the only codes.
 `spec/parse` vectors show accepted specs in parsed form.
 They keep `vertex` and `from`.
 Each source has `store`, then supplied `kind`, `about` and `of`.
-Each `fold` slot keeps its fold type, its `follow` as written, supplied `limit` and written `where`.
+Each `fold` slot keeps its fold type, its `follow` as written, supplied `limit`, `by` as written and written `where`.
 Latest-by always writes `follow`.
 Times keep their spelling. Carried keys and `note` are dropped. An accepted spec's parsed form parses back to itself.
 The parser gives exactly the specs that fit (`spec.parse` in [`laws.md`](laws.md)). That is a law
