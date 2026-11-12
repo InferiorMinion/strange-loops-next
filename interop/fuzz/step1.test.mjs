@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import { generate } from './generate.mjs';
 import { evaluateJS, assess } from './evaluate.mjs';
+import { inputText } from './transport.mjs';
 import { occurredSpan } from '../js/loops.mjs';
 
 const dir = new URL('../../vectors/byte-text/', import.meta.url);
@@ -166,6 +167,35 @@ test('shape cases are scheduled in both orders', () => {
       assert.deepEqual(evaluateJS(v), [{ refused: 'envelope-field-unknown' }]);
     }
   }
+});
+
+test('an unknown key beside an envelope that is not an object is scheduled in both orders', () => {
+  for (const seed of ['a', 'b']) {
+    for (const [family, slots] of [['record', [64 + 39, 64 + 41, 128 + 39, 192 + 41]], ['batch', [40, 41, 104, 105]]]) {
+      for (const i of slots) {
+        const v = generate(seed, i, family);
+        assert.match(v.fuzz.nearMiss, /^(not-object-before-unknown|unknown-before-not-object)-(variant|draft)$/);
+        const text = JSON.stringify(v);
+        assert.deepEqual(evaluateJS(JSON.parse(text), text), [{ refused: 'envelope-field-unknown' }], `${family} ${i}`);
+      }
+    }
+  }
+});
+
+test('spec runs write rank as spelled, and a whole number shares its text group', () => {
+  let shared = 0;
+  for (let i = 1; i < 512; i += 2) {
+    const v = generate('rank', i, 'spec');
+    const ranks = v.input.orders[0].flatMap(r => r.fields && Object.hasOwn(r.fields, 'rank') ? [r.fields.rank] : []);
+    const text = inputText(v);
+    for (const k of ranks) if (k?.$number) assert.ok(text.includes(`"rank":${k.$number}`), k.$number);
+    const [answer] = evaluateJS(v);
+    if (!answer['by-rank']) continue;
+    assert.ok(Object.keys(answer['by-rank'].groups).every(g => ['0', '1', '2'].includes(g)));
+    const whole = new Set(ranks.filter(k => k?.$number && !k.$number.endsWith('.5')).map(k => String(Number(k.$number))));
+    if (ranks.some(k => typeof k === 'string' && whole.has(k))) shared++;
+  }
+  assert.ok(shared > 0);
 });
 
 test('valid generated records include fractional instants and occurred forms', () => {
