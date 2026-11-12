@@ -18,14 +18,15 @@ selected record goes:
   read) (`By.accounting`).
 * **Memberships.** The groups hold each grouped record once for every key it
   has (`By.memberships`): a record mentioning two projects is in both, once in
-  each. So the groups add up to memberships, not records; with one key per
-  record, as every `by` but `env.about:<prefix>` gives, they add up to records
-  (`By.accounting_single`).
+  each. So the groups add up to memberships, not records; when every selected
+  record has at most one key (`By.OneKey`), they add up to records
+  (`By.accounting_single`), which every `by` but `env.about:<prefix>` guarantees
+  (`By.accounting_single_form`).
 * **No empty groups.** A group exists only where something was selected into
   it (`groupKeys_nonempty`).
 * **Partition.** A grouped count's groups, ungrouped and unread add up to the
-  plain count's value and unread when each record has one key
-  (`By.count_partition`), and its groups to its keyed memberships in any case
+  plain count's value and unread when each selected record has at most one key
+  (`By.count_partition`, and `By.count_partition_form` for the forms that ensure it), and its groups to its keyed memberships in any case
   (`By.count_memberships`).
 -/
 
@@ -153,27 +154,47 @@ theorem By.memberships (b : By) (ev : Record → Tri) (pool : List Record) :
         apply filter_eq_nil_iff.2; intro g _; simp [inGroup, he]
       simp [this, he]
 
-/-- With one key per record, a record's keys count it once if it has one. -/
-theorem sum_keys_single {b : By} (hb : b.Single) (ev : Record → Tri) (pool : List Record) :
+/-- Every record the slot selects has at most one key: a fact of the data,
+which every `by` but `env.about:<prefix>` guarantees (`By.OneKey.of_single`),
+and which `env.about:project` meets over records that each mention one project. -/
+def By.OneKey (b : By) (ev : Record → Tri) (pool : List Record) : Prop :=
+  ∀ r ∈ pool, ev r = .yes → ((b.keys r).getD []).length ≤ 1
+
+theorem By.OneKey.of_single {b : By} (hb : b.Single) (ev : Record → Tri) (pool : List Record) :
+    b.OneKey ev pool :=
+  fun r _ _ => b.keys_single hb r
+
+/-- With one key per selected record, a record's keys count it once if it has one. -/
+theorem sum_keys_single {b : By} {ev : Record → Tri} {pool : List Record} (h : b.OneKey ev pool) :
     ((pool.filter (ev · == .yes)).map fun r => ((b.keys r).getD []).length).sum =
       (pool.filter fun r => ev r == .yes && ((b.keys r).getD []) != []).length := by
   induction pool with
   | nil => rfl
   | cons r rs ih =>
-    have h1 := b.keys_single hb r
+    have ih := ih fun q hq => h q (mem_cons_of_mem _ hq)
+    have h1 := h r mem_cons_self
     revert h1
     cases he : ev r <;> rcases hk : (b.keys r).getD [] with _ | ⟨k, _ | ⟨k', ks⟩⟩ <;>
       simp [he, hk, ih] <;> omega
 
-/-- With one key per record, the groups, the ungrouped and the unread add up to
-the records the slot reads and does not refuse. -/
-theorem By.accounting_single {b : By} (hb : b.Single) (ev : Record → Tri) (pool : List Record) :
+/-- With one key per selected record, the groups, the ungrouped and the unread
+add up to the records the slot reads and does not refuse. -/
+theorem By.accounting_single {b : By} {ev : Record → Tri} {pool : List Record} (h : b.OneKey ev pool) :
     ((groupKeys b ev pool).map fun g => (pool.filter (inGroup b ev g)).length).sum +
       (pool.filter fun r => ev r == .yes && b.keys r == some []).length +
       ((pool.filter (ev · == .unknown)).length +
         (pool.filter fun r => ev r == .yes && (b.keys r).isNone).length) =
       (pool.filter (ev · != .no)).length := by
-  rw [By.accounting b ev pool, By.memberships, sum_keys_single hb]
+  rw [By.accounting b ev pool, By.memberships, sum_keys_single h]
+
+/-- So with any `by` but `env.about:<prefix>`. -/
+theorem By.accounting_single_form {b : By} (hb : b.Single) (ev : Record → Tri) (pool : List Record) :
+    ((groupKeys b ev pool).map fun g => (pool.filter (inGroup b ev g)).length).sum +
+      (pool.filter fun r => ev r == .yes && b.keys r == some []).length +
+      ((pool.filter (ev · == .unknown)).length +
+        (pool.filter fun r => ev r == .yes && (b.keys r).isNone).length) =
+      (pool.filter (ev · != .no)).length :=
+  By.accounting_single (.of_single hb ev pool)
 
 /-! ## The slot's own counts -/
 
@@ -219,12 +240,12 @@ theorem By.count_memberships {f : Bool} {s : Slot} {b : By} (sel : Record → Bo
   congr 1
   exact map_congr_left fun g _ => count_group f s b sel xs g hs
 
-/-- **Partition.** With one key per record, a grouped count's groups,
+/-- **Partition.** With at most one key per selected record, a grouped count's groups,
 ungrouped and unread add up to the value and unread of the same count without
 `by`: the groups partition what the plain count selects, and grouping loses and
 invents nothing. -/
-theorem By.count_partition {f : Bool} {s : Slot} {b : By} (hb : b.Single) (sel : Record → Bool)
-    (xs : List Record) (hs : s.type = .count f) :
+theorem By.count_partition {f : Bool} {s : Slot} {b : By} {sel : Record → Bool} {xs : List Record}
+    (h : b.OneKey (s.ev sel) (s.pool xs)) (hs : s.type = .count f) :
     ∃ gs u m r, s.grouped b sel xs = .groups gs u m ∧ ({ s with group := none } : Slot).run sel xs = .nat r ∧
       (gs.map (·.2.count)).sum + m + u = r.value + r.unread := by
   refine ⟨_, _, _, _, Slot.grouped_eq s b sel xs, by simp only [Slot.run, Slot.plain, hs]; rfl, ?_⟩
@@ -233,8 +254,15 @@ theorem By.count_partition {f : Bool} {s : Slot} {b : By} (hb : b.Single) (sel :
       (g, (({ s with tests := [], group := none } : Slot).plain (inGroup b (s.ev sel) g) xs).group))) =
       (groupKeys b (s.ev sel) (s.pool xs)).map fun g => ((s.pool xs).filter (inGroup b (s.ev sel) g)).length
     from map_congr_left fun g _ => count_group f s b sel xs g hs]
-  rw [By.accounting_single hb, Count.select_value, Count.select_unread]
+  rw [By.accounting_single h, Count.select_value, Count.select_unread]
   simp only [Slot.pool, hs]
   exact length_ne_no _ _
+
+/-- So for a grouped count by any `by` but `env.about:<prefix>`. -/
+theorem By.count_partition_form {f : Bool} {s : Slot} {b : By} (hb : b.Single) (sel : Record → Bool)
+    (xs : List Record) (hs : s.type = .count f) :
+    ∃ gs u m r, s.grouped b sel xs = .groups gs u m ∧ ({ s with group := none } : Slot).run sel xs = .nat r ∧
+      (gs.map (·.2.count)).sum + m + u = r.value + r.unread :=
+  By.count_partition (.of_single hb _ _) hs
 
 end Loops

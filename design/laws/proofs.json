@@ -179,9 +179,9 @@
    "∀ {α : Type} (l : List α) (f g : α → Nat), (List.map (fun a => f a + g a) l).sum = (List.map f l).sum + (List.map g l).sum",
    "module": "Laws.By"},
   "Loops.sum_keys_single":
-  {"uses": ["Loops.By.keys_single"],
+  {"uses": [],
    "states":
-   "∀ {b : Loops.By}, b.Single → ∀ (ev : Loops.Record → Loops.Tri) (pool : List Loops.Record), (List.map (fun r => ((b.keys r).getD []).length) (List.filter (fun x => ev x == Loops.Tri.yes) pool)).sum = (List.filter (fun r => ev r == Loops.Tri.yes && (b.keys r).getD [] != []) pool).length",
+   "∀ {b : Loops.By} {ev : Loops.Record → Loops.Tri} {pool : List Loops.Record}, b.OneKey ev pool → (List.map (fun r => ((b.keys r).getD []).length) (List.filter (fun x => ev x == Loops.Tri.yes) pool)).sum = (List.filter (fun r => ev r == Loops.Tri.yes && (b.keys r).getD [] != []) pool).length",
    "module": "Laws.By"},
   "Loops.subst_congr":
   {"uses": [],
@@ -4215,6 +4215,11 @@
   {"uses": ["Loops.canonSet_nodup"],
    "states": "∀ (b : Loops.By) (r : Loops.Record), ((b.keys r).getD []).Nodup",
    "module": "Laws.By"},
+  "Loops.By.count_partition_form":
+  {"uses": ["Loops.By.OneKey.of_single", "Loops.By.count_partition"],
+   "states":
+   "∀ {f : Bool} {s : Loops.Slot} {b : Loops.By}, b.Single → ∀ (sel : Loops.Record → Bool) (xs : List Loops.Record), s.type = Loops.FoldType.count f → ∃ gs u m r, s.grouped b sel xs = Loops.SlotValue.groups gs u m ∧ { name := s.name, type := s.type, tests := s.tests }.run sel xs = Loops.SlotValue.nat r ∧ (List.map (fun x => x.snd.count) gs).sum + m + u = r.value + r.unread",
+   "module": "Laws.By"},
   "Loops.By.count_partition":
   {"uses":
    ["Loops.By.accounting_single",
@@ -4224,7 +4229,7 @@
     "Loops.count_group",
     "Loops.length_ne_no"],
    "states":
-   "∀ {f : Bool} {s : Loops.Slot} {b : Loops.By}, b.Single → ∀ (sel : Loops.Record → Bool) (xs : List Loops.Record), s.type = Loops.FoldType.count f → ∃ gs u m r, s.grouped b sel xs = Loops.SlotValue.groups gs u m ∧ { name := s.name, type := s.type, tests := s.tests }.run sel xs = Loops.SlotValue.nat r ∧ (List.map (fun x => x.snd.count) gs).sum + m + u = r.value + r.unread",
+   "∀ {f : Bool} {s : Loops.Slot} {b : Loops.By} {sel : Loops.Record → Bool} {xs : List Loops.Record}, b.OneKey (s.ev sel) (s.pool xs) → s.type = Loops.FoldType.count f → ∃ gs u m r, s.grouped b sel xs = Loops.SlotValue.groups gs u m ∧ { name := s.name, type := s.type, tests := s.tests }.run sel xs = Loops.SlotValue.nat r ∧ (List.map (fun x => x.snd.count) gs).sum + m + u = r.value + r.unread",
    "module": "Laws.By"},
   "Loops.By.count_memberships":
   {"uses":
@@ -4232,11 +4237,16 @@
    "states":
    "∀ {f : Bool} {s : Loops.Slot} {b : Loops.By} (sel : Loops.Record → Bool) (xs : List Loops.Record), s.type = Loops.FoldType.count f → ∃ gs u m, s.grouped b sel xs = Loops.SlotValue.groups gs u m ∧ (List.map (fun x => x.snd.count) gs).sum = (List.map (fun r => ((b.keys r).getD []).length) (List.filter (fun x => s.ev sel x == Loops.Tri.yes) (s.pool xs))).sum",
    "module": "Laws.By"},
+  "Loops.By.accounting_single_form":
+  {"uses": ["Loops.By.OneKey.of_single", "Loops.By.accounting_single"],
+   "states":
+   "∀ {b : Loops.By}, b.Single → ∀ (ev : Loops.Record → Loops.Tri) (pool : List Loops.Record), (List.map (fun g => (List.filter (Loops.inGroup b ev g) pool).length) (Loops.groupKeys b ev pool)).sum + (List.filter (fun r => ev r == Loops.Tri.yes && b.keys r == some []) pool).length + ((List.filter (fun x => ev x == Loops.Tri.unknown) pool).length + (List.filter (fun r => ev r == Loops.Tri.yes && (b.keys r).isNone) pool).length) = (List.filter (fun x => ev x != Loops.Tri.no) pool).length",
+   "module": "Laws.By"},
   "Loops.By.accounting_single":
   {"uses":
    ["Loops.By.accounting", "Loops.By.memberships", "Loops.sum_keys_single"],
    "states":
-   "∀ {b : Loops.By}, b.Single → ∀ (ev : Loops.Record → Loops.Tri) (pool : List Loops.Record), (List.map (fun g => (List.filter (Loops.inGroup b ev g) pool).length) (Loops.groupKeys b ev pool)).sum + (List.filter (fun r => ev r == Loops.Tri.yes && b.keys r == some []) pool).length + ((List.filter (fun x => ev x == Loops.Tri.unknown) pool).length + (List.filter (fun r => ev r == Loops.Tri.yes && (b.keys r).isNone) pool).length) = (List.filter (fun x => ev x != Loops.Tri.no) pool).length",
+   "∀ {b : Loops.By} {ev : Loops.Record → Loops.Tri} {pool : List Loops.Record}, b.OneKey ev pool → (List.map (fun g => (List.filter (Loops.inGroup b ev g) pool).length) (Loops.groupKeys b ev pool)).sum + (List.filter (fun r => ev r == Loops.Tri.yes && b.keys r == some []) pool).length + ((List.filter (fun x => ev x == Loops.Tri.unknown) pool).length + (List.filter (fun r => ev r == Loops.Tri.yes && (b.keys r).isNone) pool).length) = (List.filter (fun x => ev x != Loops.Tri.no) pool).length",
    "module": "Laws.By"},
   "Loops.By.accounting":
   {"uses": [],
@@ -4257,6 +4267,11 @@
    "states":
    "∀ {pfx pfx_1 : String}, Loops.By.about pfx = Loops.By.about pfx_1 → pfx = pfx_1",
    "module": "Loops.Spec"},
+  "Loops.By.OneKey.of_single":
+  {"uses": ["Loops.By.keys_single"],
+   "states":
+   "∀ {b : Loops.By}, b.Single → ∀ (ev : Loops.Record → Loops.Tri) (pool : List Loops.Record), b.OneKey ev pool",
+   "module": "Laws.By"},
   "Loops.Body.opening.sizeOf_spec":
   {"uses": [],
    "states":

@@ -129,7 +129,8 @@ So `limit` on `collect` applies within each group.
 A group exists only where some record was selected into it, so there are no empty groups.
 Every selected record (every record whose `where` answers yes or unknown) is grouped, ungrouped or unread, exactly one of these.
 The groups hold each grouped record once per key, so the group sizes add up to memberships, not records.
-With one key per record, as every `by` but `env.about:<prefix>` gives, the counts of a grouped `count`, its `ungrouped` and its `unread` add up to the `value` and `unread` of the same count without `by`.
+When every selected record has at most one key, the counts of a grouped `count`, its `ungrouped` and its `unread` add up to the `value` and `unread` of the same count without `by`.
+Every `by` but `env.about:<prefix>` gives at most one key; `env.about:<prefix>` does too over records that each mention one thing under the prefix.
 
 Sum, min, and max read only safe whole values from the named payload field.
 Read each number using the layer 0 binary64 rule first.
