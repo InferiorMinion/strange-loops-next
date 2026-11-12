@@ -77,17 +77,20 @@ A caching reader for these slots is not built.
 
 **Built, 2026-11-11: `by` on count, sum, min, max and collect (issue #2).**
 `by` groups a slot by `env.kind`, `env.observer`, the members of `about` under a typed-reference prefix (`env.about:<prefix>`), or a payload field.
-It is allowed on count, sum, min and max, following `prev` or not, and on collect without `follow`; anything else is `by-invalid` at `fold.<name>.by`, checked after `limit` and before the fold's argument.
+It is allowed on count, sum, min, max and collect, following `prev` or not; on latest-by, or naming nothing to group by, it is `by-invalid` at `fold.<name>.by`, checked after `limit` and before the fold's argument.
 The result is `{"groups": {<key>: <result>}, "unread": n, "ungrouped": m}`, each `<result>` the slot's own shape.
 Settling, admission and the whole-reader heads come first, once, over everything held; each group is then the slot without `by` or `where` over the records selected into it.
 The laws are `by.set`, `by.after-admission`, `by.accounting` and `by.partition`; `spec.slice` covers grouped slots without a new premise.
-Ordering or top-N across groups, buckets and windows, `by` on latest-by or on a followed collect, and keyed things (D8c) are not built.
+Ordering or top-N across groups, buckets and windows, `by` on latest-by, and keyed things (D8c) are not built.
+**Kyle's choices, confirmed 2026-11-11:**
+- The spelling `env.about:<prefix>`: it reuses `where`'s existing rule that `env.` names the envelope, so a bare name such as `about:project` is a payload field, and no second name is reserved.
+- Keys are text, so a text value and a number or boolean value that render alike share a group: the text `"1"` and the number 1, the text `"true"` and `true`.
+- A selected record with no key is counted in `ungrouped`: a missing field, no mention under the prefix, or a value that cannot be a key (a fraction, null, an array or an object). It is never dropped and never a refusal; only a payload the reader does not hold makes a key unread.
+- A record mentioning several things under the prefix counts in each.
+- `limit` applies per group; a top-N across groups is a later discussion (the earlier strange-loops had one, in a weather vertex example).
+- `by` is allowed on collect that follows `prev`, and refused only on latest-by.
 **Implementer choices, not yet confirmed by Kyle:**
-- The spelling keeps `where`'s rule: `env.` is the envelope and a bare name is a payload field, so the issue's bare `about:<prefix>` is written `env.about:<prefix>`, and `about:project` is a payload field (reviewer's direction).
-- A group key is text: a whole number in decimal, a boolean as `true` or `false`. The text `"1"` and the number 1 share a group.
-- A payload value that is no key (a fraction, null, an array or an object) is ungrouped, as a missing field is; only a payload the reader does not hold makes a key unread.
 - Groups are written in UTF-16 order of their keys, the order canonical JSON and `thingsOf` use.
-- `limit` on a grouped collect applies within each group.
 - The four law names, and `by` checked before the fold's argument as the issue proposed.
 
 ## Decisions for the human

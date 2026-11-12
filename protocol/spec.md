@@ -62,7 +62,7 @@ and optionally:
 |---|---|---|
 | `follow` | `"prev"` | any; always written on `latest-by` |
 | `limit` | a whole number, at least 1 | `collect` |
-| `by` | what to group by, below | `count`, `sum`, `min`, `max`, following or not; `collect` without `follow` |
+| `by` | what to group by, below | `count`, `sum`, `min`, `max`, `collect`, following or not |
 | `where` | a `where` map, below | any |
 | `note` | any value: carried, not read | any |
 
@@ -119,7 +119,8 @@ These are worked out once, over everything held. A group never settles, admits o
 Then the slot selects: `from` and `where`, as without `by`.
 Then each selected record joins a group for each of its keys.
 Each group is the slot without `by` or `where`, run over the records selected into it.
-So `limit` on `collect` applies within each group.
+So `limit` on `collect` applies within each group, and a `collect` that follows `prev` lists in each group the current records selected into it, newest first.
+A top-N across groups is not part of `by`.
 
 - A record whose `where` answers no is in no group.
 - A record whose `where` answers unknown adds to the top-level `unread`. So does a selected record whose key cannot be read: a payload field on a payload the reader does not hold.
@@ -220,9 +221,8 @@ Checks run in this order, and the first that fails is the refusal:
    6. `by`: `by-invalid` at `fold.<name>.by` when it isn't text, is empty,
       starts `env.` but is none of `env.kind`, `env.observer` and
       `env.about:<prefix>`, has an empty or malformed prefix, or is written
-      on latest-by or on collect with `follow`. This check stays after
-      `limit` and before the argument, so `{"sum": "", "by": "env.of"}` is
-      refused at `by`;
+      on latest-by. This check stays after `limit` and before the argument,
+      so `{"sum": "", "by": "env.of"}` is refused at `by`;
    7. the fold type's argument: `fold-argument` at `fold.<name>.<type>`;
    8. `where`, below.
 7. **`where`**: `where-invalid` throughout. At `fold.<name>.where` when it
