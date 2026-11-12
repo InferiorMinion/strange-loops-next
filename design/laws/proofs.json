@@ -386,13 +386,13 @@
   "Loops.slotBy_name":
   {"uses": ["Loops.By.ofName_name"],
    "states":
-   "∀ (path t : String) (follow : Bool) {b : Loops.By}, b.Fits → Loops.slotBy path t follow (some (Loops.Json.str b.name)) = if t = \"latest-by\" ∨ t = \"collect\" ∧ follow = true then Loops.refuse \"by-invalid\" (toString path ++ toString \".by\") else pure (some b)",
+   "∀ (path t : String) {b : Loops.By}, b.Fits → Loops.slotBy path t (some (Loops.Json.str b.name)) = if t = \"latest-by\" then Loops.refuse \"by-invalid\" (toString path ++ toString \".by\") else pure (some b)",
    "module": "Laws.Parse"},
   "Loops.slotBy_fits":
   {"uses":
    ["Loops.By.ofName_some", "Loops.Except.pure_eq_ok", "Loops.refuse_ne_ok"],
    "states":
-   "∀ {p t : String} {follow : Bool} {o : Option Loops.Json} {g : Option Loops.By}, Loops.slotBy p t follow o = Except.ok g → ∀ (b : Loops.By), b ∈ g → b.Fits ∧ ¬(t = \"latest-by\" ∨ t = \"collect\" ∧ follow = true)",
+   "∀ {p t : String} {o : Option Loops.Json} {g : Option Loops.By}, Loops.slotBy p t o = Except.ok g → ∀ (b : Loops.By), b ∈ g → b.Fits ∧ ¬t = \"latest-by\"",
    "module": "Laws.Parse"},
   "Loops.slice_needs_targets":
   {"uses": [],
@@ -1416,7 +1416,7 @@
   {"uses":
    ["Loops.Except.map_eq_ok", "Loops.Except.pure_eq_ok", "Loops.refuse_ne_ok"],
    "states":
-   "∀ {p t : String} {follow : Bool} {limit : Option Nat} {arg : Loops.Json} {ty : Loops.FoldType}, Loops.foldType p t follow limit arg = Except.ok ty → ¬(t = \"latest-by\" ∨ t = \"collect\" ∧ follow = true) → ty.Groups",
+   "∀ {p t : String} {follow : Bool} {limit : Option Nat} {arg : Loops.Json} {ty : Loops.FoldType}, Loops.foldType p t follow limit arg = Except.ok ty → ¬t = \"latest-by\" → ty.Groups",
    "module": "Laws.Parse"},
   "Loops.foldType_fits":
   {"uses":

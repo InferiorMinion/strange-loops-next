@@ -191,7 +191,8 @@ def parseCases : List (String × Json) := [
   ("88-by-prefix-digit-first", slotOf (o [("count", .bool true), ("by", s "env.about:2x")])),
   ("89-by-prefix-colon", slotOf (o [("count", .bool true), ("by", s "env.about:project:loops")])),
   ("90-by-on-latest-by", slotOf (o [("latest-by", s "of"), ("follow", s "prev"), ("by", s "env.kind")])),
-  ("91-by-on-followed-collect", slotOf (o [("collect", .bool true), ("follow", s "prev"), ("by", s "status")])),
+  -- collect that follows `prev` groups too; only latest-by refuses `by`
+  ("91-by-on-followed-collect", slotOf (o [("collect", .bool true), ("follow", s "prev"), ("limit", .int 2), ("by", s "status")])),
   -- `by` is checked after `limit` and before the fold's argument and `where`
   ("92-limit-before-by", slotOf (o [("count", .bool true), ("by", s ""), ("limit", .int 2)])),
   ("93-by-before-argument", slotOf (o [("sum", s ""), ("by", s "env.of")])),
@@ -626,6 +627,22 @@ def byLimitSpec : Json := o [("vertex", s "newest-open-per-kind"), ("from", a [o
     ("all", o [("collect", .bool true), ("by", s "env.kind"),
       ("where", o [("status", o [("is", s "open")])])])])]
 
+-- Collect following `prev`, grouped: the moved task is listed only under its
+-- current mention, while collect over every record lists both its versions;
+-- both heads of the fork; the erased and withheld heads grouped by envelope
+-- keys and unread under a payload key; `limit` per group beside an unknown
+-- head; the fork's head that mentions two projects listed under each.
+def byFollowCollectSpec : Json := o [("vertex", s "current-per-project"),
+  ("from", a [o [("store", s "."), ("kind", a [s "task"])]]),
+  ("fold", o [
+    ("current", o [("collect", .bool true), ("follow", s "prev"), ("by", s "env.about:project")]),
+    ("every", o [("collect", .bool true), ("by", s "env.about:project")]),
+    ("by-observer", o [("collect", .bool true), ("follow", s "prev"), ("by", s "env.observer")]),
+    ("by-status", o [("collect", .bool true), ("follow", s "prev"), ("by", s "status")]),
+    ("newest-open", o [("collect", .bool true), ("follow", s "prev"), ("limit", .int 1),
+      ("by", s "env.about:project"), ("where", o [("status", o [("is", s "open")])])]),
+    ("current-plain", o [("collect", .bool true), ("follow", s "prev")])])]
+
 structure RunCase where
   name : String
   laws : List String
@@ -697,6 +714,9 @@ def runCases : List RunCase := [
   ⟨"28-by-mentions", ["spec.set", "by.accounting"], byMentionsSpec, [pm, pn]⟩,
   -- collect's limit is per group, and the top-level unread does not depend on it
   ⟨"29-by-collect-limit", ["spec.set", "by.accounting", "result.unread"], byLimitSpec, limitRecords⟩,
+  -- collect following `prev`, grouped over the whole view's heads
+  ⟨"30-by-follow-collect", ["spec.set", "spec.follow", "by.set", "by.after-admission", "by.accounting",
+      "result.unread"], byFollowCollectSpec, [m0, m1, m2, m3, m4, m5, m6]⟩,
   ⟨"gap04-unread-multi-thing", ["result.unread"],
     o [("vertex", s "x"), ("from", a [o [("store", s ".")]]), ("fold", o [
       ("by", o [("latest-by", s "of"), ("follow", s "prev"),

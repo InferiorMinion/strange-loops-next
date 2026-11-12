@@ -320,11 +320,10 @@ def By.Fits : By → Prop
   | .about p => refPrefix p.toList = true
   | .payload n => Field.Fits (.payload n) ∧ aboutPrefixOf n = none
 
-/-- The fold types `by` may group: count, sum, min and max, following `prev`
-or not, and collect without `follow`. -/
+/-- The fold types `by` may group: count, sum, min, max and collect,
+following `prev` or not; every fold type but latest-by. -/
 def FoldType.Groups : FoldType → Prop
   | .latestBy => False
-  | .collect follow _ => follow = false
   | _ => True
 
 def Slot.Fits (s : Slot) : Prop :=
@@ -482,9 +481,9 @@ theorem Slot.toJson_distinct {s : Slot} (h : s.Fits) : s.toJson.2.keysDistinct =
     | latestBy => cases group <;> simp [Slot.toJson, he, Json.keysDistinct_obj, byJson]
 
 /-- A `by` as rendered parses back, unless the fold type takes none. -/
-theorem slotBy_name (path t : String) (follow : Bool) {b : By} (hb : b.Fits) :
-    slotBy path t follow (some (.str b.name)) =
-      if t = "latest-by" ∨ (t = "collect" ∧ follow = true) then refuse "by-invalid" s!"{path}.by"
+theorem slotBy_name (path t : String) {b : By} (hb : b.Fits) :
+    slotBy path t (some (.str b.name)) =
+      if t = "latest-by" then refuse "by-invalid" s!"{path}.by"
       else pure (some b) := by
   simp only [slotBy, By.ofName_name hb]
 
@@ -522,10 +521,10 @@ theorem parseSlot_toJson {s : Slot} (h : s.Fits) : parseSlot s.name s.toJson.2 =
         simp_all [Slot.toJson, parseSlot, slotType, slotFollow, slotLimit, slotBy, byJson, foldType, slotTests, checkKeys, slotKeys, foldTypes, List.lookup, bind, Except.bind, pure, Except.pure, FoldType.Fits]
   | some b =>
     obtain ⟨hb, hgr⟩ := hgb b rfl
-    have hB : ∀ t f, slotBy (memberPath (some "fold") name) t f (some (.str b.name)) =
-        if t = "latest-by" ∨ (t = "collect" ∧ f = true) then
+    have hB : ∀ t, slotBy (memberPath (some "fold") name) t (some (.str b.name)) =
+        if t = "latest-by" then
           refuse "by-invalid" s!"{memberPath (some "fold") name}.by"
-        else pure (some b) := fun t f => slotBy_name _ t f hb
+        else pure (some b) := fun t => slotBy_name _ t hb
     cases he : tests.isEmpty
     · have hw := parseWhere_toJson s!"{memberPath (some "fold") name}.where"
         (ht.resolve_left (by simpa using he))
@@ -708,11 +707,10 @@ theorem slotTests_fits {p : String} {o : Option Json} {ts : Tests} (h : slotTest
   | none => simp [slotTests, Except.pure_eq_ok] at h; exact .inl h
   | some w => exact .inr (parseWhere_fits h (hd w rfl))
 
-/-- A `by` the parser accepts fits, on a fold type that is neither latest-by
-nor collect with `follow`. -/
-theorem slotBy_fits {p t : String} {follow : Bool} {o : Option Json} {g : Option By}
-    (h : slotBy p t follow o = .ok g) :
-    ∀ b ∈ g, b.Fits ∧ ¬(t = "latest-by" ∨ (t = "collect" ∧ follow = true)) := by
+/-- A `by` the parser accepts fits, on a fold type that is not latest-by. -/
+theorem slotBy_fits {p t : String} {o : Option Json} {g : Option By}
+    (h : slotBy p t o = .ok g) :
+    ∀ b ∈ g, b.Fits ∧ ¬(t = "latest-by") := by
   intro b hb
   unfold slotBy at h
   split at h
@@ -731,7 +729,7 @@ theorem slotBy_fits {p t : String} {follow : Bool} {o : Option Json} {g : Option
 /-- The fold types the parser lets `by` group are the ones `by` may group. -/
 theorem foldType_groups {p t : String} {follow : Bool} {limit : Option Nat} {arg : Json} {ty : FoldType}
     (h : foldType p t follow limit arg = .ok ty)
-    (hg : ¬(t = "latest-by" ∨ (t = "collect" ∧ follow = true))) : ty.Groups := by
+    (hg : ¬(t = "latest-by")) : ty.Groups := by
   unfold foldType at h
   split at h <;> simp only [Except.pure_eq_ok, Except.map_eq_ok] at h
   all_goals first

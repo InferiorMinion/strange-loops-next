@@ -15,13 +15,28 @@
         "c": {
           "collect": true,
           "follow": "prev",
+          "limit": 2,
           "by": "status"
         }
       }
     }
   },
   "expect": {
-    "refused": "by-invalid",
-    "path": "fold.c.by"
+    "parsed": {
+      "vertex": "x",
+      "from": [
+        {
+          "store": "."
+        }
+      ],
+      "fold": {
+        "c": {
+          "collect": true,
+          "follow": "prev",
+          "limit": 2,
+          "by": "status"
+        }
+      }
+    }
   }
 }

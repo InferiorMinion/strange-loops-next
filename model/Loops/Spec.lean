@@ -28,8 +28,7 @@ the closed vocabulary with an optional `where`.
   successor is of another kind, or no longer matches, or is withheld.
   When the store's rule for who may replace whom reads only envelopes, a view
   preserves each thing's heads. Each head shows only what the view shows.
-* **`by` groups** count, sum, min, max (following `prev` or not) and collect
-  without `follow`, by an envelope field, by the members of `about` under a
+* **`by` groups** count, sum, min, max and collect, following `prev` or not, by an envelope field, by the members of `about` under a
   typed-reference prefix, or by a payload field. Settling, admission and the
   heads come first, over everything held; each group then runs the slot without
   `by` over all of it, choosing only its own records.
@@ -592,14 +591,14 @@ def slotLimit (path t : String) : Option Json → Parse (Option Nat)
     else refuse "limit-invalid" s!"{path}.limit"
   | some _ => refuse "limit-invalid" s!"{path}.limit"
 
-/-- `by`: text naming what to group by (`By.ofName`), on count, sum, min and
-max, following `prev` or not, and on collect without `follow`. -/
-def slotBy (path t : String) (follow : Bool) : Option Json → Parse (Option By)
+/-- `by`: text naming what to group by (`By.ofName`), on count, sum, min, max
+and collect, following `prev` or not; never on latest-by. -/
+def slotBy (path t : String) : Option Json → Parse (Option By)
   | none => pure none
   | some (.str s) =>
     match By.ofName s with
     | some b =>
-      if t = "latest-by" ∨ (t = "collect" ∧ follow = true) then refuse "by-invalid" s!"{path}.by"
+      if t = "latest-by" then refuse "by-invalid" s!"{path}.by"
       else pure (some b)
     | none => refuse "by-invalid" s!"{path}.by"
   | some _ => refuse "by-invalid" s!"{path}.by"
@@ -631,7 +630,7 @@ def parseSlot (name : String) (j : Json) : Parse Slot :=
     let (t, arg) ← slotType path kvs
     let follow ← slotFollow path t (kvs.lookup "follow")
     let limit ← slotLimit path t (kvs.lookup "limit")
-    let group ← slotBy path t follow (kvs.lookup "by")
+    let group ← slotBy path t (kvs.lookup "by")
     let type ← foldType path t follow limit arg
     let tests ← slotTests path (kvs.lookup "where")
     pure ⟨name, type, tests, group⟩
