@@ -1,0 +1,26 @@
+{
+  "vector": "shape-first-variant-decides",
+  "layer": "record",
+  "laws": ["record.shape", "record.refuse"],
+  "source": "model",
+  "input": {
+    "envs": [
+      {
+        "observer": "sl:u11o5kditce56otma2ksbsnff7n6t0ftgbrmt4sp0j5d1riusfr0",
+        "emitted": "2026-10-21T09:30:00Z"
+      },
+      {
+        "kind": "note",
+        "observer": "sl:u11o5kditce56otma2ksbsnff7n6t0ftgbrmt4sp0j5d1riusfr0",
+        "emitted": "2026-10-21T09:30:00Z"
+      }
+    ],
+    "salt": "dt79ilntghnjetf0tbnjm26do0",
+    "payloads": [
+      {}
+    ]
+  },
+  "expect": {
+    "refused": "kind-empty"
+  }
+}

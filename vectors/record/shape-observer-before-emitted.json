@@ -1,0 +1,22 @@
+{
+  "vector": "shape-observer-before-emitted",
+  "layer": "record",
+  "laws": ["record.shape", "record.refuse"],
+  "source": "model",
+  "input": {
+    "envs": [
+      {
+        "kind": "note",
+        "observer": 7,
+        "emitted": 7
+      }
+    ],
+    "salt": "g6d2n9c3k78eagouhp5faodhho",
+    "payloads": [
+      {}
+    ]
+  },
+  "expect": {
+    "refused": "observer-not-typed"
+  }
+}

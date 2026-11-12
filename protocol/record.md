@@ -39,14 +39,32 @@ vectors in `vectors/record/`.
 The envelope reader refuses fields outside this table.
 Fields the core does not read belong in the payload; otherwise the id would silently omit them.
 
-The envelope reader uses these refusal codes: `envelope-field-unknown`, `kind-empty`,
-`observer-not-typed`, `emitted-not-rfc3339`, `occurred-not-span`,
+The envelope reader uses these refusal codes: `envelope-field-unknown`, `envelope-not-object`,
+`kind-empty`, `observer-not-typed`, `emitted-not-rfc3339`, `occurred-not-span`,
 `about-not-typed`, `of-not-typed`, `prev-not-record-id`, `under-not-record-id`,
 `erases-not-record-id`, `of-missing`.
+These are the only codes for an envelope.
 It checks them in that order.
 `of-missing` comes last: it reads `prev` and `of` together, after each has its own check.
 Raw shape comes first: inspect all envelope keys before decoding any envelope value, label or salt.
-An unknown key gives one top-level `envelope-field-unknown` refusal, including when another envelope has malformed values.
+An unknown key gives one top-level `envelope-field-unknown` refusal, including when another envelope is not an object or has malformed values.
+Then an envelope that is not an object gives `envelope-not-object`, whatever the other envelopes hold.
+A required field left out, or any field whose value has the wrong JSON type, is refused with that field's own code, in that field's place:
+
+| Field | Left out | Wrong JSON type |
+|---|---|---|
+| `kind` | `kind-empty` | `kind-empty` (not text) |
+| `observer` | `observer-not-typed` | `observer-not-typed` (not text) |
+| `emitted` | `emitted-not-rfc3339` | `emitted-not-rfc3339` (not text) |
+| `occurred` | allowed | `occurred-not-span` (not text) |
+| `about` | allowed | `about-not-typed` (not an array, or a member not text) |
+| `of` | allowed | `of-not-typed` (not text) |
+| `prev` | allowed | `prev-not-record-id` (not an array, or a member not text) |
+| `under` | allowed | `under-not-record-id` (not text) |
+| `erases` | allowed | `erases-not-record-id` (not an array, or a member not text) |
+
+`null` is a value of the wrong type, not a field left out.
+So `{"observer": 7}` is refused with `kind-empty`, and `{"kind": "note", "observer": 7, "emitted": 7}` with `observer-not-typed`.
 Text comes second: every string and member name is Unicode scalar values.
 A lone UTF-16 surrogate, in a value or a member name, is refused with `string-not-unicode`.
 This check follows raw shape and precedes every check from `kind-empty` on, including the salt.
@@ -76,21 +94,27 @@ replaces (`of: r:X, prev: [r:X], erases: [r:X]`).
 Targets don't go in `about`: `about: [r:X]` only mentions X.
 
 Writing checks the envelope, then salt length (`salt-not-16-bytes`) and repeated payload members (`member-duplicate`).
+A salt left out, of another JSON type, or not canonical base32hex text is not 16 bytes, and is refused the same way.
 It then checks nonfinite or out-of-range payload numbers (`number-out-of-range`).
 Every number must have magnitude at most 2^53 − 1, whole or not.
 A number spelling past binary64's range is such a number: it stays a number until this last check.
 No reader refuses it earlier or under another name.
 A batch writes each record through the same checks.
-A draft in a batch may name another draft by its label in `about`, `of` or `prev`.
+A draft in a batch may name another draft by its label in `about`, `of`, `prev` or `under`; never in `erases`.
+A label in `under` takes part in cycles as the others do, so a grant and a record acting under it can be written together.
+A draft's envelope that is not an object, or a draft without one, is refused with `envelope-not-object` in the shape stage.
+A draft that is not an object, an unknown draft member, a label that is not text and a draft without a payload are malformed input, with no refusal code.
 The writer then checks what each record names, across the whole batch.
+It checks no `under` target beyond its shape: whether it names a grant is standing's question.
 A `prev` target must be in the batch or the store (`prev-unknown`).
 An `of` that names a record the writer holds, in the batch or the store, must name a root (`of-not-root`).
 A `prev` target must be of the record's thing (`prev-unrelated`).
 A reader checks only the last, against the records it holds, as admission above.
 
 The whole order, for a record given as an envelope, a salt and a payload:
-`envelope-field-unknown`, `string-not-unicode`, the envelope codes from `kind-empty`,
+`envelope-field-unknown`, `envelope-not-object`, `string-not-unicode`, the envelope codes from `kind-empty`,
 `salt-not-16-bytes`, `member-duplicate`, `number-out-of-range`.
+A repeated envelope member name has no code: it is malformed input.
 
 ## Things
 
@@ -212,7 +236,7 @@ sig    = { "key": "k:" + base32hex(public key), "ed25519": base32hex(Ed25519(sig
   A 16-byte value has 26 characters and 2 pad bits.
   A 32-byte value has 52 characters and 4 pad bits.
   A 64-byte value has 103 characters and 3 pad bits.
-  A malformed value uses the field's existing refusal code.
+  A malformed value uses the field's existing refusal code, as does a field left out or of the wrong JSON type.
 * The **salt** is 16 random bytes; it stops anyone confirming a guess about a
   payload from its commitment.
 * The **payload** is any JSON value.

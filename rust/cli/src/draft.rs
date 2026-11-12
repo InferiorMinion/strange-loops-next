@@ -1,7 +1,12 @@
 //! Drafts from the command line and from JSONL, in the design's flat shape:
 //! envelope fields beside `payload`, with an optional `label` and `salt`.
 use crate::{Fail, refused, usage};
-use loops::{base32, batch::Draft, envelope::Env, json::Json};
+use loops::{
+    base32,
+    batch::Draft,
+    envelope::{self, Env},
+    json::Json,
+};
 use loops_place::key;
 
 fn new_salt() -> Result<Vec<u8>, Fail> {
@@ -84,21 +89,25 @@ pub(crate) fn from_args(
 fn shape(line: usize, what: &str) -> Fail {
     refused(format!("draft-shape at line {line}: {what}"))
 }
-fn text_of(line: usize, name: &str, value: &Json) -> Result<String, Fail> {
-    match value {
-        Json::Str(s) => Ok(s.clone()),
-        _ => Err(shape(line, &format!("{name} is text"))),
-    }
-}
-fn texts_of(line: usize, name: &str, value: &Json) -> Result<Vec<String>, Fail> {
-    match value {
-        Json::Arr(items) => items.iter().map(|v| text_of(line, name, v)).collect(),
-        _ => Err(shape(line, &format!("{name} is an array of text"))),
-    }
-}
+
+/// The envelope fields a line may carry, beside `label`, `payload` and `salt`.
+const ENVELOPE_FIELDS: &[&str] = &[
+    "kind", "observer", "emitted", "occurred", "about", "of", "prev", "under", "erases",
+];
 
 /// One draft per line: a changeset. A line names what breaks, and nothing is
 /// written unless every line is taken.
+///
+/// A line's own shape is the CLI's: a line that is not a JSON object or has a
+/// label that is not text is `draft-shape`, a repeated member
+/// `member-duplicate`, and an unknown member `draft-field-unknown`, each
+/// refused at once. Its envelope fields are read by the core's reader, as
+/// `Read.envOf` reads them: a field left out or of the wrong JSON type reads as
+/// unreadable text, so the batch writer refuses it with that field's own code,
+/// in the writer's order across the whole changeset, after label refusals.
+/// `observer` and `emitted` are filled in only when the line leaves them out.
+/// A salt the line gives is read as the core reads one: text that is not
+/// base32hex is no bytes, refused as `salt-not-16-bytes` in that check's place.
 pub(crate) fn from_jsonl(input: &str, observer: &str, now: &str) -> Result<Vec<Draft>, Fail> {
     let mut drafts = Vec::new();
     for (i, text) in input.lines().enumerate() {
@@ -109,37 +118,23 @@ pub(crate) fn from_jsonl(input: &str, observer: &str, now: &str) -> Result<Vec<D
         let Ok(Json::Obj(members)) = loops_eval::parse_json(text) else {
             return Err(shape(line, "a draft is a JSON object"));
         };
-        let mut draft = Draft {
-            env: Env {
-                observer: observer.to_owned(),
-                emitted: now.to_owned(),
-                ..Env::default()
-            },
-            payload: Json::Obj(Vec::new()),
-            ..Draft::default()
-        };
+        let mut label = None;
+        let mut payload = Json::Obj(Vec::new());
         let mut salt = None;
+        let mut fields: Vec<(String, Json)> = Vec::new();
         for (i, (name, value)) in members.iter().enumerate() {
             if members[..i].iter().any(|(earlier, _)| earlier == name) {
                 return Err(refused(format!("member-duplicate at line {line}: {name}")));
             }
             match name.as_str() {
-                "label" => draft.label = Some(text_of(line, name, value)?),
-                "kind" => draft.env.kind = text_of(line, name, value)?,
-                "observer" => draft.env.observer = text_of(line, name, value)?,
-                "emitted" => draft.env.emitted = text_of(line, name, value)?,
-                "occurred" => draft.env.occurred = Some(text_of(line, name, value)?),
-                "under" => draft.env.under = Some(text_of(line, name, value)?),
-                "about" => draft.env.about = texts_of(line, name, value)?,
-                "of" => draft.env.of = Some(text_of(line, name, value)?),
-                "prev" => draft.env.prev = texts_of(line, name, value)?,
-                "erases" => draft.env.erases = texts_of(line, name, value)?,
-                "payload" => draft.payload = value.clone(),
-                "salt" => {
-                    salt = Some(
-                        base32::decode(&text_of(line, name, value)?)
-                            .ok_or_else(|| refused(format!("salt-not-16-bytes at line {line}")))?,
-                    );
+                "label" => match value {
+                    Json::Str(s) => label = Some(s.clone()),
+                    _ => return Err(shape(line, "label is text")),
+                },
+                "payload" => payload = value.clone(),
+                "salt" => salt = Some(envelope::read_salt(Some(value))),
+                field if ENVELOPE_FIELDS.contains(&field) => {
+                    fields.push((name.clone(), value.clone()));
                 }
                 _ => {
                     return Err(refused(format!(
@@ -148,11 +143,25 @@ pub(crate) fn from_jsonl(input: &str, observer: &str, now: &str) -> Result<Vec<D
                 }
             }
         }
-        draft.salt = match salt {
-            Some(salt) => salt,
-            None => new_salt()?,
-        };
-        drafts.push(draft);
+        // The CLI fills in who and when only where the line leaves them out.
+        for (name, value) in [("observer", observer), ("emitted", now)] {
+            if !fields.iter().any(|(k, _)| k == name) {
+                fields.push((name.to_owned(), Json::Str(value.to_owned())));
+            }
+        }
+        // Every member is a known envelope field, so the core's reader only
+        // reads values here; it refuses nothing a line can hold.
+        let env = envelope::read(&format!("line {line}"), &Json::Obj(fields))
+            .map_err(|e| shape(line, &e.to_string()))?;
+        drafts.push(Draft {
+            label,
+            env,
+            salt: match salt {
+                Some(salt) => salt,
+                None => new_salt()?,
+            },
+            payload,
+        });
     }
     Ok(drafts)
 }

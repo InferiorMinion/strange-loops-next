@@ -1,0 +1,21 @@
+{
+  "vector": "shape-missing-observer",
+  "layer": "record",
+  "laws": ["record.shape", "record.refuse"],
+  "source": "model",
+  "input": {
+    "envs": [
+      {
+        "kind": "note",
+        "emitted": "2026-10-21T09:30:00Z"
+      }
+    ],
+    "salt": "n4lsb20g59q29nnuugh9fcq58o",
+    "payloads": [
+      {}
+    ]
+  },
+  "expect": {
+    "refused": "observer-not-typed"
+  }
+}

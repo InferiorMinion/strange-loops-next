@@ -1,5 +1,53 @@
 # Lean model mutation report
 
+## After the merge of `main`: both changes' entries, at `849d4da`
+
+The catalogue has 229 entries: 210, then ten for issue #1 and nine for `follow`, with six earlier entries retargeted between them.
+The full catalogue is not rerun. Node 25.9 runs the 25 entries the two changes add or retarget, with `--only`, five or fewer at a time.
+The fourteen issue #1 entries give nine build rejections and five generator assertions, as in their review-round run below.
+The eleven `follow` entries give eight build rejections and three vector differences (`wide-spec-069`, `follow-count-every`, `follow-max-every`), as in their run below.
+No entry survives, and every run restores the baseline build.
+The cheap runner, rerun on the merged tree, kills 33 of 33 mutants.
+
+## Issue #1 and labels in `under`: the changed entries only
+
+### After the review round, at `ee0b9d3`
+
+The same fourteen entries, rerun alone, after `Laws.Read` and one retargeted site (`read-missing-kind-filled` now names `Read.envOf`):
+nine are rejected by the build and five stop at a generator assertion.
+The five reader entries (`read-wrong-type-accepted`, `read-wrong-set-empty`, `read-missing-kind-filled`, `read-salt-not-text-filled`, `read-salt-not-base32-filled`) now fail the build at `Laws/Read.lean`, where they were generator assertions.
+The other nine keep the outcomes below.
+The cheap runner, rerun at `ee0b9d3`, kills 33 of 33 mutants.
+
+### First run
+
+The catalogue has 220 entries: issue #1 retargets four and adds ten.
+The full catalogue is not rerun; the D8a and D8b snapshot below remains the last full run, over 210 entries.
+Only the fourteen changed entries run, with `--only`, in the working tree at `6691065`'s model:
+
+| Mutation | Outcome |
+|---|---|
+| `wide-batch-004` (retargeted) | rejected-by-build |
+| `step1-envelope-keys-after-value` (retargeted) | error |
+| `step1-draft-keys-after-values` (retargeted) | error |
+| `step1-record-keys-after-values` (retargeted) | error |
+| `shape-not-object-skipped` | rejected-by-build |
+| `shape-not-object-before-unknown` | error |
+| `shape-draft-without-env-passes` | error |
+| `read-wrong-type-accepted` | error |
+| `read-wrong-set-empty` | error |
+| `read-missing-kind-filled` | error |
+| `read-salt-not-text-filled` | error |
+| `read-salt-not-base32-filled` | error |
+| `under-subst-skipped` | rejected-by-build |
+| `under-refs-skipped` | rejected-by-build |
+
+Every error is a generator assertion at the case the entry targets.
+The reader entries stop at the `record/shape-*` vector whose refusal they remove, such as `record/shape-kind-number: no answer`.
+`shape-draft-without-env-passes` stops at `batch/55-env-missing-before-label-value`, and the order entries at the R6 self-checks.
+`step1-envelope-keys-after-value` first survived that run: a mistyped `kind` no longer fails decoding, so its old self-check passed.
+A self-check that shape precedes a repeated envelope member now stops it; rerun alone at `fb16fc6`, it is an error again, as in the D8 run.
+The cheap runner, which is rerun at `fb16fc6` with two retargeted sites, kills 33 of 33 mutants.
 ## Follow on count, sum, min and max: targeted run
 
 The full catalogue is not rerun for issue #3.

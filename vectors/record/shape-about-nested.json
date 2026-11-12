@@ -1,0 +1,25 @@
+{
+  "vector": "shape-about-nested",
+  "layer": "record",
+  "laws": ["record.shape", "record.refuse"],
+  "source": "model",
+  "input": {
+    "envs": [
+      {
+        "kind": "note",
+        "observer": "sl:u11o5kditce56otma2ksbsnff7n6t0ftgbrmt4sp0j5d1riusfr0",
+        "emitted": "2026-10-21T09:30:00Z",
+        "about": [
+          ["@missing"]
+        ]
+      }
+    ],
+    "salt": "0dqi816342dfosq01o96ekiil8",
+    "payloads": [
+      {}
+    ]
+  },
+  "expect": {
+    "refused": "about-not-typed"
+  }
+}

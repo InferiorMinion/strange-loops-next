@@ -1,0 +1,50 @@
+{
+  "vector": "35-under-cycle",
+  "layer": "batch",
+  "laws": ["batch.refuse"],
+  "source": "model",
+  "input": {
+    "held": [
+      {
+        "id": "r:tsant02u7bhefv6nom5tukci31agdh8q5sonp4s3h4dhkfbrgli0",
+        "prev": []
+      },
+      {
+        "id": "r:l3c6scqhfqu3bfmj288git5kimd1e3ik809q8pv8p2637qi48kc0",
+        "of": "r:tsant02u7bhefv6nom5tukci31agdh8q5sonp4s3h4dhkfbrgli0",
+        "prev": ["r:tsant02u7bhefv6nom5tukci31agdh8q5sonp4s3h4dhkfbrgli0"]
+      },
+      {
+        "id": "r:iivodlg66vgkad2knrdqob3e4obh28sea6omq5kk0u25t925276g",
+        "prev": []
+      }
+    ],
+    "drafts": [
+      {
+        "label": "@ua",
+        "env": {
+          "kind": "note",
+          "observer": "sl:u11o5kditce56otma2ksbsnff7n6t0ftgbrmt4sp0j5d1riusfr0",
+          "emitted": "2026-10-24T09:00:00Z",
+          "under": "@ub"
+        },
+        "salt": "c6mtc02qu6ft5a0t5vn9d6874o",
+        "payload": {}
+      },
+      {
+        "label": "@ub",
+        "env": {
+          "kind": "grant",
+          "observer": "sl:u11o5kditce56otma2ksbsnff7n6t0ftgbrmt4sp0j5d1riusfr0",
+          "emitted": "2026-10-24T09:00:00Z",
+          "under": "@ua"
+        },
+        "salt": "o3dsdh8hkugnjji3eun2o6e20o",
+        "payload": {}
+      }
+    ]
+  },
+  "expect": {
+    "refused": "label-cycle"
+  }
+}

@@ -200,9 +200,49 @@ const envUnicodeProblem = (env) =>
 
 export const unknownEnvelopeKeys = (env) => env !== null && typeof env === "object" && !Array.isArray(env) && Reflect.ownKeys(env).some((key) => !ENV_KEYS.has(key));
 
-// Check all raw envelope shapes before reading any of their values.
+// Check all raw envelope keys before reading any of their values.
 export function checkEnvelopeKeys(envs) {
   if (envs.some(unknownEnvelopeKeys)) throw new Error("envelope-field-unknown");
+}
+
+export const notObject = (env) => env === null || typeof env !== "object" || Array.isArray(env);
+
+// Raw shape across every envelope (`envelopesShapeProblem`,
+// model/Loops/Envelope.lean): an unknown key in any of them, then any that is
+// not an object. Both come before any value, label or salt.
+export function checkEnvelopeShapes(envs) {
+  checkEnvelopeKeys(envs);
+  if (envs.some(notObject)) throw new Error("envelope-not-object");
+}
+
+// What the reader reads for a field it can't read as its JSON type: a required
+// field left out, a field of the wrong type, or a set member that is not text.
+// It is empty text, which the field's own check refuses, so the refusal is the
+// field's code in the field's place (`unreadable`, model/Loops/Envelope.lean).
+const UNREADABLE = "";
+const textOr = (v) => (typeof v === "string" ? v : UNREADABLE);
+const textsOr = (v) => (Array.isArray(v) ? v.map(textOr) : [UNREADABLE]);
+
+// An object envelope's values as the writer checks them (`decodeValues`,
+// model/Loops/Read.lean). An envelope the writer accepts reads as itself.
+export function readEnv(raw) {
+  const has = (k) => Object.hasOwn(raw, k);
+  const env = {
+    kind: has("kind") ? textOr(raw.kind) : UNREADABLE,
+    observer: has("observer") ? textOr(raw.observer) : UNREADABLE,
+    emitted: has("emitted") ? textOr(raw.emitted) : UNREADABLE,
+  };
+  for (const k of ["occurred", "of", "under"]) if (has(k)) env[k] = textOr(raw[k]);
+  for (const k of ["about", "prev", "erases"]) if (has(k)) env[k] = textsOr(raw[k]);
+  return env;
+}
+
+// A salt written in base32hex. One left out, not text, or not canonical
+// base32hex reads as no bytes, which the salt check refuses as
+// `salt-not-16-bytes` in its place (`Read.salt`, model/Loops/Read.lean).
+export function readSalt(text) {
+  if (typeof text !== "string") return new Uint8Array(0);
+  try { return base32Decode(text); } catch { return new Uint8Array(0); }
 }
 
 // The writer's envelope checks, in the model's order (`Env.problem`,
@@ -307,14 +347,15 @@ export function parse(text) {
 const saltProblem = (salt) => (salt.length === 16 ? null : "salt-not-16-bytes");
 
 // Write a record from its payload as JSON text, checking in the model's order:
-// the envelope's keys, lone surrogates, the envelope's values, the salt,
+// the envelope's shape, lone surrogates, the envelope's values, the salt,
 // repeated member names, then numbers. A number past binary64's range reads as
 // an infinity and meets the number check like any other out of range.
 export function writeText(env, salt, text, seed) {
-  checkEnvelopeKeys([env]);
+  checkEnvelopeShapes([env]);
   let payload, fault = null;
   try { payload = parse(text); } catch (e) { fault = e; }
   if (fault?.message === NOT_UNICODE || envUnicodeProblem(env)) throw new Error(NOT_UNICODE);
+  env = readEnv(env);
   salt = prepare(env, salt);
   if (fault) throw fault;
   return finish(env, salt, payload, seed);
@@ -331,13 +372,15 @@ function prepare(env, salt) {
 }
 
 // Seal a record: the stored line, and the line after erasure. Refuses unknown
-// envelope keys, then a lone surrogate anywhere in the envelope or payload,
-// then a bad envelope, a salt that isn't 16 bytes, and last a nonfinite or
-// out-of-range payload number.
+// envelope keys and an envelope that is not an object, then a lone surrogate
+// anywhere in the envelope or payload, then a bad envelope (a field left out or
+// of the wrong type among them), a salt that isn't 16 bytes, and last a
+// nonfinite or out-of-range payload number.
 // A seed supplier defers fixture seed decoding until all write checks pass.
 export function seal(env, salt, payload, seed) {
-  checkEnvelopeKeys([env]);
+  checkEnvelopeShapes([env]);
   if (envUnicodeProblem(env) || unicodeProblem(payload)) throw new Error(NOT_UNICODE);
+  env = readEnv(env);
   salt = prepare(env, salt);
   return finish(env, salt, payload, seed);
 }
@@ -373,25 +416,40 @@ function variantProblem(env, salt, payload) {
 // A record input: envelope variants, payload variants (or one payload as
 // text), a salt and a seed, as vectors/README.md describes. The fixture
 // contract, in order:
-//  * every sibling envelope's raw keys are checked; only siblings bypass the
-//    selected writer, and the active envelope goes to the writer's own shape
-//    boundary;
+//  * every envelope's raw shape is checked: an unknown key in any, then any
+//    that is not an object. Siblings are checked here and the active envelope
+//    at the writer's own shape boundary, so an unknown key in it still comes
+//    before a sibling that is not an object;
 //  * the first envelope and first payload are written, and their refusal is
-//    the answer whatever the other variants are;
+//    the answer whatever the other variants are. A salt that is not base32hex
+//    text reads as no bytes, which the salt check refuses;
 //  * once they are written, every other variant must be writable and name the
 //    same record, or the input is at fault (an error that is no refusal code);
 //  * only then is the seed read, and it is exactly 32 bytes.
 // `payloadTexts` gives each payload variant as it was written, for a caller
 // that kept the raw text: a JavaScript value cannot hold a repeated member.
 export function writeRecord(input, { envIndex = 0, payloadIndex = 0, writer = "seal", payloadTexts } = {}) {
-  checkEnvelopeKeys(input.envs.filter((_, i) => i !== envIndex));
+  const siblings = input.envs.filter((_, i) => i !== envIndex);
   const env = input.envs[envIndex];
-  const salt = () => base32Decode(input.salt);
+  checkEnvelopeKeys(siblings);
+  if (siblings.some(notObject) && !unknownEnvelopeKeys(env)) throw new Error("envelope-not-object");
+  // No envelope or no payload to write is a fault in the input, as in Lean,
+  // where only a text payload's lone surrogate comes before it.
   const fault = (what) => { throw new Error(`record input: ${what}`); };
+  const hasEnv = envIndex < input.envs.length;
+  const hasPayload = input.payload_text !== undefined || payloadIndex < (input.payloads?.length ?? 0);
+  if (!hasEnv || !hasPayload) {
+    if (hasEnv) checkEnvelopeShapes([env]);
+    if (typeof input.payload_text === "string") {
+      try { parse(input.payload_text); } catch (e) { if (e.message === NOT_UNICODE) throw e; }
+    }
+    fault(hasEnv ? "no payload given" : "no envelope given");
+  }
+  const salt = () => readSalt(input.salt);
   const seed = ({ salt, commit, id }) => {
     input.envs.forEach((e, i) => {
       if (i === envIndex) return;
-      const why = envUnicodeProblem(e) ?? problem(e);
+      const why = envUnicodeProblem(e) ?? problem(readEnv(e));
       if (why) fault(`envs[${i}] is refused (${why}) where envs[${envIndex}] is written`);
       if (idOf(e, commit) !== id) fault(`envs[${i}] names another record than envs[${envIndex}]`);
     });

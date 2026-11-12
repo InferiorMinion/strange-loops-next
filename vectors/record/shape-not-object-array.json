@@ -1,0 +1,24 @@
+{
+  "vector": "shape-not-object-array",
+  "layer": "record",
+  "laws": ["record.shape", "record.refuse"],
+  "source": "model",
+  "input": {
+    "envs": [
+      [
+        {
+          "kind": "note",
+          "observer": "sl:u11o5kditce56otma2ksbsnff7n6t0ftgbrmt4sp0j5d1riusfr0",
+          "emitted": "2026-10-21T09:30:00Z"
+        }
+      ]
+    ],
+    "salt": "6elf5h7vhkgb3juvo4nk33msvk",
+    "payloads": [
+      {}
+    ]
+  },
+  "expect": {
+    "refused": "envelope-not-object"
+  }
+}

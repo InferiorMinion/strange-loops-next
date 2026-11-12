@@ -1,5 +1,5 @@
 //! Raw JSON decoding shared by envelope and batch input boundaries.
-use crate::{base32, json::Json};
+use crate::json::Json;
 
 /// A raw input decoding error, separate from typed writer refusals.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -62,19 +62,4 @@ pub(crate) fn text<'a>(path: &str, j: &'a Json) -> Result<&'a str, Error> {
         Json::Str(s) => Ok(s),
         _ => Err(Error(format!("{path}: expected text"))),
     }
-}
-pub(crate) fn texts(path: &str, j: &Json) -> Result<Vec<String>, Error> {
-    list(path, j)?
-        .iter()
-        .enumerate()
-        .map(|(i, j)| text(&format!("{path}[{i}]"), j).map(str::to_owned))
-        .collect()
-}
-/// Loops.Read.unbase32 (model/Loops/Read.lean), canonical lowercase byte spelling.
-fn unbase32(path: &str, s: &str) -> Result<Vec<u8>, Error> {
-    base32::decode(s).ok_or_else(|| Error(format!("{path}: noncanonical base32hex")))
-}
-/// Loops.Read.bytes (model/Loops/Read.lean), strict text and canonical byte decoding.
-pub(crate) fn bytes(path: &str, j: &Json) -> Result<Vec<u8>, Error> {
-    unbase32(path, text(path, j)?)
 }

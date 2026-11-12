@@ -1,0 +1,21 @@
+{
+  "vector": "shape-missing-kind",
+  "layer": "record",
+  "laws": ["record.shape", "record.refuse"],
+  "source": "model",
+  "input": {
+    "envs": [
+      {
+        "observer": "sl:u11o5kditce56otma2ksbsnff7n6t0ftgbrmt4sp0j5d1riusfr0",
+        "emitted": "2026-10-21T09:30:00Z"
+      }
+    ],
+    "salt": "j1gfobk3gv3gv2e3gfni611j50",
+    "payloads": [
+      {}
+    ]
+  },
+  "expect": {
+    "refused": "kind-empty"
+  }
+}

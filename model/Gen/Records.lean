@@ -127,10 +127,10 @@ is the input as written (text payloads, several variants) take their `expect`
 from the same function that later rereads them. -/
 
 open Gen.Read in
-/-- Raw envelope key refusals cross the fixture adapter as protocol refusals. -/
+/-- Raw envelope shape refusals cross the fixture adapter as protocol refusals. -/
 def envelopeOutcome (out : Dec J) : Dec J :=
   match out with
-  | .error "envelope-field-unknown" => .ok (.obj [("refused", .str "envelope-field-unknown")])
+  | .error why => if shapeCodes.contains why then .ok (.obj [("refused", .str why)]) else .error why
   | other => other
 
 /-- The refusal of a record input's text payload, if the protocol has one for it. -/
@@ -147,11 +147,15 @@ other orders), or as text when it repeats a member name or carries an escape.
 
 The stages, in order:
 
-1. Every envelope's raw keys (`envelope-field-unknown`).
+1. Every envelope's raw shape: an unknown key in any of them
+   (`envelope-field-unknown`), then any that is not an object
+   (`envelope-not-object`).
 2. A text payload with a lone surrogate (`string-not-unicode`), before any
    envelope value, the salt or the payload's members are looked at.
 3. The first envelope and the first payload are written. Their refusal is the
-   answer, whatever the other variants are.
+   answer, whatever the other variants are. A field left out or of the wrong
+   JSON type is refused with the field's code, and a salt that is not
+   base32hex text with `salt-not-16-bytes`, each in its place.
 4. Once those are written, every other variant must name the same record, and
    every other payload must be writable: a refused payload can share a
    commitment with a written one (a repeated member renders as its first, a
@@ -161,7 +165,7 @@ The stages, in order:
 def recordAnswerDecoded (input : Json) : Dec J := do
   let kvs ← members? "input" ["envs", "payloads", "payload_text", "salt", "seed"] input
   let shaped := Gen.Read.envs "input.envs" (← req "input" kvs "envs")
-  if let .error "envelope-field-unknown" := shaped then throw "envelope-field-unknown"
+  if let .error why := shaped then if shapeCodes.contains why then throw why
   if let some why := payloadTextRefusal kvs then return .obj [("refused", .str why)]
   let envs ← shaped
   let payloads ← match kvs.lookup "payloads", kvs.lookup "payload_text" with
@@ -171,7 +175,7 @@ def recordAnswerDecoded (input : Json) : Dec J := do
       | .ok j => pure [j]
       | .error e => bad "input.payload_text" e
     | _, _ => bad "input" "takes one of \"payloads\" and \"payload_text\""
-  let salt ← bytes "input.salt" (← req "input" kvs "salt")
+  let salt := Loops.Read.salt (kvs.lookup "salt")
   let some e := envs.head? | bad "input.envs" "no envelope given"
   let some payload := payloads.head? | bad "input.payloads" "no payload given"
   match write e salt payload with
@@ -414,6 +418,111 @@ def variantCases : List (String × J × String) :=
     v "d5-first-pair" [rawNote, noKind] [big, .int 1] "number-out-of-range",
     v "d5-envelope-before-payload" [noKind, rawNote] [big, .int 1] "kind-empty" ]
 
+/-! ## Envelope shape (issue #1)
+
+A nonobject envelope refuses with `envelope-not-object`, after any unknown key
+and before every value. A required field left out, or any field of the wrong
+JSON type, refuses with the field's own code in the field's place. A salt that
+is left out, not text, or not base32hex refuses with `salt-not-16-bytes`. -/
+
+/-- `rawNote` with a field set, or left out when `v` is `none`. -/
+def noteWith (k : String) (v : Option J) (base : J := rawNote) : J := match base with
+  | .obj kvs =>
+    let rest := kvs.filter (·.1 != k)
+    .obj (match v with | some v => rest ++ [(k, v)] | none => rest)
+  | other => other
+
+/-- A record input with the envelopes, salt and payload given as written. -/
+def shapeInput (name : String) (envs : List J) (salt : Option J := some (.str (base32 (saltFor name))))
+    (payload : Sum J String := .inl (.obj [])) : J :=
+  .obj ([("envs", J.arr envs)] ++ (match salt with | some s => [("salt", s)] | none => []) ++
+    match payload with
+    | .inl p => [("payloads", J.arr [p])]
+    | .inr t => [("payload_text", J.str t)])
+
+def shapeCases : List (String × J × String) :=
+  let one (name : String) (env : J) (code : String) := (name, shapeInput name [env], code)
+  let w (k : String) (v : J) (base : J := rawNote) := noteWith k (some v) base
+  let without (k : String) := noteWith k none
+  let rid := J.str r1Id
+  let withOf := w "of" rid
+  let lone := "\"\\ud800\""
+  [ -- an envelope that is not an object
+    one "shape-not-object-number" (.int 7) "envelope-not-object",
+    one "shape-not-object-null" .null "envelope-not-object",
+    one "shape-not-object-text" (.str "note") "envelope-not-object",
+    one "shape-not-object-array" (.arr [rawNote]) "envelope-not-object",
+    -- a required field left out
+    one "shape-missing-kind" (without "kind") "kind-empty",
+    one "shape-missing-observer" (without "observer") "observer-not-typed",
+    one "shape-missing-emitted" (without "emitted") "emitted-not-rfc3339",
+    one "shape-empty-object" (.obj []) "kind-empty",
+    -- a field of the wrong JSON type
+    one "shape-kind-number" (w "kind" (.int 7)) "kind-empty",
+    one "shape-kind-null" (w "kind" .null) "kind-empty",
+    one "shape-observer-number" (w "observer" (.int 7)) "observer-not-typed",
+    one "shape-observer-array" (w "observer" (.arr [.str kyle])) "observer-not-typed",
+    one "shape-emitted-number" (w "emitted" (.int 1761039000)) "emitted-not-rfc3339",
+    one "shape-occurred-number" (w "occurred" (.int 2009)) "occurred-not-span",
+    one "shape-occurred-null" (w "occurred" .null) "occurred-not-span",
+    one "shape-about-text" (w "about" (.str "topic:auth")) "about-not-typed",
+    one "shape-about-object" (w "about" (.obj [])) "about-not-typed",
+    one "shape-about-member-number" (w "about" (.arr [.str "topic:auth", .int 7])) "about-not-typed",
+    one "shape-of-number" (w "of" (.int 42)) "of-not-typed",
+    one "shape-of-array" (w "of" (.arr [.str "task:42"])) "of-not-typed",
+    one "shape-of-null" (w "of" .null) "of-not-typed",
+    one "shape-prev-text" (w "prev" rid withOf) "prev-not-record-id",
+    one "shape-prev-member-null" (w "prev" (.arr [.null]) withOf) "prev-not-record-id",
+    one "shape-under-number" (w "under" (.int 7)) "under-not-record-id",
+    one "shape-under-array" (w "under" (.arr [.str grantId])) "under-not-record-id",
+    one "shape-erases-text" (w "erases" rid) "erases-not-record-id",
+    one "shape-erases-member-number" (w "erases" (.arr [rid, .int 7])) "erases-not-record-id",
+    one "shape-erases-null" (w "erases" .null) "erases-not-record-id",
+    -- a salt that is not base32hex text
+    ("shape-salt-missing", shapeInput "shape-salt-missing" [rawNote] none, "salt-not-16-bytes"),
+    ("shape-salt-number", shapeInput "shape-salt-number" [rawNote] (some (.int 7)), "salt-not-16-bytes"),
+    ("shape-salt-not-base32", shapeInput "shape-salt-not-base32" [rawNote] (some (.str "!")), "salt-not-16-bytes"),
+    -- precedence against the neighbouring checks
+    ("shape-not-object-after-written", shapeInput "shape-not-object-after-written" [rawNote, .int 7],
+      "envelope-not-object"),
+    ("shape-not-object-before-kind", shapeInput "shape-not-object-before-kind" [w "kind" (.str ""), .null],
+      "envelope-not-object"),
+    ("shape-not-object-before-text", shapeInput "shape-not-object-before-text" [.int 7] (payload := .inr lone),
+      "envelope-not-object"),
+    ("shape-text-before-missing-kind", shapeInput "shape-text-before-missing-kind" [without "kind"]
+      (payload := .inr lone), notUnicode),
+    one "shape-missing-kind-before-observer" (w "observer" (.str "kyle") (without "kind")) "kind-empty",
+    one "shape-kind-before-observer-number" (w "observer" (.int 7) (w "kind" (.str ""))) "kind-empty",
+    one "shape-observer-before-emitted" (w "emitted" (.int 7) (w "observer" (.int 7))) "observer-not-typed",
+    one "shape-emitted-before-occurred" (w "occurred" (.int 7) (w "emitted" (.str "2026-10-21"))) "emitted-not-rfc3339",
+    one "shape-about-before-of" (w "of" (.str "auth") (w "about" (.int 7))) "about-not-typed",
+    one "shape-of-before-prev" (w "prev" (.str "topic:auth") (w "of" (.int 7))) "of-not-typed",
+    one "shape-of-not-missing" (w "prev" (.arr [rid]) (w "of" .null)) "of-not-typed",
+    one "shape-prev-before-of-missing" (w "prev" (.str "topic:auth")) "prev-not-record-id",
+    one "shape-under-before-erases" (w "erases" (.int 7) (w "under" (.int 7))) "under-not-record-id",
+    one "shape-erases-before-of-missing" (w "erases" (.int 7) (w "prev" (.arr [rid]))) "erases-not-record-id",
+    ("shape-envelope-before-salt", shapeInput "shape-envelope-before-salt" [without "kind"] (some (.int 7)),
+      "kind-empty"),
+    ("shape-salt-before-member-duplicate", shapeInput "shape-salt-before-member-duplicate" [rawNote] (some (.int 7))
+      (payload := .inr "{\"a\":1,\"a\":2}"), "salt-not-16-bytes"),
+    ("shape-salt-before-number", shapeInput "shape-salt-before-number" [rawNote] none (payload := .inr "1e999"),
+      "salt-not-16-bytes"),
+    ("shape-first-variant-decides", shapeInput "shape-first-variant-decides" [without "kind", rawNote], "kind-empty"),
+    -- `null` is a value of the wrong type, not a field left out
+    one "shape-about-null" (w "about" .null) "about-not-typed",
+    one "shape-prev-null" (w "prev" .null withOf) "prev-not-record-id",
+    one "shape-under-null" (w "under" .null) "under-not-record-id",
+    ("shape-salt-null", shapeInput "shape-salt-null" [rawNote] (some .null), "salt-not-16-bytes"),
+    -- a set member that is an array is not text, whatever it holds
+    one "shape-about-nested" (w "about" (.arr [.arr [.str "@missing"]])) "about-not-typed" ]
+
+/-- Empty sets are the canonical form of leaving them out: the same record. -/
+def emptySetsInput : J :=
+  let w (k : String) (base : J := rawNote) := noteWith k (some (.arr [])) base
+  .obj [("envs", .arr [rawNote, w "about", w "prev", w "erases", w "erases" (w "prev" (w "about"))]),
+    ("payloads", .arr [.obj []]), ("salt", .str (base32 (saltFor "shape-empty-sets"))),
+    ("seed", .str (base32 (seedFor "kyle")))]
+
 def writtenVectors : Except String (List (String × J)) := do
   let unicode ← unicodeCases.mapM fun (n, input, code) => do
     pure (n, ← answeredVector n ["record.unicode", "record.refuse"] input (some code))
@@ -423,7 +532,11 @@ def writtenVectors : Except String (List (String × J)) := do
     pure (n, ← answeredVector n ["write.overflow", "record.refuse"] input (some code))
   let variants ← variantCases.mapM fun (n, input, code) => do
     pure (n, ← answeredVector n ["record.refuse"] input (some code))
-  return unicode ++ [("d2-paired-escape", paired)] ++ overflows ++ variants
+  let shapes ← shapeCases.mapM fun (n, input, code) => do
+    pure (n, ← answeredVector n ["record.shape", "record.refuse"] input (some code))
+  let emptySets ← answeredVector "shape-empty-sets" ["record.shape", "record.sets"] emptySetsInput none
+  return unicode ++ [("d2-paired-escape", paired)] ++ overflows ++ variants ++ shapes ++
+    [("shape-empty-sets", emptySets)]
 
 /-! ## Standards the reference code must meet before it writes anything -/
 
@@ -433,6 +546,10 @@ def selfCheck : Except String Unit := do
     match Gen.Read.env "env" (.obj (fields ++ [("extra", .null)])) with
     | .error "envelope-field-unknown" => pure ()
     | _ => throw "R6 raw keys must precede envelope values"
+  -- A repeated member is malformed input only once shape has passed.
+  match Gen.Read.env "env" (.obj [("kind", .str "a"), ("kind", .str "b"), ("extra", .null)]) with
+  | .error "envelope-field-unknown" => pure ()
+  | _ => throw "R6 raw keys must precede repeated envelope members"
   for envs in [[Json.int 7, unknown], [unknown, .int 7],
       [.obj [("kind", .int 7)], unknown], [unknown, .obj [("kind", .int 7)]]] do
     match Gen.Read.envs "envs" (.arr envs) with

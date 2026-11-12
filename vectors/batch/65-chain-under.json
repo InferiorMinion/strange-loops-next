@@ -1,0 +1,79 @@
+{
+  "vector": "65-chain-under",
+  "layer": "batch",
+  "laws": ["batch.meaning"],
+  "source": "model",
+  "input": {
+    "held": [
+      {
+        "id": "r:tsant02u7bhefv6nom5tukci31agdh8q5sonp4s3h4dhkfbrgli0",
+        "prev": []
+      },
+      {
+        "id": "r:l3c6scqhfqu3bfmj288git5kimd1e3ik809q8pv8p2637qi48kc0",
+        "of": "r:tsant02u7bhefv6nom5tukci31agdh8q5sonp4s3h4dhkfbrgli0",
+        "prev": ["r:tsant02u7bhefv6nom5tukci31agdh8q5sonp4s3h4dhkfbrgli0"]
+      },
+      {
+        "id": "r:iivodlg66vgkad2knrdqob3e4obh28sea6omq5kk0u25t925276g",
+        "prev": []
+      }
+    ],
+    "drafts": [
+      {
+        "label": "@c",
+        "env": {
+          "kind": "note",
+          "observer": "sl:u11o5kditce56otma2ksbsnff7n6t0ftgbrmt4sp0j5d1riusfr0",
+          "emitted": "2026-10-24T09:00:00Z",
+          "under": "@m"
+        },
+        "salt": "aa0mdki5rbhsjf3o1ir6r5qu6o",
+        "payload": {
+          "body": "acting"
+        }
+      },
+      {
+        "label": "@m",
+        "env": {
+          "kind": "grant",
+          "observer": "sl:1frecj32mepetb5moampfsgmvgimgbo9f089r79aj23a1l545l50",
+          "emitted": "2026-10-24T09:00:00Z",
+          "under": "@g"
+        },
+        "salt": "46imp6ii0a0s7ucred0df9k4us",
+        "payload": {
+          "to": "sl:u11o5kditce56otma2ksbsnff7n6t0ftgbrmt4sp0j5d1riusfr0"
+        }
+      },
+      {
+        "label": "@g",
+        "env": {
+          "kind": "grant",
+          "observer": "sl:u11o5kditce56otma2ksbsnff7n6t0ftgbrmt4sp0j5d1riusfr0",
+          "emitted": "2026-10-24T09:00:00Z"
+        },
+        "salt": "btjanbbhodjpe3adrideptjgc0",
+        "payload": {
+          "to": "sl:1frecj32mepetb5moampfsgmvgimgbo9f089r79aj23a1l545l50"
+        }
+      }
+    ]
+  },
+  "expect": {
+    "records": [
+      {
+        "id": "r:lr5oqjbp7q72atcr3kjjrgrvv60aqf2ifc887vcc29nmu7afunh0",
+        "env_canonical": "{\"emitted\":\"2026-10-24T09:00:00Z\",\"kind\":\"note\",\"observer\":\"sl:u11o5kditce56otma2ksbsnff7n6t0ftgbrmt4sp0j5d1riusfr0\",\"under\":\"r:t9otkgo09h0n2eqh7bj7jg579v7itm9c83mpo37nbeslpjrddmng\"}"
+      },
+      {
+        "id": "r:t9otkgo09h0n2eqh7bj7jg579v7itm9c83mpo37nbeslpjrddmng",
+        "env_canonical": "{\"emitted\":\"2026-10-24T09:00:00Z\",\"kind\":\"grant\",\"observer\":\"sl:1frecj32mepetb5moampfsgmvgimgbo9f089r79aj23a1l545l50\",\"under\":\"r:3a26moa8dr6tngt3lltn9e63knc3cjqerdio3hel2cfhjnuqj27g\"}"
+      },
+      {
+        "id": "r:3a26moa8dr6tngt3lltn9e63knc3cjqerdio3hel2cfhjnuqj27g",
+        "env_canonical": "{\"emitted\":\"2026-10-24T09:00:00Z\",\"kind\":\"grant\",\"observer\":\"sl:u11o5kditce56otma2ksbsnff7n6t0ftgbrmt4sp0j5d1riusfr0\"}"
+      }
+    ]
+  }
+}

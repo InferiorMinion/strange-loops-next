@@ -1,0 +1,23 @@
+{
+  "vector": "shape-prev-before-of-missing",
+  "layer": "record",
+  "laws": ["record.shape", "record.refuse"],
+  "source": "model",
+  "input": {
+    "envs": [
+      {
+        "kind": "note",
+        "observer": "sl:u11o5kditce56otma2ksbsnff7n6t0ftgbrmt4sp0j5d1riusfr0",
+        "emitted": "2026-10-21T09:30:00Z",
+        "prev": "topic:auth"
+      }
+    ],
+    "salt": "emm75j2jtv3odjrnml0qbrh0ss",
+    "payloads": [
+      {}
+    ]
+  },
+  "expect": {
+    "refused": "prev-not-record-id"
+  }
+}
