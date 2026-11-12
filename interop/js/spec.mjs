@@ -4,7 +4,7 @@
 // Written from protocol/ and vectors/README.md. No dependencies.
 
 import { occurredSpan, problem, wellFormed, NOT_UNICODE } from "./loops.mjs";
-import { answer, held, YES, UNKNOWN } from "./where.mjs";
+import { answer, held, payloadOf, YES, UNKNOWN } from "./where.mjs";
 import * as F from "./fold.mjs";
 import { admit } from "./realm.mjs";
 
@@ -109,7 +109,7 @@ const ENV_FIELDS = {
 const TOP_KEYS = new Set(["vertex", "from", "fold", "note", "ticks", "order", "resolve", "window", "boundary", "param", "covers", "into", "bundle"]);
 const SOURCE_KEYS = new Set(["store", "kind", "about", "of"]);
 const FOLD_TYPES = ["count", "sum", "min", "max", "latest-by", "collect"];
-const SLOT_KEYS = new Set([...FOLD_TYPES, "follow", "limit", "where", "note"]);
+const SLOT_KEYS = new Set([...FOLD_TYPES, "follow", "limit", "by", "where", "note"]);
 
 // Each fold type's argument.
 const ARGUMENT = {
@@ -141,6 +141,41 @@ function testFits(field, op, arg) {
   }
 }
 
+// What `by` names, or null: `env.kind`, `env.observer`, `env.about:<prefix>`
+// with a typed-reference prefix, or a payload field `where` could name. A
+// bare name is a payload field, whatever it looks like.
+const REF_PREFIX = /^[a-z][a-z0-9-]*$/;
+function byOf(v) {
+  if (typeof v !== "string") return null;
+  if (v.startsWith("env.about:")) {
+    const prefix = v.slice("env.about:".length);
+    return REF_PREFIX.test(prefix) ? { about: prefix } : null;
+  }
+  if (v === "env.kind") return { env: "kind" };
+  if (v === "env.observer") return { env: "observer" };
+  return v !== "" && !v.startsWith("env.") ? { field: v } : null;
+}
+
+// A payload value as a group key: text as written, a whole number in decimal,
+// a boolean as true or false; anything else has none.
+const keyOf = (v) =>
+  typeof v === "string" ? v : typeof v === "boolean" || whole(v) ? String(v) : undefined;
+
+// The groups a record joins, each once, sorted; [] when its key is readably
+// absent; null when it can't be read (a payload field the reader doesn't hold).
+export function keysOf(by, r) {
+  const b = byOf(by);
+  if (b.env) return [r[b.env]];
+  if (b.about) {
+    const head = `${b.about}:`;
+    return [...new Set((r.about ?? []).filter((a) => a.startsWith(head)).map((a) => a.slice(head.length)))].sort();
+  }
+  const p = payloadOf(r);
+  if (p === null) return null;
+  const k = Object.hasOwn(p, b.field) ? keyOf(p[b.field]) : undefined;
+  return k === undefined ? [] : [k];
+}
+
 function whereOf(n, at) {
   if (!isObject(n) || n.members.length === 0) refuse("where-invalid", at);
   for (const [field, tests] of n.members) {
@@ -158,15 +193,19 @@ function slotOf(name, n) {
   const types = n.members.map(([k]) => k).filter((k) => FOLD_TYPES.includes(k));
   if (types.length !== 1) refuse("fold-type", at);
   const [type] = types;
-  const [follow, limit, where] = ["follow", "limit", "where"].map((k) => get(n, k));
+  const [follow, limit, by, where] = ["follow", "limit", "by", "where"].map((k) => get(n, k));
   if (type === "latest-by" && follow === undefined) refuse("follow-missing", [...at, "follow"]);
   // Every fold type may follow prev; latest-by must.
   if (follow !== undefined && follow !== "prev") refuse("follow-invalid", [...at, "follow"]);
   if (limit !== undefined && (!(Number.isSafeInteger(limit) && limit >= 1) || type !== "collect")) refuse("limit-invalid", [...at, "limit"]);
+  // by: after limit, before the argument; count, sum, min and max, and collect without follow.
+  if (by !== undefined && (byOf(by) === null || type === "latest-by" || (type === "collect" && follow !== undefined)))
+    refuse("by-invalid", [...at, "by"]);
   if (!ARGUMENT[type](get(n, type))) refuse("fold-argument", [...at, type]);
   const slot = { [type]: get(n, type) };
   if (follow !== undefined) slot.follow = follow;
   if (limit !== undefined) slot.limit = limit;
+  if (by !== undefined) slot.by = by;
   if (where !== undefined) slot.where = whereOf(where, [...at, "where"]);
   return slot;
 }
@@ -273,7 +312,38 @@ function latestBy(states, spec, slot) {
 // supersede over every record held, then choose among the heads, so selection
 // never brings back what was superseded. Without follow they take every
 // selected record.
-function runSlot(slot, spec, { taken, current, states }) {
+function runSlot(slot, spec, ctx) {
+  return slot.by === undefined ? plainSlot(slot, spec, ctx) : grouped(slot, spec, ctx);
+}
+
+// A slot with `by`. Settling, admission and the whole-reader heads are already
+// done, over everything held; a group never redoes them. Each record the slot
+// selects joins the group of each of its keys, and each group is the slot
+// without `by` or `where` over its own records. Unknown `where` answers and
+// unreadable keys are unread at the top; a record without a key is ungrouped.
+function grouped(slot, spec, ctx) {
+  const pool = slot.follow === "prev" ? ctx.current : ctx.taken;
+  const members = new Map();
+  let unread = 0, ungrouped = 0;
+  for (const r of pool) {
+    const a = answer(slot.where, r);
+    if (a === UNKNOWN) { unread++; continue; }
+    if (a !== YES) continue;
+    const keys = keysOf(slot.by, r);
+    if (keys === null) unread++;
+    else if (keys.length === 0) ungrouped++;
+    else for (const k of keys) members.set(k, [...(members.get(k) ?? []), r]);
+  }
+  const { by, where, ...each } = slot;
+  const groups = Object.create(null);
+  for (const k of [...members.keys()].sort()) {
+    const rs = members.get(k);
+    groups[k] = plainSlot(each, spec, { taken: rs, current: rs, states: null });
+  }
+  return { groups, unread, ungrouped };
+}
+
+function plainSlot(slot, spec, { taken, current, states }) {
   const where = slot.where;
   const pool = slot.follow === "prev" ? current : taken;
   if ("count" in slot) return F.count(pool, { where });
