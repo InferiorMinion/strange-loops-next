@@ -312,7 +312,7 @@ def By.keys : By → Record → Option (List String)
   | .kind, r => some [r.kind]
   | .observer, r => some [r.observer]
   | .about p, r => some (canonSet (r.about.filterMap (refUnder p)))
-  | .payload f, r => if r.shown = .here then some ((r.get f).bind Val.key).toList else none
+  | .payload name, r => if r.shown = .here then some ((r.get name).bind Val.key).toList else none
 
 structure Slot where
   name : String
