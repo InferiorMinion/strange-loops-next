@@ -2,7 +2,7 @@
   <div class="panel-head"><h2>A worked example</h2><button class="toggle-all" type="button">Unfold all</button></div>
   <p class="gist">Every case so far, in one mature setup: six stores across two realms and three machines, plus a bridge to an HOA board. Commands and JSON illustrate the proposed CLI and store design. Ids are shortened (<code>r:a1…</code>). Records a person doesn't type, such as ticks, are described in comments. On disk every record is a JSONL line or a SQLite row.</p>
 
-  <p><b>PROPOSED FUTURE syntax.</b> Examples below use <code>latest-by:kind</code>, <code>latest</code> and <code>collect</code> with <code>by</code>. These forms are not executable in the current crate. The <a href="https://github.com/kgruel/strange-loops-next/blob/main/protocol/spec.md">normative protocol</a> defines the current contract.</p>
+  <p><b>PROPOSED FUTURE syntax.</b> Examples below use <code>latest-by:kind</code>, <code>latest</code> and <code>collect</code> with <code>by</code>. These forms are not executable in the current crate. <code>by</code> is now built, in another spelling: <code>"by": "about"</code> here groups by every thing a record mentions, while the built grammar groups by the mentions under one typed-reference prefix, <code>"by": "env.about:&lt;prefix&gt;"</code>, and reads a bare name such as <code>about</code> as a payload field. The <a href="https://github.com/kgruel/strange-loops-next/blob/main/protocol/spec.md">normative protocol</a> defines the current contract.</p>
 
   <figure>
     <div class="fig">

@@ -13,7 +13,7 @@
   <h3>The novel</h3>
   <p>A hand-built store with one steward, made strict early because its shape is designed on purpose. Two vertices ask two questions of the same records: <i>what's the manuscript?</i> and <i>is the timeline consistent?</i> The JS front end is a lens; edits made in it are new records.</p>
   <details class="unfold"><summary>Store and vertices</summary><div class="body">
-    <p><b>PROPOSED FUTURE syntax.</b> This example uses <code>latest-by: &quot;id&quot;</code> and <code>collect</code> with <code>by</code>. It shows intended semantics, not runnable syntax. See the <a href="https://github.com/kgruel/strange-loops-next/blob/main/protocol/spec.md">normative protocol/spec.md</a>.</p>
+    <p><b>PROPOSED FUTURE syntax.</b> This example uses <code>latest-by: &quot;id&quot;</code> and <code>collect</code> with <code>by</code>. It shows intended semantics, not runnable syntax. <code>collect</code> with <code>by</code> on a payload field such as <code>pov</code> is now built as written. See the <a href="https://github.com/kgruel/strange-loops-next/blob/main/protocol/spec.md">normative protocol/spec.md</a>.</p>
     <pre style="margin:0;font-family:var(--mono);font-size:13px;background:var(--sunk);padding:12px;border-radius:8px;overflow-x:auto"># .loops/anchor
 {"kind":"store-anchor", "observer":"sl:a1", "name":"novel", "stewards":["sl:a1"]}
 
@@ -133,7 +133,7 @@ loops read slice slice:=3 children:='["vx:a1…","vx:a2…"]' size:=2</pre>
     </tbody>
   </table></div>
   <details class="unfold"><summary>Weighting by observer</summary><div class="body">
-    <p><b>PROPOSED FUTURE syntax.</b> This example uses <code>collect</code> with <code>by</code> and <code>weight-by</code>. See the <a href="https://github.com/kgruel/strange-loops-next/blob/main/protocol/spec.md">normative protocol/spec.md</a> for runnable syntax.</p>
+    <p><b>PROPOSED FUTURE syntax.</b> This example uses <code>collect</code> with <code>by</code> and <code>weight-by</code>. <code>by</code> is now built, in another spelling: <code>"by": "about"</code> here groups by every thing a record mentions, while the built grammar groups by the mentions under one typed-reference prefix, <code>"by": "env.about:&lt;prefix&gt;"</code>, and reads a bare name such as <code>about</code> as a payload field. <code>weight-by</code> is not built. See the <a href="https://github.com/kgruel/strange-loops-next/blob/main/protocol/spec.md">normative protocol/spec.md</a> for runnable syntax.</p>
     <pre style="margin:0;font-family:var(--mono);font-size:13px;background:var(--sunk);padding:12px;border-radius:8px;overflow-x:auto">loops emit tenure years:=20 domain=platform --about sl:director    # by sl:team-root
 loops emit tenure years:=14 domain=platform --about sl:a1          # by sl:team-root
 
