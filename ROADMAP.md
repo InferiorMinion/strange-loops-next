@@ -11,10 +11,10 @@ The law index has 92 entries, 829 theorems, and 6 boundary witnesses.
 See [the law index](design/laws/laws.json) and [proof and boundary data](design/laws/).
 These proofs apply only under their stated premises.
 
-The tree has 526 JSON fixtures: 514 generated fixtures and 12 standard fixtures.
-Lean replays 505 generated fixtures; 9 occurred fixtures use separate checks.
+The tree has 527 JSON fixtures: 515 generated fixtures and 12 standard fixtures.
+Lean replays 506 generated fixtures; 9 occurred fixtures use separate checks.
 Rust checks every fixture, six JCS byte pairs, 4,000 binary64 cases, and 128 SUPERCOP signing cases with ed25519-dalek.
-Rust passes 154 tests; JavaScript passes 6,294 vector checks and 34 regression and law tests.
+Rust passes 154 tests; JavaScript passes 6,309 vector checks and 34 regression and law tests.
 Both also check that `spec/run` answers write their members, group and thing keys included, in the model's order.
 The fuzz suite passes 53 tests.
 See [vectors](vectors/README.md), [Rust boundaries](rust/GAPS.md), and [the mutation report](model/mutate/REPORT.md).
