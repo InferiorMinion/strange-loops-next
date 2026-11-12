@@ -17,7 +17,7 @@ node interop/fuzz/run.mjs --seed ci-1 --n 28 --out /tmp/fuzz-ci
 node interop/fuzz/run.mjs --rust --seed phase2-20261029 --n 5000 --out /tmp/fuzz-large
 node interop/fuzz/run.mjs --seed campaign-1 --n 1000 --family record --no-shrink
 node interop/fuzz/run.mjs --rust --replay /tmp/fuzz-large/mismatches/000000.json --out /tmp/fuzz-replay
-node interop/fuzz/run.mjs --rust --seed by-shape-1 --n 5600 --shrink-trials 80 --out rust/target/scratch/fuzz-by-shape-1
+node interop/fuzz/run.mjs --rust --seed by-collect-1 --n 5600 --shrink-trials 80 --out rust/target/scratch/fuzz-by-collect-1
 node interop/fuzz/run.mjs --rust --replay vectors/lens/section/d1-duplicate-base-id.json --out /tmp/fuzz-duplicate-base
 ```
 

@@ -28,9 +28,9 @@ Numeric folds read safe whole values only.
 Raw constructors and theorem premises retain separate domains.
 
 The gates pass on Node 25.9; the Node 22 runs of Step 1 are not repeated.
-The `by-shape-1` campaign, over the generator merged from `by` and issue #1, checks 5,600 cases, 800 per family, in 74.84 seconds.
-It reports 3,778 matches, 1,426 protocol refusals, 396 shared decoder refusals, and no mismatch.
-The `by-1`, `shape-follow-1`, `shape-under-2` and `follow-2` campaigns, each over an earlier generator, found no mismatch either.
+The `by-collect-1` campaign, over the final generator, checks 5,600 cases, 800 per family, in 87.11 seconds.
+It reports 3,801 matches, 1,421 protocol refusals, 378 shared decoder refusals, and no mismatch.
+The `by-shape-1`, `by-1`, `shape-follow-1`, `shape-under-2` and `follow-2` campaigns, each over an earlier generator, found no mismatch either.
 Decoder refusals are not agreement; for record and batch inputs JavaScript must also report them as malformed.
 The generator carries issue #1's shapes and labels in `under`, followed count, sum, min and max slots, and grouped slots, so the same seeds now generate different inputs; earlier campaigns' counts are historical.
 The `d8ab-1` and `d1-d6-1` campaigns found no mismatch.

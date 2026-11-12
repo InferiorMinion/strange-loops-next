@@ -2,12 +2,48 @@
 
 ## Scope
 
-This report covers the JS, Lean, and Rust campaign over the generator merged from `by` (issue #2) and issue #1's envelope shape refusals and labels in `under`, both after `follow` on count, sum, min and max (issue #3).
-It also preserves the `shape-follow-1` and `by-1` campaigns, the two issue #1 campaigns, the `follow-2` campaign, the D8a and D8b campaign, the D1–D6 campaign, the Step-1 campaign and earlier two-way campaigns as historical findings.
+This report covers the JS, Lean, and Rust campaign over the generator merged from `by` (issue #2) and issue #1's envelope shape refusals and labels in `under`, both after `follow` on count, sum, min and max (issue #3), with `by` on a collect that follows `prev`.
+It also preserves the `by-shape-1`, `shape-follow-1` and `by-1` campaigns, the two issue #1 campaigns, the `follow-2` campaign, the D8a and D8b campaign, the D1–D6 campaign, the Step-1 campaign and earlier two-way campaigns as historical findings.
 Their counts are historical: the generator changed with D8, with issue #1, with `follow` and with `by`, so the same seeds now generate different inputs.
 The harness covers record, fold, spec, realm, scenario, batch, and lens inputs.
 
-## `by` merged with issue #1: three-way campaign
+## `by` on a followed collect: three-way campaign
+
+Source commit: `9e07995`, after `by` came to collect that follows `prev`.
+Node 25.9 checks 5,600 cases with seed `by-collect-1`: 800 cases per family.
+The run uses 88 chunks and takes 87.11 seconds.
+Exit 0: no implementation disagrees on any case.
+The retained [summary](evidence/by-collect-1/summary.json) supports these counts.
+Run `python3 interop/fuzz/summarize.py report` from the repository root.
+
+| Family | Cases | Match | Protocol refusal | Shared decoder refusal | Mismatch |
+|---|---:|---:|---:|---:|---:|
+| record | 800 | 117 | 656 | 27 | 0 |
+| fold | 800 | 712 | 0 | 88 | 0 |
+| spec | 800 | 710 | 48 | 42 | 0 |
+| realm | 800 | 701 | 0 | 99 | 0 |
+| scenario | 800 | 690 | 0 | 110 | 0 |
+| batch | 800 | 303 | 485 | 12 | 0 |
+| lens | 800 | 568 | 232 | 0 | 0 |
+| Total | 5,600 | 3,801 | 1,421 | 378 | 0 |
+
+All 378 decoder refusals occur in both Lean and Rust.
+For the record and batch families JavaScript is called on them too and throws, so the 27 record and 12 batch ones are all three agreeing that the input is malformed, which is still not protocol agreement.
+No reduction runs, because no mismatch exists.
+The [mismatch list](evidence/by-collect-1/d1-mismatches.json) keeps the historical D1 example and holds no case.
+
+Every generated spec now also has two grouped collects that follow `prev`: one by `env.about:t`, and one by the boolean `flag` with a `limit` and an envelope test.
+The parse near miss that put `by` on the followed collect, which is now accepted, is replaced by a `by` that is not text.
+Raw logs and per-case files were written under the ignored `rust/target/scratch` and deleted after the summary was recorded.
+
+```sh
+node interop/fuzz/run.mjs --rust --seed by-collect-1 --n 5600 --shrink-trials 80 --out rust/target/scratch/fuzz-by-collect-1
+python3 interop/fuzz/summarize.py campaign rust/target/scratch/fuzz-by-collect-1 by-collect-1
+```
+
+## HISTORICAL `by` merged with issue #1: three-way campaign
+
+This campaign predates `by` on a followed collect; the generator changed after it.
 
 Source commit: `8d39dbd`, the merge of `main` at `7a0f77f` into the `by` branch.
 Node 25.9 checks 5,600 cases with seed `by-shape-1`: 800 cases per family.

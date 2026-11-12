@@ -1,5 +1,16 @@
 # Lean model mutation report
 
+## `by` on a followed collect: the `by` entries, at `9e07995`
+
+`by` now groups collect that follows `prev`, so `by-on-followed-collect` no longer names a wrong rule.
+It is retargeted at the one refusal left, as `by-on-latest-by` (`by` accepted on latest-by); the catalogue keeps 236 entries.
+Node 25.9 reruns the seven `by` entries alone, with `--only`, in runs of three and four.
+Six are rejected by build and `by-unreadable-ungrouped` is killed by `spec/run/21`, `24`, `25` and the new `30`.
+`by-on-latest-by` fails at `Laws/Parse.lean` (`parseSlot_toJson`); applied by hand with only the generator built, it changes `spec/parse/90`.
+`by-group-before-heads` now also covers the grouped followed collect: applied by hand, it changes `spec/run/24` and `30`.
+The other four build-rejected entries were not applied by hand again; their earlier hand applications below predate `spec/run/30`.
+The runner restored the baseline build after both runs, and its output under the ignored `rust/target/scratch` was deleted.
+
 ## After the merge of `main` with issue #1: the `by` entries, at `8d39dbd`
 
 The catalogue has 236 entries: 229 on `main` and the seven `by` adds.
