@@ -198,8 +198,8 @@ function slotOf(name, n) {
   // Every fold type may follow prev; latest-by must.
   if (follow !== undefined && follow !== "prev") refuse("follow-invalid", [...at, "follow"]);
   if (limit !== undefined && (!(Number.isSafeInteger(limit) && limit >= 1) || type !== "collect")) refuse("limit-invalid", [...at, "limit"]);
-  // by: after limit, before the argument; count, sum, min and max, and collect without follow.
-  if (by !== undefined && (byOf(by) === null || type === "latest-by" || (type === "collect" && follow !== undefined)))
+  // by: after limit, before the argument; every fold type but latest-by, following or not.
+  if (by !== undefined && (byOf(by) === null || type === "latest-by"))
     refuse("by-invalid", [...at, "by"]);
   if (!ARGUMENT[type](get(n, type))) refuse("fold-argument", [...at, type]);
   const slot = { [type]: get(n, type) };

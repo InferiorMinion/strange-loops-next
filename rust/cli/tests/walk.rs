@@ -163,7 +163,8 @@ fn count_and_sum_follow_the_heads() {
 
 const GROUPED: &str = r#"{"vertex":"per-project","from":[{"store":".","kind":["task"]}],"fold":{
   "every":{"count":true,"by":"env.about:project"},
-  "now":{"count":true,"follow":"prev","by":"env.about:project"}}}"#;
+  "now":{"count":true,"follow":"prev","by":"env.about:project"},
+  "list":{"collect":true,"follow":"prev","by":"env.about:project"}}}"#;
 
 #[test]
 fn count_groups_by_mention_over_every_record_and_over_the_heads() {
@@ -203,7 +204,13 @@ fn count_groups_by_mention_over_every_record_and_over_the_heads() {
     assert_eq!([count("every", "x"), count("every", "y")], [n(2), n(1)]);
     // Over the heads, only the current version counts, in y.
     assert_eq!([count("now", "x"), count("now", "y")], [n(1), n(1)]);
-    for slot in ["every", "now"] {
+    // A collect that follows prev lists each current version under its mention.
+    let listed = |key: &str| match at(&slots, &["list", "groups", key, "heads"]) {
+        Json::Arr(hs) => hs.len(),
+        _ => panic!("heads"),
+    };
+    assert_eq!([listed("x"), listed("y")], [1, 1]);
+    for slot in ["every", "now", "list"] {
         assert_eq!(at(&slots, &[slot, "unread"]), &n(0));
         assert_eq!(at(&slots, &[slot, "ungrouped"]), &n(0));
         let Json::Obj(groups) = at(&slots, &[slot, "groups"]) else {

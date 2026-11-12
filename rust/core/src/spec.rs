@@ -784,20 +784,16 @@ pub fn slot_limit(path: &str, t: &str, j: Option<&Json>) -> Result<Option<Nat>, 
     }
 }
 /// Lean: `Loops.slotBy`, model/Loops/Spec.lean.
-/// Parses `by` on count, sum, min and max, following or not, and on collect without `follow`.
+/// Parses `by` on count, sum, min, max and collect, following or not.
 ///
 /// # Errors
-/// Returns by-invalid for anything but a `by` name, or on latest-by or followed collect.
-#[expect(
-    clippy::fn_params_excessive_bools,
-    reason = "Lean slotBy takes the explicit follow flag"
-)]
-pub fn slot_by(path: &str, t: &str, follow: bool, j: Option<&Json>) -> Result<Option<By>, Refusal> {
+/// Returns by-invalid for anything but a `by` name, or on latest-by.
+pub fn slot_by(path: &str, t: &str, j: Option<&Json>) -> Result<Option<By>, Refusal> {
     let invalid = || refuse(RefusalCode::ByInvalid, &format!("{path}.by"));
     match j {
         None => Ok(None),
         Some(Json::Str(s)) => match By::of_name(s) {
-            Some(_) if t == "latest-by" || (t == "collect" && follow) => Err(invalid()),
+            Some(_) if t == "latest-by" => Err(invalid()),
             Some(b) => Ok(Some(b)),
             None => Err(invalid()),
         },
@@ -859,7 +855,7 @@ pub fn parse_slot(name: &str, j: &Json) -> Result<Slot, Refusal> {
     let (t, arg) = slot_type(&path, kvs)?;
     let follow = slot_follow(&path, t, lookup(kvs, "follow"))?;
     let limit = slot_limit(&path, t, lookup(kvs, "limit"))?;
-    let group = slot_by(&path, t, follow, lookup(kvs, "by"))?;
+    let group = slot_by(&path, t, lookup(kvs, "by"))?;
     let fold_type = fold_type(&path, t, follow, limit, arg)?;
     let tests = slot_tests(&path, lookup(kvs, "where"))?;
     Ok(Slot {

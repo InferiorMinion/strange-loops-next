@@ -80,7 +80,7 @@ test("a successor dropped from the slice can surface a record the whole never or
 // keep the sweep honest: it must meet specs that leave records out, and each
 // kind that the generator can exercise must matter at least once.
 test("a spec slice answers as the whole, over generated specs and stores", () => {
-  const seen = { pairs: 0, partial: 0, erasers: 0, targets: 0, successors: 0, followed: 0, followedMatters: 0, grouped: 0, groupedMatters: 0, threw: 0 };
+  const seen = { pairs: 0, partial: 0, erasers: 0, targets: 0, successors: 0, followed: 0, followedMatters: 0, grouped: 0, groupedMatters: 0, groupedHeads: 0, threw: 0 };
   // The slots that follow prev and accumulate: count, sum, min and max.
   const followedOf = (spec) => Object.entries(spec.fold)
     .filter(([, s]) => s.follow === "prev" && ["count", "sum", "min", "max"].some((t) => t in s)).map(([n]) => n);
@@ -94,6 +94,7 @@ test("a spec slice answers as the whole, over generated specs and stores", () =>
     const followed = followedOf(spec), grouped = groupedOf(spec);
     seen.followed += followed.length > 0;
     seen.grouped += grouped.length > 0;
+    seen.groupedHeads += grouped.some((n) => "collect" in spec.fold[n] && spec.fold[n].follow === "prev");
     let matters = false, groupMatters = false;
     for (const drop of ["erasers", "targets", "successors"]) {
       // A part without a kind may surface a record the whole never orders, such
@@ -133,5 +134,7 @@ test("a spec slice answers as the whole, over generated specs and stores", () =>
   assert.ok(seen.followed > 500 && seen.followedMatters > 0, JSON.stringify(seen));
   // So are slots with `by`, plain and followed, and dropping a kind changes one.
   assert.ok(seen.grouped > 500 && seen.groupedMatters > 0, JSON.stringify(seen));
+  // Among them a collect that follows prev, grouped over the whole view's heads.
+  assert.ok(seen.groupedHeads > 500, JSON.stringify(seen));
   console.log(`spec-slice sweep: ${JSON.stringify(seen)}`);
 });
