@@ -27,7 +27,7 @@ The writer accepts values with magnitude at most 2^53 − 1, including fractions
 Numeric folds read safe whole values only.
 Raw constructors and theorem premises retain separate domains.
 
-The gates pass on Node 25.9; the Node 22 runs of Step 1 are not repeated.
+The gates pass locally on Node 25.9, and CI runs every gate on Node 22.
 The `by-collect-1` campaign, over the final generator, checks 5,600 cases, 800 per family, in 87.11 seconds.
 It reports 3,801 matches, 1,421 protocol refusals, 378 shared decoder refusals, and no mismatch.
 The `by-shape-1`, `by-1`, `shape-follow-1`, `shape-under-2` and `follow-2` campaigns, each over an earlier generator, found no mismatch either.
@@ -69,8 +69,8 @@ It selects as latest-by does, and its result keeps the shape of the same slot wi
 Every head of a forked thing counts; count counts an erased or withheld head by its envelope, and sum, min and max count it unread.
 Any other `follow` value is refused with `follow-invalid`, at the check that already refused it on collect; that check now accepts `"prev"` on every fold type.
 The law is `spec.follow`: the answer depends only on the set, through each thing's heads (`heads.set`), not `acc.set`. `heads.why` still holds.
-A caching reader for these slots is not built.
-**Implementer choices, not yet confirmed by Kyle:**
+A caching reader for these slots is not built. A record with an unknown `prev` can supersede a head and later be refused when its target arrives, so a reader that caches must keep what such a record supersedes. Holding such records back instead would refuse the slices the anchor rule allows, whose live setters travel without their ancestors. Kyle, 2026-11-11: this is step 4's first law.
+**Implementer choices, confirmed by Kyle 2026-11-11:**
 - The law's name, `spec.follow`, and its place in the spec table.
 - `follow` is a flag on each accumulating fold type, as on collect, not a slot-level field.
 - `"follow": "prev"` with `limit` on count is refused with `limit-invalid`, as before: `limit` stays collect's.
@@ -89,7 +89,7 @@ Ordering or top-N across groups, buckets and windows, `by` on latest-by, and key
 - A record mentioning several things under the prefix counts in each.
 - `limit` applies per group; a top-N across groups is a later discussion (the earlier strange-loops had one, in a weather vertex example).
 - `by` is allowed on collect that follows `prev`, and refused only on latest-by.
-**Implementer choices, not yet confirmed by Kyle:**
+**Implementer choices, confirmed by Kyle 2026-11-11:**
 - Groups are written in UTF-16 order of their keys, the order canonical JSON and `thingsOf` use.
 - The four law names, and `by` checked before the fold's argument as the issue proposed.
 
@@ -154,7 +154,7 @@ See [Rust numeric boundaries](rust/GAPS.md) and [record rules](protocol/record.m
 
 ### D7: Canonical result encoding
 
-This is a future human choice, not a current behavior change.
+Kyle chose the recommendation below on 2026-11-11. It is not built, and changes no current behavior until it is; step 4's ticks need it.
 The [open design](design/rethink/sections/16-open.html) prefers JCS for results.
 Exact, unbounded `Sum` outputs include `9007199254740993` in `phase2-exact-output`.
 Neither current tests nor the model define a canonical result hash codec.
@@ -220,6 +220,7 @@ The core starts to read a payload's top-level keys by name.
 `thing.slice` as proved covers whole-record folds only; the keyed fold needs its own slice law, argued and not yet stated in Lean.
 **Order:** Take D8a and D8b now, in the envelope, before any store is kept.
 Take D8c as a second fold family beside whole-record `latest-by`, once D8a's shape is settled and its slice law is stated.
+Kyle, 2026-11-11: D8c starts with a design note, before any code. Once an emit can set only some keys, a thing's current state is the merge of its live setters, not one head's payload, and `where`, `follow` and `by` read a head's payload today. The note says how they read a keyed thing, the spec grammar and result of the keyed fold, the writer's anchor rule and the witnessed slice law. margins-claude drafts it.
 **Amended by Kyle, 2026-11-10,** on margins-claude's finding in issue #4 (`sl-py/keyslice.py`): D8a first let a record with `prev` leave `of` out and take its thing from what it replaces.
 That made a record's thing depend on another record being held, and a partial copy then answered wrongly: 10,276 of 33,634 cases under one slice rule and 412 under the other, against none in 35,200 with `of` stated.
 The CLI's "a revision without `--about` is about what it replaces" stays as a writer's convenience only.
@@ -287,7 +288,7 @@ A line's salt is read as the core reads one, so one that is not base32hex text i
 - A salt left out, not text, or not canonical base32hex is `salt-not-16-bytes`, in that check's place.
 - A batch draft that is not an object, an unknown draft member, a label that is not text, a draft without a payload, and a repeated envelope member name stay malformed input, with no code.
 
-**Implementer choices, not among those Kyle confirmed:**
+**Implementer choices, confirmed by Kyle 2026-11-11.** The second is deferred, not settled for good: step 3 decides what a writer checks of an `under` target, and that the target is held is the least it should ask.
 - In JavaScript, a repeated envelope or draft member is seen only from raw text, in the fuzz adapter; the value APIs (`resolveBatch`, `writeRecord`, `seal`, `writeText`) cannot see one (`interop/js/README.md`).
 - A writer checks no `under` target beyond its shape: whether it names a held grant is left to standing (step 3), so `under` adds no batch refusal besides `label-unknown` and `label-cycle`.
 
