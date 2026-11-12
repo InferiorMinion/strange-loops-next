@@ -117,7 +117,9 @@ Readers can admit unknown targets because they cannot judge them.
 
 `expect.records` gives ids and canonical envelopes in draft order, with labels replaced by ids.
 Alternatively, `expect.refused` gives the first refusal.
-Shape checks run first across every raw envelope, before any draft value: `envelope-field-unknown`.
+Shape checks run first across every raw envelope, before any draft value: `envelope-field-unknown`, then `envelope-not-object`.
+A draft object without `env` has an envelope that is not an object.
+A field left out or of the wrong JSON type, and a `salt` that is not base32hex text, are refused by the writer with the field's own code.
 A payload number past binary64's range is a writer refusal, `number-out-of-range`, ranked with the others.
 Label checks follow: `label-duplicate`, `label-unknown`, then `label-cycle`.
 Next come writer codes from `kind-empty`, in `protocol/record.md` order across every draft.
@@ -191,6 +193,8 @@ The two stored lines show forms before and after erasure.
 The signed message uses the exact prefix `loops/record/v1:`.
 
 A refused vector's `expect.refused` names the shape, text or writer refusal from `protocol/record.md`.
+The `shape-*` vectors give envelopes as written: one that is not an object (`envelope-not-object`), a required field left out, or a field of the wrong JSON type, which gets that field's own code.
+A `salt` left out, not text, or not canonical base32hex refuses with `salt-not-16-bytes`.
 `payload_text` preserves repeated member names in JSON text.
 Use a parser that detects repeated names.
 `payload_text` also carries a lone surrogate as a `\u` escape, which a vector cannot hold otherwise.

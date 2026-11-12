@@ -103,6 +103,19 @@ held. A segment whose name is not the hash of its bytes is listed as altered.
    `key-invalid`, `signature-invalid`, `line-not-canonical`; for the CLI,
    `observer-unbound`, `id-unknown`, `id-ambiguous`, `vertex-unknown`, `draft-shape`,
    `draft-field-unknown`, `spec-not-json`, `store-not-clean`.
+   In an `emit -` changeset these cover only a line's own shape: `draft-shape`
+   for a line that is not a JSON object or a label that is not text,
+   `draft-field-unknown` for an unknown member, and `member-duplicate` for a
+   repeated one. A line's envelope fields go through the core's reader, so a
+   field left out or of the wrong JSON type gets the field's own code in the
+   writer's order across the changeset, after label refusals; a salt that is
+   not base32hex text is `salt-not-16-bytes`. The CLI fills in `observer` and
+   `emitted` only when a line leaves them out. `observer-unbound` judges only
+   an observer that is a typed reference, so a mistyped or untyped one, on a
+   line or in `--observer`, is the writer's `observer-not-typed`.
+   Kyle chose this on 2026-11-11.
+   The flat line has no envelope member, so it has no envelope that is not an
+   object.
 8. **Erasure removes bytes only here.** `loops erase` emits a record with
    `erases`, which every reader applies, and rewrites the local segments that
    held the opening. Other copies, and git history, keep the opening until
@@ -117,7 +130,8 @@ held. A segment whose name is not the hash of its bytes is listed as altered.
    from, and targets of different things are `prev-unrelated`. On this path
    only, these precede the writer's other checks. This replaces the earlier
    "a revision without `--about` is about what it replaces". `emit -` fills
-   nothing in: a changeset states `of` itself, and may use a label there.
+   nothing in: a changeset states `of` itself, and may use a label there,
+   as in `about`, `prev` and `under`.
    Kyle confirmed on 2026-11-10 that only the single-record path fills `of`
    in, that this path refuses `prev-unknown` itself, that `export --about`
    is a mention filter and `export --of` a thing filter, and that the verb

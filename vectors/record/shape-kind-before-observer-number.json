@@ -1,0 +1,22 @@
+{
+  "vector": "shape-kind-before-observer-number",
+  "layer": "record",
+  "laws": ["record.shape", "record.refuse"],
+  "source": "model",
+  "input": {
+    "envs": [
+      {
+        "emitted": "2026-10-21T09:30:00Z",
+        "kind": "",
+        "observer": 7
+      }
+    ],
+    "salt": "me3kq942kd2phm77ji97eghs5g",
+    "payloads": [
+      {}
+    ]
+  },
+  "expect": {
+    "refused": "kind-empty"
+  }
+}

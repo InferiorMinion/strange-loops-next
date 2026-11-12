@@ -22,11 +22,11 @@ const mutants = [
   ["global heads", "Loops/Fold.lean", 'orderHeads ((perThing xs).flatMap fun ts => ts.2.heads)', '(LatestBy.fold .empty xs).heads'],
   // D2, D4 and D5 at the record adapter gen and run share.
   ["text refusal before values", "Gen/Records.lean", 'if let some why := payloadTextRefusal kvs then', 'if let some why := (none : Option String) then'],
-  ["text refusal after shape", "Gen/Records.lean", '  if let .error "envelope-field-unknown" := shaped then throw "envelope-field-unknown"\n', ''],
+  ["text refusal after shape", "Gen/Records.lean", '  if let .error why := shaped then if shapeCodes.contains why then throw why\n', ''],
   ["text refusal needs JSON", "Gen/Read.lean", '  | .ok _, .error _ => some notUnicode\n  | _, _ => none', '  | _, .error (what, _) => if what == notUnicode then some what else none\n  | _, _ => none'],
   ["text refusal reads the text", "Gen/Read.lean", '  | .ok _, .error _ => some notUnicode\n  | _, _ => none', '  | _, _ => none'],
   ["seed of 32 bytes", "Gen/Records.lean", '    if seed.length != 32 then bad "input.seed" s!"holds {seed.length} bytes; a signing seed is exactly 32"\n', ''],
-  ["seed after writing", "Gen/Records.lean", '  let salt ← bytes "input.salt" (← req "input" kvs "salt")\n', '  let salt ← bytes "input.salt" (← req "input" kvs "salt")\n  let _ ← bytes "input.seed" (← req "input" kvs "seed")\n'],
+  ["seed after writing", "Gen/Records.lean", '  let salt := Loops.Read.salt (kvs.lookup "salt")\n', '  let salt := Loops.Read.salt (kvs.lookup "salt")\n  let _ ← bytes "input.seed" (← req "input" kvs "seed")\n'],
   ["later envelope variant agrees", "Gen/Records.lean", 'if idOf H e\' (r.commit H) != id then', 'if false then'],
   ["later payload variant writable", "Gen/Records.lean", 'writeProblem e salt p then', 'writeProblem e salt payload then'],
   ["first variant decides", "Gen/Records.lean", '  | .error why => pure (.obj [("refused", .str why)])\n  | .ok w =>\n    let r := w.stored\n    let id := r.id H', '  | .error why => pure (.obj [("refused", .str ((firstRefusal ((envs.filterMap (·.problem)) ++ [why])).getD why))])\n  | .ok w =>\n    let r := w.stored\n    let id := r.id H'],

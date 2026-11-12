@@ -169,6 +169,36 @@ fn a_changed_line_is_refused_by_the_check_that_covers_the_change() {
 }
 
 #[test]
+fn a_mistyped_envelope_field_in_a_line_gets_the_writers_code() {
+    let (_, line, _) = accepted().swap_remove(1);
+    // The core's envelope reader reads a mistyped or missing field as unreadable
+    // text, so the writer's check refuses it, before the id is compared; an
+    // envelope that is not an object stays a line shape refusal.
+    for good in [line.render(), line.erased().render()] {
+        let kind = good.find("\"kind\":\"").expect("kind");
+        let end = kind + 8 + good[kind + 8..].find('"').expect("kind end");
+        let mistyped = format!("{}\"kind\":7{}", &good[..kind], &good[end + 1..]);
+        let missing = format!("{}{}", &good[..kind], &good[end + 2..]);
+        assert_eq!(
+            Line::parse(&mistyped),
+            Err(Refusal::Write(stored::Error::KindEmpty))
+        );
+        assert_eq!(
+            Refusal::Write(stored::Error::KindEmpty).code(),
+            "kind-empty"
+        );
+        assert_eq!(
+            Line::parse(&missing),
+            Err(Refusal::Write(stored::Error::KindEmpty))
+        );
+        let env = good.find("\"env\":{").expect("env") + 6;
+        let close = env + good[env..].find('}').expect("env end");
+        let not_object = format!("{}7{}", &good[..env], &good[close + 1..]);
+        assert_eq!(Line::parse(&not_object), Err(Refusal::Shape));
+    }
+}
+
+#[test]
 fn only_a_payload_objects_top_level_primitives_are_read() {
     let env = envelope::read(
         "env",

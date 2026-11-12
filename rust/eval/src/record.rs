@@ -57,7 +57,7 @@ fn written(e: &Env, salt: &[u8], payload: &Json, commit: &str, id: &str, seed: &
 
 pub(crate) fn answers(layer: &str, input: &Json) -> Result<Vec<Json>, String> {
     match answers_decoded(layer, input) {
-        Err(e) if e == "envelope-field-unknown" => {
+        Err(e) if loops::envelope::SHAPE_CODES.contains(&e.as_str()) => {
             Ok(vec![Json::Obj(vec![("refused".into(), Json::Str(e))])])
         }
         other => other,
@@ -77,7 +77,7 @@ fn answers_decoded(layer: &str, input: &Json) -> Result<Vec<Json>, String> {
     let shaped = loops::envelope::read_all("input.envs", required("input", kvs, "envs")?)
         .map_err(|e| e.to_string());
     if let Err(e) = &shaped
-        && e == "envelope-field-unknown"
+        && loops::envelope::SHAPE_CODES.contains(&e.as_str())
     {
         return Err(e.clone());
     }
@@ -98,7 +98,8 @@ fn answers_decoded(layer: &str, input: &Json) -> Result<Vec<Json>, String> {
         ],
         _ => return Err("input: takes one of payloads and payload_text".into()),
     };
-    let salt = bytes("input.salt", required("input", kvs, "salt")?)?;
+    // A salt that is not base32hex text reads as no bytes: `salt-not-16-bytes`.
+    let salt = loops::envelope::read_salt(optional(kvs, "salt"));
     let Some(env) = envs.first() else {
         return Err("input.envs: no envelope given".into());
     };
@@ -315,9 +316,13 @@ mod tests {
             answer(ENV, r#""payload_text":"{\"a\":1e999,\"a\":0}""#, SALT, None),
             Ok(refused("member-duplicate"))
         );
-        // An overflowing number where text is wanted is malformed, after shape.
+        // An overflowing number where text is wanted is a field of the wrong
+        // JSON type, refused with the field's code, after shape.
         let kind = r#"{"kind":1e999,"observer":"o:test","emitted":"2026-10-21T00:00:00Z"}"#;
-        assert!(answer(kind, r#""payloads":[{}]"#, SALT, None).is_err());
+        assert_eq!(
+            answer(kind, r#""payloads":[{}]"#, SALT, None),
+            Ok(refused("kind-empty"))
+        );
         assert_eq!(
             answer(&format!("{kind},{EXTRA}"), r#""payloads":[{}]"#, SALT, None),
             Ok(refused("envelope-field-unknown"))

@@ -1,0 +1,14 @@
+{
+  "vector": "shape-not-object-before-text",
+  "layer": "record",
+  "laws": ["record.shape", "record.refuse"],
+  "source": "model",
+  "input": {
+    "envs": [7],
+    "salt": "f45u959vjjor9qdb0dobrkubcg",
+    "payload_text": "\"\\ud800\""
+  },
+  "expect": {
+    "refused": "envelope-not-object"
+  }
+}

@@ -373,11 +373,34 @@ fn a_batch_is_one_changeset_and_labels_name_its_records() {
         text(&pair[0], &["id"])
     );
 
+    // A label in `under` names a record of the same changeset: a grant and a
+    // record acting under it, written together.
+    let out = parse_json(&s.ok_with(
+        &["emit", "-"],
+        "{\"kind\":\"note\",\"under\":\"@g\"}\n{\"label\":\"@g\",\"kind\":\"grant\"}\n",
+    ))
+    .expect("JSON");
+    let Json::Arr(acting) = at(&out, &["records"]) else {
+        panic!("records")
+    };
+    assert_eq!(
+        text(
+            &s.json(&["get", text(&acting[0], &["id"])]),
+            &["env", "under"]
+        ),
+        text(&acting[1], &["id"])
+    );
+
     // Nothing is written unless every draft is taken.
     let held = s.ok(&["export"]);
     for (bad, code) in [
         (r#"{"kind":"note","about":["@nobody"]}"#, "label-unknown"),
         (r#"{"kind":"note","of":"@nobody"}"#, "label-unknown"),
+        (r#"{"kind":"note","under":"@nobody"}"#, "label-unknown"),
+        (
+            r#"{"label":"@u","kind":"grant","under":"@u"}"#,
+            "label-cycle",
+        ),
         (r#"{"kind":"","payload":{}}"#, "kind-empty"),
         (
             r#"{"kind":"note","of":"thing:x","prev":["r:0000000000000000000000000000000000000000000000000000"]}"#,
@@ -408,7 +431,52 @@ fn a_batch_is_one_changeset_and_labels_name_its_records() {
         );
     }
     assert_eq!(s.ok(&["export"]), held);
-    assert_eq!(s.segments().len(), 2);
+    assert_eq!(s.segments().len(), 3);
+}
+
+#[test]
+fn a_changeset_line_gets_the_cores_code_for_a_missing_or_mistyped_field() {
+    let s = Store::new("mistyped");
+    s.ok_with(&["emit", "-"], "{\"kind\":\"note\"}\n");
+    let held = s.ok(&["export"]);
+    for (bad, code) in [
+        // A missing or mistyped envelope field gets the core's code for it,
+        // in the writer's order across the changeset (Kyle, 2026-11-11).
+        (r#"{"kind":7}"#, "kind-empty"),
+        (r#"{"payload":{}}"#, "kind-empty"),
+        (r#"{"kind":"note","observer":7}"#, "observer-not-typed"),
+        (r#"{"kind":"note","emitted":null}"#, "emitted-not-rfc3339"),
+        (r#"{"kind":"note","under":["@x"]}"#, "under-not-record-id"),
+        // A label beside a mistyped member is still a label, checked first.
+        (r#"{"kind":"note","about":["@nobody",7]}"#, "label-unknown"),
+        (
+            "{\"label\":\"@a\",\"kind\":\"note\"}\n{\"kind\":\"note\",\"about\":[\"@a\",7]}",
+            "about-not-typed",
+        ),
+        // A label refusal on one line outranks a mistyped field on another.
+        (
+            "{\"kind\":7}\n{\"kind\":\"note\",\"about\":[\"@nobody\"]}",
+            "label-unknown",
+        ),
+        // A salt that is not base32hex text is not 16 bytes, after the envelope.
+        (r#"{"kind":"note","salt":7}"#, "salt-not-16-bytes"),
+        (r#"{"kind":"note","salt":"!"}"#, "salt-not-16-bytes"),
+        ("{\"kind\":\"note\",\"salt\":7}\n{\"kind\":7}", "kind-empty"),
+        // The line's own shape stays the CLI's.
+        ("7", "draft-shape at line 2: a draft is a JSON object"),
+        (
+            r#"{"label":7,"kind":"note"}"#,
+            "draft-shape at line 2: label is text",
+        ),
+    ] {
+        let (exit, said) = s.fails(&["emit", "-"], &format!("{{\"kind\":\"note\"}}\n{bad}\n"));
+        assert_eq!(
+            (exit, said.as_str()),
+            (1, format!("refused: {code}").as_str()),
+            "{bad}"
+        );
+    }
+    assert_eq!(s.ok(&["export"]), held, "nothing is written");
 }
 
 #[test]

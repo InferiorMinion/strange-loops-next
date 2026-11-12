@@ -1,0 +1,18 @@
+{
+  "vector": "shape-empty-object",
+  "layer": "record",
+  "laws": ["record.shape", "record.refuse"],
+  "source": "model",
+  "input": {
+    "envs": [
+      {}
+    ],
+    "salt": "607srjhpid8hqc5q6lj3e2kd9s",
+    "payloads": [
+      {}
+    ]
+  },
+  "expect": {
+    "refused": "kind-empty"
+  }
+}

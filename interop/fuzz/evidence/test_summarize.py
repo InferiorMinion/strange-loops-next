@@ -13,17 +13,28 @@ spec.loader.exec_module(summarize)
 class EvidenceTest(unittest.TestCase):
     def test_retained_artifacts(self):
         result = summarize.report()
-        self.assertEqual(list(result['campaigns']), ['by-1', 'd1-d6-1', 'd8ab-1', 'follow-2', 'step1-3'])
-        current = result['campaigns']['by-1']
-        self.assertEqual(current['totals'], {'cases': 5600, 'match': 3924, 'protocol-refusal': 1256,
+        self.assertEqual(list(result['campaigns']), ['by-1', 'd1-d6-1', 'd8ab-1', 'follow-2', 'shape-follow-1', 'shape-under-1', 'shape-under-2', 'step1-3'])
+        grouped = result['campaigns']['by-1']
+        self.assertEqual(grouped['totals'], {'cases': 5600, 'match': 3924, 'protocol-refusal': 1256,
                                              'decoder-refusal': 420, 'mismatch': 0})
-        self.assertEqual(current['families']['spec'], {'cases': 800, 'match': 718, 'protocol-refusal': 33,
-                                                       'decoder-refusal': 49, 'mismatch': 0})
-        current = result['campaigns']['follow-2']
-        self.assertEqual(current['totals'], {'cases': 5600, 'match': 3908, 'protocol-refusal': 1324,
-                                             'decoder-refusal': 368, 'mismatch': 0})
-        self.assertEqual(current['families']['spec'], {'cases': 800, 'match': 702, 'protocol-refusal': 56,
-                                                       'decoder-refusal': 42, 'mismatch': 0})
+        merged = result['campaigns']['shape-follow-1']
+        self.assertEqual(merged['totals'], {'cases': 5600, 'match': 3807, 'protocol-refusal': 1434,
+                                            'decoder-refusal': 359, 'mismatch': 0})
+        self.assertEqual(merged['families']['batch'], {'cases': 800, 'match': 307, 'protocol-refusal': 481,
+                                                       'decoder-refusal': 12, 'mismatch': 0})
+        follow = result['campaigns']['follow-2']
+        self.assertEqual(follow['totals'], {'cases': 5600, 'match': 3908, 'protocol-refusal': 1324,
+                                            'decoder-refusal': 368, 'mismatch': 0})
+        newest = result['campaigns']['shape-under-2']
+        self.assertEqual(newest['totals'], {'cases': 5600, 'match': 3785, 'protocol-refusal': 1401,
+                                            'decoder-refusal': 414, 'mismatch': 0})
+        self.assertEqual(newest['families']['batch'], {'cases': 800, 'match': 329, 'protocol-refusal': 459,
+                                                       'decoder-refusal': 12, 'mismatch': 0})
+        latest = result['campaigns']['shape-under-1']
+        self.assertEqual(latest['totals'], {'cases': 5600, 'match': 3803, 'protocol-refusal': 1391,
+                                            'decoder-refusal': 406, 'mismatch': 0})
+        self.assertEqual(latest['families']['record'], {'cases': 800, 'match': 121, 'protocol-refusal': 655,
+                                                        'decoder-refusal': 24, 'mismatch': 0})
         current = result['campaigns']['d8ab-1']
         self.assertEqual(current['totals'], {'cases': 5600, 'match': 3954, 'protocol-refusal': 1258,
                                              'decoder-refusal': 388, 'mismatch': 0})

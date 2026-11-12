@@ -3,7 +3,10 @@ import Loops.Batch
 /-!
 # Raw envelope and draft decoding
 
-The library checks raw envelope keys before it decodes values.
+The library checks raw envelope shape before it decodes values: an unknown
+key in any envelope (`envelope-field-unknown`), then any envelope that is not
+an object (`envelope-not-object`). A required field left out, or a field of
+the wrong JSON type, is then refused with that field's own code, in its place.
 The caller supplies JSON with member order and repeated names intact.
 -/
 
@@ -75,24 +78,45 @@ def bytes (path : String) (j : Json) : Dec (List UInt8) := do
   | .ok bs => pure bs
   | .error why => bad path s!"\"{s}\" {why}"
 
+/-- A field's text, or `unreadable` when it holds another JSON type. -/
+def textOr : Json → String
+  | .str s => s
+  | _ => unreadable
+
+/-- A set field's members. A set that is not an array reads as one unreadable
+member; a member that is not text reads as `unreadable` in its place, so a
+label beside it is still a label. -/
+def textsOr : Json → List String
+  | .arr xs => xs.map textOr
+  | _ => [unreadable]
+
+/-- An envelope's values. A required field left out, or any field of the wrong
+JSON type, reads as `unreadable`, which that field's own check refuses: the
+refusal is the field's code, in the field's place (`Env.problem`). Raw shape is
+checked before this, so the envelope is an object here; a repeated member name
+is still malformed input. -/
+def envOf (kvs : List (String × Json)) : Env :=
+  { kind := ((kvs.lookup "kind").map textOr).getD unreadable,
+    observer := ((kvs.lookup "observer").map textOr).getD unreadable,
+    emitted := ((kvs.lookup "emitted").map textOr).getD unreadable,
+    occurred := (kvs.lookup "occurred").map textOr,
+    about := ((kvs.lookup "about").map textsOr).getD [],
+    of := (kvs.lookup "of").map textOr,
+    prev := ((kvs.lookup "prev").map textsOr).getD [],
+    under := (kvs.lookup "under").map textOr,
+    erases := ((kvs.lookup "erases").map textsOr).getD [] }
+
+/-- The envelope `envOf` reads from an object's members, once `object` has
+checked that no name repeats. -/
 private def decodeValues (path : String) (j : Json) : Dec Env := do
-  let kvs ← object path j
-  let setOf (k : String) : Dec (List String) := (opt kvs k (texts (dot path k))).map (·.getD [])
-  let kind ← text (dot path "kind") (← req path kvs "kind")
-  let observer ← text (dot path "observer") (← req path kvs "observer")
-  let emitted ← text (dot path "emitted") (← req path kvs "emitted")
-  let occurred ← opt kvs "occurred" (text (dot path "occurred"))
-  let under ← opt kvs "under" (text (dot path "under"))
-  let of ← opt kvs "of" (text (dot path "of"))
-  pure
-    { kind := kind, observer := observer, emitted := emitted, occurred := occurred,
-      about := ← setOf "about", of := of, prev := ← setOf "prev", under := under, erases := ← setOf "erases" }
+  let kvs ← match j with
+    | .obj _ => object path j
+    | _ => throw "envelope-not-object"
+  pure (envOf kvs)
 
-
-/-- Read one envelope. Raw keys precede duplicate and value decoding. -/
+/-- Read one envelope. Raw shape precedes duplicate and value decoding. -/
 def readOne (path : String) (j : Json) : Dec Env := do
-  let kvs := match j with | .obj fields => fields | _ => []
-  if let some why := envelopeKeysProblem kvs then throw why
+  if let some why := envelopesShapeProblem [j] then throw why
   decodeValues path j
 
 /-- A singleton uses the per-envelope boundary; multiple variants share one shape stage. -/
@@ -101,25 +125,31 @@ def readMany (path : String) (j : Json) : Dec (List Env) := do
   match raw with
   | [one] => return [← readOne (idx path 0) one]
   | _ =>
-    if let some why := envelopesKeysProblem raw then throw why
+    if let some why := envelopesShapeProblem raw then throw why
     each path decodeValues j
+
+/-- A salt, written in base32hex. One left out, of another JSON type, or not
+canonical base32hex reads as no bytes, which `write` refuses as
+`salt-not-16-bytes`, in that check's place. -/
+def salt : Option Json → List UInt8
+  | some (.str s) => (Loops.unbase32 s).getD []
+  | _ => []
 
 private def draftValues (path : String) (j : Json) : Dec Draft := do
   let kvs ← members? path ["label", "env", "salt", "payload"] j
   let label ← opt kvs "label" (text (dot path "label"))
-  let e ← decodeValues (dot path "env") (← req path kvs "env")
-  let s ← bytes (dot path "salt") (← req path kvs "salt")
-  pure { label := label, env := e, salt := s, payload := ← req path kvs "payload" }
+  let e ← decodeValues (dot path "env") ((kvs.lookup "env").getD .null)
+  pure { label := label, env := e, salt := salt (kvs.lookup "salt"), payload := ← req path kvs "payload" }
 
 /-- Check every occurrence of a draft's env member before labels and values. -/
 def draft (path : String) (j : Json) : Dec Draft := do
-  if let some why := draftsKeysProblem [j] then throw why
+  if let some why := draftsShapeProblem [j] then throw why
   draftValues path j
 
 /-- Check all draft envelopes before any label, envelope or salt decoding. -/
 def drafts (path : String) (j : Json) : Dec (List Draft) := do
   let raw ← list path j
-  if let some why := draftsKeysProblem raw then throw why
+  if let some why := draftsShapeProblem raw then throw why
   each path draftValues j
 
 end Loops.Read

@@ -227,8 +227,8 @@
   {
     "id": "wide-batch-004",
     "file": "Batch.lean",
-    "before": "(d.env.about ++ d.env.of.toList ++ d.env.prev).filter isLabel",
-    "after": "(d.env.about ++ d.env.of.toList ++ d.env.prev).filter (!isLabel ·)",
+    "before": "(d.env.about ++ d.env.of.toList ++ d.env.prev ++ d.env.under.toList).filter isLabel",
+    "after": "(d.env.about ++ d.env.of.toList ++ d.env.prev ++ d.env.under.toList).filter (!isLabel ·)",
     "reason": "Change this selection or check.",
     "definition": "Loops.Draft.refs"
   },
@@ -1507,24 +1507,24 @@
   {
     "id": "step1-envelope-keys-after-value",
     "file": "Loops/Read.lean",
-    "before": "  if let some why := envelopeKeysProblem kvs then throw why\n  decodeValues path j",
-    "after": "  let decoded ← decodeValues path j\n  if let some why := envelopeKeysProblem kvs then throw why\n  pure decoded",
+    "before": "  if let some why := envelopesShapeProblem [j] then throw why\n  decodeValues path j",
+    "after": "  let decoded ← decodeValues path j\n  if let some why := envelopesShapeProblem [j] then throw why\n  pure decoded",
     "reason": "Decode kind before raw envelope keys.",
     "definition": "Loops.Read.readOne"
   },
   {
     "id": "step1-draft-keys-after-values",
     "file": "Loops/Read.lean",
-    "before": "  if let some why := draftsKeysProblem raw then throw why\n  each path draftValues j",
-    "after": "  let decoded ← each path draftValues j\n  if let some why := draftsKeysProblem raw then throw why\n  pure decoded",
+    "before": "  if let some why := draftsShapeProblem raw then throw why\n  each path draftValues j",
+    "after": "  let decoded ← each path draftValues j\n  if let some why := draftsShapeProblem raw then throw why\n  pure decoded",
     "reason": "Decode draft labels, envelopes and salts before all-draft shape preflight.",
     "definition": "Loops.Read.drafts"
   },
   {
     "id": "step1-record-keys-after-values",
     "file": "Loops/Read.lean",
-    "before": "    if let some why := envelopesKeysProblem raw then throw why\n    each path decodeValues j",
-    "after": "    let decoded ← each path decodeValues j\n    if let some why := envelopesKeysProblem raw then throw why\n    pure decoded",
+    "before": "    if let some why := envelopesShapeProblem raw then throw why\n    each path decodeValues j",
+    "after": "    let decoded ← each path decodeValues j\n    if let some why := envelopesShapeProblem raw then throw why\n    pure decoded",
     "reason": "Decode envelope variants before all-envelope shape preflight.",
     "definition": "Loops.Read.readMany"
   },
@@ -1647,6 +1647,86 @@
     "after": "| .env .of, r => some [.val (.str r.thing)]",
     "reason": "Read env.of as the thing, not as written.",
     "definition": "Loops.Field.read"
+  },
+  {
+    "id": "shape-not-object-skipped",
+    "file": "Envelope.lean",
+    "before": "  | none => if raw.all Json.isObj then none else some \"envelope-not-object\"",
+    "after": "  | none => none",
+    "reason": "Leave a nonobject envelope to the value decoder.",
+    "definition": "Loops.envelopesShapeProblem"
+  },
+  {
+    "id": "shape-not-object-before-unknown",
+    "file": "Envelope.lean",
+    "before": "  | some why => some why\n  | none => if raw.all Json.isObj",
+    "after": "  | some why => if raw.all Json.isObj then some why else some \"envelope-not-object\"\n  | none => if raw.all Json.isObj",
+    "reason": "Let a nonobject envelope precede an unknown key.",
+    "definition": "Loops.envelopesShapeProblem"
+  },
+  {
+    "id": "shape-draft-without-env-passes",
+    "file": "Envelope.lean",
+    "before": "      | [] => [.null]",
+    "after": "      | [] => []",
+    "reason": "Let a draft without an envelope pass the shape stage.",
+    "definition": "Loops.draftEnvs"
+  },
+  {
+    "id": "read-wrong-type-accepted",
+    "file": "Loops/Read.lean",
+    "before": "  | _ => unreadable\n",
+    "after": "  | _ => \"x:wrong\"\n",
+    "reason": "Read a field of the wrong type as text every check accepts.",
+    "definition": "Loops.Read.textOr"
+  },
+  {
+    "id": "read-wrong-set-empty",
+    "file": "Loops/Read.lean",
+    "before": "  | _ => [unreadable]",
+    "after": "  | _ => []",
+    "reason": "Read a set that is not an array as empty.",
+    "definition": "Loops.Read.textsOr"
+  },
+  {
+    "id": "read-missing-kind-filled",
+    "file": "Loops/Read.lean",
+    "before": "kind := ((kvs.lookup \"kind\").map textOr).getD unreadable",
+    "after": "kind := ((kvs.lookup \"kind\").map textOr).getD \"note\"",
+    "reason": "Fill in a missing kind.",
+    "definition": "Loops.Read.envOf"
+  },
+  {
+    "id": "read-salt-not-text-filled",
+    "file": "Loops/Read.lean",
+    "before": "  | _ => []\n\nprivate def draftValues",
+    "after": "  | _ => List.replicate 16 0\n\nprivate def draftValues",
+    "reason": "Read a salt that is not text as sixteen zero bytes.",
+    "definition": "Loops.Read.salt"
+  },
+  {
+    "id": "read-salt-not-base32-filled",
+    "file": "Loops/Read.lean",
+    "before": "(Loops.unbase32 s).getD []",
+    "after": "(Loops.unbase32 s).getD (List.replicate 16 0)",
+    "reason": "Read a salt that is not base32hex as sixteen zero bytes.",
+    "definition": "Loops.Read.salt"
+  },
+  {
+    "id": "under-subst-skipped",
+    "file": "Batch.lean",
+    "before": "  let under ← substOpt σ e.under",
+    "after": "  let under ← some e.under",
+    "reason": "Leave a label in under.",
+    "definition": "Loops.substEnv"
+  },
+  {
+    "id": "under-refs-skipped",
+    "file": "Batch.lean",
+    "before": "(d.env.about ++ d.env.of.toList ++ d.env.prev ++ d.env.under.toList).filter isLabel",
+    "after": "(d.env.about ++ d.env.of.toList ++ d.env.prev).filter isLabel",
+    "reason": "Leave labels in under out of label checks and cycles.",
+    "definition": "Loops.Draft.refs"
   },
   {
     "id": "follow-pool-every",

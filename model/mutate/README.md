@@ -2,10 +2,11 @@
 
 Run `node model/mutate/run.mjs --list` to inspect the catalogue.
 Listing validates every replacement against the current source without changing files.
-The runner tests check all 226 entries and their unique source sites.
+The runner tests check all 236 entries and their unique source sites.
 The catalogue retains 187 original entries, retires two mutations, and adds eight guard mutations.
 Six more entries cover the D1 base boundary and the D2 code-unit reader.
 Nine more cover D8's `of`: the thing, the two envelope checks, `of-not-root`, the batch thing check, labels in `of`, `from.of` and `env.of`.
+Ten more cover issue #1 and labels in `under`: the shape stage's `envelope-not-object`, its order and a draft without `env`, the reader's unreadable field, set and kind, the salt reader, and labels in `under`.
 Nine more cover `follow` on count, sum, min and max: the pool, two slots that drop it, a count that chooses before working out heads or lets an unknown payload test outrank a failing envelope test, the parser and the parsed form; two older entries are retargeted at the new grammar.
 Seven more cover `by`: grouping before admission or before the heads, empty groups, an unknown `where` counted in a group, one membership for a record with several keys, an unreadable payload key counted as ungrouped, and `by` on collect with `follow`.
 The source paths may name the Loops or Gen root; flat filenames still name Loops sources.

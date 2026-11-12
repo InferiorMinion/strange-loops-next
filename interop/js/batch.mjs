@@ -1,11 +1,17 @@
-// A changeset of drafts whose about, of and prev may name each other by @label,
-// resolved to real ids, written with loops.mjs's writer so the ids match
-// layer 0's. Written from vectors/batch and protocol/; no dependencies.
+// A changeset of drafts whose about, of, prev and under may name each other by
+// @label, resolved to real ids, written with loops.mjs's writer so the ids
+// match layer 0's. Written from vectors/batch and protocol/; no dependencies.
 
-import { base32Decode, canonical, envJson, idOf, commitOf, checkEnvelopeKeys, seal, unicodeProblem, NOT_UNICODE } from "./loops.mjs";
+import {
+  canonical, envJson, idOf, commitOf, checkEnvelopeShapes, notObject, readEnv, readSalt, seal,
+  unicodeProblem, NOT_UNICODE,
+} from "./loops.mjs";
+
+// A draft's members (`Read.draftValues`, model/Loops/Read.lean).
+const DRAFT_KEYS = new Set(["label", "env", "salt", "payload"]);
 
 const isLabel = (s) => typeof s === "string" && s.startsWith("@");
-const labelsOf = (d) => [...(d.env.about ?? []), d.env.of, ...(d.env.prev ?? [])].filter(isLabel);
+const labelsOf = (d) => [...(d.env.about ?? []), d.env.of, ...(d.env.prev ?? []), d.env.under].filter(isLabel);
 
 // What writing refuses, in the order protocol/record.md checks it.
 const WRITE_CODES = [
@@ -22,7 +28,7 @@ const NO_KEY = new Uint8Array(32);
 const withRefs = (env, ref) => {
   const out = { ...env };
   for (const k of ["about", "prev"]) if (env[k]) out[k] = env[k].map((s) => (isLabel(s) ? ref(s) : s));
-  if (isLabel(env.of)) out.of = ref(env.of);
+  for (const k of ["of", "under"]) if (isLabel(env[k])) out[k] = ref(env[k]);
   return out;
 };
 
@@ -30,7 +36,7 @@ const withRefs = (env, ref) => {
 // is simply not a record id.
 function writeProblem(d) {
   try {
-    seal(withRefs(d.env, () => STAND_IN), base32Decode(d.salt), d.payload, NO_KEY);
+    seal(withRefs(d.env, () => STAND_IN), d.salt, d.payload, NO_KEY);
     return null;
   } catch (e) {
     if (!WRITE_CODES.includes(e.message)) throw e;
@@ -38,7 +44,7 @@ function writeProblem(d) {
   }
 }
 
-// A label cycle: a draft reaching itself through labels in about, of or prev.
+// A label cycle: a draft reaching itself through labels in about, of, prev or under.
 function hasCycle(drafts, byLabel) {
   const state = new Map(); // draft -> "open" | "done"
   const visit = (d) => {
@@ -63,13 +69,29 @@ const isRoot = (h) => h.of === undefined && !h.prev.length;
 // lone surrogates, labels (duplicate, unknown, cycle), writing from kind-empty, then
 // prev-unknown, of-not-root, then prev-unrelated (vectors/README.md, Batch).
 // Each stage looks at the whole batch, so no draft order changes the answer.
-export function resolveBatch(drafts, held) {
-  // The library checks every envelope's keys before labels or values.
-  try { checkEnvelopeKeys(drafts.flatMap(d => d && typeof d === "object" ? [d.env] : [])); }
-  catch (e) { if (e.message === "envelope-field-unknown") return { refused: e.message }; throw e; }
+// A draft that is not an object, has an unknown member, has a label that is
+// not text or has no payload is malformed input, which throws rather than
+// refuses. A repeated member cannot reach this value API; a caller holding
+// the raw text checks it (see README.md, Raw text).
+export function resolveBatch(raw, held) {
+  // The library checks every envelope's shape before labels or values: an
+  // unknown key in any, then any that is not an object or is left out.
+  const objects = raw.filter((d) => !notObject(d));
+  try { checkEnvelopeShapes(objects.map((d) => (Object.hasOwn(d, "env") ? d.env : null))); }
+  catch (e) { if (e.message.startsWith("envelope-")) return { refused: e.message }; throw e; }
+  if (objects.length !== raw.length) throw new Error("batch input: a draft is not an object");
+  for (const d of raw) {
+    // After the shape stage, so an unknown envelope key or a nonobject envelope keeps priority.
+    if (Reflect.ownKeys(d).some((k) => !DRAFT_KEYS.has(k))) throw new Error("batch input: a draft has an unknown member");
+    if (d.label !== undefined && typeof d.label !== "string") throw new Error("batch input: a label is not text");
+    if (!Object.hasOwn(d, "payload")) throw new Error("batch input: a draft has no payload");
+  }
   // Then every string: a lone surrogate anywhere in the changeset or in what
   // is held refuses before a label is compared or a draft written.
-  if (unicodeProblem(drafts) || unicodeProblem(held)) return { refused: NOT_UNICODE };
+  if (unicodeProblem(raw) || unicodeProblem(held)) return { refused: NOT_UNICODE };
+  // A field left out or of the wrong type, and a salt that is not base32hex
+  // text, read so that writing refuses them with their own codes.
+  const drafts = raw.map((d) => ({ ...d, env: readEnv(d.env), salt: readSalt(d.salt) }));
   const byLabel = new Map();
   for (const d of drafts) {
     if (d.label === undefined) continue;
@@ -87,8 +109,7 @@ export function resolveBatch(drafts, held) {
   const write = (d) => {
     if (!written.has(d)) {
       const env = withRefs(d.env, (l) => write(byLabel.get(l)).id);
-      const salt = base32Decode(d.salt);
-      written.set(d, { id: idOf(env, commitOf(salt, d.payload)), env });
+      written.set(d, { id: idOf(env, commitOf(d.salt, d.payload)), env });
     }
     return written.get(d);
   };

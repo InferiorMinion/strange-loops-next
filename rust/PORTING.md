@@ -73,8 +73,20 @@ silently acquire those outer-boundary checks.
 
 Reader ids and links are canonical 32-byte `Digest` values; writer envelopes
 retain raw text so writer refusals remain observable. Reader `about` entries
-and a reader `of`, when present, must be typed references; a raw envelope's
-`of` that is not text is malformed input, as `under` and `occurred` are. A
+and a reader `of`, when present, must be typed references.
+A raw envelope's shape is checked across every envelope before any value:
+an unknown key (`envelope-field-unknown`), then an envelope that is not an
+object, or a draft with none (`envelope-not-object`); `envelope::ShapeError`
+carries both. A raw envelope field left out or of the wrong JSON type reads
+as `envelope::UNREADABLE`, empty text, which the field's own writer check
+refuses, as Lean's `Read.decodeValues` does. A salt that is not base32hex
+text reads as no bytes (`envelope::read_salt`), refused as
+`salt-not-16-bytes`. A repeated envelope member, a batch draft that is not
+an object, an unknown draft member, a label that is not text and a draft
+without a payload remain malformed input. The place's line reader takes the
+same envelope reader, so a stored line with a mistyped envelope field is
+now refused with the writer's code rather than `line-shape`. A batch draft
+may use a label in `about`, `of`, `prev` or `under`, never in `erases`. A
 batch fixture's `held` entries are `{"id", "of"?, "prev"}`, Lean `Held`. Numeric `n` and fields retain finite non-whole values
 without pretending they are readable integers. Successful record signing
 requires a canonical base32hex encoding of exactly 32 seed bytes.
@@ -111,7 +123,7 @@ There is no deferred-family or skipped-file allowlist:
 
 | Family | JSON files |
 | --- | ---: |
-| record | 125 |
+| record | 180 |
 | occurred | 9 |
 | byte-text | 5 |
 | fold | 50 |
@@ -119,9 +131,9 @@ There is no deferred-family or skipped-file allowlist:
 | realm | 16 |
 | scenario | 6 |
 | lens | 21 |
-| batch | 34 |
+| batch | 67 |
 | standard | 12 |
-| **Total** | **438** |
+| **Total** | **526** |
 
 All evaluator families are checked against immutable fixture answers,
 including every listed arrival order. A record's variants are checked against

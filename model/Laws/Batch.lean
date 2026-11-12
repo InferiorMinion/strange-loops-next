@@ -37,12 +37,13 @@ theorem substOpt_congr {σ τ : String → Option String} {o : Option String}
     · simp [substOpt, hl]
 
 theorem substEnv_congr {σ τ : String → Option String} {e : Env}
-    (h : ∀ s ∈ e.about ++ e.of.toList ++ e.prev, isLabel s = true → σ s = τ s) :
+    (h : ∀ s ∈ e.about ++ e.of.toList ++ e.prev ++ e.under.toList, isLabel s = true → σ s = τ s) :
     substEnv σ e = substEnv τ e := by
   simp only [substEnv]
-  rw [subst_congr fun s hs => h s (mem_append_left _ (mem_append_left _ hs)),
-    substOpt_congr fun s hs => h s (mem_append_left _ (mem_append_right _ hs)),
-    subst_congr fun s hs => h s (mem_append_right _ hs)]
+  rw [subst_congr fun s hs => h s (mem_append_left _ (mem_append_left _ (mem_append_left _ hs))),
+    substOpt_congr fun s hs => h s (mem_append_left _ (mem_append_left _ (mem_append_right _ hs))),
+    subst_congr fun s hs => h s (mem_append_left _ (mem_append_right _ hs)),
+    substOpt_congr fun s hs => h s (mem_append_right _ hs)]
 
 /-- Labels can be ranked so a record uses only labels ranked below its own. -/
 def Acyclic (ds : List Draft) (rank : String → Nat) : Prop :=
