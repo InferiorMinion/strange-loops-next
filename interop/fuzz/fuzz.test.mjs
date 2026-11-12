@@ -28,7 +28,7 @@ async function* jsonFiles(dir) {
 test('generation is deterministic, varied, balanced, and independent of scheduling', () => {
   const corpus = FAMILIES.flatMap(f => Array.from({ length: 8 }, (_, i) => generate('stable', i, f)));
   assert.equal(createHash('sha256').update(JSON.stringify(corpus)).digest('hex'),
-    '169e88e60d50698e126f523634ded1347746e456a5df304facb8404ecd141b35');
+    '7bbf4b60a7eba81c4e8dc14800b45f60276aa1880fde50235b8248ca0bc8f03f');
   const layers = new Set();
   for (const family of FAMILIES) {
     const seen = new Set();
@@ -94,7 +94,7 @@ test('specs fold over heads with count, sum, min and max, over revised, forked a
 
 test('specs group by every by form, over revised, forked, erased and withheld records', async () => {
   const { parseSpec, runSpec } = await import('../js/spec.mjs');
-  const seen = { refused: new Set(), twoMentions: 0, withheld: 0, revised: 0, groups: 0, ungrouped: 0, unread: 0 };
+  const seen = { refused: new Set(), nowItems: 0, twoMentions: 0, withheld: 0, revised: 0, groups: 0, ungrouped: 0, unread: 0 };
   for (let i = 0; i < 512; i++) {
     const spec = generate('by', i, 'spec');
     if (spec.fuzz.nearMiss?.startsWith('by-')) {
@@ -115,9 +115,10 @@ test('specs group by every by form, over revised, forked, erased and withheld re
     seen.groups += Object.keys(out['by-mention'].groups).length;
     seen.ungrouped += out['by-missing'].ungrouped;
     seen.unread += out['by-score-now'].unread;
+    seen.nowItems += Object.keys(out['by-mention-now-items'].groups).length > 0;
   }
   assert.equal(seen.refused.size, 4, [...seen.refused].join());
-  for (const k of ['twoMentions', 'withheld', 'revised', 'groups', 'ungrouped', 'unread']) assert.ok(seen[k] > 10, `${k}: ${seen[k]}`);
+  for (const k of ['twoMentions', 'withheld', 'revised', 'groups', 'ungrouped', 'unread', 'nowItems']) assert.ok(seen[k] > 10, `${k}: ${seen[k]}`);
 });
 
 test('scheduled lens boundaries retain their intended inputs', () => {

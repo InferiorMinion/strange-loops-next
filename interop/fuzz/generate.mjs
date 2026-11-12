@@ -63,6 +63,9 @@ function spec(rng, rs) {
       'by-score-now': { count: true, follow: 'prev', by: 'score' },
       'by-missing': { count: true, by: 'missing' },
       'by-tag-items': { collect: true, limit: 1 + rng.int(3), by: 'tag', where: { flag: { is: true } } },
+      // A collect that follows prev groups its current records.
+      'by-mention-now-items': { collect: true, follow: 'prev', by: 'env.about:t' },
+      'by-flag-now-items': { collect: true, follow: 'prev', limit: 1 + rng.int(3), by: 'flag', where: { 'env.kind': { not: 'erase' } } },
     },
   };
 }
@@ -463,13 +466,13 @@ export function generate(seed, index, family) {
         if (layer === 'spec/parse') {
           const choice = rng.int(8);
           nearMiss = ['spec-repeat', 'latest-by-about', 'from-of-untyped', 'follow-not-prev',
-            'by-on-latest-by', 'by-on-followed-collect', 'by-bad-prefix', 'by-env-other'][choice];
+            'by-on-latest-by', 'by-not-text', 'by-bad-prefix', 'by-env-other'][choice];
           if (choice === 0) input = { spec_text: '{"vertex":"a","vertex":"b","from":[{"store":"s:x"}]}' };
           if (choice === 1) input.spec.fold.heads['latest-by'] = 'about';
           if (choice === 2) input.spec.from[0].of = 'item';
           if (choice === 3) input.spec.fold[rng.pick(['now', 'now-total', 'now-least', 'now-greatest'])].follow = rng.pick(['next', true]);
           if (choice === 4) input.spec.fold.heads.by = 'env.kind';
-          if (choice === 5) input.spec.fold.items.by = 'tag';
+          if (choice === 5) input.spec.fold['by-tag-items'].by = rng.pick([true, 3, null]);
           if (choice === 6) input.spec.fold['by-mention'].by = rng.pick(['env.about:', 'env.about:T', 'env.about:t:0']);
           if (choice === 7) input.spec.fold['by-kind'].by = rng.pick(['env.of', 'env.about', 'env.', '']);
         } else { nearMiss = 'bad-edtf'; input.spec.fold.chosen.where = { 'env.occurred': { is: '2024-13' } }; }

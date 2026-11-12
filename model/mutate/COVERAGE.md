@@ -235,7 +235,7 @@ The catalogue includes existing entries without definition metadata.
 - `Loops.groupKeys`: covered by `by-empty-groups-kept`
 - `Loops.inGroup`: covered by `by-unknown-in-group`
 - `Loops.By.keys`: covered by `by-membership-once`, `by-unreadable-ungrouped`
-- `Loops.slotBy`: covered by `by-on-followed-collect`
+- `Loops.slotBy`: covered by `by-on-latest-by` (retargeted from `by-on-followed-collect` when `by` came to followed collect)
 - `Loops.refuse`: excluded: It constructs a refusal. No direct eligible operation.
 - `Loops.parseArg`: covered by `coverage-spec-parsearg`
 - `Loops.parseBound`: covered by `coverage-spec-parsebound`

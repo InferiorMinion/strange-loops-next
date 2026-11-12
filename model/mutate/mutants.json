@@ -1849,11 +1849,11 @@
     "definition": "Loops.By.keys"
   },
   {
-    "id": "by-on-followed-collect",
+    "id": "by-on-latest-by",
     "file": "Spec.lean",
-    "before": "if t = \"latest-by\" ∨ (t = \"collect\" ∧ follow = true) then refuse \"by-invalid\" s!\"{path}.by\"",
-    "after": "if t = \"latest-by\" then refuse \"by-invalid\" s!\"{path}.by\"",
-    "reason": "Accept by on collect that follows prev.",
+    "before": "if t = \"latest-by\" then refuse \"by-invalid\" s!\"{path}.by\"",
+    "after": "if t = \"latest-by\" ∧ false then refuse \"by-invalid\" s!\"{path}.by\"",
+    "reason": "Accept by on latest-by.",
     "definition": "Loops.slotBy"
   }
 ]
