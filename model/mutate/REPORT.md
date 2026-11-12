@@ -1,5 +1,14 @@
 # Lean model mutation report
 
+## After the merge of `main` with issue #1: the `by` entries, at `8d39dbd`
+
+The catalogue has 236 entries: 229 on `main` and the seven `by` adds.
+The full catalogue is not rerun. Node 25.9 reruns the seven `by` entries alone, with `--only`, in runs of three and four, on the merged tree.
+The outcomes are those of the run below: six rejected by build and `by-unreadable-ungrouped` killed by `spec/run/21`, `24` and `25`.
+`by-empty-groups-kept` now first fails at `Laws/SpecSlice.lean` (`Slot.grouped_slice`) in the build's order; the rest fail at the same proofs as before.
+The hand applications below were not repeated: the merge changes neither `Loops/Spec.lean`, which they mutate, nor `Gen/Spec.lean`, which writes the spec vectors they change.
+The runner restored the baseline build after both runs, and its output under the ignored `rust/target/scratch` was deleted.
+
 ## `by`: targeted run
 
 The full catalogue is not rerun for issue #2.
