@@ -5,10 +5,10 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { base32, base32Decode, fixedBytes, canonical, checkEnvelopeKeys, seal, writeText, writeRecord, problem, validEmitted, occurredSpan, signId, verifyId, commitOf, idOf, parse as parseText, wellFormed, unicodeProblem } from "./loops.mjs";
 import { readVector } from "../answers.mjs";
-import { parseSpecText } from "./spec.mjs";
+import { parseSpecText, readJson, slotNames, slotsText } from "./spec.mjs";
 import { resolveBatch } from "./batch.mjs";
-import { heads, latest, latestBy, sum, min, max } from "./fold.mjs";
-import { admit } from "./realm.mjs";
+import { heads, latest, latestBy, count, sum, min, max } from "./fold.mjs";
+import { admit, realm } from "./realm.mjs";
 import { parse, edit, diff, apply, baseProblem, render } from "./lens.mjs";
 import { lensEdit } from "./scenario.mjs";
 import { check as checkLens } from "./check-lens.mjs";
@@ -472,4 +472,60 @@ test("a record input's first variant decides, and later variants must agree once
   assert.throws(() => writeRecord(repeated, { writer: "writeText", payloadTexts: texts }),
     /payloads\[1\] is refused \(member-duplicate\) where payloads\[0\] is written/);
   assert.throws(() => writeRecord(repeated, { writer: "writeText", payloadTexts: texts.toReversed() }), { message: "member-duplicate" });
+});
+
+// Times on the way in. Lean and Rust refuse a held record whose `emitted` is
+// not a canonical UTC instant, or whose `occurred` is not a span, when they
+// decode it (`Gen.Read.record`). JavaScript once read a time only when it
+// ordered that record. It answered seven of the cases below; the other four
+// threw with no path, a `TypeError` for an `emitted` that is not text and
+// `occurred-not-span` for one past 23 hours. It now refuses each before
+// answering, with the writer's code for the field and the field's path in the
+// list it was given, the first record first and `emitted` first.
+test("a reader refuses a held record's times before it answers", () => {
+  const ok = record(1, "task:a");
+  const bad = (n, times) => ({ ...record(n, "task:a"), ...times });
+  const refused = (code, path) => ({ message: code, code, path });
+  const noEmitted = record(2, "task:a");
+  delete noEmitted.emitted;
+  const cases = [
+    // never ordered: an accumulating fold reads no time
+    [() => sum([ok, bad(2, { occurred: "2024-99" })]), refused("occurred-not-span", "[1].occurred")],
+    [() => count([ok, bad(2, { occurred: null })]), refused("occurred-not-span", "[1].occurred")],
+    [() => min([noEmitted]), refused("emitted-not-rfc3339", "[0].emitted")],
+    // a date is a span, so content order read it, but `emitted` is an instant
+    [() => latestBy([bad(2, { emitted: "2020-01-01" })]), refused("emitted-not-rfc3339", "[0].emitted")],
+    [() => latestBy([bad(2, { emitted: "2020-01-01T00:00:00.10Z" })]), refused("emitted-not-rfc3339", "[0].emitted")],
+    [() => heads([ok, bad(2, { emitted: 1577836800 })]), refused("emitted-not-rfc3339", "[1].emitted")],
+    // `emitted` before `occurred`, and the first record first
+    [() => max([bad(2, { emitted: "", occurred: "2024-99" }), bad(3, { occurred: "x" })]), refused("emitted-not-rfc3339", "[0].emitted")],
+    [() => runSpec(spec, [ok, bad(2, { occurred: "2024-13" }), bad(3, { emitted: "x" })]), refused("occurred-not-span", "[1].occurred")],
+    // a superseded record is never ordered, and is still refused
+    [() => runSpec(spec, [bad(2, { occurred: "2024-99" }), record(3, "task:a", [id(2)])]), refused("occurred-not-span", "[0].occurred")],
+    // the paths are into the forms as given, not the settled records
+    [() => realm([record(3, "task:a"), ok, bad(2, { occurred: "2024-02-30" })]), refused("occurred-not-span", "[2].occurred")],
+    [() => step(spec, "task:a", [record(3, "task:a"), bad(2, { emitted: "2020-01-01T24:00:00Z" })]), refused("emitted-not-rfc3339", "[1].emitted")],
+  ];
+  for (const [run, want] of cases) assert.throws(run, want);
+  // What reads is answered as before.
+  assert.deepEqual(sum([ok, bad(2, { occurred: "2024-02" })]), { value: 3, unread: 0 });
+  assert.deepEqual(count([]), { value: 0, unread: 0 });
+});
+
+// The model answers a spec's slots in the order the spec writes them. An
+// object's own enumeration puts integer-like names first, so `slotsText` once
+// wrote "1" and "10" before "b"; it now writes the spec's order, which the
+// parsed spec and the answer carry beside their members.
+test("slots are written in the spec's order, integer-like names included", () => {
+  const text = '{"vertex":"v","from":[{"store":"."}],"fold":{"b":{"count":true},"10":{"count":true},"a":{"count":true},"1":{"sum":"n"}}}';
+  const { parsed } = parseSpecText(text);
+  const written = ["b", "10", "a", "1"];
+  assert.deepEqual(slotNames(parsed.fold), written);
+  const out = runSpec(parsed, [record(1, "task:a"), record(2, "task:b")]);
+  assert.deepEqual(slotNames(out), written);
+  assert.deepEqual(readJson(slotsText(out)).members.map(([name]) => name), written);
+  assert.equal(slotsText(out), '{"b":{"value":2,"unread":0},"10":{"value":2,"unread":0},"a":{"value":2,"unread":0},"1":{"value":3,"unread":0}}');
+  // The order is beside the members: the answer compares as before.
+  assert.deepEqual(Object.keys(out), ["1", "10", "b", "a"]);
+  assert.deepEqual({ ...out }, { 1: { value: 3, unread: 0 }, 10: { value: 2, unread: 0 }, a: { value: 2, unread: 0 }, b: { value: 2, unread: 0 } });
 });

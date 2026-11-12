@@ -60,20 +60,20 @@ test("a successor's other prev target decides whether it replaces", () => {
 });
 
 // The case the sweep met: A, a task of t:x whose `occurred` is no span, is
-// superseded by C, a note of t:x; B is a task of its own. The whole and the
-// complete slice never order A. Without the successor C, A is current, is
-// ordered against B, and this reader refuses its time.
-test("a successor dropped from the slice can surface a record the whole never orders", () => {
+// superseded by C, a note of t:x; B is a task of its own. The whole never
+// orders A, and this reader once refused A's time only when a slice without
+// the successor C made A current and ordered it. It now refuses the time on
+// the way in, as Lean and Rust do, so the whole is refused as every slice is.
+test("a time that is no span refuses the whole, not only a slice that orders it", () => {
   const r = (n, kind, of, prev = [], occurred) =>
     ({ id: id(n), kind, observer: "sl:x", about: [], ...(of && { of }), prev: prev.map(id), emitted: `2020-01-01T00:00:0${n}Z`, ...(occurred && { occurred }) });
   const A = r(1, "task", "t:x", [], "2024-99"), B = r(2, "task"), C = r(3, "note", "t:x", [1]);
   const spec = parseSpec({ vertex: "v", from: [{ store: ".", kind: ["task"] }],
     fold: { current: { count: true, follow: "prev", by: "env.kind" } } }).parsed;
-  const whole = [A, B, C];
-  const want = answer(spec, whole);
-  assert.deepEqual(JSON.parse(JSON.stringify(want.current)), { groups: { task: { value: 1, unread: 0 } }, unread: 0, ungrouped: 0 });
-  assert.deepEqual(answer(spec, slice(spec, whole).part), want);
-  assert.throws(() => answer(spec, slice(spec, whole, "successors").part), /occurred-not-span/);
+  const whole = [A, B, C], refused = { message: "occurred-not-span", path: "[0].occurred" };
+  assert.throws(() => answer(spec, whole), refused);
+  assert.throws(() => answer(spec, slice(spec, whole).part), refused);
+  assert.throws(() => answer(spec, slice(spec, whole, "successors").part), refused);
 });
 
 // The fuzz generator's spec runs and scenario steps. The counts at the end
@@ -97,9 +97,8 @@ test("a spec slice answers as the whole, over generated specs and stores", () =>
     seen.groupedHeads += grouped.some((n) => "collect" in spec.fold[n] && spec.fold[n].follow === "prev");
     let matters = false, groupMatters = false;
     for (const drop of ["erasers", "targets", "successors"]) {
-      // A part without a kind may surface a record the whole never orders, such
-      // as a superseded one whose `occurred` is no span, which this reader
-      // refuses only when it compares it. That too is an answer that changed.
+      // A part holds only the whole's records, so its times read as the
+      // whole's do; a part that throws all the same is an answer that changed.
       let got;
       try { got = answer(spec, slice(spec, forms, drop).part); } catch { seen[drop] += 1; seen.threw += 1; continue; }
       try { assert.deepEqual(got, want); } catch { seen[drop] += 1; }

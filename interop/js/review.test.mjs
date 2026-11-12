@@ -36,7 +36,7 @@ test('latest-by retains things with no heads and a null winner', () => {
   const id = `r:${'0'.repeat(52)}`;
   // A record's thing is its `of`, or its own id; `about` never names one.
   for (const of of [undefined, 't:x']) {
-    const out = latestBy([{ id, about: ['t:y'], ...(of && { of }), prev: [id] }]);
+    const out = latestBy([{ id, about: ['t:y'], ...(of && { of }), prev: [id], emitted: '2026-01-01T00:00:00Z' }]);
     assert.deepEqual({ ...out }, { [of ?? id]: { heads: [], winner: null, others: [] } });
   }
   assert.deepEqual({ ...latestBy([]) }, {});

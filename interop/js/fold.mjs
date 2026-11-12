@@ -5,8 +5,27 @@
 // none keeps state, so a late record is folding the longer list again.
 // No dependencies.
 
-import { base32Decode, occurredSpan, spanBefore, momentBefore } from "./loops.mjs";
+import { base32Decode, occurredSpan, spanBefore, momentBefore, validEmitted } from "./loops.mjs";
 import { answer, held, payloadOf, YES, UNKNOWN } from "./where.mjs";
+
+// Times on the way in, as the Lean and Rust readers decode a held record
+// (`Gen.Read.record`, model/Gen/Read.lean): `emitted` is text that is a
+// canonical UTC instant, and `occurred`, when present, text in occurred's
+// grammar. The first record in the list that fails, `emitted` before
+// `occurred`, refuses the whole input with the writer's code for that field
+// and its path in the list, as Lean writes one (`[1].occurred`). Every
+// reader checks this before it answers, so a time is refused whether or not
+// the reader would ever order that record.
+const timeRefusal = (code, path) => Object.assign(new Error(code), { code, path });
+
+export function checkTimes(records) {
+  records.forEach((r, i) => {
+    if (!(typeof r.emitted === "string" && validEmitted(r.emitted))) throw timeRefusal("emitted-not-rfc3339", `[${i}].emitted`);
+    if (r.occurred !== undefined && !(typeof r.occurred === "string" && occurredSpan(r.occurred)))
+      throw timeRefusal("occurred-not-span", `[${i}].occurred`);
+  });
+  return records;
+}
 
 // Content order: the record's span (a record without `occurred` is an instant
 // at its `emitted`), then its `emitted` moment, then its id as digest bytes.
@@ -56,6 +75,7 @@ function distinct(records) {
 // can't read (the payload not held, or the field not a whole number).
 
 function select(records, where) {
+  checkTimes(records);
   const selected = [];
   let unread = 0;
   for (const r of records) {
@@ -118,6 +138,7 @@ function headsOf(records) {
 
 // Each thing's heads (records), newest first.
 export function states(records) {
+  checkTimes(records);
   const byThing = new Map();
   for (const r of distinct(records)) {
     const t = thingOf(r);
