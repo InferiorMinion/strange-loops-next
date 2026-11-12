@@ -3,11 +3,11 @@ use crate::{
     envelope::typed_ref,
     families::{self, Result as FoldResult, Tri},
     fold::{LatestBy, whole_heads},
-    json::Json,
-    number::{Int, Nat},
-    record::{Digest, Record, Shown},
+    json::{Json, canon_set},
+    number::{Int, MAX_EXACT, Nat},
+    record::{Digest, Record, Shown, Val},
     things::{admit, ids_of, per_thing},
-    where_::{Cond, Refusal, RefusalCode, Tests, parse_where},
+    where_::{Cond, EnvField, Field, Refusal, RefusalCode, Tests, parse_where},
 };
 
 /// Lean: `Loops.FoldType`, model/Loops/Spec.lean.
@@ -52,6 +52,88 @@ pub enum FoldType {
     },
 }
 
+/// Lean: `Loops.By`, model/Loops/Spec.lean.
+/// What `by` groups a slot's records by.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum By {
+    /// The envelope's kind: `env.kind`.
+    Kind,
+    /// The envelope's observer: `env.observer`.
+    Observer,
+    /// The members of `about` under a typed-reference prefix: `env.about:<prefix>`.
+    About(String),
+    /// A payload field's value, named as `where` names payload fields.
+    Payload(String),
+}
+
+/// Lean: `Loops.refPrefix`, model/Loops/Spec.lean.
+/// A typed reference's prefix: a lower-case letter, then lower-case letters, digits and hyphens.
+pub fn ref_prefix(p: &str) -> bool {
+    let mut bytes = p.bytes();
+    bytes.next().is_some_and(|c| c.is_ascii_lowercase())
+        && bytes.all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == b'-')
+}
+
+/// Lean: `Loops.Val.key`, model/Loops/Spec.lean.
+/// A payload value as a group key: text as written, a safe whole number in
+/// decimal, a boolean as `true` or `false`; nothing for any other value.
+pub fn val_key(v: &Val) -> Option<String> {
+    match v {
+        Val::Str(s) => Some(s.clone()),
+        Val::Int(i) if *i >= Int::from(-MAX_EXACT) && *i <= Int::from(MAX_EXACT) => {
+            Some(i.0.to_string())
+        }
+        Val::Bool(b) => Some(b.to_string()),
+        Val::Int(_) | Val::Number(_) => None,
+    }
+}
+
+impl By {
+    /// Lean: `Loops.By.ofName`, model/Loops/Spec.lean.
+    /// Reads `env.about:<prefix>`, `env.kind`, `env.observer`, or a payload field name.
+    pub fn of_name(s: &str) -> Option<Self> {
+        if let Some(p) = s.strip_prefix("env.about:") {
+            return ref_prefix(p).then(|| Self::About(p.into()));
+        }
+        match Field::of_name(s)? {
+            Field::Env(EnvField::Kind) => Some(Self::Kind),
+            Field::Env(EnvField::Observer) => Some(Self::Observer),
+            Field::Payload(n) => Some(Self::Payload(n)),
+            Field::Env(_) => None,
+        }
+    }
+    /// Lean: `Loops.By.name`, model/Loops/Spec.lean.
+    /// Returns `by` as written.
+    pub fn name(&self) -> String {
+        match self {
+            Self::Kind => "env.kind".into(),
+            Self::Observer => "env.observer".into(),
+            Self::About(p) => format!("env.about:{p}"),
+            Self::Payload(n) => n.clone(),
+        }
+    }
+    /// Lean: `Loops.By.keys`, model/Loops/Spec.lean.
+    /// The groups a record joins, each once in canonical order; `None` when a
+    /// payload key is on a payload the reader does not hold.
+    pub fn keys(&self, r: &Record) -> Option<Vec<String>> {
+        match self {
+            Self::Kind => Some(vec![r.kind.clone()]),
+            Self::Observer => Some(vec![r.observer.clone()]),
+            Self::About(p) => {
+                let head = format!("{p}:");
+                Some(canon_set(
+                    &r.about
+                        .iter()
+                        .filter_map(|a| a.strip_prefix(head.as_str()).map(String::from))
+                        .collect::<Vec<_>>(),
+                ))
+            }
+            Self::Payload(f) => (r.shown == Shown::Here)
+                .then(|| r.get(f).as_ref().and_then(val_key).into_iter().collect()),
+        }
+    }
+}
+
 /// Lean: `Loops.Slot`, model/Loops/Spec.lean.
 /// A named fold keeps its where tests in written order.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -62,6 +144,27 @@ pub struct Slot {
     pub fold_type: FoldType,
     /// The ordered field tests, or an empty conjunction.
     pub tests: Tests,
+    /// `by`, when the slot groups.
+    pub group: Option<By>,
+}
+
+/// Lean: `Loops.GroupValue`, model/Loops/Spec.lean.
+/// What one group holds: what its slot holds without `by`.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum GroupValue {
+    /// A count and its unread count.
+    Nat(FoldResult<Nat>),
+    /// An integer sum and its unread count.
+    Int(FoldResult<Int>),
+    /// An optional integer extremum and its unread count.
+    Opt(FoldResult<Option<Int>>),
+    /// Records newest first.
+    Heads {
+        /// The ids and reader forms of the group's records.
+        heads: Vec<(Digest, Shown)>,
+        /// The group's unread count.
+        unread: Nat,
+    },
 }
 
 /// Lean: `Loops.SlotValue`, model/Loops/Spec.lean.
@@ -89,6 +192,33 @@ pub enum SlotValue {
         /// Counts distinct ids only for addressed input (equal ids imply equal records).
         unread: Nat,
     },
+    /// A slot with `by`: each group by key in canonical order, then the top unread and ungrouped counts.
+    Groups {
+        /// Each group's key and what the slot holds over it.
+        groups: Vec<(String, GroupValue)>,
+        /// Selected records whose `where` was unknown or whose key could not be read.
+        unread: Nat,
+        /// Selected records with no key.
+        ungrouped: Nat,
+    },
+}
+
+impl SlotValue {
+    /// Lean: `Loops.SlotValue.group`, model/Loops/Spec.lean.
+    /// A slot's value as one group holds it; the last two shapes never arise.
+    #[must_use]
+    pub fn group(self) -> GroupValue {
+        match self {
+            Self::Nat(r) => GroupValue::Nat(r),
+            Self::Int(r) => GroupValue::Int(r),
+            Self::Opt(r) => GroupValue::Opt(r),
+            Self::Heads { heads, unread } => GroupValue::Heads { heads, unread },
+            Self::Things { unread, .. } | Self::Groups { unread, .. } => GroupValue::Heads {
+                heads: Vec::new(),
+                unread,
+            },
+        }
+    }
 }
 
 impl Record {
@@ -222,10 +352,95 @@ pub fn acc_pool(follow: bool, xs: &[Record]) -> Vec<Record> {
     if follow { whole_heads(xs) } else { xs.to_vec() }
 }
 
+/// Lean: `Loops.groupKeys`, model/Loops/Spec.lean.
+/// Every key of a selected record, once, in canonical order.
+pub fn group_keys(b: &By, ev: impl Fn(&Record) -> Tri, pool: &[Record]) -> Vec<String> {
+    canon_set(
+        &pool
+            .iter()
+            .filter(|r| ev(r) == Tri::Yes)
+            .flat_map(|r| b.keys(r).unwrap_or_default())
+            .collect::<Vec<_>>(),
+    )
+}
+
+/// Lean: `Loops.inGroup`, model/Loops/Spec.lean.
+/// A record is in group `g` when the slot selects it and `g` is one of its keys.
+pub fn in_group(b: &By, ev: impl Fn(&Record) -> Tri, g: &str, r: &Record) -> bool {
+    ev(r) == Tri::Yes && b.keys(r).unwrap_or_default().iter().any(|k| k == g)
+}
+
 impl Slot {
     /// Lean: `Loops.Slot.run`, model/Loops/Spec.lean.
-    /// Runs one slot without admission, settlement, or duplicate-id removal.
+    /// Runs one slot: grouped when it has `by`, plain otherwise.
     pub fn run(&self, sel: impl Fn(&Record) -> bool, xs: &[Record]) -> SlotValue {
+        match &self.group {
+            None => self.plain(sel, xs),
+            Some(b) => self.grouped(b, sel, xs),
+        }
+    }
+
+    /// Lean: `Loops.Slot.ev`, model/Loops/Spec.lean.
+    /// Whether the slot selects a record: `from` takes it and its `where` answers.
+    pub fn ev(&self, sel: impl Fn(&Record) -> bool, r: &Record) -> Tri {
+        if sel(r) {
+            Cond::all(&self.tests.conds(), r)
+        } else {
+            Tri::No
+        }
+    }
+
+    /// Lean: `Loops.Slot.pool`, model/Loops/Spec.lean.
+    /// Every record held, or following `prev` the whole-reader heads.
+    pub fn pool(&self, xs: &[Record]) -> Vec<Record> {
+        match &self.fold_type {
+            FoldType::Count { follow }
+            | FoldType::Sum { follow, .. }
+            | FoldType::Min { follow, .. }
+            | FoldType::Max { follow, .. }
+            | FoldType::Collect { follow, .. } => acc_pool(*follow, xs),
+            FoldType::LatestBy => xs.to_vec(),
+        }
+    }
+
+    /// Lean: `Loops.Slot.grouped`, model/Loops/Spec.lean.
+    /// Settling, admission and the whole-reader heads are already done over
+    /// everything held; each group runs the slot without `by` or `where` over
+    /// all of it, choosing only its own records.
+    pub fn grouped(&self, b: &By, sel: impl Fn(&Record) -> bool, xs: &[Record]) -> SlotValue {
+        let ev = |r: &Record| self.ev(&sel, r);
+        let pool = self.pool(xs);
+        let each = Self {
+            tests: Tests::default(),
+            group: None,
+            ..self.clone()
+        };
+        let groups = group_keys(b, ev, &pool)
+            .into_iter()
+            .map(|g| {
+                let v = each.plain(|r| in_group(b, ev, &g, r), xs).group();
+                (g, v)
+            })
+            .collect();
+        let unread = pool.iter().filter(|r| ev(r) == Tri::Unknown).count()
+            + pool
+                .iter()
+                .filter(|r| ev(r) == Tri::Yes && b.keys(r).is_none())
+                .count();
+        let ungrouped = pool
+            .iter()
+            .filter(|r| ev(r) == Tri::Yes && b.keys(r).is_some_and(|k| k.is_empty()))
+            .count();
+        SlotValue::Groups {
+            groups,
+            unread: Nat(unread.into()),
+            ungrouped: Nat(ungrouped.into()),
+        }
+    }
+
+    /// Lean: `Loops.Slot.plain`, model/Loops/Spec.lean.
+    /// Runs one slot without `by`, admission, settlement, or duplicate-id removal.
+    pub fn plain(&self, sel: impl Fn(&Record) -> bool, xs: &[Record]) -> SlotValue {
         let cs = self.tests.conds();
         let ev = |r: &Record| if sel(r) { Cond::all(&cs, r) } else { Tri::No };
         match &self.fold_type {
@@ -286,6 +501,9 @@ impl Slot {
                 out
             }
         };
+        if let Some(b) = &self.group {
+            kvs.push(("by".into(), Json::Str(b.name())));
+        }
         if !self.tests.0.is_empty() {
             kvs.push(("where".into(), self.tests.to_json()));
         }
@@ -478,6 +696,7 @@ pub const SLOT_KEYS: &[&str] = &[
     "where",
     "follow",
     "limit",
+    "by",
     "note",
 ];
 /// Lean: `Loops.sourceKeys`, model/Loops/Spec.lean.
@@ -564,6 +783,27 @@ pub fn slot_limit(path: &str, t: &str, j: Option<&Json>) -> Result<Option<Nat>, 
         Some(_) => Err(refuse(RefusalCode::LimitInvalid, &format!("{path}.limit"))),
     }
 }
+/// Lean: `Loops.slotBy`, model/Loops/Spec.lean.
+/// Parses `by` on count, sum, min and max, following or not, and on collect without `follow`.
+///
+/// # Errors
+/// Returns by-invalid for anything but a `by` name, or on latest-by or followed collect.
+#[expect(
+    clippy::fn_params_excessive_bools,
+    reason = "Lean slotBy takes the explicit follow flag"
+)]
+pub fn slot_by(path: &str, t: &str, follow: bool, j: Option<&Json>) -> Result<Option<By>, Refusal> {
+    let invalid = || refuse(RefusalCode::ByInvalid, &format!("{path}.by"));
+    match j {
+        None => Ok(None),
+        Some(Json::Str(s)) => match By::of_name(s) {
+            Some(_) if t == "latest-by" || (t == "collect" && follow) => Err(invalid()),
+            Some(b) => Ok(Some(b)),
+            None => Err(invalid()),
+        },
+        Some(_) => Err(invalid()),
+    }
+}
 /// Lean: `Loops.foldType`, model/Loops/Spec.lean.
 /// Parses a fold argument without validating the separate follow and limit parameters.
 ///
@@ -603,7 +843,7 @@ pub fn slot_tests(path: &str, j: Option<&Json>) -> Result<Tests, Refusal> {
     )
 }
 /// Lean: `Loops.parseSlot`, model/Loops/Spec.lean.
-/// Checks name, keys, fold count, follow, limit, argument, then where.
+/// Checks name, keys, fold count, follow, limit, by, argument, then where.
 ///
 /// # Errors
 /// Returns the first slot refusal in that order, without duplicate validation.
@@ -619,12 +859,14 @@ pub fn parse_slot(name: &str, j: &Json) -> Result<Slot, Refusal> {
     let (t, arg) = slot_type(&path, kvs)?;
     let follow = slot_follow(&path, t, lookup(kvs, "follow"))?;
     let limit = slot_limit(&path, t, lookup(kvs, "limit"))?;
+    let group = slot_by(&path, t, follow, lookup(kvs, "by"))?;
     let fold_type = fold_type(&path, t, follow, limit, arg)?;
     let tests = slot_tests(&path, lookup(kvs, "where"))?;
     Ok(Slot {
         name: name.into(),
         fold_type,
         tests,
+        group,
     })
 }
 /// Lean: `Loops.parseKinds`, model/Loops/Spec.lean.

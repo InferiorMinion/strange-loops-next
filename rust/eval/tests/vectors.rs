@@ -10,9 +10,9 @@ const FAMILIES: &[(&str, usize)] = &[
     ("occurred", 9),
     ("byte-text", 5),
     ("fold", 50),
-    ("spec", 133),
+    ("spec", 156),
     ("realm", 16),
-    ("scenario", 5),
+    ("scenario", 6),
     ("lens", 21),
     ("batch", 34),
     ("standard", 12),
@@ -210,7 +210,7 @@ fn every_registered_json_and_every_arrival_order() {
     for (family, _) in FAMILIES {
         assert!(seen.iter().any(|s| s == family), "missing {family}");
     }
-    assert_eq!(checked, 410);
+    assert_eq!(checked, 434);
     overflowing.sort();
     assert_eq!(
         overflowing, OVERFLOWING,
