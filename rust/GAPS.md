@@ -34,6 +34,8 @@ store string is preserved but does not cause I/O during pure execution.
   deduplicates ids across things. Raw following collect counts unknown forms after newest-first processing.
   Count, sum, min and max that follow prev fold `whole_heads`, which keeps the
   last raw form of each id before ordering, as the model's `dedup` does.
+  A slot with `by` counts its top-level unread and ungrouped records over raw
+  input, once per form, as count does; with addressed input that is once per id.
   The distinct-id theorem interpretation requires its stated addressed-input
   premise. Limits restrict known matches, not unread totals.
 - Spec's outer recursive duplicate check includes ignored metadata before

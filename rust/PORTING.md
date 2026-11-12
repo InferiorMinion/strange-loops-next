@@ -115,13 +115,13 @@ There is no deferred-family or skipped-file allowlist:
 | occurred | 9 |
 | byte-text | 5 |
 | fold | 50 |
-| spec | 133 |
+| spec | 156 |
 | realm | 16 |
-| scenario | 5 |
+| scenario | 6 |
 | lens | 21 |
 | batch | 34 |
 | standard | 12 |
-| **Total** | **410** |
+| **Total** | **434** |
 
 All evaluator families are checked against immutable fixture answers,
 including every listed arrival order. A record's variants are checked against
