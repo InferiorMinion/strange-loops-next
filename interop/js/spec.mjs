@@ -335,8 +335,11 @@ function grouped(slot, spec, ctx) {
     else for (const k of keys) members.set(k, [...(members.get(k) ?? []), r]);
   }
   const { by, where, ...each } = slot;
+  // An object's own enumeration puts integer-like keys first, whatever the
+  // insertion order, so `groups` is a value, not an order: `slotsText` writes
+  // the order.
   const groups = Object.create(null);
-  for (const k of [...members.keys()].sort()) {
+  for (const k of [...members.keys()].sort(utf16Order)) {
     const rs = members.get(k);
     groups[k] = plainSlot(each, spec, { taken: rs, current: rs, states: null });
   }
@@ -354,6 +357,26 @@ function plainSlot(slot, spec, { taken, current, states }) {
 
 // Every slot's value, by name. `current` is the whole-reader heads `from`
 // takes: each thing's heads, each id once (a record heads one thing).
+// Strings in UTF-16 code-unit order, the order the model writes keyed members in.
+export const utf16Order = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
+
+// Slot values as JSON text, members in the order the model writes them: the
+// keys of `groups` and of `things` in UTF-16 code-unit order (an object's own
+// enumeration would put integer-like keys first), every other object in the
+// order it was built. Integers past the safe range are written exactly.
+export function slotsText(out) {
+  const write = (v, keyed) => {
+    if (typeof v === "bigint") return v.toString();
+    if (v === null || typeof v !== "object") return JSON.stringify(v);
+    if (Array.isArray(v)) return `[${v.map((x) => write(x, false)).join(",")}]`;
+    const keys = keyed ? Object.keys(v).sort(utf16Order) : Object.keys(v);
+    return `{${keys.map((k) => `${JSON.stringify(k)}:${write(v[k], false)}`).join(",")}}`;
+  };
+  const slot = (v) => `{${Object.keys(v).map((k) =>
+    `${JSON.stringify(k)}:${write(v[k], k === "groups" || k === "things")}`).join(",")}}`;
+  return `{${Object.keys(out).map((n) => `${JSON.stringify(n)}:${slot(out[n])}`).join(",")}}`;
+}
+
 export function runSpec(spec, records) {
   records = admit(records).admitted;
   const ctx = {
