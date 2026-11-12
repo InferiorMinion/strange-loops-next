@@ -91,6 +91,7 @@ Latest-by returns each thing's current records in `things`.
 Collect returns records newest first in `heads`.
 Each record carries its held form; `unread` counts records whose payload tests cannot answer.
 Count each unread id once per slot.
+An erased record's eraser is among the records, so a reader that settles them first keeps the erased form; `gen` checks this.
 
 Latest-by, and collect, count, sum, min and max with `"follow": "prev"`, read heads.
 Supersession runs per thing over the admitted set before selection.
