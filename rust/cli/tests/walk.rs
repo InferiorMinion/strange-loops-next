@@ -161,6 +161,59 @@ fn count_and_sum_follow_the_heads() {
     assert_eq!(got, [n(3, 0), n(2, 0), n(1, 1), n(5, 1)]);
 }
 
+const GROUPED: &str = r#"{"vertex":"per-project","from":[{"store":".","kind":["task"]}],"fold":{
+  "every":{"count":true,"by":"env.about:project"},
+  "now":{"count":true,"follow":"prev","by":"env.about:project"}}}"#;
+
+#[test]
+fn count_groups_by_mention_over_every_record_and_over_the_heads() {
+    let s = Store::new("per-project");
+    let first = s.ok(&[
+        "emit",
+        "task",
+        "--of",
+        "task:1",
+        "--about",
+        "project:x",
+        "Open",
+    ]);
+    // The task moves to project y: its revision mentions y, not x.
+    s.ok(&[
+        "emit",
+        "task",
+        "--prev",
+        &first,
+        "--about",
+        "project:y",
+        "Moved",
+    ]);
+    s.ok(&[
+        "emit",
+        "task",
+        "--of",
+        "task:2",
+        "--about",
+        "project:x",
+        "Other",
+    ]);
+    let slots = parse_json(&s.ok_with(&["fold", "-"], GROUPED)).expect("JSON");
+    let count = |slot: &str, key: &str| at(&slots, &[slot, "groups", key, "value"]).clone();
+    let n = |v: i64| Json::Int(v.into());
+    // Every record: the moved task's first version still counts in x.
+    assert_eq!([count("every", "x"), count("every", "y")], [n(2), n(1)]);
+    // Over the heads, only the current version counts, in y.
+    assert_eq!([count("now", "x"), count("now", "y")], [n(1), n(1)]);
+    for slot in ["every", "now"] {
+        assert_eq!(at(&slots, &[slot, "unread"]), &n(0));
+        assert_eq!(at(&slots, &[slot, "ungrouped"]), &n(0));
+        let Json::Obj(groups) = at(&slots, &[slot, "groups"]) else {
+            panic!("groups")
+        };
+        let keys: Vec<&str> = groups.iter().map(|(k, _)| k.as_str()).collect();
+        assert_eq!(keys, ["x", "y"]);
+    }
+}
+
 #[test]
 fn emit_revise_fork_fold_and_erase() {
     let s = Store::new("decision");
