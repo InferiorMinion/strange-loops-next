@@ -5,16 +5,16 @@
 The tree has three implementations: Lean, JavaScript, and Rust.
 Step 1 applies the six settled rulings before records exist.
 All three implement the settled decisions D1–D6, and D8a and D8b.
-All three let count, sum, min and max follow `prev` (issue #3).
-The law index has 87 entries, 757 theorems, and 6 boundary witnesses.
+All three let count, sum, min and max follow `prev` (issue #3), and group count, sum, min, max and collect with `by` (issue #2).
+The law index has 91 entries, 815 theorems, and 6 boundary witnesses.
 See [the law index](design/laws/laws.json) and [proof and boundary data](design/laws/).
 These proofs apply only under their stated premises.
 
-The tree has 410 JSON fixtures: 398 generated fixtures and 12 standard fixtures.
-Lean replays 389 generated fixtures; 9 occurred fixtures use separate checks.
+The tree has 434 JSON fixtures: 422 generated fixtures and 12 standard fixtures.
+Lean replays 413 generated fixtures; 9 occurred fixtures use separate checks.
 Rust checks every fixture, six JCS byte pairs, 4,000 binary64 cases, and 128 SUPERCOP signing cases with ed25519-dalek.
-Rust passes 150 tests; JavaScript passes 5,614 vector checks and 29 regression and law tests.
-The fuzz suite passes 48 tests.
+Rust passes 150 tests; JavaScript passes 5,669 vector checks and 29 regression and law tests.
+The fuzz suite passes 49 tests.
 See [vectors](vectors/README.md), [Rust boundaries](rust/GAPS.md), and [the mutation report](model/mutate/REPORT.md).
 These checks provide bounded evidence, not complete JCS or cryptographic correctness.
 They do not certify browser accessibility, external links, or official ASD dictionary compliance.
@@ -26,18 +26,18 @@ Numeric folds read safe whole values only.
 Raw constructors and theorem premises retain separate domains.
 
 The gates pass on Node 25.9; the Node 22 runs of Step 1 are not repeated.
-The `follow-2` campaign checks 5,600 cases, 800 per family, in 64.03 seconds.
-It reports 3,908 matches, 1,324 protocol refusals, 368 shared decoder refusals, and no mismatch.
+The `by-1` campaign checks 5,600 cases, 800 per family, in 67.47 seconds.
+It reports 3,924 matches, 1,256 protocol refusals, 420 shared decoder refusals, and no mismatch.
 Decoder refusals are not agreement.
-The generator carries `of` since D8, and followed count, sum, min and max slots since issue #3, so the same seeds now generate different inputs; earlier campaigns' counts are historical.
-The `d8ab-1` and `d1-d6-1` campaigns found no mismatch either.
+The generator carries `of` since D8, followed count, sum, min and max slots since issue #3, and grouped slots since issue #2, so the same seeds now generate different inputs; earlier campaigns' counts are historical.
+The `follow-2`, `d8ab-1` and `d1-d6-1` campaigns found no mismatch either.
 The 42 duplicate-base lens mismatches of the `step1-3` campaign are the class D1 settles.
 `interop/fuzz/summarize.py` derives these counts from tracked summaries.
 See [the campaign report](interop/fuzz/REPORT.md) for the scripts and current and historical results.
 The CI seed `ci-1` checks 28 three-way cases without mismatches.
 
-The mutation catalogue has 219 entries, including six for the D1 and D2 definitions, nine for D8's `of` and nine for `follow` on count, sum, min and max.
-Only the eleven `follow` entries were run, by `--only`; the counts below are the last full run, over 210 entries.
+The mutation catalogue has 226 entries, including six for the D1 and D2 definitions, nine for D8's `of`, nine for `follow` on count, sum, min and max, and seven for `by`.
+Only the eleven `follow` entries and the seven `by` entries were run, by `--only`; the counts below are the last full run, over 210 entries.
 Ten earlier entries are retargeted at `of` and the one thing it names.
 It retires the redundant positive-offset guard under R4 and the entry for the deleted `stripZeros` family.
 The full run reports 165 build rejections, 28 vector differences, 15 generator assertion exceptions, and 2 survivors.
@@ -65,11 +65,26 @@ It selects as latest-by does, and its result keeps the shape of the same slot wi
 Every head of a forked thing counts; count counts an erased or withheld head by its envelope, and sum, min and max count it unread.
 Any other `follow` value is refused with `follow-invalid`, at the check that already refused it on collect; that check now accepts `"prev"` on every fold type.
 The law is `spec.follow`: the answer depends only on the set, through each thing's heads (`heads.set`), not `acc.set`. `heads.why` still holds.
-`by` (issue #2) is not built, and neither is a caching reader for these slots.
+A caching reader for these slots is not built.
 **Implementer choices, not yet confirmed by Kyle:**
 - The law's name, `spec.follow`, and its place in the spec table.
 - `follow` is a flag on each accumulating fold type, as on collect, not a slot-level field.
 - `"follow": "prev"` with `limit` on count is refused with `limit-invalid`, as before: `limit` stays collect's.
+
+**Built, 2026-11-11: `by` on count, sum, min, max and collect (issue #2).**
+`by` groups a slot by `env.kind`, `env.observer`, the members of `about` under a typed-reference prefix (`env.about:<prefix>`), or a payload field.
+It is allowed on count, sum, min and max, following `prev` or not, and on collect without `follow`; anything else is `by-invalid` at `fold.<name>.by`, checked after `limit` and before the fold's argument.
+The result is `{"groups": {<key>: <result>}, "unread": n, "ungrouped": m}`, each `<result>` the slot's own shape.
+Settling, admission and the whole-reader heads come first, once, over everything held; each group is then the slot without `by` or `where` over the records selected into it.
+The laws are `by.set`, `by.after-admission`, `by.accounting` and `by.partition`; `spec.slice` covers grouped slots without a new premise.
+Ordering or top-N across groups, buckets and windows, `by` on latest-by or on a followed collect, and keyed things (D8c) are not built.
+**Implementer choices, not yet confirmed by Kyle:**
+- The spelling keeps `where`'s rule: `env.` is the envelope and a bare name is a payload field, so the issue's bare `about:<prefix>` is written `env.about:<prefix>`, and `about:project` is a payload field (reviewer's direction).
+- A group key is text: a whole number in decimal, a boolean as `true` or `false`. The text `"1"` and the number 1 share a group.
+- A payload value that is no key (a fraction, null, an array or an object) is ungrouped, as a missing field is; only a payload the reader does not hold makes a key unread.
+- Groups are written in UTF-16 order of their keys, the order canonical JSON and `thingsOf` use.
+- `limit` on a grouped collect applies within each group.
+- The four law names, and `by` checked before the fold's argument as the issue proposed.
 
 ## Decisions for the human
 
@@ -286,7 +301,7 @@ Each step extends the model laws, computes protocol vectors, then implements Rus
 | --- | --- | --- |
 | 0, done | The Lean spike: Count and LatestBy, one lens combinator, 23 vectors | The first laws are proved |
 | 1, done | Protocol and vectors for layer 0: canonical bytes, salt and commitment, id, signature | The model and the JS writer agree on every vector; Rust checks all fixture families and external standards |
-| 2 | Emit, read, fold for one person: JSONL segment, JSON spec, the two fold families, `"follow": "prev"`, a signing key, signing by default. `of` names a record's one thing, an id or a natural key; `about` only mentions. D8a and D8b are built; D8c is not. | It does the old CLI's workable job, signed |
+| 2 | Emit, read, fold for one person: JSONL segment, JSON spec, the two fold families, `"follow": "prev"`, `by`, a signing key, signing by default. `of` names a record's one thing, an id or a natural key; `about` only mentions. D8a and D8b are built; D8c is not. | It does the old CLI's workable job, signed |
 | 3 | Standing: declarations, admission, stances, grants, presence key, retire through; then name tables and `resolve-by` | A strict store rejects visibly; a steward's changeset takes effect |
 | 4 | Ticks: content and witness, boundaries, markers | A content tick recomputes to the same hash on two machines |
 | 5 | Sharing: the git layout, then segment-list sync | Two clones converge |

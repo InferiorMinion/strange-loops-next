@@ -2,12 +2,52 @@
 
 ## Scope
 
-This report covers the JS, Lean, and Rust campaign after `follow` on count, sum, min and max (issue #3).
-It also preserves the D8a and D8b campaign, the D1–D6 campaign, the Step-1 campaign and earlier two-way campaigns as historical findings.
-Their counts are historical: the generator changed with D8 and again with `follow`, so the same seeds now generate different inputs.
+This report covers the JS, Lean, and Rust campaign after `by` (issue #2).
+It also preserves the `follow` campaign, the D8a and D8b campaign, the D1–D6 campaign, the Step-1 campaign and earlier two-way campaigns as historical findings.
+Their counts are historical: the generator changed with D8, with `follow` and again with `by`, so the same seeds now generate different inputs.
 The harness covers record, fold, spec, realm, scenario, batch, and lens inputs.
 
-## Follow on count, sum, min and max: three-way campaign
+## `by`: three-way campaign
+
+Source commit: `ed1a8f3`. Its JavaScript and Rust evaluators are those of `501907d` and `00ca77f`; its generator is `171728c`'s.
+Node 25.9 checks 5,600 cases with seed `by-1`: 800 cases per family.
+The run uses 88 chunks and takes 67.47 seconds.
+Exit 0: no implementation disagrees on any case.
+The retained [summary](evidence/by-1/summary.json) supports these counts.
+Run `python3 interop/fuzz/summarize.py report` from the repository root.
+
+| Family | Cases | Match | Protocol refusal | Shared decoder refusal | Mismatch |
+|---|---:|---:|---:|---:|---:|
+| record | 800 | 164 | 594 | 42 | 0 |
+| fold | 800 | 701 | 0 | 99 | 0 |
+| spec | 800 | 718 | 33 | 49 | 0 |
+| realm | 800 | 681 | 0 | 119 | 0 |
+| scenario | 800 | 689 | 0 | 111 | 0 |
+| batch | 800 | 399 | 401 | 0 | 0 |
+| lens | 800 | 572 | 228 | 0 | 0 |
+| Total | 5,600 | 3,924 | 1,256 | 420 | 0 |
+
+All 420 decoder refusals occur in both Lean and Rust.
+They are not protocol agreement.
+No reduction runs, because no mismatch exists.
+The [mismatch list](evidence/by-1/d1-mismatches.json) keeps the historical D1 example and holds no case.
+
+Every generated spec now also has ten slots with `by`: a count by `env.kind`, a sum by `env.observer`, a count by `env.about:t`, a followed count and a followed sum by `env.about:t` (the first with a payload test), a min by the text field `tag` with an envelope test, a followed max by the boolean `flag`, a followed count by the whole number `score`, a count by a field no record has, and a collect by `tag` with a `limit` and a payload test.
+They run in the spec and scenario families over the records the generator already makes: revisions, forks, erased and withheld records, records mentioning one or two things, and refused revisions.
+Over 512 spec cases of seed `by`, 256 are run cases: 198 hold a revision, 169 a record mentioning two things and 115 a withheld record (`fuzz.test.mjs`, which also checks that the groups of `by-kind`, its `ungrouped` and its `unread` add up to the plain count's value and unread).
+Half the spec parse near misses now put `by` where it is refused: on latest-by, on the followed collect, with an empty or malformed prefix, or naming another envelope field; every implementation refuses them with `by-invalid`.
+The generator changed, so this campaign's counts are not comparable with `follow-2`'s.
+
+Raw logs and per-case files are not committed; they were written under the ignored `rust/target/scratch` and deleted after the summary was recorded.
+
+```sh
+node interop/fuzz/run.mjs --rust --seed by-1 --n 5600 --shrink-trials 80 --out rust/target/scratch/fuzz-by-1
+python3 interop/fuzz/summarize.py campaign rust/target/scratch/fuzz-by-1 by-1
+```
+
+## HISTORICAL follow on count, sum, min and max: three-way campaign
+
+This campaign predates `by`; seed `follow-2` now generates different inputs.
 
 Source commit: `ae80223`, after the merge of `main` at `2829f5f`. Its JavaScript and Rust evaluators are those of `908ec25` and `dbcfce1`; its model adds proofs and vectors since.
 Node 25.9 checks 5,600 cases with seed `follow-2`: 800 cases per family.
