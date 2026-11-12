@@ -1,5 +1,42 @@
 # Lean model mutation report
 
+## `by`: targeted run
+
+The full catalogue is not rerun for issue #2.
+Node 25.9 runs only the seven entries `by` adds, with `--only`, in two runs of three and four, and the default 180-second timeout.
+They mutate `Spec.run`, `Slot.grouped`, `groupKeys`, `inGroup`, `By.keys` twice and `slotBy`.
+
+| Entry | Wrong rule | Outcome | Where |
+|---|---|---|---|
+| `by-group-before-admit` | a grouped slot reads the records as held, not as admitted | rejected by build | `Laws/Spec.lean`: `Spec.set_decides` |
+| `by-group-before-heads` | each group works out heads from its own records | rejected by build | `Laws/Spec.lean`: `Slot.grouped_set_decides` |
+| `by-empty-groups-kept` | a group for every key read, selected or not | rejected by build | `Laws/By.lean`: `groupKeys_nonempty`, `By.memberships` |
+| `by-unknown-in-group` | an unknown `where` counts in its group as well as at the top | rejected by build | `Laws/By.lean`: `groupKeys_nonempty`, `By.memberships`; `Laws/SpecSlice.lean`: `Slot.grouped_slice` |
+| `by-membership-once` | a record with several keys joins only the first | rejected by build | `Laws/By.lean`: `By.keys_nodup` |
+| `by-unreadable-ungrouped` | a payload key on a withheld payload is ungrouped, not unread | killed by vector | `spec/run/21`, `24`, `25` |
+| `by-on-followed-collect` | `by` accepted on collect with `follow` | rejected by build | `Laws/Parse.lean`: `parseSlot_toJson`, `parseSlot_fits` |
+
+Build rejections are not kills.
+`by-empty-groups-kept` and `by-unknown-in-group` fail where a law fails: no empty groups, and the groups holding the selected records once per key.
+The other four fail because a proof matches the definition's form: grouping before admission or before the heads is still decided by the set, and taking one key keeps keys distinct.
+So all six were also applied by hand, with only the generator built (`lake build gen`, then `lake exe gen` into a copy of `vectors/`).
+Each changes vectors:
+
+| Entry | Vectors that change |
+|---|---|
+| `by-group-before-admit` | `spec/run/23` (the refused revision appears in group `y`) |
+| `by-group-before-heads` | `spec/run/24` (the moved task's old version stays current in `x`) |
+| `by-empty-groups-kept` | `spec/run/21`, `22`, `24`, `25` |
+| `by-unknown-in-group` | `spec/run/21`, `24` |
+| `by-membership-once` | `spec/run/22`, `24` |
+| `by-on-followed-collect` | `spec/parse/91` |
+
+`by-group-before-admit` does not model settling within a group: the runner's spec vectors hand records over settled.
+`scenario/by-01-erased-in-another-group` pins that case, settling forms first, and no catalogue entry mutates it.
+Each build rejection was read in its log and fails at the named proof, not at a lint.
+The runner restored the source and rebuilt the baseline after both runs; each hand application was reverted with `git checkout` and the generator rebuilt.
+Raw results and logs were kept under the ignored `rust/target/scratch` and deleted once this summary was written.
+
 ## Follow on count, sum, min and max: targeted run
 
 The full catalogue is not rerun for issue #3.
