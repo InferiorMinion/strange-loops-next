@@ -1,0 +1,63 @@
+{
+  "vector": "68-under-held",
+  "layer": "batch",
+  "laws": ["batch.meaning"],
+  "source": "model",
+  "input": {
+    "held": [
+      {
+        "id": "r:tsant02u7bhefv6nom5tukci31agdh8q5sonp4s3h4dhkfbrgli0",
+        "prev": []
+      },
+      {
+        "id": "r:l3c6scqhfqu3bfmj288git5kimd1e3ik809q8pv8p2637qi48kc0",
+        "of": "r:tsant02u7bhefv6nom5tukci31agdh8q5sonp4s3h4dhkfbrgli0",
+        "prev": ["r:tsant02u7bhefv6nom5tukci31agdh8q5sonp4s3h4dhkfbrgli0"]
+      },
+      {
+        "id": "r:iivodlg66vgkad2knrdqob3e4obh28sea6omq5kk0u25t925276g",
+        "prev": []
+      }
+    ],
+    "drafts": [
+      {
+        "env": {
+          "kind": "note",
+          "observer": "sl:u11o5kditce56otma2ksbsnff7n6t0ftgbrmt4sp0j5d1riusfr0",
+          "emitted": "2026-10-24T09:00:00Z",
+          "about": ["topic:auth"],
+          "under": "r:tsant02u7bhefv6nom5tukci31agdh8q5sonp4s3h4dhkfbrgli0"
+        },
+        "salt": "5ecepbhknblfjn9b51vps16gjk",
+        "payload": {
+          "body": "acting under a held root"
+        }
+      },
+      {
+        "env": {
+          "kind": "note",
+          "observer": "sl:u11o5kditce56otma2ksbsnff7n6t0ftgbrmt4sp0j5d1riusfr0",
+          "emitted": "2026-10-24T09:00:00Z",
+          "about": ["topic:auth"],
+          "under": "r:l3c6scqhfqu3bfmj288git5kimd1e3ik809q8pv8p2637qi48kc0"
+        },
+        "salt": "0daosi8p67jbeh0dpb1m1p5u3g",
+        "payload": {
+          "body": "acting under a held revision"
+        }
+      }
+    ]
+  },
+  "expect": {
+    "records": [
+      {
+        "id": "r:c6dpslrbdc0samsesgjcr99o37htpjj3il0mlaeav0fjvcm32c7g",
+        "env_canonical": "{\"about\":[\"topic:auth\"],\"emitted\":\"2026-10-24T09:00:00Z\",\"kind\":\"note\",\"observer\":\"sl:u11o5kditce56otma2ksbsnff7n6t0ftgbrmt4sp0j5d1riusfr0\",\"under\":\"r:tsant02u7bhefv6nom5tukci31agdh8q5sonp4s3h4dhkfbrgli0\"}"
+      },
+      {
+        "id": "r:s95c5rtpccrsam27h4bonl4tmt2epcj8pancjcj1po4lf3u7970g",
+        "env_canonical": "{\"about\":[\"topic:auth\"],\"emitted\":\"2026-10-24T09:00:00Z\",\"kind\":\"note\",\"observer\":\"sl:u11o5kditce56otma2ksbsnff7n6t0ftgbrmt4sp0j5d1riusfr0\",\"under\":\"r:l3c6scqhfqu3bfmj288git5kimd1e3ik809q8pv8p2637qi48kc0\"}"
+      }
+    ]
+  }
+}

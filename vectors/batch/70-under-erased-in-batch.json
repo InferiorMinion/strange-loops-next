@@ -1,0 +1,65 @@
+{
+  "vector": "70-under-erased-in-batch",
+  "layer": "batch",
+  "laws": ["batch.meaning"],
+  "source": "model",
+  "input": {
+    "held": [
+      {
+        "id": "r:tsant02u7bhefv6nom5tukci31agdh8q5sonp4s3h4dhkfbrgli0",
+        "prev": []
+      },
+      {
+        "id": "r:l3c6scqhfqu3bfmj288git5kimd1e3ik809q8pv8p2637qi48kc0",
+        "of": "r:tsant02u7bhefv6nom5tukci31agdh8q5sonp4s3h4dhkfbrgli0",
+        "prev": ["r:tsant02u7bhefv6nom5tukci31agdh8q5sonp4s3h4dhkfbrgli0"]
+      },
+      {
+        "id": "r:iivodlg66vgkad2knrdqob3e4obh28sea6omq5kk0u25t925276g",
+        "prev": []
+      }
+    ],
+    "drafts": [
+      {
+        "env": {
+          "kind": "decision",
+          "observer": "sl:u11o5kditce56otma2ksbsnff7n6t0ftgbrmt4sp0j5d1riusfr0",
+          "emitted": "2026-10-24T09:00:00Z",
+          "about": ["topic:auth"],
+          "of": "r:tsant02u7bhefv6nom5tukci31agdh8q5sonp4s3h4dhkfbrgli0",
+          "prev": ["r:tsant02u7bhefv6nom5tukci31agdh8q5sonp4s3h4dhkfbrgli0"],
+          "erases": ["r:tsant02u7bhefv6nom5tukci31agdh8q5sonp4s3h4dhkfbrgli0"]
+        },
+        "salt": "f4hp2im44963fin4gs1vkpt1l8",
+        "payload": {
+          "choice": "passkeys"
+        }
+      },
+      {
+        "env": {
+          "kind": "note",
+          "observer": "sl:u11o5kditce56otma2ksbsnff7n6t0ftgbrmt4sp0j5d1riusfr0",
+          "emitted": "2026-10-24T09:00:00Z",
+          "about": ["topic:auth"],
+          "under": "r:tsant02u7bhefv6nom5tukci31agdh8q5sonp4s3h4dhkfbrgli0"
+        },
+        "salt": "5ecepbhknblfjn9b51vps16gjk",
+        "payload": {
+          "body": "acting under a held root"
+        }
+      }
+    ]
+  },
+  "expect": {
+    "records": [
+      {
+        "id": "r:f7p9b4qbgrm6egb8aqn3a7p71mlr5d3oo1n5930rdo6gshpppm10",
+        "env_canonical": "{\"about\":[\"topic:auth\"],\"emitted\":\"2026-10-24T09:00:00Z\",\"erases\":[\"r:tsant02u7bhefv6nom5tukci31agdh8q5sonp4s3h4dhkfbrgli0\"],\"kind\":\"decision\",\"observer\":\"sl:u11o5kditce56otma2ksbsnff7n6t0ftgbrmt4sp0j5d1riusfr0\",\"of\":\"r:tsant02u7bhefv6nom5tukci31agdh8q5sonp4s3h4dhkfbrgli0\",\"prev\":[\"r:tsant02u7bhefv6nom5tukci31agdh8q5sonp4s3h4dhkfbrgli0\"]}"
+      },
+      {
+        "id": "r:c6dpslrbdc0samsesgjcr99o37htpjj3il0mlaeav0fjvcm32c7g",
+        "env_canonical": "{\"about\":[\"topic:auth\"],\"emitted\":\"2026-10-24T09:00:00Z\",\"kind\":\"note\",\"observer\":\"sl:u11o5kditce56otma2ksbsnff7n6t0ftgbrmt4sp0j5d1riusfr0\",\"under\":\"r:tsant02u7bhefv6nom5tukci31agdh8q5sonp4s3h4dhkfbrgli0\"}"
+      }
+    ]
+  }
+}

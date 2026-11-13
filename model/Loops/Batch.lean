@@ -8,19 +8,21 @@ the same batch by a label, `@name`, in `about`, `of`, `prev` or `under`, before
 either has an id; `erases` takes no label. A record's id covers its envelope,
 so a label must be replaced by the id it stands for before the record that
 uses it can be named, and a label in `under` takes part in cycles as the
-others do. Writing checks no `under` target beyond its shape: whether it
-names a grant is standing's question.
+others do.
 
 Each record is written through `write`, as a single record would be, so a
 batch can't store what writing one record would refuse. Writing also checks
 what the record names. You can only replace what you hold, so a `prev` target
-must be in the batch or the store (`prev-unknown`). A thing is named by its
-root, so an id in `of` that names a record the writer holds must name a root,
-one with no `of` and no `prev` (`of-not-root`); a reader reads `of` as written
-and never checks this. Succession is within a thing, so a `prev` target must
-be of the record's thing (`prev-unrelated`). Every check runs across the
-whole batch, so which refusal is reported never depends on the order of
-drafts or of a `prev` set.
+must be in the batch or the store (`prev-unknown`). So must an `under` target
+(`under-unknown`), whatever its shown state: an erased or withheld record
+whose envelope the writer holds is held. Nothing else about the target is
+checked: whether it names a grant, of what kind and by whom, is standing's
+question. A thing is named by its root, so an id in `of` that names a record
+the writer holds must name a root, one with no `of` and no `prev`
+(`of-not-root`); a reader reads `of` as written and never checks this.
+Succession is within a thing, so a `prev` target must be of the record's
+thing (`prev-unrelated`). Every check runs across the whole batch, so which
+refusal is reported never depends on the order of drafts or of a `prev` set.
 
 A batch **means** an assignment of ids to labels in which every label's id is
 the id of its record with all its labels replaced: exactly what writing the
@@ -106,17 +108,18 @@ def Held.root (h : Held) : Bool := h.of.isNone && h.prev.isEmpty
 /-- The thing a record is of, as `Record.thing` reads it: `of`, or its own id. -/
 def envThing (id : String) (of : Option String) : String := of.getD id
 
-/-- Each `prev` names a record the writer holds, in the batch or in the store
-(`held` gives a stored record's `of` and `prev`); an id in `of` that names a
-held record names a root; and each `prev` target is of the record's thing.
-Checked across the whole batch, so the refusal never depends on the order of
-drafts or of a `prev` set: any `prev-unknown` first, then any `of-not-root`,
-then any `prev-unrelated`. -/
+/-- Each `prev` and each `under` names a record the writer holds, in the batch
+or in the store (`held` gives a stored record's `of` and `prev`); an id in `of`
+that names a held record names a root; and each `prev` target is of the
+record's thing. Checked across the whole batch, so the refusal never depends on
+the order of drafts or of a `prev` set: any `prev-unknown` first, then any
+`under-unknown`, then any `of-not-root`, then any `prev-unrelated`. -/
 def checkPrev (H : Hash) (held : String → Option Held) (rs : List Stored) :
     Except String Unit := do
   let inBatch := rs.map fun r => (r.id H, ({ of := r.env.of, prev := r.env.prev } : Held))
   let target := fun p => inBatch.lookup p <|> held p
   if rs.any fun r => r.env.prev.any fun p => (target p).isNone then throw "prev-unknown"
+  if rs.any fun r => r.env.under.any fun u => (target u).isNone then throw "under-unknown"
   if rs.any fun r => r.env.of.any fun o => (target o).any (!·.root) then throw "of-not-root"
   if rs.any fun r => r.env.prev.any fun p => (target p).any fun h =>
       envThing p h.of != envThing (r.id H) r.env.of then
@@ -125,9 +128,9 @@ def checkPrev (H : Hash) (held : String → Option Held) (rs : List Stored) :
 /-- Resolve a batch to its records, in the order given, each written through
 `write`. Checked in order: a label given twice, a label used but never given,
 a cycle, any draft `write` refuses (reporting the code first in `writeCodes`
-among them), a `prev` naming a record the writer doesn't hold, an `of`
-naming a held record that is not a root, and a `prev` naming a record of
-another thing. -/
+among them), a `prev` naming a record the writer doesn't hold, an `under`
+naming one it doesn't hold, an `of` naming a held record that is not a root,
+and a `prev` naming a record of another thing. -/
 def resolveBatch (H : Hash) (held : String → Option Held) (ds : List Draft) :
     Except String (List Written) := do
   let labels := ds.filterMap (·.label)
