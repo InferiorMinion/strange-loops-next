@@ -75,6 +75,28 @@ test('envelope shape boundaries remain scheduled across seeds and refuse by name
   }
 });
 
+test('under target boundaries remain scheduled across seeds and refuse by name', () => {
+  const cases = [[42, 'under-unheld', 'under-unknown'], [43, 'under-held-root', null],
+    [44, 'under-held-revision', null], [45, 'under-batch-id', null],
+    [46, 'under-beside-prev-unknown-first', 'prev-unknown'], [47, 'under-beside-prev-unknown-last', 'prev-unknown'],
+    [48, 'under-beside-of-not-root-first', 'under-unknown'], [49, 'under-beside-of-not-root-last', 'under-unknown'],
+    [50, 'under-beside-prev-unrelated-first', 'under-unknown'], [51, 'under-beside-prev-unrelated-last', 'under-unknown']];
+  for (const seed of ['a', 'b', 'c', 'd']) {
+    for (const [slot, name, refused] of cases) {
+      const v = generate(seed, 256 + slot, 'batch');
+      assert.equal(v.fuzz.nearMiss, name);
+      const text = JSON.stringify(v);
+      const [answer] = evaluateJS(JSON.parse(text), text);
+      if (refused) { assert.deepEqual(answer, { refused }, name); continue; }
+      // The target is held: a stored record, or the first draft by its raw id.
+      const acting = v.input.drafts.findIndex(d => d.env.under?.startsWith('r:'));
+      const under = JSON.parse(answer.records[acting].env_canonical).under;
+      if (slot === 45) assert.equal(under, answer.records[0].id);
+      else assert.equal(under, v.input.held[slot - 43].id);
+    }
+  }
+});
+
 test('record preflight and writer refusal precede seed decoding', () => {
   const env = { kind: '', observer: 'o:x', emitted: '2024-01-01T00:00:00Z' };
   const input = { envs: [env], payloads: [null], salt: '00000000000000000000000000', seed: '!' };

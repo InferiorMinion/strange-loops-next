@@ -1,4 +1,5 @@
 // Each case has its own PRNG stream. Family scheduling does not change a case.
+import { commitOf, idOf, readEnv, readSalt } from '../js/loops.mjs';
 export const FAMILIES = Object.freeze(['record', 'fold', 'spec', 'realm', 'scenario', 'batch', 'lens']);
 export const FOLD_LAYERS = Object.freeze(['count', 'sum', 'extrema', 'latest', 'latest-by', 'heads', 'view', 'select']);
 const B32 = '0123456789abcdefghijklmnopqrstuv';
@@ -344,6 +345,42 @@ export function generate(seed, index, family) {
     // An unknown draft member is malformed input, after the shape stage.
     if (slot === 9 || slot === 10) last.extra = 0;
     if (slot === 10) ds[0].env.extra = true;
+  }
+  // An `under` target must be held, in the batch or the store (Kyle,
+  // 2026-11-13), and nothing else about it is checked. Each case has a fixed
+  // slot: a target nobody holds, a held root, a held revision (no grant), the
+  // raw id of a batch member, and an unheld target beside an unheld `prev`, an
+  // `of` naming a held revision and a `prev` of another thing, in both orders.
+  if (family === 'batch' && index % 64 >= 42 && index % 64 < 52) {
+    const d = index % 64 - 42, ds = input.drafts, last = ds.at(-1);
+    nearMiss = ['under-unheld', 'under-held-root', 'under-held-revision', 'under-batch-id',
+      'under-beside-prev-unknown-first', 'under-beside-prev-unknown-last',
+      'under-beside-of-not-root-first', 'under-beside-of-not-root-last',
+      'under-beside-prev-unrelated-first', 'under-beside-prev-unrelated-last'][d];
+    scheduled = true;
+    // Undo the random label cycle and `of` faults above, so the slot alone decides.
+    ds[0].env.about = ds[0].env.about.filter(a => a !== '@d0');
+    for (const x of ds.slice(1)) x.env.of = ds[0].env.of ?? '@d0';
+    const root = `r:${base32(Array(32).fill(7))}`, revision = `r:${base32(Array(32).fill(8))}`;
+    const unheld = `r:${base32(Array(32).fill(9))}`;
+    input.held.push({ id: root, prev: [] }, { id: revision, of: root, prev: [root] });
+    if (d === 1) last.env.under = root;
+    else if (d === 2) last.env.under = revision;
+    else if (d === 3) {
+      // The first draft names no label, so its id is known before the batch is written.
+      const first = ds[0], id = idOf(readEnv(first.env), commitOf(readSalt(first.salt), first.payload));
+      const acting = { label: '@acting', env: { ...clone(first.env), prev: [], under: id }, salt: first.salt,
+        payload: { acting: true } };
+      delete acting.env.of;
+      ds.push(acting);
+    } else {
+      last.env.under = unheld;
+      const beside = { label: '@beside', env: { ...clone(ds[0].env), prev: [] }, salt: ds[0].salt, payload: { beside: d } };
+      if (d === 4 || d === 5) { beside.env.of = 't:item'; beside.env.prev = [`r:${base32(Array(32).fill(10))}`]; }
+      if (d === 6 || d === 7) beside.env.of = revision;
+      if (d === 8 || d === 9) { beside.env.of = 't:elsewhere'; beside.env.prev = [root]; }
+      input.drafts = d % 2 ? [...ds, beside] : [beside, ...ds];
+    }
   }
   // One draft's envelope is not an object, or left out, or the draft is not an
   // object, beside another draft whose envelope has an unknown key, in both
