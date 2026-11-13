@@ -5,7 +5,16 @@ import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { readVector } from "../answers.mjs";
 import * as F from "./fold.mjs";
+import * as S from "./spec.mjs";
 import { tally, jsonFiles, runAlone } from "./tally.mjs";
+
+// latest-by answers a map from things: written as `slotsText` writes a slot's
+// `things`, its member order is checked against the vector's, as check-spec
+// checks spec/run.
+const KEYED = new Set(["fold/latest-by"]);
+const order = (n) => S.isObject(n) ? n.members.map(([k, x]) => [k, order(x)])
+  : S.isArray(n) ? n.items.map(order) : null;
+const expectNode = (file) => S.readJson(readFileSync(file, "utf8")).members.find(([k]) => k === "expect")[1];
 
 // What each family's vector expects, from one arrival order.
 const RUN = {
@@ -31,10 +40,12 @@ export function check(dir) {
         continue;
       }
       if (!v.input.orders.length) t.failures.push(`${n}: no orders`);
-      for (const [i, order] of v.input.orders.entries()) {
+      const want = KEYED.has(v.layer) ? order(expectNode(file)) : null;
+      for (const [i, rs] of v.input.orders.entries()) {
         let got;
-        try { got = RUN[v.layer](order, v); } catch (e) { got = `threw ${e.message}`; }
+        try { got = RUN[v.layer](rs, v); } catch (e) { got = `threw ${e.message}`; }
         t.expect(`${n} order ${i}`, got, v.expect);
+        if (want && typeof got !== "string") t.expect(`${n} order ${i} member order`, order(S.readJson(S.jsonText(got, true))), want);
       }
     }
   }

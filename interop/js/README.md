@@ -41,9 +41,20 @@ An input that breaks this throws an error that is not a refusal code.
 The seed is read last and is exactly 32 bytes.
 A caller that kept each payload's raw text passes it as `payloadTexts`, so a repeated member is seen.
 
-The readers (`runSpec`, the folds) do not check a held record's `occurred` on the way in.
-They read it only when they order that record, and throw `occurred-not-span` then.
-The Lean and Rust readers refuse such a record when they decode it, so an input JavaScript answers may be one they refuse; the fuzz harness counts those as decoder refusals, not agreement.
+## Reading held records
+
+The readers (`runSpec`, `settle` and `realm`, the folds) check every held record's times before they answer, as the Lean and Rust readers do when they decode one (`checkTimes`, `fold.mjs`).
+`emitted` must be text that is a canonical UTC instant, and `occurred`, when present, text in its grammar.
+The first record in the list that fails, `emitted` before `occurred`, throws the writer's code, `emitted-not-rfc3339` or `occurred-not-span`.
+The error's `path` names the field in the list given, as Lean's decoder does, such as `[1].occurred`; `settle` and `realm` name the forms as given.
+A record is refused whether or not the reader would order it.
+These readers check no other field of a held record.
+
+A spec's slots are answered in the order the spec writes them, as in the model.
+An object's own enumeration puts integer-like names first, so the parsed `fold` and the answer `runSpec` builds keep the written order beside their members, read by `slotNames`.
+`slotsText` writes the slots in that order, and the keys of `groups` and `things` in UTF-16 code-unit order (`jsonText`).
+A spec given as a value has only its enumeration order; read it from text with `parseSpecText` to keep the written one.
+`check-spec.mjs` checks the member order of `spec/run` answers, and `check-fold.mjs` that of `fold/latest-by` answers.
 
 ## Text
 

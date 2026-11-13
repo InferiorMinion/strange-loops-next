@@ -17,7 +17,9 @@ const byId = (a, b) => F.idOrder(a.id, b.id);
 // holds is kept; a record in the set whose `erases` names an id erases every
 // form of it, whatever that record's kind; a form that arrives erased with
 // no such record behind it counts as withheld.
+// Every form's times are checked first (`F.checkTimes`), with paths into `forms`.
 export function settle(forms) {
+  F.checkTimes(forms);
   const formsOf = new Map();
   for (const f of forms) formsOf.set(f.id, [...(formsOf.get(f.id) ?? []), f]);
   const erased = new Set(forms.flatMap((f) => f.erases ?? []));

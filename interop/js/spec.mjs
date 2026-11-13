@@ -245,8 +245,17 @@ function specOf(n) {
   const fold = suppliedFold === undefined ? { members: [] } : suppliedFold;
   if (!isObject(fold)) refuse("fold-invalid", ["fold"]);
   const slots = fold.members.map(([name, slot]) => [name, slotOf(name, slot)]);
-  return { vertex, from: sources, fold: Object.fromEntries(slots) };
+  return { vertex, from: sources, fold: inOrder(Object.fromEntries(slots), slots.map(([name]) => name)) };
 }
+
+// Slot names in the order the spec writes them, which is the order the model
+// answers in. An object's own enumeration puts integer-like names first, so
+// the parsed `fold`, and the answer `runSpec` builds from it, keep the written
+// order beside their members, where structural comparison doesn't see it.
+// A spec given as a value has only its enumeration order to give.
+const SLOT_ORDER = Symbol("slot order");
+const inOrder = (o, names) => Object.defineProperty(o, SLOT_ORDER, { value: names });
+export const slotNames = (o) => o[SLOT_ORDER] ?? Object.keys(o);
 
 // A spec as a node: { parsed } in its parsed form, or { refused, path } with
 // the path's keys joined by ".".
@@ -360,31 +369,37 @@ function plainSlot(slot, spec, { taken, current, states }) {
 // Strings in UTF-16 code-unit order, the order the model writes keyed members in.
 export const utf16Order = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
 
+// A value as JSON text. A keyed object, a map from things or group keys, has
+// its keys in UTF-16 code-unit order (an object's own enumeration would put
+// integer-like keys first); every other object is written in the order it was
+// built. Integers past the safe range are written exactly.
+export function jsonText(v, keyed = false) {
+  if (typeof v === "bigint") return v.toString();
+  if (v === null || typeof v !== "object") return JSON.stringify(v);
+  if (Array.isArray(v)) return `[${v.map((x) => jsonText(x)).join(",")}]`;
+  const keys = keyed ? Object.keys(v).sort(utf16Order) : Object.keys(v);
+  return `{${keys.map((k) => `${JSON.stringify(k)}:${jsonText(v[k])}`).join(",")}}`;
+}
+
 // Slot values as JSON text, members in the order the model writes them: the
-// keys of `groups` and of `things` in UTF-16 code-unit order (an object's own
-// enumeration would put integer-like keys first), every other object in the
-// order it was built. Integers past the safe range are written exactly.
+// slots in the spec's written order (`slotNames`), the keys of `groups` and
+// of `things` in UTF-16 code-unit order, every other object as it was built.
 export function slotsText(out) {
-  const write = (v, keyed) => {
-    if (typeof v === "bigint") return v.toString();
-    if (v === null || typeof v !== "object") return JSON.stringify(v);
-    if (Array.isArray(v)) return `[${v.map((x) => write(x, false)).join(",")}]`;
-    const keys = keyed ? Object.keys(v).sort(utf16Order) : Object.keys(v);
-    return `{${keys.map((k) => `${JSON.stringify(k)}:${write(v[k], false)}`).join(",")}}`;
-  };
   const slot = (v) => `{${Object.keys(v).map((k) =>
-    `${JSON.stringify(k)}:${write(v[k], k === "groups" || k === "things")}`).join(",")}}`;
-  return `{${Object.keys(out).map((n) => `${JSON.stringify(n)}:${slot(out[n])}`).join(",")}}`;
+    `${JSON.stringify(k)}:${jsonText(v[k], k === "groups" || k === "things")}`).join(",")}}`;
+  return `{${slotNames(out).map((n) => `${JSON.stringify(n)}:${slot(out[n])}`).join(",")}}`;
 }
 
 export function runSpec(spec, records) {
+  // Times first, so a path names a record as given, before admission drops any.
+  F.checkTimes(records);
   records = admit(records).admitted;
   const ctx = {
     taken: records.filter((r) => takes(spec, r)),
     current: F.heads(records).filter((r) => takes(spec, r)),
     states: F.states(records),
   };
-  const out = Object.create(null);
-  for (const [name, slot] of Object.entries(spec.fold)) out[name] = runSlot(slot, spec, ctx);
-  return out;
+  const names = slotNames(spec.fold), out = Object.create(null);
+  for (const name of names) out[name] = runSlot(spec.fold[name], spec, ctx);
+  return inOrder(out, names);
 }
