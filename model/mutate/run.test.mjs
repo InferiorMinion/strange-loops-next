@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { changedPaths, replaceUnique, command, sourcePath } from './run.mjs';
+import { merge } from './merge.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
@@ -28,6 +29,39 @@ test('catalogue keeps 240 unique mutations at current source sites; listing does
   assert.equal(result.status, 0, result.stderr);
   assert.equal(result.stdout.trim().split('\n').length, catalogue.length);
   for (const [file, before] of sources) assert.equal(await readFile(file, 'utf8'), before, file);
+});
+
+test('shards are disjoint, cover the selection in catalogue order, and refuse a bad index', async () => {
+  const list = (...args) => spawnSync(process.execPath, [path.join(here, 'run.mjs'), '--list', ...args], { encoding: 'utf8' });
+  const ids = r => r.stdout.trim().split('\n').map(line => line.split('\t')[0]);
+  const all = ids(list());
+  const shards = [1, 2, 3].map(i => ids(list('--shard', `${i}/3`)));
+  assert.deepEqual(shards.map(s => s.length), [79, 79, 78]);
+  assert.deepEqual(all.map((_, at) => shards[at % 3][Math.floor(at / 3)]), all);
+  assert.deepEqual(ids(list('--shard', '1/1')), all);
+  const only = all.slice(0, 5);
+  assert.deepEqual(ids(list('--only', only.join(','), '--shard', '2/2')), [only[1], only[3]]);
+  for (const bad of ['0/3', '4/3', '1', '1/0', 'a/b', '1/3/5']) {
+    const r = list('--shard', bad);
+    assert.equal(r.status, 1, bad);
+    assert.match(r.stderr, /Shard must be/, bad);
+  }
+});
+
+test('merging shard results needs every entry once, no error and a restored baseline', () => {
+  const ok = { status: 'ok' };
+  const shard = (name, entries, more = {}) => ({ name, result: { mutants: entries.map(([id, status]) => ({ id, status })), finalBaseline: ok, ...more } });
+  const whole = merge(['a', 'b', 'c'], [shard('1', [['c', 'survived'], ['a', 'killed-by-vector']]), shard('2', [['b', 'rejected-by-build']])]);
+  assert.deepEqual(whole.problems, []);
+  assert.deepEqual(whole.merged.mutants.map(m => m.id), ['a', 'b', 'c']);
+  assert.deepEqual(whole.merged.counts, { 'killed-by-vector': 1, 'rejected-by-build': 1, survived: 1 });
+  const problems = (...shards) => merge(['a', 'b'], shards).problems;
+  assert.match(problems(shard('1', [['a', 'survived']]))[0], /^b: in no result/);
+  assert.match(problems(shard('1', [['a', 'survived'], ['b', 'survived']]), shard('2', [['b', 'survived']]))[0], /^b: in both 1 and 2/);
+  assert.match(problems(shard('1', [['a', 'survived'], ['b', 'survived'], ['z', 'survived']]))[0], /^z: not in the catalogue/);
+  assert.match(problems(shard('1', [['a', 'error'], ['b', 'survived']]))[0], /^a: error/);
+  assert.match(problems(shard('1', [['a', 'survived'], ['b', 'survived']], { finalBaseline: null }))[0], /final baseline build is missing/);
+  assert.match(problems(shard('1', [['a', 'survived'], ['b', 'survived']], { error: 'Baseline build failed' }))[0], /Baseline build failed/);
 });
 
 test('catalogue source roots exclude traversal and unrelated files', () => {

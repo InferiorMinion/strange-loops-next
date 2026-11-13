@@ -12,11 +12,18 @@ Seven more cover `by`: grouping before admission or before the heads, empty grou
 Four more cover `under-unknown`: the check skipped, made before `prev-unknown` or after `of-not-root`, and a target looked up in the store only.
 The source paths may name the Loops or Gen root; flat filenames still name Loops sources.
 Run `node model/mutate/run.mjs --only things-prev-or,things-drop-may` to select mutations.
+Use `--shard i/n` to run every nth selected entry, starting at the ith; the n shards are disjoint and together cover the selection.
+Run `node model/mutate/merge.mjs --output merged.json results-*.json` to join the shards' results; it fails unless every catalogue entry was judged exactly once, with no error and the baseline restored.
 Use `--output path` to choose the JSON result path.
 Use `--timeout seconds` to set each command timeout.
 The default timeout is 180 seconds.
 The default result path is `model/mutate/results.json`.
 Run `node --test model/mutate/run.test.mjs` to check the runner.
+The model gate runs those tests, so a change that moves a catalogue entry's source site fails until the catalogue follows.
+
+The full catalogue runs in GitLab CI, on request: start a pipeline with the variable `MUTATION_FULL` set.
+`model-mutants-full` runs it in four shards and `mutation-report` joins them; results and logs are artifacts.
+It is not a gate. It takes hours on one machine, so it is not run on the workbench.
 See [REPORT.md](REPORT.md) for audited outcomes and the known generator assertion.
 
 The runner requires clean candidate source files in the index and worktree.
