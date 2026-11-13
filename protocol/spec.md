@@ -130,6 +130,7 @@ A top-N across groups is not part of `by`.
 A group exists only where some record was selected into it, so there are no empty groups.
 Every selected record (every record whose `where` answers yes or unknown) is grouped, ungrouped or unread, exactly one of these.
 The groups hold each grouped record once per key, so the group sizes add up to memberships, not records.
+A collect's `limit` then shortens each group's `heads`, so its lists can hold fewer than the memberships.
 When every selected record has at most one key, the counts of a grouped `count`, its `ungrouped` and its `unread` add up to the `value` and `unread` of the same count without `by`.
 Every `by` but `env.about:<prefix>` gives at most one key; `env.about:<prefix>` does too over records that each mention one thing under the prefix.
 

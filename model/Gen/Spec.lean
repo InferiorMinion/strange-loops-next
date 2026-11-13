@@ -634,7 +634,10 @@ def byLimitSpec : Json := o [("vertex", s "newest-open-per-kind"), ("from", a [o
 -- current mention, while collect over every record lists both its versions;
 -- both heads of the fork; the erased and withheld heads grouped by envelope
 -- keys and unread under a payload key; `limit` per group beside an unknown
--- head; the fork's head that mentions two projects listed under each.
+-- head; the fork's head that mentions two projects listed under each. That
+-- head is the newest open one in both of its groups, so a limit taken once
+-- over all the heads would list the same; `newest-by-observer` has a group
+-- per observer, each with its own newest head, where that limit keeps one.
 def byFollowCollectSpec : Json := o [("vertex", s "current-per-project"),
   ("from", a [o [("store", s "."), ("kind", a [s "task"])]]),
   ("fold", o [
@@ -644,6 +647,8 @@ def byFollowCollectSpec : Json := o [("vertex", s "current-per-project"),
     ("by-status", o [("collect", .bool true), ("follow", s "prev"), ("by", s "status")]),
     ("newest-open", o [("collect", .bool true), ("follow", s "prev"), ("limit", .int 1),
       ("by", s "env.about:project"), ("where", o [("status", o [("is", s "open")])])]),
+    ("newest-by-observer", o [("collect", .bool true), ("follow", s "prev"), ("limit", .int 1),
+      ("by", s "env.observer")]),
     ("current-plain", o [("collect", .bool true), ("follow", s "prev")])])]
 
 structure RunCase where
