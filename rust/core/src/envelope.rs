@@ -317,7 +317,7 @@ mod raw_tests {
             }
             for envs in [
                 vec![unknown.clone(), raw.clone()],
-                vec![raw.clone(), unknown.clone()],
+                vec![raw, unknown.clone()],
             ] {
                 assert_eq!(
                     read_all("envs", &Json::Arr(envs))
@@ -390,7 +390,7 @@ mod raw_tests {
         for malformed in [Json::Null, number_kind] {
             for raw in [
                 vec![malformed.clone(), unknown.clone()],
-                vec![unknown.clone(), malformed.clone()],
+                vec![unknown.clone(), malformed],
             ] {
                 assert_eq!(
                     read_all("envs", &Json::Arr(raw))
