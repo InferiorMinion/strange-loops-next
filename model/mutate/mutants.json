@@ -1855,5 +1855,37 @@
     "after": "if t = \"latest-by\" ∧ false then refuse \"by-invalid\" s!\"{path}.by\"",
     "reason": "Accept by on latest-by.",
     "definition": "Loops.slotBy"
+  },
+  {
+    "id": "under-unknown-skipped",
+    "file": "Batch.lean",
+    "before": "r.env.under.any fun u => (target u).isNone then throw \"under-unknown\"",
+    "after": "r.env.under.any fun _ => false then throw \"under-unknown\"",
+    "reason": "Accept an under target the writer does not hold.",
+    "definition": "Loops.checkPrev"
+  },
+  {
+    "id": "under-unknown-before-prev",
+    "file": "Batch.lean",
+    "before": "  if rs.any fun r => r.env.prev.any fun p => (target p).isNone then throw \"prev-unknown\"\n  if rs.any fun r => r.env.under.any fun u => (target u).isNone then throw \"under-unknown\"\n",
+    "after": "  if rs.any fun r => r.env.under.any fun u => (target u).isNone then throw \"under-unknown\"\n  if rs.any fun r => r.env.prev.any fun p => (target p).isNone then throw \"prev-unknown\"\n",
+    "reason": "Check under targets before prev targets.",
+    "definition": "Loops.checkPrev"
+  },
+  {
+    "id": "under-unknown-after-of-not-root",
+    "file": "Batch.lean",
+    "before": "  if rs.any fun r => r.env.under.any fun u => (target u).isNone then throw \"under-unknown\"\n  if rs.any fun r => r.env.of.any fun o => (target o).any (!·.root) then throw \"of-not-root\"\n",
+    "after": "  if rs.any fun r => r.env.of.any fun o => (target o).any (!·.root) then throw \"of-not-root\"\n  if rs.any fun r => r.env.under.any fun u => (target u).isNone then throw \"under-unknown\"\n",
+    "reason": "Check under targets after of-not-root.",
+    "definition": "Loops.checkPrev"
+  },
+  {
+    "id": "under-unknown-store-only",
+    "file": "Batch.lean",
+    "before": "(target u).isNone",
+    "after": "(held u).isNone",
+    "reason": "Look an under target up in the store only, not in the batch.",
+    "definition": "Loops.checkPrev"
   }
 ]
