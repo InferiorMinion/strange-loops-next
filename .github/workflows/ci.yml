@@ -64,6 +64,9 @@ jobs:
       - name: Model mutants
         working-directory: model
         run: node mutants.mjs
+      - name: The mutation catalogue names current source sites, and its runner works
+        timeout-minutes: 2
+        run: node --test model/mutate/run.test.mjs
       - name: Fuzz adapters and batch transport check
         timeout-minutes: 1
         run: node --test interop/fuzz/*.test.mjs

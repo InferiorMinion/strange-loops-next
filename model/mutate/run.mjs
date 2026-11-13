@@ -112,12 +112,17 @@ function options(args) {
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
     if (arg === '--list') o.list = true;
-    else if (['--only', '--output', '--timeout'].includes(arg)) {
+    else if (['--only', '--output', '--timeout', '--shard'].includes(arg)) {
       if (!args[i + 1] || args[i + 1].startsWith('--')) throw new Error(`Missing value for ${arg}`);
       const v = args[++i];
       if (arg === '--only') o.only = v.split(',');
       if (arg === '--output') o.output = path.resolve(v);
       if (arg === '--timeout') o.timeout = Number(v);
+      if (arg === '--shard') {
+        const m = /^([1-9][0-9]*)\/([1-9][0-9]*)$/.exec(v);
+        if (!m || Number(m[1]) > Number(m[2])) throw new Error('Shard must be i/n with 1 <= i <= n');
+        o.shard = { index: Number(m[1]), total: Number(m[2]) };
+      }
     } else throw new Error(`Unknown argument: ${arg}`);
   }
   if (!Number.isFinite(o.timeout) || o.timeout <= 0) throw new Error('Timeout must be positive');
@@ -128,8 +133,10 @@ export async function main(args) {
   const o = options(args);
   const catalogue = JSON.parse(await readFile(cataloguePath, 'utf8'));
   if (new Set(catalogue.map(m => m.id)).size !== catalogue.length) throw new Error('Duplicate mutant id');
-  const selected = o.only ? catalogue.filter(m => o.only.includes(m.id)) : catalogue;
-  if (o.only && (new Set(o.only).size !== o.only.length || selected.length !== o.only.length)) throw new Error('Unknown or duplicate mutant id');
+  const named = o.only ? catalogue.filter(m => o.only.includes(m.id)) : catalogue;
+  if (o.only && (new Set(o.only).size !== o.only.length || named.length !== o.only.length)) throw new Error('Unknown or duplicate mutant id');
+  // Shard i of n takes every nth selected entry, in catalogue order, so the shards are disjoint and cover the selection.
+  const selected = o.shard ? named.filter((_, at) => at % o.shard.total === o.shard.index - 1) : named;
   for (const m of catalogue) {
     if (!m.before || m.before === m.after) throw new Error(`Invalid mutant: ${m.id}`);
     const relative = sourcePath(m.file);
