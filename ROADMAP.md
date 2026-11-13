@@ -14,10 +14,10 @@ These proofs apply only under their stated premises.
 The tree has 527 JSON fixtures: 515 generated fixtures and 12 standard fixtures.
 Lean replays 506 generated fixtures; 9 occurred fixtures use separate checks.
 Rust checks every fixture, six JCS byte pairs, 4,000 binary64 cases, and 128 SUPERCOP signing cases with ed25519-dalek.
-Rust passes 154 tests; JavaScript passes 6,352 vector checks and 36 regression and law tests.
+Rust passes 154 tests; JavaScript passes 6,358 vector checks and 36 regression and law tests.
 Both also check that `spec/run` answers write their members, group and thing keys included, in the model's order; JavaScript checks `fold/latest-by` answers' thing keys too.
 JavaScript refuses a held record's invalid `emitted` or `occurred` before it answers, as the Lean and Rust readers do.
-The fuzz suite passes 53 tests.
+The fuzz suite passes 55 tests.
 See [vectors](vectors/README.md), [Rust boundaries](rust/GAPS.md), and [the mutation report](model/mutate/REPORT.md).
 These checks provide bounded evidence, not complete JCS or cryptographic correctness.
 They do not certify browser accessibility, external links, or official ASD dictionary compliance.
@@ -29,11 +29,11 @@ Numeric folds read safe whole values only.
 Raw constructors and theorem premises retain separate domains.
 
 The gates pass locally on Node 25.9, and CI runs every gate on Node 22.
-The `by-collect-1` campaign, over the final generator, checks 5,600 cases, 800 per family, in 87.11 seconds.
-It reports 3,801 matches, 1,421 protocol refusals, 378 shared decoder refusals, and no mismatch.
-The `by-shape-1`, `by-1`, `shape-follow-1`, `shape-under-2` and `follow-2` campaigns, each over an earlier generator, found no mismatch either.
+The `issue-7-1` campaign, over the generator after issue #7, checks 5,600 cases, 800 per family, in 92.49 seconds.
+It reports 3,788 matches, 1,437 protocol refusals, 375 shared decoder refusals, and no mismatch.
+The `by-collect-1`, `by-shape-1`, `by-1`, `shape-follow-1`, `shape-under-2` and `follow-2` campaigns, each over an earlier generator, found no mismatch either.
 Decoder refusals are not agreement; for record and batch inputs JavaScript must also report them as malformed.
-The generator carries issue #1's shapes and labels in `under`, followed count, sum, min and max slots, and grouped slots, so the same seeds now generate different inputs; earlier campaigns' counts are historical.
+The generator carries issue #1's shapes and labels in `under`, followed count, sum, min and max slots, grouped slots, keys written as number text (issue #7), and an unknown key beside an envelope that is not an object, so the same seeds now generate different inputs; earlier campaigns' counts are historical.
 The `d8ab-1` and `d1-d6-1` campaigns found no mismatch.
 The 42 duplicate-base lens mismatches of the `step1-3` campaign are the class D1 settles.
 `interop/fuzz/summarize.py` derives these counts from tracked summaries.

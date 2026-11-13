@@ -65,6 +65,16 @@ export function executeBatch(directory, files, { timeoutMs = 120000, engine = 'l
   return parseResponses(result.stdout, files, { engine });
 }
 
+// An input as its file writes it. `{"$number": text}` with JSON number text
+// is that number as spelled, so `1.0` reaches every reader as `1.0`; vectors
+// stay plain JSON values, which clone and shrink as any other.
+const NUMBER_TEXT = /^-?(0|[1-9]\d*)(\.\d+)?([eE][+-]?\d+)?$/;
+const spelled = v => v !== null && typeof v === 'object' && !Array.isArray(v) && Object.keys(v).length === 1
+  && typeof v.$number === 'string' && NUMBER_TEXT.test(v.$number);
+export function inputText(value) {
+  return JSON.stringify(value, (_key, v) => spelled(v) ? JSON.rawJSON(v.$number) : v);
+}
+
 // Write each chunk once. Both engines read these same input-only paths.
 // Two-way mode returns Lean wrappers. Rust mode returns { lean, rust } per vector.
 export async function batchVectors(vectors, { directory, rawText, rust = false, ...options } = {}) {
@@ -78,7 +88,7 @@ export async function batchVectors(vectors, { directory, rawText, rust = false, 
       directory ??= await mkdtemp(join(tmpdir(), 'loops-fuzz-'));
       await mkdir(directory, { recursive: true });
       files = vectors.map((_, i) => join(directory, `${String(i).padStart(6, '0')}.json`));
-      await Promise.all(files.map((file, i) => writeFile(file, rawText ?? (JSON.stringify(vectors[i]) + '\n'))));
+      await Promise.all(files.map((file, i) => writeFile(file, rawText ?? (inputText(vectors[i]) + '\n'))));
     } catch (error) {
       throw new Error(`${label} batch input IO fails: ${error.message}`, { cause: error });
     }

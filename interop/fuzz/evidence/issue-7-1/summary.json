@@ -1,0 +1,66 @@
+{
+  "implementations": [
+    "js",
+    "lean",
+    "rust"
+  ],
+  "seed": "issue-7-1",
+  "requested": 5600,
+  "counts": {
+    "record": {
+      "cases": 800,
+      "match": 96,
+      "protocol-refusal": 677,
+      "decoder-refusal": 27,
+      "mismatch": 0
+    },
+    "fold": {
+      "cases": 800,
+      "match": 698,
+      "protocol-refusal": 0,
+      "decoder-refusal": 102,
+      "mismatch": 0
+    },
+    "spec": {
+      "cases": 800,
+      "match": 707,
+      "protocol-refusal": 43,
+      "decoder-refusal": 50,
+      "mismatch": 0
+    },
+    "realm": {
+      "cases": 800,
+      "match": 713,
+      "protocol-refusal": 0,
+      "decoder-refusal": 87,
+      "mismatch": 0
+    },
+    "scenario": {
+      "cases": 800,
+      "match": 703,
+      "protocol-refusal": 0,
+      "decoder-refusal": 97,
+      "mismatch": 0
+    },
+    "batch": {
+      "cases": 800,
+      "match": 309,
+      "protocol-refusal": 479,
+      "decoder-refusal": 12,
+      "mismatch": 0
+    },
+    "lens": {
+      "cases": 800,
+      "match": 562,
+      "protocol-refusal": 238,
+      "decoder-refusal": 0,
+      "mismatch": 0
+    }
+  },
+  "mismatches": 0,
+  "decoderRefusals": 375,
+  "protocolRefusals": 1437,
+  "chunks": 88,
+  "shrinkTrials": 0,
+  "seconds": 92.48900749999999
+}
