@@ -67,7 +67,7 @@ const isRoot = (h) => h.of === undefined && !h.prev.length;
 // The batch's records, one per draft in the order given, each { id,
 // env_canonical }; or { refused } with the first stage that refuses: shape,
 // lone surrogates, labels (duplicate, unknown, cycle), writing from kind-empty, then
-// prev-unknown, of-not-root, then prev-unrelated (vectors/README.md, Batch).
+// prev-unknown, under-unknown, of-not-root, then prev-unrelated (vectors/README.md, Batch).
 // Each stage looks at the whole batch, so no draft order changes the answer.
 // A draft that is not an object, has an unknown member, has a label that is
 // not text or has no payload is malformed input, which throws rather than
@@ -121,6 +121,8 @@ export function resolveBatch(raw, held) {
   for (const r of records) holds.set(r.id, { of: r.env.of, prev: r.env.prev ?? [] });
   const prevs = records.flatMap((r) => (r.env.prev ?? []).map((p) => [r, p]));
   if (prevs.some(([, p]) => !holds.has(p))) return { refused: "prev-unknown" };
+  // An `under` target is held too, whatever its shown state; whether it is a grant is standing's question.
+  if (records.some((r) => r.env.under !== undefined && !holds.has(r.env.under))) return { refused: "under-unknown" };
   // An `of` naming a held record names a root; one the writer doesn't hold is not judged.
   if (records.some((r) => holds.has(r.env.of) && !isRoot(holds.get(r.env.of)))) return { refused: "of-not-root" };
   // Succession is within a thing: each `prev` target is of the record's thing.
