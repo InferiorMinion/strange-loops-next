@@ -17,7 +17,7 @@ node interop/fuzz/run.mjs --seed ci-1 --n 28 --out /tmp/fuzz-ci
 node interop/fuzz/run.mjs --rust --seed phase2-20261029 --n 5000 --out /tmp/fuzz-large
 node interop/fuzz/run.mjs --seed campaign-1 --n 1000 --family record --no-shrink
 node interop/fuzz/run.mjs --rust --replay /tmp/fuzz-large/mismatches/000000.json --out /tmp/fuzz-replay
-node interop/fuzz/run.mjs --rust --seed by-collect-1 --n 5600 --shrink-trials 80 --out rust/target/scratch/fuzz-by-collect-1
+node interop/fuzz/run.mjs --rust --seed issue-7-1 --n 5600 --shrink-trials 80 --out rust/target/scratch/fuzz-issue-7-1
 node interop/fuzz/run.mjs --rust --replay vectors/lens/section/d1-duplicate-base-id.json --out /tmp/fuzz-duplicate-base
 ```
 
@@ -25,7 +25,7 @@ An explicit output directory must be empty.
 Without `--out`, the runner creates an artifact directory under the system temporary directory.
 It prints that path with the summary.
 Exit codes are 0 for agreement, 1 for disagreements, and 2 for infrastructure or CLI errors.
-[REPORT.md](REPORT.md) records the campaign over the merged generator, after issue #1 and `follow` on count, sum, min and max, which finds no mismatch.
+[REPORT.md](REPORT.md) records the campaign over the generator after issue #7, which finds no mismatch.
 Earlier campaigns' counts are historical: the generator changed, so the same seeds now generate different inputs.
 It marks earlier campaign results as historical, including the 42 duplicate-base lens mismatches D1 settles.
 
@@ -101,6 +101,8 @@ A record names its thing in `of`: a root leaves it out, others name a natural ke
 Most revisions state their target's thing; a few name another, or leave `of` out, which admission refuses.
 `about` only mentions things; specs choose by `from.of`, `from.about`, both, or neither.
 Every spec has count, sum, min and max slots that follow `prev`, beside the ones that do not.
+Two slots group by `rank`, which a spec run's held payloads carry as text, as a number, or as number text such as `1.0` or `10e-1`; a whole number shares its text's group.
+`{"$number": "1.0"}` in a vector stands for that spelling, and the input file writes it raw; JS reads the orders through that text.
 Arrival orders retain the same logical records.
 Realm forms retain the same envelope and held payload for each ID.
 Record variants reorder JSON members and repeat set members.
@@ -113,6 +115,7 @@ A lone surrogate travels as a payload text, alone, in a member name, after an un
 A number past binary64's range travels as text too, alone, under a bad kind, and beside a repeated member.
 Four cases list variants that disagree: a refused first, two refused differently, and a refused envelope or payload later.
 The last two are malformed input, which every engine must refuse to answer.
+Two more list an envelope that is not an object and one with an unknown key, in both orders, as do two batch cases across drafts.
 These scheduled cases cannot be replaced by random mutations.
 Other named cases exercise wrong types, bad IDs, integer bounds, EDTF, repeated members, salt lengths, unresolved labels, an untyped or missing `of`, and specs with `"latest-by": "about"`, an untyped `from.of`, or a `follow` that is not `"prev"` on count, sum, min or max.
 A deliberate self-label cycle also carries a near-miss label.

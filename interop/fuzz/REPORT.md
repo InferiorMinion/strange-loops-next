@@ -2,12 +2,62 @@
 
 ## Scope
 
-This report covers the JS, Lean, and Rust campaign over the generator merged from `by` (issue #2) and issue #1's envelope shape refusals and labels in `under`, both after `follow` on count, sum, min and max (issue #3), with `by` on a collect that follows `prev`.
-It also preserves the `by-shape-1`, `shape-follow-1` and `by-1` campaigns, the two issue #1 campaigns, the `follow-2` campaign, the D8a and D8b campaign, the D1–D6 campaign, the Step-1 campaign and earlier two-way campaigns as historical findings.
-Their counts are historical: the generator changed with D8, with issue #1, with `follow` and with `by`, so the same seeds now generate different inputs.
+This report covers the JS, Lean, and Rust campaign over the generator after issue #7, which adds keys written as number text and an unknown key beside an envelope that is not an object.
+It also preserves the `by-collect-1`, `by-shape-1`, `shape-follow-1` and `by-1` campaigns, the two issue #1 campaigns, the `follow-2` campaign, the D8a and D8b campaign, the D1–D6 campaign, the Step-1 campaign and earlier two-way campaigns as historical findings.
+Their counts are historical: the generator changed with D8, with issue #1, with `follow`, with `by` and with issue #7, so the same seeds now generate different inputs.
 The harness covers record, fold, spec, realm, scenario, batch, and lens inputs.
 
-## `by` on a followed collect: three-way campaign
+## Issue #7: three-way campaign
+
+Source commit: `f4b3b46`, after the generator learned issue #7's two wrong ports.
+Node 25.9 checks 5,600 cases with seed `issue-7-1`: 800 cases per family.
+The run uses 88 chunks and takes 92.49 seconds.
+Exit 0: no implementation disagrees on any case.
+The retained [summary](evidence/issue-7-1/summary.json) supports these counts.
+Run `python3 interop/fuzz/summarize.py report` from the repository root.
+
+| Family | Cases | Match | Protocol refusal | Shared decoder refusal | Mismatch |
+|---|---:|---:|---:|---:|---:|
+| record | 800 | 96 | 677 | 27 | 0 |
+| fold | 800 | 698 | 0 | 102 | 0 |
+| spec | 800 | 707 | 43 | 50 | 0 |
+| realm | 800 | 713 | 0 | 87 | 0 |
+| scenario | 800 | 703 | 0 | 97 | 0 |
+| batch | 800 | 309 | 479 | 12 | 0 |
+| lens | 800 | 562 | 238 | 0 | 0 |
+| Total | 5,600 | 3,788 | 1,437 | 375 | 0 |
+
+All 375 decoder refusals occur in both Lean and Rust.
+For the record and batch families JavaScript is called on them too and throws, so the 27 record and 12 batch ones are all three agreeing that the input is malformed, which is still not protocol agreement.
+The 50 spec ones are the `bad-edtf` near miss, whose spec is refused.
+No reduction runs, because no mismatch exists.
+The [mismatch list](evidence/issue-7-1/d1-mismatches.json) keeps the historical D1 example and holds no case.
+
+Every generated spec now has two slots grouped by a payload field `rank`, and each spec run's held payloads get `rank` last, so the run's other draws are unchanged.
+`rank` is left out, the text `"0"`, `"1"` or `"2"`, that number, or number text the input file writes as spelled: `1.0`, `10e-1`, `1E0`, `1.000` or `-0`, or the fraction `1.5`.
+A vector stays a JSON value: `{"$number": "1.0"}` stands for the spelling, and only the input file writes it raw, so cloning and shrinking are unchanged.
+JavaScript reads the orders through that same text.
+Record slots 39 and 41, in three cycles of 256 in four, list an envelope that is not an object and one with an unknown key, in both orders.
+Batch slots 40 and 41 of 64 give one draft an envelope that is not an object, no envelope, or no object at all, beside a draft whose envelope has an unknown key, in both orders.
+Each answers `envelope-field-unknown`.
+
+In this run 114 of the 400 spec runs answer differently when a reader keys a whole number by its spelling, as sl-py did, so `1.0` and `"1"` part ways; 18 record and 24 batch cases are the new shape slots.
+Each wrong port was made in the JavaScript witness, run two-way on the same seed and reverted.
+Reading `rank`'s number text as text gives 114 mismatches in 800 spec cases, each in the two `rank` slots.
+Checking for an envelope that is not an object ahead of an unknown key gives 18 mismatches in 800 record cases and 15 in 800 batch cases, all in the new slots.
+The other 9 batch slot cases have a draft that is not an object, whose envelope the shape stage does not read.
+Calling such a draft malformed ahead of the shape stage gives 9 mismatches, exactly those.
+The generator before issue #7 gives no mismatch for any of the three.
+Raw logs and per-case files were written under the ignored `rust/target/scratch` and deleted after the summary was recorded.
+
+```sh
+node interop/fuzz/run.mjs --rust --seed issue-7-1 --n 5600 --shrink-trials 80 --out rust/target/scratch/fuzz-issue-7-1
+python3 interop/fuzz/summarize.py campaign rust/target/scratch/fuzz-issue-7-1 issue-7-1
+```
+
+## HISTORICAL `by` on a followed collect: three-way campaign
+
+This campaign predates issue #7's generator; the generator changed after it.
 
 Source commit: `9e07995`, after `by` came to collect that follows `prev`.
 Node 25.9 checks 5,600 cases with seed `by-collect-1`: 800 cases per family.

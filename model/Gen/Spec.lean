@@ -351,6 +351,7 @@ def taskSpec : Json := o [("vertex", s "tasks"),
     ("est-now", o [("sum", s "est"), ("follow", s "prev")])])]
 
 -- Hidden payloads must not supply numbers, even though their placeholder is zero.
+-- The erased task's eraser is no task, so `from` does not take it.
 def hiddenNumbersSpec : Json := o [("vertex", s "hidden-numbers"),
   ("from", a [o [("store", s "."), ("kind", a [s "task"])]]),
   ("fold", o [("count", o [("count", .bool true)]),
@@ -525,7 +526,8 @@ def byAdmitSpec : Json := o [("vertex", s "admitted"),
 -- A task revised as it moves from project x to project y, a task forked in
 -- project x, an erased head and a withheld head. The whole view's heads come
 -- first: grouping before them would keep the moved task's old version current
--- in x, where its successor is not.
+-- in x, where its successor is not. The erased head's eraser is no task, so
+-- `from` does not take it.
 def m0 := tb (fixtureId 0x33) "task:1" 100 "sl:kyle" ["project:x"] [("status", .str "open"), ("est", .int 3)]
 def m1 := tb (fixtureId 0x34) "task:1" 200 "sl:kyle" ["project:y"] [("status", .str "open"), ("est", .int 4)] [fixtureId 0x33]
 def m2 := tb (fixtureId 0x35) "task:2" 110 "sl:kyle" ["project:x"] [("status", .str "open"), ("est", .int 6)]
@@ -533,6 +535,7 @@ def m3 := tb (fixtureId 0x36) "task:2" 210 "sl:alice" ["project:x"] [("status", 
 def m4 := tb (fixtureId 0x37) "task:2" 220 "sl:bob" ["project:x", "project:y"] [("status", .str "open"), ("est", .int 2)] [fixtureId 0x35]
 def m5 := (tb (fixtureId 0x38) "task:3" 120 "sl:kyle" ["project:y"] [("status", .str "open"), ("est", .int 9)]).erase
 def m6 := (tb (fixtureId 0x39) "task:4" 130 "sl:kyle" ["project:z"] [("status", .str "open"), ("est", .int 5)]).withhold
+def m7 : Record := { said (fixtureId 0x3d) "sl:kyle" [] 230 with kind := "erasure", erases := [fixtureId 0x38] }
 
 def byFollowSpec : Json := o [("vertex", s "current-per-project"),
   ("from", a [o [("store", s "."), ("kind", a [s "task"])]]),
@@ -700,7 +703,7 @@ def runCases : List RunCase := [
   -- the whole view's heads come before any group: a move, a fork, an erased
   -- head and a withheld one
   ⟨"24-by-follow", ["spec.set", "spec.follow", "by.set", "by.after-admission", "by.accounting",
-      "by.partition", "result.unread"], byFollowSpec, [m0, m1, m2, m3, m4, m5, m6]⟩,
+      "by.partition", "result.unread"], byFollowSpec, [m0, m1, m2, m3, m4, m5, m6, m7]⟩,
   -- limit is per group
   ⟨"25-by-collect", ["spec.set", "by.set", "by.accounting", "result.unread"], byCollectSpec,
     [b1, b2, b3, b4, b5, b6]⟩,
@@ -716,7 +719,7 @@ def runCases : List RunCase := [
   ⟨"29-by-collect-limit", ["spec.set", "by.accounting", "result.unread"], byLimitSpec, limitRecords⟩,
   -- collect following `prev`, grouped over the whole view's heads
   ⟨"30-by-follow-collect", ["spec.set", "spec.follow", "by.set", "by.after-admission", "by.accounting",
-      "result.unread"], byFollowCollectSpec, [m0, m1, m2, m3, m4, m5, m6]⟩,
+      "result.unread"], byFollowCollectSpec, [m0, m1, m2, m3, m4, m5, m6, m7]⟩,
   ⟨"gap04-unread-multi-thing", ["result.unread"],
     o [("vertex", s "x"), ("from", a [o [("store", s ".")]]), ("fold", o [
       ("by", o [("latest-by", s "of"), ("follow", s "prev"),
@@ -763,7 +766,8 @@ def runCases : List RunCase := [
       (task (fixtureId 0xe8) "task:8" 170 [("est", .int 7)]).withhold,
       task (fixtureId 0xe9) "task:9" 180 [("est", .number (Number.ofScientific false 9007199254740992 0))]]⟩,
   ⟨"11-hidden-numbers", ["spec.set", "result.unread"], hiddenNumbersSpec,
-    [(task (fixtureId 0x76) "task:6" 100 []).withhold, (task (fixtureId 0x77) "task:7" 200 []).erase]⟩,
+    [(task (fixtureId 0x76) "task:6" 100 []).withhold, (task (fixtureId 0x77) "task:7" 200 []).erase,
+      { said (fixtureId 0x7a) "sl:kyle" [] 300 with kind := "erasure", erases := [fixtureId 0x77] }]⟩,
   ⟨"12-readable-extrema", ["spec.set", "result.unread"], readableExtremaSpec,
     [task (fixtureId 0x78) "task:8" 100 [("est", .int 3)], task (fixtureId 0x79) "task:9" 200 [("est", .int 5)]]⟩,
   ⟨"13-source-union", ["spec.set", "spec.select"], sourceUnionSpec,
@@ -817,6 +821,10 @@ def runVector (c : RunCase) : Except String J := do
   let sp ← match Spec.ofJson c.spec with
     | .ok sp => pure sp
     | .error r => throw s!"spec/run/{c.name}: refused {r.code} at {r.path}"
+  -- Settling keeps an erased form only where a held record erases it, so a
+  -- reader that settles first reads these records as they are written.
+  if c.records.any fun r => r.shown == .erased && !c.records.any (·.erases.contains r.id) then
+    throw s!"spec/run/{c.name}: an erased record has no eraser"
   let orders := rotations c.records
   let results := orders.map fun xs => J.obj ((sp.run xs).map fun (n, v) => (n, jSlot v))
   let first := results.headD .null
