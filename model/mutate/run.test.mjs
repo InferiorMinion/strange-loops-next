@@ -36,7 +36,8 @@ test('shards are disjoint, cover the selection in catalogue order, and refuse a 
   const ids = r => r.stdout.trim().split('\n').map(line => line.split('\t')[0]);
   const all = ids(list());
   const shards = [1, 2, 3].map(i => ids(list('--shard', `${i}/3`)));
-  assert.deepEqual(shards.map(s => s.length), [79, 79, 78]);
+  // Every third entry: the sizes differ by at most one, whatever the catalogue holds.
+  assert.deepEqual(shards.map(s => s.length), [0, 1, 2].map(i => Math.ceil((all.length - i) / 3)));
   assert.deepEqual(all.map((_, at) => shards[at % 3][Math.floor(at / 3)]), all);
   assert.deepEqual(ids(list('--shard', '1/1')), all);
   const only = all.slice(0, 5);
