@@ -148,7 +148,8 @@ a torn last line, an altered segment, and the batch check's view of held
 records (`of-not-root`, and `about` making no head). `rust/cli/tests/walk.rs`
 drives the binary: emit, revise, fork, fold, erase; a labelled changeset and its
 refusals; `of` filled in for a revision, `--of`, and `of-not-root` and
-`prev-unrelated` against the store; a mention making no head; two stores
+`prev-unrelated` against the store; `under-unknown`, and an erased and a
+withheld `under` target held; a mention making no head; two stores
 converging; exit codes. Expected answers come from the
 vectors or from the walk's own statements, not from the code.
 

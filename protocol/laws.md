@@ -139,6 +139,7 @@ It applies admission to `prev`, then computes per-thing states over admitted rec
 | `view.no-resurrection` (things) | `admit_view`, `stateIn_view`, `stateIn_no_false_resurrection` | With an envelope-only admission rule, a view admits the same records and keeps each thing's heads in view form. A superseded record never becomes current within that thing. | `fold/view/*`, `spec/run/03` |
 
 Writing checks `prev` too: you can only replace what you hold. `emit` refuses an unheld `prev` target outside the batch (`prev-unknown`).
+It refuses an unheld `under` target the same way (`under-unknown`); whether the target is a grant is standing's question.
 It refuses an `of` naming a held record that is not a root (`of-not-root`).
 It also refuses a `prev` target of a different thing (`prev-unrelated`).
 
@@ -215,9 +216,9 @@ No law yet states the whole-view slot incrementally, and `admit.late` still boun
 
 | Law | Theorem | Says | Vectors |
 |---|---|---|---|
-| `batch.meaning` | `Meaning.unique` | An acyclic batch has at most one meaning. A label may stand in `about`, `of`, `prev` or `under`, and every one of them counts toward acyclicity. This does not prove resolver correctness. | `batch/01`–`03`, `26`, `32`, `33`, `65`, `66` |
-| `batch.refuse` | (by construction) | Duplicate, unknown and cyclic labels are refused, a label in `under` among them. So are drafts refused by `write`, unheld `prev` targets, an `of` naming a held record that is not a root, and `prev` targets of another thing. | `batch/10`–`17`, `27`–`31`, `34`–`38` |
-| `batch.refuse-order` | `envelopeKeysProblem_set`, `draftsShapeProblem_perm`, `firstRefusal_set`, `writeProblem_codes` | Across the batch: shape, then labels, then writing, then `prev-unknown`, then `of-not-root`, then `prev-unrelated`. Raw shape checks every envelope's keys, then that every envelope is an object, before any draft value, label or salt is decoded. Shape depends only on which envelopes there are, and writing's priority only on the refusal set; stage order is by construction, pinned by raw-input rotations. | `batch/15`, `16`, `18`–`22`, `38`, `40`–`64` |
+| `batch.meaning` | `Meaning.unique` | An acyclic batch has at most one meaning. A label may stand in `about`, `of`, `prev` or `under`, and every one of them counts toward acyclicity. This does not prove resolver correctness. | `batch/01`–`03`, `26`, `32`, `33`, `65`, `66`, `68`–`70` |
+| `batch.refuse` | (by construction) | Duplicate, unknown and cyclic labels are refused, a label in `under` among them. So are drafts refused by `write`, unheld `prev` targets, unheld `under` targets, an `of` naming a held record that is not a root, and `prev` targets of another thing. | `batch/10`–`17`, `27`–`31`, `34`–`38`, `67`, `71`–`75` |
+| `batch.refuse-order` | `envelopeKeysProblem_set`, `draftsShapeProblem_perm`, `firstRefusal_set`, `writeProblem_codes` | Across the batch: shape, then labels, then writing, then `prev-unknown`, then `under-unknown`, then `of-not-root`, then `prev-unrelated`. Raw shape checks every envelope's keys, then that every envelope is an object, before any draft value, label or salt is decoded. Shape depends only on which envelopes there are, and writing's priority only on the refusal set; stage order is by construction, pinned by raw-input rotations. | `batch/15`, `16`, `18`–`22`, `38`, `40`–`64`, `71`–`75` |
 
 `gen` checks batch vectors across draft rotations and reversed `prev` sets.
 Accepted variants must give the same records, one per draft, satisfying `Meaning`.

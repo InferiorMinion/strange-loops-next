@@ -128,6 +128,7 @@ Lens cases include escaped fences, empty IDs, repeated edited IDs, and duplicate
 Duplicate bases are domain-boundary probes, not valid-base law tests.
 Batch cases include held predecessors, standing references, and held revisions that are not roots.
 Some batches break one `of` rule: `of-missing`, `of-not-root` (by label or held), or `prev-unrelated`.
+Ten batch slots in 64 name an `under` target: unheld, a held root, a held revision, a batch member's raw id, or unheld beside an unheld `prev`, an `of` naming a held revision or a `prev` of another thing, in both orders.
 This is not exhaustive numeric or wire validation.
 
 ## Answers and refusals

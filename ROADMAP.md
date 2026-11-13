@@ -6,18 +6,19 @@ The tree has three implementations: Lean, JavaScript, and Rust.
 Step 1 applies the six settled rulings before records exist.
 All three implement the settled decisions D1–D6, and D8a and D8b.
 All three refuse every envelope shape by name (issue #1) and let a label stand in `under`.
+All three writers refuse an `under` target they do not hold (`under-unknown`).
 All three let count, sum, min and max follow `prev` (issue #3), and group count, sum, min, max and collect with `by` (issue #2).
 The law index has 92 entries, 829 theorems, and 6 boundary witnesses.
 See [the law index](design/laws/laws.json) and [proof and boundary data](design/laws/).
 These proofs apply only under their stated premises.
 
-The tree has 527 JSON fixtures: 515 generated fixtures and 12 standard fixtures.
-Lean replays 506 generated fixtures; 9 occurred fixtures use separate checks.
+The tree has 536 JSON fixtures: 524 generated fixtures and 12 standard fixtures.
+Lean replays 515 generated fixtures; 9 occurred fixtures use separate checks.
 Rust checks every fixture, six JCS byte pairs, 4,000 binary64 cases, and 128 SUPERCOP signing cases with ed25519-dalek.
-Rust passes 154 tests; JavaScript passes 6,358 vector checks and 36 regression and law tests.
+Rust passes 156 tests; JavaScript passes 6,438 vector checks and 36 regression and law tests.
 Both also check that `spec/run` answers write their members, group and thing keys included, in the model's order; JavaScript checks `fold/latest-by` answers' thing keys too.
 JavaScript refuses a held record's invalid `emitted` or `occurred` before it answers, as the Lean and Rust readers do.
-The fuzz suite passes 55 tests.
+The fuzz suite passes 56 tests.
 See [vectors](vectors/README.md), [Rust boundaries](rust/GAPS.md), and [the mutation report](model/mutate/REPORT.md).
 These checks provide bounded evidence, not complete JCS or cryptographic correctness.
 They do not certify browser accessibility, external links, or official ASD dictionary compliance.
@@ -29,22 +30,24 @@ Numeric folds read safe whole values only.
 Raw constructors and theorem premises retain separate domains.
 
 The gates pass locally on Node 25.9, and CI runs every gate on Node 22.
-The `issue-7-1` campaign, over the generator after issue #7, checks 5,600 cases, 800 per family, in 92.49 seconds.
-It reports 3,788 matches, 1,437 protocol refusals, 375 shared decoder refusals, and no mismatch.
-The `by-collect-1`, `by-shape-1`, `by-1`, `shape-follow-1`, `shape-under-2` and `follow-2` campaigns, each over an earlier generator, found no mismatch either.
+The `under-1` campaign, over the generator after `under-unknown`, checks 5,600 cases, 800 per family, in 90.70 seconds.
+It reports 3,776 matches, 1,477 protocol refusals, 347 shared decoder refusals, and no mismatch.
+Four wrong ports of the check in the JavaScript witness each give mismatches on the same seed: 60, 24, 24 and 25 in 800 batch cases.
+The `issue-7-1`, `by-collect-1`, `by-shape-1`, `by-1`, `shape-follow-1`, `shape-under-2` and `follow-2` campaigns, each over an earlier generator, found no mismatch either.
 Decoder refusals are not agreement; for record and batch inputs JavaScript must also report them as malformed.
-The generator carries issue #1's shapes and labels in `under`, followed count, sum, min and max slots, grouped slots, keys written as number text (issue #7), and an unknown key beside an envelope that is not an object, so the same seeds now generate different inputs; earlier campaigns' counts are historical.
+The generator carries issue #1's shapes and labels in `under`, followed count, sum, min and max slots, grouped slots, keys written as number text (issue #7), an unknown key beside an envelope that is not an object, and `under` targets held or not, so the same seeds now generate different inputs; earlier campaigns' counts are historical.
 The `d8ab-1` and `d1-d6-1` campaigns found no mismatch.
 The 42 duplicate-base lens mismatches of the `step1-3` campaign are the class D1 settles.
 `interop/fuzz/summarize.py` derives these counts from tracked summaries.
 See [the campaign report](interop/fuzz/REPORT.md) for the scripts and current and historical results.
 The CI seed `ci-1` checks 28 three-way cases without mismatches.
 
-The mutation catalogue has 236 entries, including six for the D1 and D2 definitions, nine for D8's `of`, nine for `follow` on count, sum, min and max, ten for issue #1's shapes and labels in `under`, and seven for `by`.
+The mutation catalogue has 240 entries, including six for the D1 and D2 definitions, nine for D8's `of`, nine for `follow` on count, sum, min and max, ten for issue #1's shapes and labels in `under`, seven for `by`, and four for `under-unknown`.
 Ten earlier entries are retargeted at `of` and the one thing it names, two at the `follow` grammar, and four at the shape stage and labels in `under`.
 It retires the redundant positive-offset guard under R4 and the entry for the deleted `stripZeros` family.
 The last full run covers the 210 entries before issue #1 and `follow`. After the merge, the 25 entries the two changes add or retarget, run alone with `--only`, give 17 build rejections, three vector differences and five generator assertions, and no survivor.
 The seven `by` entries, rerun alone on the tree merged with issue #1, give six build rejections and one vector difference, and no survivor.
+The four `under-unknown` entries, run alone, give three vector differences and one generator assertion, and no survivor.
 The full run reports 165 build rejections, 28 vector differences, 15 generator assertion exceptions, and 2 survivors.
 The runner exits 1 for assertion exceptions; no timeout or infrastructure failure occurs.
 Of the nine D8 entries, six fail the build, two change batch vectors, and one stops at a generator assertion.
@@ -59,7 +62,7 @@ See [the mutation report](model/mutate/REPORT.md) for outcomes, restoration chec
 ## Step 2: the first product slice
 
 `loops-place` and the `loops` CLI emit, read and fold for one person, signed, over `.loops/`.
-Stored lines match the model's record vectors byte for byte; 13 tests drive the place and the binary.
+Stored lines match the model's record vectors byte for byte; 14 tests drive the place and the binary.
 The layout, the CLI and their refusal codes are a working proposal, not protocol.
 [`rust/PLACE.md`](rust/PLACE.md) lists what is implemented and the nine choices made on the way.
 Two of them need the model: what a place is has no law, and a payload reaches a fold only as `value`, `n` and top-level fields.
@@ -289,9 +292,24 @@ A line's salt is read as the core reads one, so one that is not base32hex text i
 - A salt left out, not text, or not canonical base32hex is `salt-not-16-bytes`, in that check's place.
 - A batch draft that is not an object, an unknown draft member, a label that is not text, a draft without a payload, and a repeated envelope member name stay malformed input, with no code.
 
-**Implementer choices, confirmed by Kyle 2026-11-11.** The second is deferred, not settled for good: step 3 decides what a writer checks of an `under` target, and that the target is held is the least it should ask.
+**Implementer choice, confirmed by Kyle 2026-11-11.**
 - In JavaScript, a repeated envelope or draft member is seen only from raw text, in the fuzz adapter; the value APIs (`resolveBatch`, `writeRecord`, `seal`, `writeText`) cannot see one (`interop/js/README.md`).
-- A writer checks no `under` target beyond its shape: whether it names a held grant is left to standing (step 3), so `under` adds no batch refusal besides `label-unknown` and `label-cycle`.
+
+### `under` targets
+
+**Kyle, 2026-11-13:** "Let's take under targets now."
+This replaces the choice deferred on 2026-11-11, that a writer checks no `under` target beyond its shape.
+Kyle took margins-claude's view: a writer refuses an `under` target it does not hold, beside `prev-unknown`.
+**Built, 2026-11-13.** A new writer refusal, `under-unknown`: a record's `under` must name a record the writer holds, in the batch or in the store.
+It runs across the whole batch, after `prev-unknown` and before `of-not-root` and `prev-unrelated`, so no draft order changes the refusal.
+A batch member counts, named by its label or by its id.
+A stored record counts whatever its shown state: the writer holds an erased or withheld record's envelope.
+Nothing else about the target is checked. Whether it is a grant, of what kind and by whom, is still standing's question (step 3).
+Readers do not refuse on it, as they do not for `prev-unknown`.
+The batch writer and the CLI's single-record path check it against the same store lookup; there the CLI's own `prev-unknown` still comes first.
+`batch/67`–`75` pin it: an unheld target refused, a held root and a held revision accepted, a batch member's raw id and an erased target accepted, and the order beside `prev-unknown`, `of-not-root`, `prev-unrelated` and a writer refusal.
+No existing vector changed meaning: every earlier batch vector's `under` names a batch member by label.
+The CLI walk pins an erased and a withheld stored target.
 
 ### Retained boundaries
 

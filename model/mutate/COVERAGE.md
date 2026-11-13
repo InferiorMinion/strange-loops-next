@@ -11,6 +11,7 @@ D8 retargets ten entries at `of` and the one thing it names, and adds nine: 210 
 Following `prev` on count, sum, min and max retargets two entries (`wide-spec-069`, `coverage-spec-slotfollow`) and adds nine: 219 entries total.
 Issue #1 retargets four entries at the shape stage and labels in `under`, and adds ten: 229 entries total with both.
 `by` adds seven: 236 entries total with all three.
+`under-unknown` adds four: 240 entries total.
 The raw-reader ordering mutations target library definitions under `Loops`.
 The cheap runner uses those fourteen replacements and the four former D6 survivors.
 It requires runtime failures after successful builds.
@@ -52,7 +53,7 @@ The catalogue includes existing entries without definition metadata.
 - `Loops.Draft.ready`: covered by `wide-batch-005`
 - `Loops.resolveRounds`: covered by `wide-batch-006`
 - `Loops.envThing`: covered by `finish-batch-envthings`
-- `Loops.checkPrev`: covered by `finish-batch-checkprev`, `d8-of-not-root-skipped`, `d8-unrelated-ignores-target-of`
+- `Loops.checkPrev`: covered by `finish-batch-checkprev`, `d8-of-not-root-skipped`, `d8-unrelated-ignores-target-of`, `under-unknown-skipped`, `under-unknown-before-prev`, `under-unknown-after-of-not-root`, `under-unknown-store-only`
 - `Loops.resolveBatch`: covered by `wide-batch-007`
 
 ## model/Loops/Envelope.lean
