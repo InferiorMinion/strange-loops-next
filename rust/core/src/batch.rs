@@ -446,7 +446,7 @@ mod tests {
             ]);
             for drafts in [
                 vec![malformed.clone(), repeated.clone()],
-                vec![repeated.clone(), malformed.clone()],
+                vec![repeated, malformed.clone()],
             ] {
                 let called = Cell::new(false);
                 let result = read_all("drafts", &Json::Arr(drafts), || {
