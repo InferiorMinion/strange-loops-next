@@ -172,7 +172,7 @@
     "group": "Observers and standing",
     "status": "settled",
     "claim": "A label may stand in <code>under</code>.",
-    "why": "A changeset can create grant <code>@g</code> and act under it. <code>under</code> accepts labels, like <code>about</code>, <code>of</code> and <code>prev</code>, and participates in cycle detection. Historical standing plan: it names a grant held in the batch or store. Future standing checks decide whether that grant authorizes the act. A label grants no extra authority. Version 35."
+    "why": "A changeset can create grant <code>@g</code> and act under it. <code>under</code> accepts labels, like <code>about</code>, <code>of</code> and <code>prev</code>, and participates in cycle detection. A writer refuses an <code>under</code> target it doesn't hold, in the batch or the store (<code>under-unknown</code>; Kyle, 2026-11-13). Whether the target is a grant, and whether it authorizes the act, is for future standing checks. A label grants no extra authority. Version 35."
   },
   {
     "kind": "decision",

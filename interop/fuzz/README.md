@@ -17,7 +17,7 @@ node interop/fuzz/run.mjs --seed ci-1 --n 28 --out /tmp/fuzz-ci
 node interop/fuzz/run.mjs --rust --seed phase2-20261029 --n 5000 --out /tmp/fuzz-large
 node interop/fuzz/run.mjs --seed campaign-1 --n 1000 --family record --no-shrink
 node interop/fuzz/run.mjs --rust --replay /tmp/fuzz-large/mismatches/000000.json --out /tmp/fuzz-replay
-node interop/fuzz/run.mjs --rust --seed issue-7-1 --n 5600 --shrink-trials 80 --out rust/target/scratch/fuzz-issue-7-1
+node interop/fuzz/run.mjs --rust --seed under-1 --n 5600 --shrink-trials 80 --out rust/target/scratch/fuzz-under-1
 node interop/fuzz/run.mjs --rust --replay vectors/lens/section/d1-duplicate-base-id.json --out /tmp/fuzz-duplicate-base
 ```
 
@@ -25,7 +25,7 @@ An explicit output directory must be empty.
 Without `--out`, the runner creates an artifact directory under the system temporary directory.
 It prints that path with the summary.
 Exit codes are 0 for agreement, 1 for disagreements, and 2 for infrastructure or CLI errors.
-[REPORT.md](REPORT.md) records the campaign over the generator after issue #7, which finds no mismatch.
+[REPORT.md](REPORT.md) records the campaign over the generator after `under-unknown`, which finds no mismatch.
 Earlier campaigns' counts are historical: the generator changed, so the same seeds now generate different inputs.
 It marks earlier campaign results as historical, including the 42 duplicate-base lens mismatches D1 settles.
 
@@ -128,6 +128,7 @@ Lens cases include escaped fences, empty IDs, repeated edited IDs, and duplicate
 Duplicate bases are domain-boundary probes, not valid-base law tests.
 Batch cases include held predecessors, standing references, and held revisions that are not roots.
 Some batches break one `of` rule: `of-missing`, `of-not-root` (by label or held), or `prev-unrelated`.
+Ten batch slots in 64 name an `under` target: unheld, a held root, a held revision, a batch member's raw id, or unheld beside an unheld `prev`, an `of` naming a held revision or a `prev` of another thing, in both orders.
 This is not exhaustive numeric or wire validation.
 
 ## Answers and refusals

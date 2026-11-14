@@ -34,10 +34,11 @@ loops whoami
   `.git`; exit 0 ok, 1 refused with its code, 2 usage, and 3 when the file
   system or the system's randomness fails.
 * Every write goes through `batch::resolve_batch`, so one record and a
-  labelled changeset meet the same checks, `prev-unknown`, `of-not-root` and
-  `prev-unrelated` included. The batch check reads a held record's `of` and
-  `prev` from its stored envelope (`Held::writer_view`). A changeset writes
-  nothing unless every draft is taken.
+  labelled changeset meet the same checks, `prev-unknown`, `under-unknown`,
+  `of-not-root` and `prev-unrelated` included. The batch check reads a held
+  record's `of` and `prev` from its stored envelope (`Held::writer_view`), so
+  a record whose payload is erased or withheld is held as any other. A
+  changeset writes nothing unless every draft is taken.
 * An id can be given by any prefix that names one held record, in `--prev`,
   `--erases`, `--under`, `--of` and the `of` verb. A thing with a colon that is not
   `r:` is a natural key, taken as typed.
@@ -147,7 +148,8 @@ a torn last line, an altered segment, and the batch check's view of held
 records (`of-not-root`, and `about` making no head). `rust/cli/tests/walk.rs`
 drives the binary: emit, revise, fork, fold, erase; a labelled changeset and its
 refusals; `of` filled in for a revision, `--of`, and `of-not-root` and
-`prev-unrelated` against the store; a mention making no head; two stores
+`prev-unrelated` against the store; `under-unknown`, and an erased and a
+withheld `under` target held; a mention making no head; two stores
 converging; exit codes. Expected answers come from the
 vectors or from the walk's own statements, not from the code.
 

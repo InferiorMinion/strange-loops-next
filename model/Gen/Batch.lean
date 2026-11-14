@@ -153,6 +153,28 @@ def chainC := draft (some "@c") "batch-chain-c"
 def chainCAbout := draft (some "@c") "batch-chain-ca"
   { kind := "note", observer := kyle, emitted := at0, about := ["@m"] } (.obj [("body", .str "about it")])
 
+-- An `under` target must be held, in the batch or the store, as a `prev`
+-- target must. Nothing else about it is checked: the held revision is no
+-- grant, and the raw id of a batch member counts as a label does.
+def underUnheld := draft none "batch-uh"
+  { kind := "note", observer := kyle, emitted := at0, about := ["topic:auth"], under := some grantId }
+  (.obj [("body", .str "acting on a grant nobody holds")])
+def underHeldRoot := draft none "batch-uhr"
+  { kind := "note", observer := kyle, emitted := at0, about := ["topic:auth"], under := some heldAuthId }
+  (.obj [("body", .str "acting under a held root")])
+def underHeldRevision := draft none "batch-uhv"
+  { kind := "note", observer := kyle, emitted := at0, about := ["topic:auth"], under := some heldRevisionId }
+  (.obj [("body", .str "acting under a held revision")])
+def decide1Id : String := idOf H decide1.env (decide1.commit H)
+def underBatchId := draft none "batch-ubi"
+  { kind := "note", observer := kyle, emitted := at0, about := ["topic:auth"], under := some decide1Id }
+  (.obj [("body", .str "acting under a batch member by its id")])
+-- an unheld `prev` and an unheld `under` in one draft
+def unknownBoth := draft none "batch-ub2"
+  { kind := "decision", observer := kyle, emitted := at0, of := some grantId, prev := [grantId],
+    under := some grantId }
+  (.obj [])
+
 structure Case where
   name : String
   laws : List String
@@ -192,7 +214,21 @@ def cases : List Case := [
   ⟨"37-cycle-through-under-and-prev", ["batch.refuse"], [mixedA, mixedB]⟩,
   ⟨"38-under-label-before-write", ["batch.refuse", "batch.refuse-order"], [underUnknown, badKind]⟩,
   ⟨"65-chain-under", ["batch.meaning"], [chainC, chainM, chainG]⟩,
-  ⟨"66-chain-under-then-about", ["batch.meaning"], [chainCAbout, chainM, chainG]⟩
+  ⟨"66-chain-under-then-about", ["batch.meaning"], [chainCAbout, chainM, chainG]⟩,
+  ⟨"67-under-unknown", ["batch.refuse"], [underUnheld]⟩,
+  ⟨"68-under-held", ["batch.meaning"], [underHeldRoot, underHeldRevision]⟩,
+  ⟨"69-under-batch-id", ["batch.meaning"], [decide1, underBatchId]⟩,
+  ⟨"70-under-erased-in-batch", ["batch.meaning"], [eraseHeld, underHeldRoot]⟩,
+  ⟨"71-prev-unknown-before-under-unknown", ["batch.refuse", "batch.refuse-order"],
+    [underUnheld, unknownPrev]⟩,
+  ⟨"72-prev-unknown-before-under-unknown-one-draft", ["batch.refuse", "batch.refuse-order"],
+    [unknownBoth]⟩,
+  ⟨"73-under-unknown-before-of-not-root", ["batch.refuse", "batch.refuse-order"],
+    [ofHeldRevision, underUnheld]⟩,
+  ⟨"74-under-unknown-before-prev-unrelated", ["batch.refuse", "batch.refuse-order"],
+    [decide1, unrelated, underUnheld]⟩,
+  ⟨"75-write-before-under-unknown", ["batch.refuse", "batch.refuse-order"],
+    [bigNumber, underUnheld]⟩
 ]
 
 /-- In the chains, `@c` names the id of `@m`'s envelope with `@g`'s id in place

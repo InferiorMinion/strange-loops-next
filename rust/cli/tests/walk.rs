@@ -535,6 +535,93 @@ fn a_revision_is_of_what_it_replaces_and_the_store_decides_of_not_root() {
 }
 
 #[test]
+fn an_under_target_is_held_whatever_its_shown_state() {
+    let s = Store::new("under");
+    let grant = s.ok(&["emit", "grant", "to wren"]);
+    let missing = "r:0000000000000000000000000000000000000000000000000000";
+    // A held target, by its id or a prefix, in one record or a changeset.
+    let acting = s.ok(&["emit", "note", "--under", &grant[2..12], "acting"]);
+    assert_eq!(text(&s.json(&["get", &acting]), &["env", "under"]), grant);
+    s.ok_with(
+        &["emit", "-"],
+        &format!("{{\"kind\":\"note\",\"under\":\"{grant}\"}}\n"),
+    );
+    // A target nobody here holds is refused, and nothing is written.
+    let held = s.ok(&["export"]);
+    assert_eq!(
+        s.fails(&["emit", "note", "--under", missing, "x"], ""),
+        (1, "refused: under-unknown".into())
+    );
+    for (bad, code) in [
+        (
+            r#"{"kind":"note","under":"r:0000000000000000000000000000000000000000000000000000"}"#,
+            "under-unknown",
+        ),
+        // An unheld `prev` outranks an unheld `under`, on one line or two, in either order.
+        (
+            r#"{"kind":"note","of":"thing:x","prev":["r:0000000000000000000000000000000000000000000000000000"],"under":"r:0000000000000000000000000000000000000000000000000000"}"#,
+            "prev-unknown",
+        ),
+        (
+            "{\"kind\":\"note\",\"under\":\"r:0000000000000000000000000000000000000000000000000000\"}\n{\"kind\":\"note\",\"of\":\"thing:x\",\"prev\":[\"r:0000000000000000000000000000000000000000000000000000\"]}",
+            "prev-unknown",
+        ),
+        (
+            "{\"kind\":\"note\",\"of\":\"thing:x\",\"prev\":[\"r:0000000000000000000000000000000000000000000000000000\"]}\n{\"kind\":\"note\",\"under\":\"r:0000000000000000000000000000000000000000000000000000\"}",
+            "prev-unknown",
+        ),
+        // And an unheld `under` outranks `of-not-root`, in either order.
+        (
+            "{\"kind\":\"note\",\"under\":\"r:0000000000000000000000000000000000000000000000000000\"}\n{\"label\":\"@a\",\"kind\":\"note\",\"of\":\"thing:x\"}\n{\"kind\":\"note\",\"of\":\"@a\"}",
+            "under-unknown",
+        ),
+        (
+            "{\"label\":\"@a\",\"kind\":\"note\",\"of\":\"thing:x\"}\n{\"kind\":\"note\",\"of\":\"@a\"}\n{\"kind\":\"note\",\"under\":\"r:0000000000000000000000000000000000000000000000000000\"}",
+            "under-unknown",
+        ),
+    ] {
+        assert_eq!(
+            s.fails(&["emit", "-"], &format!("{bad}\n")),
+            (1, format!("refused: {code}")),
+            "{bad}"
+        );
+    }
+    // On this path the CLI's own prev-unknown still comes first.
+    assert_eq!(
+        s.fails(
+            &["emit", "note", "--under", missing, "--prev", missing, "x"],
+            ""
+        ),
+        (1, "refused: prev-unknown".into())
+    );
+    assert_eq!(s.ok(&["export"]), held);
+    // What the target is is not checked: a note is as good as a grant here.
+    s.ok(&["emit", "note", "--under", &acting, "under a note"]);
+
+    // An erased target is still held: its envelope is.
+    let erased = s.ok(&["emit", "grant", "to kyle"]);
+    s.ok(&["erase", &erased]);
+    s.ok(&["emit", "note", "--under", &erased, "under an erased grant"]);
+
+    // So is a withheld one: a store holding the erased line without its eraser.
+    let other = Store::new("under-withheld");
+    let line = s
+        .ok(&["export"])
+        .lines()
+        .find(|line| line.contains(&erased[2..]) && !line.contains("\"erasure\""))
+        .expect("the erased line")
+        .to_owned();
+    other.ok_with(&["import"], &format!("{line}\n"));
+    let withheld = other.ok(&["get", &erased]);
+    assert!(withheld.contains(&erased) && !withheld.contains("\"payload\""));
+    other.ok(&["emit", "note", "--under", &erased, "under a withheld grant"]);
+    other.ok_with(
+        &["emit", "-"],
+        &format!("{{\"kind\":\"note\",\"under\":\"{erased}\"}}\n"),
+    );
+}
+
+#[test]
 fn two_stores_converge_by_export_and_import() {
     let (a, b) = (Store::new("sync-a"), Store::new("sync-b"));
     let thing = "repo:strange-loops";

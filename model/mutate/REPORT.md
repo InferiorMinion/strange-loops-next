@@ -1,5 +1,24 @@
 # Lean model mutation report
 
+## `under-unknown`: the four new entries, at `9b5f552`
+
+The catalogue has 240 entries: 236 and four that mutate the new `under-unknown` check in `Loops.checkPrev`.
+The full catalogue is not rerun. Node 25.9 runs only the four new entries, with `--only`, in one run, with the default 180-second timeout.
+
+| Entry | Wrong rule | Outcome | Where |
+|---|---|---|---|
+| `under-unknown-skipped` | an unheld `under` target is accepted | killed by vector | `batch/67`, `73`, `74` |
+| `under-unknown-before-prev` | `under-unknown` checked before `prev-unknown` | killed by vector | `batch/71`, `72` |
+| `under-unknown-after-of-not-root` | `under-unknown` checked after `of-not-root` | killed by vector | `batch/73` |
+| `under-unknown-store-only` | an `under` target looked up in the store only | generator assertion | `batch/65-chain-under: under-unknown` |
+
+No entry survives.
+`under-unknown-store-only` stops at the generator's own check of the `under` chain in `batch/65`.
+Applied by hand, with the replay checker (`lake exe run --check`), it changes `batch/33`, `65`, `66` and `69`, each of which has a draft under a batch member; the source was then restored and the baseline rebuilt.
+The runner exits 1 for the generator assertion; no timeout or infrastructure failure occurs.
+It restored the source after each entry and rebuilt the baseline at the end.
+Raw results and logs were kept under the ignored `rust/target/scratch` and deleted once this summary was written.
+
 ## `by` on a followed collect: the `by` entries, at `9e07995`
 
 `by` now groups collect that follows `prev`, so `by-on-followed-collect` no longer names a wrong rule.

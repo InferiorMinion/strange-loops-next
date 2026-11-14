@@ -114,6 +114,8 @@ pub enum Error {
     Write(stored::Error),
     /// A prev target is absent from the batch and held store.
     PrevUnknown,
+    /// An under target is absent from the batch and held store.
+    UnderUnknown,
     /// An `of` names a held record that is not a root.
     OfNotRoot,
     /// A prev target is of a different thing from the record.
@@ -130,6 +132,7 @@ impl Error {
             Self::LabelCycle => "label-cycle",
             Self::Write(error) => error.code(),
             Self::PrevUnknown => "prev-unknown",
+            Self::UnderUnknown => "under-unknown",
             Self::OfNotRoot => "of-not-root",
             Self::PrevUnrelated => "prev-unrelated",
         }
@@ -301,10 +304,13 @@ pub fn env_thing<'a>(id: &'a str, of: Option<&'a str>) -> &'a str {
 
 /// Lean: `Loops.checkPrev`, model/Loops/Batch.lean.
 /// Looks a target up in the batch before the held lookup. Checks every
-/// unknown prev target first, then every `of` that names a held non-root,
-/// then every prev target of another thing, each across the whole batch.
+/// unknown prev target first, then every unknown under target, then every
+/// `of` that names a held non-root, then every prev target of another thing,
+/// each across the whole batch. An under target is only looked up: what it
+/// is, a grant or not, is standing's question.
 /// # Errors
-/// Returns prev-unknown for an absent target, then of-not-root, then prev-unrelated.
+/// Returns prev-unknown for an absent prev target, then under-unknown for an
+/// absent under target, then of-not-root, then prev-unrelated.
 pub fn check_prev(
     h: &impl Fn(&[u8]) -> Vec<u8>,
     held: &impl Fn(&str) -> Option<Held>,
@@ -332,6 +338,12 @@ pub fn check_prev(
         .any(|r| r.env.prev.iter().any(|p| target(p).is_none()))
     {
         return Err(Error::PrevUnknown);
+    }
+    if rs
+        .iter()
+        .any(|r| r.env.under.iter().any(|u| target(u).is_none()))
+    {
+        return Err(Error::UnderUnknown);
     }
     if rs.iter().any(|r| {
         r.env
@@ -377,7 +389,7 @@ fn writer_priority(error: stored::Error) -> u8 {
 /// Resolves labels, writes checked records, and checks prev targets while preserving the original draft order.
 /// # Errors
 /// Checks duplicate labels, unknown labels, cycles, global writer priority, unknown prev targets,
-/// an `of` naming a held non-root, then prev targets of another thing.
+/// unknown under targets, an `of` naming a held non-root, then prev targets of another thing.
 pub fn resolve_batch(
     h: &impl Fn(&[u8]) -> Vec<u8>,
     held: &impl Fn(&str) -> Option<Held>,
@@ -1104,6 +1116,71 @@ mod tests {
     }
 
     #[test]
+    fn an_under_target_is_held_after_prev_unknown_and_before_the_rest() {
+        let held_id = format!("r:{}", crate::base32::base32(&[0; 32]));
+        let missing_id = format!("r:{}", crate::base32::base32(&[1; 32]));
+        // A held revision: not a root and no grant, but held, which is all `under` asks.
+        let held = |p: &str| {
+            (p == held_id).then(|| Held {
+                of: Some("thing:held".into()),
+                prev: texts(&["r:p"]),
+            })
+        };
+        let mut under_held = draft(None);
+        under_held.env.under = Some(held_id.clone());
+        assert!(resolve_batch(&hash, &held, std::slice::from_ref(&under_held)).is_ok());
+        let mut under_missing = draft(None);
+        under_missing.env.under = Some(missing_id.clone());
+        assert_eq!(
+            resolve_batch(&hash, &held, std::slice::from_ref(&under_missing)),
+            Err(Error::UnderUnknown)
+        );
+        // The raw id of a batch member is held, in either order.
+        let member = draft(Some("@m"));
+        let mut under_member = draft(None);
+        under_member.env.under = Some(stored::id_of(&hash, &member.env, &member.commit(&hash)));
+        under_member.payload = Json::Str("under a member".into());
+        for ds in [
+            [member.clone(), under_member.clone()],
+            [under_member, member],
+        ] {
+            assert!(resolve_batch(&hash, &no_held, &ds).is_ok());
+        }
+        let mut unknown_prev = draft(None);
+        unknown_prev.env.of = Some("thing:other".into());
+        unknown_prev.env.prev = vec![missing_id.clone()];
+        let mut not_root = draft(None);
+        not_root.env.of = Some(held_id.clone());
+        not_root.payload = Json::Str("not a root".into());
+        let mut unrelated = draft(None);
+        unrelated.env.of = Some("thing:other".into());
+        unrelated.env.prev = vec![held_id.clone()];
+        unrelated.payload = Json::Str("unrelated".into());
+        for ds in [
+            [under_missing.clone(), unknown_prev.clone()],
+            [unknown_prev, under_missing.clone()],
+        ] {
+            assert_eq!(resolve_batch(&hash, &held, &ds), Err(Error::PrevUnknown));
+        }
+        for other in [not_root, unrelated] {
+            for ds in [
+                [under_missing.clone(), other.clone()],
+                [other, under_missing.clone()],
+            ] {
+                assert_eq!(resolve_batch(&hash, &held, &ds), Err(Error::UnderUnknown));
+            }
+        }
+        // One draft with both: prev-unknown.
+        let mut both = under_missing;
+        both.env.of = Some(missing_id.clone());
+        both.env.prev = vec![missing_id];
+        assert_eq!(
+            resolve_batch(&hash, &held, &[both]),
+            Err(Error::PrevUnknown)
+        );
+    }
+
+    #[test]
     fn batch_lookup_finds_a_root_and_hash_has_no_size_constraint() {
         let constant = |_: &[u8]| vec![];
         let root = draft(None);
@@ -1130,6 +1207,7 @@ mod tests {
             (Error::LabelUnknown, "label-unknown"),
             (Error::LabelCycle, "label-cycle"),
             (Error::PrevUnknown, "prev-unknown"),
+            (Error::UnderUnknown, "under-unknown"),
             (Error::OfNotRoot, "of-not-root"),
             (Error::PrevUnrelated, "prev-unrelated"),
         ] {

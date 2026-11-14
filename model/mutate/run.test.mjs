@@ -10,9 +10,9 @@ import { merge } from './merge.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
-test('catalogue keeps 236 unique mutations at current source sites; listing does not mutate', async () => {
+test('catalogue keeps 240 unique mutations at current source sites; listing does not mutate', async () => {
   const catalogue = JSON.parse(await readFile(path.join(here, 'mutants.json'), 'utf8'));
-  assert.equal(catalogue.length, 236);
+  assert.equal(catalogue.length, 240);
   assert.ok(!catalogue.some(m => ['finish-occurred-stamp-of', 'wide-time-094'].includes(m.id)));
   for (const id of ["wide-families-013","wide-spec-064","extra-families-max-acc","extra-families-min-acc","finish-json-hexdigit","last-spec-tests-conds"]) {
     assert.ok(catalogue.some(m => m.id === id), id);
@@ -36,7 +36,8 @@ test('shards are disjoint, cover the selection in catalogue order, and refuse a 
   const ids = r => r.stdout.trim().split('\n').map(line => line.split('\t')[0]);
   const all = ids(list());
   const shards = [1, 2, 3].map(i => ids(list('--shard', `${i}/3`)));
-  assert.deepEqual(shards.map(s => s.length), [79, 79, 78]);
+  // Every third entry: the sizes differ by at most one, whatever the catalogue holds.
+  assert.deepEqual(shards.map(s => s.length), [0, 1, 2].map(i => Math.ceil((all.length - i) / 3)));
   assert.deepEqual(all.map((_, at) => shards[at % 3][Math.floor(at / 3)]), all);
   assert.deepEqual(ids(list('--shard', '1/1')), all);
   const only = all.slice(0, 5);

@@ -240,6 +240,10 @@ fn shown_line(held: &Held, record: &Record) -> Option<Json> {
     })
 }
 
+/// Every write, one record or a changeset, goes through the batch writer,
+/// against what this store holds: an unheld `prev` target is `prev-unknown`
+/// and an unheld `under` target `under-unknown`. A record whose payload is
+/// erased or withheld is held (`Held::writer_view` reads its envelope).
 fn write_changeset(
     place: &Dir,
     held: &Held,

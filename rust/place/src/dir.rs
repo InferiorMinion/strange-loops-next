@@ -271,8 +271,9 @@ impl Held {
     }
     /// What a writer reads of a held record, from its stored envelope: its
     /// `of` and its `prev` (Lean `Loops.Held`, model/Loops/Batch.lean). This
-    /// is the lookup the batch check takes, so `of-not-root` and
-    /// `prev-unrelated` are decided against the store.
+    /// is the lookup the batch check takes, so `prev-unknown`,
+    /// `under-unknown`, `of-not-root` and `prev-unrelated` are decided against
+    /// the store. A record whose payload is erased or withheld is held.
     pub fn writer_view(&self, id: &str) -> Option<batch::Held> {
         self.line(id).map(|line| batch::Held {
             of: line.env().of.clone(),

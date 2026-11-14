@@ -139,6 +139,11 @@ test("a label may stand in under, and takes part in cycles", () => {
   assert.deepEqual(resolveBatch([d(null, { under: "@nowhere" })], []), { refused: "label-unknown" });
   assert.deepEqual(resolveBatch([d("@a", { under: "@b" }), d("@b", { under: "@a" })], []), { refused: "label-cycle" });
   assert.deepEqual(resolveBatch([d("@s", { under: "@s" })], []), { refused: "label-cycle" });
+  // An `under` target is held, in the batch or in what is held, whatever it is.
+  const target = records[0].id;
+  assert.deepEqual(resolveBatch([d(null, { under: target })], []), { refused: "under-unknown" });
+  assert.equal(resolveBatch([d(null, { under: target })], [{ id: target, prev: [] }]).records.length, 1);
+  assert.equal(resolveBatch([d(null, { under: target }), d("@g", { kind: "grant" })], []).records.length, 2);
   // erases still takes no label: one there is no record id
   assert.deepEqual(resolveBatch([d("@g", {}), d(null, { erases: ["@g"] })], []), { refused: "erases-not-record-id" });
   // a draft's envelope left out or not an object is a shape refusal, before labels

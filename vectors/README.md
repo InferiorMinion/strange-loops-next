@@ -113,7 +113,8 @@ Collect counts unread candidates before applying its limit.
 Each draft has an optional `label` (`@name`), an envelope, a `salt` and a payload.
 `about`, `of`, `prev` and `under` may use labels; `erases` may not.
 `input.held` lists store-held records: each `id`, its `of` when it has one, and its `prev`.
-Writers require every `prev` target in the batch or held store state.
+Writers require every `prev` and `under` target in the batch or held store state.
+A batch member counts by its label or its id; a `held` entry carries no shown state, so an erased or withheld record is held like any other.
 Readers can admit unknown targets because they cannot judge them.
 
 `expect.records` gives ids and canonical envelopes in draft order, with labels replaced by ids.
@@ -124,7 +125,8 @@ A field left out or of the wrong JSON type, and a `salt` that is not base32hex t
 A payload number past binary64's range is a writer refusal, `number-out-of-range`, ranked with the others.
 Label checks follow: `label-duplicate`, `label-unknown`, then `label-cycle`.
 Next come writer codes from `kind-empty`, in `protocol/record.md` order across every draft.
-Finally, `prev-unknown`, `of-not-root` and `prev-unrelated` run, in that order, across the whole batch.
+Finally, `prev-unknown`, `under-unknown`, `of-not-root` and `prev-unrelated` run, in that order, across the whole batch.
+`under-unknown` refuses an `under` naming a record the writer holds neither in the batch nor in `held`; nothing else about the target is checked.
 `of-not-root` refuses an `of` naming a record the writer holds, in the batch or `held`, that is not a root: one with `of` or `prev`.
 `prev-unrelated` refuses a `prev` naming a held record of another thing.
 Every draft order and `prev` order gives the same records or refusal.

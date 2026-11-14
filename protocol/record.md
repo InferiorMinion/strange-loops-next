@@ -68,7 +68,7 @@ So `{"observer": 7}` is refused with `kind-empty`, and `{"kind": "note", "observ
 Text comes second: every string and member name is Unicode scalar values.
 A lone UTF-16 surrogate, in a value or a member name, is refused with `string-not-unicode`.
 This check follows raw shape and precedes every check from `kind-empty` on, including the salt.
-For a batch, the stages are shape, then labels, then writing, then `prev-unknown`, then `of-not-root`, then `prev-unrelated`.
+For a batch, the stages are shape, then labels, then writing, then `prev-unknown`, then `under-unknown`, then `of-not-root`, then `prev-unrelated`.
 A batch given as values that can hold a lone surrogate checks text after shape and before labels.
 The typed writer starts at `kind-empty`; its envelope type cannot contain unknown fields.
 Several equivalent envelope variants remain valid when every variant passes shape checks.
@@ -106,11 +106,15 @@ A draft's envelope that is not an object, or a draft without one, is refused wit
 A draft that is not an object, an unknown draft member, a label that is not text and a draft without a payload are malformed input, with no refusal code.
 The shape stage reads the envelopes of every draft that is an object and keeps priority: a batch is malformed input only when no envelope refuses there.
 The writer then checks what each record names, across the whole batch.
-It checks no `under` target beyond its shape: whether it names a grant is standing's question.
 A `prev` target must be in the batch or the store (`prev-unknown`).
+An `under` target must be in the batch or the store too (`under-unknown`).
+A record of the batch counts, named by its label or by its id.
+A stored record counts whatever its shown state: the writer holds an erased or withheld record's envelope.
+Nothing else about an `under` target is checked: whether it names a grant, of what kind and by whom, is standing's question.
 An `of` that names a record the writer holds, in the batch or the store, must name a root (`of-not-root`).
 A `prev` target must be of the record's thing (`prev-unrelated`).
 A reader checks only the last, against the records it holds, as admission above.
+No reader refuses an unheld `prev` or `under` target.
 
 The whole order, for a record given as an envelope, a salt and a payload:
 `envelope-field-unknown`, `envelope-not-object`, `string-not-unicode`, the envelope codes from `kind-empty`,

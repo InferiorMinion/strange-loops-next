@@ -2,12 +2,62 @@
 
 ## Scope
 
-This report covers the JS, Lean, and Rust campaign over the generator after issue #7, which adds keys written as number text and an unknown key beside an envelope that is not an object.
-It also preserves the `by-collect-1`, `by-shape-1`, `shape-follow-1` and `by-1` campaigns, the two issue #1 campaigns, the `follow-2` campaign, the D8a and D8b campaign, the D1–D6 campaign, the Step-1 campaign and earlier two-way campaigns as historical findings.
-Their counts are historical: the generator changed with D8, with issue #1, with `follow`, with `by` and with issue #7, so the same seeds now generate different inputs.
+This report covers the JS, Lean, and Rust campaign over the generator after the writer came to refuse an `under` target it does not hold (`under-unknown`).
+It also preserves the `issue-7-1`, `by-collect-1`, `by-shape-1`, `shape-follow-1` and `by-1` campaigns, the two issue #1 campaigns, the `follow-2` campaign, the D8a and D8b campaign, the D1–D6 campaign, the Step-1 campaign and earlier two-way campaigns as historical findings.
+Their counts are historical: the generator changed with D8, with issue #1, with `follow`, with `by`, with issue #7 and with `under-unknown`, so the same seeds now generate different inputs.
 The harness covers record, fold, spec, realm, scenario, batch, and lens inputs.
 
-## Issue #7: three-way campaign
+## `under-unknown`: three-way campaign
+
+Source commit: `f856072`, after the generator learned the `under` target slots.
+Node 25.9 checks 5,600 cases with seed `under-1`: 800 cases per family.
+The run uses 88 chunks and takes 90.70 seconds.
+Exit 0: no implementation disagrees on any case.
+The retained [summary](evidence/under-1/summary.json) supports these counts.
+Run `python3 interop/fuzz/summarize.py report` from the repository root.
+
+| Family | Cases | Match | Protocol refusal | Shared decoder refusal | Mismatch |
+|---|---:|---:|---:|---:|---:|
+| record | 800 | 100 | 673 | 27 | 0 |
+| fold | 800 | 702 | 0 | 98 | 0 |
+| spec | 800 | 710 | 41 | 49 | 0 |
+| realm | 800 | 719 | 0 | 81 | 0 |
+| scenario | 800 | 720 | 0 | 80 | 0 |
+| batch | 800 | 257 | 531 | 12 | 0 |
+| lens | 800 | 568 | 232 | 0 | 0 |
+| Total | 5,600 | 3,776 | 1,477 | 347 | 0 |
+
+All 347 decoder refusals occur in both Lean and Rust.
+For the record and batch families JavaScript is called on them too and throws, so the 27 record and 12 batch ones are all three agreeing that the input is malformed, which is still not protocol agreement.
+No reduction runs, because no mismatch exists.
+The [mismatch list](evidence/under-1/d1-mismatches.json) keeps the historical D1 example and holds no case.
+
+Batch slots 42 to 51 of 64 each schedule one `under` case, so 12 of the 800 batch cases fall in each.
+The held store has a root and a revision of it.
+A draft stands under a target nobody holds, under the held root, under the held revision, which is no grant, or under the raw id of the first draft, a member of the same batch.
+A draft under an unheld target stands beside one with an unheld `prev`, beside one whose `of` names the held revision, and beside one whose `prev` names a record of another thing, each in both draft orders.
+The first answers `under-unknown`; the next three are written; then `prev-unknown` twice and `under-unknown` four times.
+Each wrong port was made in the JavaScript witness, run two-way on the same seed over the 800 batch cases with `--family batch --no-shrink`, and reverted; the correct witness gives no mismatch there.
+
+| Wrong port | Mismatches | Slots |
+|---|---:|---|
+| No `under-unknown` check | 60 | the unheld target, and beside `of-not-root` and `prev-unrelated` in both orders |
+| Checked after `of-not-root` | 24 | beside `of-not-root`, both orders |
+| Checked before `prev-unknown` | 24 | beside `prev-unknown`, both orders |
+| Batch members not counted as held | 25 | the raw id of a batch member (12) and issue #1's label in `under` (13) |
+
+The generator before this change gives no mismatch for the first three; it never names an unheld `under` target.
+Raw logs and per-case files were written under the ignored `rust/target/scratch` and deleted after the summary was recorded.
+
+```sh
+node interop/fuzz/run.mjs --rust --seed under-1 --n 5600 --shrink-trials 80 --out rust/target/scratch/fuzz-under-1
+python3 interop/fuzz/summarize.py campaign rust/target/scratch/fuzz-under-1 under-1
+```
+
+## HISTORICAL Issue #7: three-way campaign
+
+This campaign predates the `under` target slots; the generator changed after it.
+
 
 Source commit: `f4b3b46`, after the generator learned issue #7's two wrong ports.
 Node 25.9 checks 5,600 cases with seed `issue-7-1`: 800 cases per family.
