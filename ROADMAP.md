@@ -271,10 +271,9 @@ D8c, declared keys, is not built, and the keyed fold's slice law is not stated.
 
 ### D8c: declared keys, design note
 
-**Draft by margins-claude, 2026-11-11, for Kyle's rulings before any code.** Nothing here is built.
-Kyle ruled on 2026-11-13; each choice he confirmed is marked **Ruled**.
-One is still **Open**: how a slot that follows `keys` reads a thing's envelope (section 3), which he sent to a consult.
-The experiments and proofs are in the margins repo: `sl-py/keyfold.py`, `keyslice.py`, `keygap.py`, `keyanchor.py`, `keyslice_anchored.py` and `lean/Convex.lean`.
+**By margins-claude, drafted 2026-11-11 for Kyle's rulings before any code.** Nothing here was built when he ruled.
+Kyle ruled on 2026-11-13, and on 2026-11-14, after a consult, on how a slot that follows `keys` reads a thing's envelope (section 3). Every choice is marked **Ruled**; none is open.
+The experiments and proofs are in the margins repo: `sl-py/keyfold.py`, `keyslice.py`, `keygap.py`, `keyanchor.py`, `keyslice_anchored.py`, `keyenv.py` and `lean/Convex.lean`.
 
 **The problem.** Once an emit sets only some keys, a thing's state is the merge of its live setters, not one head's payload.
 `where`, `by`, the numeric folds and the slots that follow `prev` all read one record's payload.
@@ -282,7 +281,8 @@ With anchored writers the head of a task is often the emit that last changed its
 
 **Terms.** A record *sets* key `k` when `k` is in its `sets`, or when it has no `sets` (a whole-read emit, which sets every key).
 A setter of `k` is *live for `k`* when no admitted descendant of it over `prev` sets `k`.
-A record is *live* when it is live for some key.
+Every record sets the envelope, whatever its `sets`. A record is live for the envelope when no admitted record of its thing is above it over `prev`: it is a head.
+A record is *live* when it is live for some key, the envelope among them. So every head is live, a pure join too.
 For a thing with only whole-read emits, the live records are its heads.
 
 #### 1. `sets` in the envelope
@@ -303,12 +303,13 @@ For a thing with only whole-read emits, the live records are its heads.
 `follow` names how supersession is read. `"prev"` reads a thing as its heads; `"keys"` reads it as its live setters.
 Both readings are wanted, so a spec says which; `follow-invalid` refuses any other value.
 
-The result, per thing, gives the live setters of each key some live record declares, and the live whole-read emits.
+The result, per thing, gives the live setters of each key some live record declares, the live whole-read emits, and the heads.
 Here `W` and `W2` are whole-read, `B` sets `status` from `W`, and `W2` is concurrent with `B`:
 
 ```json
 {"things": {"task:1": {"keys": {"status": [{"id": "r:W2", "shown": "here"}, {"id": "r:B", "shown": "withheld"}]},
-                       "whole": [{"id": "r:W2", "shown": "here"}, {"id": "r:W", "shown": "here"}]}},
+                       "whole": [{"id": "r:W2", "shown": "here"}, {"id": "r:W", "shown": "here"}],
+                       "heads": [{"id": "r:W2", "shown": "here"}, {"id": "r:B", "shown": "withheld"}]}},
  "unread": 0}
 ```
 
@@ -316,7 +317,8 @@ Here `W` and `W2` are whole-read, `B` sets `status` from `W`, and `W2` is concur
 - A key is unknown exactly when a live setter's `shown` is not `here`. The fold returns ids, not values, as `latest-by` does.
 - `keys` has an entry for every key some live record declares, and under it all of that key's live setters, whole-read ones included: `W2` is live for `status` and `W` is not.
 - `whole` lists the live whole-read emits. A key with no entry is read from them, and every one of them is live for it: a whole-read emit that some setter of that key replaced would have an entry to show it, or be replaced by a whole-read emit and so not live at all.
-- **Ruled:** this shape. (If the envelope is read from the heads, section 3, the result should list them too.)
+- `heads` lists the thing's heads, newest first: the records the envelope is read from (section 3). A pure-join head is listed here and nowhere else.
+- **Ruled:** this shape; `heads` came with the envelope ruling of 2026-11-14.
 
 #### 3. How the other slots read a keyed thing
 
@@ -334,34 +336,34 @@ For a slot that follows `keys`:
 - **count** counts the things selected. A thing forked across whole-read emits counts once here and twice under `"follow": "prev"`.
 - **sum, min, max:** a field with one live setter is read from it. With two it is unread. **Ruled:** also when both hold the same number; reading them would make the core compare values, which D8 ruled out.
 - **`by` on a payload field:** the thing joins the group of each live setter's key, as a record that mentions two projects joins two groups. An unheld setter makes it unread; no setter, ungrouped.
-- **collect** lists the selected things' live records, newest first. With anchored writers this is the thing's slice.
-- **`from`, envelope tests and `by` on an envelope key: Open**, below. Whichever reading is ruled, a selected thing's payload fields are read from all their live setters.
+- **collect** lists the selected things' live records, newest first, a pure-join head among them. With anchored writers this is the thing's slice.
+- **`from` and the envelope tests of `where`** choose heads, each head alone, as they do under `"follow": "prev"`. A thing is selected when one of its heads is chosen.
+  The payload tests are then asked of the thing, over each field's live setters, whether or not `from` takes those records.
+- **`by` on `env.kind`, `env.observer` or `env.about:<prefix>`:** the thing joins the group of each key of each chosen head, once in each group; with no key it is ungrouped. An envelope key is never unread.
+- **One head:** its envelope is the thing's. **A fork:** one chosen head selects the thing; it is counted once and grouped under the keys of each chosen head. **A pure-join head:** it is the head, so its envelope is the thing's. It is how a task is moved without setting a key, and how two heads that mention different projects are settled.
 - **Whole-read beside keyed:** a whole-read emit sets every key and is live for each until a descendant sets it. A later whole-read emit replaces everything under it.
 
 The alternatives were to give `"follow": "prev"` this meaning (then no spec could ask for a fork's heads one by one), or to leave the other slots unable to read keyed things (then no spec can count open tasks once writers set keys).
 
-**Open: how a keyed thing's envelope is read** (consult, 2026-11-13; `sl-py/keyenv.py` and `lean/Convex.lean` in the margins repo).
-A payload key has setters. `kind`, `observer`, `about` and the times belong to a record, and nothing replaces them key by key. Three readings:
+**Ruled 2026-11-14: the envelope is read from the heads** (Kyle: "Rule B"; consult of 2026-11-13, `sl-py/keyenv.py` and `lean/Convex.lean` in the margins repo).
+A payload key has setters. `kind`, `observer`, `about` and the times belong to a record, and nothing replaces them key by key.
+So every emit sets the envelope: the envelope's live setters are the heads, and there is one notion of current, not two.
+A task moves from one project to another as it does under `"follow": "prev"` (`spec/run/24-by-follow`).
 
-- **A, every live record** (this note's first recommendation, withdrawn). A thing is selected when one of its live records is taken, and joins the group of each live record's key.
+What the ruling carries with it:
+
+- **Writers:** every emit carries the thing's whole `about` (section 5).
+- **The anchor rule** reaches every live record the writer holds, since every two records share the envelope (section 5).
+- **The result of section 2** has a `heads` list.
+
+The alternatives considered:
+
+- **Every live record** (this note's first recommendation, withdrawn). A thing is selected when one of its live records is taken, and joins the group of each live record's key.
   Take a task whose every emit mentions `project:x` until one says `project:y`. It stays in x until every earlier live record is replaced: a median of 12 more emits, and never in 7 of 2,000 runs.
   If only the root mentions x, the task leaves x when some emit retires the root, usually one that sets `title`. Setting one key changes what a reading of another field says.
-- **B, the heads.** `from`, the envelope tests and `by` on an envelope key read the thing's heads, as `"follow": "prev"` does; payload fields are read from live setters. The move then works as in `spec/run/24-by-follow`.
-- **C, setter by setter.** A key whose setter `from` does not take reads as absent. With a mention on the root only, `status` reads absent from the first later emit: an answer where the reader should say it does not know.
+- **Setter by setter.** A key whose setter `from` does not take reads as absent. With a mention on the root only, `status` reads absent from the first later emit: an answer where the reader should say it does not know.
 
-**Recommendation: B, stated as one more key.** Every emit sets the envelope. A record is live for the envelope when no admitted record of its thing is above it, so the envelope's live setters are the heads, and a pure join is live for the envelope and for nothing else.
-
-- **Selection.** `from` and the envelope tests of `where` choose heads, each head alone, as they do under `"follow": "prev"`. A thing is selected when one of its heads is chosen. The payload tests are then asked of the thing, as above.
-- **`by` on `env.kind`, `env.observer` or `env.about:<prefix>`.** The thing joins the group of each key of each chosen head, once in each group; with no key it is ungrouped. An envelope key is never unread.
-- **One head:** its envelope is the thing's. **A fork:** one chosen head selects the thing; it is counted once and grouped under the keys of each chosen head. **A pure-join head:** it is the head, so its envelope is the thing's. It is how a task is moved without setting a key, and how two heads that mention different projects are settled.
-- **Writers:** every emit carries the thing's whole `about`. `loops emit` copies it from the heads it builds on, as it fills `of`; `emit -` states it.
-- **The anchor rule:** its words stand. Every two records share the envelope, so the rule names every live record the writer holds.
-  `prev` names per record go from 2.88 to 4.39 with three replicas (3.75 to 6.06 in long steady histories) and from 2.27 to 3.74 with one writer, the longest 5 either way.
-  The live records, heads included, are then the slice: no holding of 11,369 read a key or the heads wrongly, nor any through 3,172 rounds of keeping only the slice. Every live record is a head or is named by one, so the heads list the slice.
-  With the rule over payload keys only, the live records and the heads read alone take a superseded record for a head in 1,529 of 11,347 holdings. A sender can add a path above each such record instead: about two more records at 300 events (11.3 for 9.6), with no bound.
-- **The result of section 2** gains a `heads` list: a pure-join head is in neither `keys` nor `whole`.
-
-The strongest case against B: an emit no longer says only what it changes, since it restates the mentions. A changeset that leaves them out takes the thing out of its project. And concurrent emits to different keys, which are no conflict in the payload, are two heads whose envelopes are both read until a join.
+What the ruling costs: an emit no longer says only what it changes, since it restates the mentions. A changeset that leaves them out takes the thing out of its project. And concurrent emits to different keys, which are no conflict in the payload, are two heads whose envelopes are both read until a join.
 
 #### 4. The laws
 
@@ -369,27 +371,31 @@ The strongest case against B: an emit no longer says only what it changes, since
 |---|---|---|
 | *witnessed* | A part reads each key's live setters as the whole does exactly when every held setter that is dead for a key has a setter of that key above it through held records. | Proved abstractly (`witnessed_iff`). To port. |
 | convex | A part that is convex over `prev` and holds the live setters is witnessed. Not the other way. | Proved (`witnessed_of_convex`, `Named`). To port as the corollary. |
-| anchored | When every emit that sets `k` names every held live record that sets `k`, the live records alone are a witnessed part. | Proved (`anchored_slice`; `slice_reads` from the rule itself). To port. |
+| anchored | When every emit that sets `k` names every held live record that sets `k`, the live records alone are a witnessed part. The envelope is such a `k`, and every record sets it. | Proved (`anchored_slice`; `slice_reads` from the rule itself). To port. |
 | `Closed` | The anchored law needs a sender that holds what the writers of its records had seen. | Proved as a premise; found by experiment (55 wrong in 35,200 when the sender is missing records, none for a convex part). To port as a premise with its boundary witness. |
-| heads | A head is a live setter of a key every record sets. So *witnessed* and anchored cover the heads when the anchor rule counts that key, and every live record is then a head or named by one. Over payload keys only, the live records read alone can take a superseded record for a head. | Proved abstractly (`heads_slice`, `live_named_by_head`, `Title.heads_need_env`). Wanted only if the envelope is read from the heads. |
+| heads | A head is a live setter of a key every record sets. So *witnessed* and anchored cover the heads, and every live record is a head or named by one: the heads list the slice. With the anchor rule over payload keys only, the live records read alone can take a superseded record for a head. | Proved abstractly (`heads_slice`, `live_named_by_head`, `Title.heads_need_env`). To port. |
 | receiver's flag | A receiver can tell which of its own records a missing name might have replaced; the flag is sound and tight. | Proved (`flag_tight`). Step 5 uses it; not needed for D8c. |
 
 - These are stated over an abstract `prev` and `sets`. The model needs `sets` on the record, liveness per key, and the laws restated over `realm`, so behind settling and admission.
+- By experiment (`keyenv.py`, three replicas, pure joins in the mix): no holding of 11,369 read a key or the heads wrongly from its live records alone, nor any through 3,172 rounds of keeping only the slice. With the anchor rule over payload keys only, 1,529 of 11,347 took a superseded record for a head. This is not yet run behind settling, admission and erasure, or with a sender that is itself missing records.
 - By experiment (`keyslice.py`, 35,200 pairs with `of` stated): the answer needs no record outside the thing; the sent members must be admitted ones; a live setter's eraser is needed for the shown state, not for the answer; a sender must not send a payload its own eraser took away.
-- **`spec.slice` over keyed things is not proved.** For a slot that follows `keys`, "current" becomes "live for a key", and the successors that matter are the setters of the same key. I expect the law to be: the slice of each selected thing, plus what `SpecSlice` already asks of records read as written. That is a conjecture until it is tested and stated.
+- **`spec.slice` over keyed things is not proved.** For a slot that follows `keys`, "current" becomes "live for a key", the envelope among them, and the successors that matter are the setters of the same key. I expect the law to be: the slice of each selected thing, plus what `SpecSlice` already asks of records read as written. That is a conjecture until it is tested and stated.
 - A slice law is about a slice read alone, as ruled.
 
 #### 5. The writer
 
 - **The anchor rule,** as agreed on #5: an emit that sets a key names in `prev`, beside what it builds on, every record its writer holds that sets that key and is still live.
+  Every emit sets the envelope, and so does every record, so the rule names every live record of the thing the writer holds (**Ruled** 2026-11-14, with the envelope reading).
   `loops emit` fills this in on the single-record path, as it fills in `of`.
-- **`emit -` fills nothing in:** a changeset states its own `prev`, as it states its own `of`. **Ruled.**
+- **`about` is whole on every emit:** the head's mentions are the thing's. `loops emit` copies `about` from the heads it builds on, every mention when it builds on several. **Ruled** 2026-11-14.
+  How the command line states another `about`, or none, is left to the build.
+- **`emit -` fills nothing in:** a changeset states its own `prev` and its own `about`, as it states its own `of`. **Ruled.**
 - **No refusal for an unanchored emit.** It reads correctly whole; only its slice is larger. **Ruled.**
-- **A whole-read emit shares every key,** so it names every live record of the thing it holds, and is then the only live record.
-- **If the envelope is read from the heads** (section 3, Open), every emit does the same naming, and `loops emit` copies `about` from the heads it builds on.
-- **Cost.** `prev` names per record: 1.13 plain against 3.10 anchored with three replicas; 2.4 for one writer over 1,000 records, longest 5. The bound is about one name per key of the thing.
-  The names are in the id. A root that stays live for one key is named by every later setter of its other keys; restating that key lets it go.
-- **What it buys.** Over 300 events a thing's slice is about 8 records anchored, 59 for the cheapest witnessed part with plain writers, and 233 for the convex part.
+- **A whole-read emit** names the same records and sets every key, so it is then the only live record.
+- **Cost** (`keyenv.py`). `prev` names per record with three replicas: 1.12 plain, 2.88 anchored over payload keys only, 4.39 with the envelope counted; in long steady histories 3.75 against 6.06. For one writer over 1,000 records, 2.27 against 3.74, the longest 5 either way.
+  The bound is one name per live record of the thing, so about one per key, and every emit pays it. The names are in the id. A whole-read emit brings it back to one.
+- **What it buys.** Over 300 events a thing's slice is about 9 records, against 58 for the cheapest witnessed part with plain writers and 234 for the convex part.
+  The heads list it: a receiver that holds a thing's heads knows every other live record by name.
 
 #### 6. Out of scope
 
@@ -398,7 +404,7 @@ The strongest case against B: an emit no longer says only what it changes, since
 - The caching reader for slots over heads or live setters, and what it must keep for a record with an unknown `prev`: step 4.
 - Whether two live setters conflict: a reading above the core.
 
-**Order of work, if the recommendations stand:** `sets` in the model with its refusal; liveness per key and `latest-by` following `keys`; vectors, JavaScript, Rust; then the other slots following `keys`; then the laws ported; then the anchor in `loops emit`.
+**Order of work:** `sets` in the model with its refusal; liveness per key, the envelope among the keys, and `latest-by` following `keys` with `heads` in its result; vectors, JavaScript, Rust; then the other slots following `keys`, selecting by heads and reading payload fields from live setters; then the laws ported, the heads law among them; then the anchor and the copied `about` in `loops emit`.
 
 ### Issue #1: envelope shape refusals, and a label in `under`
 
