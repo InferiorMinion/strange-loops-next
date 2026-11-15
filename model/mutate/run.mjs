@@ -112,6 +112,7 @@ function options(args) {
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
     if (arg === '--list') o.list = true;
+    else if (arg === '--no-second-verdict') o.firstOnly = true;
     else if (['--only', '--output', '--timeout', '--shard'].includes(arg)) {
       if (!args[i + 1] || args[i + 1].startsWith('--')) throw new Error(`Missing value for ${arg}`);
       const v = args[++i];
@@ -151,6 +152,27 @@ export async function main(args) {
   const save = async () => { await mkdir(path.dirname(o.output), { recursive: true }); const tmp = `${o.output}.tmp`; await writeFile(tmp, `${JSON.stringify(result, null, 2)}\n`); await rename(tmp, o.output); };
   const restore = () => { if (mutated) { git(['checkout', '--', mutated]); mutated = null; } };
   const run = (name, program, argv) => command(program, argv, o.timeout, path.join(logs, `${name}.log`));
+  // The second verdict of a build rejection: does anything that runs object to the mutant? The generator, `run` and
+  // `checks` import no law, so they build where a proof or a lint failed. It is recorded beside the status and never
+  // changes it, and its commands stay out of `commands`. `none` means only proofs stand against the mutant, not that
+  // the mutant is equivalent; `unknown` means a step timed out or could not start.
+  const secondVerdict = async id => {
+    const runtime = { verdict: 'unknown', commands: [], changedPaths: [] };
+    const step = async (name, argv, verdict) => {
+      const c = await run(`${id}-runtime-${name}`, 'lake', argv); runtime.commands.push(c);
+      if (c.status === 'nonzero') runtime.verdict = verdict;
+      return c.status === 'ok';
+    };
+    if (!await step('build', ['build', 'gen', 'run', 'checks'], 'unbuilt')) return runtime;
+    const dir = await mkdtemp(path.join(temp, `${id}-runtime-`));
+    await cp(path.join(root, 'vectors'), dir, { recursive: true });
+    if (!await step('gen', ['exe', 'gen', dir], 'generator')) return runtime;
+    runtime.changedPaths = await changedPaths(path.join(root, 'vectors'), dir);
+    if (runtime.changedPaths.length) { runtime.verdict = 'vector'; return runtime; }
+    if (!await step('run', ['exe', 'run', '--check', path.join(root, 'vectors')], 'run-check')) return runtime;
+    if (await step('checks', ['exe', 'checks', root], 'checks')) runtime.verdict = 'none';
+    return runtime;
+  };
   const handlerInt = () => onSignal('SIGINT'), handlerTerm = () => onSignal('SIGTERM');
   process.on('SIGINT', handlerInt); process.on('SIGTERM', handlerTerm);
   try {
@@ -182,7 +204,7 @@ export async function main(args) {
         mutated = relative;
         await writeFile(absolute, patch.text);
         const build = await run(`${m.id}-build`, 'lake', ['build', '--wfail']); entry.commands.push(build);
-        if (build.status === 'nonzero') { entry.status = 'rejected-by-build'; entry.failureDetail = `Build exited ${build.code}; inspect the build log to identify the rejection.`; entry.buildRejectionNeedsAudit = true; }
+        if (build.status === 'nonzero') { entry.status = 'rejected-by-build'; entry.failureDetail = `Build exited ${build.code}; inspect the build log to identify the rejection.`; entry.buildRejectionNeedsAudit = true; if (!o.firstOnly) entry.runtime = await secondVerdict(m.id); }
         else if (build.status === 'ok') {
           const dir = await mkdtemp(path.join(temp, `${m.id}-`));
           await cp(path.join(root, 'vectors'), dir, { recursive: true });
@@ -192,14 +214,14 @@ export async function main(args) {
         } else entry.failureDetail = `Build ${build.status}`;
       } catch (e) { entry.failureDetail = e.message; }
       finally { restore(); await save(); }
-      console.log(`${m.id}: ${entry.status}`);
+      console.log(`${m.id}: ${entry.status}${entry.runtime ? ` (at run time: ${entry.runtime.verdict})` : ''}`);
       if (entry.status === 'error') failed = true;
-      if (entry.commands.some(command => command.status === 'cleanup-error')) break;
+      if ([...entry.commands, ...(entry.runtime?.commands ?? [])].some(command => command.status === 'cleanup-error')) break;
     }
   } catch (e) { failed = true; result.error = e.message; console.error(e.message); }
   finally {
     try { restore(); } catch (e) { failed = true; result.restoreError = e.message; }
-    if (temp && !result.restoreError && !result.mutants.some(entry => entry.commands.some(command => command.status === 'cleanup-error')) && result.baseline.build?.status !== 'cleanup-error' && result.baseline.gen?.status !== 'cleanup-error') {
+    if (temp && !result.restoreError && !result.mutants.some(entry => [...entry.commands, ...(entry.runtime?.commands ?? [])].some(command => command.status === 'cleanup-error')) && result.baseline.build?.status !== 'cleanup-error' && result.baseline.gen?.status !== 'cleanup-error') {
       try { result.finalBaseline = await command('lake', ['build', '--wfail'], o.timeout, path.join(logs, 'final-baseline-build.log'), true); if (result.finalBaseline.status !== 'ok') failed = true; } catch (e) { failed = true; result.finalBaseline = { status: 'error', error: e.message }; }
     }
     try { if (temp) await save(); } catch (e) { failed = true; console.error(e.message); }

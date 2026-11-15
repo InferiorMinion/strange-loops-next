@@ -29,7 +29,12 @@ export function merge(ids, shards) {
   mutants.sort((a, b) => (order.get(a.id) ?? ids.length) - (order.get(b.id) ?? ids.length));
   const counts = {};
   for (const m of mutants) counts[m.status] = (counts[m.status] ?? 0) + 1;
-  return { merged: { catalogue: ids.length, counts, mutants }, problems };
+  // The second verdict of the build rejections that have one: what objects at run time, and which stand on proofs alone.
+  const judged = mutants.filter(m => m.status === 'rejected-by-build' && m.runtime);
+  if (!judged.length) return { merged: { catalogue: ids.length, counts, mutants }, problems };
+  const runtime = {};
+  for (const m of judged) runtime[m.runtime.verdict] = (runtime[m.runtime.verdict] ?? 0) + 1;
+  return { merged: { catalogue: ids.length, counts, runtime, proofsAlone: judged.filter(m => m.runtime.verdict === 'none').map(m => m.id), mutants }, problems };
 }
 
 // The entries a run was asked for, in catalogue order: the whole catalogue, or
@@ -56,6 +61,10 @@ export async function main(args) {
   if (output) await writeFile(output, `${JSON.stringify(merged, null, 2)}\n`);
   console.log(`${merged.mutants.length} of ${merged.catalogue} entries: ${Object.entries(merged.counts).map(([k, n]) => `${n} ${k}`).join(', ')}`);
   for (const m of merged.mutants.filter(m => m.status === 'survived')) console.log(`survived: ${m.id} (${m.file}:${m.line})`);
+  if (merged.runtime) {
+    console.log(`rejected by build, at run time: ${Object.entries(merged.runtime).map(([k, n]) => `${n} ${k}`).join(', ')}`);
+    for (const id of merged.proofsAlone) console.log(`on proofs alone: ${id}`);
+  }
   for (const problem of problems) console.error(`problem: ${problem}`);
   return problems.length ? 1 : 0;
 }
