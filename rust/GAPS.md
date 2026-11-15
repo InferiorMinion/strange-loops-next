@@ -34,6 +34,9 @@ store string is preserved but does not cause I/O during pure execution.
   deduplicates ids across things. Raw following collect counts unknown forms after newest-first processing.
   Count, sum, min and max that follow prev fold `whole_heads`, which keeps the
   last raw form of each id before ordering, as the model's `dedup` does.
+  Latest-by that follows keys works out each thing's live setters over the raw
+  records of that thing, as `keyed_in` reads them; with addressed input each
+  id is one setter.
   A slot with `by` counts its top-level unread and ungrouped records over raw
   input, once per form, as count does; with addressed input that is once per id.
   The distinct-id theorem interpretation requires its stated addressed-input

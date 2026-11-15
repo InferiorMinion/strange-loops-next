@@ -4,7 +4,7 @@ use loops::{
     json::Json,
     number::Nat,
     record::{Digest, Record, Shown, Val, id_text},
-    spec::{self, FoldType, Slot, SlotValue, Source, Spec},
+    spec::{self, FoldType, Follow, Slot, SlotValue, Source, Spec},
     things,
     where_::{Tests, parse_where},
 };
@@ -193,11 +193,20 @@ fn low_level_parsers_do_not_add_boundary_checks() {
         .is_ok()
     );
     assert_eq!(
-        spec::fold_type("p", "count", true, Some(0_u64.into()), &Json::Bool(true))
-            .expect("raw fold keeps follow and ignores limit"),
+        spec::fold_type(
+            "p",
+            "count",
+            Some(Follow::Prev),
+            Some(0_u64.into()),
+            &Json::Bool(true)
+        )
+        .expect("raw fold keeps follow and ignores limit"),
         FoldType::Count { follow: true }
     );
-    assert!(!spec::slot_follow("p", "unknown", None).expect("raw no follow"));
+    assert_eq!(
+        spec::slot_follow("p", "unknown", None).expect("raw no follow"),
+        None
+    );
     assert_eq!(
         spec::slot_limit("p", "unknown", None).expect("raw no limit"),
         None
@@ -249,12 +258,24 @@ fn low_level_parsers_do_not_add_boundary_checks() {
             "{raw}"
         );
     }
-    // Any fold type may follow prev; any other value is refused on each.
+}
+
+#[test]
+fn follow_prev_on_every_fold_type_and_keys_on_latest_by_only() {
+    // Any fold type may follow prev, and only latest-by may follow keys; any
+    // other value is refused on each.
     for t in ["count", "sum", "min", "max", "latest-by", "collect"] {
-        assert!(
+        assert_eq!(
             spec::slot_follow("p", t, Some(&json(r#""prev""#))).expect("prev"),
+            Some(Follow::Prev),
             "{t}"
         );
+        let keys = spec::slot_follow("p", t, Some(&json(r#""keys""#)));
+        if t == "latest-by" {
+            assert_eq!(keys.expect("keys"), Some(Follow::Keys));
+        } else {
+            assert!(keys.is_err(), "{t} keys");
+        }
         for raw in ["null", "false", r#""next""#] {
             assert!(
                 spec::slot_follow("p", t, Some(&json(raw))).is_err(),

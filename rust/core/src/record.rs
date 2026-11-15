@@ -57,6 +57,9 @@ pub struct Record {
     pub emitted: Stamp,
     /// The digests of the records whose payloads this record erases.
     pub erases: Vec<Digest>,
+    /// The payload keys this record sets: `None` when it is read whole, which
+    /// sets every key; an empty list for a pure join, which sets none.
+    pub sets: Option<Vec<String>>,
     /// The exact integer payload field for numeric folds.
     pub n: Int,
     /// A binary64 payload that overrides `n` in lookup and remains unread by numeric folds.
