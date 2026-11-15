@@ -11,7 +11,7 @@ All three refuse every envelope shape by name (issue #1) and let a label stand i
 All three writers refuse an `under` target they do not hold (`under-unknown`).
 `loops emit` follows D8c's anchor rule: an emit of a thing names in `prev` every live record of it the store holds, and carries the thing's whole `about`.
 All three let count, sum, min and max follow `prev` (issue #3), and group count, sum, min, max and collect with `by` (issue #2).
-The law index has 99 entries, 951 theorems, and 6 boundary witnesses.
+The law index has 104 entries, 1006 theorems, and 6 boundary witnesses.
 See [the law index](design/laws/laws.json) and [proof and boundary data](design/laws/).
 These proofs apply only under their stated premises.
 
@@ -177,7 +177,7 @@ Never round or cap current model outputs.
 ### D8: Items, mentions and declared keys
 
 Kyle ruled this on 2026-11-10.
-D8a and D8b are built across the model, vectors, JavaScript and Rust; of D8c, `sets` is built in the envelope, liveness per key, latest-by following `keys`, count, sum, min, max, collect and `by` following `keys`, and the anchor rule and copied `about` in `loops emit`; the keyed slice laws are not, and are being ported in merge request !34.
+D8a and D8b are built across the model, vectors, JavaScript and Rust; of D8c, `sets` is built in the envelope, liveness per key, latest-by following `keys`, count, sum, min, max, collect and `by` following `keys`, the slice laws for one keyed thing, and the anchor rule and copied `about` in `loops emit`; the slice law for a spec with a keyed slot is not.
 It changes the settled envelope, so it lands as R1–R6 and D1–D6 did: model, vectors, JavaScript, Rust, then protocol and pages.
 **Finding:** Two apps built on the product slice hit one wall on 2026-11-10.
 The orchestration dry run is in [Scenarios](design/rethink/sections/13-scenarios.html), step 8; margins-claude's `work` app is described in its notes on merge request !12.
@@ -283,7 +283,7 @@ Nothing compares `sets` with the payload or with another record's: a declared ke
 No fold, spec or lens reads it yet; it is carried, hashed into the id, stored, read back and shown, and an erased or withheld record keeps it with its envelope.
 The law is `record.keys`; `record.sets` now covers `sets` too.
 `record/15`–`19`, `45`–`47` and `shape-sets-*`, and `batch/76`–`82`, pin it.
-The keyed fold, liveness per key and their laws are built in the next paragraph, the other slots that follow `keys` in the one after it, and the anchor rule in `loops emit` in the last; the slice laws are not.
+The keyed fold, liveness per key and their laws are built in the next paragraph, the other slots that follow `keys` in the one after it, the slice laws for one thing in the one after that, and the anchor rule in `loops emit` in the last; the slice law for a spec with a keyed slot is not.
 **Implementer choices, for Kyle to confirm:**
 - `sets` holds keys, not labels: in a changeset a key that starts with `@` is written as given, neither replaced nor looked up (`batch/76`).
 - A held record's `sets` is checked as its other fields are: a stored line whose `sets` is not keys is refused with the writer's code, and one in another order is not canonical. The reader's record in fold, realm, scenario and spec vectors carries `sets` since the keyed fold below.
@@ -301,7 +301,7 @@ The result per thing is `{"keys", "whole", "heads"}`, as in the note's example, 
 `thingTest` (`Cond.onThing` per test) takes a thing's records and is what the next slice's count, sum, min, max, collect and `by` can ask.
 The laws are `keyed.live`, `keyed.fold` and `keyed.select`; `spec.set` covers the keyed slot. `spec.slice` does not: `Spec.run_slice` takes a spec with no keyed slot, since a keyed slot reads live setters the spec does not take, and the spec-slice sweep finds slices that answer it differently.
 `spec/parse/97`–`110`, `spec/run/31`–`41` and `scenario/keys-01-settled-setter` pin it; the CLI walk reads a keyed thing through `loops fold`.
-The slice laws of section 4 are not built; the anchor rule and copied `about` in `loops emit` are, two paragraphs below.
+The slice law for a spec with a keyed slot is not built; the slice laws for one thing, and the anchor rule and copied `about` in `loops emit`, are, in later paragraphs.
 **Implementer choices, for Kyle to confirm:**
 - A field no record of the thing sets is absent, as a missing field in a held payload is: `is`, `present`, `at-least` and `below` answer no, `not` and `absent` answer yes (`spec/run/40`, `task:13`). A live setter that declares a field its payload lacks reads it as absent too.
 - A chosen thing whose payload tests answer unknown counts once in `unread`; `unread` counts things, not records.
@@ -319,7 +319,7 @@ Count counts the selected things; sum, min and max read the field from its one l
 With `by`, a payload key is read from each live setter of the field and an envelope key from each chosen head (`By.thingKeys`), and each group is the slot without `by` over its things (`Slot.keyedGrouped`).
 The laws are `keyed.slots`, `keyed.by` and `keyed.whole-read`: when every record is read whole and every thing has one head, each such slot, grouped or not, gives what the same slot following `prev` gives (`Slot.keys_as_prev`). `spec.set` covers them; `spec.slice` does not, and its premise now leaves out every slot that follows `keys`, as the spec-slice sweep does.
 `spec/run/42`–`50` pin it, `42` being the note's count of open tasks beside the same count following `prev`; the CLI walk counts, sums and collects through `loops fold`.
-The slice laws of section 4, the heads law among them, are not built; the anchor rule and copied `about` in `loops emit` (section 5) are, in the next paragraph.
+The slice law for a spec with a keyed slot is not built; the slice laws for one thing are in the paragraph after these choices, and the anchor rule and copied `about` in `loops emit` (section 5) in the one after that.
 **Implementer choices, for Kyle to confirm:**
 - A field with no live setter is unread to sum, min and max, as a record without the field is; so is one whose live setter holds no safe whole number there. A record with `sets` that does not declare the field is no setter of it, so a field its payload holds but does not declare is unread too (`spec/run/44`, `task:5`).
 - `unread` counts things, each at most once in a slot: a thing whose tests are unknown, or a selected thing whose field or key cannot be read. Within a group, a thing whose field cannot be read adds to that group's `unread`, as a record does.
@@ -328,6 +328,21 @@ The slice laws of section 4, the heads law among them, are not built; the anchor
 - A group's own `unread` counts only things whose field cannot be read there; a thing whose tests are unknown is unread at the top, as an unknown record is.
 - `follow` on count, sum, min, max and collect is an `Option Follow` in the model, replacing the flag; `FoldType.follow` reads it. `By.count_partition` and its neighbours take a premise that the count does not follow `keys`; over things the partition is `By.keyedAccounting`.
 - The law names `keyed.slots`, `keyed.by` and `keyed.whole-read`, and the renamed vectors `spec/parse/106-argument-after-follow-keys-on-sum` and `107-limit-after-follow-keys-on-count`.
+
+**Built, 2026-11-14: the slice laws for one keyed thing**, section 4 of the design note below, in `model/Laws/LiveSlice.lean` (margins-claude).
+They are laws only: no definition a reader runs changes, and no vector.
+They are stated over `Loops/Live.lean` as it stands (`above`, `liveFor`, `liveEnv`, `live`, `keyedIn`), with the envelope as one more key a record sets, and then behind settling and admission, over `realm`.
+*Witnessed* is exact and has no premise (`witnessed_iff`): a part reads its records as the whole does, for a key, exactly when every held setter the whole reads as dead has a setter of the key above it through held records; a part that is witnessed for every key and holds the live records gives the thing's keyed state (`keyedIn_part`).
+Convex is one way to be witnessed and not the least (`witnessed_of_convex`, `convex_not_needed`).
+With anchored names, every record naming every live record under it, the live records alone give the keyed state, heads included, and every live record is a head or named by one (`anchored_slice`, `keyedIn_live`, `heads_slice`, `live_named_by_head`); over payload keys alone the heads are not given (`heads_need_env`).
+The writer's rule leaves anchored names only in a holding that is closed, one that holds what the writers of its records held (`anchored_of_written`); a holder missing a record reads wrongly from its own live records (`closed_needed`).
+Behind settling and admission (`keyedIn_slice`, `keyedIn_live_slice`), a part owes each record of the thing it holds every form of it, what erases it, and that the whole admits it; with anchored names the forms of the live records and what erases them are the slice.
+It owes nothing for `prev` targets: a record the whole admits, any part admits (`entitled_fewer`).
+The laws are `keyed.witnessed`, `keyed.convex`, `keyed.anchored`, `keyed.heads` and `keyed.slice`.
+Two things the port found:
+- **No cycle over `prev` is a premise** (`NoCycle`) of every law but *witnessed*: a dead setter has a live setter above it only when going up ends. Real ids give that, since an id is a hash of an envelope that holds its `prev`. The model's ids are numbers, and a fold vector has a record that names itself, so the laws state it.
+- **`thing.slice`'s `prev` targets do not carry over.** Under `"follow": "prev"` a target's envelope is harmless: the record that names it is above it. Under `keys` an envelope still sets its keys, so a target held without its witness reads as a live setter (`target_needs_witness`). A whole `thing.slice`, which holds every record of the thing, gives the keyed state too (`keyedIn_thing_slice`).
+The slice law for a spec with a keyed slot is not stated: `Spec.run_slice` keeps its premise. By experiment (margins `sl-py/keyspecslice.py`, 16,000 spec and store pairs) the spec slice with the live records, the members between two sent members and the erasers of the live records answers every keyed slot, and the spec slice alone answers wrongly in 5,119 and 4,840 of 8,000.
 
 **Built, 2026-11-14: the writer**, section 5 of the design note below, in `loops emit`.
 An emit of a thing names in `prev`, beside any `--prev`, every record of that thing the store holds that is live for some key, the envelope among them, and so every head (`rust/PLACE.md`, choice 11).
@@ -448,17 +463,17 @@ What the ruling costs: an emit no longer says only what it changes, since it res
 
 | Law | Says | State |
 |---|---|---|
-| *witnessed* | A part reads each key's live setters as the whole does exactly when every held setter that is dead for a key has a setter of that key above it through held records. | Proved abstractly (`witnessed_iff`). To port. |
-| convex | A part that is convex over `prev` and holds the live setters is witnessed. Not the other way. | Proved (`witnessed_of_convex`, `Named`). To port as the corollary. |
-| anchored | When every emit that sets `k` names every held live record that sets `k`, the live records alone are a witnessed part. The envelope is such a `k`, and every record sets it. | Proved (`anchored_slice`; `slice_reads` from the rule itself). To port. |
-| `Closed` | The anchored law needs a sender that holds what the writers of its records had seen. | Proved as a premise; found by experiment (55 wrong in 35,200 when the sender is missing records, none for a convex part). To port as a premise with its boundary witness. |
-| heads | A head is a live setter of a key every record sets. So *witnessed* and anchored cover the heads, and every live record is a head or named by one: the heads list the slice. With the anchor rule over payload keys only, the live records read alone can take a superseded record for a head. | Proved abstractly (`heads_slice`, `live_named_by_head`, `Title.heads_need_env`). To port. |
+| *witnessed* | A part reads each key's live setters as the whole does exactly when every held setter that is dead for a key has a setter of that key above it through held records. | Proved over the model and over `realm` (`witnessed_iff`, `keyedIn_part`, `keyedIn_slice`): `keyed.witnessed`, `keyed.slice`. |
+| convex | A part that is convex over `prev` and holds the live setters is witnessed. Not the other way. | Proved, with no cycle over `prev` as a premise (`witnessed_of_convex`, `keyedIn_convex`, `convex_not_needed`): `keyed.convex`. |
+| anchored | When every emit that sets `k` names every held live record that sets `k`, the live records alone are a witnessed part. The envelope is such a `k`, and every record sets it. | Proved, with no cycle as a premise (`anchored_slice`, `keyedIn_live`, `keyedIn_live_slice`): `keyed.anchored`. |
+| `Closed` | The anchored law needs a sender that holds what the writers of its records had seen. | Proved as a premise; found by experiment (55 wrong in 35,200 when the sender is missing records, none for a convex part). Proved: the rule gives anchored names to a closed holding (`anchored_of_written`), and a holding that is not closed reads wrongly (`closed_needed`). |
+| heads | A head is a live setter of a key every record sets. So *witnessed* and anchored cover the heads, and every live record is a head or named by one: the heads list the slice. With the anchor rule over payload keys only, the live records read alone can take a superseded record for a head. | Proved (`heads_slice`, `live_named_by_head`, `heads_need_env`): `keyed.heads`. |
 | receiver's flag | A receiver can tell which of its own records a missing name might have replaced; the flag is sound and tight. | Proved (`flag_tight`). Step 5 uses it; not needed for D8c. |
 
-- These are stated over an abstract `prev` and `sets`. The model needs `sets` on the record, liveness per key, and the laws restated over `realm`, so behind settling and admission.
+- These were first stated over an abstract `prev` and `sets` (margins `lean/Convex.lean`). They are now stated over the model's liveness and over `realm`, behind settling and admission (`model/Laws/LiveSlice.lean`); the paragraph "the slice laws for one keyed thing" above says what the port found.
 - By experiment (`keyenv.py`, three replicas, pure joins in the mix): no holding of 11,369 read a key or the heads wrongly from its live records alone, nor any through 3,172 rounds of keeping only the slice. With the anchor rule over payload keys only, 1,529 of 11,347 took a superseded record for a head. This is not yet run behind settling, admission and erasure, or with a sender that is itself missing records.
 - By experiment (`keyslice.py`, 35,200 pairs with `of` stated): the answer needs no record outside the thing; the sent members must be admitted ones; a live setter's eraser is needed for the shown state, not for the answer; a sender must not send a payload its own eraser took away.
-- **`spec.slice` over keyed things is not proved.** For a slot that follows `keys`, "current" becomes "live for a key", the envelope among them, and the successors that matter are the setters of the same key. I expect the law to be: the slice of each selected thing, plus what `SpecSlice` already asks of records read as written. That is a conjecture until it is tested and stated.
+- **`spec.slice` over keyed things is not proved.** By experiment the spec slice needs the live records of the things it touches, the members between two sent members, and the erasers of the live records; a bare `prev` target reads wrongly. For a slot that follows `keys`, "current" becomes "live for a key", the envelope among them, and the successors that matter are the setters of the same key. I expect the law to be: the slice of each selected thing, plus what `SpecSlice` already asks of records read as written. That is a conjecture until it is tested and stated.
 - A slice law is about a slice read alone, as ruled.
 
 #### 5. The writer
@@ -485,7 +500,7 @@ What the ruling costs: an emit no longer says only what it changes, since it res
 - The caching reader for slots over heads or live setters, and what it must keep for a record with an unknown `prev`: step 4.
 - Whether two live setters conflict: a reading above the core.
 
-**Order of work:** `sets` in the model with its refusal; liveness per key, the envelope among the keys, and `latest-by` following `keys` with `heads` in its result; vectors, JavaScript, Rust; then the other slots following `keys`, selecting by heads and reading payload fields from live setters; then the laws ported, the heads law among them; then the anchor and the copied `about` in `loops emit`. All but the laws are built; the laws are being ported in merge request !34.
+**Order of work:** `sets` in the model with its refusal; liveness per key, the envelope among the keys, and `latest-by` following `keys` with `heads` in its result; vectors, JavaScript, Rust; then the other slots following `keys`, selecting by heads and reading payload fields from live setters; then the laws ported, the heads law among them (done for one thing; the spec-level slice follows the other slots); then the anchor and the copied `about` in `loops emit`. All but the spec-level slice law are built.
 
 ### Issue #1: envelope shape refusals, and a label in `under`
 
@@ -573,7 +588,7 @@ Each step extends the model laws, computes protocol vectors, then implements Rus
 | --- | --- | --- |
 | 0, done | The Lean spike: Count and LatestBy, one lens combinator, 23 vectors | The first laws are proved |
 | 1, done | Protocol and vectors for layer 0: canonical bytes, salt and commitment, id, signature | The model and the JS writer agree on every vector; Rust checks all fixture families and external standards |
-| 2 | Emit, read, fold for one person: JSONL segment, JSON spec, the two fold families, `"follow": "prev"`, `by`, a signing key, signing by default. `of` names a record's one thing, an id or a natural key; `about` only mentions. D8a and D8b are built; of D8c, `sets` is built in the envelope, every slot that follows `keys`, and the writer's anchor rule; the keyed slice laws are not (merge request !34). | It does the old CLI's workable job, signed |
+| 2 | Emit, read, fold for one person: JSONL segment, JSON spec, the two fold families, `"follow": "prev"`, `by`, a signing key, signing by default. `of` names a record's one thing, an id or a natural key; `about` only mentions. D8a and D8b are built; of D8c, `sets` is built in the envelope, every slot that follows `keys`, the slice laws for one keyed thing, and the writer's anchor rule; the slice law for a spec with a keyed slot is not. | It does the old CLI's workable job, signed |
 | 3 | Standing: declarations, admission, stances, grants, presence key, retire through; then name tables and `resolve-by` | A strict store rejects visibly; a steward's changeset takes effect |
 | 4 | Ticks: content and witness, boundaries, markers | A content tick recomputes to the same hash on two machines |
 | 5 | Sharing: the git layout, then segment-list sync | Two clones converge |
