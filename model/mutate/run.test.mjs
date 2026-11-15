@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { changedPaths, replaceUnique, command, sourcePath } from './run.mjs';
-import { merge } from './merge.mjs';
+import { merge, selection } from './merge.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
@@ -63,6 +63,16 @@ test('merging shard results needs every entry once, no error and a restored base
   assert.match(problems(shard('1', [['a', 'error'], ['b', 'survived']]))[0], /^a: error/);
   assert.match(problems(shard('1', [['a', 'survived'], ['b', 'survived']], { finalBaseline: null }))[0], /final baseline build is missing/);
   assert.match(problems(shard('1', [['a', 'survived'], ['b', 'survived']], { error: 'Baseline build failed' }))[0], /Baseline build failed/);
+});
+
+test('merging a run of named entries needs those entries and no others', () => {
+  assert.deepEqual(selection(['a', 'b', 'c'], undefined), ['a', 'b', 'c']);
+  assert.deepEqual(selection(['a', 'b', 'c'], ['c', 'a']), ['a', 'c']);
+  assert.throws(() => selection(['a', 'b'], ['a', 'z']), /Unknown or duplicate/);
+  assert.throws(() => selection(['a', 'b'], ['a', 'a']), /Unknown or duplicate/);
+  const shard = (entries) => ({ name: '1', result: { mutants: entries.map(id => ({ id, status: 'survived' })), finalBaseline: { status: 'ok' } } });
+  assert.deepEqual(merge(selection(['a', 'b', 'c'], ['c', 'a']), [shard(['a', 'c'])]).problems, []);
+  assert.match(merge(selection(['a', 'b', 'c'], ['c', 'a']), [shard(['a', 'b', 'c'])]).problems[0], /^b: not in the catalogue/);
 });
 
 test('catalogue source roots exclude traversal and unrelated files', () => {

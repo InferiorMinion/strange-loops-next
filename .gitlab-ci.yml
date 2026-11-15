@@ -248,7 +248,11 @@ model-mutants:
 # could not be judged (a timeout, a generator failure) or the source was not
 # restored. A survivor does not fail it, and a build rejection still needs its
 # log read (model/mutate/README.md). Results and logs are kept as artifacts, and
-# mutation-report joins them.
+# mutation-report joins them. Each build or generator command gets
+# MUTATION_TIMEOUT seconds, 600 unless set: on a busy runner a build that
+# rebuilds most of the model passes the runner's own default of 180, and a
+# timed-out entry is not judged. MUTATION_ONLY, a comma-separated list of entry
+# ids, runs those entries alone, to judge again the ones a run could not.
 model-mutants-full:
   extends: .model
   cache:
@@ -267,6 +271,8 @@ model-mutants-full:
     - >-
       node model/mutate/run.mjs
       --shard "$CI_NODE_INDEX/$CI_NODE_TOTAL"
+      --timeout "${MUTATION_TIMEOUT:-600}"
+      ${MUTATION_ONLY:+--only "$MUTATION_ONLY"}
       --output "$CI_PROJECT_DIR/mutation/results-$CI_NODE_INDEX.json"
   artifacts:
     name: mutation-shard-$CI_NODE_INDEX
@@ -274,7 +280,8 @@ model-mutants-full:
     paths: [mutation/]
     expire_in: 1 month
 
-# Joins the shards and fails unless every catalogue entry was judged exactly once.
+# Joins the shards and fails unless every catalogue entry, or every entry
+# MUTATION_ONLY names, was judged exactly once.
 mutation-report:
   stage: check
   image: node:22-bookworm
@@ -285,7 +292,7 @@ mutation-report:
     - if: $MUTATION_FULL
       when: always
   script:
-    - node model/mutate/merge.mjs --output mutation/merged.json mutation/results-*.json
+    - node model/mutate/merge.mjs ${MUTATION_ONLY:+--only "$MUTATION_ONLY"} --output mutation/merged.json mutation/results-*.json
   artifacts:
     name: mutation-report
     when: always
