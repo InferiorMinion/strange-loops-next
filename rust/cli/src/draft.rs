@@ -32,6 +32,7 @@ pub(crate) fn from_args(
     let mut kind = None;
     let mut fields: Vec<(String, Json)> = Vec::new();
     let mut message = None;
+    let mut nothing = false;
     let mut rest = args.iter();
     while let Some(arg) = rest.next() {
         let mut value = || {
@@ -45,6 +46,14 @@ pub(crate) fn from_args(
             "--prev" => env.prev.push(link(&value()?)?),
             "--erases" => env.erases.push(link(&value()?)?),
             "--under" => env.under = Some(link(&value()?)?),
+            // `--sets` names one key the emit sets; `--sets-nothing` states an
+            // empty `sets`, an emit that sets no key. Without either the emit
+            // states no `sets` and is read whole.
+            "--sets" => env.sets.get_or_insert_with(Vec::new).push(value()?),
+            "--sets-nothing" => {
+                nothing = true;
+                env.sets.get_or_insert_with(Vec::new);
+            }
             "--occurred" => env.occurred = Some(value()?),
             "--observer" => env.observer = value()?,
             "--emitted" => env.emitted = value()?,
@@ -71,6 +80,9 @@ pub(crate) fn from_args(
             },
         }
     }
+    if nothing && env.sets.as_ref().is_some_and(|keys| !keys.is_empty()) {
+        return Err(usage("--sets-nothing takes no --sets beside it"));
+    }
     env.kind = kind.ok_or_else(|| usage("emit takes a kind"))?;
     if let Some(message) = message {
         fields.push(("text".to_owned(), Json::Str(message)));
@@ -92,7 +104,7 @@ fn shape(line: usize, what: &str) -> Fail {
 
 /// The envelope fields a line may carry, beside `label`, `payload` and `salt`.
 const ENVELOPE_FIELDS: &[&str] = &[
-    "kind", "observer", "emitted", "occurred", "about", "of", "prev", "under", "erases",
+    "kind", "observer", "emitted", "occurred", "about", "of", "prev", "under", "erases", "sets",
 ];
 
 /// One draft per line: a changeset. A line names what breaks, and nothing is
