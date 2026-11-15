@@ -108,7 +108,8 @@ private def keyedSettleCase : Except String J := do
         ("where", .obj [("status", .obj [("is", .str "closed")])])]),
       ("note", .obj [("latest-by", .str "of"), ("follow", .str "keys"),
         ("where", .obj [("title", .obj [("is", .str "note")])])])])]
-  let base : List Section := [⟨"task:1".toList, [w.value.toList]⟩]
+  -- the lens reads the head, B, before and after the last step
+  let base : List Section := [⟨"task:1".toList, [b.value.toList]⟩]
   scenario "keys-01-settled-setter" "task:1" spj [w, b, e]
     [("before", [w]), ("set", [w, b]), ("withheld", [w, b.withhold]), ("erased-alone", [w, b.erase]),
       ("erased", [w, b, e])] base (render base)

@@ -175,10 +175,10 @@
       "base": [
         {
           "id": "task:1",
-          "body": ["write the note"]
+          "body": [""]
         }
       ],
-      "text": ["::: task:1", "write the note", ":::"]
+      "text": ["::: task:1", "", ":::"]
     }
   },
   "expect": {
@@ -569,12 +569,12 @@
       }
     ],
     "lens": {
-      "rendered": ["::: task:1", "write the note", ":::"],
+      "rendered": ["::: task:1", "", ":::"],
       "outcomes": [],
       "applied": [
         {
           "id": "task:1",
-          "body": ["write the note"]
+          "body": [""]
         }
       ]
     }
