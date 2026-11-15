@@ -4,7 +4,7 @@
 // Written from protocol/ and vectors/README.md. No dependencies.
 
 import { occurredSpan, problem, wellFormed, NOT_UNICODE } from "./loops.mjs";
-import { answer, held, payloadOf, YES, UNKNOWN } from "./where.mjs";
+import { answer, held, payloadOf, payloadReading, testAnswer, YES, NO, UNKNOWN } from "./where.mjs";
 import * as F from "./fold.mjs";
 import { admit } from "./realm.mjs";
 
@@ -195,8 +195,9 @@ function slotOf(name, n) {
   const [type] = types;
   const [follow, limit, by, where] = ["follow", "limit", "by", "where"].map((k) => get(n, k));
   if (type === "latest-by" && follow === undefined) refuse("follow-missing", [...at, "follow"]);
-  // Every fold type may follow prev; latest-by must.
-  if (follow !== undefined && follow !== "prev") refuse("follow-invalid", [...at, "follow"]);
+  // Every fold type may follow prev; latest-by must follow prev or keys.
+  if (follow !== undefined && follow !== "prev" && !(follow === "keys" && type === "latest-by"))
+    refuse("follow-invalid", [...at, "follow"]);
   if (limit !== undefined && (!(Number.isSafeInteger(limit) && limit >= 1) || type !== "collect")) refuse("limit-invalid", [...at, "limit"]);
   // by: after limit, before the argument; every fold type but latest-by, following or not.
   if (by !== undefined && (byOf(by) === null || type === "latest-by"))
@@ -316,6 +317,49 @@ function latestBy(states, spec, slot) {
   return { things, unread: unread.size };
 }
 
+// A where map asked of a thing whose records are `rs`, as a slot following
+// keys asks it: each payload test of every live setter of its field. One
+// answer from all of them is the answer; different answers, or a setter whose
+// payload is not held, is unknown. A field no record of the thing sets is
+// absent. Envelope tests are not asked here: they choose heads.
+export function thingAnswer(where, rs) {
+  let out = YES;
+  for (const [name, tests] of Object.entries(where ?? {})) {
+    if (name.startsWith("env.")) continue;
+    const setters = rs.filter((r) => F.liveFor(rs, name, r));
+    for (const [op, arg] of Object.entries(tests)) {
+      const as = setters.map((r) => testAnswer(op, arg, payloadReading(name, r)));
+      const a = as.length === 0 ? testAnswer(op, arg, { type: "value", held: true, v: undefined })
+        : as.every((x) => x === as[0]) ? as[0] : UNKNOWN;
+      if (a === NO) return NO;
+      if (a === UNKNOWN) out = UNKNOWN;
+    }
+  }
+  return out;
+}
+
+const envelopeTests = (where) =>
+  where === undefined ? undefined : Object.fromEntries(Object.entries(where).filter(([k]) => k.startsWith("env.")));
+
+// Latest-by following keys: each thing one of whose heads `from` and the
+// envelope tests choose, alone, and whose payload tests hold of the thing,
+// with its whole keyed state. A chosen thing whose tests are unknown is unread once.
+function keyedLatest(keyed, spec, slot) {
+  const things = Object.create(null);
+  let unread = 0;
+  const env = envelopeTests(slot.where);
+  for (const [t, { rs, state }] of keyed) {
+    if (!state.heads.some((h) => takes(spec, h) && answer(env, h) === YES)) continue;
+    const a = thingAnswer(slot.where, rs);
+    if (a === UNKNOWN) unread++;
+    else if (a === YES) things[t] = {
+      keys: Object.fromEntries(state.keys.map(([k, ss]) => [k, ss.map(shownOf)])),
+      whole: state.whole.map(shownOf), heads: state.heads.map(shownOf),
+    };
+  }
+  return { things, unread };
+}
+
 // Accumulating slots select, then fold the records `from` takes. Slots over
 // heads (latest-by, and collect, count, sum, min and max following prev)
 // supersede over every record held, then choose among the heads, so selection
@@ -355,38 +399,43 @@ function grouped(slot, spec, ctx) {
   return { groups, unread, ungrouped };
 }
 
-function plainSlot(slot, spec, { taken, current, states }) {
+function plainSlot(slot, spec, { taken, current, states, keyed }) {
   const where = slot.where;
   const pool = slot.follow === "prev" ? current : taken;
   if ("count" in slot) return F.count(pool, { where });
   for (const type of ["sum", "min", "max"]) if (type in slot) return F[type](pool, { where, field: slot[type] });
-  if ("latest-by" in slot) return latestBy(states, spec, slot);
+  if ("latest-by" in slot) return slot.follow === "keys" ? keyedLatest(keyed(), spec, slot) : latestBy(states, spec, slot);
   return collect(pool, slot);
 }
 
 // Every slot's value, by name. `current` is the whole-reader heads `from`
-// takes: each thing's heads, each id once (a record heads one thing).
+// takes: each thing's heads, each id once (a record heads one thing). `keyed`
+// gives each thing's records and keyed state, worked out when a slot asks.
 // Strings in UTF-16 code-unit order, the order the model writes keyed members in.
 export const utf16Order = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
 
 // A value as JSON text. A keyed object, a map from things or group keys, has
 // its keys in UTF-16 code-unit order (an object's own enumeration would put
 // integer-like keys first); every other object is written in the order it was
-// built. Integers past the safe range are written exactly.
-export function jsonText(v, keyed = false) {
+// built. `each`, when given, writes each member's value. Integers past the
+// safe range are written exactly.
+export function jsonText(v, keyed = false, each = null) {
   if (typeof v === "bigint") return v.toString();
   if (v === null || typeof v !== "object") return JSON.stringify(v);
   if (Array.isArray(v)) return `[${v.map((x) => jsonText(x)).join(",")}]`;
   const keys = keyed ? Object.keys(v).sort(utf16Order) : Object.keys(v);
-  return `{${keys.map((k) => `${JSON.stringify(k)}:${jsonText(v[k])}`).join(",")}}`;
+  return `{${keys.map((k) => `${JSON.stringify(k)}:${each ? each(v[k]) : jsonText(v[k])}`).join(",")}}`;
 }
 
 // Slot values as JSON text, members in the order the model writes them: the
-// slots in the spec's written order (`slotNames`), the keys of `groups` and
-// of `things` in UTF-16 code-unit order, every other object as it was built.
+// slots in the spec's written order (`slotNames`), the keys of `groups`, of
+// `things` and of a keyed thing's `keys` in UTF-16 code-unit order, every
+// other object as it was built.
+const keyedThing = (x) => Array.isArray(x) ? jsonText(x)
+  : `{${Object.keys(x).map((k) => `${JSON.stringify(k)}:${jsonText(x[k], k === "keys")}`).join(",")}}`;
 export function slotsText(out) {
   const slot = (v) => `{${Object.keys(v).map((k) =>
-    `${JSON.stringify(k)}:${jsonText(v[k], k === "groups" || k === "things")}`).join(",")}}`;
+    `${JSON.stringify(k)}:${k === "things" ? jsonText(v[k], true, keyedThing) : jsonText(v[k], k === "groups")}`).join(",")}}`;
   return `{${slotNames(out).map((n) => `${JSON.stringify(n)}:${slot(out[n])}`).join(",")}}`;
 }
 
@@ -399,6 +448,9 @@ export function runSpec(spec, records) {
     current: F.heads(records).filter((r) => takes(spec, r)),
     states: F.states(records),
   };
+  let keyedStates;
+  ctx.keyed = () => keyedStates ??= new Map([...F.recordsByThing(records)].map(([t, rs]) =>
+    [t, { rs, state: F.keyedOf(rs, ctx.states.get(t)) }]));
   const names = slotNames(spec.fold), out = Object.create(null);
   for (const name of names) out[name] = runSlot(spec.fold[name], spec, ctx);
   return inOrder(out, names);

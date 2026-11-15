@@ -139,12 +139,7 @@ function headsOf(records) {
 // Each thing's heads (records), newest first.
 export function states(records) {
   checkTimes(records);
-  const byThing = new Map();
-  for (const r of distinct(records)) {
-    const t = thingOf(r);
-    byThing.set(t, [...(byThing.get(t) ?? []), r]);
-  }
-  return new Map([...byThing].map(([t, rs]) => [t, headsOf(rs)]));
+  return new Map([...recordsByThing(records)].map(([t, rs]) => [t, headsOf(rs)]));
 }
 
 const ids = (rs) => rs.map((r) => r.id);
@@ -154,6 +149,64 @@ export function latestBy(records) {
   const out = Object.create(null);
   for (const [t, hs] of states(records)) out[t] = { heads: ids(hs), winner: hs.length ? hs[0].id : null, others: ids(hs.slice(1)) };
   return out;
+}
+
+// A thing read by its live setters (latest-by following keys). A record
+// without `sets` is read whole and sets every key; `"sets": []` sets none.
+// Every record sets the envelope. Liveness reads only records of the thing,
+// admitted and held: a `prev` naming a record not held reaches nothing.
+
+export const setsKey = (r, k) => r.sets === undefined || r.sets.includes(k);
+const readWhole = (r) => r.sets === undefined;
+
+// The records of `rs` above `r` over `prev`: those that name it, and those that
+// name a record above it, through `rs`.
+export function above(rs, r) {
+  const reached = new Set([r.id]);
+  for (let grew = true; grew;) {
+    grew = false;
+    for (const q of rs) {
+      if (!reached.has(q.id) && (q.prev ?? []).some((p) => reached.has(p))) { reached.add(q.id); grew = true; }
+    }
+  }
+  return rs.filter((q) => (q.prev ?? []).some((p) => reached.has(p)));
+}
+
+// A setter of k is live for k when no record above it sets k.
+export const liveFor = (rs, k, r) => setsKey(r, k) && !above(rs, r).some((q) => setsKey(q, k));
+
+// Live for some key, the envelope among them: a head is live for the envelope;
+// a whole-read record is live for some key until a whole-read record is above it.
+export function live(rs, r) {
+  const up = above(rs, r);
+  if (up.length === 0) return true;
+  if (readWhole(r)) return !up.some(readWhole);
+  return r.sets.some((k) => liveFor(rs, k, r));
+}
+
+const utf16 = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
+
+// A thing's keyed state from its records `rs` and its heads: each key some live
+// record declares, with that key's live setters; the live whole-read records;
+// the heads. Each list newest first.
+export function keyedOf(rs, heads) {
+  const lives = rs.filter((r) => live(rs, r));
+  const names = [...new Set(lives.flatMap((r) => r.sets ?? []))].sort(utf16);
+  return {
+    keys: names.map((k) => [k, rs.filter((r) => liveFor(rs, k, r)).sort(newestFirst)]),
+    whole: lives.filter(readWhole).sort(newestFirst),
+    heads,
+  };
+}
+
+// Each thing's records (each id once).
+export function recordsByThing(records) {
+  const byThing = new Map();
+  for (const r of distinct(records)) {
+    const t = thingOf(r);
+    byThing.set(t, [...(byThing.get(t) ?? []), r]);
+  }
+  return byThing;
 }
 
 // Latest chooses the newest head across all things.

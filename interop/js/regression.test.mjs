@@ -559,3 +559,16 @@ test("slots are written in the spec's order, integer-like names included", () =>
   assert.deepEqual(Object.keys(out), ["1", "10", "b", "a"]);
   assert.deepEqual({ ...out }, { 1: { value: 3, unread: 0 }, 10: { value: 2, unread: 0 }, a: { value: 2, unread: 0 }, b: { value: 2, unread: 0 } });
 });
+
+// A keyed thing's `keys` is a map from key names, written in UTF-16 order as
+// the model writes it. An object's own enumeration would put "10" and "2"
+// before "a"; and "10" comes before "2" in UTF-16 order.
+test("a keyed thing's keys are written in UTF-16 order, integer-like names included", () => {
+  const root = { ...record(1, "task:a"), fields: { a: 1, 10: 2, 2: 3 } };
+  const set = (n, k, prev) => ({ ...record(n, "task:a", prev), sets: [k] });
+  const records = [root, set(2, "a", [root.id]), set(3, "2", [id(2)]), set(4, "10", [id(3)])];
+  const { parsed } = parseSpecText('{"vertex":"v","from":[{"store":"."}],"fold":{"s":{"latest-by":"of","follow":"keys"}}}');
+  const text = slotsText(runSpec(parsed, records));
+  const keys = readJson(text).members[0][1].members[0][1].members[0][1].members[0][1];
+  assert.deepEqual(keys.members.map(([k]) => k), ["10", "2", "a"]);
+});
