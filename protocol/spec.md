@@ -71,7 +71,7 @@ Any other key is refused.
 Settle forms before admission, then run heads and all slots over admitted records.
 For each slot, count each unread record id once, or for a slot that follows `keys` each unread thing once.
 For `collect`, count unread candidates before the limit.
-Apply the limit only to the ordered list of matching records.
+Apply the limit only to the ordered list of matching records; for a `collect` that follows `keys`, the limit counts things, each listed whole (below).
 
 A record belongs to exactly one thing, its `of` or its own id.
 `about` plays no part in heads.
@@ -136,7 +136,7 @@ A selected thing whose tests answer unknown is unread, once; a thing is counted 
 
 - `count` counts the selected things whose tests answer yes. A thing forked across records read whole counts once here, and once per head under `"follow": "prev"`.
 - `sum`, `min` and `max` read the field from its live setters, as a payload test does. With one live setter the field is read from it, by the rule below for a record's field. With none, or with two or more, it is unread, also when two hold the same number: no values are compared. So is a thing whose one live setter is erased or withheld, or holds no safe whole number in the field, as a record would be.
-- `collect` lists the live records of the selected things, newest first in content order, a pure-join head among them, each with what is shown of it. `limit` applies to that list of records, as it applies to the matching records of a `collect` without `follow`.
+- `collect` lists the live records of the selected things, newest first in content order, a pure-join head among them, each with what is shown of it. `limit` counts things, not records: the list holds every live record of the first `limit` things and no record of the rest, so a thing is listed whole or not at all. The things are taken in the order of each one's newest live record, newest first in content order, the order of the list itself; content order ends in the record id, so no two things tie. The records of the things taken keep their place in the one newest-first list, so they are not grouped thing by thing, and the result keeps its shape. A thing whose tests are unknown is counted in `unread` before the limit and takes no place under it.
 
 A slot that follows `keys` reads a payload field only from the records that set it, so it never reads a payload key a record with `sets` does not declare.
 
@@ -187,7 +187,7 @@ Settling, admission, the heads and liveness come first, over everything held.
 
 - **A payload field:** the thing's keys are the keys of the field's live setters, each once. A live setter that is erased or withheld makes the key unread, and the thing adds one to `unread`. With no live setter, or none whose value has a key, the thing is ungrouped.
 - **`env.kind`, `env.observer` or `env.about:<prefix>`:** the thing's keys are the keys of each head `from` and the envelope tests chose, each once. The envelope is read from the heads, so a later head moves a thing from one group to another, and a pure-join head settles two heads that mention different things. Such a key is never unread; with no key the thing is ungrouped.
-- Each group is the slot without `by` over the things in it, so a forked thing is in each of its groups once, and `limit` applies to each group's list of live records.
+- Each group is the slot without `by` over the things in it, so a forked thing is in each of its groups once, and a collect's `limit` counts the things in each group, each listed whole in each group it is in.
 
 Every selected thing (every thing whose tests answer yes or unknown) is grouped, ungrouped or unread, exactly one of these.
 

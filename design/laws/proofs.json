@@ -160,6 +160,21 @@
    "states":
    "∀ {xs : List Loops.Record} {hd : String → Loops.Record}, Loops.Addressed xs → (∀ (t : String), t ∈ Loops.thingsOf xs → (Loops.stateIn t xs).heads = [hd t]) → Loops.Distinct (List.map hd (Loops.thingsOf xs))",
    "module": "Laws.KeyedSlots"},
+  "Loops.wholeThings_whole":
+  {"uses": ["Loops.mem_wholeThings"],
+   "states":
+   "∀ {l : Option Nat} {rs : List Loops.Record} {r q : Loops.Record}, r ∈ Loops.wholeThings l rs → q ∈ rs → q.thing = r.thing → q ∈ Loops.wholeThings l rs",
+   "module": "Laws.KeyedSlots"},
+  "Loops.wholeThings_things":
+  {"uses": ["Loops.mem_wholeThings", "Loops.thingsInOrder_nodup"],
+   "states":
+   "∀ {k : Nat} {rs : List Loops.Record}, (∀ (r : Loops.Record), r ∈ Loops.wholeThings (some k) rs → r.thing ∈ List.take k (Loops.thingsInOrder rs)) ∧ (List.take k (Loops.thingsInOrder rs)).length ≤ k ∧ (List.take k (Loops.thingsInOrder rs)).Nodup",
+   "module": "Laws.KeyedSlots"},
+  "Loops.wholeThings_distinct":
+  {"uses": ["Loops.thingsInOrder_distinct"],
+   "states":
+   "∀ {l : Option Nat} {rs : List Loops.Record}, (List.map Loops.Record.thing rs).Nodup → Loops.wholeThings l rs = Loops.limitTo l rs",
+   "module": "Laws.KeyedSlots"},
   "Loops.wholeHeads_taken_slice":
   {"uses":
    ["Loops.head_thing",
@@ -307,6 +322,20 @@
    "states":
    "∀ (m : Loops.Record → List String) (xs : List Loops.Record), Loops.thingsOf (List.map (Loops.mentioning m) xs) = Loops.thingsOf xs",
    "module": "Laws.Things"},
+  "Loops.thingsInOrder_nodup":
+  {"uses": [],
+   "states": "∀ (rs : List Loops.Record), (Loops.thingsInOrder rs).Nodup",
+   "module": "Laws.KeyedSlots"},
+  "Loops.thingsInOrder_distinct":
+  {"uses": [],
+   "states":
+   "∀ {rs : List Loops.Record}, (List.map Loops.Record.thing rs).Nodup → Loops.thingsInOrder rs = List.map Loops.Record.thing rs",
+   "module": "Laws.KeyedSlots"},
+  "Loops.thingsInOrder.eq_def":
+  {"uses": [],
+   "states":
+   "∀ (x : List Loops.Record), Loops.thingsInOrder x = match x with | [] => [] | r :: rs => r.thing :: List.filter (fun x => x != r.thing) (Loops.thingsInOrder rs)",
+   "module": "Laws.KeyedSlots"},
   "Loops.thing_view":
   {"uses":
    ["Loops.SameEnvelope.id", "Loops.SameEnvelope.of", "Loops.View.envelope"],
@@ -364,6 +393,11 @@
    "states":
    "Loops.Anchored Loops.tg.all ∧ Loops.liveOf Loops.tg.all = [Loops.tg.x, Loops.tg.y3] ∧ Loops.keyedIn \"k1\" [Loops.tg.x, Loops.tg.y3] = Loops.keyedIn \"k1\" Loops.tg.all ∧ Loops.keyedIn \"k1\" [Loops.tg.d, Loops.tg.x, Loops.tg.y2, Loops.tg.y3] ≠ Loops.keyedIn \"k1\" Loops.tg.all",
    "module": "Laws.LiveSlice"},
+  "Loops.take_full":
+  {"uses": [],
+   "states":
+   "∀ {α : Type u_1} {l : List α} {k : Nat} {a : α}, a ∈ l → ¬a ∈ List.take k l → (List.take k l).length = k",
+   "module": "Laws.KeyedSlots"},
   "Loops.takeWhile_slash":
   {"uses": [],
    "states":
@@ -1291,6 +1325,11 @@
    "states":
    "∀ {n : Nat} {s1 s2 : Int} {f1 f2 : List Int}, Loops.Stripped f1 → Loops.Stripped f2 → f1.length ≤ n → f2.length ≤ n → (s1 :: f1 < s2 :: f2 ↔ Loops.momentScaled n s1 f1 < Loops.momentScaled n s2 f2)",
    "module": "Laws.Time"},
+  "Loops.mem_wholeThings":
+  {"uses": [],
+   "states":
+   "∀ {k : Nat} {rs : List Loops.Record} {r : Loops.Record}, r ∈ Loops.wholeThings (some k) rs ↔ r ∈ rs ∧ r.thing ∈ List.take k (Loops.thingsInOrder rs)",
+   "module": "Laws.KeyedSlots"},
   "Loops.mem_wholeHeads":
   {"uses":
    ["Loops.mem_orderHeads", "Loops.mem_perHeads", "Loops.perHeads_addressed"],
@@ -1308,6 +1347,11 @@
    "states":
    "∀ {zs : List Loops.Record} {t : String}, t ∈ Loops.thingsOf zs ↔ ∃ r, r ∈ zs ∧ r.isOf t = true",
    "module": "Laws.KeyedSpecSlice"},
+  "Loops.mem_thingsInOrder":
+  {"uses": [],
+   "states":
+   "∀ {rs : List Loops.Record} {t : String}, t ∈ Loops.thingsInOrder rs ↔ ∃ r, r ∈ rs ∧ r.thing = t",
+   "module": "Laws.KeyedSlots"},
   "Loops.mem_stateIn_heads_iff":
   {"uses":
    ["Loops.LatestBy.Inv.heads_mem",
@@ -1533,6 +1577,11 @@
    "states":
    "∀ {rs : List Loops.Record} {o : Option String} {r : Loops.Record}, Loops.liveK rs o r = true ↔ Loops.setsK o r = true ∧ ∀ (q : Loops.Record), q ∈ Loops.above rs r → Loops.setsK o q = false",
    "module": "Laws.LiveSlice"},
+  "Loops.liveIn_thing":
+  {"uses": ["Loops.isOf_iff"],
+   "states":
+   "∀ {xs : List Loops.Record} {t : String} {r : Loops.Record}, r ∈ Loops.liveIn xs t → r.thing = t",
+   "module": "Laws.KeyedSlots"},
   "Loops.liveIn_sub":
   {"uses": [],
    "states":
@@ -1700,6 +1749,19 @@
   {"uses": [],
    "states":
    "∀ (f : Option Loops.Follow) (limit : Option Nat) (xs : List Loops.Record) (ev : String → Loops.Tri), ∃ hs, Loops.keyedValue (Loops.FoldType.collect f limit) xs ev = Loops.SlotValue.heads hs (List.filter (fun x => ev x == Loops.Tri.unknown) (Loops.thingsOf xs)).length",
+   "module": "Laws.KeyedSlots"},
+  "Loops.keyedValue_collect_limit":
+  {"uses":
+   ["Loops.SlotValue.heads.injEq",
+    "Loops.liveIn_sub",
+    "Loops.liveIn_thing",
+    "Loops.mem_newestFirst_iff",
+    "Loops.mem_thingsInOrder",
+    "Loops.mem_wholeThings",
+    "Loops.take_full",
+    "Loops.wholeThings_things"],
+   "states":
+   "∀ {xs : List Loops.Record}, Loops.Addressed xs → ∀ (f : Option Loops.Follow) (ev : String → Loops.Tri) (k : Nat) {hs : List (Loops.RecordId × Loops.Shown)} {u : Nat}, Loops.keyedValue (Loops.FoldType.collect f (some k)) xs ev = Loops.SlotValue.heads hs u → ∃ T, T.Nodup ∧ T.length ≤ k ∧ (∀ (t : String), t ∈ T → t ∈ Loops.thingsOf xs ∧ ev t = Loops.Tri.yes) ∧ (∀ (t : String), t ∈ Loops.thingsOf xs → ev t = Loops.Tri.yes → Loops.liveIn xs t ≠ [] → ¬t ∈ T → T.length = k) ∧ ∀ (p : Loops.RecordId × Loops.Shown), p ∈ hs ↔ ∃ t, t ∈ T ∧ ∃ r, r ∈ Loops.liveIn xs t ∧ (r.id, r.shown) = p",
    "module": "Laws.KeyedSlots"},
   "Loops.keyedValue_collect":
   {"uses":
@@ -2406,10 +2468,13 @@
     "Loops.idsOf_length",
     "Loops.length_filter_map_on",
     "Loops.liveIn_sub",
+    "Loops.liveIn_thing",
     "Loops.mem_newestFirst_iff",
+    "Loops.newestFirst_distinct",
     "Loops.newestFirst_unread",
     "Loops.payTest_unlinked",
     "Loops.sorted_ext",
+    "Loops.wholeThings_distinct",
     "Loops.whole_distinct",
     "Loops.whole_hd_mem",
     "Loops.whole_heads_flat",
