@@ -9,6 +9,7 @@ All three carry D8c's `sets` in the envelope and refuse one that is not a set of
 All three read a thing by its live setters in every slot that follows `keys`: latest-by, and count, sum, min, max and collect, with `by` or without.
 All three refuse every envelope shape by name (issue #1) and let a label stand in `under`.
 All three writers refuse an `under` target they do not hold (`under-unknown`).
+`loops emit` follows D8c's anchor rule: an emit of a thing names in `prev` every live record of it the store holds, and carries the thing's whole `about`.
 All three let count, sum, min and max follow `prev` (issue #3), and group count, sum, min, max and collect with `by` (issue #2).
 The law index has 104 entries, 1006 theorems, and 6 boundary witnesses.
 See [the law index](design/laws/laws.json) and [proof and boundary data](design/laws/).
@@ -17,7 +18,7 @@ These proofs apply only under their stated premises.
 The tree has 600 JSON fixtures: 588 generated fixtures and 12 standard fixtures.
 Lean replays 579 generated fixtures; 9 occurred fixtures use separate checks.
 Rust checks every fixture, six JCS byte pairs, 4,000 binary64 cases, and 128 SUPERCOP signing cases with ed25519-dalek.
-Rust passes 167 tests; JavaScript passes 6,944 vector checks and 39 regression and law tests.
+Rust passes 174 tests; JavaScript passes 6,944 vector checks and 39 regression and law tests.
 Both also check that `spec/run` answers write their members, group, thing and key names included, in the model's order; JavaScript checks `fold/latest-by` answers' thing keys too.
 JavaScript refuses a held record's invalid `emitted` or `occurred` before it answers, as the Lean and Rust readers do.
 The fuzz suite passes 60 tests.
@@ -67,9 +68,9 @@ See [the mutation report](model/mutate/REPORT.md) for outcomes, restoration chec
 ## Step 2: the first product slice
 
 `loops-place` and the `loops` CLI emit, read and fold for one person, signed, over `.loops/`.
-Stored lines match the model's record vectors byte for byte; 22 tests drive the place and the binary.
+Stored lines match the model's record vectors byte for byte; 29 tests drive the place and the binary.
 The layout, the CLI and their refusal codes are a working proposal, not protocol.
-[`rust/PLACE.md`](rust/PLACE.md) lists what is implemented and the ten choices made on the way.
+[`rust/PLACE.md`](rust/PLACE.md) lists what is implemented and the fourteen choices made on the way.
 Two of them need the model: what a place is has no law, and a payload reaches a fold only as `value`, `n` and top-level fields.
 
 **Built, 2026-11-11: `"follow": "prev"` on count, sum, min and max (issue #3).**
@@ -176,7 +177,7 @@ Never round or cap current model outputs.
 ### D8: Items, mentions and declared keys
 
 Kyle ruled this on 2026-11-10.
-D8a and D8b are built across the model, vectors, JavaScript and Rust; of D8c, `sets` is built in the envelope, liveness per key, latest-by following `keys`, count, sum, min, max, collect and `by` following `keys`, and the slice laws for one keyed thing; the slice law for a spec with a keyed slot and the writer's anchor rule are not.
+D8a and D8b are built across the model, vectors, JavaScript and Rust; of D8c, `sets` is built in the envelope, liveness per key, latest-by following `keys`, count, sum, min, max, collect and `by` following `keys`, the slice laws for one keyed thing, and the anchor rule and copied `about` in `loops emit`; the slice law for a spec with a keyed slot is not.
 It changes the settled envelope, so it lands as R1–R6 and D1–D6 did: model, vectors, JavaScript, Rust, then protocol and pages.
 **Finding:** Two apps built on the product slice hit one wall on 2026-11-10.
 The orchestration dry run is in [Scenarios](design/rethink/sections/13-scenarios.html), step 8; margins-claude's `work` app is described in its notes on merge request !12.
@@ -258,7 +259,7 @@ Making it count takes a new emit that declares it, since the declaration is in t
 The model gives each record one thing, `of` or its own id, and makes `about` a mention only.
 Its laws are restated over the thing, and `thing.one`, `thing.mentions` and `record.of` join the index.
 The vectors are regenerated; JavaScript and Rust agree on every one, and the `d8ab-1` campaign finds no mismatch.
-D8c, declared keys, is not built, and the keyed fold's slice law is not stated.
+D8c, declared keys, is built in the paragraphs below, all but its slice laws.
 **Kyle's choices, confirmed 2026-11-10:**
 - **Spec:** the spec says `"latest-by": "of"`. `from.of` selects a thing's records; `from.about` is a mention test.
 - **Filling in `of`:** only the single-record `emit --prev` path fills `of` in, from the record it replaces.
@@ -282,7 +283,7 @@ Nothing compares `sets` with the payload or with another record's: a declared ke
 No fold, spec or lens reads it yet; it is carried, hashed into the id, stored, read back and shown, and an erased or withheld record keeps it with its envelope.
 The law is `record.keys`; `record.sets` now covers `sets` too.
 `record/15`–`19`, `45`–`47` and `shape-sets-*`, and `batch/76`–`82`, pin it.
-The keyed fold, liveness per key and their laws are built in the next paragraph, the other slots that follow `keys` in the one after it, and the slice laws for one thing in the one after that; the slice law for a spec with a keyed slot and the anchor rule in `loops emit` are not.
+The keyed fold, liveness per key and their laws are built in the next paragraph, the other slots that follow `keys` in the one after it, the slice laws for one thing in the one after that, and the anchor rule in `loops emit` in the last; the slice law for a spec with a keyed slot is not.
 **Implementer choices, for Kyle to confirm:**
 - `sets` holds keys, not labels: in a changeset a key that starts with `@` is written as given, neither replaced nor looked up (`batch/76`).
 - A held record's `sets` is checked as its other fields are: a stored line whose `sets` is not keys is refused with the writer's code, and one in another order is not canonical. The reader's record in fold, realm, scenario and spec vectors carries `sets` since the keyed fold below.
@@ -300,7 +301,7 @@ The result per thing is `{"keys", "whole", "heads"}`, as in the note's example, 
 `thingTest` (`Cond.onThing` per test) takes a thing's records and is what the next slice's count, sum, min, max, collect and `by` can ask.
 The laws are `keyed.live`, `keyed.fold` and `keyed.select`; `spec.set` covers the keyed slot. `spec.slice` does not: `Spec.run_slice` takes a spec with no keyed slot, since a keyed slot reads live setters the spec does not take, and the spec-slice sweep finds slices that answer it differently.
 `spec/parse/97`–`110`, `spec/run/31`–`41` and `scenario/keys-01-settled-setter` pin it; the CLI walk reads a keyed thing through `loops fold`.
-The slice law for a spec with a keyed slot, and the anchor rule and copied `about` in `loops emit`, are not built.
+The slice law for a spec with a keyed slot is not built; the slice laws for one thing, and the anchor rule and copied `about` in `loops emit`, are, in later paragraphs.
 **Implementer choices, for Kyle to confirm:**
 - A field no record of the thing sets is absent, as a missing field in a held payload is: `is`, `present`, `at-least` and `below` answer no, `not` and `absent` answer yes (`spec/run/40`, `task:13`). A live setter that declares a field its payload lacks reads it as absent too.
 - A chosen thing whose payload tests answer unknown counts once in `unread`; `unread` counts things, not records.
@@ -318,7 +319,7 @@ Count counts the selected things; sum, min and max read the field from its one l
 With `by`, a payload key is read from each live setter of the field and an envelope key from each chosen head (`By.thingKeys`), and each group is the slot without `by` over its things (`Slot.keyedGrouped`).
 The laws are `keyed.slots`, `keyed.by` and `keyed.whole-read`: when every record is read whole and every thing has one head, each such slot, grouped or not, gives what the same slot following `prev` gives (`Slot.keys_as_prev`). `spec.set` covers them; `spec.slice` does not, and its premise now leaves out every slot that follows `keys`, as the spec-slice sweep does.
 `spec/run/42`–`50` pin it, `42` being the note's count of open tasks beside the same count following `prev`; the CLI walk counts, sums and collects through `loops fold`.
-The slice law for a spec with a keyed slot, and the anchor rule and copied `about` in `loops emit` (section 5), are not built; the slice laws for one thing are in the paragraph after these choices.
+The slice law for a spec with a keyed slot is not built; the slice laws for one thing are in the paragraph after these choices, and the anchor rule and copied `about` in `loops emit` (section 5) in the one after that.
 **Implementer choices, for Kyle to confirm:**
 - A field with no live setter is unread to sum, min and max, as a record without the field is; so is one whose live setter holds no safe whole number there. A record with `sets` that does not declare the field is no setter of it, so a field its payload holds but does not declare is unread too (`spec/run/44`, `task:5`).
 - `unread` counts things, each at most once in a slot: a thing whose tests are unknown, or a selected thing whose field or key cannot be read. Within a group, a thing whose field cannot be read adds to that group's `unread`, as a record does.
@@ -342,6 +343,25 @@ Two things the port found:
 - **No cycle over `prev` is a premise** (`NoCycle`) of every law but *witnessed*: a dead setter has a live setter above it only when going up ends. Real ids give that, since an id is a hash of an envelope that holds its `prev`. The model's ids are numbers, and a fold vector has a record that names itself, so the laws state it.
 - **`thing.slice`'s `prev` targets do not carry over.** Under `"follow": "prev"` a target's envelope is harmless: the record that names it is above it. Under `keys` an envelope still sets its keys, so a target held without its witness reads as a live setter (`target_needs_witness`). A whole `thing.slice`, which holds every record of the thing, gives the keyed state too (`keyedIn_thing_slice`).
 The slice law for a spec with a keyed slot is not stated: `Spec.run_slice` keeps its premise. By experiment (margins `sl-py/keyspecslice.py`, 16,000 spec and store pairs) the spec slice with the live records, the members between two sent members and the erasers of the live records answers every keyed slot, and the spec slice alone answers wrongly in 5,119 and 4,840 of 8,000.
+
+**Built, 2026-11-14: the writer**, section 5 of the design note below, in `loops emit`.
+An emit of a thing names in `prev`, beside any `--prev`, every record of that thing the store holds that is live for some key, the envelope among them, and so every head (`rust/PLACE.md`, choice 11).
+The thing is `--of`, or what `--prev` replaces; liveness is the core's `live`, over the store settled and admitted as `loops fold` reads it, so an erased or withheld record is named by its envelope.
+With no `--about`, the emit copies `about` from the thing's heads, every mention when there are several; `--about` states the whole `about`, and `--no-about` an empty one.
+A root, an erasure and the first record of a thing name nothing and copy nothing. `emit -` fills nothing in, and nothing refuses an unanchored record.
+Nothing in the model, the vectors, JavaScript or the core changed: `loops_place::fill` holds the rule, over the core's `live`, and `loops emit` calls it before the batch check.
+The CLI walk writes the note's history (a task created whole, then `--sets status`, then `--sets title`) with `loops emit` alone and checks each `prev` against the live records a collect that follows `keys` lists; it covers a whole-read emit above keyed ones, a fork merged by export and import and joined by one emit, an erased and a withheld live record, `--about`, `--no-about` and a moved task, and a changeset that fills nothing in.
+`rust/place/tests/anchor.rs` writes 300 seeded random emits through the same filler, over six things and four keys, with whole-read emits, pure joins, moves, explicit `prev`s and erasures: one writer, and two replicas that merge both ways now and then.
+Every 25 emits it requires the history to be anchored (every record above a live record names it) and each thing's live records, with the records that erase them, to answer fifteen slots that follow `keys` as the whole holding does: latest-by, count, sum, min, max and collect, with `where`, `limit` and `by`. At 300 emits the slice holds 41 of 300 records for one writer and 44 of 300 merged; no answer differed. Written without the anchor, each emit naming one live record of its thing, the same seeds give slices that answer differently at 10 of the 12 checkpoints for one writer and 10 of the 24 for the two replicas, so the property has teeth.
+Existing walk tests that made a fork with a second `--prev` to one record now write the fork as a changeset that states its own `prev`, since `loops emit` would name the first revision in the second; in the two-store walk, b's note now replaces b's revision, so the merged thing has two heads, not three.
+**Implementer choices, for Kyle to confirm:**
+- With no `--about`, an emit of a thing copies the union of its heads' mentions, in canonical order; `--about`, once or more, replaces the copy; `--no-about` states an empty `about`; `--no-about` with `--about` is a usage error.
+- An emit builds on every head of its thing and every other live record held, whether or not `--prev` names them; an explicit `--prev` is kept beside them, live or not. The heads it builds on, for `about`, are the thing's heads, not an explicit `--prev` that is not one.
+- Liveness is read over the admitted records: a held record admission refuses is not named.
+- `loops erase` writes a root with `erases` and no `of`, so it names nothing; `--erases` and `--under` on an emit change nothing about the anchor; a thing named by a root's id is that root's thing, and the root is named while it is live.
+- What was filled in is not printed: `emit` answers the id, and `loops get` shows the `prev` and `about` written.
+- No flag turns the anchor off; `emit -` is the path that fills nothing in.
+- The filler, of `of` as well as of the anchor and `about`, moved from the CLI into `loops-place` (`loops_place::fill`), so a test can drive the writer's rule over hundreds of emits without starting the binary for each; the CLI still decides when it runs.
 
 ### D8c: declared keys, design note
 
@@ -458,11 +478,13 @@ What the ruling costs: an emit no longer says only what it changes, since it res
 
 #### 5. The writer
 
+**Built 2026-11-14** in `loops emit`; see the paragraph above the note.
+
 - **The anchor rule,** as agreed on #5: an emit that sets a key names in `prev`, beside what it builds on, every record its writer holds that sets that key and is still live.
   Every emit sets the envelope, and so does every record, so the rule names every live record of the thing the writer holds (**Ruled** 2026-11-14, with the envelope reading).
   `loops emit` fills this in on the single-record path, as it fills in `of`.
 - **`about` is whole on every emit:** the head's mentions are the thing's. `loops emit` copies `about` from the heads it builds on, every mention when it builds on several. **Ruled** 2026-11-14.
-  How the command line states another `about`, or none, is left to the build.
+  How the command line states another `about`, or none, is left to the build: `--about` replaces the copy and `--no-about` states none.
 - **`emit -` fills nothing in:** a changeset states its own `prev` and its own `about`, as it states its own `of`. **Ruled.**
 - **No refusal for an unanchored emit.** It reads correctly whole; only its slice is larger. **Ruled.**
 - **A whole-read emit** names the same records and sets every key, so it is then the only live record.
@@ -478,7 +500,7 @@ What the ruling costs: an emit no longer says only what it changes, since it res
 - The caching reader for slots over heads or live setters, and what it must keep for a record with an unknown `prev`: step 4.
 - Whether two live setters conflict: a reading above the core.
 
-**Order of work:** `sets` in the model with its refusal; liveness per key, the envelope among the keys, and `latest-by` following `keys` with `heads` in its result; vectors, JavaScript, Rust; then the other slots following `keys`, selecting by heads and reading payload fields from live setters; then the laws ported, the heads law among them (done for one thing; the spec-level slice follows the other slots); then the anchor and the copied `about` in `loops emit`.
+**Order of work:** `sets` in the model with its refusal; liveness per key, the envelope among the keys, and `latest-by` following `keys` with `heads` in its result; vectors, JavaScript, Rust; then the other slots following `keys`, selecting by heads and reading payload fields from live setters; then the laws ported, the heads law among them (done for one thing; the spec-level slice follows the other slots); then the anchor and the copied `about` in `loops emit`. All but the spec-level slice law are built.
 
 ### Issue #1: envelope shape refusals, and a label in `under`
 
@@ -566,7 +588,7 @@ Each step extends the model laws, computes protocol vectors, then implements Rus
 | --- | --- | --- |
 | 0, done | The Lean spike: Count and LatestBy, one lens combinator, 23 vectors | The first laws are proved |
 | 1, done | Protocol and vectors for layer 0: canonical bytes, salt and commitment, id, signature | The model and the JS writer agree on every vector; Rust checks all fixture families and external standards |
-| 2 | Emit, read, fold for one person: JSONL segment, JSON spec, the two fold families, `"follow": "prev"`, `by`, a signing key, signing by default. `of` names a record's one thing, an id or a natural key; `about` only mentions. D8a and D8b are built; of D8c, `sets` is built in the envelope, and every slot that follows `keys`; the keyed slice laws and the writer's anchor rule are not. | It does the old CLI's workable job, signed |
+| 2 | Emit, read, fold for one person: JSONL segment, JSON spec, the two fold families, `"follow": "prev"`, `by`, a signing key, signing by default. `of` names a record's one thing, an id or a natural key; `about` only mentions. D8a and D8b are built; of D8c, `sets` is built in the envelope, every slot that follows `keys`, the slice laws for one keyed thing, and the writer's anchor rule; the slice law for a spec with a keyed slot is not. | It does the old CLI's workable job, signed |
 | 3 | Standing: declarations, admission, stances, grants, presence key, retire through; then name tables and `resolve-by` | A strict store rejects visibly; a steward's changeset takes effect |
 | 4 | Ticks: content and witness, boundaries, markers | A content tick recomputes to the same hash on two machines |
 | 5 | Sharing: the git layout, then segment-list sync | Two clones converge |

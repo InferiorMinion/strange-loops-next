@@ -7,7 +7,7 @@ use loops::{
     envelope::{self, Env},
     json::Json,
 };
-use loops_place::key;
+use loops_place::{fill::About, key};
 
 fn new_salt() -> Result<Vec<u8>, Fail> {
     key::salt().map_err(|e| Fail::System(e.to_string()))
@@ -16,13 +16,15 @@ fn new_salt() -> Result<Vec<u8>, Fail> {
 /// `emit <kind> [field=text | field:=json]... ["message"]` and its flags.
 /// `field=text` is always text and `field:=json` a JSON value, as `HTTPie` writes them.
 /// `link` resolves a record id the person typed; `thing` resolves what `--of` names.
+/// The draft comes back with whether it states its `about`: with `--about`,
+/// once or more, or `--no-about` for none; without either it is copied.
 pub(crate) fn from_args(
     args: &[String],
     now: &str,
     observer: &str,
     link: impl Fn(&str) -> Result<String, Fail>,
     thing: impl Fn(&str) -> Result<String, Fail>,
-) -> Result<Draft, Fail> {
+) -> Result<(Draft, About), Fail> {
     let mut env = Env {
         emitted: now.to_owned(),
         observer: observer.to_owned(),
@@ -33,6 +35,7 @@ pub(crate) fn from_args(
     let mut fields: Vec<(String, Json)> = Vec::new();
     let mut message = None;
     let mut nothing = false;
+    let mut no_about = false;
     let mut rest = args.iter();
     while let Some(arg) = rest.next() {
         let mut value = || {
@@ -42,6 +45,7 @@ pub(crate) fn from_args(
         };
         match arg.as_str() {
             "--about" => env.about.push(value()?),
+            "--no-about" => no_about = true,
             "--of" => env.of = Some(thing(&value()?)?),
             "--prev" => env.prev.push(link(&value()?)?),
             "--erases" => env.erases.push(link(&value()?)?),
@@ -83,11 +87,19 @@ pub(crate) fn from_args(
     if nothing && env.sets.as_ref().is_some_and(|keys| !keys.is_empty()) {
         return Err(usage("--sets-nothing takes no --sets beside it"));
     }
+    if no_about && !env.about.is_empty() {
+        return Err(usage("--no-about takes no --about beside it"));
+    }
+    let about = if no_about || !env.about.is_empty() {
+        About::Stated
+    } else {
+        About::Copied
+    };
     env.kind = kind.ok_or_else(|| usage("emit takes a kind"))?;
     if let Some(message) = message {
         fields.push(("text".to_owned(), Json::Str(message)));
     }
-    Ok(Draft {
+    let draft = Draft {
         label: None,
         env,
         salt: match salt {
@@ -95,7 +107,8 @@ pub(crate) fn from_args(
             None => new_salt()?,
         },
         payload: Json::Obj(fields),
-    })
+    };
+    Ok((draft, about))
 }
 
 fn shape(line: usize, what: &str) -> Fail {
