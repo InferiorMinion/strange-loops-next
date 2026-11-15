@@ -1010,6 +1010,40 @@ def keyedWhereSpec : Json := o [("vertex", s "open"),
     ("open-est-1", o [("sum", s "est"), ("follow", s "keys"),
       ("where", o [("status", o [("is", s "open")]), ("est", o [("is", .int 1)])])])])]
 
+-- Two live setters of a field, exactly one of them not held. task:1's second
+-- setter of `est` is withheld, task:2's erased by an eraser `from` does not
+-- take: each thing is unread to sum, min and max, though one setter is held.
+-- task:3 and task:4 do the same for `status`, which `by` reads: each is unread
+-- at the top, in no group. task:5's two setters of `est` are held, a control.
+def uh0 := kt (fixtureId 0x271) "task:1" 100 none [("est", .int 1), ("status", .str "open")]
+def uh1 := kt (fixtureId 0x272) "task:1" 200 (some ["est"]) [("est", .int 4)] [fixtureId 0x271] [] "sl:alice"
+def uh2 := (kt (fixtureId 0x273) "task:1" 210 (some ["est"]) [("est", .int 6)] [fixtureId 0x271] [] "sl:bob").withhold
+def uh3 := kt (fixtureId 0x274) "task:2" 110 none [("est", .int 2), ("status", .str "open")]
+def uh4 := kt (fixtureId 0x275) "task:2" 220 (some ["est"]) [("est", .int 5)] [fixtureId 0x274] [] "sl:alice"
+def uh5 := (kt (fixtureId 0x276) "task:2" 230 (some ["est"]) [("est", .int 7)] [fixtureId 0x274] [] "sl:bob").erase
+def uh6 : Record := { said (fixtureId 0x277) "sl:kyle" [] 300 with kind := "erasure", erases := [fixtureId 0x276] }
+def uh7 := kt (fixtureId 0x278) "task:3" 120 none [("est", .int 3), ("status", .str "open")]
+def uh8 := kt (fixtureId 0x279) "task:3" 240 (some ["status"]) [("status", .str "closed")] [fixtureId 0x278] [] "sl:alice"
+def uh9 := (kt (fixtureId 0x27a) "task:3" 250 (some ["status"]) [("status", .str "done")] [fixtureId 0x278] [] "sl:bob").withhold
+def uh10 := kt (fixtureId 0x27b) "task:4" 130 none [("est", .int 8), ("status", .str "open")]
+def uh11 := kt (fixtureId 0x27c) "task:4" 260 (some ["status"]) [("status", .str "closed")] [fixtureId 0x27b] [] "sl:alice"
+def uh12 := (kt (fixtureId 0x27d) "task:4" 270 (some ["status"]) [("status", .str "done")] [fixtureId 0x27b] [] "sl:bob").erase
+def uh13 : Record := { said (fixtureId 0x27e) "sl:kyle" [] 310 with kind := "erasure", erases := [fixtureId 0x27d] }
+def uh14 := kt (fixtureId 0x27f) "task:5" 140 none [("est", .int 9), ("status", .str "open")]
+def uh15 := kt (fixtureId 0x280) "task:5" 280 (some ["est"]) [("est", .int 10)] [fixtureId 0x27f] [] "sl:alice"
+def uh16 := kt (fixtureId 0x281) "task:5" 290 (some ["est"]) [("est", .int 11)] [fixtureId 0x27f] [] "sl:bob"
+
+def unheldSetterSpec : Json := o [("vertex", s "one-unheld"),
+  ("from", a [o [("store", s "."), ("kind", a [s "task"])]]),
+  ("fold", o [
+    ("sum", o [("sum", s "est"), ("follow", s "keys")]),
+    ("min", o [("min", s "est"), ("follow", s "keys")]),
+    ("max", o [("max", s "est"), ("follow", s "keys")]),
+    ("sum-heads", o [("sum", s "est"), ("follow", s "prev")]),
+    ("per-status", o [("count", .bool true), ("follow", s "keys"), ("by", s "status")]),
+    ("est-per-status", o [("max", s "est"), ("follow", s "keys"), ("by", s "status")]),
+    ("per-status-heads", o [("count", .bool true), ("follow", s "prev"), ("by", s "status")])])]
+
 -- Every record read whole and no thing forked: each slot that follows `keys`
 -- gives what the same slot following `prev` gives, grouped or not.
 def wr0 := kt (fixtureId 0x261) "task:1" 100 none [("status", .str "open"), ("est", .int 3)] [] ["project:x"]
@@ -1153,6 +1187,9 @@ def runCases : List RunCase := [
   -- every record read whole, no fork: `keys` gives what `prev` gives
   ⟨"49-keys-whole-read", ["spec.set", "keyed.whole-read", "spec.follow"], wholeReadSpec,
     [wr0, wr1, wr2, wr3, wr4]⟩,
+  -- two live setters, one of them withheld or erased: unread, not read from the held one
+  ⟨"50-keys-one-setter-unheld", ["spec.set", "keyed.slots", "keyed.by", "result.unread"], unheldSetterSpec,
+    [uh0, uh1, uh2, uh3, uh4, uh5, uh6, uh7, uh8, uh9, uh10, uh11, uh12, uh13, uh14, uh15, uh16]⟩,
   ⟨"gap04-unread-multi-thing", ["result.unread"],
     o [("vertex", s "x"), ("from", a [o [("store", s ".")]]), ("fold", o [
       ("by", o [("latest-by", s "of"), ("follow", s "prev"),
