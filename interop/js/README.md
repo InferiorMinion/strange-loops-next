@@ -21,6 +21,7 @@ Heads, admission (`realm.mjs`), the writer's `prev` checks (`batch.mjs`) and a s
 `about` only mentions; `from.about` and `env.about` test it as written, and it never makes a head.
 A latest-by that follows `keys` reads each thing by its live setters (`fold.mjs`, `above`, `liveFor`, `live`, `keyedOf`), over the records of the thing that were admitted.
 `from` and the envelope tests choose heads; `thingAnswer` (`spec.mjs`) asks each payload test of every live setter of its field.
+Count, sum, min, max and collect that follow `keys` read those things (`keyedThings`, `overThings`): a field from its one live setter, and with `by` a payload key from the field's live setters and an envelope key from the chosen heads (`thingKeys`).
 
 ## Raw text
 

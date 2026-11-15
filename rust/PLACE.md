@@ -160,7 +160,9 @@ refusals; `of` filled in for a revision, `--of`, and `of-not-root` and
 `prev-unrelated` against the store; `under-unknown`, and an erased and a
 withheld `under` target held; `sets` on either path, empty included, and
 kept on an erased and a withheld record; a latest-by that follows keys over a
-keyed chain, a fork, an erased setter and a pure join; a mention making no head; two stores
+keyed chain, a fork, an erased setter and a pure join; count, sum and collect
+that follow keys over a head that sets only `title`, a fork and two setters of
+one field; a mention making no head; two stores
 converging; exit codes. Expected answers come from the
 vectors or from the walk's own statements, not from the code.
 

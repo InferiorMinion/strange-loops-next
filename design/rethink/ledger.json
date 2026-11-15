@@ -193,7 +193,7 @@
     "group": "Things",
     "status": "settled",
     "claim": "D8b: <code>about</code> only mentions; it never makes a head.",
-    "why": "<code>where</code> and <code>collect</code> still read it, so everything said about a thing stays a fold. <code>from.about</code> is a mention test and <code>from.of</code> takes a thing's records. A link is a thing whose <code>about</code> names both ends. Kyle, 2026-11-10; built with D8a. D8c, keys a record declares it sets, is ruled; its envelope field <code>sets</code> is built, and so is latest-by following <code>keys</code>; the other slots that follow <code>keys</code> are not."
+    "why": "<code>where</code> and <code>collect</code> still read it, so everything said about a thing stays a fold. <code>from.about</code> is a mention test and <code>from.of</code> takes a thing's records. A link is a thing whose <code>about</code> names both ends. Kyle, 2026-11-10; built with D8a. D8c, keys a record declares it sets, is ruled; its envelope field <code>sets</code> is built, and so are latest-by, count, sum, min, max and collect following <code>keys</code>; the keyed slice laws are not."
   },
   {
     "kind": "decision",

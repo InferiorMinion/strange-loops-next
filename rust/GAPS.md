@@ -36,7 +36,9 @@ store string is preserved but does not cause I/O during pure execution.
   last raw form of each id before ordering, as the model's `dedup` does.
   Latest-by that follows keys works out each thing's live setters over the raw
   records of that thing, as `keyed_in` reads them; with addressed input each
-  id is one setter.
+  id is one setter. Count, sum, min, max and collect that follow keys count
+  each thing once, and read a field's live setters through `setters`, which
+  keeps one form of each id, as the model's `orderHeads` does.
   A slot with `by` counts its top-level unread and ungrouped records over raw
   input, once per form, as count does; with addressed input that is once per id.
   The distinct-id theorem interpretation requires its stated addressed-input
