@@ -376,7 +376,8 @@ function keyedThings(keyed, spec, slot) {
 // from a thing's one live setter: with none, or two or more (the same number
 // or not; no values are compared), the thing is unread, as it is when that
 // setter's payload is not held or holds no whole number there. Collect lists
-// the things' live records, newest first, at most `limit` of them.
+// the things' live records, newest first; with `limit`, those of the `limit`
+// things whose newest live records are newest, each thing listed whole.
 function overThings(slot, things, unread) {
   if ("count" in slot) return { value: things.length, unread };
   for (const type of ["sum", "min", "max"]) if (type in slot) {
@@ -386,8 +387,10 @@ function overThings(slot, things, unread) {
     const r = F[type](sole, { field });
     return { value: r.value, unread: unread + things.length - sole.length + r.unread };
   }
-  const live = things.flatMap(({ rs }) => rs.filter((r) => F.live(rs, r))).sort(F.newestFirst).map(shownOf);
-  return { heads: slot.limit === undefined ? live : live.slice(0, slot.limit), unread };
+  const live = things.flatMap(({ rs }) => rs.filter((r) => F.live(rs, r))).sort(F.newestFirst);
+  const kept = new Set();
+  for (const r of live) if (kept.size < (slot.limit ?? Infinity)) kept.add(F.thingOf(r));
+  return { heads: live.filter((r) => kept.has(F.thingOf(r))).map(shownOf), unread };
 }
 
 // A slot that follows keys, without `by`: a selected thing whose tests are

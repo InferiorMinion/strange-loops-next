@@ -537,11 +537,39 @@ pub fn sole_setter(xs: &[Record], f: &str, t: &str) -> Option<Record> {
     if ss.len() == 1 { ss.pop() } else { None }
 }
 
+/// Lean: `Loops.thingsInOrder`, model/Loops/Spec.lean.
+/// The things of records `rs`, each once, in the order of each one's first record.
+pub fn things_in_order(rs: &[Record]) -> Vec<String> {
+    let mut out: Vec<String> = Vec::new();
+    for r in rs {
+        let t = r.thing();
+        if !out.contains(&t) {
+            out.push(t);
+        }
+    }
+    out
+}
+
+/// Lean: `Loops.wholeThings`, model/Loops/Spec.lean.
+/// A limit over things: of records `rs`, newest first, those of the first
+/// `limit` things, each listed whole, in the order of `rs`.
+pub fn whole_things(limit: Option<&Nat>, rs: Vec<Record>) -> Vec<Record> {
+    if limit.is_none() {
+        return rs;
+    }
+    let ts = things_in_order(&rs);
+    let kept = limit_to(limit, &ts);
+    rs.into_iter()
+        .filter(|r| kept.contains(&r.thing()))
+        .collect()
+}
+
 /// Lean: `Loops.keyedValue`, model/Loops/Spec.lean.
 /// A slot that follows `keys`, over the things `ev` selects: count counts
 /// them, sum, min and max read each one's field from its one live setter,
-/// collect lists their live records newest first. A thing `ev` cannot answer
-/// for is unread once.
+/// collect lists their live records newest first, of at most `limit` things,
+/// those whose newest live records are newest, each listed whole. A thing
+/// `ev` cannot answer for is unread once.
 pub fn keyed_value(ty: &FoldType, xs: &[Record], ev: impl Fn(&str) -> Tri) -> SlotValue {
     let ts = things_of(xs);
     let yes: Vec<&String> = ts.iter().filter(|t| ev(t) == Tri::Yes).collect();
@@ -576,7 +604,7 @@ pub fn keyed_value(ty: &FoldType, xs: &[Record], ev: impl Fn(&str) -> Tri) -> Sl
         FoldType::Collect { limit, .. } => {
             let live = newest_first(&yes.iter().flat_map(|t| live_in(xs, t)).collect::<Vec<_>>());
             SlotValue::Heads {
-                heads: shown_ids(limit_to(limit.as_ref(), &live)),
+                heads: shown_ids(&whole_things(limit.as_ref(), live)),
                 unread,
             }
         }
@@ -1316,6 +1344,33 @@ mod tests {
             vec![original, hidden.unlinked()]
         );
         assert_eq!(newest_first(&[]), Vec::<Record>::new());
+    }
+
+    #[test]
+    fn a_limit_over_things_lists_each_thing_whole() {
+        // Newest first, two things interleaved in time.
+        let rs = newest_first(&[
+            record(1, "thing:a", 1),
+            record(2, "thing:b", 2),
+            record(3, "thing:a", 3),
+            record(4, "thing:b", 4),
+            record(5, "thing:a", 5),
+        ]);
+        let ids = |k: Option<usize>| -> Vec<u8> {
+            whole_things(k.map(|k| Nat(k.into())).as_ref(), rs.clone())
+                .iter()
+                .map(|r| r.id.0[31])
+                .collect()
+        };
+        assert_eq!(
+            things_in_order(&rs),
+            vec!["thing:a".to_string(), "thing:b".to_string()]
+        );
+        assert_eq!(ids(None), vec![5, 4, 3, 2, 1]);
+        assert_eq!(ids(Some(0)), Vec::<u8>::new());
+        assert_eq!(ids(Some(1)), vec![5, 3, 1]);
+        assert_eq!(ids(Some(2)), vec![5, 4, 3, 2, 1]);
+        assert_eq!(ids(Some(3)), vec![5, 4, 3, 2, 1]);
     }
 
     #[test]
