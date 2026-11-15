@@ -13,6 +13,7 @@ Issue #1 retargets four entries at the shape stage and labels in `under`, and ad
 `by` adds seven: 236 entries total with all three.
 `under-unknown` adds four: 240 entries total.
 `sets` adds ten: 250 entries total. `finish-envelope-env-tojson` is retargeted at `Loops.Env.baseJson`, where its site now is.
+Latest-by following `keys` adds twenty, over `Loops/Live.lean` and the keyed slot in `Loops/Spec.lean`: 270 entries total. `coverage-spec-slotfollow` is retargeted at `slotFollow`'s new result.
 The raw-reader ordering mutations target library definitions under `Loops`.
 The cheap runner uses those fourteen replacements and the four former D6 survivors.
 It requires runtime failures after successful builds.
@@ -170,6 +171,20 @@ The catalogue includes existing entries without definition metadata.
 - `Loops.Lens.baseProblem`: covered by `d1-base-problem-remove`
 - `Loops.Lens.read`: covered by `d1-read-text-first`
 
+## model/Loops/Live.lean
+
+- `Loops.Record.whole`: covered by `keys-whole-not-live`
+- `Loops.Record.declares`: excluded: It reads `sets` with no choice, and `keys-from-heads` reads its uses
+- `Loops.Record.setsKey`: covered by `keys-whole-sets-nothing`
+- `Loops.namesIn`: excluded: `keys-above-direct` and `keys-upward-one-step` change its uses
+- `Loops.upward`: covered by `keys-upward-one-step`
+- `Loops.above`: covered by `keys-above-direct`
+- `Loops.liveFor`: covered by `keys-live-for-no-above`
+- `Loops.liveEnv`: excluded: `keys-env-not-live` removes its use in `live`
+- `Loops.live`: covered by `keys-env-not-live`, `keys-whole-always-live`
+- `Loops.liveKeys`: covered by `keys-from-heads`
+- `Loops.keyedIn`: covered by `keys-whole-not-live`, `keys-heads-are-live`
+
 ## model/Loops/Occurred.lean
 
 - `Loops.Span.point`: excluded: It constructs a span with its proof. No direct eligible operation.
@@ -199,7 +214,7 @@ The catalogue includes existing entries without definition metadata.
 - `Loops.Newer`: covered by `record-newer-id-flip`
 - `Loops.Addressed`: covered by `extra-record-addressed`
 - `Loops.Distinct`: excluded: It states Nodup on record ids. No direct eligible operation.
-- `Loops.Record.withhold`: excluded: It constructs a withheld view. No direct eligible operation.
+- `Loops.Record.withhold`: covered by `keys-withhold-drops-sets`
 - `Loops.Record.erase`: excluded: It constructs an erased view. No direct eligible operation.
 - `Loops.Record.get`: covered by `wide-record-049`
 - `Loops.Record.num`: covered by `record-num-hidden`, `record-num-drop-int`
@@ -284,6 +299,12 @@ The catalogue includes existing entries without definition metadata.
 - `Loops.Slot.toJson`: covered by `finish-spec-slot-tojson`, `follow-count-not-written`
 - `Loops.Source.toJson`: covered by `finish-spec-source-tojson`
 - `Loops.Spec.toJson`: covered by `extra-spec-spec-tojson`
+- `Loops.Tri.agree`: covered by `keys-differ-yes`
+- `Loops.Cond.onThing`: covered by `keys-tests-on-heads`, `keys-unheld-skipped`, `keys-unset-unknown`
+- `Loops.thingTest`: excluded: Its filter and fold are `Cond.all`'s, and `keys-tests-on-heads` changes what it asks
+- `Loops.keyedOf`: covered by `keys-chosen-by-live`, `keys-unread-no`
+- `Loops.Keyed.view`: excluded: It only maps `shownIds`, which other entries cover
+- `Loops.Follow.name`: covered by `keys-written-as-prev`
 
 ## model/Loops/Stored.lean
 
