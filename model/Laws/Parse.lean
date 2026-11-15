@@ -191,6 +191,17 @@ theorem Json.repeatMember_none (path : Option String) (seen : List String) : (kv
         exact ⟨hv, fun a x hx e => ⟨fun ha => hnk ⟨x, hx, e.trans ha⟩, hs a x hx e⟩, hn, hm⟩
 end
 
+/-- **The first repeat in an array.** An array's elements are searched in order: when no element
+before `x` repeats a key, the array's repeat is `x`'s, whatever the elements after it hold. -/
+theorem Json.repeatIn_first (path : Option String) {pre : List Json} {x : Json} (rest : List Json) {p : String}
+    (hpre : ∀ y ∈ pre, y.repeatAt path = none) (hx : x.repeatAt path = some p) :
+    Json.repeatIn path (pre ++ x :: rest) = some p := by
+  induction pre with
+  | nil => simp [Json.repeatIn, hx, Option.orElse]
+  | cons y ys ih =>
+    simp only [cons_append, Json.repeatIn, hpre y (mem_cons_self ..), Option.orElse]
+    exact ih fun z hz => hpre z (mem_cons_of_mem _ hz)
+
 /-- A spec with a repeated key is refused at the first repeat, as layer 0 refuses a payload. -/
 theorem Spec.ofJson_repeat {j : Json} (h : j.keysDistinct = false) :
     ∃ p, j.repeatAt none = some p ∧ Spec.ofJson j = refuse "member-duplicate" p := by

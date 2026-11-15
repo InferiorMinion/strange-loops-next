@@ -1,0 +1,28 @@
+{
+  "vector": "119-repeat-first-element",
+  "layer": "spec/parse",
+  "laws": ["spec.parse"],
+  "source": "model",
+  "input": {
+    "spec": {
+      "vertex": "x",
+      "from": [
+        {
+          "store": ".",
+          "kind": ["note"],
+          "kind": ["task"]
+        },
+        {
+          "store": ".",
+          "of": "task:1",
+          "of": "task:2"
+        }
+      ]
+    },
+    "spec_text": "{\"vertex\":\"x\",\"from\":[{\"store\":\".\",\"kind\":[\"note\"],\"kind\":[\"task\"]},{\"store\":\".\",\"of\":\"task:1\",\"of\":\"task:2\"}]}"
+  },
+  "expect": {
+    "refused": "member-duplicate",
+    "path": "from.kind"
+  }
+}

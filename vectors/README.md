@@ -82,6 +82,7 @@ A repeated-key spec also supplies `input.spec_text`; read that text without disc
 Alternatively, `expect.refused` gives the code and `path`.
 `protocol/spec.md` defines the normative grammar, parsed form and refusal order.
 Several vectors break multiple rules; refusal order decides the expected code and path.
+A path has no array index, so `119` and `120` repeat a different key in each of two elements of `from`: the refusal is at the first element's repeat.
 
 ## `spec/run`
 

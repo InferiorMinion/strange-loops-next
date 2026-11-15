@@ -235,6 +235,18 @@ def parseCases : List (String × Json) := [
   ("113-limit-zero-on-keyed-collect", slotOf (o [("collect", .bool true), ("follow", s "keys"), ("limit", .int 0)])),
   ("114-by-invalid-on-keyed-count", slotOf (o [("count", .bool true), ("follow", s "keys"), ("by", s "env.of")])),
   ("115-follow-keys-upper-on-count", slotOf (o [("count", .bool true), ("follow", s "Keys")])),
+  -- a field's tests are an object of at least one test: an empty one, text and an array are refused at the field
+  ("116-where-tests-empty", slotOf (o [("count", .bool true), ("where", o [("status", o [])])])),
+  ("117-where-tests-not-object", slotOf (o [("count", .bool true), ("where", o [("status", s "open")])])),
+  ("118-where-tests-array", slotOf (o [("count", .bool true), ("where", o [("status", a [])])])),
+  -- two elements of one array each repeat a key: the refusal is at the first element's repeat, whichever key that is
+  -- (a path has no index, so the two keys differ)
+  ("119-repeat-first-element", o [("vertex", s "x"), ("from", a [
+    o [("store", s "."), ("kind", a [s "note"]), ("kind", a [s "task"])],
+    o [("store", s "."), ("of", s "task:1"), ("of", s "task:2")]])]),
+  ("120-repeat-first-element-swapped", o [("vertex", s "x"), ("from", a [
+    o [("store", s "."), ("of", s "task:1"), ("of", s "task:2")],
+    o [("store", s "."), ("kind", a [s "note"]), ("kind", a [s "task"])]])]),
   ("gap03-repeat-key-before-value", o [("vertex", s "x"), ("vertex", o [("x", s "a"), ("x", s "b")]),
     ("from", a [o [("store", s ".")]])]),
   ("gap05-limit-zero", slotOf (o [("collect", .bool true), ("limit", .int 0)])),

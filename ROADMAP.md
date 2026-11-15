@@ -13,14 +13,14 @@ All three writers refuse an `under` target they do not hold (`under-unknown`).
 `loops emit` follows D8c's anchor rule: an emit of a thing names in `prev` every live record of it the store holds, and carries the thing's whole `about`.
 An emit of a thing the store holds sets the fields it names, and `loops of`, `read --values` and `fold --values` show each key's value from its live setters.
 All three let count, sum, min and max follow `prev` (issue #3), and group count, sum, min, max and collect with `by` (issue #2).
-The law index has 105 entries, 1059 theorems, and 6 boundary witnesses.
+The law index has 105 entries, 1060 theorems, and 6 boundary witnesses.
 See [the law index](design/laws/laws.json) and [proof and boundary data](design/laws/).
 These proofs apply only under their stated premises.
 
-The tree has 601 JSON fixtures: 589 generated fixtures and 12 standard fixtures.
-Lean replays 580 generated fixtures; 9 occurred fixtures use separate checks.
+The tree has 606 JSON fixtures: 594 generated fixtures and 12 standard fixtures.
+Lean replays 585 generated fixtures; 9 occurred fixtures use separate checks.
 Rust checks every fixture, six JCS byte pairs, 4,000 binary64 cases, and 128 SUPERCOP signing cases with ed25519-dalek.
-Rust passes 180 tests; JavaScript passes 6,974 vector checks and 41 regression and law tests.
+Rust passes 180 tests; JavaScript passes 6,979 vector checks and 41 regression and law tests.
 Both also check that `spec/run` answers write their members, group, thing and key names included, in the model's order; JavaScript checks `fold/latest-by` answers' thing keys too.
 JavaScript refuses a held record's invalid `emitted` or `occurred` before it answers, as the Lean and Rust readers do.
 The fuzz suite passes 60 tests.
