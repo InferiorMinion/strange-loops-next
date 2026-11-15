@@ -819,8 +819,8 @@
   {
     "id": "coverage-spec-slotfollow",
     "file": "Spec.lean",
-    "before": "| some (.str \"prev\") => pure true",
-    "after": "| some (.str \"prev\") =>\n    if t = \"collect\" || t = \"latest-by\" then pure true else refuse \"follow-invalid\" s!\"{path}.follow\"",
+    "before": "| some (.str \"prev\") => pure (some .prev)",
+    "after": "| some (.str \"prev\") =>\n    if t = \"collect\" || t = \"latest-by\" then pure (some .prev) else refuse \"follow-invalid\" s!\"{path}.follow\"",
     "reason": "Accept follow only on collect and latest-by, as before.",
     "definition": "Loops.slotFollow"
   },
@@ -1967,5 +1967,165 @@
     "after": "  pure { e with about, of, prev, under, sets := e.sets.map (·.map fun k => if isLabel k then (σ k).getD k else k) }",
     "reason": "Replace a key in sets that looks like a label with the id it names.",
     "definition": "Loops.substEnv"
+  },
+  {
+    "id": "keys-live-for-no-above",
+    "file": "Loops/Live.lean",
+    "before": "  r.setsKey k && !(above rs r).any (·.setsKey k)",
+    "after": "  r.setsKey k",
+    "reason": "List every setter of a key, replaced or not.",
+    "definition": "Loops.liveFor"
+  },
+  {
+    "id": "keys-whole-sets-nothing",
+    "file": "Loops/Live.lean",
+    "before": "  | none => true",
+    "after": "  | none => false",
+    "reason": "Let a whole-read record set no key.",
+    "definition": "Loops.Record.setsKey"
+  },
+  {
+    "id": "keys-env-not-live",
+    "file": "Loops/Live.lean",
+    "before": "  liveEnv rs r ||",
+    "after": "  false ||",
+    "reason": "Leave the envelope out of the keys a record is live for.",
+    "definition": "Loops.live"
+  },
+  {
+    "id": "keys-whole-always-live",
+    "file": "Loops/Live.lean",
+    "before": "| none => !(above rs r).any Record.whole",
+    "after": "| none => true",
+    "reason": "Keep a whole-read record live under a whole-read record above it.",
+    "definition": "Loops.live"
+  },
+  {
+    "id": "keys-above-direct",
+    "file": "Loops/Live.lean",
+    "before": "rs.filter (namesIn (upward rs [r.id]))",
+    "after": "rs.filter (namesIn [r.id])",
+    "reason": "Count as above only what names a record directly.",
+    "definition": "Loops.above"
+  },
+  {
+    "id": "keys-upward-one-step",
+    "file": "Loops/Live.lean",
+    "before": "  | some q => upward rs (q.id :: ids)",
+    "after": "  | some q => q.id :: ids",
+    "reason": "Stop the upward reach after one record.",
+    "definition": "Loops.upward"
+  },
+  {
+    "id": "keys-from-heads",
+    "file": "Loops/Live.lean",
+    "before": "canonSet ((rs.filter (live rs)).flatMap Record.declares)",
+    "after": "canonSet ((rs.filter (liveEnv rs)).flatMap Record.declares)",
+    "reason": "List only the keys the heads declare.",
+    "definition": "Loops.liveKeys"
+  },
+  {
+    "id": "keys-whole-not-live",
+    "file": "Loops/Live.lean",
+    "before": "whole := orderHeads (rs.filter fun r => r.whole && live rs r)",
+    "after": "whole := orderHeads (rs.filter fun r => r.whole)",
+    "reason": "List every whole-read record, replaced or not.",
+    "definition": "Loops.keyedIn"
+  },
+  {
+    "id": "keys-heads-are-live",
+    "file": "Loops/Live.lean",
+    "before": "heads := (stateIn t xs).heads }",
+    "after": "heads := orderHeads (rs.filter (live rs)) }",
+    "reason": "List the live records as the heads.",
+    "definition": "Loops.keyedIn"
+  },
+  {
+    "id": "keys-chosen-by-live",
+    "file": "Spec.lean",
+    "before": "if k.heads.any (chosen sel cs) then",
+    "after": "if (k.heads ++ k.whole).any (chosen sel cs) then",
+    "reason": "Let a live whole-read record choose the thing, as a head does.",
+    "definition": "Loops.keyedOf"
+  },
+  {
+    "id": "keys-tests-on-heads",
+    "file": "Spec.lean",
+    "before": "Tri.agree ((rs.filter (liveFor rs f)).map c.eval)",
+    "after": "Tri.agree ((rs.filter (liveEnv rs)).map c.eval)",
+    "reason": "Ask a payload test of the heads, not the field's live setters.",
+    "definition": "Loops.Cond.onThing"
+  },
+  {
+    "id": "keys-unheld-skipped",
+    "file": "Spec.lean",
+    "before": "((rs.filter (liveFor rs f)).map c.eval) (.ofBool",
+    "after": "(((rs.filter (liveFor rs f)).map c.eval).filter (· != .unknown)) (.ofBool",
+    "reason": "Pass over a live setter whose payload is not held.",
+    "definition": "Loops.Cond.onThing"
+  },
+  {
+    "id": "keys-unset-unknown",
+    "file": "Spec.lean",
+    "before": "(.ofBool (c.op.test []))",
+    "after": "Tri.unknown",
+    "reason": "Answer unknown for a field no record sets.",
+    "definition": "Loops.Cond.onThing"
+  },
+  {
+    "id": "keys-differ-yes",
+    "file": "Spec.lean",
+    "before": "  else .unknown",
+    "after": "  else if ts.contains .unknown then .unknown else .yes",
+    "reason": "Answer yes when held setters disagree.",
+    "definition": "Loops.Tri.agree"
+  },
+  {
+    "id": "keys-unread-no",
+    "file": "Spec.lean",
+    "before": "(per.filter (·.2.2 == .unknown)).length",
+    "after": "(per.filter (·.2.2 != .yes)).length",
+    "reason": "Count a chosen thing whose tests answer no as unread.",
+    "definition": "Loops.keyedOf"
+  },
+  {
+    "id": "keys-follow-anywhere",
+    "file": "Spec.lean",
+    "before": "| some (.str \"keys\") => if t = \"latest-by\" then pure (some .keys) else refuse \"follow-invalid\" s!\"{path}.follow\"",
+    "after": "| some (.str \"keys\") => pure (some .keys)",
+    "reason": "Accept follow keys on every fold type.",
+    "definition": "Loops.slotFollow"
+  },
+  {
+    "id": "keys-parsed-as-prev",
+    "file": "Spec.lean",
+    "before": "pure (.latestBy (fl.getD .prev))",
+    "after": "pure (.latestBy .prev)",
+    "reason": "Parse a latest-by following keys as following prev.",
+    "definition": "Loops.foldType"
+  },
+  {
+    "id": "keys-written-as-prev",
+    "file": "Spec.lean",
+    "before": "(\"follow\", .str f.name)",
+    "after": "(\"follow\", .str \"prev\")",
+    "reason": "Write follow as prev in the parsed form of a keyed latest-by.",
+    "definition": "Loops.Slot.toJson"
+  },
+  {
+    "id": "keys-run-as-prev",
+    "file": "Spec.lean",
+    "before": "| .latestBy .keys => keyedOf sel cs xs",
+    "after": "| .latestBy .keys => latestOf sel cs xs",
+    "reason": "Run a latest-by following keys as following prev.",
+    "definition": "Loops.Slot.plain"
+  },
+  {
+    "id": "keys-withhold-drops-sets",
+    "file": "Record.lean",
+    "before": "fields := [], shown := .withheld }",
+    "after": "fields := [], shown := .withheld, sets := none }",
+    "reason": "Drop sets from a withheld record's envelope.",
+    "definition": "Loops.Record.withhold"
   }
 ]
