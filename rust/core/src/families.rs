@@ -111,6 +111,30 @@ impl<T: Clone, S: Fn(T, &Record) -> T, R: Fn(&Record) -> bool> Acc<T, S, R> {
         }
         Result { value, unread }
     }
+    /// Lean: `Loops.Acc.overThings`, model/Loops/Spec.lean.
+    /// Folds the things `ev` selects, each read from the record `pick` gives
+    /// it; a thing with none, or one the fold cannot read, is unread, as is a
+    /// thing `ev` cannot answer for, each once.
+    pub fn over_things(
+        &self,
+        pick: impl Fn(&str) -> Option<Record>,
+        ev: impl Fn(&str) -> Tri,
+        ts: &[String],
+    ) -> Result<T> {
+        let mut value = self.init.clone();
+        let mut unread = Nat::default();
+        for t in ts {
+            match ev(t) {
+                Tri::No => {}
+                Tri::Unknown => unread.0 += 1_u8,
+                Tri::Yes => match pick(t) {
+                    Some(r) if (self.readable)(&r) => value = (self.step)(value, &r),
+                    _ => unread.0 += 1_u8,
+                },
+            }
+        }
+        Result { value, unread }
+    }
 }
 /// Lean: `Loops.Count.acc`, `Loops.Sum.acc`, `Loops.Min.acc`, and `Loops.Max.acc`, model/Loops/Families.lean.
 /// This alias names fold families with concrete step and readability functions.

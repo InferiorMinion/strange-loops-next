@@ -276,6 +276,58 @@ fn latest_by_follows_keys_through_the_live_setters() {
     assert_eq!(ids(&slots, &[&state[..], &["whole"]].concat()), [root]);
 }
 
+const KEYED_SLOTS: &str = r#"{"vertex":"tasks","from":[{"store":".","kind":["task"]}],"fold":{
+  "tasks":{"count":true,"follow":"keys"},
+  "heads":{"count":true,"follow":"prev"},
+  "open":{"count":true,"follow":"keys","where":{"status":{"is":"open"}}},
+  "open-heads":{"count":true,"follow":"prev","where":{"status":{"is":"open"}}},
+  "est":{"sum":"n","follow":"keys"},
+  "live":{"collect":true,"follow":"keys"}}}"#;
+
+#[test]
+fn count_sum_and_collect_follow_keys_through_the_things() {
+    let s = Store::new("keyed-slots");
+    let fold = || parse_json(&s.ok_with(&["fold", "-"], KEYED_SLOTS)).expect("JSON");
+    let n = |v: i64, u: i64| (Json::Int(v.into()), Json::Int(u.into()));
+    let root = s.ok(&[
+        "emit",
+        "task",
+        "--of",
+        "task:1",
+        "status=open",
+        "n:=3",
+        "Write the spec",
+    ]);
+    let title = s.ok(&[
+        "emit",
+        "task",
+        "--prev",
+        &root,
+        "--sets",
+        "title",
+        "title=Rewrite",
+    ]);
+    // The head sets only `title`: over heads the task is not open, over its
+    // live setters it is, and `n` is still read from the root.
+    let slots = fold();
+    let got = ["tasks", "heads", "open", "open-heads", "est"].map(|k| tally(&slots, k));
+    assert_eq!(got, [n(1, 0), n(1, 0), n(1, 0), n(0, 0), n(3, 0)]);
+    assert_eq!(ids(&slots, &["live", "heads"]), [title, root.clone()]);
+    // A concurrent emit sets `n`: two heads, one thing, and `n` read from it.
+    let five = s.ok(&["emit", "task", "--prev", &root, "--sets", "n", "n:=5"]);
+    let slots = fold();
+    let got = ["tasks", "heads", "est"].map(|k| tally(&slots, k));
+    assert_eq!(got, [n(1, 0), n(2, 0), n(5, 0)]);
+    assert_eq!(len(&slots, &["live", "heads"]), 3);
+    // Another sets `n` too: two live setters, so the sum cannot read it,
+    // although no values are compared.
+    s.ok(&["emit", "task", "--prev", &root, "--sets", "n", "n:=5"]);
+    let slots = fold();
+    let got = ["tasks", "heads", "est"].map(|k| tally(&slots, k));
+    assert_eq!(got, [n(1, 0), n(3, 0), n(0, 1)]);
+    assert!(ids(&slots, &["live", "heads"]).contains(&five));
+}
+
 #[test]
 fn count_groups_by_mention_over_every_record_and_over_the_heads() {
     let s = Store::new("per-project");

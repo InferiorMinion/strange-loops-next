@@ -4,15 +4,15 @@ use crate::{
     families::{self, Result as FoldResult, Tri},
     fold::{LatestBy, whole_heads},
     json::{Json, canon_set},
-    live::{Keyed, keyed_in, live_for},
+    live::{Keyed, keyed_in, live_for, live_in, records_of, setters},
     number::{Int, MAX_EXACT, Nat},
     record::{Digest, Record, Shown, Val},
-    things::{admit, ids_of, per_thing, things_of},
+    things::{admit, ids_of, per_thing, state_in, things_of},
     where_::{Cond, EnvField, Field, Refusal, RefusalCode, Tests, parse_where},
 };
 
 /// Lean: `Loops.Follow`, model/Loops/Spec.lean.
-/// How a slot over heads reads supersession: as a thing's heads, or as its live setters.
+/// How a slot reads supersession: as a thing's heads, or as its live setters.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Follow {
     /// A thing is its heads.
@@ -37,29 +37,29 @@ impl Follow {
 pub enum FoldType {
     /// Counts every selected record with a known test result.
     Count {
-        /// Counts the whole-reader heads instead of all records.
-        follow: bool,
+        /// Counts the whole-reader heads (`prev`) or the selected things (`keys`) instead of all records.
+        follow: Option<Follow>,
     },
     /// Adds readable integers from the named payload field.
     Sum {
         /// The payload field read.
         field: String,
-        /// Adds over the whole-reader heads instead of all records.
-        follow: bool,
+        /// Adds over the whole-reader heads (`prev`) or the selected things (`keys`).
+        follow: Option<Follow>,
     },
     /// Finds the smallest readable integer in the named payload field.
     Min {
         /// The payload field read.
         field: String,
-        /// Reads the whole-reader heads instead of all records.
-        follow: bool,
+        /// Reads the whole-reader heads (`prev`) or the selected things (`keys`).
+        follow: Option<Follow>,
     },
     /// Finds the largest readable integer in the named payload field.
     Max {
         /// The payload field read.
         field: String,
-        /// Reads the whole-reader heads instead of all records.
-        follow: bool,
+        /// Reads the whole-reader heads (`prev`) or the selected things (`keys`).
+        follow: Option<Follow>,
     },
     /// Reports selected current heads, or following `keys` the keyed state, for each thing.
     LatestBy {
@@ -68,12 +68,27 @@ pub enum FoldType {
     },
     /// Reports selected records newest first.
     Collect {
-        /// Uses current per-thing heads instead of all records.
-        follow: bool,
+        /// Uses current per-thing heads (`prev`), or the selected things' live records (`keys`).
+        follow: Option<Follow>,
         /// Caps known matches without changing the pre-limit unknown-form count.
         /// That count represents distinct ids only for addressed input.
         limit: Option<Nat>,
     },
+}
+
+impl FoldType {
+    /// Lean: `Loops.FoldType.follow`, model/Loops/Spec.lean.
+    /// How the slot reads supersession, if it follows.
+    pub const fn follow(&self) -> Option<Follow> {
+        match self {
+            Self::Count { follow }
+            | Self::Sum { follow, .. }
+            | Self::Min { follow, .. }
+            | Self::Max { follow, .. }
+            | Self::Collect { follow, .. } => *follow,
+            Self::LatestBy { follow } => Some(*follow),
+        }
+    }
 }
 
 /// Lean: `Loops.By`, model/Loops/Spec.lean.
@@ -155,6 +170,31 @@ impl By {
             Self::Payload(f) => (r.shown == Shown::Here)
                 .then(|| r.get(f).as_ref().and_then(val_key).into_iter().collect()),
         }
+    }
+    /// Lean: `Loops.By.thingKeys`, model/Loops/Spec.lean.
+    /// The groups thing `t` joins, each once: a payload field's key read from
+    /// each of its live setters, `None` when one of them is not held; an
+    /// envelope key read from each head `from` and the envelope tests choose.
+    pub fn thing_keys(
+        &self,
+        sel: impl Fn(&Record) -> bool,
+        cs: &[Cond],
+        xs: &[Record],
+        t: &str,
+    ) -> Option<Vec<String>> {
+        let src = match self {
+            Self::Payload(f) => setters(&records_of(t, xs), f),
+            _ => state_in(t, xs)
+                .heads
+                .into_iter()
+                .filter(|h| chosen(&sel, cs, h))
+                .collect(),
+        };
+        let mut keys = Vec::new();
+        for r in &src {
+            keys.extend(self.keys(r)?);
+        }
+        Some(canon_set(&keys))
     }
 }
 
@@ -469,12 +509,78 @@ pub fn collect_of(
 /// Lean: `Loops.accPool`, model/Loops/Spec.lean.
 /// What an accumulating slot folds: every record, or following `prev` the
 /// whole-reader heads, each id once.
-#[expect(
-    clippy::fn_params_excessive_bools,
-    reason = "Lean accPool takes the explicit follow flag"
-)]
-pub fn acc_pool(follow: bool, xs: &[Record]) -> Vec<Record> {
-    if follow { whole_heads(xs) } else { xs.to_vec() }
+pub fn acc_pool(follow: Option<Follow>, xs: &[Record]) -> Vec<Record> {
+    if follow == Some(Follow::Prev) {
+        whole_heads(xs)
+    } else {
+        xs.to_vec()
+    }
+}
+
+/// Lean: `Loops.thingEv`, model/Loops/Spec.lean.
+/// Whether a slot that follows `keys` selects thing `t`: no, unless `from`
+/// and the envelope tests choose one of its heads; then its payload tests,
+/// asked of the thing.
+pub fn thing_ev(sel: impl Fn(&Record) -> bool, cs: &[Cond], xs: &[Record], t: &str) -> Tri {
+    if state_in(t, xs).heads.iter().any(|h| chosen(&sel, cs, h)) {
+        thing_test(cs, &records_of(t, xs))
+    } else {
+        Tri::No
+    }
+}
+
+/// Lean: `Loops.soleSetter`, model/Loops/Spec.lean.
+/// The record thing `t`'s field is read from: its one live setter of it.
+/// With none, or two or more, there is none: the core never compares values.
+pub fn sole_setter(xs: &[Record], f: &str, t: &str) -> Option<Record> {
+    let mut ss = setters(&records_of(t, xs), f);
+    if ss.len() == 1 { ss.pop() } else { None }
+}
+
+/// Lean: `Loops.keyedValue`, model/Loops/Spec.lean.
+/// A slot that follows `keys`, over the things `ev` selects: count counts
+/// them, sum, min and max read each one's field from its one live setter,
+/// collect lists their live records newest first. A thing `ev` cannot answer
+/// for is unread once.
+pub fn keyed_value(ty: &FoldType, xs: &[Record], ev: impl Fn(&str) -> Tri) -> SlotValue {
+    let ts = things_of(xs);
+    let yes: Vec<&String> = ts.iter().filter(|t| ev(t) == Tri::Yes).collect();
+    let unread = Nat(ts.iter().filter(|t| ev(t) == Tri::Unknown).count().into());
+    match ty {
+        FoldType::Count { .. } => SlotValue::Nat(FoldResult {
+            value: Nat(yes.len().into()),
+            unread,
+        }),
+        FoldType::Sum { field, .. } => SlotValue::Int(families::sum_on(field).over_things(
+            |t| sole_setter(xs, field, t),
+            &ev,
+            &ts,
+        )),
+        FoldType::Min { field, .. } => SlotValue::Opt(families::min_on(field).over_things(
+            |t| sole_setter(xs, field, t),
+            &ev,
+            &ts,
+        )),
+        FoldType::Max { field, .. } => SlotValue::Opt(families::max_on(field).over_things(
+            |t| sole_setter(xs, field, t),
+            &ev,
+            &ts,
+        )),
+        FoldType::LatestBy { .. } => SlotValue::Keyed {
+            things: yes
+                .into_iter()
+                .map(|t| (t.clone(), keyed_in(t, xs).view()))
+                .collect(),
+            unread,
+        },
+        FoldType::Collect { limit, .. } => {
+            let live = newest_first(&yes.iter().flat_map(|t| live_in(xs, t)).collect::<Vec<_>>());
+            SlotValue::Heads {
+                heads: shown_ids(limit_to(limit.as_ref(), &live)),
+                unread,
+            }
+        }
+    }
 }
 
 /// Lean: `Loops.groupKeys`, model/Loops/Spec.lean.
@@ -501,6 +607,9 @@ impl Slot {
     pub fn run(&self, sel: impl Fn(&Record) -> bool, xs: &[Record]) -> SlotValue {
         match &self.group {
             None => self.plain(sel, xs),
+            Some(b) if self.fold_type.follow() == Some(Follow::Keys) => {
+                self.keyed_grouped(b, sel, xs)
+            }
             Some(b) => self.grouped(b, sel, xs),
         }
     }
@@ -563,11 +672,71 @@ impl Slot {
         }
     }
 
+    /// Lean: `Loops.Slot.keyedGrouped`, model/Loops/Spec.lean.
+    /// A slot with `by` that follows `keys`: each selected thing joins the
+    /// group of each of its keys, once in each; each group is the slot without
+    /// `by` over its things. Unknown tests and unreadable keys are unread at
+    /// the top, once a thing; a thing with no key is ungrouped.
+    pub fn keyed_grouped(&self, b: &By, sel: impl Fn(&Record) -> bool, xs: &[Record]) -> SlotValue {
+        let cs = self.tests.conds();
+        let ts = things_of(xs);
+        let evs: Vec<(String, Tri, Option<Vec<String>>)> = ts
+            .into_iter()
+            .map(|t| {
+                let e = thing_ev(&sel, &cs, xs, &t);
+                let k = if e == Tri::Yes {
+                    b.thing_keys(&sel, &cs, xs, &t)
+                } else {
+                    None
+                };
+                (t, e, k)
+            })
+            .collect();
+        let keys = canon_set(
+            &evs.iter()
+                .filter(|(_, e, _)| *e == Tri::Yes)
+                .flat_map(|(_, _, k)| k.clone().unwrap_or_default())
+                .collect::<Vec<_>>(),
+        );
+        let groups = keys
+            .into_iter()
+            .map(|g| {
+                let v = keyed_value(&self.fold_type, xs, |t| {
+                    let joins = evs.iter().any(|(u, e, k)| {
+                        u == t && *e == Tri::Yes && k.as_ref().is_some_and(|k| k.contains(&g))
+                    });
+                    if joins { Tri::Yes } else { Tri::No }
+                })
+                .group();
+                (g, v)
+            })
+            .collect();
+        let unread = evs.iter().filter(|(_, e, _)| *e == Tri::Unknown).count()
+            + evs
+                .iter()
+                .filter(|(_, e, k)| *e == Tri::Yes && k.is_none())
+                .count();
+        let ungrouped = evs
+            .iter()
+            .filter(|(_, e, k)| *e == Tri::Yes && k.as_ref().is_some_and(Vec::is_empty))
+            .count();
+        SlotValue::Groups {
+            groups,
+            unread: Nat(unread.into()),
+            ungrouped: Nat(ungrouped.into()),
+        }
+    }
+
     /// Lean: `Loops.Slot.plain`, model/Loops/Spec.lean.
     /// Runs one slot without `by`, admission, settlement, or duplicate-id removal.
     pub fn plain(&self, sel: impl Fn(&Record) -> bool, xs: &[Record]) -> SlotValue {
         let cs = self.tests.conds();
         let ev = |r: &Record| if sel(r) { Cond::all(&cs, r) } else { Tri::No };
+        if self.fold_type.follow() == Some(Follow::Keys)
+            && !matches!(self.fold_type, FoldType::LatestBy { .. })
+        {
+            return keyed_value(&self.fold_type, xs, |t| thing_ev(&sel, &cs, xs, t));
+        }
         match &self.fold_type {
             FoldType::Count { follow } => {
                 SlotValue::Nat(families::count_acc().select(ev, &acc_pool(*follow, xs)))
@@ -588,7 +757,7 @@ impl Slot {
                 follow: Follow::Keys,
             } => keyed_of(sel, &cs, xs),
             FoldType::Collect { follow, limit } => {
-                collect_of(sel, &cs, *follow, limit.as_ref(), xs)
+                collect_of(sel, &cs, *follow == Some(Follow::Prev), limit.as_ref(), xs)
             }
         }
     }
@@ -596,14 +765,12 @@ impl Slot {
     /// Lean: `Loops.Slot.toJson`, model/Loops/Spec.lean.
     /// Encodes the fold before follow, limit, and optional where members.
     pub fn to_json(&self) -> (String, Json) {
-        let follow_json = |follow: bool| {
-            if follow {
-                vec![("follow".into(), Json::Str("prev".into()))]
-            } else {
-                Vec::new()
-            }
+        let follow_json = |follow: Option<Follow>| {
+            follow.map_or_else(Vec::new, |f| {
+                vec![("follow".into(), Json::Str(f.name().into()))]
+            })
         };
-        let with_follow = |kv: (String, Json), follow: bool| {
+        let with_follow = |kv: (String, Json), follow: Option<Follow>| {
             let mut out = vec![kv];
             out.extend(follow_json(follow));
             out
@@ -881,8 +1048,8 @@ pub fn slot_type<'a>(path: &str, kvs: &'a [(String, Json)]) -> Result<&'a (Strin
     }
 }
 /// Lean: `Loops.slotFollow`, model/Loops/Spec.lean.
-/// Parses `follow`: `"prev"`, which any fold type may carry, or `"keys"`, on
-/// latest-by; latest-by must carry one.
+/// Parses `follow`: `"prev"` or `"keys"`, which any fold type may carry;
+/// latest-by must carry one.
 ///
 /// # Errors
 /// Returns follow-missing on latest-by, or follow-invalid for any other value.
@@ -894,7 +1061,7 @@ pub fn slot_follow(path: &str, t: &str, j: Option<&Json>) -> Result<Option<Follo
         )),
         None => Ok(None),
         Some(Json::Str(s)) if s == "prev" => Ok(Some(Follow::Prev)),
-        Some(Json::Str(s)) if s == "keys" && t == "latest-by" => Ok(Some(Follow::Keys)),
+        Some(Json::Str(s)) if s == "keys" => Ok(Some(Follow::Keys)),
         Some(_) => Err(refuse(
             RefusalCode::FollowInvalid,
             &format!("{path}.follow"),
@@ -946,7 +1113,6 @@ pub fn fold_type(
 ) -> Result<FoldType, Refusal> {
     let p = format!("{path}.{t}");
     let latest = follow.unwrap_or(Follow::Prev);
-    let follow = follow.is_some();
     match (t, arg) {
         ("count", Json::Bool(true)) => Ok(FoldType::Count { follow }),
         ("sum", f) => field_arg(&p, f).map(|field| FoldType::Sum { field, follow }),
@@ -1279,5 +1445,67 @@ mod tests {
                 unread: Nat::default(),
             }
         );
+    }
+
+    #[test]
+    fn keyed_slots_count_a_fork_once_and_leave_two_setters_unread() {
+        // A root read whole and two concurrent emits that each set `n`: one
+        // thing with two heads, and two live setters of `n` that hold the same
+        // number.
+        let root = Record {
+            n: Int::from(3_i64),
+            ..record(1, "thing:a", 1)
+        };
+        let set = |id, hour| Record {
+            prev: vec![root.id],
+            sets: Some(vec!["n".into()]),
+            n: Int::from(5_i64),
+            ..record(id, "thing:a", hour)
+        };
+        let xs = [root.clone(), set(2, 2), set(3, 3)];
+        let slot = |fold_type| Slot {
+            name: "s".into(),
+            fold_type,
+            tests: Tests::default(),
+            group: None,
+        };
+        let count = |follow| slot(FoldType::Count { follow }).run(|_| true, &xs);
+        let sum = |follow| {
+            slot(FoldType::Sum {
+                field: "n".into(),
+                follow,
+            })
+            .run(|_| true, &xs)
+        };
+        let n = |value: u8, unread: u8| FoldResult {
+            value: Nat(value.into()),
+            unread: Nat(unread.into()),
+        };
+        assert_eq!(count(Some(Follow::Keys)), SlotValue::Nat(n(1, 0)));
+        assert_eq!(count(Some(Follow::Prev)), SlotValue::Nat(n(2, 0)));
+        assert_eq!(
+            sum(Some(Follow::Keys)),
+            SlotValue::Int(FoldResult {
+                value: Int::default(),
+                unread: Nat(1_u8.into()),
+            })
+        );
+        assert_eq!(
+            sum(Some(Follow::Prev)),
+            SlotValue::Int(FoldResult {
+                value: Int::from(10_i64),
+                unread: Nat::default(),
+            })
+        );
+        // Collect lists the thing's live records: both setters, and the root,
+        // which they replace for `n` only, so it is still live for every other key.
+        let SlotValue::Heads { heads, .. } = slot(FoldType::Collect {
+            follow: Some(Follow::Keys),
+            limit: None,
+        })
+        .run(|_| true, &xs) else {
+            panic!("collect holds heads")
+        };
+        assert_eq!(heads.len(), 3);
     }
 }

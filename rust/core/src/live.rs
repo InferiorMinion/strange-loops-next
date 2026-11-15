@@ -123,6 +123,30 @@ pub fn keyed_in(t: &str, xs: &[Record]) -> Keyed {
     }
 }
 
+/// Lean: `Loops.recordsOf`, model/Loops/Live.lean.
+/// The records of thing `t` a reader holds.
+pub fn records_of(t: &str, xs: &[Record]) -> Vec<Record> {
+    xs.iter().filter(|r| r.is_of(t)).cloned().collect()
+}
+
+/// Lean: `Loops.setters`, model/Loops/Live.lean.
+/// The live setters of key `k` among a thing's records `rs`, newest first, each once.
+pub fn setters(rs: &[Record], k: &str) -> Vec<Record> {
+    order_heads(
+        &rs.iter()
+            .filter(|r| live_for(rs, k, r))
+            .cloned()
+            .collect::<Vec<_>>(),
+    )
+}
+
+/// Lean: `Loops.liveIn`, model/Loops/Live.lean.
+/// Thing `t`'s live records, its heads among them.
+pub fn live_in(xs: &[Record], t: &str) -> Vec<Record> {
+    let rs = records_of(t, xs);
+    rs.iter().filter(|r| live(&rs, r)).cloned().collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
