@@ -1,5 +1,44 @@
 # Lean model mutation report
 
+## Full run in CI, after D8c: the 291 entries at `132ecb2`, with 23 run again at `122fd7e`
+
+The catalogue had 291 entries at `132ecb2`, before a keyed collect's limit counted things; the four entries that change added, and the two it retargeted, are in the section below and are not in this run.
+GitLab CI ran all 291 on 2026-11-15 (pipeline 1961, `MUTATION_FULL` set), in four shards with the runner's default timeout of 180 seconds a command.
+The retained [summary](evidence/mutations-d8c/summary.json) supports these counts.
+Run `python3 interop/fuzz/summarize.py report` from the repository root.
+
+| Outcome | Count |
+|---|---:|
+| Rejected by build | 243 |
+| Vector differences | 24 |
+| Generator assertion exceptions | 22 |
+| Survivors | 2 |
+
+The survivors are `finish-json-hexdigit` and `last-spec-tests-conds`, the two scoped-equivalence survivors of the run before.
+Each generator assertion keeps its text in the summary.
+Build rejections are not semantic proof kills: 243 entries stop the build, and this run did not read their logs to say whether each stops at a property or at a lemma that restates the mutated definition.
+
+**Two runs make these counts.** The first judged 268 entries: 226 build rejections, 22 vector differences, 18 generator assertions and the 2 survivors.
+The other 23 timed out in the build, which is an error and not a kill: 22 in the one shard that ran on a slower CI runner, where every entry from 17:07 UTC on timed out, and `coverage-time-instant-` in another shard.
+A build log read from one of them was still building at step 100 of 104.
+Those 23 were run again on `main` at `122fd7e` (pipeline 1985, `MUTATION_ONLY`, 600 seconds a command) and none timed out: 17 build rejections, two vector differences (`d8-unrelated-ignores-target-of`, `under-unknown-before-prev`) and four generator assertions (`occurred-qualifier-and`, `wide-batch-005`, `wide-envelope-009`, `step1-draft-keys-after-values`).
+The summary holds each of the 23 with its second outcome, and its baseline is the first run's.
+`122fd7e` differs from `132ecb2` in the laws and in a keyed collect's limit, so a build rejection there may stop at a law the first run did not have; the 23 entries' own source sites are the same in both.
+The second run also took eight entries the slow shard had not reached when it started; all eight were rejected by the build in both runs, and the summary holds their second outcome too.
+
+The 23 that timed out first: `occurred-qualifier-and`, `wide-batch-005`, `wide-envelope-009`, `wide-families-013`, `step1-seconds-bound`, `step1-draft-keys-after-values`, `d2-lone-low-accepted`, `d8-thing-ignores-of`, `d8-unrelated-ignores-target-of`, `d8-env-of-reads-thing`, `read-wrong-type-accepted`, `read-salt-not-base32-filled`, `follow-pool-heads-always`, `follow-count-not-written`, `by-group-before-admit`, `by-membership-once`, `under-unknown-before-prev`, `sets-empty-name-accepted`, `sets-empty-left-out`, `sets-key-as-label`, `keys-whole-always-live`, `keys-whole-not-live`, `coverage-time-instant-`.
+
+Each shard restored the source and rebuilt the baseline at its end; in the outcomes kept, no command timed out, received a signal or reported a spawn or cleanup error.
+A shard exits 1 when an entry errors, so the CI jobs show as failed with their results uploaded; the three shards on one runner took 78 to 83 minutes each, and the slow one 162.
+Since then the CI job gives each command 600 seconds, or `MUTATION_TIMEOUT`.
+
+```sh
+echo '{"ref":"main","variables":[{"key":"MUTATION_FULL","value":"1"}]}' | glab api -X POST projects/kaygee%2Fstrange-loops-next/pipeline --input - -H "Content-Type: application/json"
+python3 interop/fuzz/summarize.py mutation /tmp/joined-mutants.json mutations-d8c
+```
+
+The second command takes one result file: the four shards' `mutants` in catalogue order, the second run's entry in place of the first's, and the first shard's baseline.
+
 ## A keyed collect's limit over things: the four new entries, two retargeted and one whose definition moved, at `fe57cb6`
 
 The catalogue has 295 entries: 291 and four that mutate the limit of a collect that follows `keys` (`keyedValue`, `wholeThings`, `thingsInOrder`), on Kyle's ruling of 2026-11-15 that it counts things, each listed whole.

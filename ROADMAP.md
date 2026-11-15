@@ -50,16 +50,12 @@ The CI seed `ci-1` checks 28 three-way cases without mismatches.
 The mutation catalogue has 295 entries, including six for the D1 and D2 definitions, nine for D8's `of`, nine for `follow` on count, sum, min and max, ten for issue #1's shapes and labels in `under`, seven for `by`, four for `under-unknown`, ten for `sets`, twenty for latest-by following `keys`, twenty-one for count, sum, min, max and collect following `keys`, and four for a keyed collect's limit counting things.
 Ten earlier entries are retargeted at `of` and the one thing it names, three at the `follow` grammar, four at the shape stage and labels in `under`, eleven at the `follow` type on count, sum, min, max and collect, and two at a keyed collect's new site.
 It retires the redundant positive-offset guard under R4 and the entry for the deleted `stripZeros` family.
-The last full run covers the 210 entries before issue #1 and `follow`. After the merge, the 25 entries the two changes add or retarget, run alone with `--only`, give 17 build rejections, three vector differences and five generator assertions, and no survivor.
-The seven `by` entries, rerun alone on the tree merged with issue #1, give six build rejections and one vector difference, and no survivor.
-The four `under-unknown` entries, run alone, give three vector differences and one generator assertion, and no survivor.
-The ten `sets` entries and the six whose definitions `sets` touched, run alone, give twelve build rejections, one vector difference and three generator assertions, and no survivor.
-The twenty keyed entries and the ten whose definitions the keyed slot touched, run alone, give 27 build rejections and three vector differences, and no survivor.
-The twenty-one entries for the other slots that follow `keys`, the eleven retargeted and five more whose definitions they touched, run alone, give 36 build rejections and one vector difference, and no survivor.
+The last full run, in CI on 2026-11-15, covers the 291 entries before a keyed collect's limit counted things: 243 build rejections, 24 vector differences, 22 generator assertion exceptions, and 2 survivors.
+It ran at `132ecb2` in four shards. 23 entries timed out at the runner's default of 180 seconds a command, 22 of them in the one shard on a slower CI runner; run again at `122fd7e` with 600 seconds they give 17 build rejections, two vector differences and four generator assertions, and the counts above hold them so.
 The four entries for a keyed collect's limit, the two retargeted at the collect's new site and the other entry on `keyedValue`, run alone, give seven build rejections and no survivor.
-The full run reports 165 build rejections, 28 vector differences, 15 generator assertion exceptions, and 2 survivors.
-The runner exits 1 for assertion exceptions; no timeout or infrastructure failure occurs.
-Of the nine D8 entries, six fail the build, two change batch vectors, and one stops at a generator assertion.
+The runner exits 1 for assertion exceptions; after the second run no timeout or infrastructure failure is left.
+Of the nine D8 entries, seven fail the build and two change batch vectors.
+The run before it, over the 210 entries before issue #1 and `follow`, reported 165 build rejections, 28 vector differences, 15 generator assertion exceptions, and the same 2 survivors.
 The four D6 helper survivors fail the build at their lemmas; the two scoped-equivalence survivors remain.
 All-envelope shape checks now belong to each library.
 Six deliberate per-envelope faults failed the respective vector layers in Step 1; that probe is not repeated here.
