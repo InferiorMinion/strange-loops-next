@@ -2,12 +2,67 @@
 
 ## Scope
 
-This report covers the JS, Lean, and Rust campaign over the generator after the writer came to refuse an `under` target it does not hold (`under-unknown`).
-It also preserves the `issue-7-1`, `by-collect-1`, `by-shape-1`, `shape-follow-1` and `by-1` campaigns, the two issue #1 campaigns, the `follow-2` campaign, the D8a and D8b campaign, the D1–D6 campaign, the Step-1 campaign and earlier two-way campaigns as historical findings.
-Their counts are historical: the generator changed with D8, with issue #1, with `follow`, with `by`, with issue #7 and with `under-unknown`, so the same seeds now generate different inputs.
+This report covers the JS, Lean, and Rust campaign over the generator after the envelope came to carry `sets`, the payload keys a record sets.
+It also preserves the `under-1`, `issue-7-1`, `by-collect-1`, `by-shape-1`, `shape-follow-1` and `by-1` campaigns, the two issue #1 campaigns, the `follow-2` campaign, the D8a and D8b campaign, the D1–D6 campaign, the Step-1 campaign and earlier two-way campaigns as historical findings.
+Their counts are historical: the generator changed with D8, with issue #1, with `follow`, with `by`, with issue #7, with `under-unknown` and with `sets`, so the same seeds now generate different inputs.
 The harness covers record, fold, spec, realm, scenario, batch, and lens inputs.
 
-## `under-unknown`: three-way campaign
+## `sets`: three-way campaign
+
+Source commit: `68a85c3`, after the generator learned `sets`.
+Node 25.9 checks 5,600 cases with seed `sets-1`: 800 cases per family.
+The run uses 88 chunks and takes 87.72 seconds.
+Exit 0: no implementation disagrees on any case.
+The retained [summary](evidence/sets-1/summary.json) supports these counts.
+Run `python3 interop/fuzz/summarize.py report` from the repository root.
+
+| Family | Cases | Match | Protocol refusal | Shared decoder refusal | Mismatch |
+|---|---:|---:|---:|---:|---:|
+| record | 800 | 55 | 718 | 27 | 0 |
+| fold | 800 | 696 | 0 | 104 | 0 |
+| spec | 800 | 704 | 43 | 53 | 0 |
+| realm | 800 | 697 | 0 | 103 | 0 |
+| scenario | 800 | 689 | 0 | 111 | 0 |
+| batch | 800 | 202 | 586 | 12 | 0 |
+| lens | 800 | 571 | 229 | 0 | 0 |
+| Total | 5,600 | 3,614 | 1,576 | 410 | 0 |
+
+All 410 decoder refusals occur in both Lean and Rust.
+For the record and batch families JavaScript is called on them too and throws, so the 27 record and 12 batch ones are all three agreeing that the input is malformed, which is still not protocol agreement.
+No reduction runs, because no mismatch exists.
+The [mismatch list](evidence/sets-1/d1-mismatches.json) keeps the historical D1 example and holds no case.
+
+Record slots 37, 38, 42, 43 and 56 to 63 of the cycles of 256 that issue #1's shapes leave free each schedule one `sets` case, so 3 of the 800 record cases fall in each.
+A `sets` that is text, `null` or an object, one with a member that is a number or `null`, and one with an empty name answer `sets-not-keys`.
+Beside a bad `erases` it answers `erases-not-record-id`; beside a `prev` with no `of` it answers `sets-not-keys`.
+An empty `sets`, a key the payload lacks, a payload that is not an object, and variants in other orders with repeats are written.
+Batch slots 56 to 63 of 64 each schedule one: a `sets` that is not an array, an empty name, a draft with a bad `sets` beside one with a bad `erases` and beside one with `prev` and no `of`, each in both draft orders, a key that starts with `@`, and an empty `sets`.
+Every record and draft no slot schedules draws `sets` last, so each earlier draw is as it was: absent half the time, empty, some key names with repeats, or now and then not keys.
+Of the 97 record and 307 batch cases that carry `sets`, JavaScript writes 41 records and 114 batches, 11 and 37 of them with an empty `sets`, refuses 49 and 93 with `sets-not-keys`, and refuses 7 and 100 for something else.
+
+Each wrong port was made in the JavaScript witness, run two-way on the same seed over the 800 record and the 800 batch cases with `--family record` or `--family batch` and `--no-shrink`, and reverted; the correct witness gives no mismatch there.
+
+| Wrong port | Record | Batch | Cases |
+|---|---:|---:|---|
+| No `sets-not-keys` check | 49 | 93 | every scheduled refusal, and random ones |
+| Checked after `of-missing` | 6 | 1 | `sets` beside `of-missing` in one envelope |
+| Checked before `erases-not-record-id` | 6 | 7 | `sets` beside `erases` in one envelope |
+| An empty `sets` left out of the canonical envelope | 11 | 37 | every written empty `sets` |
+| Members in the writer's order, repeats kept | 18 | 48 | variants and keys in another order |
+| Ranked after `of-missing` among a batch's refusals | 0 | 21 | a bad `sets` and an `of-missing` in different drafts |
+
+Two of the order ports show few batch mismatches: where the two faults are in different drafts, the batch's ranking decides, not one envelope's order, and the last row covers that.
+The generator before this change writes no `sets`.
+Raw logs and per-case files were written under the ignored `rust/target/scratch` and deleted after the summary was recorded.
+
+```sh
+node interop/fuzz/run.mjs --rust --seed sets-1 --n 5600 --shrink-trials 80 --out rust/target/scratch/fuzz-sets-1
+python3 interop/fuzz/summarize.py campaign rust/target/scratch/fuzz-sets-1 sets-1
+```
+
+## HISTORICAL `under-unknown`: three-way campaign
+
+This campaign predates `sets`; the generator changed after it.
 
 Source commit: `f856072`, after the generator learned the `under` target slots.
 Node 25.9 checks 5,600 cases with seed `under-1`: 800 cases per family.

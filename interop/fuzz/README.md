@@ -17,7 +17,7 @@ node interop/fuzz/run.mjs --seed ci-1 --n 28 --out /tmp/fuzz-ci
 node interop/fuzz/run.mjs --rust --seed phase2-20261029 --n 5000 --out /tmp/fuzz-large
 node interop/fuzz/run.mjs --seed campaign-1 --n 1000 --family record --no-shrink
 node interop/fuzz/run.mjs --rust --replay /tmp/fuzz-large/mismatches/000000.json --out /tmp/fuzz-replay
-node interop/fuzz/run.mjs --rust --seed under-1 --n 5600 --shrink-trials 80 --out rust/target/scratch/fuzz-under-1
+node interop/fuzz/run.mjs --rust --seed sets-1 --n 5600 --shrink-trials 80 --out rust/target/scratch/fuzz-sets-1
 node interop/fuzz/run.mjs --rust --replay vectors/lens/section/d1-duplicate-base-id.json --out /tmp/fuzz-duplicate-base
 ```
 
@@ -25,7 +25,7 @@ An explicit output directory must be empty.
 Without `--out`, the runner creates an artifact directory under the system temporary directory.
 It prints that path with the summary.
 Exit codes are 0 for agreement, 1 for disagreements, and 2 for infrastructure or CLI errors.
-[REPORT.md](REPORT.md) records the campaign over the generator after `under-unknown`, which finds no mismatch.
+[REPORT.md](REPORT.md) records the campaign over the generator after `sets`, which finds no mismatch.
 Earlier campaigns' counts are historical: the generator changed, so the same seeds now generate different inputs.
 It marks earlier campaign results as historical, including the 42 duplicate-base lens mismatches D1 settles.
 
