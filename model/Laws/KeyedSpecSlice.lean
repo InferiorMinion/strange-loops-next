@@ -413,7 +413,7 @@ section Realm
 variable {may : Record → Record → Bool} {S W : List Record}
 
 /-- A part of the forms held covers a thing when it owes each record of the
-thing it holds its forms, its erasers and the whole's admission (`KeyedPart`),
+thing it holds its forms, its erasers and the whole's refusal (`KeyedPart`),
 holds a form of every live record, and is witnessed. -/
 theorem covers_of_keyedPart (hm : EnvOnly may) {t : String} (hF : Forms W) (h : KeyedPart may t S W)
     (hl : ∀ r ∈ recordsOf t (realm may W), live (recordsOf t (realm may W)) r = true → ∃ a ∈ S, a.id = r.id)
@@ -448,6 +448,27 @@ theorem covers_of_live (hm : EnvOnly may) {t : String} (hF : Forms W) (h : Keyed
     obtain ⟨hrW, hex⟩ := (realm_part hm hF h ht).1 hrS
     have hrt : r ∈ recordsOf t (realm may W) := List.mem_filter.2 ⟨hrW, ht⟩
     exact List.mem_filter.2 ⟨hrt, ho r hrt hex⟩
+
+/-- **A refused record is owed its `prev` targets.** A part owes each record of
+the thing it holds every form of it and what erases it, and either the whole
+admits the record or the part holds what the record names in `prev`: it then
+refuses the record exactly when the whole does. A spec slice can bring a record
+of a covered thing that the whole refuses, as a target, and it brings the
+targets only of the records the spec takes (`refused_needs_targets`). -/
+theorem KeyedPart.of_targets (hm : EnvOnly may) {t : String} (hF : Forms W)
+    (sub : ∀ r ∈ S, r ∈ W)
+    (forms : ∀ a ∈ S, a.isOf t = true → ∀ b ∈ W, b.id = a.id → b ∈ S)
+    (erasers : ∀ a ∈ S, a.isOf t = true → ∀ e ∈ W, e.erases.contains a.id = true → e ∈ S)
+    (targets : ∀ r ∈ settle W, r.isOf t = true → (∃ a ∈ S, a.id = r.id) →
+      entitled may (settle W) r = true ∨ ∀ q ∈ W, q.id ∈ r.prev → q ∈ S) :
+    KeyedPart may t S W where
+  sub := sub
+  forms := forms
+  erasers := erasers
+  admitted := fun r hr ht ha he => by
+    rcases targets r hr ht ha with h | h
+    · exact h
+    · rw [← entitled_part hm hF sub (SameEnvelope.refl r) h]; exact he
 
 /-- A part that holds no form of a record of the thing that the spec takes
 folds no record of the thing that the spec takes. -/
@@ -509,6 +530,29 @@ def ks.h : Record :=
 theorem keyed_slot_needs_live :
     SpecSlice ks.spec [ks.n, ks.h] [ks.m, ks.n, ks.h] ∧
       ks.spec.run (settle [ks.n, ks.h]) ≠ ks.spec.run (settle [ks.m, ks.n, ks.h]) := by
+  refine ⟨⟨?_, ?_, ?_, ?_, ?_, ?_⟩, ?_⟩ <;> decide +kernel
+
+/-! ## A refused record needs what it names
+
+`y` is a note of another thing. `f`, a note of `k1`, names `y`, so a reader of
+everything refuses `f`. `g`, a task of `k1`, names `f`. The spec takes tasks:
+its spec slice holds `g` and the record `g` names, `f`, and need not hold `y`.
+It holds the one live record of `k1`, `g`. Without `y` it admits `f` and lists
+it as the live setter of `pri`; a reader of everything reads no `pri` at all. -/
+
+def rf.y : Record :=
+  { id := 1, kind := "note", observer := "sl:x", of := some "k2", value := "", prev := [], emitted := default,
+    sets := some ["title"] }
+def rf.f : Record :=
+  { id := 2, kind := "note", observer := "sl:x", of := some "k1", value := "", prev := [1], emitted := default,
+    sets := some ["pri"] }
+def rf.g : Record :=
+  { id := 3, kind := "task", observer := "sl:x", of := some "k1", value := "", prev := [2], emitted := default,
+    sets := some ["est"] }
+
+theorem refused_needs_targets :
+    SpecSlice ks.spec [rf.f, rf.g] [rf.y, rf.f, rf.g] ∧
+      ks.spec.run (settle [rf.f, rf.g]) ≠ ks.spec.run (settle [rf.y, rf.f, rf.g]) := by
   refine ⟨⟨?_, ?_, ?_, ?_, ?_, ?_⟩, ?_⟩ <;> decide +kernel
 
 end Loops
