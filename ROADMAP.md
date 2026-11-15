@@ -588,7 +588,7 @@ The CLI walk pins an erased and a withheld stored target.
 
 ### Step 4: the cut, design note
 
-**Draft by margins-claude, 2026-11-15, for Kyle's rulings before any code.** Nothing here is built.
+**Draft by margins-claude, 2026-11-15, for Kyle's rulings before any code.** Nothing here is built. Section 8 was added the same day, after the lens experiment.
 Every choice that is Kyle's is marked **Open**, with a recommendation and the alternatives.
 The coordinator asked the questions; the experiment and the proofs are in the margins repo: `sl-py/cut.py` (seed `cut-1`, 200 stores for each configuration) and `lean/Convex.lean`, section `Cut`.
 The stores are two or three keyed things written by three replicas that sync, with pure joins, whole-read emits, erasures and now and then a `prev` that crosses things.
@@ -675,12 +675,45 @@ Every result in `vectors/spec/run` is made of these: an object with fixed member
 - So a tick over such a thing cannot take its live records for `covers`. It needs every record between them (`keyed.convex`), which grows with the history. That is the cost of the ruling once ticks exist, and it is paid for each thing a collector writes.
 - **Open, recommended:** keep `emit -` as ruled, and give the changeset path a way to ask for the filler (`loops_place::fill` already holds it), so a collector that wants compact ticks states one option. The alternatives: nothing, and such things are covered whole; or `emit -` fills by default, which unrules 2026-11-13.
 
+#### 8. An emit against a base
+
+`loops emit` names every live record of the thing that the store holds *now* ([place](rust/PLACE.md), choice 11).
+The slice laws ask less and something else: that an emit name what is live in what its writer *saw* (`Anchoring`'s `saw`).
+For one person in one store the two are the same.
+They part when a holder writes on a read older than its holding: a lens applying an edit against the tick its file names, an agent acting on a context it was given by tick id, and once stores share, anyone whose store took in a peer's record between their read and their emit.
+
+**What the default does today:** `loops emit task --of task:1 status=done`, run after a sync, replaces a `status` that a peer set and the writer has not read, and nothing shows that it did.
+
+Measured in margins (`sl-py/lenskeys.py`, seed `lenskeys-1`, 300 stores; `notes/2026-11-15-lenskeys.md`).
+A replica reads a keyed thing from a base (what it held at some earlier minute, a part closed downward), changes some keys, and writes one emit that sets them into what it holds now.
+6,450 emits set 10,127 keys; 3,047 of the emits were against a base the holding had passed.
+This is the coordinator's second suggestion, the lens laws, and it needs no lens: it is a replica that syncs and then sets a key without reading. A lens adds the render and the parse.
+
+| `prev` names | the base's live records | what is live now (as built) | the base's heads |
+|---|---:|---:|---:|
+| keys that read back as set, alone | 7,152 | 10,127 | 7,152 |
+| ... having replaced a setter the base did not hold | 0 | 2,975 | 0 |
+| keys in conflict with setters the base did not hold | 2,975 | 0 | 2,975 |
+| keys that read any other way | 0 | 0 | 0 |
+| emits after which an untouched key changed | 0 | 0 | 0 |
+| emits after which the live records alone read otherwise | 0 | 0 | 1,835 |
+| emits leaving two heads | 3,047 | 0 | 3,047 |
+
+- **Against the base, the lens laws hold.** A key reads back as set, or as a conflict between the emit and setters the base did not hold: "a stale base makes a visible fork instead of overwriting" ([horizons](design/rethink/sections/15-horizons.html)). So put-get has a premise, that no record outside the base sets the key. The cases expected to bite did not: two live setters at the read, an erased or withheld live setter, a pure-join head, a key unset.
+- **As built, the fork is not made.** The same 2,975 keys replaced a setter the writer never read. `--prev` does not help: it is kept beside what is filled in.
+- **"Facet records, prev = heads" is not enough.** With the base's heads alone a reader of everything gets the same answers, and the live records alone read otherwise after 1,835 emits. The walk should say the base's live records of the thing. By 3 that is the base tick's `covers` for the thing, so a tick lists what an emit against it must name.
+- **No new law.** An emit that names the base's live records follows the writer's rule with `saw` read as the base, and a base closed downward is a world (1). Liveness only shrinks as a holding grows, so what is live now under the emit was live in the base and is named.
+- **Such an emit forks the envelope.** Every one of the 3,047 left two heads, 613 of them with no key in conflict. The walk's two edits of different facets from one tick ("the store has no fork") leave no key forked and two heads; a slot that follows `prev` shows a fork until an emit names both.
+- **A render keeps five states apart:** a value, empty (a live setter declares the key and holds nothing for it), a conflict, unknown (the one live setter is erased or withheld), and no section. Unknown shown as empty hides "clear it" from the diff. And 1,130 of 5,616 conflicts had sides showing the same value: a lens that prints one value there can never settle it, since retyping the value is no edit, while a sum reads the key as unread.
+- The bases here are old by construction (any earlier minute against the last), so the counts say how the cases split and not how often they come up.
+- **Open, recommended: the filler takes a base.** Wherever the filler runs (`loops emit`, and the changeset path if 7 is taken), a writer may state a base, a tick or ids, and the filler names that base's live records of the thing and copies `about` from its heads. With no base stated it does what it does now, and that is said plainly: an emit with no base claims its writer read everything the store holds. The alternatives: the single-record path stays as built and anything that writes from a base uses `emit -` and works out the base's live records itself, in whatever language it is written; or the filler always wants a base, and a person at the CLI has none to give.
+
 #### Not here
 
 - **`under`.** A record under a grant with a later `emitted` raises the same question for standing (step 3): does a cut hold the grant.
 - **The slice of a cut across things.** A cut closed downward is a holding like any other, so `spec.slice` and `keyed.spec-slice` say what its `covers` is. The sweeps were not rerun over cuts.
 - **Boundaries and markers**, the runner, and what verifying a deep tick tree costs.
-- **The lens laws against the keyed fold** (the coordinator's second suggestion) are the next experiment.
+- **The lens at the text level** (the conflict block, normal form), several lens files in one transaction, and a base that is not closed downward.
 
 ### Retained boundaries
 
