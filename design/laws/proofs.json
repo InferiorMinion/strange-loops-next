@@ -29,6 +29,35 @@
    "states":
    "∀ {env : Loops.Env} {salt : List UInt8} {payload : Loops.Json} {c : String}, Loops.writeProblem env salt payload = some c → c ∈ Loops.writeCodes",
    "module": "Laws.Write"},
+  "Loops.witnessed_same":
+  {"uses": ["Loops.above_congr", "Loops.dead_iff"],
+   "states":
+   "∀ {U W : List Loops.Record}, (∀ (r : Loops.Record), r ∈ U ↔ r ∈ W) → ∀ (o : Option String), Loops.Witnessed U W o",
+   "module": "Laws.LiveSlice"},
+  "Loops.witnessed_of_named":
+  {"uses":
+   ["Loops.above_of_names",
+    "Loops.liveK_iff",
+    "Loops.live_above",
+    "Loops.live_iff_liveK",
+    "Loops.mem_above"],
+   "states":
+   "∀ {W : List Loops.Record}, Loops.NoCycle W → ∀ (o : Option String), (∀ (x : Loops.Record), x ∈ W → ∀ (y : Loops.Record), y ∈ Loops.above W x → Loops.setsK o x = true → Loops.setsK o y = true → Loops.live W x = true → x.id ∈ y.prev) → Loops.Witnessed (Loops.liveOf W) W o",
+   "module": "Laws.LiveSlice"},
+  "Loops.witnessed_of_convex":
+  {"uses":
+   ["Loops.above_convex",
+    "Loops.liveK_iff",
+    "Loops.live_above",
+    "Loops.mem_above"],
+   "states":
+   "∀ {U W : List Loops.Record}, Loops.NoCycle W → Loops.Convex U W → ∀ (o : Option String), (∀ (a : Loops.Record), a ∈ W → Loops.liveK W o a = true → a ∈ U) → Loops.Witnessed U W o",
+   "module": "Laws.LiveSlice"},
+  "Loops.witnessed_iff":
+  {"uses": ["Loops.dead_iff", "Loops.liveK_iff", "Loops.liveK_part"],
+   "states":
+   "∀ {U W : List Loops.Record}, (∀ (q : Loops.Record), q ∈ U → q ∈ W) → ∀ (o : Option String), Loops.Witnessed U W o ↔ ∀ (a : Loops.Record), a ∈ U → Loops.liveK U o a = Loops.liveK W o a",
+   "module": "Laws.LiveSlice"},
   "Loops.withholding_view":
   {"uses": ["Loops.SameEnvelope.refl", "Loops.withhold_envelope"],
    "states": "∀ (p : Loops.Record → Bool), Loops.View (Loops.withholding p)",
@@ -191,6 +220,11 @@
    "states":
    "∀ {rs rs' : List Loops.Record}, (∀ (q : Loops.Record), q ∈ rs ↔ q ∈ rs') → ∀ (cs : List Loops.Cond), Loops.thingTest cs rs = Loops.thingTest cs rs'",
    "module": "Laws.Live"},
+  "Loops.target_needs_witness":
+  {"uses": [],
+   "states":
+   "Loops.Anchored Loops.tg.all ∧ Loops.liveOf Loops.tg.all = [Loops.tg.x, Loops.tg.y3] ∧ Loops.keyedIn \"k1\" [Loops.tg.x, Loops.tg.y3] = Loops.keyedIn \"k1\" Loops.tg.all ∧ Loops.keyedIn \"k1\" [Loops.tg.d, Loops.tg.x, Loops.tg.y2, Loops.tg.y3] ≠ Loops.keyedIn \"k1\" Loops.tg.all",
+   "module": "Laws.LiveSlice"},
   "Loops.takeWhile_slash":
   {"uses": [],
    "states":
@@ -452,6 +486,11 @@
    "states":
    "∀ {a a' b b' : Loops.Record}, Loops.SameEnvelope a a' → Loops.SameEnvelope b b' → Loops.shares a b = Loops.shares a' b'",
    "module": "Laws.Slice"},
+  "Loops.sharesKey_of":
+  {"uses": [],
+   "states":
+   "∀ {x y : Loops.Record} {k : String}, x.setsKey k = true → y.setsKey k = true → Loops.sharesKey x y = true",
+   "module": "Laws.LiveSlice"},
   "Loops.settle_taken":
   {"uses":
    ["Loops.Spec.takes_env",
@@ -484,6 +523,18 @@
    "states":
    "∀ {t : String} {S W : List Loops.Record}, Loops.Forms W → Loops.Slice t S W → ∀ {r : Loops.Record}, r.isOf t = true → (r ∈ Loops.settle S ↔ r ∈ Loops.settle W)",
    "module": "Laws.Slice"},
+  "Loops.settle_part":
+  {"uses":
+   ["Loops.KeyedPart.sub",
+    "Loops.form_isOf",
+    "Loops.isOf_env",
+    "Loops.mem_idsOf",
+    "Loops.pick_form",
+    "Loops.pick_id",
+    "Loops.pick_part"],
+   "states":
+   "∀ {may : Loops.Record → Loops.Record → Bool} {t : String} {S W : List Loops.Record}, Loops.Forms W → Loops.KeyedPart may t S W → ∀ {r : Loops.Record}, r.isOf t = true → (r ∈ Loops.settle S ↔ r ∈ Loops.settle W ∧ ∃ a, a ∈ S ∧ a.id = r.id)",
+   "module": "Laws.LiveSlice"},
   "Loops.settle_keeps":
   {"uses": ["Loops.mem_idsOf"],
    "states":
@@ -513,6 +564,15 @@
    "states":
    "∀ {xs ys : List Loops.Record}, Loops.Forms xs → (∀ (r : Loops.Record), r ∈ xs ↔ r ∈ ys) → Loops.settle xs = Loops.settle ys",
    "module": "Laws.Things"},
+  "Loops.settle_env_part":
+  {"uses":
+   ["Loops.SameEnvelope.id",
+    "Loops.SameEnvelope.symm",
+    "Loops.SameEnvelope.trans",
+    "Loops.pick_form"],
+   "states":
+   "∀ {S W : List Loops.Record}, Loops.Forms W → (∀ (r : Loops.Record), r ∈ S → r ∈ W) → ∀ {q q' : Loops.Record}, q ∈ Loops.settle W → q' ∈ Loops.settle S → q.id = q'.id → Loops.SameEnvelope q q'",
+   "module": "Laws.LiveSlice"},
   "Loops.settle_distinct":
   {"uses": ["Loops.idsOf_sorted", "Loops.pick_id"],
    "states": "∀ (xs : List Loops.Record), Loops.Distinct (Loops.settle xs)",
@@ -532,6 +592,11 @@
    "states":
    "∀ (sel : Loops.Record → Bool) (cs : List Loops.Cond) (r : Loops.Record), ((if sel r = true then Loops.Cond.all cs r else Loops.Tri.no) = Loops.Tri.yes ↔ Loops.chosen sel cs r = true ∧ Loops.payTest cs r = Loops.Tri.yes) ∧ ((if sel r = true then Loops.Cond.all cs r else Loops.Tri.no) = Loops.Tri.unknown ↔ Loops.chosen sel cs r = true ∧ Loops.payTest cs r = Loops.Tri.unknown)",
    "module": "Laws.Spec"},
+  "Loops.saw_of_reach":
+  {"uses": ["Loops.Anchoring.names", "Loops.Anchoring.trans"],
+   "states":
+   "∀ {saw : Loops.Record → List Loops.Record} {W : List Loops.Record}, Loops.Addressed W → Loops.Anchoring saw W → Loops.ClosedOver saw W → ∀ {x : Loops.Record}, x ∈ W → ∀ {i : Loops.RecordId}, Loops.Reach W [x.id] i → ∀ (y : Loops.Record), y ∈ W → i ∈ y.prev → x ∈ saw y",
+   "module": "Laws.LiveSlice"},
   "Loops.roots_iff":
   {"uses": [],
    "states":
@@ -593,6 +658,16 @@
    "states":
    "∀ {sp : Loops.Spec} {S W : List Loops.Record} {may : Loops.Record → Loops.Record → Bool}, Loops.EnvOnly may → Loops.Forms W → Loops.SpecSlice sp S W → ∀ {r : Loops.Record}, sp.takes r = true → (r ∈ Loops.realm may S ↔ r ∈ Loops.realm may W)",
    "module": "Laws.SpecSlice"},
+  "Loops.realm_part":
+  {"uses":
+   ["Loops.KeyedPart.admitted",
+    "Loops.KeyedPart.sub",
+    "Loops.entitled_fewer",
+    "Loops.mem_admit",
+    "Loops.settle_part"],
+   "states":
+   "∀ {may : Loops.Record → Loops.Record → Bool}, Loops.EnvOnly may → ∀ {t : String} {S W : List Loops.Record}, Loops.Forms W → Loops.KeyedPart may t S W → ∀ {r : Loops.Record}, r.isOf t = true → (r ∈ Loops.realm may S ↔ r ∈ Loops.realm may W ∧ ∃ a, a ∈ S ∧ a.id = r.id)",
+   "module": "Laws.LiveSlice"},
   "Loops.realm_addressed":
   {"uses":
    ["Loops.Distinct.addressed",
@@ -601,6 +676,11 @@
    "states":
    "∀ (may : Loops.Record → Loops.Record → Bool) (xs : List Loops.Record), Loops.Addressed (Loops.realm may xs)",
    "module": "Laws.SpecSlice"},
+  "Loops.reach_of_above":
+  {"uses": ["Loops.mem_above"],
+   "states":
+   "∀ {W : List Loops.Record} {a b : Loops.Record}, b ∈ Loops.above W a → Loops.Reach W [a.id] b.id",
+   "module": "Laws.LiveSlice"},
   "Loops.radixValue_lt_iff":
   {"uses": ["Loops.radixValue_bound"],
    "states":
@@ -688,6 +768,15 @@
    "states":
    "∀ {t : String} {S W : List Loops.Record}, Loops.Forms W → Loops.Slice t S W → ∀ {a : Loops.Record}, a ∈ W → a.isOf t = true → Loops.pick S a.id = Loops.pick W a.id",
    "module": "Laws.Slice"},
+  "Loops.pick_part":
+  {"uses":
+   ["Loops.KeyedPart.erasers",
+    "Loops.KeyedPart.forms",
+    "Loops.KeyedPart.sub",
+    "Loops.baseForm_eq"],
+   "states":
+   "∀ {may : Loops.Record → Loops.Record → Bool} {t : String} {S W : List Loops.Record}, Loops.Forms W → Loops.KeyedPart may t S W → ∀ {a : Loops.Record}, a ∈ S → a.isOf t = true → Loops.pick S a.id = Loops.pick W a.id",
+   "module": "Laws.LiveSlice"},
   "Loops.pick_id":
   {"uses": ["Loops.SameEnvelope.id", "Loops.baseForm_mem"],
    "states":
@@ -1214,6 +1303,21 @@
    "states":
    "∀ {kvs : List (String × Loops.Json)} {k : String} {v : Loops.Json}, (Loops.Json.obj kvs).keysDistinct = true → List.lookup k kvs = some v → v.keysDistinct = true",
    "module": "Laws.Parse"},
+  "Loops.live_part":
+  {"uses": ["Loops.liveK_part", "Loops.live_iff_liveK"],
+   "states":
+   "∀ {U W : List Loops.Record}, (∀ (q : Loops.Record), q ∈ U → q ∈ W) → ∀ {r : Loops.Record}, Loops.live W r = true → Loops.live U r = true",
+   "module": "Laws.LiveSlice"},
+  "Loops.live_named_by_head":
+  {"uses": ["Loops.liveK_none", "Loops.live_above", "Loops.mem_above"],
+   "states":
+   "∀ {W : List Loops.Record}, Loops.NoCycle W → Loops.Anchored W → ∀ {a : Loops.Record}, a ∈ W → Loops.live W a = true → Loops.liveEnv W a = true ∨ ∃ b, b ∈ W ∧ Loops.liveEnv W b = true ∧ a.id ∈ b.prev",
+   "module": "Laws.LiveSlice"},
+  "Loops.live_iff_liveK":
+  {"uses": ["Loops.liveK_none", "Loops.live_iff"],
+   "states":
+   "∀ {rs : List Loops.Record} {r : Loops.Record}, Loops.live rs r = true ↔ ∃ o, Loops.liveK rs o r = true",
+   "module": "Laws.LiveSlice"},
   "Loops.live_iff":
   {"uses": ["Loops.exists_fresh", "Loops.liveFor_iff"],
    "states":
@@ -1224,6 +1328,31 @@
    "states":
    "∀ {rs rs' : List Loops.Record}, (∀ (q : Loops.Record), q ∈ rs ↔ q ∈ rs') → ∀ (r : Loops.Record), Loops.live rs r = Loops.live rs' r",
    "module": "Laws.Live"},
+  "Loops.live_above":
+  {"uses": ["Loops.above_length_lt", "Loops.above_trans", "Loops.dead_iff"],
+   "states":
+   "∀ {W : List Loops.Record}, Loops.NoCycle W → ∀ (o : Option String) (a : Loops.Record), Loops.setsK o a = true → Loops.liveK W o a = false → ∃ b, b ∈ Loops.above W a ∧ Loops.liveK W o b = true",
+   "module": "Laws.LiveSlice"},
+  "Loops.liveK_some":
+  {"uses": [],
+   "states":
+   "∀ (rs : List Loops.Record) (k : String) (r : Loops.Record), Loops.liveK rs (some k) r = Loops.liveFor rs k r",
+   "module": "Laws.LiveSlice"},
+  "Loops.liveK_part":
+  {"uses": ["Loops.above_sub", "Loops.liveK_iff"],
+   "states":
+   "∀ {U W : List Loops.Record}, (∀ (q : Loops.Record), q ∈ U → q ∈ W) → ∀ {o : Option String} {r : Loops.Record}, Loops.liveK W o r = true → Loops.liveK U o r = true",
+   "module": "Laws.LiveSlice"},
+  "Loops.liveK_none":
+  {"uses": [],
+   "states":
+   "∀ (rs : List Loops.Record) (r : Loops.Record), Loops.liveK rs none r = Loops.liveEnv rs r",
+   "module": "Laws.LiveSlice"},
+  "Loops.liveK_iff":
+  {"uses": [],
+   "states":
+   "∀ {rs : List Loops.Record} {o : Option String} {r : Loops.Record}, Loops.liveK rs o r = true ↔ Loops.setsK o r = true ∧ ∀ (q : Loops.Record), q ∈ Loops.above rs r → Loops.setsK o q = false",
+   "module": "Laws.LiveSlice"},
   "Loops.liveFor_undeclared":
   {"uses": [],
    "states":
@@ -1339,6 +1468,11 @@
    "states":
    "∀ {kvs : List (String × Loops.Json)}, (Loops.Json.obj kvs).keysDistinct = true → (List.map (fun x => x.fst) kvs).Nodup",
    "module": "Laws.Write"},
+  "Loops.keyed_slice_needs_erasers":
+  {"uses": [],
+   "states":
+   "Loops.keyedIn \"k1\" (Loops.realm (fun x x_1 => true) [Loops.er.x]) ≠ Loops.keyedIn \"k1\" (Loops.realm (fun x x_1 => true) [Loops.er.x, Loops.er.e])",
+   "module": "Laws.LiveSlice"},
   "Loops.keyedOf_unread":
   {"uses": ["Loops.SlotValue.keyed.injEq"],
    "states":
@@ -1381,6 +1515,29 @@
    "states":
    "∀ {t : String} {xs : List Loops.Record}, Loops.Addressed xs → ∀ {r : Loops.Record}, r ∈ (Loops.keyedIn t xs).whole ↔ r ∈ Loops.recordsOf t xs ∧ r.whole = true ∧ Loops.live (Loops.recordsOf t xs) r = true",
    "module": "Laws.Live"},
+  "Loops.keyedIn_thing_slice":
+  {"uses":
+   ["Loops.Distinct.addressed",
+    "Loops.admit_distinct",
+    "Loops.entitled_slice",
+    "Loops.keyedIn_part",
+    "Loops.mem_admit",
+    "Loops.settle_distinct",
+    "Loops.settle_slice",
+    "Loops.witnessed_same"],
+   "states":
+   "∀ {may : Loops.Record → Loops.Record → Bool}, Loops.EnvOnly may → ∀ {t : String} {S W : List Loops.Record}, Loops.Forms W → Loops.Slice t S W → Loops.keyedIn t (Loops.realm may S) = Loops.keyedIn t (Loops.realm may W)",
+   "module": "Laws.LiveSlice"},
+  "Loops.keyedIn_slice":
+  {"uses":
+   ["Loops.Distinct.addressed",
+    "Loops.admit_distinct",
+    "Loops.keyedIn_part",
+    "Loops.realm_part",
+    "Loops.settle_distinct"],
+   "states":
+   "∀ {may : Loops.Record → Loops.Record → Bool}, Loops.EnvOnly may → ∀ {t : String} {S W : List Loops.Record}, Loops.Forms W → Loops.KeyedPart may t S W → (∀ (r : Loops.Record), r ∈ Loops.recordsOf t (Loops.realm may W) → Loops.live (Loops.recordsOf t (Loops.realm may W)) r = true → ∃ a, a ∈ S ∧ a.id = r.id) → (∀ (o : Option String), Loops.Witnessed (Loops.recordsOf t (Loops.realm may S)) (Loops.recordsOf t (Loops.realm may W)) o) → Loops.keyedIn t (Loops.realm may S) = Loops.keyedIn t (Loops.realm may W)",
+   "module": "Laws.LiveSlice"},
   "Loops.keyedIn_setters":
   {"uses":
    ["Loops.addressed_filter",
@@ -1403,6 +1560,41 @@
    "states":
    "∀ {xs ys : List Loops.Record}, Loops.Addressed xs → Loops.Addressed ys → (∀ (r : Loops.Record), r ∈ xs ↔ r ∈ ys) → ∀ (t : String), Loops.keyedIn t xs = Loops.keyedIn t ys",
    "module": "Laws.Live"},
+  "Loops.keyedIn_part":
+  {"uses":
+   ["Loops.LatestBy.Inv.heads_sorted",
+    "Loops.LatestBy.inv_of",
+    "Loops.addressed_filter",
+    "Loops.addressed_recordsOf",
+    "Loops.canonSet_eq",
+    "Loops.liveK_none",
+    "Loops.liveK_some",
+    "Loops.live_iff_liveK",
+    "Loops.mem_stateIn_heads_iff",
+    "Loops.orderHeads_set_decides",
+    "Loops.sorted_ext",
+    "Loops.witnessed_iff"],
+   "states":
+   "∀ {t : String} {xs ys : List Loops.Record}, Loops.Addressed xs → Loops.Addressed ys → (∀ (r : Loops.Record), r ∈ Loops.recordsOf t ys → r ∈ Loops.recordsOf t xs) → (∀ (r : Loops.Record), r ∈ Loops.recordsOf t xs → Loops.live (Loops.recordsOf t xs) r = true → r ∈ Loops.recordsOf t ys) → (∀ (o : Option String), Loops.Witnessed (Loops.recordsOf t ys) (Loops.recordsOf t xs) o) → Loops.keyedIn t ys = Loops.keyedIn t xs",
+   "module": "Laws.LiveSlice"},
+  "Loops.keyedIn_live_slice":
+  {"uses":
+   ["Loops.Witnessed.congr",
+    "Loops.anchored_witnessed",
+    "Loops.keyedIn_slice",
+    "Loops.realm_part"],
+   "states":
+   "∀ {may : Loops.Record → Loops.Record → Bool}, Loops.EnvOnly may → ∀ {t : String} {S W : List Loops.Record}, Loops.Forms W → Loops.KeyedPart may t S W → Loops.NoCycle (Loops.recordsOf t (Loops.realm may W)) → Loops.Anchored (Loops.recordsOf t (Loops.realm may W)) → (∀ (r : Loops.Record), r ∈ Loops.recordsOf t (Loops.realm may W) → Loops.live (Loops.recordsOf t (Loops.realm may W)) r = true → ∃ a, a ∈ S ∧ a.id = r.id) → (∀ (r : Loops.Record), r ∈ Loops.recordsOf t (Loops.realm may W) → (∃ a, a ∈ S ∧ a.id = r.id) → Loops.live (Loops.recordsOf t (Loops.realm may W)) r = true) → Loops.keyedIn t (Loops.realm may S) = Loops.keyedIn t (Loops.realm may W)",
+   "module": "Laws.LiveSlice"},
+  "Loops.keyedIn_live":
+  {"uses":
+   ["Loops.addressed_filter",
+    "Loops.addressed_recordsOf",
+    "Loops.anchored_witnessed",
+    "Loops.keyedIn_part"],
+   "states":
+   "∀ {t : String} {xs : List Loops.Record}, Loops.Addressed xs → Loops.NoCycle (Loops.recordsOf t xs) → Loops.Anchored (Loops.recordsOf t xs) → Loops.keyedIn t (Loops.liveOf (Loops.recordsOf t xs)) = Loops.keyedIn t xs",
+   "module": "Laws.LiveSlice"},
   "Loops.keyedIn_keys":
   {"uses": ["Loops.mem_canonSet"],
    "states":
@@ -1413,6 +1605,12 @@
    "states":
    "∀ (t : String) (xs : List Loops.Record), (Loops.keyedIn t xs).heads = (Loops.stateIn t xs).heads",
    "module": "Laws.Live"},
+  "Loops.keyedIn_convex":
+  {"uses":
+   ["Loops.keyedIn_part", "Loops.live_iff_liveK", "Loops.witnessed_of_convex"],
+   "states":
+   "∀ {t : String} {xs ys : List Loops.Record}, Loops.Addressed xs → Loops.Addressed ys → Loops.NoCycle (Loops.recordsOf t xs) → (∀ (r : Loops.Record), r ∈ Loops.recordsOf t ys → r ∈ Loops.recordsOf t xs) → (∀ (r : Loops.Record), r ∈ Loops.recordsOf t xs → Loops.live (Loops.recordsOf t xs) r = true → r ∈ Loops.recordsOf t ys) → Loops.Convex (Loops.recordsOf t ys) (Loops.recordsOf t xs) → Loops.keyedIn t ys = Loops.keyedIn t xs",
+   "module": "Laws.LiveSlice"},
   "Loops.isOf_view":
   {"uses": ["Loops.thing_view"],
    "states":
@@ -1555,11 +1753,21 @@
    "states":
    "∀ {sp : Loops.Spec} {S W : List Loops.Record} {may : Loops.Record → Loops.Record → Bool}, Loops.EnvOnly may → Loops.Forms W → Loops.SpecSlice sp S W → ∀ (t : String) {r : Loops.Record}, sp.takes r = true → (r ∈ (Loops.stateIn t (Loops.realm may S)).heads ↔ r ∈ (Loops.stateIn t (Loops.realm may W)).heads)",
    "module": "Laws.SpecSlice"},
+  "Loops.heads_slice":
+  {"uses": ["Loops.anchored_slice", "Loops.liveK_none"],
+   "states":
+   "∀ {W : List Loops.Record}, Loops.NoCycle W → Loops.Anchored W → ∀ {a : Loops.Record}, a ∈ W → (Loops.live W a = true ∧ Loops.liveEnv (Loops.liveOf W) a = true ↔ Loops.liveEnv W a = true)",
+   "module": "Laws.LiveSlice"},
   "Loops.heads_one_thing":
   {"uses": ["Loops.stateIn_heads_thing"],
    "states":
    "∀ {xs : List Loops.Record}, Loops.Addressed xs → ∀ {t u : String} {r : Loops.Record}, r ∈ (Loops.stateIn t xs).heads → r ∈ (Loops.stateIn u xs).heads → t = u",
    "module": "Laws.Things"},
+  "Loops.heads_need_env":
+  {"uses": [],
+   "states":
+   "Loops.AnchoredKeys [Loops.hd.t, Loops.hd.s1, Loops.hd.s2] ∧ Loops.liveOf [Loops.hd.t, Loops.hd.s1, Loops.hd.s2] = [Loops.hd.t, Loops.hd.s2] ∧ Loops.liveEnv [Loops.hd.t, Loops.hd.s2] Loops.hd.t = true ∧ Loops.liveEnv [Loops.hd.t, Loops.hd.s1, Loops.hd.s2] Loops.hd.t = false",
+   "module": "Laws.LiveSlice"},
   "Loops.head_thing":
   {"uses": ["Loops.isOf_iff", "Loops.mem_canonSet", "Loops.mem_stateIn_heads"],
    "states":
@@ -1609,6 +1817,11 @@
    "states":
    "∀ (x : Nat) (x_1 : List Int), Loops.fracScaled x x_1 = match x, x_1 with | x, [] => 0 | 0, head :: tail => 0 | n.succ, d :: ds => d * 10 ^ n + Loops.fracScaled n ds",
    "module": "Laws.Time"},
+  "Loops.form_isOf":
+  {"uses": ["Loops.SameEnvelope.id", "Loops.isOf_env", "Loops.pick_form"],
+   "states":
+   "∀ {t : String} {W : List Loops.Record}, Loops.Forms W → ∀ {r a : Loops.Record}, r ∈ Loops.settle W → r.isOf t = true → a ∈ W → a.id = r.id → a.isOf t = true",
+   "module": "Laws.LiveSlice"},
   "Loops.followed_slice":
   {"uses":
    ["Loops.Acc.select_filter",
@@ -1747,6 +1960,19 @@
    "states":
    "∀ {may : Loops.Record → Loops.Record → Bool}, Loops.EnvOnly may → ∀ {S W : List Loops.Record}, Loops.Forms W → (∀ (r : Loops.Record), r ∈ S → r ∈ W) → ∀ {r r' : Loops.Record}, Loops.SameEnvelope r r' → (∀ (q : Loops.Record), q ∈ W → q.id ∈ r.prev → q ∈ S) → Loops.entitled may (Loops.settle S) r = Loops.entitled may (Loops.settle W) r'",
    "module": "Laws.SpecSlice"},
+  "Loops.entitled_fewer":
+  {"uses":
+   ["Loops.SameEnvelope.id",
+    "Loops.SameEnvelope.refl",
+    "Loops.mem_idsOf",
+    "Loops.pick_form",
+    "Loops.pick_id",
+    "Loops.pick_some",
+    "Loops.settle_env_part",
+    "Loops.shares_env"],
+   "states":
+   "∀ {may : Loops.Record → Loops.Record → Bool}, Loops.EnvOnly may → ∀ {S W : List Loops.Record}, Loops.Forms W → (∀ (r : Loops.Record), r ∈ S → r ∈ W) → ∀ {r : Loops.Record}, Loops.entitled may (Loops.settle W) r = true → Loops.entitled may (Loops.settle S) r = true",
+   "module": "Laws.LiveSlice"},
   "Loops.entitled_congr":
   {"uses": [],
    "states":
@@ -1795,6 +2021,11 @@
    "states":
    "∀ (x x_1 : Nat), Loops.decimalChars x x_1 = match x, x_1 with | 0, x => [] | k.succ, n => Char.ofNat (48 + n / 10 ^ k) :: Loops.decimalChars k (n % 10 ^ k)",
    "module": "Laws.Instant"},
+  "Loops.dead_iff":
+  {"uses": [],
+   "states":
+   "∀ {rs : List Loops.Record} {o : Option String} {r : Loops.Record}, Loops.setsK o r = true → (Loops.liveK rs o r = false ↔ ∃ q, q ∈ Loops.above rs r ∧ Loops.setsK o q = true)",
+   "module": "Laws.LiveSlice"},
   "Loops.daysIn_pos":
   {"uses": [],
    "states": "∀ (y m : Nat), 0 < Loops.daysIn y m",
@@ -1824,6 +2055,11 @@
    "states":
    "∀ (f : Bool) (s : Loops.Slot) (b : Loops.By) (sel : Loops.Record → Bool) (xs : List Loops.Record) (g : String), s.type = Loops.FoldType.count f → ({ name := s.name, type := s.type }.plain (Loops.inGroup b (s.ev sel) g) xs).group.count = (List.filter (Loops.inGroup b (s.ev sel) g) (s.pool xs)).length",
    "module": "Laws.By"},
+  "Loops.convex_not_needed":
+  {"uses": [],
+   "states":
+   "Loops.Witnessed [Loops.lv.a, Loops.lv.c] [Loops.lv.a, Loops.lv.b, Loops.lv.c] (some \"status\") ∧ Loops.Witnessed [Loops.lv.a, Loops.lv.c] [Loops.lv.a, Loops.lv.b, Loops.lv.c] none ∧ ¬Loops.Convex [Loops.lv.a, Loops.lv.c] [Loops.lv.a, Loops.lv.b, Loops.lv.c]",
+   "module": "Laws.LiveSlice"},
   "Loops.collectOf_unread":
   {"uses":
    ["Loops.Addressed.filter",
@@ -1868,6 +2104,11 @@
    "states":
    "∀ (sel : Loops.Record → Bool) (cs : List Loops.Cond) (limit : Option Nat) {xs : List Loops.Record}, Loops.Addressed xs → ∀ {hs : List (Loops.RecordId × Loops.Shown)} {u : Nat}, Loops.collectOf sel cs true limit xs = Loops.SlotValue.heads hs u → ∀ {p : Loops.RecordId × Loops.Shown}, p ∈ hs → ∃ t r, Loops.HeadOf xs t r ∧ sel r = true ∧ Loops.Cond.all cs r = Loops.Tri.yes ∧ (r.id, r.shown) = p",
    "module": "Laws.Spec"},
+  "Loops.closed_needed":
+  {"uses": ["Loops.Anchoring.of_checks"],
+   "states":
+   "Loops.Anchoring Loops.cl.saw [Loops.cl.x, Loops.cl.y, Loops.cl.y2] ∧ ¬Loops.ClosedOver Loops.cl.saw [Loops.cl.x, Loops.cl.y, Loops.cl.y2] ∧ Loops.liveFor (Loops.liveOf [Loops.cl.x, Loops.cl.y, Loops.cl.y2]) \"a\" Loops.cl.x = true ∧ Loops.liveFor [Loops.cl.x, Loops.cl.y, Loops.cl.y2] \"a\" Loops.cl.x = false",
+   "module": "Laws.LiveSlice"},
   "Loops.chosen_takes":
   {"uses": [],
    "states":
@@ -2012,6 +2253,36 @@
    "states":
    "∀ {f : Loops.Record → Loops.Record}, Loops.View f → ∀ (s : Loops.Signed) (L : String), (Loops.Signed.through f s).anchors L = s.anchors L",
    "module": "Laws.Keys"},
+  "Loops.anchored_witnessed":
+  {"uses": ["Loops.witnessed_of_named"],
+   "states":
+   "∀ {W : List Loops.Record}, Loops.NoCycle W → Loops.Anchored W → ∀ (o : Option String), Loops.Witnessed (Loops.liveOf W) W o",
+   "module": "Laws.LiveSlice"},
+  "Loops.anchored_slice":
+  {"uses":
+   ["Loops.anchored_witnessed", "Loops.live_iff_liveK", "Loops.witnessed_iff"],
+   "states":
+   "∀ {W : List Loops.Record}, Loops.NoCycle W → Loops.Anchored W → ∀ (o : Option String) {a : Loops.Record}, a ∈ W → (Loops.live W a = true ∧ Loops.liveK (Loops.liveOf W) o a = true ↔ Loops.liveK W o a = true)",
+   "module": "Laws.LiveSlice"},
+  "Loops.anchored_of_written":
+  {"uses":
+   ["Loops.Anchoring.rule",
+    "Loops.live_part",
+    "Loops.mem_above",
+    "Loops.saw_of_reach"],
+   "states":
+   "∀ {saw : Loops.Record → List Loops.Record} {W : List Loops.Record}, Loops.Addressed W → Loops.Anchoring saw W → Loops.ClosedOver saw W → Loops.Anchored W",
+   "module": "Laws.LiveSlice"},
+  "Loops.anchoredKeys_slice":
+  {"uses":
+   ["Loops.liveK_some",
+    "Loops.live_iff_liveK",
+    "Loops.sharesKey_of",
+    "Loops.witnessed_iff",
+    "Loops.witnessed_of_named"],
+   "states":
+   "∀ {W : List Loops.Record}, Loops.NoCycle W → Loops.AnchoredKeys W → ∀ (k : String) {a : Loops.Record}, a ∈ W → (Loops.live W a = true ∧ Loops.liveFor (Loops.liveOf W) k a = true ↔ Loops.liveFor W k a = true)",
+   "module": "Laws.LiveSlice"},
   "Loops.admit_view":
   {"uses": ["Loops.entitled_view"],
    "states":
@@ -2069,6 +2340,31 @@
    "states":
    "∀ {xs : List Loops.Record}, Loops.Addressed xs → Loops.Distinct (Loops.accPool true xs) ∧ ∀ (t : String), t ∈ Loops.thingsOf xs → ∀ (r : Loops.Record), r ∈ (Loops.stateIn t xs).heads → r ∈ Loops.accPool true xs",
    "module": "Laws.Spec"},
+  "Loops.above_trans":
+  {"uses": ["Loops.Reach.trans", "Loops.mem_above", "Loops.reach_of_above"],
+   "states":
+   "∀ {W : List Loops.Record} {a b c : Loops.Record}, b ∈ Loops.above W a → c ∈ Loops.above W b → c ∈ Loops.above W a",
+   "module": "Laws.LiveSlice"},
+  "Loops.above_sub":
+  {"uses": ["Loops.Reach.sub", "Loops.mem_above"],
+   "states":
+   "∀ {U W : List Loops.Record}, (∀ (q : Loops.Record), q ∈ U → q ∈ W) → ∀ {r q : Loops.Record}, q ∈ Loops.above U r → q ∈ Loops.above W r",
+   "module": "Laws.LiveSlice"},
+  "Loops.above_of_names":
+  {"uses": ["Loops.mem_above"],
+   "states":
+   "∀ {W : List Loops.Record} {r q : Loops.Record}, q ∈ W → r.id ∈ q.prev → q ∈ Loops.above W r",
+   "module": "Laws.LiveSlice"},
+  "Loops.above_length_lt":
+  {"uses": ["Loops.above_trans", "Loops.mem_above"],
+   "states":
+   "∀ {W : List Loops.Record}, Loops.NoCycle W → ∀ {a b : Loops.Record}, b ∈ Loops.above W a → (Loops.above W b).length < (Loops.above W a).length",
+   "module": "Laws.LiveSlice"},
+  "Loops.above_convex":
+  {"uses": ["Loops.above_of_names", "Loops.above_trans", "Loops.mem_above"],
+   "states":
+   "∀ {U W : List Loops.Record}, Loops.Convex U W → ∀ {a : Loops.Record}, a ∈ U → ∀ {i : Loops.RecordId}, Loops.Reach W [a.id] i → ∀ (c : Loops.Record), c ∈ U → i ∈ c.prev → c ∈ Loops.above W a → c ∈ Loops.above U a",
+   "module": "Laws.LiveSlice"},
   "Loops.above_congr":
   {"uses": ["Loops.Reach.congr", "Loops.mem_above"],
    "states":
@@ -2134,6 +2430,11 @@
    "states":
    "∀ {env : Loops.Env} {salt : List UInt8} {payload : Loops.Json}, Loops.Writable env salt payload → env.problem = none",
    "module": "Loops.Stored"},
+  "Loops.Witnessed.congr":
+  {"uses": ["Loops.above_congr"],
+   "states":
+   "∀ {U U' W : List Loops.Record}, (∀ (r : Loops.Record), r ∈ U ↔ r ∈ U') → ∀ {o : Option String}, Loops.Witnessed U W o → Loops.Witnessed U' W o",
+   "module": "Laws.LiveSlice"},
   "Loops.Where.payload.sizeOf_spec":
   {"uses": [],
    "states": "∀ (t : Loops.Record → Bool), sizeOf (Loops.Where.payload t) = 1",
@@ -3046,6 +3347,16 @@
    "states":
    "∀ {kvs : List (String × Loops.Json)}, List.lookup \"kind\" kvs = none ∨ List.lookup \"observer\" kvs = none ∨ List.lookup \"emitted\" kvs = none → (Loops.Read.envOf kvs).problem ≠ none",
    "module": "Laws.Read"},
+  "Loops.Reach.trans":
+  {"uses": [],
+   "states":
+   "∀ {W : List Loops.Record} {i j p : Loops.RecordId}, Loops.Reach W [i] j → Loops.Reach W [j] p → Loops.Reach W [i] p",
+   "module": "Laws.LiveSlice"},
+  "Loops.Reach.sub":
+  {"uses": [],
+   "states":
+   "∀ {U W : List Loops.Record}, (∀ (q : Loops.Record), q ∈ U → q ∈ W) → ∀ {ids : List Loops.RecordId} {i : Loops.RecordId}, Loops.Reach U ids i → Loops.Reach W ids i",
+   "module": "Laws.LiveSlice"},
   "Loops.Reach.namer":
   {"uses": [],
    "states":
@@ -3749,6 +4060,26 @@
    "states":
    "∀ {keys : List (String × List (Loops.RecordId × Loops.Shown))} {whole heads : List (Loops.RecordId × Loops.Shown)} {keys_1 : List (String × List (Loops.RecordId × Loops.Shown))} {whole_1 heads_1 : List (Loops.RecordId × Loops.Shown)}, { keys := keys, whole := whole, heads := heads } = { keys := keys_1, whole := whole_1, heads := heads_1 } → keys = keys_1 ∧ whole = whole_1 ∧ heads = heads_1",
    "module": "Loops.Spec"},
+  "Loops.KeyedPart.sub":
+  {"uses": [],
+   "states":
+   "∀ {may : Loops.Record → Loops.Record → Bool} {t : String} {S W : List Loops.Record}, Loops.KeyedPart may t S W → ∀ (r : Loops.Record), r ∈ S → r ∈ W",
+   "module": "Laws.LiveSlice"},
+  "Loops.KeyedPart.forms":
+  {"uses": [],
+   "states":
+   "∀ {may : Loops.Record → Loops.Record → Bool} {t : String} {S W : List Loops.Record}, Loops.KeyedPart may t S W → ∀ (a : Loops.Record), a ∈ S → a.isOf t = true → ∀ (b : Loops.Record), b ∈ W → b.id = a.id → b ∈ S",
+   "module": "Laws.LiveSlice"},
+  "Loops.KeyedPart.erasers":
+  {"uses": [],
+   "states":
+   "∀ {may : Loops.Record → Loops.Record → Bool} {t : String} {S W : List Loops.Record}, Loops.KeyedPart may t S W → ∀ (a : Loops.Record), a ∈ S → a.isOf t = true → ∀ (e : Loops.Record), e ∈ W → e.erases.contains a.id = true → e ∈ S",
+   "module": "Laws.LiveSlice"},
+  "Loops.KeyedPart.admitted":
+  {"uses": [],
+   "states":
+   "∀ {may : Loops.Record → Loops.Record → Bool} {t : String} {S W : List Loops.Record}, Loops.KeyedPart may t S W → ∀ (r : Loops.Record), r ∈ Loops.settle W → r.isOf t = true → (∃ a, a ∈ S ∧ a.id = r.id) → Loops.entitled may (Loops.settle W) r = true",
+   "module": "Laws.LiveSlice"},
   "Loops.Keyed.mk.sizeOf_spec":
   {"uses": [],
    "states":
@@ -4797,6 +5128,31 @@
    "states":
    "∀ {c c_1 : Loops.Claim}, Loops.Arg.time c = Loops.Arg.time c_1 → c = c_1",
    "module": "Loops.Spec"},
+  "Loops.Anchoring.trans":
+  {"uses": [],
+   "states":
+   "∀ {saw : Loops.Record → List Loops.Record} {W : List Loops.Record}, Loops.Anchoring saw W → ∀ (y : Loops.Record), y ∈ W → ∀ (x : Loops.Record), x ∈ saw y → ∀ (z : Loops.Record), z ∈ saw x → z ∈ saw y",
+   "module": "Laws.LiveSlice"},
+  "Loops.Anchoring.rule":
+  {"uses": [],
+   "states":
+   "∀ {saw : Loops.Record → List Loops.Record} {W : List Loops.Record}, Loops.Anchoring saw W → ∀ (y : Loops.Record), y ∈ W → ∀ (x : Loops.Record), x ∈ saw y → Loops.live (saw y) x = true → x.id ∈ y.prev",
+   "module": "Laws.LiveSlice"},
+  "Loops.Anchoring.of_checks":
+  {"uses": [],
+   "states":
+   "∀ {saw : Loops.Record → List Loops.Record} {W : List Loops.Record}, (W.all fun y => y.prev.all fun p => (saw y).any fun x => x.id == p) = true → (W.all fun y => (saw y).all fun x => (saw x).all fun z => (saw y).contains z) = true → (W.all fun y => (saw y).all fun x => !Loops.live (saw y) x || y.prev.contains x.id) = true → Loops.Anchoring saw W",
+   "module": "Laws.LiveSlice"},
+  "Loops.Anchoring.names":
+  {"uses": [],
+   "states":
+   "∀ {saw : Loops.Record → List Loops.Record} {W : List Loops.Record}, Loops.Anchoring saw W → ∀ (y : Loops.Record), y ∈ W → ∀ (p : Loops.RecordId), p ∈ y.prev → ∃ x, x ∈ saw y ∧ x.id = p",
+   "module": "Laws.LiveSlice"},
+  "Loops.Anchored.keys":
+  {"uses": [],
+   "states":
+   "∀ {W : List Loops.Record}, Loops.Anchored W → Loops.AnchoredKeys W",
+   "module": "Laws.LiveSlice"},
   "Loops.Addressed.unlinked":
   {"uses": [],
    "states":
