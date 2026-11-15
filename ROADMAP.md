@@ -11,14 +11,14 @@ All three refuse every envelope shape by name (issue #1) and let a label stand i
 All three writers refuse an `under` target they do not hold (`under-unknown`).
 `loops emit` follows D8c's anchor rule: an emit of a thing names in `prev` every live record of it the store holds, and carries the thing's whole `about`.
 All three let count, sum, min and max follow `prev` (issue #3), and group count, sum, min, max and collect with `by` (issue #2).
-The law index has 104 entries, 1006 theorems, and 6 boundary witnesses.
+The law index has 105 entries, 1041 theorems, and 6 boundary witnesses.
 See [the law index](design/laws/laws.json) and [proof and boundary data](design/laws/).
 These proofs apply only under their stated premises.
 
 The tree has 600 JSON fixtures: 588 generated fixtures and 12 standard fixtures.
 Lean replays 579 generated fixtures; 9 occurred fixtures use separate checks.
 Rust checks every fixture, six JCS byte pairs, 4,000 binary64 cases, and 128 SUPERCOP signing cases with ed25519-dalek.
-Rust passes 174 tests; JavaScript passes 6,944 vector checks and 39 regression and law tests.
+Rust passes 174 tests; JavaScript passes 6,944 vector checks and 40 regression and law tests.
 Both also check that `spec/run` answers write their members, group, thing and key names included, in the model's order; JavaScript checks `fold/latest-by` answers' thing keys too.
 JavaScript refuses a held record's invalid `emitted` or `occurred` before it answers, as the Lean and Rust readers do.
 The fuzz suite passes 60 tests.
@@ -91,7 +91,7 @@ It is allowed on count, sum, min, max and collect, following `prev` or not; on l
 The result is `{"groups": {<key>: <result>}, "unread": n, "ungrouped": m}`, each `<result>` the slot's own shape.
 Settling, admission and the whole-reader heads come first, once, over everything held; each group is then the slot without `by` or `where` over the records selected into it.
 The laws are `by.set`, `by.after-admission`, `by.accounting` and `by.partition`; `spec.slice` covers grouped slots without a new premise.
-Ordering or top-N across groups, buckets and windows, `by` on latest-by, and `by` over keyed things (D8c) are not built.
+Ordering or top-N across groups, buckets and windows, and `by` on latest-by are not built.
 **Kyle's choices, confirmed 2026-11-11:**
 - The spelling `env.about:<prefix>`: it reuses `where`'s existing rule that `env.` names the envelope, so a bare name such as `about:project` is a payload field, and no second name is reserved.
 - Keys are text, so a text value and a number or boolean value that render alike share a group: the text `"1"` and the number 1, the text `"true"` and `true`.
@@ -177,7 +177,7 @@ Never round or cap current model outputs.
 ### D8: Items, mentions and declared keys
 
 Kyle ruled this on 2026-11-10.
-D8a and D8b are built across the model, vectors, JavaScript and Rust; of D8c, `sets` is built in the envelope, liveness per key, latest-by following `keys`, count, sum, min, max, collect and `by` following `keys`, the slice laws for one keyed thing, and the anchor rule and copied `about` in `loops emit`; the slice law for a spec with a keyed slot is not.
+D8a and D8b are built across the model, vectors, JavaScript and Rust, and all of D8c is built: `sets` in the envelope, liveness per key, latest-by following `keys`, count, sum, min, max, collect and `by` following `keys`, the slice laws for one keyed thing and for a spec with a keyed slot, and the anchor rule and copied `about` in `loops emit`.
 It changes the settled envelope, so it lands as R1–R6 and D1–D6 did: model, vectors, JavaScript, Rust, then protocol and pages.
 **Finding:** Two apps built on the product slice hit one wall on 2026-11-10.
 The orchestration dry run is in [Scenarios](design/rethink/sections/13-scenarios.html), step 8; margins-claude's `work` app is described in its notes on merge request !12.
@@ -283,7 +283,7 @@ Nothing compares `sets` with the payload or with another record's: a declared ke
 No fold, spec or lens reads it yet; it is carried, hashed into the id, stored, read back and shown, and an erased or withheld record keeps it with its envelope.
 The law is `record.keys`; `record.sets` now covers `sets` too.
 `record/15`–`19`, `45`–`47` and `shape-sets-*`, and `batch/76`–`82`, pin it.
-The keyed fold, liveness per key and their laws are built in the next paragraph, the other slots that follow `keys` in the one after it, the slice laws for one thing in the one after that, and the anchor rule in `loops emit` in the last; the slice law for a spec with a keyed slot is not.
+The keyed fold, liveness per key and their laws are built in the next paragraph, the other slots that follow `keys` in the one after it, the slice laws for one thing and for a spec in the two after that, and the anchor rule in `loops emit` in the last.
 **Implementer choices, for Kyle to confirm:**
 - `sets` holds keys, not labels: in a changeset a key that starts with `@` is written as given, neither replaced nor looked up (`batch/76`).
 - A held record's `sets` is checked as its other fields are: a stored line whose `sets` is not keys is refused with the writer's code, and one in another order is not canonical. The reader's record in fold, realm, scenario and spec vectors carries `sets` since the keyed fold below.
@@ -301,7 +301,7 @@ The result per thing is `{"keys", "whole", "heads"}`, as in the note's example, 
 `thingTest` (`Cond.onThing` per test) takes a thing's records and is what the next slice's count, sum, min, max, collect and `by` can ask.
 The laws are `keyed.live`, `keyed.fold` and `keyed.select`; `spec.set` covers the keyed slot. `spec.slice` does not: `Spec.run_slice` takes a spec with no keyed slot, since a keyed slot reads live setters the spec does not take, and the spec-slice sweep finds slices that answer it differently.
 `spec/parse/97`–`110`, `spec/run/31`–`41` and `scenario/keys-01-settled-setter` pin it; the CLI walk reads a keyed thing through `loops fold`.
-The slice law for a spec with a keyed slot is not built; the slice laws for one thing, and the anchor rule and copied `about` in `loops emit`, are, in later paragraphs.
+The slice laws, and the anchor rule and copied `about` in `loops emit`, are built in later paragraphs.
 **Implementer choices, for Kyle to confirm:**
 - A field no record of the thing sets is absent, as a missing field in a held payload is: `is`, `present`, `at-least` and `below` answer no, `not` and `absent` answer yes (`spec/run/40`, `task:13`). A live setter that declares a field its payload lacks reads it as absent too.
 - A chosen thing whose payload tests answer unknown counts once in `unread`; `unread` counts things, not records.
@@ -319,7 +319,7 @@ Count counts the selected things; sum, min and max read the field from its one l
 With `by`, a payload key is read from each live setter of the field and an envelope key from each chosen head (`By.thingKeys`), and each group is the slot without `by` over its things (`Slot.keyedGrouped`).
 The laws are `keyed.slots`, `keyed.by` and `keyed.whole-read`: when every record is read whole and every thing has one head, each such slot, grouped or not, gives what the same slot following `prev` gives (`Slot.keys_as_prev`). `spec.set` covers them; `spec.slice` does not, and its premise now leaves out every slot that follows `keys`, as the spec-slice sweep does.
 `spec/run/42`–`50` pin it, `42` being the note's count of open tasks beside the same count following `prev`; the CLI walk counts, sums and collects through `loops fold`.
-The slice law for a spec with a keyed slot is not built; the slice laws for one thing are in the paragraph after these choices, and the anchor rule and copied `about` in `loops emit` (section 5) in the one after that.
+The slice laws are in the two paragraphs after these choices, and the anchor rule and copied `about` in `loops emit` (section 5) in the one after them.
 **Implementer choices, for Kyle to confirm:**
 - A field with no live setter is unread to sum, min and max, as a record without the field is; so is one whose live setter holds no safe whole number there. A record with `sets` that does not declare the field is no setter of it, so a field its payload holds but does not declare is unread too (`spec/run/44`, `task:5`).
 - `unread` counts things, each at most once in a slot: a thing whose tests are unknown, or a selected thing whose field or key cannot be read. Within a group, a thing whose field cannot be read adds to that group's `unread`, as a record does.
@@ -342,7 +342,17 @@ The laws are `keyed.witnessed`, `keyed.convex`, `keyed.anchored`, `keyed.heads` 
 Two things the port found:
 - **No cycle over `prev` is a premise** (`NoCycle`) of every law but *witnessed*: a dead setter has a live setter above it only when going up ends. Real ids give that, since an id is a hash of an envelope that holds its `prev`. The model's ids are numbers, and a fold vector has a record that names itself, so the laws state it.
 - **`thing.slice`'s `prev` targets do not carry over.** Under `"follow": "prev"` a target's envelope is harmless: the record that names it is above it. Under `keys` an envelope still sets its keys, so a target held without its witness reads as a live setter (`target_needs_witness`). A whole `thing.slice`, which holds every record of the thing, gives the keyed state too (`keyedIn_thing_slice`).
-The slice law for a spec with a keyed slot is not stated: `Spec.run_slice` keeps its premise. By experiment (margins `sl-py/keyspecslice.py`, 16,000 spec and store pairs) the spec slice with the live records, the members between two sent members and the erasers of the live records answers every keyed slot, and the spec slice alone answers wrongly in 5,119 and 4,840 of 8,000.
+The slice law for a spec with a keyed slot is in the next paragraph.
+
+**Built, 2026-11-14: the slice for a spec with a keyed slot**, in `model/Laws/KeyedSpecSlice.lean` (margins-claude). Laws only, and the JavaScript spec-slice sweep now checks it.
+A slot that follows `keys` reads each thing it selects by its live setters, records the spec need not take, so a spec slice is not enough for it (`keyed_slot_needs_live`).
+A part *covers* a thing when its folded records of the thing are the whole's, hold the thing's live records and are witnessed for every key (`Covers`); it then reads everything a keyed slot asks of the thing as the whole does: its heads, its payload tests, each field's one setter, its live records and its group keys.
+A part answers every slot that follows `keys`, of any fold type, grouped or not, when it covers each thing, or neither reader can select the thing: the part folds no record of it the spec takes, and the whole has no head of it the spec takes (`KeyedCover`, `Slot.keyed_cover`).
+With a spec slice beside the cover, every slot of any spec is answered (`Spec.run_slice_keyed`); a spec whose slots all follow `keys` needs the cover alone (`Spec.run_keyed`). `Spec.run_slice` and `Slot.run_slice` keep their premise: they are the case with no keyed slot, where no cover is needed.
+A part of the forms covers a thing as `keyed.slice` says (`covers_of_keyedPart`), and with anchored names by the forms of its live records and what erases them (`covers_of_live`).
+The law is `keyed.spec-slice`.
+- **It is proved, and it asks a little more than the experiment needed.** The experiment (margins `sl-py/keyspecslice.py`, 16,000 spec and store pairs, every keyed slot type) was answered by the spec slice with the live records of the things it touches, the members between two sent members, and the erasers of the live records; the spec slice alone answered wrongly in 5,119 and 4,840 of 8,000. The law asks for what erases any record the part holds of a covered thing, since it holds the part's records of the thing to be the whole's records, shown state and all, where a keyed slot reads the shown state of the live ones only.
+- **The sweep** (`interop/js/spec-slice.test.mjs`) builds that part for each of 3,860 generated specs and stores and finds every slot, keyed ones among them, answered as the whole answers; it is a proper part in 518, and leaving out the live records changes an answer in 51 and the erasers in 3. The spec slice alone still differs on a keyed slot in 54.
 
 **Built, 2026-11-14: the writer**, section 5 of the design note below, in `loops emit`.
 An emit of a thing names in `prev`, beside any `--prev`, every record of that thing the store holds that is live for some key, the envelope among them, and so every head (`rust/PLACE.md`, choice 11).
@@ -473,7 +483,7 @@ What the ruling costs: an emit no longer says only what it changes, since it res
 - These were first stated over an abstract `prev` and `sets` (margins `lean/Convex.lean`). They are now stated over the model's liveness and over `realm`, behind settling and admission (`model/Laws/LiveSlice.lean`); the paragraph "the slice laws for one keyed thing" above says what the port found.
 - By experiment (`keyenv.py`, three replicas, pure joins in the mix): no holding of 11,369 read a key or the heads wrongly from its live records alone, nor any through 3,172 rounds of keeping only the slice. With the anchor rule over payload keys only, 1,529 of 11,347 took a superseded record for a head. This is not yet run behind settling, admission and erasure, or with a sender that is itself missing records.
 - By experiment (`keyslice.py`, 35,200 pairs with `of` stated): the answer needs no record outside the thing; the sent members must be admitted ones; a live setter's eraser is needed for the shown state, not for the answer; a sender must not send a payload its own eraser took away.
-- **`spec.slice` over keyed things is not proved.** By experiment the spec slice needs the live records of the things it touches, the members between two sent members, and the erasers of the live records; a bare `prev` target reads wrongly. For a slot that follows `keys`, "current" becomes "live for a key", the envelope among them, and the successors that matter are the setters of the same key. I expect the law to be: the slice of each selected thing, plus what `SpecSlice` already asks of records read as written. That is a conjecture until it is tested and stated.
+- **The slice for a spec with a keyed slot is proved** (`Spec.run_slice_keyed`, law `keyed.spec-slice`): a spec slice, and a cover of every thing the spec could select. The conjecture here was the slice of each selected thing plus what `SpecSlice` asks; that holds with one added condition, that what the part holds of each such thing is witnessed, because the spec slice brings dead members of it and each still sets its keys. A bare `prev` target reads wrongly.
 - A slice law is about a slice read alone, as ruled.
 
 #### 5. The writer
@@ -500,7 +510,7 @@ What the ruling costs: an emit no longer says only what it changes, since it res
 - The caching reader for slots over heads or live setters, and what it must keep for a record with an unknown `prev`: step 4.
 - Whether two live setters conflict: a reading above the core.
 
-**Order of work:** `sets` in the model with its refusal; liveness per key, the envelope among the keys, and `latest-by` following `keys` with `heads` in its result; vectors, JavaScript, Rust; then the other slots following `keys`, selecting by heads and reading payload fields from live setters; then the laws ported, the heads law among them (done for one thing; the spec-level slice follows the other slots); then the anchor and the copied `about` in `loops emit`. All but the spec-level slice law are built.
+**Order of work:** `sets` in the model with its refusal; liveness per key, the envelope among the keys, and `latest-by` following `keys` with `heads` in its result; vectors, JavaScript, Rust; then the other slots following `keys`, selecting by heads and reading payload fields from live setters; then the laws ported, the heads law among them (done, for one thing and for a spec); then the anchor and the copied `about` in `loops emit`. All of it is built.
 
 ### Issue #1: envelope shape refusals, and a label in `under`
 
@@ -588,7 +598,7 @@ Each step extends the model laws, computes protocol vectors, then implements Rus
 | --- | --- | --- |
 | 0, done | The Lean spike: Count and LatestBy, one lens combinator, 23 vectors | The first laws are proved |
 | 1, done | Protocol and vectors for layer 0: canonical bytes, salt and commitment, id, signature | The model and the JS writer agree on every vector; Rust checks all fixture families and external standards |
-| 2 | Emit, read, fold for one person: JSONL segment, JSON spec, the two fold families, `"follow": "prev"`, `by`, a signing key, signing by default. `of` names a record's one thing, an id or a natural key; `about` only mentions. D8a and D8b are built; of D8c, `sets` is built in the envelope, every slot that follows `keys`, the slice laws for one keyed thing, and the writer's anchor rule; the slice law for a spec with a keyed slot is not. | It does the old CLI's workable job, signed |
+| 2 | Emit, read, fold for one person: JSONL segment, JSON spec, the two fold families, `"follow": "prev"`, `by`, a signing key, signing by default. `of` names a record's one thing, an id or a natural key; `about` only mentions. D8a, D8b and D8c are built: `sets` in the envelope, every slot that follows `keys`, the slice laws for one keyed thing and for a spec with a keyed slot, and the writer's anchor rule. | It does the old CLI's workable job, signed |
 | 3 | Standing: declarations, admission, stances, grants, presence key, retire through; then name tables and `resolve-by` | A strict store rejects visibly; a steward's changeset takes effect |
 | 4 | Ticks: content and witness, boundaries, markers | A content tick recomputes to the same hash on two machines |
 | 5 | Sharing: the git layout, then segment-list sync | Two clones converge |
