@@ -80,13 +80,26 @@ test("a time that is no span refuses the whole, not only a slice that orders it"
 // keep the sweep honest: it must meet specs that leave records out, and each
 // kind that the generator can exercise must matter at least once.
 test("a spec slice answers as the whole, over generated specs and stores", () => {
-  const seen = { pairs: 0, partial: 0, erasers: 0, targets: 0, successors: 0, followed: 0, followedMatters: 0, grouped: 0, groupedMatters: 0, groupedHeads: 0, threw: 0 };
+  const seen = { pairs: 0, partial: 0, erasers: 0, targets: 0, successors: 0, followed: 0, followedMatters: 0, grouped: 0, groupedMatters: 0, groupedHeads: 0, threw: 0, keyed: 0, keyedDiffers: 0 };
+  // A latest-by that follows keys is outside spec.slice: it reads live setters
+  // the spec does not take, so this slice need not hold them (Slot.run_slice
+  // takes no such slot). The sweep checks the other slots, and counts how often
+  // the keyed ones differ over this slice.
+  const keyedOf = (spec) => Object.entries(spec.fold).filter(([, s]) => s.follow === "keys").map(([n]) => n);
+  const unkeyed = (spec) => ({ ...spec, fold: Object.fromEntries(Object.entries(spec.fold).filter(([, s]) => s.follow !== "keys")) });
   // The slots that follow prev and accumulate: count, sum, min and max.
   const followedOf = (spec) => Object.entries(spec.fold)
     .filter(([, s]) => s.follow === "prev" && ["count", "sum", "min", "max"].some((t) => t in s)).map(([n]) => n);
   // The slots with `by`, followed or not.
   const groupedOf = (spec) => Object.entries(spec.fold).filter(([, s]) => s.by !== undefined).map(([n]) => n);
-  const check = (spec, forms) => {
+  const check = (full, forms) => {
+    const keyed = keyedOf(full);
+    if (keyed.length) {
+      seen.keyed += 1;
+      const whole = answer(full, forms), part = answer(full, slice(full, forms).part);
+      seen.keyedDiffers += keyed.some((n) => !isDeepStrictEqual(part[n], whole[n]));
+    }
+    const spec = unkeyed(full);
     const want = answer(spec, forms), { part, left } = slice(spec, forms);
     assert.deepEqual(answer(spec, part), want);
     seen.pairs += 1;
@@ -135,5 +148,7 @@ test("a spec slice answers as the whole, over generated specs and stores", () =>
   assert.ok(seen.grouped > 500 && seen.groupedMatters > 0, JSON.stringify(seen));
   // Among them a collect that follows prev, grouped over the whole view's heads.
   assert.ok(seen.groupedHeads > 500, JSON.stringify(seen));
+  // Keyed slots met the sweep, and this slice does not answer for them.
+  assert.ok(seen.keyed > 500 && seen.keyedDiffers > 0, JSON.stringify(seen));
   console.log(`spec-slice sweep: ${JSON.stringify(seen)}`);
 });

@@ -28,7 +28,7 @@ async function* jsonFiles(dir) {
 test('generation is deterministic, varied, balanced, and independent of scheduling', () => {
   const corpus = FAMILIES.flatMap(f => Array.from({ length: 8 }, (_, i) => generate('stable', i, f)));
   assert.equal(createHash('sha256').update(JSON.stringify(corpus)).digest('hex'),
-    '5dd00e9800ad54d764c1e040f36e477bd9a4f39ef152fb36ba25e2407c3cafed');
+    '9ca168522e7771839d765506efd47c54fe9ad15fb7be879866267324d6830619');
   const layers = new Set();
   for (const family of FAMILIES) {
     const seen = new Set();
@@ -79,6 +79,7 @@ test('specs fold over heads with count, sum, min and max, over revised, forked a
       assert.ok(['now', 'now-total', 'now-least', 'now-greatest'].some(k => spec.input.spec.fold[k].follow !== 'prev'));
       continue;
     }
+    if (spec.fuzz.nearMiss === 'follow-keys-elsewhere') continue;
     if (spec.input.spec_text) continue;
     for (const k of ['now', 'now-flagged', 'now-total', 'now-least', 'now-greatest', 'now-score', 'now-flagged-total', 'now-flagged-greatest']) {
       assert.equal(spec.input.spec.fold[k].follow, 'prev', k);
@@ -90,6 +91,41 @@ test('specs fold over heads with count, sum, min and max, over revised, forked a
     erasedHead += rs.some(r => r.shown === 'erased' && !named.includes(r.id));
   }
   assert.ok(revised > 50 && forked > 10 && erasedHead > 10 && refused > 5, `${revised} ${forked} ${erasedHead} ${refused}`);
+});
+
+test('keyed latest-by slots read things with sets, chains, forks, joins and unheld setters', async () => {
+  const { parseSpec, runSpec } = await import('../js/spec.mjs');
+  const seen = { keyedRefused: 0, spelling: 0, withSets: 0, pureJoin: 0, joins: 0, liveBeyondHeads: 0,
+    twoSetters: 0, unheldSetter: 0, unread: 0, selected: 0, notSelected: 0 };
+  for (let i = 0; i < 1024; i++) {
+    const v = generate('keyed', i, 'spec');
+    if (v.fuzz.nearMiss === 'follow-keys-elsewhere' || v.fuzz.nearMiss === 'follow-keys-spelling') {
+      seen[v.fuzz.nearMiss === 'follow-keys-spelling' ? 'spelling' : 'keyedRefused']++;
+      assert.equal(parseSpec(v.input.spec).refused, 'follow-invalid', v.fuzz.nearMiss);
+      continue;
+    }
+    if (v.layer !== 'spec/run') continue;
+    const rs = v.input.orders[0], parsed = parseSpec(v.input.spec).parsed;
+    seen.withSets += rs.some(r => r.sets !== undefined);
+    seen.pureJoin += rs.some(r => r.sets?.length === 0 && r.prev.length > 1);
+    seen.joins += rs.some(r => r.prev.length > 1);
+    let out;
+    try { out = runSpec(parsed, rs); } catch { continue; }
+    for (const thing of Object.values(out.keyed.things)) {
+      const heads = new Set(thing.heads.map(h => h.id));
+      const live = [...thing.whole, ...Object.values(thing.keys).flat()];
+      seen.liveBeyondHeads += live.some(h => !heads.has(h.id));
+      seen.twoSetters += Object.values(thing.keys).some(ss => ss.length > 1);
+      seen.unheldSetter += live.some(h => h.shown !== 'here');
+    }
+    for (const name of ['keyed-flag', 'keyed-note-score', 'keyed-tag', 'keyed-missing', 'keyed-value']) {
+      seen.unread += out[name].unread > 0;
+      seen.selected += Object.keys(out[name].things).length > 0;
+      seen.notSelected += Object.keys(out[name].things).length < Object.keys(out.keyed.things).length;
+    }
+  }
+  // The two refusals are one-in-eighty near misses of spec/parse; the rest are counts of runs.
+  for (const [k, n] of Object.entries(seen)) assert.ok(n > (['keyedRefused', 'spelling'].includes(k) ? 0 : 50), `${k}: ${JSON.stringify(seen)}`);
 });
 
 test('specs group by every by form, over revised, forked, erased and withheld records', async () => {

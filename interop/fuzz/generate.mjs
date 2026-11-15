@@ -71,6 +71,14 @@ function spec(rng, rs) {
       // ways (`1.0`, `10e-1`), which must share the text's group.
       'by-rank': { count: true, by: 'rank' },
       'by-rank-items': { collect: true, by: 'rank' },
+      // Latest-by following keys reads each thing by its live setters: heads
+      // choose, each alone, and each payload test asks the field's live setters.
+      keyed: { 'latest-by': 'of', follow: 'keys' },
+      'keyed-flag': { 'latest-by': 'of', follow: 'keys', where: { flag: { is: true } } },
+      'keyed-note-score': { 'latest-by': 'of', follow: 'keys', where: { 'env.kind': { is: 'note' }, score: { 'at-least': 3 } } },
+      'keyed-tag': { 'latest-by': 'of', follow: 'keys', where: { tag: { not: 'tag-1' }, 'env.observer': { not: 'o:0' } } },
+      'keyed-missing': { 'latest-by': 'of', follow: 'keys', where: { missing: { absent: true } } },
+      'keyed-value': { 'latest-by': 'of', follow: 'keys', where: { value: { is: 'yes' } } },
     },
   };
 }
@@ -571,9 +579,10 @@ export function generate(seed, index, family) {
       }
       case 'spec':
         if (layer === 'spec/parse') {
-          const choice = rng.int(8);
+          const choice = rng.int(10);
           nearMiss = ['spec-repeat', 'latest-by-about', 'from-of-untyped', 'follow-not-prev',
-            'by-on-latest-by', 'by-not-text', 'by-bad-prefix', 'by-env-other'][choice];
+            'by-on-latest-by', 'by-not-text', 'by-bad-prefix', 'by-env-other', 'follow-keys-elsewhere',
+            'follow-keys-spelling'][choice];
           if (choice === 0) input = { spec_text: '{"vertex":"a","vertex":"b","from":[{"store":"s:x"}]}' };
           if (choice === 1) input.spec.fold.heads['latest-by'] = 'about';
           if (choice === 2) input.spec.from[0].of = 'item';
@@ -582,6 +591,9 @@ export function generate(seed, index, family) {
           if (choice === 5) input.spec.fold['by-tag-items'].by = rng.pick([true, 3, null]);
           if (choice === 6) input.spec.fold['by-mention'].by = rng.pick(['env.about:', 'env.about:T', 'env.about:t:0']);
           if (choice === 7) input.spec.fold['by-kind'].by = rng.pick(['env.of', 'env.about', 'env.', '']);
+          // `keys` is latest-by's alone, and spelled exactly.
+          if (choice === 8) input.spec.fold[rng.pick(['now', 'now-total', 'now-least', 'now-greatest', 'items', 'count'])].follow = 'keys';
+          if (choice === 9) input.spec.fold.keyed.follow = rng.pick(['key', 'Keys', ['keys'], true]);
         } else { nearMiss = 'bad-edtf'; input.spec.fold.chosen.where = { 'env.occurred': { is: '2024-13' } }; }
         break;
       case 'fold':
@@ -613,6 +625,44 @@ export function generate(seed, index, family) {
         : { $number: rng.pick([`${k}.0`, `${k * 10}e-1`, `${k}E0`, k ? `${k}.000` : '-0', `${k}.5`]) });
     }
     for (const order of input.orders) for (const r of order) if (ranks.has(r.id)) r.fields.rank = clone(ranks.get(r.id));
+  }
+  // `sets` on the records a reader holds, and a second `prev` that joins two
+  // records of one thing, drawn last so every earlier draw stays as it was:
+  // read whole half the time, a pure join now and then, or some of the
+  // payload's keys, a key no record has among them. A join names an earlier
+  // record of its own thing, and now and then sets nothing. One record keeps
+  // one envelope in every order and every form.
+  const readerSets = () => {
+    const roll = rng.int(8);
+    if (roll < 4) return undefined;
+    if (roll === 4) return [];
+    return [...new Set(Array.from({ length: 1 + rng.int(3) },
+      () => rng.pick(['flag', 'score', 'tag', 'n', 'value', 'rank', 'missing'])))].sort();
+  };
+  const held = layer === 'spec/run' && input.orders ? input.orders[0]
+    : family === 'scenario' && Array.isArray(input.records) ? input.records
+    : family === 'realm' && Array.isArray(input.forms) ? input.forms : null;
+  if (held) {
+    const envelopes = new Map();
+    held.forEach((r, i) => {
+      if (envelopes.has(r.id) || typeof r.id !== 'string') return;
+      let sets = readerSets();
+      const prev = [...(r.prev ?? [])];
+      const mine = typeof r.of === 'string' ? r.of : r.id;
+      const peers = held.slice(0, i).filter(q => (typeof q.of === 'string' ? q.of : q.id) === mine && !prev.includes(q.id));
+      if (prev.length && peers.length && rng.int(3) === 0) {
+        prev.push(rng.pick(peers).id);
+        if (rng.int(2)) sets = [];
+      }
+      envelopes.set(r.id, { sets, prev });
+    });
+    const lists = layer === 'spec/run' ? input.orders : [held];
+    for (const list of lists) for (const r of list) {
+      const e = envelopes.get(r.id);
+      if (!e) continue;
+      r.prev = [...e.prev];
+      if (e.sets !== undefined) r.sets = [...e.sets];
+    }
   }
   // `sets` on records and drafts no slot schedules, drawn last so every earlier
   // draw stays as it was: absent, empty, some key names with repeats, or now
