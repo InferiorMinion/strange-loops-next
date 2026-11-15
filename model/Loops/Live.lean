@@ -110,4 +110,18 @@ def keyedIn (t : String) (xs : List Record) : Keyed :=
     whole := orderHeads (rs.filter fun r => r.whole && live rs r)
     heads := (stateIn t xs).heads }
 
+/-! ## What the other slots read of a thing -/
+
+/-- The records of thing `t` a reader holds. -/
+abbrev recordsOf (t : String) (xs : List Record) : List Record := xs.filter (·.isOf t)
+
+/-- The live setters of key `k` among a thing's records `rs`, newest first, each
+once: the records a payload field is read from. -/
+def setters (rs : List Record) (k : String) : List Record := orderHeads (rs.filter (liveFor rs k))
+
+/-- Thing `t`'s live records: each live for some key, the envelope among them,
+so its heads, a pure join among them, too. -/
+def liveIn (xs : List Record) (t : String) : List Record :=
+  (recordsOf t xs).filter (live (recordsOf t xs))
+
 end Loops

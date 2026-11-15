@@ -219,50 +219,51 @@ theorem Count.select_value (ev : Record → Tri) (xs : List Record) :
   simp [Acc.select, Count.acc, Acc.fold, ← Count.fold.eq_1, Count.fold_eq]
 
 /-- A count group holds the number of records selected into it. -/
-theorem count_group (f : Bool) (s : Slot) (b : By) (sel : Record → Bool) (xs : List Record) (g : String)
-    (hs : s.type = .count f) :
+theorem count_group {f : Option Follow} (hf : f ≠ some .keys) (s : Slot) (b : By) (sel : Record → Bool)
+    (xs : List Record) (g : String) (hs : s.type = .count f) :
     (({ s with tests := [], group := none } : Slot).plain (inGroup b (s.ev sel) g) xs).group.count =
       ((s.pool xs).filter (inGroup b (s.ev sel) g)).length := by
-  simp only [Slot.plain, hs, Slot.pool, SlotValue.group, GroupValue.count, Count.select_value]
+  simp only [Slot.plain, hs, hf, ite_false, Slot.pool, SlotValue.group, GroupValue.count, Count.select_value]
   congr 1
   apply filter_congr
   intro r _
   cases inGroup b (s.ev sel) g r <;> simp [Tests.conds, Cond.all]
 
 /-- **A grouped count's groups hold its memberships.** -/
-theorem By.count_memberships {f : Bool} {s : Slot} {b : By} (sel : Record → Bool) (xs : List Record)
-    (hs : s.type = .count f) :
+theorem By.count_memberships {f : Option Follow} (hf : f ≠ some .keys) {s : Slot} {b : By}
+    (sel : Record → Bool) (xs : List Record) (hs : s.type = .count f) :
     ∃ gs u m, s.grouped b sel xs = .groups gs u m ∧
       (gs.map (·.2.count)).sum =
         (((s.pool xs).filter (s.ev sel · == .yes)).map fun r => ((b.keys r).getD []).length).sum := by
   refine ⟨_, _, _, Slot.grouped_eq s b sel xs, ?_⟩
   rw [← By.memberships, map_map]
   congr 1
-  exact map_congr_left fun g _ => count_group f s b sel xs g hs
+  exact map_congr_left fun g _ => count_group hf s b sel xs g hs
 
 /-- **Partition.** With at most one key per selected record, a grouped count's groups,
 ungrouped and unread add up to the value and unread of the same count without
 `by`: the groups partition what the plain count selects, and grouping loses and
 invents nothing. -/
-theorem By.count_partition {f : Bool} {s : Slot} {b : By} {sel : Record → Bool} {xs : List Record}
+theorem By.count_partition {f : Option Follow} (hf : f ≠ some .keys) {s : Slot} {b : By}
+    {sel : Record → Bool} {xs : List Record}
     (h : b.OneKey (s.ev sel) (s.pool xs)) (hs : s.type = .count f) :
     ∃ gs u m r, s.grouped b sel xs = .groups gs u m ∧ ({ s with group := none } : Slot).run sel xs = .nat r ∧
       (gs.map (·.2.count)).sum + m + u = r.value + r.unread := by
-  refine ⟨_, _, _, _, Slot.grouped_eq s b sel xs, by simp only [Slot.run, Slot.plain, hs]; rfl, ?_⟩
+  refine ⟨_, _, _, _, Slot.grouped_eq s b sel xs, by simp only [Slot.run, Slot.plain, hs, hf, ite_false]; rfl, ?_⟩
   simp only [map_map]
   rw [show ((groupKeys b (s.ev sel) (s.pool xs)).map ((·.2.count) ∘ fun g =>
       (g, (({ s with tests := [], group := none } : Slot).plain (inGroup b (s.ev sel) g) xs).group))) =
       (groupKeys b (s.ev sel) (s.pool xs)).map fun g => ((s.pool xs).filter (inGroup b (s.ev sel) g)).length
-    from map_congr_left fun g _ => count_group f s b sel xs g hs]
+    from map_congr_left fun g _ => count_group hf s b sel xs g hs]
   rw [By.accounting_single h, Count.select_value, Count.select_unread]
   simp only [Slot.pool, hs]
   exact length_ne_no _ _
 
 /-- So for a grouped count by any `by` but `env.about:<prefix>`. -/
-theorem By.count_partition_form {f : Bool} {s : Slot} {b : By} (hb : b.Single) (sel : Record → Bool)
-    (xs : List Record) (hs : s.type = .count f) :
+theorem By.count_partition_form {f : Option Follow} (hf : f ≠ some .keys) {s : Slot} {b : By}
+    (hb : b.Single) (sel : Record → Bool) (xs : List Record) (hs : s.type = .count f) :
     ∃ gs u m r, s.grouped b sel xs = .groups gs u m ∧ ({ s with group := none } : Slot).run sel xs = .nat r ∧
       (gs.map (·.2.count)).sum + m + u = r.value + r.unread :=
-  By.count_partition (.of_single hb _ _) hs
+  By.count_partition hf (.of_single hb _ _) hs
 
 end Loops

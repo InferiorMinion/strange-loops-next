@@ -206,7 +206,7 @@ def parseCases : List (String × Json) := [
       ("open", o [("latest-by", s "of"), ("follow", s "keys"),
         ("where", o [("status", o [("is", s "open")]), ("env.observer", o [("is", s "sl:kyle")])])]),
       ("heads", o [("latest-by", s "of"), ("follow", s "prev")])])]),
-  -- `keys` on every other fold type is refused, at `follow`
+  -- every other fold type may follow `keys` too; the parsed form writes it
   ("98-follow-keys-on-count", slotOf (o [("count", .bool true), ("follow", s "keys")])),
   ("99-follow-keys-on-sum", slotOf (o [("sum", s "est"), ("follow", s "keys")])),
   ("100-follow-keys-on-min", slotOf (o [("min", s "est"), ("follow", s "keys")])),
@@ -216,12 +216,25 @@ def parseCases : List (String × Json) := [
   ("103-follow-key-on-latest-by", slotOf (o [("latest-by", s "of"), ("follow", s "key")])),
   ("104-follow-keys-upper-on-latest-by", slotOf (o [("latest-by", s "of"), ("follow", s "Keys")])),
   ("105-follow-keys-array-on-latest-by", slotOf (o [("latest-by", s "of"), ("follow", a [s "keys"])])),
-  -- the check stays after the fold type and before limit, by and the argument
-  ("106-follow-keys-before-argument", slotOf (o [("sum", s ""), ("follow", s "keys")])),
-  ("107-follow-keys-before-limit", slotOf (o [("count", .bool true), ("limit", .int 0), ("follow", s "keys")])),
+  -- following `keys`, the argument and `limit` are still checked
+  ("106-argument-after-follow-keys-on-sum", slotOf (o [("sum", s ""), ("follow", s "keys")])),
+  ("107-limit-after-follow-keys-on-count", slotOf (o [("count", .bool true), ("limit", .int 0), ("follow", s "keys")])),
   ("108-limit-on-keyed-latest-by", slotOf (o [("latest-by", s "of"), ("follow", s "keys"), ("limit", .int 2)])),
   ("109-by-on-keyed-latest-by", slotOf (o [("latest-by", s "of"), ("follow", s "keys"), ("by", s "env.kind")])),
   ("110-argument-after-follow-keys", slotOf (o [("latest-by", s "about"), ("follow", s "keys")])),
+  -- `keys` on count, sum, min, max and collect, with `by`, `where` and `limit`
+  ("111-follow-keys-every-fold", o [("vertex", s "x"), ("from", a [o [("store", s "."), ("kind", a [s "task"])]]),
+    ("fold", o [
+      ("open", o [("count", .bool true), ("follow", s "keys"), ("where", o [("status", o [("is", s "open")])])]),
+      ("est", o [("by", s "env.about:project"), ("sum", s "est"), ("follow", s "keys")]),
+      ("lo", o [("min", s "est"), ("follow", s "keys"), ("by", s "status")]),
+      ("hi", o [("max", s "est"), ("follow", s "keys"), ("by", s "env.observer"),
+        ("where", o [("env.kind", o [("is", s "task")])])]),
+      ("recent", o [("limit", .int 3), ("collect", .bool true), ("follow", s "keys"), ("by", s "env.kind")])])]),
+  ("112-limit-on-keyed-sum", slotOf (o [("sum", s "est"), ("follow", s "keys"), ("limit", .int 2)])),
+  ("113-limit-zero-on-keyed-collect", slotOf (o [("collect", .bool true), ("follow", s "keys"), ("limit", .int 0)])),
+  ("114-by-invalid-on-keyed-count", slotOf (o [("count", .bool true), ("follow", s "keys"), ("by", s "env.of")])),
+  ("115-follow-keys-upper-on-count", slotOf (o [("count", .bool true), ("follow", s "Keys")])),
   ("gap03-repeat-key-before-value", o [("vertex", s "x"), ("vertex", o [("x", s "a"), ("x", s "b")]),
     ("from", a [o [("store", s ".")]])]),
   ("gap05-limit-zero", slotOf (o [("collect", .bool true), ("limit", .int 0)])),
@@ -812,6 +825,212 @@ def ka0 := ke (fixtureId 0x191) "task:15" 100 none [("status", .str "open"), ("t
 def ka1 := ke (fixtureId 0x192) "task:16" 200 (some ["status"]) [("status", .str "closed")] [fixtureId 0x191]
 def ka2 := ke (fixtureId 0x193) "task:15" 300 (some ["title"]) [("title", .str "b")] [fixtureId 0x1ff]
 
+/-! ### Count, sum, min, max and collect following `keys` -/
+
+/-- A task emit of `thing` that sets `sets`, with what it mentions and who said it. -/
+def kt (id : RecordId) (thing : String) (t : Nat) (sets : Option (List String))
+    (fields : List (String × Val)) (prev : List RecordId := []) (about : List String := [])
+    (observer : String := "sl:kyle") (ok : Reads t := by decide) : Record :=
+  { ke id thing t sets fields prev observer ok with about }
+
+-- Count the open tasks. task:1 is opened whole and then retitled: its head
+-- sets only `title`, so the head's payload has no `status`. task:2 is closed by
+-- one emit and retitled by the next. task:3's head closes it. Read over heads,
+-- no task is open and one is closed; read over live setters, task:1 is open and
+-- the other two are closed.
+def co0 := kt (fixtureId 0x201) "task:1" 100 none [("status", .str "open"), ("title", .str "a")]
+def co1 := kt (fixtureId 0x202) "task:1" 200 (some ["title"]) [("title", .str "b")] [fixtureId 0x201]
+def co2 := kt (fixtureId 0x203) "task:2" 110 none [("status", .str "open"), ("title", .str "c")]
+def co3 := kt (fixtureId 0x204) "task:2" 210 (some ["status"]) [("status", .str "closed")] [fixtureId 0x203]
+def co4 := kt (fixtureId 0x205) "task:2" 310 (some ["title"]) [("title", .str "d")] [fixtureId 0x204]
+def co5 := kt (fixtureId 0x206) "task:3" 120 none [("status", .str "open"), ("title", .str "e")]
+def co6 := kt (fixtureId 0x207) "task:3" 220 (some ["status"]) [("status", .str "closed")] [fixtureId 0x206]
+
+def countOpenSpec : Json := o [("vertex", s "open-tasks"),
+  ("from", a [o [("store", s "."), ("kind", a [s "task"])]]),
+  ("fold", o [
+    ("open", o [("count", .bool true), ("follow", s "keys"), ("where", o [("status", o [("is", s "open")])])]),
+    ("open-heads", o [("count", .bool true), ("follow", s "prev"), ("where", o [("status", o [("is", s "open")])])]),
+    ("closed", o [("count", .bool true), ("follow", s "keys"), ("where", o [("status", o [("is", s "closed")])])]),
+    ("closed-heads", o [("count", .bool true), ("follow", s "prev"), ("where", o [("status", o [("is", s "closed")])])]),
+    ("tasks", o [("count", .bool true), ("follow", s "keys")])])]
+
+-- A fork across whole-read emits: two heads of task:1, both open. Following
+-- `keys` the thing counts once, and its two live setters of `est` leave the
+-- sum unread; following `prev` each head counts and adds. task:2 is one head.
+def fk0 := kt (fixtureId 0x211) "task:1" 100 none [("status", .str "open"), ("est", .int 1)]
+def fk1 := kt (fixtureId 0x212) "task:1" 200 none [("status", .str "open"), ("est", .int 2)] [fixtureId 0x211] [] "sl:alice"
+def fk2 := kt (fixtureId 0x213) "task:1" 210 none [("status", .str "open"), ("est", .int 3)] [fixtureId 0x211] [] "sl:bob"
+def fk3 := kt (fixtureId 0x214) "task:2" 110 none [("status", .str "open"), ("est", .int 5)]
+
+def forkSpec : Json := o [("vertex", s "forked"),
+  ("from", a [o [("store", s "."), ("kind", a [s "task"])]]),
+  ("fold", o [
+    ("count", o [("count", .bool true), ("follow", s "keys")]),
+    ("count-heads", o [("count", .bool true), ("follow", s "prev")]),
+    ("open", o [("count", .bool true), ("follow", s "keys"), ("where", o [("status", o [("is", s "open")])])]),
+    ("open-heads", o [("count", .bool true), ("follow", s "prev"), ("where", o [("status", o [("is", s "open")])])]),
+    ("est", o [("sum", s "est"), ("follow", s "keys")]),
+    ("est-heads", o [("sum", s "est"), ("follow", s "prev")]),
+    ("records", o [("collect", .bool true), ("follow", s "keys")]),
+    ("records-heads", o [("collect", .bool true), ("follow", s "prev")])])]
+
+-- A field read from its live setters. task:1's one live setter of `est` is
+-- its root, under a head that sets `title`. task:2's two live setters hold the
+-- same number, task:3's two different ones. task:4's live setter is withheld
+-- and task:7's erased, by an eraser `from` does not take. task:5 declares only
+-- `title`, so nothing sets `est`. task:6's one setter holds text.
+def nu0 := kt (fixtureId 0x221) "task:1" 100 none [("est", .int 3)]
+def nu1 := kt (fixtureId 0x222) "task:1" 200 (some ["title"]) [("title", .str "a")] [fixtureId 0x221]
+def nu2 := kt (fixtureId 0x223) "task:2" 110 none [("est", .int 5)]
+def nu3 := kt (fixtureId 0x224) "task:2" 210 (some ["est"]) [("est", .int 2)] [fixtureId 0x223] [] "sl:alice"
+def nu4 := kt (fixtureId 0x225) "task:2" 220 (some ["est"]) [("est", .int 2)] [fixtureId 0x223] [] "sl:bob"
+def nu5 := kt (fixtureId 0x226) "task:3" 120 none [("est", .int 1)]
+def nu6 := kt (fixtureId 0x227) "task:3" 230 (some ["est"]) [("est", .int 4)] [fixtureId 0x226] [] "sl:alice"
+def nu7 := kt (fixtureId 0x228) "task:3" 240 (some ["est"]) [("est", .int 6)] [fixtureId 0x226] [] "sl:bob"
+def nu8 := kt (fixtureId 0x229) "task:4" 130 none [("est", .int 7)]
+def nu9 := (kt (fixtureId 0x22a) "task:4" 250 (some ["est"]) [("est", .int 8)] [fixtureId 0x229]).withhold
+def nu10 := kt (fixtureId 0x22b) "task:5" 140 (some ["title"]) [("title", .str "b"), ("est", .int 9)]
+def nu11 := kt (fixtureId 0x22c) "task:6" 150 none [("est", .str "8")]
+def nu12 := kt (fixtureId 0x22d) "task:7" 160 none [("est", .int 9)]
+def nu13 := (kt (fixtureId 0x22e) "task:7" 260 (some ["est"]) [("est", .int 10)] [fixtureId 0x22d]).erase
+def nu14 : Record := { said (fixtureId 0x22f) "sl:kyle" [] 270 with kind := "erasure", erases := [fixtureId 0x22e] }
+
+def numbersSpec : Json := o [("vertex", s "estimates"),
+  ("from", a [o [("store", s "."), ("kind", a [s "task"])]]),
+  ("fold", o [
+    ("sum", o [("sum", s "est"), ("follow", s "keys")]),
+    ("min", o [("min", s "est"), ("follow", s "keys")]),
+    ("max", o [("max", s "est"), ("follow", s "keys")]),
+    ("sum-heads", o [("sum", s "est"), ("follow", s "prev")]),
+    ("min-heads", o [("min", s "est"), ("follow", s "prev")]),
+    ("max-heads", o [("max", s "est"), ("follow", s "prev")]),
+    ("count", o [("count", .bool true), ("follow", s "keys")])])]
+
+-- `by` a payload field, read from its live setters. task:1's one setter of
+-- `status` is open; task:2's two are closed and done, so it is in both groups;
+-- task:3's two are both closed, so it is in that group once; task:4's is
+-- withheld, so it is unread; task:5 declares only `title`, so it has no
+-- setter; task:6's setter has no `status`. The last two are ungrouped.
+def bp0 := kt (fixtureId 0x231) "task:1" 100 none [("status", .str "open"), ("est", .int 1)]
+def bp1 := kt (fixtureId 0x232) "task:1" 200 (some ["title"]) [("title", .str "a")] [fixtureId 0x231]
+def bp2 := kt (fixtureId 0x233) "task:2" 110 none [("status", .str "open"), ("est", .int 2)]
+def bp3 := kt (fixtureId 0x234) "task:2" 210 (some ["status"]) [("status", .str "closed")] [fixtureId 0x233] [] "sl:alice"
+def bp4 := kt (fixtureId 0x235) "task:2" 220 (some ["status"]) [("status", .str "done")] [fixtureId 0x233] [] "sl:bob"
+def bp5 := kt (fixtureId 0x236) "task:3" 120 none [("status", .str "open"), ("est", .int 3)]
+def bp6 := kt (fixtureId 0x237) "task:3" 230 (some ["status"]) [("status", .str "closed")] [fixtureId 0x236] [] "sl:alice"
+def bp7 := kt (fixtureId 0x238) "task:3" 240 (some ["status"]) [("status", .str "closed")] [fixtureId 0x236] [] "sl:bob"
+def bp8 := kt (fixtureId 0x239) "task:4" 130 none [("status", .str "open"), ("est", .int 4)]
+def bp9 := (kt (fixtureId 0x23a) "task:4" 250 (some ["status"]) [("status", .str "closed")] [fixtureId 0x239]).withhold
+def bp10 := kt (fixtureId 0x23b) "task:5" 140 (some ["title"]) [("title", .str "b"), ("status", .str "open")]
+def bp11 := kt (fixtureId 0x23c) "task:6" 150 none [("est", .int 6)]
+
+def byPayloadKeysSpec : Json := o [("vertex", s "per-status"),
+  ("from", a [o [("store", s "."), ("kind", a [s "task"])]]),
+  ("fold", o [
+    ("count", o [("count", .bool true), ("follow", s "keys"), ("by", s "status")]),
+    ("count-heads", o [("count", .bool true), ("follow", s "prev"), ("by", s "status")]),
+    ("est", o [("sum", s "est"), ("follow", s "keys"), ("by", s "status")]),
+    ("records", o [("collect", .bool true), ("follow", s "keys"), ("by", s "status")]),
+    ("tasks", o [("count", .bool true), ("follow", s "keys")])])]
+
+-- `by` an envelope key, read from the heads. task:1 moves from project x to
+-- project y by a later head that sets only `title`. task:2 forks into a head
+-- that mentions x and one that mentions y, so it is in both groups and counts
+-- once in each. task:3 forks the same way and a pure join that mentions y
+-- settles it: the join is the head. task:4's head mentions no project. Under
+-- `prev` the fork counts once per head.
+def ba0 := kt (fixtureId 0x241) "task:1" 100 none [("status", .str "open"), ("est", .int 1)] [] ["project:x"]
+def ba1 := kt (fixtureId 0x242) "task:1" 200 (some ["title"]) [("title", .str "a")] [fixtureId 0x241] ["project:y"]
+def ba2 := kt (fixtureId 0x243) "task:2" 110 none [("status", .str "open"), ("est", .int 2)] [] ["project:x"]
+def ba3 := kt (fixtureId 0x244) "task:2" 210 (some ["status"]) [("status", .str "closed")] [fixtureId 0x243] ["project:x"] "sl:alice"
+def ba4 := kt (fixtureId 0x245) "task:2" 220 (some ["title"]) [("title", .str "b")] [fixtureId 0x243] ["project:y"] "sl:bob"
+def ba5 := kt (fixtureId 0x246) "task:3" 120 none [("status", .str "open"), ("est", .int 3)] [] ["project:x"]
+def ba6 := kt (fixtureId 0x247) "task:3" 230 (some ["status"]) [("status", .str "closed")] [fixtureId 0x246] ["project:x"] "sl:alice"
+def ba7 := kt (fixtureId 0x248) "task:3" 240 (some ["title"]) [("title", .str "c")] [fixtureId 0x246] ["project:y"] "sl:bob"
+def ba8 := kt (fixtureId 0x249) "task:3" 300 (some []) [] [fixtureId 0x247, fixtureId 0x248] ["project:y"]
+def ba9 := kt (fixtureId 0x24a) "task:4" 130 none [("status", .str "open"), ("est", .int 4)] [] ["project:z"]
+def ba10 := kt (fixtureId 0x24b) "task:4" 310 (some ["title"]) [("title", .str "d")] [fixtureId 0x24a]
+
+def byAboutKeysSpec : Json := o [("vertex", s "per-project"),
+  ("from", a [o [("store", s "."), ("kind", a [s "task"])]]),
+  ("fold", o [
+    ("count", o [("count", .bool true), ("follow", s "keys"), ("by", s "env.about:project")]),
+    ("count-heads", o [("count", .bool true), ("follow", s "prev"), ("by", s "env.about:project")]),
+    ("open", o [("count", .bool true), ("follow", s "keys"), ("by", s "env.about:project"),
+      ("where", o [("status", o [("is", s "open")])])]),
+    ("est", o [("sum", s "est"), ("follow", s "keys"), ("by", s "env.about:project")]),
+    ("bob", o [("count", .bool true), ("follow", s "keys"), ("by", s "env.about:project"),
+      ("where", o [("env.observer", o [("is", s "sl:bob")])])]),
+    ("per-observer", o [("count", .bool true), ("follow", s "keys"), ("by", s "env.observer")]),
+    ("records", o [("collect", .bool true), ("follow", s "keys"), ("by", s "env.about:project")]),
+    ("tasks", o [("count", .bool true), ("follow", s "keys")])])]
+
+-- Collect lists each selected thing's live records, newest first. task:1's
+-- root is still live for every key but `status` and `title`; task:2 is
+-- settled by a pure join, its two setters of `status` still live under it;
+-- task:3's live setter of `status` is erased, and listed as erased.
+def cl0 := kt (fixtureId 0x251) "task:1" 100 none [("status", .str "open"), ("title", .str "a"), ("est", .int 1)]
+def cl1 := kt (fixtureId 0x252) "task:1" 200 (some ["status"]) [("status", .str "closed")] [fixtureId 0x251]
+def cl2 := kt (fixtureId 0x253) "task:1" 300 (some ["title"]) [("title", .str "b")] [fixtureId 0x252]
+def cl3 := kt (fixtureId 0x254) "task:2" 110 none [("status", .str "open"), ("title", .str "c")]
+def cl4 := kt (fixtureId 0x255) "task:2" 210 (some ["status"]) [("status", .str "closed")] [fixtureId 0x254] [] "sl:alice"
+def cl5 := kt (fixtureId 0x256) "task:2" 220 (some ["status"]) [("status", .str "done")] [fixtureId 0x254] [] "sl:bob"
+def cl6 := kt (fixtureId 0x257) "task:2" 320 (some []) [] [fixtureId 0x255, fixtureId 0x256]
+def cl7 := kt (fixtureId 0x258) "task:3" 120 none [("status", .str "open"), ("title", .str "e")]
+def cl8 := (kt (fixtureId 0x259) "task:3" 230 (some ["status"]) [("status", .str "closed")] [fixtureId 0x258]).erase
+def cl9 := kt (fixtureId 0x25a) "task:3" 330 (some ["title"]) [("title", .str "f")] [fixtureId 0x259]
+def cl10 : Record := { said (fixtureId 0x25b) "sl:kyle" [] 400 with kind := "erasure", erases := [fixtureId 0x259] }
+
+def collectKeysSpec : Json := o [("vertex", s "live"),
+  ("from", a [o [("store", s "."), ("kind", a [s "task"])]]),
+  ("fold", o [
+    ("live", o [("collect", .bool true), ("follow", s "keys")]),
+    ("newest", o [("collect", .bool true), ("follow", s "keys"), ("limit", .int 2)]),
+    ("heads", o [("collect", .bool true), ("follow", s "prev")]),
+    ("per-observer", o [("collect", .bool true), ("follow", s "keys"), ("by", s "env.observer")]),
+    ("newest-per-observer", o [("collect", .bool true), ("follow", s "keys"), ("limit", .int 1),
+      ("by", s "env.observer")]),
+    ("closed", o [("collect", .bool true), ("follow", s "keys"), ("where", o [("status", o [("is", s "closed")])])]),
+    ("open", o [("collect", .bool true), ("follow", s "keys"), ("where", o [("status", o [("is", s "open")])])])])]
+
+-- Payload tests on every fold type, over the records of `spec/run/40`: tests
+-- asked of the thing, over each field's live setters.
+def keyedWhereSpec : Json := o [("vertex", s "open"),
+  ("from", a [o [("store", s "."), ("kind", a [s "task"])]]),
+  ("fold", o [
+    ("count", o [("count", .bool true), ("follow", s "keys"), ("where", o [("status", o [("is", s "open")])])]),
+    ("sum", o [("sum", s "est"), ("follow", s "keys"), ("where", o [("status", o [("is", s "open")])])]),
+    ("min", o [("min", s "est"), ("follow", s "keys"), ("where", o [("status", o [("is", s "open")])])]),
+    ("max", o [("max", s "est"), ("follow", s "keys"), ("where", o [("status", o [("is", s "open")])])]),
+    ("collect", o [("collect", .bool true), ("follow", s "keys"), ("where", o [("status", o [("is", s "open")])])]),
+    ("est-absent", o [("count", .bool true), ("follow", s "keys"), ("where", o [("est", o [("absent", .bool true)])])]),
+    ("not-open-per-status", o [("count", .bool true), ("follow", s "keys"), ("by", s "status"),
+      ("where", o [("status", o [("not", s "open")])])]),
+    ("open-est-1", o [("sum", s "est"), ("follow", s "keys"),
+      ("where", o [("status", o [("is", s "open")]), ("est", o [("is", .int 1)])])])])]
+
+-- Every record read whole and no thing forked: each slot that follows `keys`
+-- gives what the same slot following `prev` gives, grouped or not.
+def wr0 := kt (fixtureId 0x261) "task:1" 100 none [("status", .str "open"), ("est", .int 3)] [] ["project:x"]
+def wr1 := kt (fixtureId 0x262) "task:1" 200 none [("status", .str "closed"), ("est", .int 4)] [fixtureId 0x261] ["project:y"]
+def wr2 := kt (fixtureId 0x263) "task:2" 110 none [("status", .str "open"), ("est", .int 5)] [] ["project:x"]
+def wr3 := (kt (fixtureId 0x264) "task:3" 120 none [("status", .str "open"), ("est", .int 6)] [] ["project:y"]).withhold
+def wr4 := kt (fixtureId 0x265) "task:4" 130 none [("status", .str "open")] []
+
+def wholeReadSpec : Json :=
+  let pair (n : String) (slot : List (String × Json)) : List (String × Json) :=
+    [(n, o (slot ++ [("follow", s "keys")])), (n ++ "-heads", o (slot ++ [("follow", s "prev")]))]
+  o [("vertex", s "whole-read"),
+    ("from", a [o [("store", s "."), ("kind", a [s "task"])]]),
+    ("fold", o (pair "count" [("count", .bool true)] ++
+      pair "open" [("count", .bool true), ("where", o [("status", o [("is", s "open")])])] ++
+      pair "sum" [("sum", s "est")] ++ pair "min" [("min", s "est")] ++ pair "max" [("max", s "est")] ++
+      pair "collect" [("collect", .bool true), ("limit", .int 3)] ++
+      pair "per-project" [("count", .bool true), ("by", s "env.about:project")] ++
+      pair "est-per-status" [("sum", s "est"), ("by", s "status")] ++
+      pair "collect-per-project" [("collect", .bool true), ("by", s "env.about:project")]))]
+
 structure RunCase where
   name : String
   laws : List String
@@ -911,6 +1130,29 @@ def runCases : List RunCase := [
     [kp0, kp1, kp2, kp3, kp4, kp5, kp6, kp7, kp8, kp9, kp10, kp11, kp12]⟩,
   -- a refused record, and one whose `prev` target is not held, are above nothing
   ⟨"41-keys-admitted-only", ["spec.set", "keyed.live", "keyed.fold"], keyedSpec, [ka0, ka1, ka2]⟩,
+  -- count the open tasks: the head only retitled one, and over heads it is not open
+  ⟨"42-keys-count-open", ["spec.set", "keyed.slots", "keyed.select", "spec.follow"], countOpenSpec,
+    [co0, co1, co2, co3, co4, co5, co6]⟩,
+  -- a fork across whole-read emits counts once following `keys`, twice following `prev`
+  ⟨"43-keys-fork-once", ["spec.set", "keyed.slots", "spec.follow"], forkSpec, [fk0, fk1, fk2, fk3]⟩,
+  -- sum, min and max read a field from its one live setter
+  ⟨"44-keys-numbers", ["spec.set", "keyed.slots", "result.unread"], numbersSpec,
+    [nu0, nu1, nu2, nu3, nu4, nu5, nu6, nu7, nu8, nu9, nu10, nu11, nu12, nu13, nu14]⟩,
+  -- `by` a payload field: a thing joins the group of each live setter's key
+  ⟨"45-keys-by-payload", ["spec.set", "keyed.by", "result.unread"], byPayloadKeysSpec,
+    [bp0, bp1, bp2, bp3, bp4, bp5, bp6, bp7, bp8, bp9, bp10, bp11]⟩,
+  -- `by` an envelope key: a thing joins the group of each key of each chosen head
+  ⟨"46-keys-by-about", ["spec.set", "keyed.by", "keyed.select"], byAboutKeysSpec,
+    [ba0, ba1, ba2, ba3, ba4, ba5, ba6, ba7, ba8, ba9, ba10]⟩,
+  -- collect lists the selected things' live records, a pure join and an erased setter among them
+  ⟨"47-keys-collect", ["spec.set", "keyed.slots", "keyed.by", "result.unread"], collectKeysSpec,
+    [cl0, cl1, cl2, cl3, cl4, cl5, cl6, cl7, cl8, cl9, cl10]⟩,
+  -- payload tests asked of the thing, on every fold type
+  ⟨"48-keys-where", ["spec.set", "keyed.slots", "keyed.select", "keyed.by", "result.unread"], keyedWhereSpec,
+    [kp0, kp1, kp2, kp3, kp4, kp5, kp6, kp7, kp8, kp9, kp10, kp11, kp12]⟩,
+  -- every record read whole, no fork: `keys` gives what `prev` gives
+  ⟨"49-keys-whole-read", ["spec.set", "keyed.whole-read", "spec.follow"], wholeReadSpec,
+    [wr0, wr1, wr2, wr3, wr4]⟩,
   ⟨"gap04-unread-multi-thing", ["result.unread"],
     o [("vertex", s "x"), ("from", a [o [("store", s ".")]]), ("fold", o [
       ("by", o [("latest-by", s "of"), ("follow", s "prev"),
