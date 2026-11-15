@@ -15,6 +15,10 @@ import Laws.Record
   (`unreadable_refused`); `Laws.Read` carries it to the refusal.
 * **Only a root leaves `of` out.** An envelope `write` accepts with `prev`
   states `of` (`Env.problem_of`).
+* **`sets` holds key names.** Every key an accepted envelope declares is
+  non-empty text (`Env.problem_sets`). `sets-not-keys` follows
+  `erases-not-record-id` and precedes `of-missing`
+  (`Env.problem_sets_not_keys`, `Env.problem_of_missing_sets`).
 * **Closed codes.** Every refusal `writeProblem` gives is in `writeCodes`, so
   choosing among a batch's refusals by that list never loses one.
 * **The set decides the refusal.** Which refusal a batch reports depends only
@@ -32,8 +36,8 @@ open List
 theorem envelopeKeysProblem_set {xs ys : List (String × Json)}
     (h : ∀ k, k ∈ xs.map Prod.fst ↔ k ∈ ys.map Prod.fst) :
     envelopeKeysProblem xs = envelopeKeysProblem ys := by
-  have hall : xs.all (fun (k, _) => ["kind", "observer", "emitted", "occurred", "about", "of", "prev", "under", "erases"].contains k) =
-      ys.all (fun (k, _) => ["kind", "observer", "emitted", "occurred", "about", "of", "prev", "under", "erases"].contains k) := by
+  have hall : xs.all (fun (k, _) => envelopeFields.contains k) =
+      ys.all (fun (k, _) => envelopeFields.contains k) := by
     apply Bool.eq_iff_iff.mpr
     simp only [List.all_eq_true]
     constructor
@@ -75,8 +79,8 @@ holding it is refused, are `Laws.Read`'s; which code is reported, and the
 order, are pinned by the vectors. -/
 theorem unreadable_refused :
     unreadable.isEmpty = true ∧ typedRef unreadable = false ∧ validEmitted unreadable = false ∧
-      occurredSpan? unreadable = none ∧ recordId unreadable = false := by
-  refine ⟨rfl, ?_, ?_, ?_, ?_⟩ <;> decide
+      occurredSpan? unreadable = none ∧ recordId unreadable = false ∧ keyName unreadable = false := by
+  refine ⟨rfl, ?_, ?_, ?_, ?_, rfl⟩ <;> decide
 
 /-- Only a root leaves `of` out: an envelope `write` accepts with `prev` states `of`. -/
 theorem Env.problem_of {e : Env} (h : e.problem = none) (hp : e.prev ≠ []) : e.of.isSome = true := by
@@ -89,6 +93,35 @@ theorem Env.problem_of {e : Env} (h : e.problem = none) (hp : e.prev ≠ []) : e
       unfold Env.problem at h
       simp only [ho, hpv] at h
       repeat (split at h <;> try simp_all)
+
+/-- Every key an accepted envelope declares is a key name: non-empty text. -/
+theorem Env.problem_sets {e : Env} (h : e.problem = none) : e.keysNamed = true := by
+  cases hk : e.keysNamed
+  · unfold Env.problem at h
+    repeat (split at h <;> try simp_all)
+  · rfl
+
+/-- `sets-not-keys` follows `erases-not-record-id`: it speaks only when every
+member of `erases` is a record id, and some declared key is not a key name. -/
+theorem Env.problem_sets_not_keys {e : Env} (h : e.problem = some "sets-not-keys") :
+    e.erases.all recordId = true ∧ e.keysNamed = false := by
+  unfold Env.problem at h
+  repeat' split at h
+  all_goals simp only [reduceCtorEq, Option.some.injEq] at h
+  all_goals (try simp at h)
+  rename_i _ _ _ _ _ _ _ _ hx hk
+  exact ⟨by simpa using hx, by simpa using hk⟩
+
+/-- `of-missing` follows `sets-not-keys`: it speaks only when every declared
+key is a key name. -/
+theorem Env.problem_of_missing_sets {e : Env} (h : e.problem = some "of-missing") :
+    e.keysNamed = true := by
+  unfold Env.problem at h
+  repeat' split at h
+  all_goals simp only [reduceCtorEq, Option.some.injEq] at h
+  all_goals (try simp at h)
+  rename_i _ _ _ _ _ _ _ _ _ hk _
+  simpa using hk
 
 theorem Env.problem_codes {e : Env} {c : String} (h : e.problem = some c) : c ∈ writeCodes := by
   unfold Env.problem at h

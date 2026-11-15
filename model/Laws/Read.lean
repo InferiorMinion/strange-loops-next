@@ -12,7 +12,8 @@ import Laws.Write
 * **The reader puts it there.** `Read.envOf` reads a required field left
   out, or a field of the wrong JSON type, as `unreadable`, so the envelope it
   reads is refused (`Read.envOf_missing`, `Read.envOf_mistyped`,
-  `Read.envOf_set_mistyped`).
+  `Read.envOf_set_mistyped`, `Read.envOf_sets_mistyped`). An empty name in
+  `sets` is refused by the same check as an unreadable one.
 * **A salt that is not base32hex text is not 16 bytes** (`Read.salt_length`),
   and under a good envelope that is the writer's refusal
   (`writeProblem_salt`).
@@ -27,14 +28,15 @@ namespace Loops
 theorem Env.problem_unreadable {e : Env}
     (h : e.kind = unreadable ∨ e.observer = unreadable ∨ e.emitted = unreadable ∨
       e.occurred = some unreadable ∨ unreadable ∈ e.about ∨ e.of = some unreadable ∨
-      unreadable ∈ e.prev ∨ e.under = some unreadable ∨ unreadable ∈ e.erases) :
+      unreadable ∈ e.prev ∨ e.under = some unreadable ∨ unreadable ∈ e.erases ∨
+      ∃ xs, e.sets = some xs ∧ unreadable ∈ xs) :
     e.problem ≠ none := by
-  obtain ⟨hk, ho, he, hs, hr⟩ := unreadable_refused
+  obtain ⟨hk, ho, he, hs, hr, hn'⟩ := unreadable_refused
   intro hn
   unfold Env.problem at hn
   repeat (split at hn; · cases hn)
-  rename_i h1 h2 h3 h4 h5 h6 h7 h8 h9 _
-  rcases h with h | h | h | h | h | h | h | h | h
+  rename_i h1 h2 h3 h4 h5 h6 h7 h8 h9 h10 _
+  rcases h with h | h | h | h | h | h | h | h | h | ⟨xs, hx, h⟩
   · exact h1 (h ▸ hk)
   · exact h2 (by simp [h, ho])
   · exact h3 (by simp [h, he])
@@ -50,12 +52,17 @@ theorem Env.problem_unreadable {e : Env}
   · have : ¬ e.erases.all recordId = true := fun hall => by
       have := List.all_eq_true.1 hall _ h; simp [hr] at this
     exact h9 (by simpa using this)
+  · have : ¬ e.keysNamed = true := fun hall => by
+      simp only [Env.keysNamed, hx, Option.map_some, Option.getD_some] at hall
+      have := List.all_eq_true.1 hall _ h; simp [hn'] at this
+    exact h10 (by simpa using this)
 
 /-- An accepted write's envelope holds no unreadable field. -/
 theorem Written.no_unreadable (w : Written) :
     ¬(w.env.kind = unreadable ∨ w.env.observer = unreadable ∨ w.env.emitted = unreadable ∨
       w.env.occurred = some unreadable ∨ unreadable ∈ w.env.about ∨ w.env.of = some unreadable ∨
-      unreadable ∈ w.env.prev ∨ w.env.under = some unreadable ∨ unreadable ∈ w.env.erases) :=
+      unreadable ∈ w.env.prev ∨ w.env.under = some unreadable ∨ unreadable ∈ w.env.erases ∨
+      ∃ xs, w.env.sets = some xs ∧ unreadable ∈ xs) :=
   fun h => Env.problem_unreadable h w.ok.env
 
 namespace Read
@@ -92,6 +99,20 @@ theorem envOf_set_mistyped {kvs : List (String × Json)} {k : String} {j : Json}
     · exact List.mem_map.2 ⟨x, hx, textOr_unreadable hs⟩
   simp only [List.mem_cons, List.not_mem_nil, or_false] at hk
   rcases hk with rfl | rfl | rfl <;> simp [envOf, hj, hu]
+
+/-- `sets` given a value that is not an array, or an array with a member that
+is not text, is refused. -/
+theorem envOf_sets_mistyped {kvs : List (String × Json)} {j : Json}
+    (hj : kvs.lookup "sets" = some j)
+    (h : (∀ xs, j ≠ .arr xs) ∨ ∃ xs x, j = .arr xs ∧ x ∈ xs ∧ ∀ s, x ≠ .str s) :
+    (envOf kvs).problem ≠ none := by
+  apply Env.problem_unreadable
+  have hu : unreadable ∈ textsOr j := by
+    rcases h with h | ⟨xs, x, rfl, hx, hs⟩
+    · cases j <;> simp_all [textsOr]
+    · exact List.mem_map.2 ⟨x, hx, textOr_unreadable hs⟩
+  exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr
+    ⟨textsOr j, by simp [envOf, hj], hu⟩))))))))
 
 /-- A salt of 16 bytes was written as base32hex text of 16 bytes. -/
 theorem salt_length {j : Option Json} (h : (salt j).length = 16) :

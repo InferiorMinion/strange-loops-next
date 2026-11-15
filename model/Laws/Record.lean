@@ -6,8 +6,11 @@ import Loops.Stored
 * **Erasure keeps the id.** Forgetting the opening changes storage, not the
   record: every reference, tick and signature still resolves.
 * **An opening checks.** A record's own salt and payload open its commitment.
-* **Sets are sets.** Reordering or repeating `about` or `prev` gives the
-  same envelope bytes, so the same id.
+* **Sets are sets.** Reordering or repeating `about`, `prev`, `erases` or
+  `sets` gives the same envelope bytes, so the same id.
+* **Absent and empty `sets` differ.** The canonical envelope holds `sets`
+  only as stated (`toJson_sets`), so an empty one is not the same
+  envelope as none (`sets_empty_ne_absent`).
 * **Member order is free.** Reordering an object's members never changes its
   canonical text.
 
@@ -348,22 +351,52 @@ theorem canonSet_eq {xs ys : List String} (h : ∀ s, s ∈ xs ↔ s ∈ ys) : c
   intro a
   rw [mem_sortBy (fun a _ b _ e => utf16_inj e), mem_sortBy (fun a _ b _ e => utf16_inj e), h]
 
+/-- Two declarations of keys that are the same: both absent, or both stated
+with the same members. Absent and empty are not the same. -/
+def SameKeys : Option (List String) → Option (List String) → Prop
+  | none, none => True
+  | some xs, some ys => ∀ s, s ∈ xs ↔ s ∈ ys
+  | _, _ => False
+
+theorem setsJson_eq {a b : Option (List String)} (h : SameKeys a b) : Env.setsJson a = Env.setsJson b := by
+  match a, b, h with
+  | none, none, _ => rfl
+  | some xs, some ys, h => simp only [Env.setsJson, canonSet_eq h]
+
 theorem env_sets {e e' : Env} (hk : e.kind = e'.kind) (ho : e.observer = e'.observer)
     (he : e.emitted = e'.emitted) (hoc : e.occurred = e'.occurred) (hu : e.under = e'.under)
     (hof : e.of = e'.of) (ha : ∀ s, s ∈ e.about ↔ s ∈ e'.about) (hp : ∀ s, s ∈ e.prev ↔ s ∈ e'.prev)
-    (hx : ∀ s, s ∈ e.erases ↔ s ∈ e'.erases) :
+    (hx : ∀ s, s ∈ e.erases ↔ s ∈ e'.erases) (hs : SameKeys e.sets e'.sets) :
     e.toJson.canon = e'.toJson.canon := by
-  simp only [Env.toJson, hk, ho, he, hoc, hu, hof, canonSet_eq ha, canonSet_eq hp, canonSet_eq hx]
+  simp only [Env.toJson, Env.baseJson, hk, ho, he, hoc, hu, hof, canonSet_eq ha, canonSet_eq hp,
+    canonSet_eq hx, setsJson_eq hs]
 
-/-- Reordering or repeating `about`, `prev` or `erases` never changes a record's id. -/
+/-- Reordering or repeating `about`, `prev`, `erases` or `sets` never changes a record's id. -/
 theorem id_sets (H : Hash) {e e' : Env} (commit : String) (hk : e.kind = e'.kind)
     (ho : e.observer = e'.observer) (he : e.emitted = e'.emitted) (hoc : e.occurred = e'.occurred)
     (hu : e.under = e'.under) (hof : e.of = e'.of) (ha : ∀ s, s ∈ e.about ↔ s ∈ e'.about)
-    (hp : ∀ s, s ∈ e.prev ↔ s ∈ e'.prev) (hx : ∀ s, s ∈ e.erases ↔ s ∈ e'.erases) :
+    (hp : ∀ s, s ∈ e.prev ↔ s ∈ e'.prev) (hx : ∀ s, s ∈ e.erases ↔ s ∈ e'.erases)
+    (hs : SameKeys e.sets e'.sets) :
     idOf H e commit = idOf H e' commit := by
   have : e.toJson = e'.toJson := by
-    simp only [Env.toJson, hk, ho, he, hoc, hu, hof, canonSet_eq ha, canonSet_eq hp, canonSet_eq hx]
+    simp only [Env.toJson, Env.baseJson, hk, ho, he, hoc, hu, hof, canonSet_eq ha, canonSet_eq hp,
+      canonSet_eq hx, setsJson_eq hs]
   simp [idOf, idPreimage, Json.canon, Json.canonMembers, this]
+
+/-- `sets` enters the canonical envelope only as `Env.setsJson` writes it:
+left out when absent, written with its members in canonical order when
+stated, empty or not. The rest of the envelope does not depend on it. -/
+theorem toJson_sets (e : Env) (s : Option (List String)) :
+    ({ e with sets := s } : Env).toJson = .obj (e.baseJson ++ Env.setsJson s) := rfl
+
+/-- Absent and empty differ: an envelope that states an empty `sets` is not
+the envelope without it. -/
+theorem sets_empty_ne_absent (e : Env) :
+    ({ e with sets := some [] } : Env).toJson ≠ ({ e with sets := none } : Env).toJson := by
+  rw [toJson_sets, toJson_sets]
+  intro h
+  have := congrArg (fun j => match j with | Json.obj kvs => kvs.length | _ => 0) h
+  simp [Env.setsJson] at this
 
 /-! ## Member order is free -/
 
