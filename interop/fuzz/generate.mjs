@@ -97,6 +97,16 @@ function spec(rng, rs) {
       'keys-by-kind-least': { min: 'n', follow: 'keys', by: 'env.kind', where: { value: { not: 'no' } } },
       'keys-by-rank-items': { collect: true, follow: 'keys', limit: 1 + rng.int(3), by: 'rank' },
       'keys-by-mention-items': { collect: true, follow: 'keys', by: 'env.about:t', where: { score: { 'at-least': 3 } } },
+      // Two or three payload tests asked of one thing, over fields the records
+      // set with `sets`: one can answer no while another answers unknown, and
+      // no outranks unknown, as in a `where` map.
+      'keyed-flag-score': { 'latest-by': 'of', follow: 'keys', where: { flag: { is: true }, score: { 'at-least': 3 } } },
+      'keys-flag-score': { count: true, follow: 'keys', where: { flag: { is: true }, score: { 'at-least': 3 } } },
+      'keys-tag-flag-total': { sum: 'n', follow: 'keys', where: { tag: { not: 'tag-1' }, flag: { is: false } } },
+      'keys-three-least': { min: 'score', follow: 'keys', where: { flag: { is: true }, tag: { is: 'tag-2' }, n: { 'at-least': 0 } } },
+      'keys-score-value-greatest': { max: 'n', follow: 'keys', where: { score: { below: 5 }, value: { not: 'no' } } },
+      'keys-flag-score-items': { collect: true, follow: 'keys', where: { flag: { is: false }, score: { 'at-least': 2 } } },
+      'keys-flag-score-by-tag': { count: true, follow: 'keys', by: 'tag', where: { flag: { is: true }, score: { below: 6 }, rank: { present: true } } },
     },
   };
 }

@@ -28,7 +28,7 @@ async function* jsonFiles(dir) {
 test('generation is deterministic, varied, balanced, and independent of scheduling', () => {
   const corpus = FAMILIES.flatMap(f => Array.from({ length: 8 }, (_, i) => generate('stable', i, f)));
   assert.equal(createHash('sha256').update(JSON.stringify(corpus)).digest('hex'),
-    '3c5fb708bcb35f5153d016b4c03614339b0a0f114541c612a4d1f2a4859bfb7e');
+    '7d8cc7f8e2dab910b8a4c8165e7494e1dc34ff0b4577106bc0b2280b07751d2a');
   const layers = new Set();
   for (const family of FAMILIES) {
     const seen = new Set();
@@ -152,6 +152,30 @@ test('count, sum, min, max and collect follow keys over forks, setters, groups a
     seen.unreadKey += out['keys-by-flag-greatest'].unread > 0;
   }
   for (const [k, n] of Object.entries(seen)) assert.ok(n > 30, `${k}: ${JSON.stringify(seen)}`);
+});
+
+test('keyed slots with several payload tests meet a test answering no beside one answering unknown', async () => {
+  const { parseSpec, thingAnswer } = await import('../js/spec.mjs');
+  const { recordsByThing } = await import('../js/fold.mjs');
+  const several = (w) => Object.keys(w ?? {}).filter((f) => !f.startsWith('env.')).length > 1;
+  let slots = 0, both = 0, three = 0;
+  for (let i = 0; i < 512; i++) {
+    const v = generate('several', i, 'spec');
+    if (v.layer !== 'spec/run') continue;
+    const parsed = parseSpec(v.input.spec).parsed;
+    if (!parsed) continue;
+    const names = Object.keys(parsed.fold).filter((n) => parsed.fold[n].follow === 'keys' && several(parsed.fold[n].where));
+    slots += names.length;
+    three += names.some((n) => Object.keys(parsed.fold[n].where).length > 2);
+    let hit = false;
+    for (const [, rs] of recordsByThing(v.input.orders[0])) for (const n of names) {
+      const as = Object.entries(parsed.fold[n].where).filter(([f]) => !f.startsWith('env.')).map(([f, w]) => thingAnswer({ [f]: w }, rs));
+      hit ||= as.includes('no') && as.includes('unknown');
+    }
+    both += hit;
+  }
+  // Every fold type has such a slot, one with three tests, and many runs hold a thing where they disagree.
+  assert.ok(slots > 500 && three > 50 && both > 50, `${slots} ${three} ${both}`);
 });
 
 test('specs group by every by form, over revised, forked, erased and withheld records', async () => {
