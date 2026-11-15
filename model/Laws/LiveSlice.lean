@@ -554,15 +554,19 @@ The laws above are about the records a reader folds. A reader folds what its
 places hold after settling the forms and admitting by `prev` (`realm`). A part
 of the forms gives a part of the folded records when it owes each record of the
 thing it holds at all three things (`KeyedPart`): every form of it, every
-record that erases it, and that the whole admits it. It owes nothing for a
-record's `prev` targets: holding fewer of them never refuses a record the
-whole admits (`entitled_fewer`). -/
+record that erases it, and that it refuses it when the whole does. It owes
+nothing for the `prev` targets of a record the whole admits: holding fewer of
+them never refuses it (`entitled_fewer`). A record the whole refuses is another
+matter, since a part that lacks the target the whole refuses it for admits it,
+and its envelope then sets its keys; a part that holds what such a record names
+in `prev` refuses it too (`KeyedPart.of_targets`, in `Laws.KeyedSpecSlice`). -/
 
 structure KeyedPart (may : Record → Record → Bool) (t : String) (S W : List Record) : Prop where
   sub : ∀ r ∈ S, r ∈ W
   forms : ∀ a ∈ S, a.isOf t = true → ∀ b ∈ W, b.id = a.id → b ∈ S
   erasers : ∀ a ∈ S, a.isOf t = true → ∀ e ∈ W, e.erases.contains a.id = true → e ∈ S
-  admitted : ∀ r ∈ settle W, r.isOf t = true → (∃ a ∈ S, a.id = r.id) → entitled may (settle W) r = true
+  admitted : ∀ r ∈ settle W, r.isOf t = true → (∃ a ∈ S, a.id = r.id) →
+    entitled may (settle S) r = true → entitled may (settle W) r = true
 
 /-- The part keeps, for a record of the thing it holds, what the whole keeps. -/
 theorem pick_part {may : Record → Record → Bool} {t : String} {S W : List Record} (hF : Forms W)
@@ -652,7 +656,7 @@ theorem realm_part {may : Record → Record → Bool} (hm : EnvOnly may) {t : St
   constructor
   · intro hr
     obtain ⟨hw, ha⟩ := (settle_part hF h ht).1 (mem_admit.1 hr).1
-    exact ⟨mem_admit.2 ⟨hw, h.admitted r hw ht ha⟩, ha⟩
+    exact ⟨mem_admit.2 ⟨hw, h.admitted r hw ht ha (mem_admit.1 hr).2⟩, ha⟩
   · rintro ⟨hr, ha⟩
     obtain ⟨hw, he⟩ := mem_admit.1 hr
     exact mem_admit.2 ⟨(settle_part hF h ht).2 ⟨hw, ha⟩, entitled_fewer hm hF h.sub he⟩
