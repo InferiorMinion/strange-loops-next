@@ -52,10 +52,10 @@ theorem idsOf_ext {xs ys : List Record} (h : ∀ i, (∃ r ∈ xs, r.id = i) ↔
 /-! ## Settling -/
 
 theorem withhold_congr {a b : Record} (h : SameEnvelope a b) : a.withhold = b.withhold := by
-  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, h10⟩ := h
+  obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11⟩ := h
   cases a; cases b
-  simp only at h1 h2 h3 h4 h5 h6 h7 h8 h9 h10
-  subst h1 h2 h3 h4 h5 h6 h7 h8 h9 h10
+  simp only at h1 h2 h3 h4 h5 h6 h7 h8 h9 h10 h11
+  subst h1 h2 h3 h4 h5 h6 h7 h8 h9 h10 h11
   rfl
 
 theorem baseForm_mem {forms : List Record} {r : Record} (h : baseForm forms = some r) :

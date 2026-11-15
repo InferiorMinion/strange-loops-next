@@ -49,6 +49,9 @@ structure Record where
   emitted  : Stamp
   /-- The ids whose payloads this record erases, whatever its kind. -/
   erases   : List RecordId := []
+  /-- The payload keys this record sets: `none` when it is read whole, which
+  sets every key; `some []` for a pure join, which sets none. -/
+  sets     : Option (List String) := none
   /-- A numeric payload field the numeric folds read. Exact: an integer. -/
   n        : Int := 0
   /-- A nonwhole numeric payload overrides the fixture integer. -/
@@ -95,6 +98,7 @@ structure SameEnvelope (a b : Record) : Prop where
   occurred : a.occurred = b.occurred
   emitted : a.emitted = b.emitted
   erases : a.erases = b.erases
+  sets : a.sets = b.sets
 
 /-- A view of records: it may hide a payload, and changes nothing else. A
 narrowed handle, a withheld form and an erasure are all views. -/
