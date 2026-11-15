@@ -65,6 +65,11 @@ function cover(spec, forms, drop) {
     for (const i of between) envelopes.add(i);
     const mine = new Set([...sent, ...between]);
     if (drop !== "erasers") for (const f of forms) if ((f.erases ?? []).some((e) => mine.has(e))) envelopes.add(f.id);
+    // A record of the thing the part holds and the whole refuses: the part
+    // holds what it names in `prev`, so that it refuses it too.
+    const ok = new Set(rs.map((r) => r.id));
+    for (const f of forms) if (thingOf(f) === t && !ok.has(f.id) && (held.has(f.id) || whole.has(f.id) || envelopes.has(f.id)))
+      for (const p of f.prev ?? []) envelopes.add(p);
   }
   const taken = new Set(forms.filter((f) => takes(spec, f)).map((f) => f.id));
   return forms.flatMap((f) => (taken.has(f.id) || whole.has(f.id) ? [f] : held.has(f.id) || envelopes.has(f.id) ? [envelope(f)] : []));
