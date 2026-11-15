@@ -1,5 +1,29 @@
 # Lean model mutation report
 
+## A keyed collect's limit over things: the four new entries, two retargeted and one whose definition moved, at `fe57cb6`
+
+The catalogue has 295 entries: 291 and four that mutate the limit of a collect that follows `keys` (`keyedValue`, `wholeThings`, `thingsInOrder`), on Kyle's ruling of 2026-11-15 that it counts things, each listed whole.
+`keys-slots-collect-heads` and `keys-slots-collect-no-limit` are retargeted at the collect's new site in `keyedValue`; `keys-slots-limit-over-records` is the rule as first built, now a wrong one.
+The full catalogue is not rerun. Node 25.9 runs the four new entries, the two retargeted and `keys-slots-count-unknown-dropped`, the other entry on `keyedValue`, with `--only`, in one run, with a 900-second timeout.
+The last column gives the first error the build reports, file and line in the mutated tree.
+
+| Entry | Wrong rule | Outcome | Where |
+|---|---|---|---|
+| `keys-slots-limit-over-records` | let a keyed collect's limit count records, cutting a thing's live records | rejected by build | `Laws/KeyedSlots.lean:136` (`keyedValue_collect`) |
+| `keys-slots-limit-cuts-things` | choose the things by the limit, then cut their records at the limit too | rejected by build | `Laws/KeyedSlots.lean:187` (`mem_wholeThings`) |
+| `keys-slots-limit-oldest-first` | choose the things with the oldest live records, not the newest | rejected by build | `Laws/KeyedSlots.lean:187` (`mem_wholeThings`) |
+| `keys-slots-things-repeated` | count a thing once per live record toward the limit | rejected by build | `Laws/KeyedSlots.lean:154` (`mem_thingsInOrder`) |
+| `keys-slots-collect-heads` | (retargeted) collect a selected thing's heads, not its live records | rejected by build | `Laws/Spec.lean:455` (`keyedValue_set_decides`) |
+| `keys-slots-collect-no-limit` | (retargeted) ignore limit on a collect that follows keys | rejected by build | `Laws/KeyedSlots.lean:285` (`keyedValue_collect_limit`) |
+| `keys-slots-count-unknown-dropped` | (unchanged) | rejected by build | `Laws/KeyedSlots.lean:63` (`keyedValue_count`) |
+
+No entry survives.
+All seven are rejected by build, each at an error at a theorem, not a warning alone. Build rejections are not semantic proof kills; the entries rejected by build were not applied by hand. The same wrong rules as JavaScript ports, the limit over records and the oldest things first, fail 52 and 46 vector checks, `spec/run/51` among them (`interop/fuzz/REPORT.md`).
+`keys-slots-limit-cuts-things` gives the same answers as `keys-slots-limit-over-records`: the first `k` records of the newest-first list are of at most `k` things, all among the first `k`.
+The runner exits 0: no generator assertion, timeout or infrastructure failure occurs.
+It restored the source after each entry and rebuilt the baseline at the end.
+Raw results and logs were kept under the session's scratch directory and deleted once this summary was written.
+
 ## Count, sum, min, max and collect following `keys`: the twenty-one new entries and sixteen whose definitions moved, at `cd2e9ca`
 
 The catalogue has 291 entries: 270 and twenty-one that mutate the slots that follow `keys` (`thingEv`, `soleSetter`, `Acc.overThings`, `keyedValue`, `By.thingKeys`, `Slot.keyedGrouped`, `Slot.run`, `Slot.plain`, `accPool`, `FoldType.follow`, `foldType`) and `setters` and `liveIn` (`Loops/Live.lean`).

@@ -15,6 +15,7 @@ Issue #1 retargets four entries at the shape stage and labels in `under`, and ad
 `sets` adds ten: 250 entries total. `finish-envelope-env-tojson` is retargeted at `Loops.Env.baseJson`, where its site now is.
 Latest-by following `keys` adds twenty, over `Loops/Live.lean` and the keyed slot in `Loops/Spec.lean`: 270 entries total. `coverage-spec-slotfollow` is retargeted at `slotFollow`'s new result.
 Count, sum, min, max and collect following `keys` add twenty-one: 291 entries total. `follow` on those fold types became an `Option Follow`, so eleven entries are retargeted at their new sites (`wide-spec-069`, `follow-pool-every`, `follow-pool-heads-always`, `follow-count-every`, `follow-max-every`, `follow-sum-parse-dropped`, `follow-json-inverted`, `follow-count-envelope-first`, `follow-count-unknown-first`, `keys-follow-anywhere`, `keys-written-as-prev`); the four that name `Loops.Slot.run` now name `Loops.Slot.plain`, where their site is.
+A keyed collect's `limit` counting things adds four, over `Loops.keyedValue`, `Loops.wholeThings` and `Loops.thingsInOrder`: 295 entries total. `keys-slots-collect-heads` and `keys-slots-collect-no-limit` are retargeted at the collect's new site.
 The raw-reader ordering mutations target library definitions under `Loops`.
 The cheap runner uses those fourteen replacements and the four former D6 survivors.
 It requires runtime failures after successful builds.
@@ -258,7 +259,9 @@ The catalogue includes existing entries without definition metadata.
 - `Loops.thingEv`: covered by `keys-slots-every-record-chooses`, `keys-slots-unchosen-unknown`
 - `Loops.soleSetter`: covered by `keys-slots-first-of-two-setters`
 - `Loops.Acc.overThings`: covered by `keys-slots-unreadable-not-unread`
-- `Loops.keyedValue`: covered by `keys-slots-count-unknown-dropped`, `keys-slots-collect-heads`, `keys-slots-collect-no-limit`
+- `Loops.thingsInOrder`: covered by `keys-slots-things-repeated`
+- `Loops.wholeThings`: covered by `keys-slots-limit-cuts-things`, `keys-slots-limit-oldest-first`
+- `Loops.keyedValue`: covered by `keys-slots-count-unknown-dropped`, `keys-slots-collect-heads`, `keys-slots-collect-no-limit`, `keys-slots-limit-over-records`
 - `Loops.By.thingKeys`: covered by `keys-slots-payload-key-from-heads`, `keys-slots-envelope-key-every-head`, `keys-slots-unheld-key-read`
 - `Loops.Slot.keyedGrouped`: covered by `keys-slots-unreadable-key-dropped`, `keys-slots-ungrouped-dropped`
 - `Loops.Source.takes`: covered by `spec-source-all-any`, `d8-source-of-by-about`

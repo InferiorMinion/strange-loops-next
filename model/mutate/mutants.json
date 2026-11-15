@@ -2171,18 +2171,50 @@
   {
     "id": "keys-slots-collect-heads",
     "file": "Spec.lean",
-    "before": "  | .collect _ limit => .heads (shownIds (limitTo limit (newestFirst (yes.flatMap (liveIn xs))))) unread",
-    "after": "  | .collect _ limit => .heads (shownIds (limitTo limit (newestFirst (yes.flatMap fun t => (stateIn t xs).heads)))) unread",
+    "before": "  | .collect _ limit => .heads (shownIds (wholeThings limit (newestFirst (yes.flatMap (liveIn xs))))) unread",
+    "after": "  | .collect _ limit => .heads (shownIds (wholeThings limit (newestFirst (yes.flatMap fun t => (stateIn t xs).heads)))) unread",
     "reason": "Collect a selected thing's heads, not its live records.",
     "definition": "Loops.keyedValue"
   },
   {
     "id": "keys-slots-collect-no-limit",
     "file": "Spec.lean",
-    "before": "  | .collect _ limit => .heads (shownIds (limitTo limit (newestFirst (yes.flatMap (liveIn xs))))) unread",
+    "before": "  | .collect _ limit => .heads (shownIds (wholeThings limit (newestFirst (yes.flatMap (liveIn xs))))) unread",
     "after": "  | .collect _ limit => .heads (shownIds (newestFirst (yes.flatMap (liveIn xs)))) unread",
     "reason": "Ignore limit on a collect that follows keys.",
     "definition": "Loops.keyedValue"
+  },
+  {
+    "id": "keys-slots-limit-over-records",
+    "file": "Spec.lean",
+    "before": "  | .collect _ limit => .heads (shownIds (wholeThings limit (newestFirst (yes.flatMap (liveIn xs))))) unread",
+    "after": "  | .collect _ limit => .heads (shownIds (limitTo limit (newestFirst (yes.flatMap (liveIn xs))))) unread",
+    "reason": "Let a keyed collect's limit count records, cutting a thing's live records.",
+    "definition": "Loops.keyedValue"
+  },
+  {
+    "id": "keys-slots-limit-cuts-things",
+    "file": "Spec.lean",
+    "before": "  | some k, rs => rs.filter fun r => ((thingsInOrder rs).take k).contains r.thing",
+    "after": "  | some k, rs => (rs.filter fun r => ((thingsInOrder rs).take k).contains r.thing).take k",
+    "reason": "Choose the things by the limit, then cut their records at the limit too.",
+    "definition": "Loops.wholeThings"
+  },
+  {
+    "id": "keys-slots-limit-oldest-first",
+    "file": "Spec.lean",
+    "before": "((thingsInOrder rs).take k)",
+    "after": "((thingsInOrder rs.reverse).take k)",
+    "reason": "Choose the things with the oldest live records, not the newest.",
+    "definition": "Loops.wholeThings"
+  },
+  {
+    "id": "keys-slots-things-repeated",
+    "file": "Spec.lean",
+    "before": "  | r :: rs => r.thing :: (thingsInOrder rs).filter (· != r.thing)",
+    "after": "  | r :: rs => r.thing :: thingsInOrder rs",
+    "reason": "Count a thing once per live record toward the limit.",
+    "definition": "Loops.thingsInOrder"
   },
   {
     "id": "keys-slots-every-record-listed",
