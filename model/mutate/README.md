@@ -17,7 +17,7 @@ Four more cover a keyed collect's limit counting things: a limit over records, t
 The source paths may name the Loops or Gen root; flat filenames still name Loops sources.
 Run `node model/mutate/run.mjs --only things-prev-or,things-drop-may` to select mutations.
 Use `--shard i/n` to run every nth selected entry, starting at the ith; the n shards are disjoint and together cover the selection.
-Run `node model/mutate/merge.mjs --output merged.json results-*.json` to join the shards' results; it fails unless every catalogue entry was judged exactly once, with no error and the baseline restored.
+Run `node model/mutate/merge.mjs --output merged.json results-*.json` to join the shards' results; it fails unless every catalogue entry, or with `--only` every entry named, was judged exactly once, with no error and the baseline restored.
 Use `--output path` to choose the JSON result path.
 Use `--timeout seconds` to set each command timeout.
 The default timeout is 180 seconds.
@@ -27,6 +27,8 @@ The model gate runs those tests, so a change that moves a catalogue entry's sour
 
 The full catalogue runs in GitLab CI, on request: start a pipeline with the variable `MUTATION_FULL` set.
 `model-mutants-full` runs it in four shards and `mutation-report` joins them; results and logs are artifacts.
+There each command gets 600 seconds, or `MUTATION_TIMEOUT` seconds when that variable is set.
+With `MUTATION_ONLY` set to a comma-separated list of ids, the shards run those entries alone and the report checks those; `merge.mjs --only` takes the same list.
 It is not a gate. It takes hours on one machine, so it is not run on the workbench.
 See [REPORT.md](REPORT.md) for audited outcomes and the known generator assertion.
 

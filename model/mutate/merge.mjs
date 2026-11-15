@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // Joins the result files of a sharded run (`run.mjs --shard i/n`) into one and
-// checks that together they cover the catalogue exactly once.
+// checks that together they cover the catalogue exactly once, or with `--only`
+// the entries it names.
 import { readFile, writeFile } from 'node:fs/promises';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { realpathSync } from 'node:fs';
@@ -31,13 +32,24 @@ export function merge(ids, shards) {
   return { merged: { catalogue: ids.length, counts, mutants }, problems };
 }
 
+// The entries a run was asked for, in catalogue order: the whole catalogue, or
+// the ones `--only` named, as `run.mjs --only` selects them.
+export function selection(ids, only) {
+  if (!only) return ids;
+  if (new Set(only).size !== only.length || only.some(id => !ids.includes(id))) throw new Error('Unknown or duplicate mutant id');
+  return ids.filter(id => only.includes(id));
+}
+
 export async function main(args) {
-  const at = args.indexOf('--output');
-  const output = at < 0 ? null : args[at + 1];
-  if (at >= 0 && !output) throw new Error('Missing value for --output');
-  const files = args.filter((_, i) => at < 0 || (i !== at && i !== at + 1));
-  if (!files.length) throw new Error('Usage: merge.mjs [--output merged.json] results-1.json results-2.json ...');
-  const ids = JSON.parse(await readFile(cataloguePath, 'utf8')).map(m => m.id);
+  const files = [], named = {};
+  for (let i = 0; i < args.length; i++) {
+    if (!['--output', '--only'].includes(args[i])) { files.push(args[i]); continue; }
+    if (!args[i + 1] || args[i + 1].startsWith('--')) throw new Error(`Missing value for ${args[i]}`);
+    named[args[i]] = args[++i];
+  }
+  const output = named['--output'] ?? null;
+  if (!files.length) throw new Error('Usage: merge.mjs [--output merged.json] [--only id,id] results-1.json results-2.json ...');
+  const ids = selection(JSON.parse(await readFile(cataloguePath, 'utf8')).map(m => m.id), named['--only']?.split(','));
   const shards = [];
   for (const file of files) shards.push({ name: path.basename(file), result: JSON.parse(await readFile(file, 'utf8')) });
   const { merged, problems } = merge(ids, shards);
