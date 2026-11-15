@@ -1,0 +1,223 @@
+{
+  "vector": "31-keys-example",
+  "layer": "spec/run",
+  "laws": ["spec.set", "keyed.live", "keyed.fold"],
+  "source": "model",
+  "input": {
+    "spec": {
+      "vertex": "tasks",
+      "from": [
+        {
+          "store": ".",
+          "kind": ["task"]
+        }
+      ],
+      "fold": {
+        "state": {
+          "latest-by": "of",
+          "follow": "keys"
+        },
+        "heads": {
+          "latest-by": "of",
+          "follow": "prev"
+        }
+      }
+    },
+    "orders": [
+      [
+        {
+          "id": "r:000000000000000000000000000000000000000000000000040g",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:1",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:01:40Z",
+          "occurred": "2026-10-01T00:01:40Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "title": "a"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000410",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:1",
+          "prev": ["r:000000000000000000000000000000000000000000000000040g"],
+          "emitted": "2026-10-01T00:03:20Z",
+          "occurred": "2026-10-01T00:03:20Z",
+          "sets": ["status"],
+          "shown": "withheld"
+        },
+        {
+          "id": "r:000000000000000000000000000000000000000000000000041g",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:1",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:05:00Z",
+          "occurred": "2026-10-01T00:05:00Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "title": "b"
+          }
+        }
+      ],
+      [
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000410",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:1",
+          "prev": ["r:000000000000000000000000000000000000000000000000040g"],
+          "emitted": "2026-10-01T00:03:20Z",
+          "occurred": "2026-10-01T00:03:20Z",
+          "sets": ["status"],
+          "shown": "withheld"
+        },
+        {
+          "id": "r:000000000000000000000000000000000000000000000000041g",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:1",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:05:00Z",
+          "occurred": "2026-10-01T00:05:00Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "title": "b"
+          }
+        },
+        {
+          "id": "r:000000000000000000000000000000000000000000000000040g",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:1",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:01:40Z",
+          "occurred": "2026-10-01T00:01:40Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "title": "a"
+          }
+        }
+      ],
+      [
+        {
+          "id": "r:000000000000000000000000000000000000000000000000041g",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:1",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:05:00Z",
+          "occurred": "2026-10-01T00:05:00Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "title": "b"
+          }
+        },
+        {
+          "id": "r:000000000000000000000000000000000000000000000000040g",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:1",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:01:40Z",
+          "occurred": "2026-10-01T00:01:40Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "title": "a"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000410",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:1",
+          "prev": ["r:000000000000000000000000000000000000000000000000040g"],
+          "emitted": "2026-10-01T00:03:20Z",
+          "occurred": "2026-10-01T00:03:20Z",
+          "sets": ["status"],
+          "shown": "withheld"
+        }
+      ]
+    ]
+  },
+  "expect": {
+    "state": {
+      "things": {
+        "task:1": {
+          "keys": {
+            "status": [
+              {
+                "id": "r:000000000000000000000000000000000000000000000000041g",
+                "shown": "here"
+              },
+              {
+                "id": "r:0000000000000000000000000000000000000000000000000410",
+                "shown": "withheld"
+              }
+            ]
+          },
+          "whole": [
+            {
+              "id": "r:000000000000000000000000000000000000000000000000041g",
+              "shown": "here"
+            },
+            {
+              "id": "r:000000000000000000000000000000000000000000000000040g",
+              "shown": "here"
+            }
+          ],
+          "heads": [
+            {
+              "id": "r:000000000000000000000000000000000000000000000000041g",
+              "shown": "here"
+            },
+            {
+              "id": "r:0000000000000000000000000000000000000000000000000410",
+              "shown": "withheld"
+            }
+          ]
+        }
+      },
+      "unread": 0
+    },
+    "heads": {
+      "things": {
+        "task:1": [
+          {
+            "id": "r:000000000000000000000000000000000000000000000000041g",
+            "shown": "here"
+          },
+          {
+            "id": "r:0000000000000000000000000000000000000000000000000410",
+            "shown": "withheld"
+          }
+        ]
+      },
+      "unread": 0
+    }
+  }
+}

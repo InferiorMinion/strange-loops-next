@@ -1,0 +1,193 @@
+{
+  "vector": "38-keys-undeclared",
+  "layer": "spec/run",
+  "laws": ["spec.set", "keyed.fold", "keyed.select"],
+  "source": "model",
+  "input": {
+    "spec": {
+      "vertex": "tasks",
+      "from": [
+        {
+          "store": ".",
+          "kind": ["task"]
+        }
+      ],
+      "fold": {
+        "state": {
+          "latest-by": "of",
+          "follow": "keys"
+        },
+        "est-3": {
+          "latest-by": "of",
+          "follow": "keys",
+          "where": {
+            "est": {
+              "is": 3
+            }
+          }
+        },
+        "est-9": {
+          "latest-by": "of",
+          "follow": "keys",
+          "where": {
+            "est": {
+              "is": 9
+            }
+          }
+        },
+        "est-9-heads": {
+          "latest-by": "of",
+          "follow": "prev",
+          "where": {
+            "est": {
+              "is": 9
+            }
+          }
+        }
+      }
+    },
+    "orders": [
+      [
+        {
+          "id": "r:00000000000000000000000000000000000000000000000005gg",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:6",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:01:40Z",
+          "occurred": "2026-10-01T00:01:40Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "est": 3
+          }
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000005h0",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:6",
+          "value": "",
+          "prev": ["r:00000000000000000000000000000000000000000000000005gg"],
+          "emitted": "2026-10-01T00:03:20Z",
+          "occurred": "2026-10-01T00:03:20Z",
+          "sets": ["status"],
+          "n": 0,
+          "fields": {
+            "status": "closed",
+            "est": 9
+          }
+        }
+      ],
+      [
+        {
+          "id": "r:00000000000000000000000000000000000000000000000005h0",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:6",
+          "value": "",
+          "prev": ["r:00000000000000000000000000000000000000000000000005gg"],
+          "emitted": "2026-10-01T00:03:20Z",
+          "occurred": "2026-10-01T00:03:20Z",
+          "sets": ["status"],
+          "n": 0,
+          "fields": {
+            "status": "closed",
+            "est": 9
+          }
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000005gg",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:6",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:01:40Z",
+          "occurred": "2026-10-01T00:01:40Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "est": 3
+          }
+        }
+      ]
+    ]
+  },
+  "expect": {
+    "state": {
+      "things": {
+        "task:6": {
+          "keys": {
+            "status": [
+              {
+                "id": "r:00000000000000000000000000000000000000000000000005h0",
+                "shown": "here"
+              }
+            ]
+          },
+          "whole": [
+            {
+              "id": "r:00000000000000000000000000000000000000000000000005gg",
+              "shown": "here"
+            }
+          ],
+          "heads": [
+            {
+              "id": "r:00000000000000000000000000000000000000000000000005h0",
+              "shown": "here"
+            }
+          ]
+        }
+      },
+      "unread": 0
+    },
+    "est-3": {
+      "things": {
+        "task:6": {
+          "keys": {
+            "status": [
+              {
+                "id": "r:00000000000000000000000000000000000000000000000005h0",
+                "shown": "here"
+              }
+            ]
+          },
+          "whole": [
+            {
+              "id": "r:00000000000000000000000000000000000000000000000005gg",
+              "shown": "here"
+            }
+          ],
+          "heads": [
+            {
+              "id": "r:00000000000000000000000000000000000000000000000005h0",
+              "shown": "here"
+            }
+          ]
+        }
+      },
+      "unread": 0
+    },
+    "est-9": {
+      "things": {},
+      "unread": 0
+    },
+    "est-9-heads": {
+      "things": {
+        "task:6": [
+          {
+            "id": "r:00000000000000000000000000000000000000000000000005h0",
+            "shown": "here"
+          }
+        ]
+      },
+      "unread": 0
+    }
+  }
+}
