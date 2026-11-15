@@ -14,6 +14,7 @@ use loops::{
 use loops_place::{
     clock,
     dir::{Dir, Held},
+    fill,
     key::Key,
     line::{Line, hash},
 };
@@ -30,9 +31,13 @@ usage: loops [-C <dir>] <verb> ...
 
   init                          make .loops/ here
   emit <kind> [field=text | field:=json]... [\"message\"]
-       [--of <thing>] [--about <thing>]... [--prev <id>]... [--erases <id>]...
-       [--occurred <when>] [--under <id>] [--sets <key>]... [--sets-nothing]
-                                a revision without --of is of what it replaces
+       [--of <thing>] [--about <thing>]... [--no-about] [--prev <id>]...
+       [--erases <id>]... [--occurred <when>] [--under <id>]
+       [--sets <key>]... [--sets-nothing]
+                                a revision without --of is of what it replaces;
+                                an emit names every live record of its thing
+                                held here, and copies its heads' about unless
+                                --about or --no-about states it
   emit -                        drafts as JSONL on stdin: one changeset
   get <id>                      one record
   of <thing>                    a thing's current state: the records of it
@@ -258,39 +263,6 @@ fn write_changeset(
     Ok(lines)
 }
 
-/// A revision written without `--of` is of what it replaces. Every record
-/// with `prev` states `of`, and the protocol never infers it, so this writer
-/// fills it in before writing: the thing of each `prev` target, which is the
-/// target's `of`, or its id when it is a root (Lean `Loops.envThing`). The
-/// checks the batch would make decide when it can't: a target this store
-/// doesn't hold is `prev-unknown`, and targets of different things are
-/// `prev-unrelated`. A label is left to the batch, which refuses it here.
-fn fill_of(held: &Held, mut draft: batch::Draft) -> Result<batch::Draft, Fail> {
-    if draft.env.of.is_some()
-        || draft.env.prev.is_empty()
-        || draft.env.prev.iter().any(|p| batch::is_label(p))
-    {
-        return Ok(draft);
-    }
-    let things = draft
-        .env
-        .prev
-        .iter()
-        .map(|id| {
-            held.writer_view(id)
-                .map(|target| batch::env_thing(id, target.of.as_deref()).to_owned())
-        })
-        .collect::<Option<Vec<_>>>()
-        .ok_or_else(|| refused(batch::Error::PrevUnknown.code()))?;
-    match things.split_first() {
-        Some((thing, rest)) if rest.iter().all(|t| t == thing) => {
-            draft.env.of = Some(thing.clone());
-            Ok(draft)
-        }
-        _ => Err(refused(batch::Error::PrevUnrelated.code())),
-    }
-}
-
 fn emit(start: &Path, args: &[String]) -> Result<(), Fail> {
     let place = find_store(start)?;
     let held = place.read()?;
@@ -314,14 +286,18 @@ fn emit(start: &Path, args: &[String]) -> Result<(), Fail> {
             .collect();
         return say(&object(vec![("records", Json::Arr(records))]).canon());
     }
-    let draft = draft::from_args(
+    let (draft, about) = draft::from_args(
         args,
         &now,
         &key.public(),
         |given| link(&held, given),
         |given| thing_ref(&held, given),
     )?;
-    let draft = fill_of(&held, draft)?;
+    // A revision without `--of` is of what it replaces; then the emit names
+    // every live record of its thing held here, and copies the heads' `about`
+    // unless it states its own. A refusal here precedes the writer's others.
+    let draft = fill::of(&|id: &str| held.writer_view(id), draft).map_err(|e| refused(e.code()))?;
+    let draft = fill::anchor(&realm(&held), draft, about);
     let lines = write_changeset(&place, &held, &key, &[draft])?;
     say(lines.first().map_or("", Line::id))
 }

@@ -3,6 +3,7 @@
 Step 2 of the build sequence: emit, read and fold for one person, signed.
 `loops-place` (`rust/place`) is the first code around the pure core that
 touches a disk, a clock and a key. `loops` (`rust/cli`) is the CLI over it.
+`loops_place::fill` holds what the single-record emit fills in.
 The core gained nothing; `loops-eval` gained one export, `slots_json`.
 
 None of this is protocol yet. The stored line is (`protocol/record.md`);
@@ -14,8 +15,9 @@ written down here so they can be changed on purpose.
 ```
 loops init                          make .loops/ here
 loops emit <kind> [field=text | field:=json]... ["message"]
-      [--of <thing>] [--about <thing>]... [--prev <id>]... [--erases <id>]...
-      [--occurred <when>] [--under <id>] [--sets <key>]... [--sets-nothing]
+      [--of <thing>] [--about <thing>]... [--no-about] [--prev <id>]...
+      [--erases <id>]... [--occurred <when>] [--under <id>]
+      [--sets <key>]... [--sets-nothing]
 loops emit -                        drafts as JSONL on stdin: one changeset
 loops get <id>                      one record
 loops of <thing>                    a thing's winner, its other heads, how many records are of it
@@ -49,6 +51,11 @@ loops whoami
   mention it, as a spec's `from.of` and `from.about` do.
 * A revision written without `--of` is of what it replaces; see choice 9.
 * `--sets` names a key the emit sets; see choice 10.
+* An emit of a thing names in `prev` every live record of that thing the
+  store holds, beside any `--prev`; see choice 11.
+* An emit of a thing carries the thing's whole `about`, copied from its heads
+  unless `--about` or `--no-about` states it; see choices 12 and 13.
+* `emit -` fills nothing in: a changeset states its own `of`, `prev` and `about`.
 * Every answer is JSON or an id. Lenses are a later step, so `--json` is accepted and changes nothing.
 
 ## On disk
@@ -147,6 +154,42 @@ held. A segment whose name is not the hash of its bytes is listed as altered.
     a line's envelope field, as written; a key that starts with `@` is a key,
     not a label.
 
+11. **`emit` fills in the anchor.** The anchor rule of D8c (`ROADMAP.md`,
+    the design note's section 5): every emit sets the envelope, so an emit of
+    a thing names in `prev` every record of that thing the store holds that
+    is live for some key, the envelope among them, and so every head. The
+    thing is `--of`, or what `--prev` replaces (choice 9); an emit with
+    neither is a root and names nothing, and the first record of a thing the
+    store holds nothing of names nothing. Liveness is the core's
+    (`loops::live::live`), read over the store as `loops fold` reads it:
+    settled, then admitted. An erased or withheld record keeps its envelope
+    and is named like any other; a record admission refuses is not named. A
+    `--prev` is kept beside what is filled in, whether or not it is live, and
+    `prev` is written as the canonical set it is. A whole-read emit names the
+    same records and is then the only live record of its thing. Nothing
+    refuses an unanchored record, on either path, and nothing reads the
+    names in later. `loops erase` writes a root, with `erases` and no `of`,
+    so it names nothing; `--erases` and `--under` on an emit change nothing
+    here, and neither does a thing named by a root's id rather than a natural
+    key: the root is that thing's first record, and is named while it is live.
+    What was filled in is not printed: `emit` answers the id, and `loops get`
+    shows the `prev` and `about` written.
+12. **`emit` copies `about` from the heads.** The head's mentions are the
+    thing's, so with no `--about` an emit of a thing is given the union of
+    the mentions of the thing's heads, every one of which it now names, in
+    canonical order. A root and a first record copy nothing.
+13. **`--about` states the whole `about`, and `--no-about` an empty one.**
+    `--about`, once or more, replaces the copy rather than adding to it, so
+    a task moves from one project to another by naming the new one alone.
+    `--no-about` states that the emit mentions nothing, and the thing then
+    mentions nothing until an emit names something again. The two together
+    are a usage error, as `--sets` with `--sets-nothing` is.
+14. **The filler is in `loops-place`.** `loops_place::fill` fills in `of`
+    (choice 9) and then the anchor and `about` (choices 11–13), over what a
+    store holds, and `loops emit` calls it before the batch check. It sits
+    beside the CLI's other uses of a store so a test can drive the writer's
+    rule over a few hundred emits without starting the binary for each.
+
 ## Checked by
 
 `rust/place/tests/lines.rs` signs every accepted record vector and requires
@@ -163,7 +206,16 @@ kept on an erased and a withheld record; a latest-by that follows keys over a
 keyed chain, a fork, an erased setter and a pure join; count, sum and collect
 that follow keys over a head that sets only `title`, a fork and two setters of
 one field; a mention making no head; two stores
-converging; exit codes. Expected answers come from the
+converging; exit codes; an emit naming every live record of its thing held,
+through the note's history, a whole-read emit above keyed ones, a fork merged
+by export and import, an erased and a withheld live record, a root and a first
+record; `about` copied, replaced by `--about` and emptied by `--no-about`, and
+a moved task changing group; and a changeset that fills nothing in.
+`rust/place/tests/anchor.rs` writes 300 random emits as `loops emit` writes
+them, one writer and then two that merge now and then, and requires each
+history to be anchored (every record above a live record names it) and each
+thing's live records, with their erasers, to answer every slot that follows
+`keys` as the whole holding does. Expected answers come from the
 vectors or from the walk's own statements, not from the code.
 
 Not checked: nothing in the model says what a place is, so there is no law
