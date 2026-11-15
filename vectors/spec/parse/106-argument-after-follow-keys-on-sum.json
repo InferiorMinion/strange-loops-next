@@ -1,0 +1,26 @@
+{
+  "vector": "106-argument-after-follow-keys-on-sum",
+  "layer": "spec/parse",
+  "laws": ["spec.parse"],
+  "source": "model",
+  "input": {
+    "spec": {
+      "vertex": "x",
+      "from": [
+        {
+          "store": "."
+        }
+      ],
+      "fold": {
+        "c": {
+          "sum": "",
+          "follow": "keys"
+        }
+      }
+    }
+  },
+  "expect": {
+    "refused": "fold-argument",
+    "path": "fold.c.sum"
+  }
+}

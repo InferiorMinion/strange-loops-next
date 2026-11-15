@@ -1,5 +1,60 @@
 # Lean model mutation report
 
+## Count, sum, min, max and collect following `keys`: the twenty-one new entries and sixteen whose definitions moved, at `cd2e9ca`
+
+The catalogue has 291 entries: 270 and twenty-one that mutate the slots that follow `keys` (`thingEv`, `soleSetter`, `Acc.overThings`, `keyedValue`, `By.thingKeys`, `Slot.keyedGrouped`, `Slot.run`, `Slot.plain`, `accPool`, `FoldType.follow`, `foldType`) and `setters` and `liveIn` (`Loops/Live.lean`).
+`follow` on count, sum, min, max and collect is now an `Option Follow`, so eleven entries are retargeted at their new sites, and `keys-follow-anywhere` now refuses `keys` off latest-by.
+The full catalogue is not rerun. Node 25.9 runs the twenty-one new entries, the eleven retargeted and five whose definitions the change touched, with `--only`, in one run, with a 900-second timeout.
+The last column gives the first error the build reports, file and line in the unmutated tree.
+
+| Entry | Wrong rule | Outcome | Where |
+|---|---|---|---|
+| `keys-slots-every-record-chooses` | let any record of a thing, not only a head, choose it | rejected by build | `Laws/Spec.lean:418` |
+| `keys-slots-unchosen-unknown` | count a thing none of whose heads is chosen as unread | rejected by build | `Laws/KeyedSlots.lean:59` |
+| `keys-slots-first-of-two-setters` | read a field from the newest of two or more live setters | rejected by build | `Laws/KeyedSlots.lean:84` |
+| `keys-slots-unreadable-not-unread` | drop a selected thing whose field cannot be read without counting it unread | rejected by build | `Laws/KeyedSlots.lean:119` |
+| `keys-slots-count-unknown-dropped` | count no thing unread whose tests are unknown | rejected by build | `Laws/KeyedSlots.lean:63` |
+| `keys-slots-collect-heads` | collect a selected thing's heads, not its live records | rejected by build | `Laws/Spec.lean:455` |
+| `keys-slots-collect-no-limit` | ignore limit on a collect that follows keys | rejected by build | `Laws/KeyedSlots.lean:435` |
+| `keys-slots-every-record-listed` | list every record of a selected thing, replaced or not | rejected by build | `Laws/Spec.lean:433` |
+| `keys-slots-replaced-setters` | read a field from every setter of it, replaced or not | rejected by build | `Laws/Spec.lean:423` |
+| `keys-slots-payload-key-from-heads` | read a payload key from the chosen heads, not the field's live setters | rejected by build | `Laws/Spec.lean:466` |
+| `keys-slots-envelope-key-every-head` | read an envelope key from every head, chosen or not | rejected by build | `Laws/KeyedSlots.lean:165` |
+| `keys-slots-unheld-key-read` | read the keys of the setters held, passing over one not held | rejected by build | `Laws/KeyedSlots.lean:149` |
+| `keys-slots-unreadable-key-dropped` | drop a thing whose key cannot be read without counting it unread | rejected by build | `Laws/KeyedSlots.lean:185` |
+| `keys-slots-ungrouped-dropped` | count no thing ungrouped | rejected by build | `Laws/KeyedSlots.lean:185` |
+| `keys-slots-grouped-as-records` | group a slot that follows keys by records, as written | rejected by build | `Laws/Spec.lean:557` |
+| `keys-slots-count-as-records` | count records, as written, when following keys | rejected by build | `Laws/Spec.lean:487` |
+| `keys-slots-sum-over-heads` | sum over the heads when following keys, as following prev does | rejected by build | `Laws/Spec.lean:487` |
+| `keys-slots-collect-as-prev` | collect the heads when following keys, as following prev does | rejected by build | `Laws/Spec.lean:496` |
+| `keys-slots-pool-swapped` | fold the heads without follow, and every record following prev | rejected by build | `Laws/Spec.lean:794` |
+| `keys-slots-collect-not-following` | group a collect that follows keys by records, as written | rejected by build | `Laws/SpecSlice.lean:508` |
+| `keys-slots-count-parsed-unfollowed` | parse a count that follows keys as one that does not follow | rejected by build | `Laws/Parse.lean:504` |
+| `wide-spec-069` | (retargeted) change this selection or check | killed by vector | `spec/parse/64` |
+| `follow-pool-every` | (retargeted) fold every record when following prev | rejected by build | `Laws/Spec.lean:491` |
+| `follow-pool-heads-always` | (retargeted) fold the heads even without follow | rejected by build | `Laws/Spec.lean:492` |
+| `follow-count-every` | (retargeted) count every record when following prev | rejected by build | `Laws/By.lean:228` |
+| `follow-max-every` | (retargeted) take the maximum over every record when following prev | rejected by build | `Laws/KeyedSlots.lean:486` |
+| `follow-sum-parse-dropped` | (retargeted) parse sum without its follow | rejected by build | `Laws/Parse.lean:504` |
+| `follow-json-inverted` | (retargeted) write follow on the slots that do not follow | rejected by build | `Laws/Parse.lean:501` |
+| `follow-count-envelope-first` | (retargeted) choose by from and where before working out the heads, when following prev | rejected by build | `Laws/Spec.lean:491` |
+| `follow-count-unknown-first` | (retargeted) let an unknown payload test outrank a failing envelope test, when following prev | rejected by build | `Laws/By.lean:225` |
+| `keys-follow-anywhere` | (retargeted) refuse follow keys on every fold type but latest-by | rejected by build | `Laws/Parse.lean:501` |
+| `keys-written-as-prev` | (retargeted) write follow as prev in the parsed form of a keyed latest-by | rejected by build | `Laws/Parse.lean:508` |
+| `wide-spec-062` | (unchanged) | rejected by build | `Laws/By.lean:225` |
+| `finish-spec-slot-tojson` | (unchanged) | rejected by build | `Laws/Parse.lean:476` |
+| `coverage-spec-slotfollow` | (unchanged) | rejected by build | `Laws/Parse.lean:504` |
+| `follow-count-not-written` | (unchanged) | rejected by build | `Laws/Parse.lean:504` |
+| `by-group-before-heads` | (unchanged) | rejected by build | `Laws/Spec.lean:548` |
+
+No entry survives.
+Thirty-six are rejected by build and one killed by a vector.
+Each rejection is an error at a theorem, not a warning alone; five of them also report a warning first.
+Build rejections are not semantic proof kills; the entries rejected by build were not applied by hand.
+The runner exits 0: no generator assertion, timeout or infrastructure failure occurs.
+It restored the source after each entry and rebuilt the baseline at the end.
+Raw results and logs were kept under the session's scratch directory and deleted once this summary was written.
+
 ## Latest-by following `keys`: the twenty new entries and ten whose definitions moved, at `4a3817f`
 
 The catalogue has 270 entries: 250 and twenty that mutate liveness per key (`Loops/Live.lean`) and the keyed slot, its selection, its grammar and its parsed form (`Loops/Spec.lean`).

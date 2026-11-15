@@ -659,8 +659,8 @@
   {
     "id": "wide-spec-069",
     "file": "Spec.lean",
-    "before": "| \"count\", .bool true => pure (.count follow)",
-    "after": "| \"count\", .bool _ => pure (.count follow)",
+    "before": "| \"count\", .bool true => pure (.count fl)",
+    "after": "| \"count\", .bool _ => pure (.count fl)",
     "reason": "Change this selection or check.",
     "definition": "Loops.foldType"
   },
@@ -1731,40 +1731,40 @@
   {
     "id": "follow-pool-every",
     "file": "Spec.lean",
-    "before": "if follow then wholeHeads xs else xs",
-    "after": "if follow then xs else xs",
+    "before": "if follow = some .prev then wholeHeads xs else xs",
+    "after": "if follow = some .prev then xs else xs",
     "reason": "Fold every record when following prev.",
     "definition": "Loops.accPool"
   },
   {
     "id": "follow-pool-heads-always",
     "file": "Spec.lean",
-    "before": "if follow then wholeHeads xs else xs",
-    "after": "if follow then wholeHeads xs else wholeHeads xs",
+    "before": "if follow = some .prev then wholeHeads xs else xs",
+    "after": "if follow = some .prev then wholeHeads xs else wholeHeads xs",
     "reason": "Fold the heads even without follow.",
     "definition": "Loops.accPool"
   },
   {
     "id": "follow-count-every",
     "file": "Spec.lean",
-    "before": "| .count follow => .nat (Count.acc.select ev (accPool follow xs))",
-    "after": "| .count follow => .nat (Count.acc.select ev (accPool (follow && false) xs))",
+    "before": "else .nat (Count.acc.select ev (accPool follow xs))",
+    "after": "else .nat (Count.acc.select ev (accPool none xs))",
     "reason": "Count every record when following prev.",
-    "definition": "Loops.Slot.run"
+    "definition": "Loops.Slot.plain"
   },
   {
     "id": "follow-max-every",
     "file": "Spec.lean",
-    "before": "| .max f follow => .opt ((Max.on f).select ev (accPool follow xs))",
-    "after": "| .max f follow => .opt ((Max.on f).select ev (accPool (follow && false) xs))",
+    "before": "else .opt ((Max.on f).select ev (accPool follow xs))",
+    "after": "else .opt ((Max.on f).select ev (accPool none xs))",
     "reason": "Take the maximum over every record when following prev.",
-    "definition": "Loops.Slot.run"
+    "definition": "Loops.Slot.plain"
   },
   {
     "id": "follow-sum-parse-dropped",
     "file": "Spec.lean",
-    "before": "| \"sum\", f => (FoldType.sum · follow) <$> fieldArg p f",
-    "after": "| \"sum\", f => (FoldType.sum · false) <$> fieldArg p f",
+    "before": "| \"sum\", f => (FoldType.sum · fl) <$> fieldArg p f",
+    "after": "| \"sum\", f => (FoldType.sum · none) <$> fieldArg p f",
     "reason": "Parse sum without its follow.",
     "definition": "Loops.foldType"
   },
@@ -1779,26 +1779,26 @@
   {
     "id": "follow-json-inverted",
     "file": "Spec.lean",
-    "before": "if follow then [(\"follow\", .str \"prev\")] else []",
-    "after": "if !follow then [(\"follow\", .str \"prev\")] else []",
+    "before": "  | some f => [(\"follow\", .str f.name)]\n  | none => []",
+    "after": "  | some _ => []\n  | none => [(\"follow\", .str \"prev\")]",
     "reason": "Write follow on the slots that do not follow.",
     "definition": "Loops.followJson"
   },
   {
     "id": "follow-count-envelope-first",
     "file": "Spec.lean",
-    "before": "| .count follow => .nat (Count.acc.select ev (accPool follow xs))",
-    "after": "| .count follow => .nat (Count.acc.select ev (accPool follow (xs.filter fun r => !follow || ev r != .no)))",
+    "before": "else .nat (Count.acc.select ev (accPool follow xs))",
+    "after": "else .nat (Count.acc.select ev (accPool follow (xs.filter fun r => follow != some .prev || ev r != .no)))",
     "reason": "Choose by from and where before working out the heads, when following prev.",
-    "definition": "Loops.Slot.run"
+    "definition": "Loops.Slot.plain"
   },
   {
     "id": "follow-count-unknown-first",
     "file": "Spec.lean",
-    "before": "| .count follow => .nat (Count.acc.select ev (accPool follow xs))",
-    "after": "| .count follow => .nat (Count.acc.select (fun r => if follow && sel r && payTest cs r == .unknown then .unknown else ev r) (accPool follow xs))",
+    "before": "else .nat (Count.acc.select ev (accPool follow xs))",
+    "after": "else .nat (Count.acc.select (fun r => if follow = some .prev && sel r && payTest cs r == .unknown then .unknown else ev r) (accPool follow xs))",
     "reason": "Let an unknown payload test outrank a failing envelope test, when following prev.",
-    "definition": "Loops.Slot.run"
+    "definition": "Loops.Slot.plain"
   },
   {
     "id": "by-group-before-admit",
@@ -2091,9 +2091,9 @@
   {
     "id": "keys-follow-anywhere",
     "file": "Spec.lean",
-    "before": "| some (.str \"keys\") => if t = \"latest-by\" then pure (some .keys) else refuse \"follow-invalid\" s!\"{path}.follow\"",
-    "after": "| some (.str \"keys\") => pure (some .keys)",
-    "reason": "Accept follow keys on every fold type.",
+    "before": "| some (.str \"keys\") => pure (some .keys)",
+    "after": "| some (.str \"keys\") => if t = \"latest-by\" then pure (some .keys) else refuse \"follow-invalid\" s!\"{path}.follow\"",
+    "reason": "Refuse follow keys on every fold type but latest-by.",
     "definition": "Loops.slotFollow"
   },
   {
@@ -2107,8 +2107,8 @@
   {
     "id": "keys-written-as-prev",
     "file": "Spec.lean",
-    "before": "(\"follow\", .str f.name)",
-    "after": "(\"follow\", .str \"prev\")",
+    "before": "| .latestBy f => [(\"latest-by\", .str \"of\"), (\"follow\", .str f.name)]",
+    "after": "| .latestBy f => [(\"latest-by\", .str \"of\"), (\"follow\", .str \"prev\")]",
     "reason": "Write follow as prev in the parsed form of a keyed latest-by.",
     "definition": "Loops.Slot.toJson"
   },
@@ -2127,5 +2127,173 @@
     "after": "fields := [], shown := .withheld, sets := none }",
     "reason": "Drop sets from a withheld record's envelope.",
     "definition": "Loops.Record.withhold"
+  },
+  {
+    "id": "keys-slots-every-record-chooses",
+    "file": "Spec.lean",
+    "before": "  if (stateIn t xs).heads.any (chosen sel cs) then thingTest cs (recordsOf t xs) else .no",
+    "after": "  if (recordsOf t xs).any (chosen sel cs) then thingTest cs (recordsOf t xs) else .no",
+    "reason": "Let any record of a thing, not only a head, choose it.",
+    "definition": "Loops.thingEv"
+  },
+  {
+    "id": "keys-slots-unchosen-unknown",
+    "file": "Spec.lean",
+    "before": "  if (stateIn t xs).heads.any (chosen sel cs) then thingTest cs (recordsOf t xs) else .no",
+    "after": "  if (stateIn t xs).heads.any (chosen sel cs) then thingTest cs (recordsOf t xs) else .unknown",
+    "reason": "Count a thing none of whose heads is chosen as unread.",
+    "definition": "Loops.thingEv"
+  },
+  {
+    "id": "keys-slots-first-of-two-setters",
+    "file": "Spec.lean",
+    "before": "  | [r] => some r\n  | _ => none",
+    "after": "  | r :: _ => some r\n  | _ => none",
+    "reason": "Read a field from the newest of two or more live setters.",
+    "definition": "Loops.soleSetter"
+  },
+  {
+    "id": "keys-slots-unreadable-not-unread",
+    "file": "Spec.lean",
+    "before": "    (ts.filter (ev · == .unknown)).length + (yes.filter fun t => !(pick t).any f.readable).length⟩",
+    "after": "    (ts.filter (ev · == .unknown)).length⟩",
+    "reason": "Drop a selected thing whose field cannot be read without counting it unread.",
+    "definition": "Loops.Acc.overThings"
+  },
+  {
+    "id": "keys-slots-count-unknown-dropped",
+    "file": "Spec.lean",
+    "before": "  | .count _ => .nat ⟨yes.length, unread⟩",
+    "after": "  | .count _ => .nat ⟨yes.length, 0⟩",
+    "reason": "Count no thing unread whose tests are unknown.",
+    "definition": "Loops.keyedValue"
+  },
+  {
+    "id": "keys-slots-collect-heads",
+    "file": "Spec.lean",
+    "before": "  | .collect _ limit => .heads (shownIds (limitTo limit (newestFirst (yes.flatMap (liveIn xs))))) unread",
+    "after": "  | .collect _ limit => .heads (shownIds (limitTo limit (newestFirst (yes.flatMap fun t => (stateIn t xs).heads)))) unread",
+    "reason": "Collect a selected thing's heads, not its live records.",
+    "definition": "Loops.keyedValue"
+  },
+  {
+    "id": "keys-slots-collect-no-limit",
+    "file": "Spec.lean",
+    "before": "  | .collect _ limit => .heads (shownIds (limitTo limit (newestFirst (yes.flatMap (liveIn xs))))) unread",
+    "after": "  | .collect _ limit => .heads (shownIds (newestFirst (yes.flatMap (liveIn xs)))) unread",
+    "reason": "Ignore limit on a collect that follows keys.",
+    "definition": "Loops.keyedValue"
+  },
+  {
+    "id": "keys-slots-every-record-listed",
+    "file": "Loops/Live.lean",
+    "before": "  (recordsOf t xs).filter (live (recordsOf t xs))",
+    "after": "  recordsOf t xs",
+    "reason": "List every record of a selected thing, replaced or not.",
+    "definition": "Loops.liveIn"
+  },
+  {
+    "id": "keys-slots-replaced-setters",
+    "file": "Loops/Live.lean",
+    "before": "def setters (rs : List Record) (k : String) : List Record := orderHeads (rs.filter (liveFor rs k))",
+    "after": "def setters (rs : List Record) (k : String) : List Record := orderHeads (rs.filter (·.setsKey k))",
+    "reason": "Read a field from every setter of it, replaced or not.",
+    "definition": "Loops.setters"
+  },
+  {
+    "id": "keys-slots-payload-key-from-heads",
+    "file": "Spec.lean",
+    "before": "    | .payload f => setters (recordsOf t xs) f",
+    "after": "    | .payload _ => (stateIn t xs).heads.filter (chosen sel cs)",
+    "reason": "Read a payload key from the chosen heads, not the field's live setters.",
+    "definition": "Loops.By.thingKeys"
+  },
+  {
+    "id": "keys-slots-envelope-key-every-head",
+    "file": "Spec.lean",
+    "before": "    | _ => (stateIn t xs).heads.filter (chosen sel cs)",
+    "after": "    | _ => (stateIn t xs).heads",
+    "reason": "Read an envelope key from every head, chosen or not.",
+    "definition": "Loops.By.thingKeys"
+  },
+  {
+    "id": "keys-slots-unheld-key-read",
+    "file": "Spec.lean",
+    "before": "  if src.all (b.keys · |>.isSome) then some (canonSet (src.flatMap fun r => (b.keys r).getD [])) else none",
+    "after": "  some (canonSet (src.flatMap fun r => (b.keys r).getD []))",
+    "reason": "Read the keys of the setters held, passing over one not held.",
+    "definition": "Loops.By.thingKeys"
+  },
+  {
+    "id": "keys-slots-unreadable-key-dropped",
+    "file": "Spec.lean",
+    "before": "    ((ts.filter (ev · == .unknown)).length + (ts.filter fun t => ev t == .yes && (keys t).isNone).length)",
+    "after": "    (ts.filter (ev · == .unknown)).length",
+    "reason": "Drop a thing whose key cannot be read without counting it unread.",
+    "definition": "Loops.Slot.keyedGrouped"
+  },
+  {
+    "id": "keys-slots-ungrouped-dropped",
+    "file": "Spec.lean",
+    "before": "    (ts.filter fun t => ev t == .yes && keys t == some []).length",
+    "after": "    0",
+    "reason": "Count no thing ungrouped.",
+    "definition": "Loops.Slot.keyedGrouped"
+  },
+  {
+    "id": "keys-slots-grouped-as-records",
+    "file": "Spec.lean",
+    "before": "  | some b => if s.type.follow = some .keys then s.keyedGrouped b sel xs else s.grouped b sel xs",
+    "after": "  | some b => s.grouped b sel xs",
+    "reason": "Group a slot that follows keys by records, as written.",
+    "definition": "Loops.Slot.run"
+  },
+  {
+    "id": "keys-slots-count-as-records",
+    "file": "Spec.lean",
+    "before": "    if follow = some .keys then keyedValue (.count follow) xs (thingEv sel cs xs)",
+    "after": "    if follow = some .keys then .nat (Count.acc.select ev (accPool follow xs))",
+    "reason": "Count records, as written, when following keys.",
+    "definition": "Loops.Slot.plain"
+  },
+  {
+    "id": "keys-slots-sum-over-heads",
+    "file": "Spec.lean",
+    "before": "    if follow = some .keys then keyedValue (.sum f follow) xs (thingEv sel cs xs)",
+    "after": "    if follow = some .keys then .int ((Sum.on f).select ev (accPool (some .prev) xs))",
+    "reason": "Sum over the heads when following keys, as following prev does.",
+    "definition": "Loops.Slot.plain"
+  },
+  {
+    "id": "keys-slots-collect-as-prev",
+    "file": "Spec.lean",
+    "before": "    if follow = some .keys then keyedValue (.collect follow limit) xs (thingEv sel cs xs)",
+    "after": "    if follow = some .keys then collectOf sel cs true limit xs",
+    "reason": "Collect the heads when following keys, as following prev does.",
+    "definition": "Loops.Slot.plain"
+  },
+  {
+    "id": "keys-slots-pool-swapped",
+    "file": "Spec.lean",
+    "before": "if follow = some .prev then wholeHeads xs else xs",
+    "after": "if follow = none then wholeHeads xs else xs",
+    "reason": "Fold the heads without follow, and every record following prev.",
+    "definition": "Loops.accPool"
+  },
+  {
+    "id": "keys-slots-collect-not-following",
+    "file": "Spec.lean",
+    "before": "  | .count f | .sum _ f | .min _ f | .max _ f | .collect f _ => f",
+    "after": "  | .count f | .sum _ f | .min _ f | .max _ f => f\n  | .collect f _ => f.filter (· == .prev)",
+    "reason": "Group a collect that follows keys by records, as written.",
+    "definition": "Loops.FoldType.follow"
+  },
+  {
+    "id": "keys-slots-count-parsed-unfollowed",
+    "file": "Spec.lean",
+    "before": "| \"count\", .bool true => pure (.count fl)",
+    "after": "| \"count\", .bool true => pure (.count (fl.filter (· == .prev)))",
+    "reason": "Parse a count that follows keys as one that does not follow.",
+    "definition": "Loops.foldType"
   }
 ]

@@ -474,12 +474,12 @@ theorem followed_slice (hm : EnvOnly may) (hF : Forms W) (h : SpecSlice sp S W)
     ((wholeHeads_distinct (realm_addressed may W)).filter _) (wholeHeads_taken_slice hm hF h)
 
 /-- A slot without `by` gives the same value over the slice, for any selection
-within what the spec takes. A latest-by that follows `keys` reads records the
-spec does not take, live setters of other kinds among them; this slice does not
-hold them, and its slice law is not stated. -/
+within what the spec takes. A slot that follows `keys` reads records the spec
+does not take, live setters of other kinds among them; this slice does not hold
+them, and its slice law is not stated. -/
 theorem Slot.plain_slice (hm : EnvOnly may) (hF : Forms W) (h : SpecSlice sp S W)
     {sel : Record → Bool} (hsel : ∀ r, sel r = true → sp.takes r = true) (s : Slot)
-    (hk : s.type ≠ .latestBy .keys) :
+    (hk : s.type.follow ≠ some .keys) :
     s.plain sel (realm may S) = s.plain sel (realm may W) := by
   have hS : Distinct (realm may S) := admit_distinct may (settle_distinct S)
   have hW : Distinct (realm may W) := admit_distinct may (settle_distinct W)
@@ -496,16 +496,17 @@ theorem Slot.plain_slice (hm : EnvOnly may) (hF : Forms W) (h : SpecSlice sp S W
     · rintro ⟨hr, ht⟩; exact ⟨(realm_taken hm hF h ht).1 hr, ht⟩
     · rintro ⟨hr, ht⟩; exact ⟨(realm_taken hm hF h ht).2 hr, ht⟩
   unfold Slot.plain
-  split
+  split <;> rename_i he <;> simp only [he, FoldType.follow] at hk
   all_goals dsimp only
   iterate 4
-    simp only [accPool]
+    simp only [hk, ite_false, accPool]
     split
     · rw [followed_slice hm hF h hsel]
     · rw [acc]
   · exact latestOf_slice hm hF h hsel _
-  · rename_i he; exact absurd he hk
-  · exact collectOf_slice hm hF h hsel _ _ _
+  · exact absurd rfl hk
+  · simp only [hk, ite_false]
+    exact collectOf_slice hm hF h hsel _ _ _
 
 /-- What a slot reads, among the records the spec takes, is the same in the
 slice and in the whole. -/
@@ -558,7 +559,7 @@ slot without `by` with a selection within what the spec takes, a group's key
 reads only a taken record, and the keys, the unread and the ungrouped count
 taken records. -/
 theorem Slot.grouped_slice (hm : EnvOnly may) (hF : Forms W) (h : SpecSlice sp S W) (s : Slot)
-    (hk : s.type ≠ .latestBy .keys) (b : By) :
+    (hk : s.type.follow ≠ some .keys) (b : By) :
     s.grouped b sp.takes (realm may S) = s.grouped b sp.takes (realm may W) := by
   have ne : ∀ r, s.ev sp.takes r = .yes → s.ev sp.takes r ≠ .no := fun r e => by rw [e]; decide
   have keys : groupKeys b (s.ev sp.takes) (s.pool (realm may S)) =
@@ -586,20 +587,21 @@ theorem Slot.grouped_slice (hm : EnvOnly may) (hF : Forms W) (h : SpecSlice sp S
       (fun r hr => s.ev_takes (ne r (by simp only [inGroup, Bool.and_eq_true, beq_iff_eq] at hr; exact hr.1)))
       { name := s.name, type := s.type } hk]
 
-/-- Every slot but a latest-by that follows `keys` gives the same value over the slice. -/
+/-- Every slot but one that follows `keys` gives the same value over the slice. -/
 theorem Slot.run_slice (hm : EnvOnly may) (hF : Forms W) (h : SpecSlice sp S W) (s : Slot)
-    (hk : s.type ≠ .latestBy .keys) :
+    (hk : s.type.follow ≠ some .keys) :
     s.run sp.takes (realm may S) = s.run sp.takes (realm may W) := by
   unfold Slot.run
   split
   · exact s.plain_slice hm hF h (fun _ e => e) hk
-  · exact s.grouped_slice hm hF h hk _
+  · simp only [hk, ite_false]
+    exact s.grouped_slice hm hF h hk _
 
 /-- **A spec slice answers for its spec.** Running the spec over the slice
 gives what running it over everything held gives: every slot, the values, the
 current records with what is shown of each, and the unread counts. -/
 theorem Spec.run_slice (hm : EnvOnly may) (hF : Forms W) (h : SpecSlice sp S W)
-    (hk : ∀ s ∈ sp.slots, s.type ≠ .latestBy .keys) :
+    (hk : ∀ s ∈ sp.slots, s.type.follow ≠ some .keys) :
     sp.run (settle S) may = sp.run (settle W) may := by
   unfold Spec.run
   exact map_congr_left fun s hs => by

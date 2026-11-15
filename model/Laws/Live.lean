@@ -201,9 +201,6 @@ theorem live_iff {rs : List Record} {r : Record} :
 
 /-! ## A thing's keyed state -/
 
-/-- The records of a thing. -/
-abbrev recordsOf (t : String) (xs : List Record) : List Record := xs.filter (·.isOf t)
-
 theorem addressed_filter {xs : List Record} (hx : Addressed xs) (p : Record → Bool) :
     Addressed (xs.filter p) := fun a ha b hb => hx a (mem_filter.1 ha).1 b (mem_filter.1 hb).1
 

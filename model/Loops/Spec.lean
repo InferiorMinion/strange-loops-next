@@ -37,6 +37,13 @@ the closed vocabulary with an optional `where`.
   them is the answer; different answers, or a setter whose payload is not held,
   is unknown, and the thing is unread once. A field no record of the thing sets
   is absent.
+* **Count, sum, min, max and collect following `keys`** read things, selected
+  as latest-by following `keys` selects them. Count counts the things; sum, min
+  and max read the field from its one live setter, and a thing with none, two or
+  more, or one whose payload does not hold the field as a number, is unread;
+  collect lists the things' live records. `by` puts a thing in the group of each
+  key of each live setter of a payload field, or of each chosen head for an
+  envelope key.
 * **`by` groups** count, sum, min, max and collect, following `prev` or not, by an envelope field, by the members of `about` under a
   typed-reference prefix, or by a payload field. Settling, admission and the
   heads come first, over everything held; each group then runs the slot without
@@ -233,8 +240,9 @@ def Cond.all (cs : List Cond) (r : Record) : Tri :=
 
 /-! ## Slots -/
 
-/-- How a slot over heads reads supersession: `prev` reads a thing as its
-heads, `keys` as its live setters. -/
+/-- How a slot reads supersession: `prev` reads a thing as its heads, `keys` as
+its live setters. A count, sum, min, max or collect without `follow` reads every
+record. -/
 inductive Follow where
   | prev
   | keys
@@ -246,19 +254,26 @@ def Follow.name : Follow → String
 
 /-- A fold type from the closed vocabulary. -/
 inductive FoldType where
-  /-- Count, Sum, Min and Max fold every selected record, or with `follow`
-  only the current ones: the whole-reader heads, each id once. -/
-  | count (follow : Bool)
-  | sum (field : String) (follow : Bool)
-  | min (field : String) (follow : Bool)
-  | max (field : String) (follow : Bool)
+  /-- Count, Sum, Min and Max fold every selected record; following `prev`,
+  only the current ones: the whole-reader heads, each id once; following
+  `keys`, the things selected. -/
+  | count (follow : Option Follow)
+  | sum (field : String) (follow : Option Follow)
+  | min (field : String) (follow : Option Follow)
+  | max (field : String) (follow : Option Follow)
   /-- Per thing, by `of`. Following `prev`, each thing's heads; following
   `keys`, each thing's keyed state (`Keyed`). -/
   | latestBy (follow : Follow)
   /-- Every selected record newest first, or only the heads when following
-  `prev`; at most `limit` of them. -/
-  | collect (follow : Bool) (limit : Option Nat)
+  `prev`, or the selected things' live records when following `keys`; at most
+  `limit` of them. -/
+  | collect (follow : Option Follow) (limit : Option Nat)
   deriving Repr, DecidableEq
+
+/-- How a slot reads supersession, if it follows. -/
+def FoldType.follow : FoldType → Option Follow
+  | .count f | .sum _ f | .min _ f | .max _ f | .collect f _ => f
+  | .latestBy f => some f
 
 /-- A `where` map as written: each field with its tests. -/
 abbrev Tests := List (Field × List Op)
@@ -463,25 +478,78 @@ def collectOf (sel : Record → Bool) (cs : List Cond) (follow : Bool) (limit : 
   .heads (shownIds (limitTo limit (hs.filter (payTest cs · == .yes))))
     (hs.filter (payTest cs · == .unknown)).length
 
-/-- What an accumulating slot folds: every record the reader holds, or with
-`follow` the whole-reader heads, which `wholeHeads` combines from each
+/-- What an accumulating slot folds: every record the reader holds, or
+following `prev` the whole-reader heads, which `wholeHeads` combines from each
 thing's heads, keeping each id once. -/
-def accPool (follow : Bool) (xs : List Record) : List Record :=
-  if follow then wholeHeads xs else xs
+def accPool (follow : Option Follow) (xs : List Record) : List Record :=
+  if follow = some .prev then wholeHeads xs else xs
+
+/-! ### Count, sum, min, max and collect following `keys` -/
+
+/-- Whether a slot that follows `keys` selects thing `t`: no, unless `from` and
+the envelope tests choose one of its heads, each alone; then what its payload
+tests answer, asked of the thing. -/
+def thingEv (sel : Record → Bool) (cs : List Cond) (xs : List Record) (t : String) : Tri :=
+  if (stateIn t xs).heads.any (chosen sel cs) then thingTest cs (recordsOf t xs) else .no
+
+/-- The record thing `t`'s field `f` is read from: its one live setter of `f`.
+With none, or two or more, there is none, also when two hold the same value: the
+core never compares values. -/
+def soleSetter (xs : List Record) (f : String) (t : String) : Option Record :=
+  match setters (recordsOf t xs) f with
+  | [r] => some r
+  | _ => none
+
+/-- An accumulating fold over the things `ev` selects, each read from the
+record `pick` gives it. A thing with no such record, or one the fold cannot
+read, is unread, as is a thing `ev` cannot answer for: each once. -/
+def Acc.overThings {σ} (f : Acc σ) (pick : String → Option Record) (ev : String → Tri)
+    (ts : List String) : Result σ :=
+  let yes := ts.filter (ev · == .yes)
+  ⟨f.fold ((yes.filterMap pick).filter f.readable),
+    (ts.filter (ev · == .unknown)).length + (yes.filter fun t => !(pick t).any f.readable).length⟩
+
+/-- A slot that follows `keys`, over the things `ev` selects: the unit is the
+thing. Count counts them; sum, min and max read each one's field from its one
+live setter; collect lists their live records newest first, at most `limit` of
+them; latest-by gives each its keyed state. A thing `ev` cannot answer for is
+unread once. -/
+def keyedValue (ty : FoldType) (xs : List Record) (ev : String → Tri) : SlotValue :=
+  let ts := thingsOf xs
+  let yes := ts.filter (ev · == .yes)
+  let unread := (ts.filter (ev · == .unknown)).length
+  match ty with
+  | .count _ => .nat ⟨yes.length, unread⟩
+  | .sum f _ => .int ((Sum.on f).overThings (soleSetter xs f) ev ts)
+  | .min f _ => .opt ((Min.on f).overThings (soleSetter xs f) ev ts)
+  | .max f _ => .opt ((Max.on f).overThings (soleSetter xs f) ev ts)
+  | .latestBy _ => .keyed (yes.map fun t => (t, (keyedIn t xs).view)) unread
+  | .collect _ limit => .heads (shownIds (limitTo limit (newestFirst (yes.flatMap (liveIn xs))))) unread
 
 /-- Accumulating slots select with `from` and `where`, then fold, over every
-record or, following `prev`, over the heads. This is a slot without `by`. -/
+record or, following `prev`, over the heads; following `keys`, over the things
+selected. This is a slot without `by`. -/
 def Slot.plain (s : Slot) (sel : Record → Bool) (xs : List Record) : SlotValue :=
   let cs := s.tests.conds
   let ev := fun r => if sel r then Cond.all cs r else Tri.no
   match s.type with
-  | .count follow => .nat (Count.acc.select ev (accPool follow xs))
-  | .sum f follow => .int ((Sum.on f).select ev (accPool follow xs))
-  | .min f follow => .opt ((Min.on f).select ev (accPool follow xs))
-  | .max f follow => .opt ((Max.on f).select ev (accPool follow xs))
+  | .count follow =>
+    if follow = some .keys then keyedValue (.count follow) xs (thingEv sel cs xs)
+    else .nat (Count.acc.select ev (accPool follow xs))
+  | .sum f follow =>
+    if follow = some .keys then keyedValue (.sum f follow) xs (thingEv sel cs xs)
+    else .int ((Sum.on f).select ev (accPool follow xs))
+  | .min f follow =>
+    if follow = some .keys then keyedValue (.min f follow) xs (thingEv sel cs xs)
+    else .opt ((Min.on f).select ev (accPool follow xs))
+  | .max f follow =>
+    if follow = some .keys then keyedValue (.max f follow) xs (thingEv sel cs xs)
+    else .opt ((Max.on f).select ev (accPool follow xs))
   | .latestBy .prev => latestOf sel cs xs
   | .latestBy .keys => keyedOf sel cs xs
-  | .collect follow limit => collectOf sel cs follow limit xs
+  | .collect follow limit =>
+    if follow = some .keys then keyedValue (.collect follow limit) xs (thingEv sel cs xs)
+    else collectOf sel cs (follow = some .prev) limit xs
 
 /-- Whether a slot selects a record: `from` takes it and its `where` answers. -/
 def Slot.ev (s : Slot) (sel : Record → Bool) (r : Record) : Tri :=
@@ -517,11 +585,42 @@ def Slot.grouped (s : Slot) (b : By) (sel : Record → Bool) (xs : List Record) 
     ((pool.filter (ev · == .unknown)).length + (pool.filter fun r => ev r == .yes && (b.keys r).isNone).length)
     (pool.filter fun r => ev r == .yes && b.keys r == some []).length
 
-/-- A slot: grouped when it has `by`, plain otherwise. -/
+/-- The groups thing `t` joins under `by`, each once, read from the records its
+key is read from: for a payload field, the field's live setters; for an
+envelope key, the heads `from` and the envelope tests choose. `none` when one of
+them cannot be read, a live setter whose payload is not held; an envelope key
+always can. An empty list is a key readably absent: no setter, or none with a
+key, or no chosen head with a member under the prefix. -/
+def By.thingKeys (b : By) (sel : Record → Bool) (cs : List Cond) (xs : List Record) (t : String) :
+    Option (List String) :=
+  let src := match b with
+    | .payload f => setters (recordsOf t xs) f
+    | _ => (stateIn t xs).heads.filter (chosen sel cs)
+  if src.all (b.keys · |>.isSome) then some (canonSet (src.flatMap fun r => (b.keys r).getD [])) else none
+
+/-- A slot with `by` that follows `keys`: the unit is the thing. Settling,
+admission, the heads and liveness come first, over everything held. Each thing
+the slot selects joins the group of each of its keys, once in each; each group
+is the slot without `by` over the things selected into it. A selected thing
+whose tests are unknown, or whose key cannot be read, is unread at the top,
+once; one with no key is ungrouped. -/
+def Slot.keyedGrouped (s : Slot) (b : By) (sel : Record → Bool) (xs : List Record) : SlotValue :=
+  let cs := s.tests.conds
+  let ev := thingEv sel cs xs
+  let keys := b.thingKeys sel cs xs
+  let ts := thingsOf xs
+  .groups ((canonSet ((ts.filter (ev · == .yes)).flatMap fun t => (keys t).getD [])).map fun g =>
+      (g, (keyedValue s.type xs fun t =>
+        if ev t == .yes && ((keys t).getD []).contains g then .yes else .no).group))
+    ((ts.filter (ev · == .unknown)).length + (ts.filter fun t => ev t == .yes && (keys t).isNone).length)
+    (ts.filter fun t => ev t == .yes && keys t == some []).length
+
+/-- A slot: grouped when it has `by`, plain otherwise; a grouped slot that
+follows `keys` groups things. -/
 def Slot.run (s : Slot) (sel : Record → Bool) (xs : List Record) : SlotValue :=
   match s.group with
   | none => s.plain sel xs
-  | some b => s.grouped b sel xs
+  | some b => if s.type.follow = some .keys then s.keyedGrouped b sel xs else s.grouped b sel xs
 
 /-! ## The spec -/
 
@@ -649,12 +748,12 @@ def slotType (path : String) (kvs : List (String × Json)) : Parse (String × Js
   | [p] => pure p
   | _ => refuse "fold-type" path
 
-/-- `follow`: `"prev"`, on any fold type, or `"keys"`, on latest-by; always
-written on latest-by. -/
+/-- `follow`: `"prev"` or `"keys"`, on any fold type; always written on
+latest-by. -/
 def slotFollow (path t : String) : Option Json → Parse (Option Follow)
   | none => if t = "latest-by" then refuse "follow-missing" s!"{path}.follow" else pure none
   | some (.str "prev") => pure (some .prev)
-  | some (.str "keys") => if t = "latest-by" then pure (some .keys) else refuse "follow-invalid" s!"{path}.follow"
+  | some (.str "keys") => pure (some .keys)
   | some _ => refuse "follow-invalid" s!"{path}.follow"
 
 /-- `limit`: a positive whole number, on collect only. -/
@@ -681,14 +780,13 @@ def slotBy (path t : String) : Option Json → Parse (Option By)
 def foldType (path t : String) (fl : Option Follow) (limit : Option Nat) (arg : Json) :
     Parse FoldType :=
   let p := s!"{path}.{t}"
-  let follow := fl.isSome
   match t, arg with
-  | "count", .bool true => pure (.count follow)
-  | "sum", f => (FoldType.sum · follow) <$> fieldArg p f
-  | "min", f => (FoldType.min · follow) <$> fieldArg p f
-  | "max", f => (FoldType.max · follow) <$> fieldArg p f
+  | "count", .bool true => pure (.count fl)
+  | "sum", f => (FoldType.sum · fl) <$> fieldArg p f
+  | "min", f => (FoldType.min · fl) <$> fieldArg p f
+  | "max", f => (FoldType.max · fl) <$> fieldArg p f
   | "latest-by", .str "of" => pure (.latestBy (fl.getD .prev))
-  | "collect", .bool true => pure (.collect follow limit)
+  | "collect", .bool true => pure (.collect fl limit)
   | _, _ => refuse "fold-argument" p
 
 def slotTests (path : String) : Option Json → Parse Tests
@@ -829,9 +927,10 @@ def Op.toJson : Op → String × Json
 /-- A `where` map as written. -/
 def Tests.toJson (ts : Tests) : Json := .obj (ts.map fun (f, os) => (f.name, .obj (os.map Op.toJson)))
 
-/-- `follow` as written: present when the slot follows `prev`. -/
-def followJson (follow : Bool) : List (String × Json) :=
-  if follow then [("follow", .str "prev")] else []
+/-- `follow` as written: present when the slot follows. -/
+def followJson : Option Follow → List (String × Json)
+  | some f => [("follow", .str f.name)]
+  | none => []
 
 /-- `by` as written: present when the slot groups. -/
 def byJson : Option By → List (String × Json)

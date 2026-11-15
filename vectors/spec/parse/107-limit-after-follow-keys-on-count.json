@@ -1,5 +1,5 @@
 {
-  "vector": "107-follow-keys-before-limit",
+  "vector": "107-limit-after-follow-keys-on-count",
   "layer": "spec/parse",
   "laws": ["spec.parse"],
   "source": "model",
@@ -21,7 +21,7 @@
     }
   },
   "expect": {
-    "refused": "follow-invalid",
-    "path": "fold.c.follow"
+    "refused": "limit-invalid",
+    "path": "fold.c.limit"
   }
 }

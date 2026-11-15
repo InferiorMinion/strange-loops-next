@@ -404,6 +404,76 @@ theorem Acc.followed_set_decides {σ} (f : Acc σ) (ev : Record → Tri) {xs ys 
     f.select ev (wholeHeads xs) = f.select ev (wholeHeads ys) :=
   wholeHeads_answer_set_decides (f.select ev) hx hy h
 
+/-! ## Slots that follow `keys`: the set decides
+
+Selection reads each thing's heads and its records, liveness only which records
+are held (`live_congr`), and each list is put in content order, so a slot that
+follows `keys` depends only on the set held. -/
+
+theorem thingEv_set_decides (sel : Record → Bool) (cs : List Cond) {xs ys : List Record}
+    (hx : Addressed xs) (hy : Addressed ys) (h : ∀ r, r ∈ xs ↔ r ∈ ys) :
+    thingEv sel cs xs = thingEv sel cs ys := by
+  funext t
+  unfold thingEv
+  rw [stateIn_local hx hy fun r => by rw [h], thingTest_congr (recordsOf_same h t) cs]
+
+theorem setters_congr {rs rs' : List Record} (hr : Addressed rs) (hr' : Addressed rs')
+    (h : ∀ q, q ∈ rs ↔ q ∈ rs') (k : String) : setters rs k = setters rs' k :=
+  orderHeads_set_decides (addressed_filter hr _) (addressed_filter hr' _)
+    (mem_filter_congr h (liveFor_congr h k))
+
+theorem soleSetter_set_decides {xs ys : List Record} (hx : Addressed xs) (hy : Addressed ys)
+    (h : ∀ r, r ∈ xs ↔ r ∈ ys) (f : String) : soleSetter xs f = soleSetter ys f := by
+  funext t
+  unfold soleSetter
+  rw [setters_congr (addressed_recordsOf hx t) (addressed_recordsOf hy t) (recordsOf_same h t)]
+
+theorem mem_liveIn_same {xs ys : List Record} (h : ∀ r, r ∈ xs ↔ r ∈ ys) (t : String) (r : Record) :
+    r ∈ liveIn xs t ↔ r ∈ liveIn ys t :=
+  mem_filter_congr (recordsOf_same h t) (live_congr (recordsOf_same h t)) r
+
+theorem liveIn_sub {xs : List Record} {t : String} {r : Record} (h : r ∈ liveIn xs t) : r ∈ xs :=
+  (mem_filter.1 (mem_filter.1 h).1).1
+
+/-- **A slot that follows `keys` depends only on the set held**, whatever it
+selects things by. -/
+theorem keyedValue_set_decides (ty : FoldType) (ev : String → Tri) {xs ys : List Record}
+    (hx : Addressed xs) (hy : Addressed ys) (h : ∀ r, r ∈ xs ↔ r ∈ ys) :
+    keyedValue ty xs ev = keyedValue ty ys ev := by
+  unfold keyedValue
+  rw [thingsOf_same h]
+  cases ty with
+  | count => rfl
+  | sum f _ | min f _ | max f _ => simp only [soleSetter_set_decides hx hy h f]
+  | latestBy => simp only [keyedIn_set_decides hx hy h]
+  | collect _ limit =>
+    have sub : ∀ {zs : List Record} {ts : List String}, Addressed zs →
+        Addressed (ts.flatMap (liveIn zs)) := fun hz a ha b hb =>
+      hz a (by obtain ⟨_, _, ha⟩ := mem_flatMap.1 ha; exact liveIn_sub ha) b
+        (by obtain ⟨_, _, hb⟩ := mem_flatMap.1 hb; exact liveIn_sub hb)
+    simp only
+    rw [newestFirst_eq (sub (ts := (thingsOf ys).filter (ev · == .yes)) hx)
+      (sub (ts := (thingsOf ys).filter (ev · == .yes)) hy) fun r => by simp only [mem_flatMap, mem_liveIn_same h]]
+
+theorem thingKeys_set_decides (b : By) (sel : Record → Bool) (cs : List Cond) {xs ys : List Record}
+    (hx : Addressed xs) (hy : Addressed ys) (h : ∀ r, r ∈ xs ↔ r ∈ ys) :
+    b.thingKeys sel cs xs = b.thingKeys sel cs ys := by
+  funext t
+  unfold By.thingKeys
+  cases b with
+  | payload f =>
+    simp only
+    rw [setters_congr (addressed_recordsOf hx t) (addressed_recordsOf hy t) (recordsOf_same h t)]
+  | _ => simp only; rw [stateIn_local hx hy fun r => by rw [h]]
+
+/-- So does a slot with `by` that follows `keys`. -/
+theorem Slot.keyedGrouped_set_decides (s : Slot) (b : By) (sel : Record → Bool) {xs ys : List Record}
+    (hx : Addressed xs) (hy : Addressed ys) (h : ∀ r, r ∈ xs ↔ r ∈ ys) :
+    s.keyedGrouped b sel xs = s.keyedGrouped b sel ys := by
+  unfold Slot.keyedGrouped
+  simp only [thingEv_set_decides sel _ hx hy h, thingKeys_set_decides b sel _ hx hy h, thingsOf_same h,
+    keyedValue_set_decides _ _ hx hy h]
+
 /-- With each input id supplied once, a slot without `by` gives the same value
 for the same record set, whatever it selects by. -/
 theorem Slot.plain_set_decides (s : Slot) (sel : Record → Bool) {xs ys : List Record}
@@ -413,13 +483,19 @@ theorem Slot.plain_set_decides (s : Slot) (sel : Record → Bool) {xs ys : List 
   split
   all_goals dsimp only
   iterate 4
+    split
+    · rw [thingEv_set_decides _ _ hx.addressed hy.addressed h]
+      exact keyedValue_set_decides _ _ hx.addressed hy.addressed h
     simp only [accPool]
     split
     · exact congrArg _ (Acc.followed_set_decides _ _ hx.addressed hy.addressed h)
     · exact congrArg _ (Acc.select_set_decides _ _ hx hy h)
   · exact latestOf_set_decides _ _ hx.addressed hy.addressed h
   · exact keyedOf_set_decides _ _ hx.addressed hy.addressed h
-  · exact collectOf_set_decides _ _ _ _ hx.addressed hy.addressed h
+  · split
+    · rw [thingEv_set_decides _ _ hx.addressed hy.addressed h]
+      exact keyedValue_set_decides _ _ hx.addressed hy.addressed h
+    · exact collectOf_set_decides _ _ _ _ hx.addressed hy.addressed h
 
 /-! ## Grouping with `by` -/
 
@@ -478,7 +554,9 @@ theorem Slot.set_decides (s : Slot) (sel : Record → Bool) {xs ys : List Record
   unfold Slot.run
   split
   · exact s.plain_set_decides sel hx hy h
-  · exact s.grouped_set_decides _ sel hx hy h
+  · split
+    · exact s.keyedGrouped_set_decides _ sel hx.addressed hy.addressed h
+    · exact s.grouped_set_decides _ sel hx hy h
 
 /-- With each input id supplied once, the same record set gives the same spec result under any fixed replacement rule. -/
 theorem Spec.set_decides (sp : Spec) (may : Record → Record → Bool) {xs ys : List Record}
@@ -712,13 +790,13 @@ theorem collectOf_heads (sel : Record → Bool) (cs : List Cond) (limit : Option
 /-- Following `prev`, an accumulating slot reads only current records: each is
 a head of some thing. -/
 theorem mem_accPool_follow {xs : List Record} (hx : Addressed xs) {r : Record}
-    (h : r ∈ accPool true xs) : ∃ t, HeadOf xs t r := by
+    (h : r ∈ accPool (some .prev) xs) : ∃ t, HeadOf xs t r := by
   obtain ⟨t, -, ht⟩ := (mem_wholeHeads hx).1 h
   exact ⟨t, stateIn_heads hx ht⟩
 
 /-- And it reads every head, each once by id. -/
 theorem accPool_follow_heads {xs : List Record} (hx : Addressed xs) :
-    Distinct (accPool true xs) ∧ ∀ t ∈ thingsOf xs, ∀ r ∈ (stateIn t xs).heads, r ∈ accPool true xs :=
+    Distinct (accPool (some .prev) xs) ∧ ∀ t ∈ thingsOf xs, ∀ r ∈ (stateIn t xs).heads, r ∈ accPool (some .prev) xs :=
   ⟨wholeHeads_distinct hx, fun t ht _ hr => (mem_wholeHeads hx).2 ⟨t, ht, hr⟩⟩
 
 theorem Tri.and_assoc (a b c : Tri) : (a.and b).and c = a.and (b.and c) := by
@@ -774,7 +852,7 @@ theorem select_as_latest (sel : Record → Bool) (cs : List Cond) (r : Record) :
 latest-by does. -/
 theorem Count.followed_unread (sel : Record → Bool) (cs : List Cond) {xs : List Record}
     (hx : Addressed xs) :
-    (Count.acc.select (fun r => if sel r then Cond.all cs r else Tri.no) (accPool true xs)).unread =
+    (Count.acc.select (fun r => if sel r then Cond.all cs r else Tri.no) (accPool (some .prev) xs)).unread =
       (idsOf ((wholeHeads xs).filter fun r => chosen sel cs r && payTest cs r == .unknown)).length := by
   rw [Count.select_unread]
   have hd : Distinct ((wholeHeads xs).filter fun r => chosen sel cs r && payTest cs r == .unknown) :=

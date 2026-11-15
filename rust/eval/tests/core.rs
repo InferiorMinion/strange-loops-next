@@ -201,7 +201,9 @@ fn low_level_parsers_do_not_add_boundary_checks() {
             &Json::Bool(true)
         )
         .expect("raw fold keeps follow and ignores limit"),
-        FoldType::Count { follow: true }
+        FoldType::Count {
+            follow: Some(Follow::Prev)
+        }
     );
     assert_eq!(
         spec::slot_follow("p", "unknown", None).expect("raw no follow"),
@@ -261,22 +263,20 @@ fn low_level_parsers_do_not_add_boundary_checks() {
 }
 
 #[test]
-fn follow_prev_on_every_fold_type_and_keys_on_latest_by_only() {
-    // Any fold type may follow prev, and only latest-by may follow keys; any
-    // other value is refused on each.
+fn follow_prev_and_keys_on_every_fold_type() {
+    // Any fold type may follow prev or keys; any other value is refused on each.
     for t in ["count", "sum", "min", "max", "latest-by", "collect"] {
         assert_eq!(
             spec::slot_follow("p", t, Some(&json(r#""prev""#))).expect("prev"),
             Some(Follow::Prev),
             "{t}"
         );
-        let keys = spec::slot_follow("p", t, Some(&json(r#""keys""#)));
-        if t == "latest-by" {
-            assert_eq!(keys.expect("keys"), Some(Follow::Keys));
-        } else {
-            assert!(keys.is_err(), "{t} keys");
-        }
-        for raw in ["null", "false", r#""next""#] {
+        assert_eq!(
+            spec::slot_follow("p", t, Some(&json(r#""keys""#))).expect("keys"),
+            Some(Follow::Keys),
+            "{t}"
+        );
+        for raw in ["null", "false", r#""next""#, r#""Keys""#] {
             assert!(
                 spec::slot_follow("p", t, Some(&json(raw))).is_err(),
                 "{t} {raw}"

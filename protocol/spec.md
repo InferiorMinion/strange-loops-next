@@ -60,7 +60,7 @@ and optionally:
 
 | Key | Holds | On |
 |---|---|---|
-| `follow` | `"prev"` on any; `"keys"` on `latest-by` | any; always written on `latest-by` |
+| `follow` | `"prev"` or `"keys"` | any; always written on `latest-by` |
 | `limit` | a whole number, at least 1 | `collect` |
 | `by` | what to group by, below | `count`, `sum`, `min`, `max`, `collect`, following or not |
 | `where` | a `where` map, below | any |
@@ -69,7 +69,7 @@ and optionally:
 Any other key is refused.
 
 Settle forms before admission, then run heads and all slots over admitted records.
-For each slot, count each unread record id once.
+For each slot, count each unread record id once, or for a slot that follows `keys` each unread thing once.
 For `collect`, count unread candidates before the limit.
 Apply the limit only to the ordered list of matching records.
 
@@ -92,10 +92,11 @@ An erased or withheld head is still current, and only its envelope is held.
 `count` counts it, since counting reads no payload; a payload test on it answers unknown, and the head is unread.
 `sum`, `min` and `max` cannot read its field, so it is unread to them.
 
-## `latest-by` following `keys`
+## Following `keys`
 
-`{"latest-by": "of", "follow": "keys"}` reads each thing by its live setters, where `"follow": "prev"` reads it by its heads.
-`"follow": "keys"` on count, sum, min, max and collect is not built yet; it is refused with `follow-invalid`.
+`"follow": "keys"` reads each thing by its live setters, where `"follow": "prev"` reads it by its heads.
+On `latest-by` it gives each thing's keyed state; on `count`, `sum`, `min`, `max` and `collect` the unit is the thing (below).
+Slots without `follow`, and slots that follow `prev`, read records as written, each from its own payload.
 
 A record *sets* key `k` when `k` is in its `sets`, or when it has no `sets`: a record read whole sets every key.
 `"sets": []` sets no key; such a record is a pure join.
@@ -128,9 +129,20 @@ The tests then combine as a `where` map does.
 A selected thing whose tests answer yes is in `things` with its whole keyed state, every head listed whether chosen or not.
 One whose tests answer unknown adds one to `unread`.
 
+### Count, sum, min, max and collect following `keys`
+
+These slots select things as `latest-by` following `keys` does, and keep the shape of the same slot without `follow`.
+A selected thing whose tests answer unknown is unread, once; a thing is counted in `unread` at most once in a slot, whatever makes it unread.
+
+- `count` counts the selected things whose tests answer yes. A thing forked across records read whole counts once here, and once per head under `"follow": "prev"`.
+- `sum`, `min` and `max` read the field from its live setters, as a payload test does. With one live setter the field is read from it, by the rule below for a record's field. With none, or with two or more, it is unread, also when two hold the same number: no values are compared. So is a thing whose one live setter is erased or withheld, or holds no safe whole number in the field, as a record would be.
+- `collect` lists the live records of the selected things, newest first in content order, a pure-join head among them, each with what is shown of it. `limit` applies to that list of records, as it applies to the matching records of a `collect` without `follow`.
+
+A slot that follows `keys` reads a payload field only from the records that set it, so it never reads a payload key a record with `sets` does not declare.
+
 ## `by`
 
-`by` groups a slot's records by a key read from each record alone.
+`by` groups a slot's records by a key read from each record alone; following `keys`, it groups things (below).
 It is text, spelled as `where` spells fields: `env.` names the envelope, and any other name is a payload field.
 
 | `by` | A record's keys |
@@ -169,6 +181,15 @@ The groups hold each grouped record once per key, so the group sizes add up to m
 A collect's `limit` then shortens each group's `heads`, so its lists can hold fewer than the memberships.
 When every selected record has at most one key, the counts of a grouped `count`, its `ungrouped` and its `unread` add up to the `value` and `unread` of the same count without `by`.
 Every `by` but `env.about:<prefix>` gives at most one key; `env.about:<prefix>` does too over records that each mention one thing under the prefix.
+
+A slot with `by` that follows `keys` groups the things it selects, and its result has the same shape.
+Settling, admission, the heads and liveness come first, over everything held.
+
+- **A payload field:** the thing's keys are the keys of the field's live setters, each once. A live setter that is erased or withheld makes the key unread, and the thing adds one to `unread`. With no live setter, or none whose value has a key, the thing is ungrouped.
+- **`env.kind`, `env.observer` or `env.about:<prefix>`:** the thing's keys are the keys of each head `from` and the envelope tests chose, each once. The envelope is read from the heads, so a later head moves a thing from one group to another, and a pure-join head settles two heads that mention different things. Such a key is never unread; with no key the thing is ungrouped.
+- Each group is the slot without `by` over the things in it, so a forked thing is in each of its groups once, and `limit` applies to each group's list of live records.
+
+Every selected thing (every thing whose tests answer yes or unknown) is grouped, ungrouped or unread, exactly one of these.
 
 Sum, min, and max read only safe whole values from the named payload field.
 Read each number using the layer 0 binary64 rule first.
@@ -251,10 +272,10 @@ Checks run in this order, and the first that fails is the refusal:
    2. an unknown key: `unknown-key` at `fold.<name>.<key>`;
    3. not exactly one fold type: `fold-type`;
    4. `follow`: `follow-missing` on latest-by without it, `follow-invalid`
-      when it isn't `"prev"`, or `"keys"` on latest-by; at `fold.<name>.follow`.
+      when it isn't `"prev"` or `"keys"`; at `fold.<name>.follow`.
       This check stays after the fold type and before `limit` and the
-      argument, so `{"sum": "", "follow": "next"}` and
-      `{"sum": "", "follow": "keys"}` are refused at `follow`;
+      argument, so `{"sum": "", "follow": "next"}` is refused at `follow`,
+      and `{"sum": "", "follow": "keys"}` at the argument;
    5. `limit`: `limit-invalid` when it isn't a whole number of at least 1,
       or the fold type isn't collect; at `fold.<name>.limit`;
    6. `by`: `by-invalid` at `fold.<name>.by` when it isn't text, is empty,
@@ -277,8 +298,8 @@ These are the only codes.
 `spec/parse` vectors show accepted specs in parsed form.
 They keep `vertex` and `from`.
 Each source has `store`, then supplied `kind`, `about` and `of`.
-Each `fold` slot keeps its fold type, its `follow` as written, supplied `limit`, `by` as written and written `where`.
-Latest-by always writes `follow`, `"prev"` or `"keys"` as given.
+Each `fold` slot keeps its fold type, its `follow` as written, `"prev"` or `"keys"`, supplied `limit`, `by` as written and written `where`.
+Latest-by always writes `follow`.
 Times keep their spelling. Carried keys and `note` are dropped. An accepted spec's parsed form parses back to itself.
 The parser gives exactly the specs that fit (`spec.parse` in [`laws.md`](laws.md)). That is a law
 about what the parser gives; which JSON it accepts is this page, pinned by

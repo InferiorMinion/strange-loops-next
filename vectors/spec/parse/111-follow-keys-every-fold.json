@@ -1,0 +1,102 @@
+{
+  "vector": "111-follow-keys-every-fold",
+  "layer": "spec/parse",
+  "laws": ["spec.parse"],
+  "source": "model",
+  "input": {
+    "spec": {
+      "vertex": "x",
+      "from": [
+        {
+          "store": ".",
+          "kind": ["task"]
+        }
+      ],
+      "fold": {
+        "open": {
+          "count": true,
+          "follow": "keys",
+          "where": {
+            "status": {
+              "is": "open"
+            }
+          }
+        },
+        "est": {
+          "by": "env.about:project",
+          "sum": "est",
+          "follow": "keys"
+        },
+        "lo": {
+          "min": "est",
+          "follow": "keys",
+          "by": "status"
+        },
+        "hi": {
+          "max": "est",
+          "follow": "keys",
+          "by": "env.observer",
+          "where": {
+            "env.kind": {
+              "is": "task"
+            }
+          }
+        },
+        "recent": {
+          "limit": 3,
+          "collect": true,
+          "follow": "keys",
+          "by": "env.kind"
+        }
+      }
+    }
+  },
+  "expect": {
+    "parsed": {
+      "vertex": "x",
+      "from": [
+        {
+          "store": ".",
+          "kind": ["task"]
+        }
+      ],
+      "fold": {
+        "open": {
+          "count": true,
+          "follow": "keys",
+          "where": {
+            "status": {
+              "is": "open"
+            }
+          }
+        },
+        "est": {
+          "sum": "est",
+          "follow": "keys",
+          "by": "env.about:project"
+        },
+        "lo": {
+          "min": "est",
+          "follow": "keys",
+          "by": "status"
+        },
+        "hi": {
+          "max": "est",
+          "follow": "keys",
+          "by": "env.observer",
+          "where": {
+            "env.kind": {
+              "is": "task"
+            }
+          }
+        },
+        "recent": {
+          "collect": true,
+          "follow": "keys",
+          "limit": 3,
+          "by": "env.kind"
+        }
+      }
+    }
+  }
+}

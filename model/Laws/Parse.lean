@@ -467,17 +467,17 @@ theorem Slot.toJson_distinct {s : Slot} (h : s.Fits) : s.toJson.2.keysDistinct =
   · have hw := Tests.toJson_distinct (ht.resolve_left (by simpa using he))
     cases type with
     | collect follow limit =>
-      cases follow <;> cases limit <;> cases group <;>
-        simp [Slot.toJson, he, Json.keysDistinct_obj, hw, followJson, byJson]
+      rcases follow with _ | _ | _ <;> cases limit <;> cases group <;>
+        simp [Slot.toJson, he, Json.keysDistinct_obj, hw, followJson, byJson, Follow.name]
     | count follow | sum _ follow | min _ follow | max _ follow =>
-      cases follow <;> cases group <;> simp [Slot.toJson, he, Json.keysDistinct_obj, hw, followJson, byJson]
+      rcases follow with _ | _ | _ <;> cases group <;> simp [Slot.toJson, he, Json.keysDistinct_obj, hw, followJson, byJson, Follow.name]
     | latestBy f => cases f <;> cases group <;> simp [Slot.toJson, he, Json.keysDistinct_obj, hw, byJson, Follow.name]
   · cases type with
     | collect follow limit =>
-      cases follow <;> cases limit <;> cases group <;>
-        simp [Slot.toJson, he, Json.keysDistinct_obj, followJson, byJson]
+      rcases follow with _ | _ | _ <;> cases limit <;> cases group <;>
+        simp [Slot.toJson, he, Json.keysDistinct_obj, followJson, byJson, Follow.name]
     | count follow | sum _ follow | min _ follow | max _ follow =>
-      cases follow <;> cases group <;> simp [Slot.toJson, he, Json.keysDistinct_obj, followJson, byJson]
+      rcases follow with _ | _ | _ <;> cases group <;> simp [Slot.toJson, he, Json.keysDistinct_obj, followJson, byJson, Follow.name]
     | latestBy f => cases f <;> cases group <;> simp [Slot.toJson, he, Json.keysDistinct_obj, byJson, Follow.name]
 
 /-- A `by` as rendered parses back, unless the fold type takes none. -/
@@ -499,12 +499,12 @@ theorem parseSlot_toJson {s : Slot} (h : s.Fits) : parseSlot s.name s.toJson.2 =
         (ht.resolve_left (by simpa using he))
       cases type with
       | collect follow limit =>
-        cases follow <;> cases limit <;>
-          simp_all [Slot.toJson, parseSlot, slotType, slotFollow, slotLimit, slotBy, byJson, foldType, slotTests, checkKeys, slotKeys, foldTypes, List.lookup, bind, Except.bind, pure, Except.pure, FoldType.Fits, followJson]
+        rcases follow with _ | _ | _ <;> cases limit <;>
+          simp_all [Slot.toJson, parseSlot, slotType, slotFollow, slotLimit, slotBy, byJson, foldType, slotTests, checkKeys, slotKeys, foldTypes, List.lookup, bind, Except.bind, pure, Except.pure, FoldType.Fits, followJson, Follow.name]
       | count follow | sum _ follow | min _ follow | max _ follow =>
-        cases follow <;>
+        rcases follow with _ | _ | _ <;>
         simp_all [Slot.toJson, parseSlot, slotType, slotFollow, slotLimit, slotBy, byJson, foldType, slotTests, checkKeys, slotKeys, foldTypes, List.lookup, bind, Except.bind, pure,
-          Except.pure, FoldType.Fits, fieldArg, Functor.map, Except.map, followJson]
+          Except.pure, FoldType.Fits, fieldArg, Functor.map, Except.map, followJson, Follow.name]
       | latestBy f =>
         cases f <;>
         simp_all [Slot.toJson, parseSlot, slotType, slotFollow, slotLimit, slotBy, byJson, foldType, slotTests, checkKeys, slotKeys, foldTypes, List.lookup, bind, Except.bind, pure, Except.pure, FoldType.Fits, Follow.name]
@@ -512,12 +512,12 @@ theorem parseSlot_toJson {s : Slot} (h : s.Fits) : parseSlot s.name s.toJson.2 =
       subst h0
       cases type with
       | collect follow limit =>
-        cases follow <;> cases limit <;>
-          simp_all [Slot.toJson, parseSlot, slotType, slotFollow, slotLimit, slotBy, byJson, foldType, slotTests, checkKeys, slotKeys, foldTypes, List.lookup, bind, Except.bind, pure, Except.pure, FoldType.Fits, followJson]
+        rcases follow with _ | _ | _ <;> cases limit <;>
+          simp_all [Slot.toJson, parseSlot, slotType, slotFollow, slotLimit, slotBy, byJson, foldType, slotTests, checkKeys, slotKeys, foldTypes, List.lookup, bind, Except.bind, pure, Except.pure, FoldType.Fits, followJson, Follow.name]
       | count follow | sum _ follow | min _ follow | max _ follow =>
-        cases follow <;>
+        rcases follow with _ | _ | _ <;>
         simp_all [Slot.toJson, parseSlot, slotType, slotFollow, slotLimit, slotBy, byJson, foldType, slotTests, checkKeys, slotKeys, foldTypes, List.lookup, bind, Except.bind, pure,
-          Except.pure, FoldType.Fits, fieldArg, Functor.map, Except.map, followJson]
+          Except.pure, FoldType.Fits, fieldArg, Functor.map, Except.map, followJson, Follow.name]
       | latestBy f =>
         cases f <;>
         simp_all [Slot.toJson, parseSlot, slotType, slotFollow, slotLimit, slotBy, byJson, foldType, slotTests, checkKeys, slotKeys, foldTypes, List.lookup, bind, Except.bind, pure, Except.pure, FoldType.Fits, Follow.name]
@@ -532,23 +532,23 @@ theorem parseSlot_toJson {s : Slot} (h : s.Fits) : parseSlot s.name s.toJson.2 =
         (ht.resolve_left (by simpa using he))
       cases type with
       | collect follow limit =>
-        cases follow <;> cases limit <;>
-          simp_all [Slot.toJson, parseSlot, slotType, slotFollow, slotLimit, byJson, foldType, slotTests, checkKeys, slotKeys, foldTypes, List.lookup, bind, Except.bind, pure, Except.pure, FoldType.Fits, FoldType.Groups, followJson]
+        rcases follow with _ | _ | _ <;> cases limit <;>
+          simp_all [Slot.toJson, parseSlot, slotType, slotFollow, slotLimit, byJson, foldType, slotTests, checkKeys, slotKeys, foldTypes, List.lookup, bind, Except.bind, pure, Except.pure, FoldType.Fits, FoldType.Groups, followJson, Follow.name]
       | count follow | sum _ follow | min _ follow | max _ follow =>
-        cases follow <;>
+        rcases follow with _ | _ | _ <;>
         simp_all [Slot.toJson, parseSlot, slotType, slotFollow, slotLimit, byJson, foldType, slotTests, checkKeys, slotKeys, foldTypes, List.lookup, bind, Except.bind, pure,
-          Except.pure, FoldType.Fits, fieldArg, Functor.map, Except.map, followJson]
+          Except.pure, FoldType.Fits, fieldArg, Functor.map, Except.map, followJson, Follow.name]
       | latestBy _ => exact absurd hgr id
     · have h0 : tests = [] := by simpa using he
       subst h0
       cases type with
       | collect follow limit =>
-        cases follow <;> cases limit <;>
-          simp_all [Slot.toJson, parseSlot, slotType, slotFollow, slotLimit, byJson, foldType, slotTests, checkKeys, slotKeys, foldTypes, List.lookup, bind, Except.bind, pure, Except.pure, FoldType.Fits, FoldType.Groups, followJson]
+        rcases follow with _ | _ | _ <;> cases limit <;>
+          simp_all [Slot.toJson, parseSlot, slotType, slotFollow, slotLimit, byJson, foldType, slotTests, checkKeys, slotKeys, foldTypes, List.lookup, bind, Except.bind, pure, Except.pure, FoldType.Fits, FoldType.Groups, followJson, Follow.name]
       | count follow | sum _ follow | min _ follow | max _ follow =>
-        cases follow <;>
+        rcases follow with _ | _ | _ <;>
         simp_all [Slot.toJson, parseSlot, slotType, slotFollow, slotLimit, byJson, foldType, slotTests, checkKeys, slotKeys, foldTypes, List.lookup, bind, Except.bind, pure,
-          Except.pure, FoldType.Fits, fieldArg, Functor.map, Except.map, followJson]
+          Except.pure, FoldType.Fits, fieldArg, Functor.map, Except.map, followJson, Follow.name]
       | latestBy _ => exact absurd hgr id
 
 theorem Source.toJson_distinct (s : Source) : s.toJson.keysDistinct = true := by

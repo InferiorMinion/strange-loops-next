@@ -572,3 +572,19 @@ test("a keyed thing's keys are written in UTF-16 order, integer-like names inclu
   const keys = readJson(text).members[0][1].members[0][1].members[0][1].members[0][1];
   assert.deepEqual(keys.members.map(([k]) => k), ["10", "2", "a"]);
 });
+
+// A slot that follows keys groups things: each live setter's key, written in
+// UTF-16 order as the model writes groups. A thing whose two live setters of
+// the field hold different keys is in both groups, and counted once in each.
+test("a keyed count groups each thing by its live setters' keys, in UTF-16 order", () => {
+  const root = { ...record(1, "task:a"), fields: { k: "a" } };
+  const set = (n, k) => ({ ...record(n, "task:a", [root.id]), sets: ["k"], fields: { k } });
+  const other = { ...record(4, "task:b"), fields: { k: "10" } };
+  const records = [root, set(2, "2"), set(3, "10"), other];
+  const { parsed } = parseSpecText('{"vertex":"v","from":[{"store":"."}],"fold":{"s":{"count":true,"follow":"keys","by":"k"},"t":{"count":true,"follow":"keys"},"h":{"count":true,"follow":"prev"}}}');
+  const out = runSpec(parsed, records);
+  const groups = readJson(slotsText(out)).members[0][1].members[0][1];
+  assert.deepEqual(groups.members.map(([k]) => k), ["10", "2"]);
+  assert.deepEqual({ ...out.s.groups }, { 10: { value: 2, unread: 0 }, 2: { value: 1, unread: 0 } });
+  assert.deepEqual([out.t.value, out.h.value], [2, 3]);
+});

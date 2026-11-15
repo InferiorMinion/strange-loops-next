@@ -1,0 +1,679 @@
+{
+  "vector": "49-keys-whole-read",
+  "layer": "spec/run",
+  "laws": ["spec.set", "keyed.whole-read", "spec.follow"],
+  "source": "model",
+  "input": {
+    "spec": {
+      "vertex": "whole-read",
+      "from": [
+        {
+          "store": ".",
+          "kind": ["task"]
+        }
+      ],
+      "fold": {
+        "count": {
+          "count": true,
+          "follow": "keys"
+        },
+        "count-heads": {
+          "count": true,
+          "follow": "prev"
+        },
+        "open": {
+          "count": true,
+          "where": {
+            "status": {
+              "is": "open"
+            }
+          },
+          "follow": "keys"
+        },
+        "open-heads": {
+          "count": true,
+          "where": {
+            "status": {
+              "is": "open"
+            }
+          },
+          "follow": "prev"
+        },
+        "sum": {
+          "sum": "est",
+          "follow": "keys"
+        },
+        "sum-heads": {
+          "sum": "est",
+          "follow": "prev"
+        },
+        "min": {
+          "min": "est",
+          "follow": "keys"
+        },
+        "min-heads": {
+          "min": "est",
+          "follow": "prev"
+        },
+        "max": {
+          "max": "est",
+          "follow": "keys"
+        },
+        "max-heads": {
+          "max": "est",
+          "follow": "prev"
+        },
+        "collect": {
+          "collect": true,
+          "limit": 3,
+          "follow": "keys"
+        },
+        "collect-heads": {
+          "collect": true,
+          "limit": 3,
+          "follow": "prev"
+        },
+        "per-project": {
+          "count": true,
+          "by": "env.about:project",
+          "follow": "keys"
+        },
+        "per-project-heads": {
+          "count": true,
+          "by": "env.about:project",
+          "follow": "prev"
+        },
+        "est-per-status": {
+          "sum": "est",
+          "by": "status",
+          "follow": "keys"
+        },
+        "est-per-status-heads": {
+          "sum": "est",
+          "by": "status",
+          "follow": "prev"
+        },
+        "collect-per-project": {
+          "collect": true,
+          "by": "env.about:project",
+          "follow": "keys"
+        },
+        "collect-per-project-heads": {
+          "collect": true,
+          "by": "env.about:project",
+          "follow": "prev"
+        }
+      }
+    },
+    "orders": [
+      [
+        {
+          "id": "r:00000000000000000000000000000000000000000000000009gg",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": ["project:x"],
+          "of": "task:1",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:01:40Z",
+          "occurred": "2026-10-01T00:01:40Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "est": 3
+          }
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000009h0",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": ["project:y"],
+          "of": "task:1",
+          "value": "",
+          "prev": ["r:00000000000000000000000000000000000000000000000009gg"],
+          "emitted": "2026-10-01T00:03:20Z",
+          "occurred": "2026-10-01T00:03:20Z",
+          "n": 0,
+          "fields": {
+            "status": "closed",
+            "est": 4
+          }
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000009hg",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": ["project:x"],
+          "of": "task:2",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:01:50Z",
+          "occurred": "2026-10-01T00:01:50Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "est": 5
+          }
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000009i0",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": ["project:y"],
+          "of": "task:3",
+          "prev": [],
+          "emitted": "2026-10-01T00:02:00Z",
+          "occurred": "2026-10-01T00:02:00Z",
+          "shown": "withheld"
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000009ig",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:4",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:02:10Z",
+          "occurred": "2026-10-01T00:02:10Z",
+          "n": 0,
+          "fields": {
+            "status": "open"
+          }
+        }
+      ],
+      [
+        {
+          "id": "r:00000000000000000000000000000000000000000000000009h0",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": ["project:y"],
+          "of": "task:1",
+          "value": "",
+          "prev": ["r:00000000000000000000000000000000000000000000000009gg"],
+          "emitted": "2026-10-01T00:03:20Z",
+          "occurred": "2026-10-01T00:03:20Z",
+          "n": 0,
+          "fields": {
+            "status": "closed",
+            "est": 4
+          }
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000009hg",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": ["project:x"],
+          "of": "task:2",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:01:50Z",
+          "occurred": "2026-10-01T00:01:50Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "est": 5
+          }
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000009i0",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": ["project:y"],
+          "of": "task:3",
+          "prev": [],
+          "emitted": "2026-10-01T00:02:00Z",
+          "occurred": "2026-10-01T00:02:00Z",
+          "shown": "withheld"
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000009ig",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:4",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:02:10Z",
+          "occurred": "2026-10-01T00:02:10Z",
+          "n": 0,
+          "fields": {
+            "status": "open"
+          }
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000009gg",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": ["project:x"],
+          "of": "task:1",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:01:40Z",
+          "occurred": "2026-10-01T00:01:40Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "est": 3
+          }
+        }
+      ],
+      [
+        {
+          "id": "r:00000000000000000000000000000000000000000000000009hg",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": ["project:x"],
+          "of": "task:2",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:01:50Z",
+          "occurred": "2026-10-01T00:01:50Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "est": 5
+          }
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000009i0",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": ["project:y"],
+          "of": "task:3",
+          "prev": [],
+          "emitted": "2026-10-01T00:02:00Z",
+          "occurred": "2026-10-01T00:02:00Z",
+          "shown": "withheld"
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000009ig",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:4",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:02:10Z",
+          "occurred": "2026-10-01T00:02:10Z",
+          "n": 0,
+          "fields": {
+            "status": "open"
+          }
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000009gg",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": ["project:x"],
+          "of": "task:1",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:01:40Z",
+          "occurred": "2026-10-01T00:01:40Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "est": 3
+          }
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000009h0",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": ["project:y"],
+          "of": "task:1",
+          "value": "",
+          "prev": ["r:00000000000000000000000000000000000000000000000009gg"],
+          "emitted": "2026-10-01T00:03:20Z",
+          "occurred": "2026-10-01T00:03:20Z",
+          "n": 0,
+          "fields": {
+            "status": "closed",
+            "est": 4
+          }
+        }
+      ],
+      [
+        {
+          "id": "r:00000000000000000000000000000000000000000000000009i0",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": ["project:y"],
+          "of": "task:3",
+          "prev": [],
+          "emitted": "2026-10-01T00:02:00Z",
+          "occurred": "2026-10-01T00:02:00Z",
+          "shown": "withheld"
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000009ig",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:4",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:02:10Z",
+          "occurred": "2026-10-01T00:02:10Z",
+          "n": 0,
+          "fields": {
+            "status": "open"
+          }
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000009gg",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": ["project:x"],
+          "of": "task:1",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:01:40Z",
+          "occurred": "2026-10-01T00:01:40Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "est": 3
+          }
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000009h0",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": ["project:y"],
+          "of": "task:1",
+          "value": "",
+          "prev": ["r:00000000000000000000000000000000000000000000000009gg"],
+          "emitted": "2026-10-01T00:03:20Z",
+          "occurred": "2026-10-01T00:03:20Z",
+          "n": 0,
+          "fields": {
+            "status": "closed",
+            "est": 4
+          }
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000009hg",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": ["project:x"],
+          "of": "task:2",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:01:50Z",
+          "occurred": "2026-10-01T00:01:50Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "est": 5
+          }
+        }
+      ],
+      [
+        {
+          "id": "r:00000000000000000000000000000000000000000000000009ig",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:4",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:02:10Z",
+          "occurred": "2026-10-01T00:02:10Z",
+          "n": 0,
+          "fields": {
+            "status": "open"
+          }
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000009gg",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": ["project:x"],
+          "of": "task:1",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:01:40Z",
+          "occurred": "2026-10-01T00:01:40Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "est": 3
+          }
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000009h0",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": ["project:y"],
+          "of": "task:1",
+          "value": "",
+          "prev": ["r:00000000000000000000000000000000000000000000000009gg"],
+          "emitted": "2026-10-01T00:03:20Z",
+          "occurred": "2026-10-01T00:03:20Z",
+          "n": 0,
+          "fields": {
+            "status": "closed",
+            "est": 4
+          }
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000009hg",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": ["project:x"],
+          "of": "task:2",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:01:50Z",
+          "occurred": "2026-10-01T00:01:50Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "est": 5
+          }
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000009i0",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": ["project:y"],
+          "of": "task:3",
+          "prev": [],
+          "emitted": "2026-10-01T00:02:00Z",
+          "occurred": "2026-10-01T00:02:00Z",
+          "shown": "withheld"
+        }
+      ]
+    ]
+  },
+  "expect": {
+    "count": {
+      "value": 4,
+      "unread": 0
+    },
+    "count-heads": {
+      "value": 4,
+      "unread": 0
+    },
+    "open": {
+      "value": 2,
+      "unread": 1
+    },
+    "open-heads": {
+      "value": 2,
+      "unread": 1
+    },
+    "sum": {
+      "value": 9,
+      "unread": 2
+    },
+    "sum-heads": {
+      "value": 9,
+      "unread": 2
+    },
+    "min": {
+      "value": 4,
+      "unread": 2
+    },
+    "min-heads": {
+      "value": 4,
+      "unread": 2
+    },
+    "max": {
+      "value": 5,
+      "unread": 2
+    },
+    "max-heads": {
+      "value": 5,
+      "unread": 2
+    },
+    "collect": {
+      "heads": [
+        {
+          "id": "r:00000000000000000000000000000000000000000000000009h0",
+          "shown": "here"
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000009ig",
+          "shown": "here"
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000009i0",
+          "shown": "withheld"
+        }
+      ],
+      "unread": 0
+    },
+    "collect-heads": {
+      "heads": [
+        {
+          "id": "r:00000000000000000000000000000000000000000000000009h0",
+          "shown": "here"
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000009ig",
+          "shown": "here"
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000009i0",
+          "shown": "withheld"
+        }
+      ],
+      "unread": 0
+    },
+    "per-project": {
+      "groups": {
+        "x": {
+          "value": 1,
+          "unread": 0
+        },
+        "y": {
+          "value": 2,
+          "unread": 0
+        }
+      },
+      "unread": 0,
+      "ungrouped": 1
+    },
+    "per-project-heads": {
+      "groups": {
+        "x": {
+          "value": 1,
+          "unread": 0
+        },
+        "y": {
+          "value": 2,
+          "unread": 0
+        }
+      },
+      "unread": 0,
+      "ungrouped": 1
+    },
+    "est-per-status": {
+      "groups": {
+        "closed": {
+          "value": 4,
+          "unread": 0
+        },
+        "open": {
+          "value": 5,
+          "unread": 1
+        }
+      },
+      "unread": 1,
+      "ungrouped": 0
+    },
+    "est-per-status-heads": {
+      "groups": {
+        "closed": {
+          "value": 4,
+          "unread": 0
+        },
+        "open": {
+          "value": 5,
+          "unread": 1
+        }
+      },
+      "unread": 1,
+      "ungrouped": 0
+    },
+    "collect-per-project": {
+      "groups": {
+        "x": {
+          "heads": [
+            {
+              "id": "r:00000000000000000000000000000000000000000000000009hg",
+              "shown": "here"
+            }
+          ],
+          "unread": 0
+        },
+        "y": {
+          "heads": [
+            {
+              "id": "r:00000000000000000000000000000000000000000000000009h0",
+              "shown": "here"
+            },
+            {
+              "id": "r:00000000000000000000000000000000000000000000000009i0",
+              "shown": "withheld"
+            }
+          ],
+          "unread": 0
+        }
+      },
+      "unread": 0,
+      "ungrouped": 1
+    },
+    "collect-per-project-heads": {
+      "groups": {
+        "x": {
+          "heads": [
+            {
+              "id": "r:00000000000000000000000000000000000000000000000009hg",
+              "shown": "here"
+            }
+          ],
+          "unread": 0
+        },
+        "y": {
+          "heads": [
+            {
+              "id": "r:00000000000000000000000000000000000000000000000009h0",
+              "shown": "here"
+            },
+            {
+              "id": "r:00000000000000000000000000000000000000000000000009i0",
+              "shown": "withheld"
+            }
+          ],
+          "unread": 0
+        }
+      },
+      "unread": 0,
+      "ungrouped": 1
+    }
+  }
+}

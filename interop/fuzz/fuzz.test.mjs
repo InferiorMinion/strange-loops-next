@@ -28,7 +28,7 @@ async function* jsonFiles(dir) {
 test('generation is deterministic, varied, balanced, and independent of scheduling', () => {
   const corpus = FAMILIES.flatMap(f => Array.from({ length: 8 }, (_, i) => generate('stable', i, f)));
   assert.equal(createHash('sha256').update(JSON.stringify(corpus)).digest('hex'),
-    '9ca168522e7771839d765506efd47c54fe9ad15fb7be879866267324d6830619');
+    '7d8cc7f8e2dab910b8a4c8165e7494e1dc34ff0b4577106bc0b2280b07751d2a');
   const layers = new Set();
   for (const family of FAMILIES) {
     const seen = new Set();
@@ -79,7 +79,6 @@ test('specs fold over heads with count, sum, min and max, over revised, forked a
       assert.ok(['now', 'now-total', 'now-least', 'now-greatest'].some(k => spec.input.spec.fold[k].follow !== 'prev'));
       continue;
     }
-    if (spec.fuzz.nearMiss === 'follow-keys-elsewhere') continue;
     if (spec.input.spec_text) continue;
     for (const k of ['now', 'now-flagged', 'now-total', 'now-least', 'now-greatest', 'now-score', 'now-flagged-total', 'now-flagged-greatest']) {
       assert.equal(spec.input.spec.fold[k].follow, 'prev', k);
@@ -95,13 +94,14 @@ test('specs fold over heads with count, sum, min and max, over revised, forked a
 
 test('keyed latest-by slots read things with sets, chains, forks, joins and unheld setters', async () => {
   const { parseSpec, runSpec } = await import('../js/spec.mjs');
-  const seen = { keyedRefused: 0, spelling: 0, withSets: 0, pureJoin: 0, joins: 0, liveBeyondHeads: 0,
+  const seen = { limitRefused: 0, spelling: 0, withSets: 0, pureJoin: 0, joins: 0, liveBeyondHeads: 0,
     twoSetters: 0, unheldSetter: 0, unread: 0, selected: 0, notSelected: 0 };
   for (let i = 0; i < 1024; i++) {
     const v = generate('keyed', i, 'spec');
-    if (v.fuzz.nearMiss === 'follow-keys-elsewhere' || v.fuzz.nearMiss === 'follow-keys-spelling') {
-      seen[v.fuzz.nearMiss === 'follow-keys-spelling' ? 'spelling' : 'keyedRefused']++;
-      assert.equal(parseSpec(v.input.spec).refused, 'follow-invalid', v.fuzz.nearMiss);
+    if (v.fuzz.nearMiss === 'follow-keys-limit' || v.fuzz.nearMiss === 'follow-keys-spelling') {
+      const spelling = v.fuzz.nearMiss === 'follow-keys-spelling';
+      seen[spelling ? 'spelling' : 'limitRefused']++;
+      assert.equal(parseSpec(v.input.spec).refused, spelling ? 'follow-invalid' : 'limit-invalid', v.fuzz.nearMiss);
       continue;
     }
     if (v.layer !== 'spec/run') continue;
@@ -125,7 +125,57 @@ test('keyed latest-by slots read things with sets, chains, forks, joins and unhe
     }
   }
   // The two refusals are one-in-eighty near misses of spec/parse; the rest are counts of runs.
-  for (const [k, n] of Object.entries(seen)) assert.ok(n > (['keyedRefused', 'spelling'].includes(k) ? 0 : 50), `${k}: ${JSON.stringify(seen)}`);
+  for (const [k, n] of Object.entries(seen)) assert.ok(n > (['limitRefused', 'spelling'].includes(k) ? 0 : 50), `${k}: ${JSON.stringify(seen)}`);
+});
+
+test('count, sum, min, max and collect follow keys over forks, setters, groups and unread things', async () => {
+  const { parseSpec, runSpec } = await import('../js/spec.mjs');
+  const seen = { forkOnce: 0, twoSettersUnread: 0, sumRead: 0, liveBeyondHeads: 0, limited: 0,
+    twoGroups: 0, payloadGroups: 0, ungrouped: 0, unreadThings: 0, unreadKey: 0, differsFromPrev: 0 };
+  for (let i = 0; i < 1024; i++) {
+    const v = generate('keyed-slots', i, 'spec');
+    if (v.layer !== 'spec/run') continue;
+    const parsed = parseSpec(v.input.spec).parsed;
+    let out;
+    try { out = runSpec(parsed, v.input.orders[0]); } catch { continue; }
+    const items = out['keys-items'], all = runSpec({ ...parsed, fold: { a: { collect: true, follow: 'keys' } } }, v.input.orders[0]).a;
+    seen.forkOnce += out['keys-count'].value < out.now.value;
+    seen.differsFromPrev += out['keys-total'].value !== out['now-total'].value;
+    seen.twoSettersUnread += out['keys-total'].unread > 0;
+    seen.sumRead += out['keys-total'].value !== 0;
+    seen.liveBeyondHeads += all.heads.length > out.now.value;
+    seen.limited += items.heads.length < all.heads.length;
+    seen.twoGroups += Object.keys(out['keys-by-mention'].groups).length > 1;
+    seen.payloadGroups += Object.keys(out['keys-by-tag'].groups).length > 0;
+    seen.ungrouped += out['keys-by-mention'].ungrouped > 0;
+    seen.unreadThings += out['keys-flagged'].unread > 0;
+    seen.unreadKey += out['keys-by-flag-greatest'].unread > 0;
+  }
+  for (const [k, n] of Object.entries(seen)) assert.ok(n > 30, `${k}: ${JSON.stringify(seen)}`);
+});
+
+test('keyed slots with several payload tests meet a test answering no beside one answering unknown', async () => {
+  const { parseSpec, thingAnswer } = await import('../js/spec.mjs');
+  const { recordsByThing } = await import('../js/fold.mjs');
+  const several = (w) => Object.keys(w ?? {}).filter((f) => !f.startsWith('env.')).length > 1;
+  let slots = 0, both = 0, three = 0;
+  for (let i = 0; i < 512; i++) {
+    const v = generate('several', i, 'spec');
+    if (v.layer !== 'spec/run') continue;
+    const parsed = parseSpec(v.input.spec).parsed;
+    if (!parsed) continue;
+    const names = Object.keys(parsed.fold).filter((n) => parsed.fold[n].follow === 'keys' && several(parsed.fold[n].where));
+    slots += names.length;
+    three += names.some((n) => Object.keys(parsed.fold[n].where).length > 2);
+    let hit = false;
+    for (const [, rs] of recordsByThing(v.input.orders[0])) for (const n of names) {
+      const as = Object.entries(parsed.fold[n].where).filter(([f]) => !f.startsWith('env.')).map(([f, w]) => thingAnswer({ [f]: w }, rs));
+      hit ||= as.includes('no') && as.includes('unknown');
+    }
+    both += hit;
+  }
+  // Every fold type has such a slot, one with three tests, and many runs hold a thing where they disagree.
+  assert.ok(slots > 500 && three > 50 && both > 50, `${slots} ${three} ${both}`);
 });
 
 test('specs group by every by form, over revised, forked, erased and withheld records', async () => {
