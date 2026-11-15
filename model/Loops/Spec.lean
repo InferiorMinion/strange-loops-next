@@ -678,17 +678,17 @@ def slotBy (path t : String) : Option Json → Parse (Option By)
   | some _ => refuse "by-invalid" s!"{path}.by"
 
 /-- The fold type with its argument. -/
-def foldType (path t : String) (follow : Option Follow) (limit : Option Nat) (arg : Json) :
+def foldType (path t : String) (fl : Option Follow) (limit : Option Nat) (arg : Json) :
     Parse FoldType :=
   let p := s!"{path}.{t}"
-  let follow' := follow.isSome
+  let follow := fl.isSome
   match t, arg with
-  | "count", .bool true => pure (.count follow')
-  | "sum", f => (FoldType.sum · follow') <$> fieldArg p f
-  | "min", f => (FoldType.min · follow') <$> fieldArg p f
-  | "max", f => (FoldType.max · follow') <$> fieldArg p f
-  | "latest-by", .str "of" => pure (.latestBy (follow.getD .prev))
-  | "collect", .bool true => pure (.collect follow' limit)
+  | "count", .bool true => pure (.count follow)
+  | "sum", f => (FoldType.sum · follow) <$> fieldArg p f
+  | "min", f => (FoldType.min · follow) <$> fieldArg p f
+  | "max", f => (FoldType.max · follow) <$> fieldArg p f
+  | "latest-by", .str "of" => pure (.latestBy (fl.getD .prev))
+  | "collect", .bool true => pure (.collect follow limit)
   | _, _ => refuse "fold-argument" p
 
 def slotTests (path : String) : Option Json → Parse Tests
