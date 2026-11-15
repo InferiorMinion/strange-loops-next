@@ -18,6 +18,22 @@ The survivors are `finish-json-hexdigit` and `last-spec-tests-conds`, the two sc
 Each generator assertion keeps its text in the summary.
 Build rejections are not semantic proof kills: 243 entries stop the build, and this run did not read their logs to say whether each stops at a property or at a lemma that restates the mutated definition.
 
+**The logs were read afterwards**, by margins-claude on 2026-11-15 (margins `notes/2026-11-15-mutation-audit.md`, with every entry in `mut/audit-2026-11-15.json`).
+By the first error of each log, 17 entries stop at a restatement of the mutated definition, 6 at a restatement of one branch of it, 5 at a closed example, 46 at an invariance law most mutants still satisfy, 166 at a property, and 3 at a warning alone (`things-no-self-anchor`, `d8-subst-of-skipped`, `shape-not-object-skipped`).
+Reading does not settle what a rejection is worth, since a proof can break while its statement still holds of the mutant, so each of the 243 was also run at `d32ca25` with the generator built alone, without the laws.
+**230 of the 243 are also caught by something that runs:** a vector differs for 113, an assertion inside the generator fails for 104, the generator does not build for 7, and `lake exe checks` fails for 6. The three warning-only entries are among them.
+The 13 that stood on proofs alone:
+
+| Kind | Entries |
+|---|---|
+| Mutates a `Prop` that only laws read | `last-families-tri-refines`, `last-things-envonly`, `last-things-forms`, `extra-record-addressed` |
+| Cannot be reached before standing | `things-drop-may` |
+| Equivalent at run time, by argument and no proof | `finish-json-json-canonmembers`, `finish-json-sortby`, `things-here-last`, `spec-unread-duplicates`, `families-drop-readable` |
+| Stated behaviour that nothing running held | `extra-spec-parsefield`, `coverage-spec-json-repeatin`, `wide-stored-081` |
+
+The last three were gaps: a `where` field with no tests, the order in which an array is searched for a repeated key (the law it stopped at was still true of the mutant), and `opens`, which nothing ran. Merge request !45 pins each with vectors, a law and a runtime check.
+The runner now records this second verdict itself for every build rejection (`runtime.verdict`, [README](README.md)), so a later full run names the entries on proofs alone without a separate pass.
+
 **Two runs make these counts.** The first judged 268 entries: 226 build rejections, 22 vector differences, 18 generator assertions and the 2 survivors.
 The other 23 timed out in the build, which is an error and not a kill: 22 in the one shard that ran on a slower CI runner, where every entry from 17:07 UTC on timed out, and `coverage-time-instant-` in another shard.
 A build log read from one of them was still building at step 100 of 104.

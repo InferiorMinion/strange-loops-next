@@ -45,6 +45,26 @@ Results are saved after each mutation.
 Command logs are in the output path plus `.logs`.
 A nonzero build is `rejected-by-build`, with `buildRejectionNeedsAudit` set.
 Inspect its log to locate the rejection; the status makes no semantic-proof claim.
+
+A build rejection also gets a second verdict, in `runtime.verdict`: does anything that runs object to the mutant?
+The generator, `run` and `checks` import no law, so they build where a proof or a lint stopped `lake build --wfail`.
+The runner builds those three alone, generates into a copy and compares, then runs `lake exe run --check` over the vectors and `lake exe checks`, as the model gate does, and stops at the first that objects:
+
+| `runtime.verdict` | Means |
+|---|---|
+| `unbuilt` | the generator, `run` or `checks` does not build: a fixture checked by `decide`, or a type |
+| `generator` | the generator exits nonzero: an assertion inside it |
+| `vector` | a generated vector differs; `runtime.changedPaths` lists them |
+| `run-check` | a committed vector's answer no longer follows from its input |
+| `checks` | an `ensure` line of `Gen/Checks.lean` fails |
+| `none` | nothing that runs objects: only proofs, or a lint, stand against the mutant |
+| `unknown` | a step timed out or could not start |
+
+The second verdict never changes the status, and its commands are in `runtime.commands`, not in `commands`.
+It is no verdict on the proofs: it does not say which law fails, or whether the failing statement is false of the mutant or only its proof broke.
+`none` does not mean the mutant is equivalent. It names the build rejections whose logs are worth reading: a mutated `Prop` that only laws read, a mutant no run can reach, or behaviour that no vector or check holds.
+`merge.mjs` counts the second verdicts and lists the entries with `none` as `on proofs alone`.
+`--no-second-verdict` skips it.
 A timeout, spawn failure, or generator failure is an error, not a kill.
 Survivors do not cause a nonzero exit.
 Signals stop the active process group and return a signal-specific exit code.
