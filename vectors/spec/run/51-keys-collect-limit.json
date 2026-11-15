@@ -1,0 +1,4002 @@
+{
+  "vector": "51-keys-collect-limit",
+  "layer": "spec/run",
+  "laws": ["spec.set", "keyed.slots", "keyed.by", "result.unread"],
+  "source": "model",
+  "input": {
+    "spec": {
+      "vertex": "newest-things",
+      "from": [
+        {
+          "store": ".",
+          "kind": ["task"]
+        }
+      ],
+      "fold": {
+        "all": {
+          "collect": true,
+          "follow": "keys"
+        },
+        "one": {
+          "collect": true,
+          "follow": "keys",
+          "limit": 1
+        },
+        "two": {
+          "collect": true,
+          "follow": "keys",
+          "limit": 2
+        },
+        "three": {
+          "collect": true,
+          "follow": "keys",
+          "limit": 3
+        },
+        "four": {
+          "collect": true,
+          "follow": "keys",
+          "limit": 4
+        },
+        "many": {
+          "collect": true,
+          "follow": "keys",
+          "limit": 9
+        },
+        "closed-one": {
+          "collect": true,
+          "follow": "keys",
+          "limit": 1,
+          "where": {
+            "status": {
+              "is": "closed"
+            }
+          }
+        },
+        "per-observer-one": {
+          "collect": true,
+          "follow": "keys",
+          "limit": 1,
+          "by": "env.observer"
+        },
+        "per-observer-two": {
+          "collect": true,
+          "follow": "keys",
+          "limit": 2,
+          "by": "env.observer"
+        },
+        "per-status-one": {
+          "collect": true,
+          "follow": "keys",
+          "limit": 1,
+          "by": "status"
+        }
+      }
+    },
+    "orders": [
+      [
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000a8g",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:a",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:01:40Z",
+          "occurred": "2026-10-01T00:01:40Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "title": "a",
+            "est": 1
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000a90",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:a",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000a8g"],
+          "emitted": "2026-10-01T00:05:00Z",
+          "occurred": "2026-10-01T00:05:00Z",
+          "sets": ["status"],
+          "n": 0,
+          "fields": {
+            "status": "closed"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000a9g",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:a",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000a90"],
+          "emitted": "2026-10-01T00:08:20Z",
+          "occurred": "2026-10-01T00:08:20Z",
+          "sets": ["title"],
+          "n": 0,
+          "fields": {
+            "title": "b"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000aa0",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:b",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:03:20Z",
+          "occurred": "2026-10-01T00:03:20Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "title": "c"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000aag",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:b",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000aa0"],
+          "emitted": "2026-10-01T00:06:40Z",
+          "occurred": "2026-10-01T00:06:40Z",
+          "sets": ["status"],
+          "n": 0,
+          "fields": {
+            "status": "closed"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000ab0",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:c",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:02:30Z",
+          "occurred": "2026-10-01T00:02:30Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "title": "d"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000abg",
+          "kind": "task",
+          "observer": "sl:alice",
+          "about": [],
+          "of": "task:c",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000ab0"],
+          "emitted": "2026-10-01T00:04:10Z",
+          "occurred": "2026-10-01T00:04:10Z",
+          "sets": ["status"],
+          "n": 0,
+          "fields": {
+            "status": "closed"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000ac0",
+          "kind": "task",
+          "observer": "sl:bob",
+          "about": [],
+          "of": "task:c",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000ab0"],
+          "emitted": "2026-10-01T00:04:20Z",
+          "occurred": "2026-10-01T00:04:20Z",
+          "sets": ["status"],
+          "n": 0,
+          "fields": {
+            "status": "done"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000acg",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:c",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000abg", "r:0000000000000000000000000000000000000000000000000ac0"],
+          "emitted": "2026-10-01T00:09:00Z",
+          "occurred": "2026-10-01T00:09:00Z",
+          "sets": [],
+          "n": 0
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000ad0",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:d",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:02:00Z",
+          "occurred": "2026-10-01T00:02:00Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "title": "e"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000adg",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:d",
+          "prev": ["r:0000000000000000000000000000000000000000000000000ad0"],
+          "emitted": "2026-10-01T00:08:40Z",
+          "occurred": "2026-10-01T00:08:40Z",
+          "sets": ["status"],
+          "shown": "erased"
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000ae0",
+          "kind": "erasure",
+          "observer": "sl:kyle",
+          "about": [],
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:10:00Z",
+          "erases": ["r:0000000000000000000000000000000000000000000000000adg"],
+          "n": 0
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000aeg",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:e",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:02:10Z",
+          "occurred": "2026-10-01T00:02:10Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "title": "f"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000af0",
+          "kind": "task",
+          "observer": "sl:alice",
+          "about": [],
+          "of": "task:e",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000aeg"],
+          "emitted": "2026-10-01T00:09:10Z",
+          "occurred": "2026-10-01T00:09:10Z",
+          "sets": ["status"],
+          "n": 0,
+          "fields": {
+            "status": "closed"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000afg",
+          "kind": "task",
+          "observer": "sl:bob",
+          "about": [],
+          "of": "task:e",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000aeg"],
+          "emitted": "2026-10-01T00:09:20Z",
+          "occurred": "2026-10-01T00:09:20Z",
+          "sets": ["title"],
+          "n": 0,
+          "fields": {
+            "title": "g"
+          }
+        }
+      ],
+      [
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000a90",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:a",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000a8g"],
+          "emitted": "2026-10-01T00:05:00Z",
+          "occurred": "2026-10-01T00:05:00Z",
+          "sets": ["status"],
+          "n": 0,
+          "fields": {
+            "status": "closed"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000a9g",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:a",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000a90"],
+          "emitted": "2026-10-01T00:08:20Z",
+          "occurred": "2026-10-01T00:08:20Z",
+          "sets": ["title"],
+          "n": 0,
+          "fields": {
+            "title": "b"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000aa0",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:b",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:03:20Z",
+          "occurred": "2026-10-01T00:03:20Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "title": "c"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000aag",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:b",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000aa0"],
+          "emitted": "2026-10-01T00:06:40Z",
+          "occurred": "2026-10-01T00:06:40Z",
+          "sets": ["status"],
+          "n": 0,
+          "fields": {
+            "status": "closed"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000ab0",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:c",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:02:30Z",
+          "occurred": "2026-10-01T00:02:30Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "title": "d"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000abg",
+          "kind": "task",
+          "observer": "sl:alice",
+          "about": [],
+          "of": "task:c",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000ab0"],
+          "emitted": "2026-10-01T00:04:10Z",
+          "occurred": "2026-10-01T00:04:10Z",
+          "sets": ["status"],
+          "n": 0,
+          "fields": {
+            "status": "closed"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000ac0",
+          "kind": "task",
+          "observer": "sl:bob",
+          "about": [],
+          "of": "task:c",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000ab0"],
+          "emitted": "2026-10-01T00:04:20Z",
+          "occurred": "2026-10-01T00:04:20Z",
+          "sets": ["status"],
+          "n": 0,
+          "fields": {
+            "status": "done"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000acg",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:c",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000abg", "r:0000000000000000000000000000000000000000000000000ac0"],
+          "emitted": "2026-10-01T00:09:00Z",
+          "occurred": "2026-10-01T00:09:00Z",
+          "sets": [],
+          "n": 0
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000ad0",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:d",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:02:00Z",
+          "occurred": "2026-10-01T00:02:00Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "title": "e"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000adg",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:d",
+          "prev": ["r:0000000000000000000000000000000000000000000000000ad0"],
+          "emitted": "2026-10-01T00:08:40Z",
+          "occurred": "2026-10-01T00:08:40Z",
+          "sets": ["status"],
+          "shown": "erased"
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000ae0",
+          "kind": "erasure",
+          "observer": "sl:kyle",
+          "about": [],
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:10:00Z",
+          "erases": ["r:0000000000000000000000000000000000000000000000000adg"],
+          "n": 0
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000aeg",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:e",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:02:10Z",
+          "occurred": "2026-10-01T00:02:10Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "title": "f"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000af0",
+          "kind": "task",
+          "observer": "sl:alice",
+          "about": [],
+          "of": "task:e",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000aeg"],
+          "emitted": "2026-10-01T00:09:10Z",
+          "occurred": "2026-10-01T00:09:10Z",
+          "sets": ["status"],
+          "n": 0,
+          "fields": {
+            "status": "closed"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000afg",
+          "kind": "task",
+          "observer": "sl:bob",
+          "about": [],
+          "of": "task:e",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000aeg"],
+          "emitted": "2026-10-01T00:09:20Z",
+          "occurred": "2026-10-01T00:09:20Z",
+          "sets": ["title"],
+          "n": 0,
+          "fields": {
+            "title": "g"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000a8g",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:a",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:01:40Z",
+          "occurred": "2026-10-01T00:01:40Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "title": "a",
+            "est": 1
+          }
+        }
+      ],
+      [
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000a9g",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:a",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000a90"],
+          "emitted": "2026-10-01T00:08:20Z",
+          "occurred": "2026-10-01T00:08:20Z",
+          "sets": ["title"],
+          "n": 0,
+          "fields": {
+            "title": "b"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000aa0",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:b",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:03:20Z",
+          "occurred": "2026-10-01T00:03:20Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "title": "c"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000aag",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:b",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000aa0"],
+          "emitted": "2026-10-01T00:06:40Z",
+          "occurred": "2026-10-01T00:06:40Z",
+          "sets": ["status"],
+          "n": 0,
+          "fields": {
+            "status": "closed"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000ab0",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:c",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:02:30Z",
+          "occurred": "2026-10-01T00:02:30Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "title": "d"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000abg",
+          "kind": "task",
+          "observer": "sl:alice",
+          "about": [],
+          "of": "task:c",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000ab0"],
+          "emitted": "2026-10-01T00:04:10Z",
+          "occurred": "2026-10-01T00:04:10Z",
+          "sets": ["status"],
+          "n": 0,
+          "fields": {
+            "status": "closed"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000ac0",
+          "kind": "task",
+          "observer": "sl:bob",
+          "about": [],
+          "of": "task:c",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000ab0"],
+          "emitted": "2026-10-01T00:04:20Z",
+          "occurred": "2026-10-01T00:04:20Z",
+          "sets": ["status"],
+          "n": 0,
+          "fields": {
+            "status": "done"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000acg",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:c",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000abg", "r:0000000000000000000000000000000000000000000000000ac0"],
+          "emitted": "2026-10-01T00:09:00Z",
+          "occurred": "2026-10-01T00:09:00Z",
+          "sets": [],
+          "n": 0
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000ad0",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:d",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:02:00Z",
+          "occurred": "2026-10-01T00:02:00Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "title": "e"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000adg",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:d",
+          "prev": ["r:0000000000000000000000000000000000000000000000000ad0"],
+          "emitted": "2026-10-01T00:08:40Z",
+          "occurred": "2026-10-01T00:08:40Z",
+          "sets": ["status"],
+          "shown": "erased"
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000ae0",
+          "kind": "erasure",
+          "observer": "sl:kyle",
+          "about": [],
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:10:00Z",
+          "erases": ["r:0000000000000000000000000000000000000000000000000adg"],
+          "n": 0
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000aeg",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:e",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:02:10Z",
+          "occurred": "2026-10-01T00:02:10Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "title": "f"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000af0",
+          "kind": "task",
+          "observer": "sl:alice",
+          "about": [],
+          "of": "task:e",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000aeg"],
+          "emitted": "2026-10-01T00:09:10Z",
+          "occurred": "2026-10-01T00:09:10Z",
+          "sets": ["status"],
+          "n": 0,
+          "fields": {
+            "status": "closed"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000afg",
+          "kind": "task",
+          "observer": "sl:bob",
+          "about": [],
+          "of": "task:e",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000aeg"],
+          "emitted": "2026-10-01T00:09:20Z",
+          "occurred": "2026-10-01T00:09:20Z",
+          "sets": ["title"],
+          "n": 0,
+          "fields": {
+            "title": "g"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000a8g",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:a",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:01:40Z",
+          "occurred": "2026-10-01T00:01:40Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "title": "a",
+            "est": 1
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000a90",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:a",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000a8g"],
+          "emitted": "2026-10-01T00:05:00Z",
+          "occurred": "2026-10-01T00:05:00Z",
+          "sets": ["status"],
+          "n": 0,
+          "fields": {
+            "status": "closed"
+          }
+        }
+      ],
+      [
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000aa0",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:b",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:03:20Z",
+          "occurred": "2026-10-01T00:03:20Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "title": "c"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000aag",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:b",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000aa0"],
+          "emitted": "2026-10-01T00:06:40Z",
+          "occurred": "2026-10-01T00:06:40Z",
+          "sets": ["status"],
+          "n": 0,
+          "fields": {
+            "status": "closed"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000ab0",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:c",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:02:30Z",
+          "occurred": "2026-10-01T00:02:30Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "title": "d"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000abg",
+          "kind": "task",
+          "observer": "sl:alice",
+          "about": [],
+          "of": "task:c",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000ab0"],
+          "emitted": "2026-10-01T00:04:10Z",
+          "occurred": "2026-10-01T00:04:10Z",
+          "sets": ["status"],
+          "n": 0,
+          "fields": {
+            "status": "closed"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000ac0",
+          "kind": "task",
+          "observer": "sl:bob",
+          "about": [],
+          "of": "task:c",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000ab0"],
+          "emitted": "2026-10-01T00:04:20Z",
+          "occurred": "2026-10-01T00:04:20Z",
+          "sets": ["status"],
+          "n": 0,
+          "fields": {
+            "status": "done"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000acg",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:c",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000abg", "r:0000000000000000000000000000000000000000000000000ac0"],
+          "emitted": "2026-10-01T00:09:00Z",
+          "occurred": "2026-10-01T00:09:00Z",
+          "sets": [],
+          "n": 0
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000ad0",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:d",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:02:00Z",
+          "occurred": "2026-10-01T00:02:00Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "title": "e"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000adg",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:d",
+          "prev": ["r:0000000000000000000000000000000000000000000000000ad0"],
+          "emitted": "2026-10-01T00:08:40Z",
+          "occurred": "2026-10-01T00:08:40Z",
+          "sets": ["status"],
+          "shown": "erased"
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000ae0",
+          "kind": "erasure",
+          "observer": "sl:kyle",
+          "about": [],
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:10:00Z",
+          "erases": ["r:0000000000000000000000000000000000000000000000000adg"],
+          "n": 0
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000aeg",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:e",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:02:10Z",
+          "occurred": "2026-10-01T00:02:10Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "title": "f"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000af0",
+          "kind": "task",
+          "observer": "sl:alice",
+          "about": [],
+          "of": "task:e",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000aeg"],
+          "emitted": "2026-10-01T00:09:10Z",
+          "occurred": "2026-10-01T00:09:10Z",
+          "sets": ["status"],
+          "n": 0,
+          "fields": {
+            "status": "closed"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000afg",
+          "kind": "task",
+          "observer": "sl:bob",
+          "about": [],
+          "of": "task:e",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000aeg"],
+          "emitted": "2026-10-01T00:09:20Z",
+          "occurred": "2026-10-01T00:09:20Z",
+          "sets": ["title"],
+          "n": 0,
+          "fields": {
+            "title": "g"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000a8g",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:a",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:01:40Z",
+          "occurred": "2026-10-01T00:01:40Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "title": "a",
+            "est": 1
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000a90",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:a",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000a8g"],
+          "emitted": "2026-10-01T00:05:00Z",
+          "occurred": "2026-10-01T00:05:00Z",
+          "sets": ["status"],
+          "n": 0,
+          "fields": {
+            "status": "closed"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000a9g",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:a",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000a90"],
+          "emitted": "2026-10-01T00:08:20Z",
+          "occurred": "2026-10-01T00:08:20Z",
+          "sets": ["title"],
+          "n": 0,
+          "fields": {
+            "title": "b"
+          }
+        }
+      ],
+      [
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000aag",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:b",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000aa0"],
+          "emitted": "2026-10-01T00:06:40Z",
+          "occurred": "2026-10-01T00:06:40Z",
+          "sets": ["status"],
+          "n": 0,
+          "fields": {
+            "status": "closed"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000ab0",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:c",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:02:30Z",
+          "occurred": "2026-10-01T00:02:30Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "title": "d"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000abg",
+          "kind": "task",
+          "observer": "sl:alice",
+          "about": [],
+          "of": "task:c",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000ab0"],
+          "emitted": "2026-10-01T00:04:10Z",
+          "occurred": "2026-10-01T00:04:10Z",
+          "sets": ["status"],
+          "n": 0,
+          "fields": {
+            "status": "closed"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000ac0",
+          "kind": "task",
+          "observer": "sl:bob",
+          "about": [],
+          "of": "task:c",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000ab0"],
+          "emitted": "2026-10-01T00:04:20Z",
+          "occurred": "2026-10-01T00:04:20Z",
+          "sets": ["status"],
+          "n": 0,
+          "fields": {
+            "status": "done"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000acg",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:c",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000abg", "r:0000000000000000000000000000000000000000000000000ac0"],
+          "emitted": "2026-10-01T00:09:00Z",
+          "occurred": "2026-10-01T00:09:00Z",
+          "sets": [],
+          "n": 0
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000ad0",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:d",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:02:00Z",
+          "occurred": "2026-10-01T00:02:00Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "title": "e"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000adg",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:d",
+          "prev": ["r:0000000000000000000000000000000000000000000000000ad0"],
+          "emitted": "2026-10-01T00:08:40Z",
+          "occurred": "2026-10-01T00:08:40Z",
+          "sets": ["status"],
+          "shown": "erased"
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000ae0",
+          "kind": "erasure",
+          "observer": "sl:kyle",
+          "about": [],
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:10:00Z",
+          "erases": ["r:0000000000000000000000000000000000000000000000000adg"],
+          "n": 0
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000aeg",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:e",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:02:10Z",
+          "occurred": "2026-10-01T00:02:10Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "title": "f"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000af0",
+          "kind": "task",
+          "observer": "sl:alice",
+          "about": [],
+          "of": "task:e",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000aeg"],
+          "emitted": "2026-10-01T00:09:10Z",
+          "occurred": "2026-10-01T00:09:10Z",
+          "sets": ["status"],
+          "n": 0,
+          "fields": {
+            "status": "closed"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000afg",
+          "kind": "task",
+          "observer": "sl:bob",
+          "about": [],
+          "of": "task:e",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000aeg"],
+          "emitted": "2026-10-01T00:09:20Z",
+          "occurred": "2026-10-01T00:09:20Z",
+          "sets": ["title"],
+          "n": 0,
+          "fields": {
+            "title": "g"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000a8g",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:a",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:01:40Z",
+          "occurred": "2026-10-01T00:01:40Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "title": "a",
+            "est": 1
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000a90",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:a",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000a8g"],
+          "emitted": "2026-10-01T00:05:00Z",
+          "occurred": "2026-10-01T00:05:00Z",
+          "sets": ["status"],
+          "n": 0,
+          "fields": {
+            "status": "closed"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000a9g",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:a",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000a90"],
+          "emitted": "2026-10-01T00:08:20Z",
+          "occurred": "2026-10-01T00:08:20Z",
+          "sets": ["title"],
+          "n": 0,
+          "fields": {
+            "title": "b"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000aa0",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:b",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:03:20Z",
+          "occurred": "2026-10-01T00:03:20Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "title": "c"
+          }
+        }
+      ],
+      [
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000ab0",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:c",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:02:30Z",
+          "occurred": "2026-10-01T00:02:30Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "title": "d"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000abg",
+          "kind": "task",
+          "observer": "sl:alice",
+          "about": [],
+          "of": "task:c",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000ab0"],
+          "emitted": "2026-10-01T00:04:10Z",
+          "occurred": "2026-10-01T00:04:10Z",
+          "sets": ["status"],
+          "n": 0,
+          "fields": {
+            "status": "closed"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000ac0",
+          "kind": "task",
+          "observer": "sl:bob",
+          "about": [],
+          "of": "task:c",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000ab0"],
+          "emitted": "2026-10-01T00:04:20Z",
+          "occurred": "2026-10-01T00:04:20Z",
+          "sets": ["status"],
+          "n": 0,
+          "fields": {
+            "status": "done"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000acg",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:c",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000abg", "r:0000000000000000000000000000000000000000000000000ac0"],
+          "emitted": "2026-10-01T00:09:00Z",
+          "occurred": "2026-10-01T00:09:00Z",
+          "sets": [],
+          "n": 0
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000ad0",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:d",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:02:00Z",
+          "occurred": "2026-10-01T00:02:00Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "title": "e"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000adg",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:d",
+          "prev": ["r:0000000000000000000000000000000000000000000000000ad0"],
+          "emitted": "2026-10-01T00:08:40Z",
+          "occurred": "2026-10-01T00:08:40Z",
+          "sets": ["status"],
+          "shown": "erased"
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000ae0",
+          "kind": "erasure",
+          "observer": "sl:kyle",
+          "about": [],
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:10:00Z",
+          "erases": ["r:0000000000000000000000000000000000000000000000000adg"],
+          "n": 0
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000aeg",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:e",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:02:10Z",
+          "occurred": "2026-10-01T00:02:10Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "title": "f"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000af0",
+          "kind": "task",
+          "observer": "sl:alice",
+          "about": [],
+          "of": "task:e",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000aeg"],
+          "emitted": "2026-10-01T00:09:10Z",
+          "occurred": "2026-10-01T00:09:10Z",
+          "sets": ["status"],
+          "n": 0,
+          "fields": {
+            "status": "closed"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000afg",
+          "kind": "task",
+          "observer": "sl:bob",
+          "about": [],
+          "of": "task:e",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000aeg"],
+          "emitted": "2026-10-01T00:09:20Z",
+          "occurred": "2026-10-01T00:09:20Z",
+          "sets": ["title"],
+          "n": 0,
+          "fields": {
+            "title": "g"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000a8g",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:a",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:01:40Z",
+          "occurred": "2026-10-01T00:01:40Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "title": "a",
+            "est": 1
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000a90",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:a",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000a8g"],
+          "emitted": "2026-10-01T00:05:00Z",
+          "occurred": "2026-10-01T00:05:00Z",
+          "sets": ["status"],
+          "n": 0,
+          "fields": {
+            "status": "closed"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000a9g",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:a",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000a90"],
+          "emitted": "2026-10-01T00:08:20Z",
+          "occurred": "2026-10-01T00:08:20Z",
+          "sets": ["title"],
+          "n": 0,
+          "fields": {
+            "title": "b"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000aa0",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:b",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:03:20Z",
+          "occurred": "2026-10-01T00:03:20Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "title": "c"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000aag",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:b",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000aa0"],
+          "emitted": "2026-10-01T00:06:40Z",
+          "occurred": "2026-10-01T00:06:40Z",
+          "sets": ["status"],
+          "n": 0,
+          "fields": {
+            "status": "closed"
+          }
+        }
+      ],
+      [
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000abg",
+          "kind": "task",
+          "observer": "sl:alice",
+          "about": [],
+          "of": "task:c",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000ab0"],
+          "emitted": "2026-10-01T00:04:10Z",
+          "occurred": "2026-10-01T00:04:10Z",
+          "sets": ["status"],
+          "n": 0,
+          "fields": {
+            "status": "closed"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000ac0",
+          "kind": "task",
+          "observer": "sl:bob",
+          "about": [],
+          "of": "task:c",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000ab0"],
+          "emitted": "2026-10-01T00:04:20Z",
+          "occurred": "2026-10-01T00:04:20Z",
+          "sets": ["status"],
+          "n": 0,
+          "fields": {
+            "status": "done"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000acg",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:c",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000abg", "r:0000000000000000000000000000000000000000000000000ac0"],
+          "emitted": "2026-10-01T00:09:00Z",
+          "occurred": "2026-10-01T00:09:00Z",
+          "sets": [],
+          "n": 0
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000ad0",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:d",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:02:00Z",
+          "occurred": "2026-10-01T00:02:00Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "title": "e"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000adg",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:d",
+          "prev": ["r:0000000000000000000000000000000000000000000000000ad0"],
+          "emitted": "2026-10-01T00:08:40Z",
+          "occurred": "2026-10-01T00:08:40Z",
+          "sets": ["status"],
+          "shown": "erased"
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000ae0",
+          "kind": "erasure",
+          "observer": "sl:kyle",
+          "about": [],
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:10:00Z",
+          "erases": ["r:0000000000000000000000000000000000000000000000000adg"],
+          "n": 0
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000aeg",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:e",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:02:10Z",
+          "occurred": "2026-10-01T00:02:10Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "title": "f"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000af0",
+          "kind": "task",
+          "observer": "sl:alice",
+          "about": [],
+          "of": "task:e",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000aeg"],
+          "emitted": "2026-10-01T00:09:10Z",
+          "occurred": "2026-10-01T00:09:10Z",
+          "sets": ["status"],
+          "n": 0,
+          "fields": {
+            "status": "closed"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000afg",
+          "kind": "task",
+          "observer": "sl:bob",
+          "about": [],
+          "of": "task:e",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000aeg"],
+          "emitted": "2026-10-01T00:09:20Z",
+          "occurred": "2026-10-01T00:09:20Z",
+          "sets": ["title"],
+          "n": 0,
+          "fields": {
+            "title": "g"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000a8g",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:a",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:01:40Z",
+          "occurred": "2026-10-01T00:01:40Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "title": "a",
+            "est": 1
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000a90",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:a",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000a8g"],
+          "emitted": "2026-10-01T00:05:00Z",
+          "occurred": "2026-10-01T00:05:00Z",
+          "sets": ["status"],
+          "n": 0,
+          "fields": {
+            "status": "closed"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000a9g",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:a",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000a90"],
+          "emitted": "2026-10-01T00:08:20Z",
+          "occurred": "2026-10-01T00:08:20Z",
+          "sets": ["title"],
+          "n": 0,
+          "fields": {
+            "title": "b"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000aa0",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:b",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:03:20Z",
+          "occurred": "2026-10-01T00:03:20Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "title": "c"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000aag",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:b",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000aa0"],
+          "emitted": "2026-10-01T00:06:40Z",
+          "occurred": "2026-10-01T00:06:40Z",
+          "sets": ["status"],
+          "n": 0,
+          "fields": {
+            "status": "closed"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000ab0",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:c",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:02:30Z",
+          "occurred": "2026-10-01T00:02:30Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "title": "d"
+          }
+        }
+      ],
+      [
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000ac0",
+          "kind": "task",
+          "observer": "sl:bob",
+          "about": [],
+          "of": "task:c",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000ab0"],
+          "emitted": "2026-10-01T00:04:20Z",
+          "occurred": "2026-10-01T00:04:20Z",
+          "sets": ["status"],
+          "n": 0,
+          "fields": {
+            "status": "done"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000acg",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:c",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000abg", "r:0000000000000000000000000000000000000000000000000ac0"],
+          "emitted": "2026-10-01T00:09:00Z",
+          "occurred": "2026-10-01T00:09:00Z",
+          "sets": [],
+          "n": 0
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000ad0",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:d",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:02:00Z",
+          "occurred": "2026-10-01T00:02:00Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "title": "e"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000adg",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:d",
+          "prev": ["r:0000000000000000000000000000000000000000000000000ad0"],
+          "emitted": "2026-10-01T00:08:40Z",
+          "occurred": "2026-10-01T00:08:40Z",
+          "sets": ["status"],
+          "shown": "erased"
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000ae0",
+          "kind": "erasure",
+          "observer": "sl:kyle",
+          "about": [],
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:10:00Z",
+          "erases": ["r:0000000000000000000000000000000000000000000000000adg"],
+          "n": 0
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000aeg",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:e",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:02:10Z",
+          "occurred": "2026-10-01T00:02:10Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "title": "f"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000af0",
+          "kind": "task",
+          "observer": "sl:alice",
+          "about": [],
+          "of": "task:e",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000aeg"],
+          "emitted": "2026-10-01T00:09:10Z",
+          "occurred": "2026-10-01T00:09:10Z",
+          "sets": ["status"],
+          "n": 0,
+          "fields": {
+            "status": "closed"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000afg",
+          "kind": "task",
+          "observer": "sl:bob",
+          "about": [],
+          "of": "task:e",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000aeg"],
+          "emitted": "2026-10-01T00:09:20Z",
+          "occurred": "2026-10-01T00:09:20Z",
+          "sets": ["title"],
+          "n": 0,
+          "fields": {
+            "title": "g"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000a8g",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:a",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:01:40Z",
+          "occurred": "2026-10-01T00:01:40Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "title": "a",
+            "est": 1
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000a90",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:a",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000a8g"],
+          "emitted": "2026-10-01T00:05:00Z",
+          "occurred": "2026-10-01T00:05:00Z",
+          "sets": ["status"],
+          "n": 0,
+          "fields": {
+            "status": "closed"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000a9g",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:a",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000a90"],
+          "emitted": "2026-10-01T00:08:20Z",
+          "occurred": "2026-10-01T00:08:20Z",
+          "sets": ["title"],
+          "n": 0,
+          "fields": {
+            "title": "b"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000aa0",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:b",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:03:20Z",
+          "occurred": "2026-10-01T00:03:20Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "title": "c"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000aag",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:b",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000aa0"],
+          "emitted": "2026-10-01T00:06:40Z",
+          "occurred": "2026-10-01T00:06:40Z",
+          "sets": ["status"],
+          "n": 0,
+          "fields": {
+            "status": "closed"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000ab0",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:c",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:02:30Z",
+          "occurred": "2026-10-01T00:02:30Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "title": "d"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000abg",
+          "kind": "task",
+          "observer": "sl:alice",
+          "about": [],
+          "of": "task:c",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000ab0"],
+          "emitted": "2026-10-01T00:04:10Z",
+          "occurred": "2026-10-01T00:04:10Z",
+          "sets": ["status"],
+          "n": 0,
+          "fields": {
+            "status": "closed"
+          }
+        }
+      ],
+      [
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000acg",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:c",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000abg", "r:0000000000000000000000000000000000000000000000000ac0"],
+          "emitted": "2026-10-01T00:09:00Z",
+          "occurred": "2026-10-01T00:09:00Z",
+          "sets": [],
+          "n": 0
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000ad0",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:d",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:02:00Z",
+          "occurred": "2026-10-01T00:02:00Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "title": "e"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000adg",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:d",
+          "prev": ["r:0000000000000000000000000000000000000000000000000ad0"],
+          "emitted": "2026-10-01T00:08:40Z",
+          "occurred": "2026-10-01T00:08:40Z",
+          "sets": ["status"],
+          "shown": "erased"
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000ae0",
+          "kind": "erasure",
+          "observer": "sl:kyle",
+          "about": [],
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:10:00Z",
+          "erases": ["r:0000000000000000000000000000000000000000000000000adg"],
+          "n": 0
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000aeg",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:e",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:02:10Z",
+          "occurred": "2026-10-01T00:02:10Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "title": "f"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000af0",
+          "kind": "task",
+          "observer": "sl:alice",
+          "about": [],
+          "of": "task:e",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000aeg"],
+          "emitted": "2026-10-01T00:09:10Z",
+          "occurred": "2026-10-01T00:09:10Z",
+          "sets": ["status"],
+          "n": 0,
+          "fields": {
+            "status": "closed"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000afg",
+          "kind": "task",
+          "observer": "sl:bob",
+          "about": [],
+          "of": "task:e",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000aeg"],
+          "emitted": "2026-10-01T00:09:20Z",
+          "occurred": "2026-10-01T00:09:20Z",
+          "sets": ["title"],
+          "n": 0,
+          "fields": {
+            "title": "g"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000a8g",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:a",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:01:40Z",
+          "occurred": "2026-10-01T00:01:40Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "title": "a",
+            "est": 1
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000a90",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:a",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000a8g"],
+          "emitted": "2026-10-01T00:05:00Z",
+          "occurred": "2026-10-01T00:05:00Z",
+          "sets": ["status"],
+          "n": 0,
+          "fields": {
+            "status": "closed"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000a9g",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:a",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000a90"],
+          "emitted": "2026-10-01T00:08:20Z",
+          "occurred": "2026-10-01T00:08:20Z",
+          "sets": ["title"],
+          "n": 0,
+          "fields": {
+            "title": "b"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000aa0",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:b",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:03:20Z",
+          "occurred": "2026-10-01T00:03:20Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "title": "c"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000aag",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:b",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000aa0"],
+          "emitted": "2026-10-01T00:06:40Z",
+          "occurred": "2026-10-01T00:06:40Z",
+          "sets": ["status"],
+          "n": 0,
+          "fields": {
+            "status": "closed"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000ab0",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:c",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:02:30Z",
+          "occurred": "2026-10-01T00:02:30Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "title": "d"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000abg",
+          "kind": "task",
+          "observer": "sl:alice",
+          "about": [],
+          "of": "task:c",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000ab0"],
+          "emitted": "2026-10-01T00:04:10Z",
+          "occurred": "2026-10-01T00:04:10Z",
+          "sets": ["status"],
+          "n": 0,
+          "fields": {
+            "status": "closed"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000ac0",
+          "kind": "task",
+          "observer": "sl:bob",
+          "about": [],
+          "of": "task:c",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000ab0"],
+          "emitted": "2026-10-01T00:04:20Z",
+          "occurred": "2026-10-01T00:04:20Z",
+          "sets": ["status"],
+          "n": 0,
+          "fields": {
+            "status": "done"
+          }
+        }
+      ],
+      [
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000ad0",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:d",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:02:00Z",
+          "occurred": "2026-10-01T00:02:00Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "title": "e"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000adg",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:d",
+          "prev": ["r:0000000000000000000000000000000000000000000000000ad0"],
+          "emitted": "2026-10-01T00:08:40Z",
+          "occurred": "2026-10-01T00:08:40Z",
+          "sets": ["status"],
+          "shown": "erased"
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000ae0",
+          "kind": "erasure",
+          "observer": "sl:kyle",
+          "about": [],
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:10:00Z",
+          "erases": ["r:0000000000000000000000000000000000000000000000000adg"],
+          "n": 0
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000aeg",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:e",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:02:10Z",
+          "occurred": "2026-10-01T00:02:10Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "title": "f"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000af0",
+          "kind": "task",
+          "observer": "sl:alice",
+          "about": [],
+          "of": "task:e",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000aeg"],
+          "emitted": "2026-10-01T00:09:10Z",
+          "occurred": "2026-10-01T00:09:10Z",
+          "sets": ["status"],
+          "n": 0,
+          "fields": {
+            "status": "closed"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000afg",
+          "kind": "task",
+          "observer": "sl:bob",
+          "about": [],
+          "of": "task:e",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000aeg"],
+          "emitted": "2026-10-01T00:09:20Z",
+          "occurred": "2026-10-01T00:09:20Z",
+          "sets": ["title"],
+          "n": 0,
+          "fields": {
+            "title": "g"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000a8g",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:a",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:01:40Z",
+          "occurred": "2026-10-01T00:01:40Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "title": "a",
+            "est": 1
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000a90",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:a",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000a8g"],
+          "emitted": "2026-10-01T00:05:00Z",
+          "occurred": "2026-10-01T00:05:00Z",
+          "sets": ["status"],
+          "n": 0,
+          "fields": {
+            "status": "closed"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000a9g",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:a",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000a90"],
+          "emitted": "2026-10-01T00:08:20Z",
+          "occurred": "2026-10-01T00:08:20Z",
+          "sets": ["title"],
+          "n": 0,
+          "fields": {
+            "title": "b"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000aa0",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:b",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:03:20Z",
+          "occurred": "2026-10-01T00:03:20Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "title": "c"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000aag",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:b",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000aa0"],
+          "emitted": "2026-10-01T00:06:40Z",
+          "occurred": "2026-10-01T00:06:40Z",
+          "sets": ["status"],
+          "n": 0,
+          "fields": {
+            "status": "closed"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000ab0",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:c",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:02:30Z",
+          "occurred": "2026-10-01T00:02:30Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "title": "d"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000abg",
+          "kind": "task",
+          "observer": "sl:alice",
+          "about": [],
+          "of": "task:c",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000ab0"],
+          "emitted": "2026-10-01T00:04:10Z",
+          "occurred": "2026-10-01T00:04:10Z",
+          "sets": ["status"],
+          "n": 0,
+          "fields": {
+            "status": "closed"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000ac0",
+          "kind": "task",
+          "observer": "sl:bob",
+          "about": [],
+          "of": "task:c",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000ab0"],
+          "emitted": "2026-10-01T00:04:20Z",
+          "occurred": "2026-10-01T00:04:20Z",
+          "sets": ["status"],
+          "n": 0,
+          "fields": {
+            "status": "done"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000acg",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:c",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000abg", "r:0000000000000000000000000000000000000000000000000ac0"],
+          "emitted": "2026-10-01T00:09:00Z",
+          "occurred": "2026-10-01T00:09:00Z",
+          "sets": [],
+          "n": 0
+        }
+      ],
+      [
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000adg",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:d",
+          "prev": ["r:0000000000000000000000000000000000000000000000000ad0"],
+          "emitted": "2026-10-01T00:08:40Z",
+          "occurred": "2026-10-01T00:08:40Z",
+          "sets": ["status"],
+          "shown": "erased"
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000ae0",
+          "kind": "erasure",
+          "observer": "sl:kyle",
+          "about": [],
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:10:00Z",
+          "erases": ["r:0000000000000000000000000000000000000000000000000adg"],
+          "n": 0
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000aeg",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:e",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:02:10Z",
+          "occurred": "2026-10-01T00:02:10Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "title": "f"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000af0",
+          "kind": "task",
+          "observer": "sl:alice",
+          "about": [],
+          "of": "task:e",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000aeg"],
+          "emitted": "2026-10-01T00:09:10Z",
+          "occurred": "2026-10-01T00:09:10Z",
+          "sets": ["status"],
+          "n": 0,
+          "fields": {
+            "status": "closed"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000afg",
+          "kind": "task",
+          "observer": "sl:bob",
+          "about": [],
+          "of": "task:e",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000aeg"],
+          "emitted": "2026-10-01T00:09:20Z",
+          "occurred": "2026-10-01T00:09:20Z",
+          "sets": ["title"],
+          "n": 0,
+          "fields": {
+            "title": "g"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000a8g",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:a",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:01:40Z",
+          "occurred": "2026-10-01T00:01:40Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "title": "a",
+            "est": 1
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000a90",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:a",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000a8g"],
+          "emitted": "2026-10-01T00:05:00Z",
+          "occurred": "2026-10-01T00:05:00Z",
+          "sets": ["status"],
+          "n": 0,
+          "fields": {
+            "status": "closed"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000a9g",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:a",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000a90"],
+          "emitted": "2026-10-01T00:08:20Z",
+          "occurred": "2026-10-01T00:08:20Z",
+          "sets": ["title"],
+          "n": 0,
+          "fields": {
+            "title": "b"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000aa0",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:b",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:03:20Z",
+          "occurred": "2026-10-01T00:03:20Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "title": "c"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000aag",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:b",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000aa0"],
+          "emitted": "2026-10-01T00:06:40Z",
+          "occurred": "2026-10-01T00:06:40Z",
+          "sets": ["status"],
+          "n": 0,
+          "fields": {
+            "status": "closed"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000ab0",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:c",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:02:30Z",
+          "occurred": "2026-10-01T00:02:30Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "title": "d"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000abg",
+          "kind": "task",
+          "observer": "sl:alice",
+          "about": [],
+          "of": "task:c",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000ab0"],
+          "emitted": "2026-10-01T00:04:10Z",
+          "occurred": "2026-10-01T00:04:10Z",
+          "sets": ["status"],
+          "n": 0,
+          "fields": {
+            "status": "closed"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000ac0",
+          "kind": "task",
+          "observer": "sl:bob",
+          "about": [],
+          "of": "task:c",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000ab0"],
+          "emitted": "2026-10-01T00:04:20Z",
+          "occurred": "2026-10-01T00:04:20Z",
+          "sets": ["status"],
+          "n": 0,
+          "fields": {
+            "status": "done"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000acg",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:c",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000abg", "r:0000000000000000000000000000000000000000000000000ac0"],
+          "emitted": "2026-10-01T00:09:00Z",
+          "occurred": "2026-10-01T00:09:00Z",
+          "sets": [],
+          "n": 0
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000ad0",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:d",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:02:00Z",
+          "occurred": "2026-10-01T00:02:00Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "title": "e"
+          }
+        }
+      ],
+      [
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000ae0",
+          "kind": "erasure",
+          "observer": "sl:kyle",
+          "about": [],
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:10:00Z",
+          "erases": ["r:0000000000000000000000000000000000000000000000000adg"],
+          "n": 0
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000aeg",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:e",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:02:10Z",
+          "occurred": "2026-10-01T00:02:10Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "title": "f"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000af0",
+          "kind": "task",
+          "observer": "sl:alice",
+          "about": [],
+          "of": "task:e",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000aeg"],
+          "emitted": "2026-10-01T00:09:10Z",
+          "occurred": "2026-10-01T00:09:10Z",
+          "sets": ["status"],
+          "n": 0,
+          "fields": {
+            "status": "closed"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000afg",
+          "kind": "task",
+          "observer": "sl:bob",
+          "about": [],
+          "of": "task:e",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000aeg"],
+          "emitted": "2026-10-01T00:09:20Z",
+          "occurred": "2026-10-01T00:09:20Z",
+          "sets": ["title"],
+          "n": 0,
+          "fields": {
+            "title": "g"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000a8g",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:a",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:01:40Z",
+          "occurred": "2026-10-01T00:01:40Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "title": "a",
+            "est": 1
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000a90",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:a",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000a8g"],
+          "emitted": "2026-10-01T00:05:00Z",
+          "occurred": "2026-10-01T00:05:00Z",
+          "sets": ["status"],
+          "n": 0,
+          "fields": {
+            "status": "closed"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000a9g",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:a",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000a90"],
+          "emitted": "2026-10-01T00:08:20Z",
+          "occurred": "2026-10-01T00:08:20Z",
+          "sets": ["title"],
+          "n": 0,
+          "fields": {
+            "title": "b"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000aa0",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:b",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:03:20Z",
+          "occurred": "2026-10-01T00:03:20Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "title": "c"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000aag",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:b",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000aa0"],
+          "emitted": "2026-10-01T00:06:40Z",
+          "occurred": "2026-10-01T00:06:40Z",
+          "sets": ["status"],
+          "n": 0,
+          "fields": {
+            "status": "closed"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000ab0",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:c",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:02:30Z",
+          "occurred": "2026-10-01T00:02:30Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "title": "d"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000abg",
+          "kind": "task",
+          "observer": "sl:alice",
+          "about": [],
+          "of": "task:c",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000ab0"],
+          "emitted": "2026-10-01T00:04:10Z",
+          "occurred": "2026-10-01T00:04:10Z",
+          "sets": ["status"],
+          "n": 0,
+          "fields": {
+            "status": "closed"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000ac0",
+          "kind": "task",
+          "observer": "sl:bob",
+          "about": [],
+          "of": "task:c",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000ab0"],
+          "emitted": "2026-10-01T00:04:20Z",
+          "occurred": "2026-10-01T00:04:20Z",
+          "sets": ["status"],
+          "n": 0,
+          "fields": {
+            "status": "done"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000acg",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:c",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000abg", "r:0000000000000000000000000000000000000000000000000ac0"],
+          "emitted": "2026-10-01T00:09:00Z",
+          "occurred": "2026-10-01T00:09:00Z",
+          "sets": [],
+          "n": 0
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000ad0",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:d",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:02:00Z",
+          "occurred": "2026-10-01T00:02:00Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "title": "e"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000adg",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:d",
+          "prev": ["r:0000000000000000000000000000000000000000000000000ad0"],
+          "emitted": "2026-10-01T00:08:40Z",
+          "occurred": "2026-10-01T00:08:40Z",
+          "sets": ["status"],
+          "shown": "erased"
+        }
+      ],
+      [
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000aeg",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:e",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:02:10Z",
+          "occurred": "2026-10-01T00:02:10Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "title": "f"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000af0",
+          "kind": "task",
+          "observer": "sl:alice",
+          "about": [],
+          "of": "task:e",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000aeg"],
+          "emitted": "2026-10-01T00:09:10Z",
+          "occurred": "2026-10-01T00:09:10Z",
+          "sets": ["status"],
+          "n": 0,
+          "fields": {
+            "status": "closed"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000afg",
+          "kind": "task",
+          "observer": "sl:bob",
+          "about": [],
+          "of": "task:e",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000aeg"],
+          "emitted": "2026-10-01T00:09:20Z",
+          "occurred": "2026-10-01T00:09:20Z",
+          "sets": ["title"],
+          "n": 0,
+          "fields": {
+            "title": "g"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000a8g",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:a",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:01:40Z",
+          "occurred": "2026-10-01T00:01:40Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "title": "a",
+            "est": 1
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000a90",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:a",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000a8g"],
+          "emitted": "2026-10-01T00:05:00Z",
+          "occurred": "2026-10-01T00:05:00Z",
+          "sets": ["status"],
+          "n": 0,
+          "fields": {
+            "status": "closed"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000a9g",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:a",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000a90"],
+          "emitted": "2026-10-01T00:08:20Z",
+          "occurred": "2026-10-01T00:08:20Z",
+          "sets": ["title"],
+          "n": 0,
+          "fields": {
+            "title": "b"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000aa0",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:b",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:03:20Z",
+          "occurred": "2026-10-01T00:03:20Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "title": "c"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000aag",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:b",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000aa0"],
+          "emitted": "2026-10-01T00:06:40Z",
+          "occurred": "2026-10-01T00:06:40Z",
+          "sets": ["status"],
+          "n": 0,
+          "fields": {
+            "status": "closed"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000ab0",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:c",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:02:30Z",
+          "occurred": "2026-10-01T00:02:30Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "title": "d"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000abg",
+          "kind": "task",
+          "observer": "sl:alice",
+          "about": [],
+          "of": "task:c",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000ab0"],
+          "emitted": "2026-10-01T00:04:10Z",
+          "occurred": "2026-10-01T00:04:10Z",
+          "sets": ["status"],
+          "n": 0,
+          "fields": {
+            "status": "closed"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000ac0",
+          "kind": "task",
+          "observer": "sl:bob",
+          "about": [],
+          "of": "task:c",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000ab0"],
+          "emitted": "2026-10-01T00:04:20Z",
+          "occurred": "2026-10-01T00:04:20Z",
+          "sets": ["status"],
+          "n": 0,
+          "fields": {
+            "status": "done"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000acg",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:c",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000abg", "r:0000000000000000000000000000000000000000000000000ac0"],
+          "emitted": "2026-10-01T00:09:00Z",
+          "occurred": "2026-10-01T00:09:00Z",
+          "sets": [],
+          "n": 0
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000ad0",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:d",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:02:00Z",
+          "occurred": "2026-10-01T00:02:00Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "title": "e"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000adg",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:d",
+          "prev": ["r:0000000000000000000000000000000000000000000000000ad0"],
+          "emitted": "2026-10-01T00:08:40Z",
+          "occurred": "2026-10-01T00:08:40Z",
+          "sets": ["status"],
+          "shown": "erased"
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000ae0",
+          "kind": "erasure",
+          "observer": "sl:kyle",
+          "about": [],
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:10:00Z",
+          "erases": ["r:0000000000000000000000000000000000000000000000000adg"],
+          "n": 0
+        }
+      ],
+      [
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000af0",
+          "kind": "task",
+          "observer": "sl:alice",
+          "about": [],
+          "of": "task:e",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000aeg"],
+          "emitted": "2026-10-01T00:09:10Z",
+          "occurred": "2026-10-01T00:09:10Z",
+          "sets": ["status"],
+          "n": 0,
+          "fields": {
+            "status": "closed"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000afg",
+          "kind": "task",
+          "observer": "sl:bob",
+          "about": [],
+          "of": "task:e",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000aeg"],
+          "emitted": "2026-10-01T00:09:20Z",
+          "occurred": "2026-10-01T00:09:20Z",
+          "sets": ["title"],
+          "n": 0,
+          "fields": {
+            "title": "g"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000a8g",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:a",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:01:40Z",
+          "occurred": "2026-10-01T00:01:40Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "title": "a",
+            "est": 1
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000a90",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:a",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000a8g"],
+          "emitted": "2026-10-01T00:05:00Z",
+          "occurred": "2026-10-01T00:05:00Z",
+          "sets": ["status"],
+          "n": 0,
+          "fields": {
+            "status": "closed"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000a9g",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:a",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000a90"],
+          "emitted": "2026-10-01T00:08:20Z",
+          "occurred": "2026-10-01T00:08:20Z",
+          "sets": ["title"],
+          "n": 0,
+          "fields": {
+            "title": "b"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000aa0",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:b",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:03:20Z",
+          "occurred": "2026-10-01T00:03:20Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "title": "c"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000aag",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:b",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000aa0"],
+          "emitted": "2026-10-01T00:06:40Z",
+          "occurred": "2026-10-01T00:06:40Z",
+          "sets": ["status"],
+          "n": 0,
+          "fields": {
+            "status": "closed"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000ab0",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:c",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:02:30Z",
+          "occurred": "2026-10-01T00:02:30Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "title": "d"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000abg",
+          "kind": "task",
+          "observer": "sl:alice",
+          "about": [],
+          "of": "task:c",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000ab0"],
+          "emitted": "2026-10-01T00:04:10Z",
+          "occurred": "2026-10-01T00:04:10Z",
+          "sets": ["status"],
+          "n": 0,
+          "fields": {
+            "status": "closed"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000ac0",
+          "kind": "task",
+          "observer": "sl:bob",
+          "about": [],
+          "of": "task:c",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000ab0"],
+          "emitted": "2026-10-01T00:04:20Z",
+          "occurred": "2026-10-01T00:04:20Z",
+          "sets": ["status"],
+          "n": 0,
+          "fields": {
+            "status": "done"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000acg",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:c",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000abg", "r:0000000000000000000000000000000000000000000000000ac0"],
+          "emitted": "2026-10-01T00:09:00Z",
+          "occurred": "2026-10-01T00:09:00Z",
+          "sets": [],
+          "n": 0
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000ad0",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:d",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:02:00Z",
+          "occurred": "2026-10-01T00:02:00Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "title": "e"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000adg",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:d",
+          "prev": ["r:0000000000000000000000000000000000000000000000000ad0"],
+          "emitted": "2026-10-01T00:08:40Z",
+          "occurred": "2026-10-01T00:08:40Z",
+          "sets": ["status"],
+          "shown": "erased"
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000ae0",
+          "kind": "erasure",
+          "observer": "sl:kyle",
+          "about": [],
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:10:00Z",
+          "erases": ["r:0000000000000000000000000000000000000000000000000adg"],
+          "n": 0
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000aeg",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:e",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:02:10Z",
+          "occurred": "2026-10-01T00:02:10Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "title": "f"
+          }
+        }
+      ],
+      [
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000afg",
+          "kind": "task",
+          "observer": "sl:bob",
+          "about": [],
+          "of": "task:e",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000aeg"],
+          "emitted": "2026-10-01T00:09:20Z",
+          "occurred": "2026-10-01T00:09:20Z",
+          "sets": ["title"],
+          "n": 0,
+          "fields": {
+            "title": "g"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000a8g",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:a",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:01:40Z",
+          "occurred": "2026-10-01T00:01:40Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "title": "a",
+            "est": 1
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000a90",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:a",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000a8g"],
+          "emitted": "2026-10-01T00:05:00Z",
+          "occurred": "2026-10-01T00:05:00Z",
+          "sets": ["status"],
+          "n": 0,
+          "fields": {
+            "status": "closed"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000a9g",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:a",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000a90"],
+          "emitted": "2026-10-01T00:08:20Z",
+          "occurred": "2026-10-01T00:08:20Z",
+          "sets": ["title"],
+          "n": 0,
+          "fields": {
+            "title": "b"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000aa0",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:b",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:03:20Z",
+          "occurred": "2026-10-01T00:03:20Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "title": "c"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000aag",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:b",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000aa0"],
+          "emitted": "2026-10-01T00:06:40Z",
+          "occurred": "2026-10-01T00:06:40Z",
+          "sets": ["status"],
+          "n": 0,
+          "fields": {
+            "status": "closed"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000ab0",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:c",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:02:30Z",
+          "occurred": "2026-10-01T00:02:30Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "title": "d"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000abg",
+          "kind": "task",
+          "observer": "sl:alice",
+          "about": [],
+          "of": "task:c",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000ab0"],
+          "emitted": "2026-10-01T00:04:10Z",
+          "occurred": "2026-10-01T00:04:10Z",
+          "sets": ["status"],
+          "n": 0,
+          "fields": {
+            "status": "closed"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000ac0",
+          "kind": "task",
+          "observer": "sl:bob",
+          "about": [],
+          "of": "task:c",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000ab0"],
+          "emitted": "2026-10-01T00:04:20Z",
+          "occurred": "2026-10-01T00:04:20Z",
+          "sets": ["status"],
+          "n": 0,
+          "fields": {
+            "status": "done"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000acg",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:c",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000abg", "r:0000000000000000000000000000000000000000000000000ac0"],
+          "emitted": "2026-10-01T00:09:00Z",
+          "occurred": "2026-10-01T00:09:00Z",
+          "sets": [],
+          "n": 0
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000ad0",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:d",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:02:00Z",
+          "occurred": "2026-10-01T00:02:00Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "title": "e"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000adg",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:d",
+          "prev": ["r:0000000000000000000000000000000000000000000000000ad0"],
+          "emitted": "2026-10-01T00:08:40Z",
+          "occurred": "2026-10-01T00:08:40Z",
+          "sets": ["status"],
+          "shown": "erased"
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000ae0",
+          "kind": "erasure",
+          "observer": "sl:kyle",
+          "about": [],
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:10:00Z",
+          "erases": ["r:0000000000000000000000000000000000000000000000000adg"],
+          "n": 0
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000aeg",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:e",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:02:10Z",
+          "occurred": "2026-10-01T00:02:10Z",
+          "n": 0,
+          "fields": {
+            "status": "open",
+            "title": "f"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000af0",
+          "kind": "task",
+          "observer": "sl:alice",
+          "about": [],
+          "of": "task:e",
+          "value": "",
+          "prev": ["r:0000000000000000000000000000000000000000000000000aeg"],
+          "emitted": "2026-10-01T00:09:10Z",
+          "occurred": "2026-10-01T00:09:10Z",
+          "sets": ["status"],
+          "n": 0,
+          "fields": {
+            "status": "closed"
+          }
+        }
+      ]
+    ]
+  },
+  "expect": {
+    "all": {
+      "heads": [
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000afg",
+          "shown": "here"
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000af0",
+          "shown": "here"
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000acg",
+          "shown": "here"
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000adg",
+          "shown": "erased"
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000a9g",
+          "shown": "here"
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000aag",
+          "shown": "here"
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000a90",
+          "shown": "here"
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000ac0",
+          "shown": "here"
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000abg",
+          "shown": "here"
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000aa0",
+          "shown": "here"
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000ab0",
+          "shown": "here"
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000aeg",
+          "shown": "here"
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000ad0",
+          "shown": "here"
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000a8g",
+          "shown": "here"
+        }
+      ],
+      "unread": 0
+    },
+    "one": {
+      "heads": [
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000afg",
+          "shown": "here"
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000af0",
+          "shown": "here"
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000aeg",
+          "shown": "here"
+        }
+      ],
+      "unread": 0
+    },
+    "two": {
+      "heads": [
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000afg",
+          "shown": "here"
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000af0",
+          "shown": "here"
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000acg",
+          "shown": "here"
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000ac0",
+          "shown": "here"
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000abg",
+          "shown": "here"
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000ab0",
+          "shown": "here"
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000aeg",
+          "shown": "here"
+        }
+      ],
+      "unread": 0
+    },
+    "three": {
+      "heads": [
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000afg",
+          "shown": "here"
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000af0",
+          "shown": "here"
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000acg",
+          "shown": "here"
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000adg",
+          "shown": "erased"
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000ac0",
+          "shown": "here"
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000abg",
+          "shown": "here"
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000ab0",
+          "shown": "here"
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000aeg",
+          "shown": "here"
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000ad0",
+          "shown": "here"
+        }
+      ],
+      "unread": 0
+    },
+    "four": {
+      "heads": [
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000afg",
+          "shown": "here"
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000af0",
+          "shown": "here"
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000acg",
+          "shown": "here"
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000adg",
+          "shown": "erased"
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000a9g",
+          "shown": "here"
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000a90",
+          "shown": "here"
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000ac0",
+          "shown": "here"
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000abg",
+          "shown": "here"
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000ab0",
+          "shown": "here"
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000aeg",
+          "shown": "here"
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000ad0",
+          "shown": "here"
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000a8g",
+          "shown": "here"
+        }
+      ],
+      "unread": 0
+    },
+    "many": {
+      "heads": [
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000afg",
+          "shown": "here"
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000af0",
+          "shown": "here"
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000acg",
+          "shown": "here"
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000adg",
+          "shown": "erased"
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000a9g",
+          "shown": "here"
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000aag",
+          "shown": "here"
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000a90",
+          "shown": "here"
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000ac0",
+          "shown": "here"
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000abg",
+          "shown": "here"
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000aa0",
+          "shown": "here"
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000ab0",
+          "shown": "here"
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000aeg",
+          "shown": "here"
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000ad0",
+          "shown": "here"
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000a8g",
+          "shown": "here"
+        }
+      ],
+      "unread": 0
+    },
+    "closed-one": {
+      "heads": [
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000afg",
+          "shown": "here"
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000af0",
+          "shown": "here"
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000aeg",
+          "shown": "here"
+        }
+      ],
+      "unread": 2
+    },
+    "per-observer-one": {
+      "groups": {
+        "sl:alice": {
+          "heads": [
+            {
+              "id": "r:0000000000000000000000000000000000000000000000000afg",
+              "shown": "here"
+            },
+            {
+              "id": "r:0000000000000000000000000000000000000000000000000af0",
+              "shown": "here"
+            },
+            {
+              "id": "r:0000000000000000000000000000000000000000000000000aeg",
+              "shown": "here"
+            }
+          ],
+          "unread": 0
+        },
+        "sl:bob": {
+          "heads": [
+            {
+              "id": "r:0000000000000000000000000000000000000000000000000afg",
+              "shown": "here"
+            },
+            {
+              "id": "r:0000000000000000000000000000000000000000000000000af0",
+              "shown": "here"
+            },
+            {
+              "id": "r:0000000000000000000000000000000000000000000000000aeg",
+              "shown": "here"
+            }
+          ],
+          "unread": 0
+        },
+        "sl:kyle": {
+          "heads": [
+            {
+              "id": "r:0000000000000000000000000000000000000000000000000acg",
+              "shown": "here"
+            },
+            {
+              "id": "r:0000000000000000000000000000000000000000000000000ac0",
+              "shown": "here"
+            },
+            {
+              "id": "r:0000000000000000000000000000000000000000000000000abg",
+              "shown": "here"
+            },
+            {
+              "id": "r:0000000000000000000000000000000000000000000000000ab0",
+              "shown": "here"
+            }
+          ],
+          "unread": 0
+        }
+      },
+      "unread": 0,
+      "ungrouped": 0
+    },
+    "per-observer-two": {
+      "groups": {
+        "sl:alice": {
+          "heads": [
+            {
+              "id": "r:0000000000000000000000000000000000000000000000000afg",
+              "shown": "here"
+            },
+            {
+              "id": "r:0000000000000000000000000000000000000000000000000af0",
+              "shown": "here"
+            },
+            {
+              "id": "r:0000000000000000000000000000000000000000000000000aeg",
+              "shown": "here"
+            }
+          ],
+          "unread": 0
+        },
+        "sl:bob": {
+          "heads": [
+            {
+              "id": "r:0000000000000000000000000000000000000000000000000afg",
+              "shown": "here"
+            },
+            {
+              "id": "r:0000000000000000000000000000000000000000000000000af0",
+              "shown": "here"
+            },
+            {
+              "id": "r:0000000000000000000000000000000000000000000000000aeg",
+              "shown": "here"
+            }
+          ],
+          "unread": 0
+        },
+        "sl:kyle": {
+          "heads": [
+            {
+              "id": "r:0000000000000000000000000000000000000000000000000acg",
+              "shown": "here"
+            },
+            {
+              "id": "r:0000000000000000000000000000000000000000000000000adg",
+              "shown": "erased"
+            },
+            {
+              "id": "r:0000000000000000000000000000000000000000000000000ac0",
+              "shown": "here"
+            },
+            {
+              "id": "r:0000000000000000000000000000000000000000000000000abg",
+              "shown": "here"
+            },
+            {
+              "id": "r:0000000000000000000000000000000000000000000000000ab0",
+              "shown": "here"
+            },
+            {
+              "id": "r:0000000000000000000000000000000000000000000000000ad0",
+              "shown": "here"
+            }
+          ],
+          "unread": 0
+        }
+      },
+      "unread": 0,
+      "ungrouped": 0
+    },
+    "per-status-one": {
+      "groups": {
+        "closed": {
+          "heads": [
+            {
+              "id": "r:0000000000000000000000000000000000000000000000000afg",
+              "shown": "here"
+            },
+            {
+              "id": "r:0000000000000000000000000000000000000000000000000af0",
+              "shown": "here"
+            },
+            {
+              "id": "r:0000000000000000000000000000000000000000000000000aeg",
+              "shown": "here"
+            }
+          ],
+          "unread": 0
+        },
+        "done": {
+          "heads": [
+            {
+              "id": "r:0000000000000000000000000000000000000000000000000acg",
+              "shown": "here"
+            },
+            {
+              "id": "r:0000000000000000000000000000000000000000000000000ac0",
+              "shown": "here"
+            },
+            {
+              "id": "r:0000000000000000000000000000000000000000000000000abg",
+              "shown": "here"
+            },
+            {
+              "id": "r:0000000000000000000000000000000000000000000000000ab0",
+              "shown": "here"
+            }
+          ],
+          "unread": 0
+        }
+      },
+      "unread": 1,
+      "ungrouped": 0
+    }
+  }
+}

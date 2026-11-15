@@ -266,7 +266,8 @@ inductive FoldType where
   | latestBy (follow : Follow)
   /-- Every selected record newest first, or only the heads when following
   `prev`, or the selected things' live records when following `keys`; at most
-  `limit` of them. -/
+  `limit` records, or following `keys` the live records of at most `limit`
+  things, each listed whole. -/
   | collect (follow : Option Follow) (limit : Option Nat)
   deriving Repr, DecidableEq
 
@@ -509,11 +510,24 @@ def Acc.overThings {σ} (f : Acc σ) (pick : String → Option Record) (ev : Str
   ⟨f.fold ((yes.filterMap pick).filter f.readable),
     (ts.filter (ev · == .unknown)).length + (yes.filter fun t => !(pick t).any f.readable).length⟩
 
+/-- The things of records `rs`, each once, in the order of each one's first
+record in `rs`. -/
+def thingsInOrder : List Record → List String
+  | [] => []
+  | r :: rs => r.thing :: (thingsInOrder rs).filter (· != r.thing)
+
+/-- A limit over things: of records `rs`, newest first, those of the first
+`limit` things, a thing coming before another when its newest record in `rs` is
+newer. Each listed thing is listed whole, and the order of `rs` is kept. -/
+def wholeThings : Option Nat → List Record → List Record
+  | some k, rs => rs.filter fun r => ((thingsInOrder rs).take k).contains r.thing
+  | none, rs => rs
+
 /-- A slot that follows `keys`, over the things `ev` selects: the unit is the
 thing. Count counts them; sum, min and max read each one's field from its one
-live setter; collect lists their live records newest first, at most `limit` of
-them; latest-by gives each its keyed state. A thing `ev` cannot answer for is
-unread once. -/
+live setter; collect lists their live records newest first, of at most `limit`
+things, the things with the newest live records, each listed whole; latest-by
+gives each its keyed state. A thing `ev` cannot answer for is unread once. -/
 def keyedValue (ty : FoldType) (xs : List Record) (ev : String → Tri) : SlotValue :=
   let ts := thingsOf xs
   let yes := ts.filter (ev · == .yes)
@@ -524,7 +538,7 @@ def keyedValue (ty : FoldType) (xs : List Record) (ev : String → Tri) : SlotVa
   | .min f _ => .opt ((Min.on f).overThings (soleSetter xs f) ev ts)
   | .max f _ => .opt ((Max.on f).overThings (soleSetter xs f) ev ts)
   | .latestBy _ => .keyed (yes.map fun t => (t, (keyedIn t xs).view)) unread
-  | .collect _ limit => .heads (shownIds (limitTo limit (newestFirst (yes.flatMap (liveIn xs))))) unread
+  | .collect _ limit => .heads (shownIds (wholeThings limit (newestFirst (yes.flatMap (liveIn xs))))) unread
 
 /-- Accumulating slots select with `from` and `where`, then fold, over every
 record or, following `prev`, over the heads; following `keys`, over the things

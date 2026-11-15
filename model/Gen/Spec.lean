@@ -994,6 +994,43 @@ def collectKeysSpec : Json := o [("vertex", s "live"),
     ("closed", o [("collect", .bool true), ("follow", s "keys"), ("where", o [("status", o [("is", s "closed")])])]),
     ("open", o [("collect", .bool true), ("follow", s "keys"), ("where", o [("status", o [("is", s "open")])])])])]
 
+-- A limit over things, each listed whole. Ordered by each thing's newest live
+-- record: task:e (560), task:c (540), task:d (520), task:a (500), task:b (400).
+-- task:a and task:b interleave in time (500, 400, 300, 200, 100), so a limit
+-- over records falls inside task:a's three live records. task:c is settled by
+-- a pure join above two setters of `status`; task:d's live setter of `status`
+-- is erased. task:e is forked, its heads by alice and bob, so under `by`
+-- `env.observer` it is in two groups, and the newest thing overall is in no
+-- group of sl:kyle. By oldest live record the order would be a, d, c, b, e.
+def lt0 := kt (fixtureId 0x291) "task:a" 100 none [("status", .str "open"), ("title", .str "a"), ("est", .int 1)]
+def lt1 := kt (fixtureId 0x292) "task:a" 300 (some ["status"]) [("status", .str "closed")] [fixtureId 0x291]
+def lt2 := kt (fixtureId 0x293) "task:a" 500 (some ["title"]) [("title", .str "b")] [fixtureId 0x292]
+def lt3 := kt (fixtureId 0x294) "task:b" 200 none [("status", .str "open"), ("title", .str "c")]
+def lt4 := kt (fixtureId 0x295) "task:b" 400 (some ["status"]) [("status", .str "closed")] [fixtureId 0x294]
+def lt5 := kt (fixtureId 0x296) "task:c" 150 none [("status", .str "open"), ("title", .str "d")]
+def lt6 := kt (fixtureId 0x297) "task:c" 250 (some ["status"]) [("status", .str "closed")] [fixtureId 0x296] [] "sl:alice"
+def lt7 := kt (fixtureId 0x298) "task:c" 260 (some ["status"]) [("status", .str "done")] [fixtureId 0x296] [] "sl:bob"
+def lt8 := kt (fixtureId 0x299) "task:c" 540 (some []) [] [fixtureId 0x297, fixtureId 0x298]
+def lt9 := kt (fixtureId 0x29a) "task:d" 120 none [("status", .str "open"), ("title", .str "e")]
+def lt10 := (kt (fixtureId 0x29b) "task:d" 520 (some ["status"]) [("status", .str "closed")] [fixtureId 0x29a]).erase
+def lt11 : Record := { said (fixtureId 0x29c) "sl:kyle" [] 600 with kind := "erasure", erases := [fixtureId 0x29b] }
+def lt12 := kt (fixtureId 0x29d) "task:e" 130 none [("status", .str "open"), ("title", .str "f")]
+def lt13 := kt (fixtureId 0x29e) "task:e" 550 (some ["status"]) [("status", .str "closed")] [fixtureId 0x29d] [] "sl:alice"
+def lt14 := kt (fixtureId 0x29f) "task:e" 560 (some ["title"]) [("title", .str "g")] [fixtureId 0x29d] [] "sl:bob"
+
+def collectLimitSpec : Json :=
+  let lim (k : Int) (more : List (String × Json) := []) : Json :=
+    o ([("collect", .bool true), ("follow", s "keys"), ("limit", .int k)] ++ more)
+  o [("vertex", s "newest-things"),
+    ("from", a [o [("store", s "."), ("kind", a [s "task"])]]),
+    ("fold", o [
+      ("all", o [("collect", .bool true), ("follow", s "keys")]),
+      ("one", lim 1), ("two", lim 2), ("three", lim 3), ("four", lim 4), ("many", lim 9),
+      ("closed-one", lim 1 [("where", o [("status", o [("is", s "closed")])])]),
+      ("per-observer-one", lim 1 [("by", s "env.observer")]),
+      ("per-observer-two", lim 2 [("by", s "env.observer")]),
+      ("per-status-one", lim 1 [("by", s "status")])])]
+
 -- Payload tests on every fold type, over the records of `spec/run/40`: tests
 -- asked of the thing, over each field's live setters.
 def keyedWhereSpec : Json := o [("vertex", s "open"),
@@ -1190,6 +1227,9 @@ def runCases : List RunCase := [
   -- two live setters, one of them withheld or erased: unread, not read from the held one
   ⟨"50-keys-one-setter-unheld", ["spec.set", "keyed.slots", "keyed.by", "result.unread"], unheldSetterSpec,
     [uh0, uh1, uh2, uh3, uh4, uh5, uh6, uh7, uh8, uh9, uh10, uh11, uh12, uh13, uh14, uh15, uh16]⟩,
+  -- collect's limit counts things, each listed whole, the newest first
+  ⟨"51-keys-collect-limit", ["spec.set", "keyed.slots", "keyed.by", "result.unread"], collectLimitSpec,
+    [lt0, lt1, lt2, lt3, lt4, lt5, lt6, lt7, lt8, lt9, lt10, lt11, lt12, lt13, lt14]⟩,
   ⟨"gap04-unread-multi-thing", ["result.unread"],
     o [("vertex", s "x"), ("from", a [o [("store", s ".")]]), ("fold", o [
       ("by", o [("latest-by", s "of"), ("follow", s "prev"),

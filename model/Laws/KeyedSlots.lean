@@ -126,7 +126,7 @@ theorem keyedValue_collect {xs : List Record} (hx : Addressed xs) (f : Option Fo
     {hs : List (RecordId × Shown)} {u : Nat} (h : keyedValue (.collect f none) xs ev = .heads hs u)
     {p : RecordId × Shown} :
     p ∈ hs ↔ ∃ t ∈ thingsOf xs, ev t = .yes ∧ ∃ r ∈ liveIn xs t, (r.id, r.shown) = p := by
-  simp only [keyedValue, limitTo, SlotValue.heads.injEq] at h
+  simp only [keyedValue, wholeThings, SlotValue.heads.injEq] at h
   obtain ⟨rfl, -⟩ := h
   have ha : Addressed (((thingsOf xs).filter (ev · == .yes)).flatMap (liveIn xs)) := fun a ha b hb =>
     hx a (by obtain ⟨_, _, ha⟩ := mem_flatMap.1 ha; exact liveIn_sub ha) b
@@ -143,6 +143,152 @@ theorem keyedValue_collect_unread (f : Option Follow) (limit : Option Nat) (xs :
     (ev : String → Tri) :
     ∃ hs, keyedValue (.collect f limit) xs ev = .heads hs ((thingsOf xs).filter (ev · == .unknown)).length :=
   ⟨_, rfl⟩
+
+/-! ### A limit over things -/
+
+theorem mem_thingsInOrder {rs : List Record} {t : String} :
+    t ∈ thingsInOrder rs ↔ ∃ r ∈ rs, r.thing = t := by
+  induction rs with
+  | nil => simp [thingsInOrder]
+  | cons r rs ih =>
+    rw [thingsInOrder, mem_cons, mem_filter, ih]
+    constructor
+    · rintro (rfl | ⟨⟨q, hq, e⟩, -⟩)
+      · exact ⟨r, mem_cons_self, rfl⟩
+      · exact ⟨q, mem_cons_of_mem _ hq, e⟩
+    · rintro ⟨q, hq, rfl⟩
+      rcases mem_cons.1 hq with rfl | hq
+      · exact .inl rfl
+      · by_cases e : q.thing = r.thing
+        · exact .inl e
+        · exact .inr ⟨⟨q, hq, rfl⟩, by simpa using e⟩
+
+/-- Each thing once. -/
+theorem thingsInOrder_nodup (rs : List Record) : (thingsInOrder rs).Nodup := by
+  induction rs with
+  | nil => exact nodup_nil
+  | cons r rs ih =>
+    simp only [thingsInOrder]
+    exact nodup_cons.2 ⟨by simp [mem_filter], ih.filter _⟩
+
+/-- Over records of distinct things, the things are the records' things, in order. -/
+theorem thingsInOrder_distinct {rs : List Record} (h : (rs.map Record.thing).Nodup) :
+    thingsInOrder rs = rs.map Record.thing := by
+  induction rs with
+  | nil => rfl
+  | cons r rs ih =>
+    obtain ⟨hr, hn⟩ := nodup_cons.1 h
+    simp only [thingsInOrder, map_cons, ih hn]
+    congr 1
+    exact filter_eq_self.2 fun t ht => by
+      simp only [bne_iff_ne, ne_eq]; rintro rfl; exact hr ht
+
+theorem mem_wholeThings {k : Nat} {rs : List Record} {r : Record} :
+    r ∈ wholeThings (some k) rs ↔ r ∈ rs ∧ r.thing ∈ (thingsInOrder rs).take k := by
+  simp [wholeThings, mem_filter]
+
+/-- **Each thing is listed whole**: a listed record's thing has every one of its
+records in the list. -/
+theorem wholeThings_whole {l : Option Nat} {rs : List Record} {r q : Record}
+    (hr : r ∈ wholeThings l rs) (hq : q ∈ rs) (e : q.thing = r.thing) : q ∈ wholeThings l rs := by
+  cases l with
+  | none => exact hq
+  | some k => exact mem_wholeThings.2 ⟨hq, e ▸ (mem_wholeThings.1 hr).2⟩
+
+/-- The records of at most `k` things are listed. -/
+theorem wholeThings_things {k : Nat} {rs : List Record} :
+    (∀ r ∈ wholeThings (some k) rs, r.thing ∈ (thingsInOrder rs).take k) ∧
+      ((thingsInOrder rs).take k).length ≤ k ∧ ((thingsInOrder rs).take k).Nodup :=
+  ⟨fun _ hr => (mem_wholeThings.1 hr).2, length_take_le _ _,
+    (take_sublist _ _).nodup (thingsInOrder_nodup rs)⟩
+
+/-- When the records are of distinct things, a limit over things is a limit over records. -/
+theorem wholeThings_distinct {l : Option Nat} {rs : List Record} (h : (rs.map Record.thing).Nodup) :
+    wholeThings l rs = limitTo l rs := by
+  cases l with
+  | none => rfl
+  | some k =>
+    simp only [wholeThings, limitTo, thingsInOrder_distinct h]
+    induction rs generalizing k with
+    | nil => simp
+    | cons r rs ih =>
+      obtain ⟨hr, hn⟩ := nodup_cons.1 h
+      cases k with
+      | zero => simp
+      | succ k =>
+        simp only [map_cons, take_succ_cons, filter_cons, contains_cons, beq_self_eq_true,
+          Bool.true_or, ↓reduceIte]
+        congr 1
+        rw [← ih hn k]
+        apply filter_congr
+        intro q hq
+        have : (q.thing == r.thing) = false := by
+          simp only [beq_eq_false_iff_ne, ne_eq]
+          intro e; exact hr (e ▸ mem_map_of_mem hq)
+        simp [this]
+
+theorem liveIn_thing {xs : List Record} {t : String} {r : Record} (h : r ∈ liveIn xs t) : r.thing = t :=
+  isOf_iff.1 (mem_filter.1 (mem_filter.1 h).1).2
+
+theorem take_full {α} {l : List α} {k : Nat} {a : α} (ha : a ∈ l) (hn : a ∉ l.take k) :
+    (l.take k).length = k := by
+  rw [length_take]
+  by_cases hk : l.length ≤ k
+  · rw [take_of_length_le hk] at hn; exact absurd ha hn
+  · omega
+
+/-- **Collect following `keys` with a limit of `k` lists things whole**: it
+lists exactly the live records of at most `k` selected things, every live record
+of each, and leaves out a selected thing with a live record only when it lists
+`k` things. The things are the first `k` in the newest-first list of the
+selected things' live records, so a thing whose newest live record is newer
+comes first. -/
+theorem keyedValue_collect_limit {xs : List Record} (hx : Addressed xs) (f : Option Follow)
+    (ev : String → Tri) (k : Nat) {hs : List (RecordId × Shown)} {u : Nat}
+    (h : keyedValue (.collect f (some k)) xs ev = .heads hs u) :
+    ∃ T : List String, T.Nodup ∧ T.length ≤ k ∧ (∀ t ∈ T, t ∈ thingsOf xs ∧ ev t = .yes) ∧
+      (∀ t ∈ thingsOf xs, ev t = .yes → liveIn xs t ≠ [] → t ∉ T → T.length = k) ∧
+      ∀ p, p ∈ hs ↔ ∃ t ∈ T, ∃ r ∈ liveIn xs t, (r.id, r.shown) = p := by
+  simp only [keyedValue, SlotValue.heads.injEq] at h
+  obtain ⟨rfl, -⟩ := h
+  have ha : Addressed (((thingsOf xs).filter (ev · == .yes)).flatMap (liveIn xs)) := fun a ha b hb =>
+    hx a (by obtain ⟨_, _, ha⟩ := mem_flatMap.1 ha; exact liveIn_sub ha) b
+      (by obtain ⟨_, _, hb⟩ := mem_flatMap.1 hb; exact liveIn_sub hb)
+  generalize hL : newestFirst (((thingsOf xs).filter (ev · == .yes)).flatMap (liveIn xs)) = L
+  -- every record of `L` is a selected thing's live record, unlinked
+  have hmem : ∀ r, r ∈ L ↔ ∃ t ∈ thingsOf xs, ev t = .yes ∧ ∃ q ∈ liveIn xs t, r = q.unlinked := by
+    intro r
+    rw [← hL, mem_newestFirst_iff ha]
+    simp only [mem_flatMap, mem_filter, beq_iff_eq]
+    constructor
+    · rintro ⟨q, ⟨t, ⟨ht, he⟩, hq⟩, rfl⟩; exact ⟨t, ht, he, q, hq, rfl⟩
+    · rintro ⟨t, ht, he, q, hq, rfl⟩; exact ⟨q, ⟨t, ⟨ht, he⟩, hq⟩, rfl⟩
+  have hthing : ∀ r ∈ L, ∃ t ∈ thingsOf xs, ev t = .yes ∧ r.thing = t := by
+    intro r hr
+    obtain ⟨t, ht, he, q, hq, rfl⟩ := (hmem r).1 hr
+    exact ⟨t, ht, he, (liveIn_thing hq : q.thing = t)⟩
+  obtain ⟨-, hlen, hnd⟩ := wholeThings_things (k := k) (rs := L)
+  have hsel : ∀ t ∈ (thingsInOrder L).take k, t ∈ thingsOf xs ∧ ev t = .yes := by
+    intro t ht
+    obtain ⟨r, hr, rfl⟩ := mem_thingsInOrder.1 (mem_of_mem_take ht)
+    obtain ⟨t', ht', he, e⟩ := hthing r hr
+    exact e ▸ ⟨ht', he⟩
+  refine ⟨(thingsInOrder L).take k, hnd, hlen, hsel, ?_, ?_⟩
+  · intro t ht he hne hn
+    obtain ⟨q, hq⟩ := exists_mem_of_ne_nil _ hne
+    exact take_full (mem_thingsInOrder.2 ⟨q.unlinked, (hmem _).2 ⟨t, ht, he, q, hq, rfl⟩,
+      (liveIn_thing hq : q.thing = t)⟩) hn
+  · intro p
+    simp only [shownIds, mem_map]
+    constructor
+    · rintro ⟨r, hr, rfl⟩
+      obtain ⟨hr, hT⟩ := mem_wholeThings.1 hr
+      obtain ⟨t, -, -, q, hq, rfl⟩ := (hmem r).1 hr
+      exact ⟨t, liveIn_thing hq ▸ hT, q, hq, rfl⟩
+    · rintro ⟨t, hT, q, hq, rfl⟩
+      obtain ⟨ht, he⟩ := hsel t hT
+      exact ⟨q.unlinked, mem_wholeThings.2 ⟨(hmem _).2 ⟨t, ht, he, q, hq, rfl⟩,
+        (liveIn_thing hq).symm ▸ hT⟩, rfl⟩
 
 /-! ## `by` over things -/
 
@@ -430,6 +576,22 @@ theorem collectOf_as_things (hx : Addressed xs) (hw : ∀ r ∈ xs, r.sets = non
       exact ⟨(whole_hd_mem hx hh ht).1, (whole_live_iff hx hw hh ht (whole_hd_mem hx hh ht).1).2 rfl⟩
   have hyes : ∀ t ∈ thingsOf xs, e t = .yes ↔ chosen sel cs (hd t) = true ∧ payTest cs (hd t) = .yes :=
     fun t ht => by rw [he t ht]; split <;> simp_all
+  -- one live record per thing, so the list's records are of distinct things
+  have hnd : ((newestFirst (((thingsOf xs).filter (e · == .yes)).flatMap (liveIn xs))).map
+      Record.thing).Nodup := by
+    rw [Nodup, pairwise_map]
+    apply (pairwise_map.1 (newestFirst_distinct hL)).imp_of_mem
+    intro a b ha hb hab e'
+    apply hab
+    obtain ⟨qa, hqa, rfl⟩ := (mem_newestFirst_iff hL).1 ha
+    obtain ⟨qb, hqb, rfl⟩ := (mem_newestFirst_iff hL).1 hb
+    obtain ⟨ta, hta, hqa⟩ := mem_flatMap.1 hqa
+    obtain ⟨tb, -, hqb⟩ := mem_flatMap.1 hqb
+    have : ta = tb := (liveIn_thing hqa).symm.trans (e'.trans (liveIn_thing hqb : qb.thing = tb))
+    subst this
+    have ht := (mem_filter.1 hta).1
+    rw [(hliv ta ht qa).1 hqa, (hliv ta ht qb).1 hqb]
+  rw [wholeThings_distinct hnd]
   congr 1
   · congr 2
     apply sorted_ext
