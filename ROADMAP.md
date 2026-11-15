@@ -19,7 +19,7 @@ These proofs apply only under their stated premises.
 The tree has 601 JSON fixtures: 589 generated fixtures and 12 standard fixtures.
 Lean replays 580 generated fixtures; 9 occurred fixtures use separate checks.
 Rust checks every fixture, six JCS byte pairs, 4,000 binary64 cases, and 128 SUPERCOP signing cases with ed25519-dalek.
-Rust passes 175 tests; JavaScript passes 6,974 vector checks and 40 regression and law tests.
+Rust passes 175 tests; JavaScript passes 6,974 vector checks and 41 regression and law tests.
 Both also check that `spec/run` answers write their members, group, thing and key names included, in the model's order; JavaScript checks `fold/latest-by` answers' thing keys too.
 JavaScript refuses a held record's invalid `emitted` or `occurred` before it answers, as the Lean and Rust readers do.
 The fuzz suite passes 60 tests.
