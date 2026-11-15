@@ -1,0 +1,81 @@
+{
+  "vector": "76-sets-in-batch",
+  "layer": "batch",
+  "laws": ["batch.meaning", "record.keys"],
+  "source": "model",
+  "input": {
+    "held": [
+      {
+        "id": "r:tsant02u7bhefv6nom5tukci31agdh8q5sonp4s3h4dhkfbrgli0",
+        "prev": []
+      },
+      {
+        "id": "r:l3c6scqhfqu3bfmj288git5kimd1e3ik809q8pv8p2637qi48kc0",
+        "of": "r:tsant02u7bhefv6nom5tukci31agdh8q5sonp4s3h4dhkfbrgli0",
+        "prev": ["r:tsant02u7bhefv6nom5tukci31agdh8q5sonp4s3h4dhkfbrgli0"]
+      },
+      {
+        "id": "r:iivodlg66vgkad2knrdqob3e4obh28sea6omq5kk0u25t925276g",
+        "prev": []
+      }
+    ],
+    "drafts": [
+      {
+        "label": "@t",
+        "env": {
+          "kind": "task",
+          "observer": "sl:u11o5kditce56otma2ksbsnff7n6t0ftgbrmt4sp0j5d1riusfr0",
+          "emitted": "2026-10-24T09:00:00Z",
+          "sets": ["title", "status"]
+        },
+        "salt": "40gd7o1bunse1tvl5mrfu8bfqo",
+        "payload": {
+          "title": "Write the spec",
+          "status": "open"
+        }
+      },
+      {
+        "env": {
+          "kind": "task",
+          "observer": "sl:u11o5kditce56otma2ksbsnff7n6t0ftgbrmt4sp0j5d1riusfr0",
+          "emitted": "2026-10-24T09:00:00Z",
+          "of": "@t",
+          "prev": ["@t"],
+          "sets": []
+        },
+        "salt": "vc1v06i8t9khct4fl38o2benr0",
+        "payload": {}
+      },
+      {
+        "env": {
+          "kind": "task",
+          "observer": "sl:u11o5kditce56otma2ksbsnff7n6t0ftgbrmt4sp0j5d1riusfr0",
+          "emitted": "2026-10-24T09:00:00Z",
+          "of": "@t",
+          "prev": ["@t"],
+          "sets": ["status", "@t", "@nowhere", "status"]
+        },
+        "salt": "i72l5o3rqmqbl4hl08u8avo950",
+        "payload": {
+          "status": "done"
+        }
+      }
+    ]
+  },
+  "expect": {
+    "records": [
+      {
+        "id": "r:rlkqsn2m0mb90vpku9he0ftla3ti0k6j04vr73mkkddadg3hh9k0",
+        "env_canonical": "{\"emitted\":\"2026-10-24T09:00:00Z\",\"kind\":\"task\",\"observer\":\"sl:u11o5kditce56otma2ksbsnff7n6t0ftgbrmt4sp0j5d1riusfr0\",\"sets\":[\"status\",\"title\"]}"
+      },
+      {
+        "id": "r:2jl7e4s7ijjcahaun8tbi5nt6fvc3mona0qqurb0fdrsdl6f84t0",
+        "env_canonical": "{\"emitted\":\"2026-10-24T09:00:00Z\",\"kind\":\"task\",\"observer\":\"sl:u11o5kditce56otma2ksbsnff7n6t0ftgbrmt4sp0j5d1riusfr0\",\"of\":\"r:rlkqsn2m0mb90vpku9he0ftla3ti0k6j04vr73mkkddadg3hh9k0\",\"prev\":[\"r:rlkqsn2m0mb90vpku9he0ftla3ti0k6j04vr73mkkddadg3hh9k0\"],\"sets\":[]}"
+      },
+      {
+        "id": "r:obol5k1qr4h782ijafh74mhcmjhu25bgo4dlhbgc0lalpaqu627g",
+        "env_canonical": "{\"emitted\":\"2026-10-24T09:00:00Z\",\"kind\":\"task\",\"observer\":\"sl:u11o5kditce56otma2ksbsnff7n6t0ftgbrmt4sp0j5d1riusfr0\",\"of\":\"r:rlkqsn2m0mb90vpku9he0ftla3ti0k6j04vr73mkkddadg3hh9k0\",\"prev\":[\"r:rlkqsn2m0mb90vpku9he0ftla3ti0k6j04vr73mkkddadg3hh9k0\"],\"sets\":[\"@nowhere\",\"@t\",\"status\"]}"
+      }
+    ]
+  }
+}

@@ -132,14 +132,29 @@ def canonicalTextChecks : IO Unit := do
   let fields := [("kind", "kind-empty", true), ("observer", "observer-not-typed", true),
     ("emitted", "emitted-not-rfc3339", true), ("occurred", "occurred-not-span", false),
     ("about", "about-not-typed", false), ("of", "of-not-typed", false), ("prev", "prev-not-record-id", false),
-    ("under", "under-not-record-id", false), ("erases", "erases-not-record-id", false)]
+    ("under", "under-not-record-id", false), ("erases", "erases-not-record-id", false),
+    ("sets", "sets-not-keys", false)]
   for (k, code, required) in fields do
     let wrong := [Json.int 7, .null, .bool true, .obj [], .arr [.int 7]] ++
-      (if ["about", "prev", "erases"].contains k then [.str "r:x", .arr [.str "topic:a", .null]] else [.arr []])
+      (if ["about", "prev", "erases"].contains k then [.str "r:x", .arr [.str "topic:a", .null]]
+       else if k == "sets" then [.str "title", .arr [.str "title", .null], .arr [.str "title", .str ""]]
+       else [.arr []])
     for v in (if required then [none] else []) ++ wrong.map some do
       ensure (match Read.env "env" (set k v) with
         | .ok e => e.problem == some code
         | .error _ => false) s!"{k} left out or mistyped is not refused with {code}"
+  -- `sets`: absent and empty differ, and an empty set is written
+  for v in [Json.arr [], .arr [.str "title"], .arr [.str "@d", .str "title", .str "@d"]] do
+    ensure (match Read.env "env" (set "sets" (some v)) with
+      | .ok e => e.problem == none
+      | .error _ => false) "a set of key names is refused"
+  let absent : Env := { kind := "note", observer := "o:test", emitted := "2026-10-21T00:00:00Z" }
+  let empty : Env := { absent with sets := some [] }
+  ensure (empty.toJson.canon != absent.toJson.canon) "an empty sets is left out"
+  ensure (empty.toJson.canon == "{\"emitted\":\"2026-10-21T00:00:00Z\",\"kind\":\"note\",\"observer\":\"o:test\",\"sets\":[]}")
+    "an empty sets is not written as []"
+  ensure (({ absent with sets := some ["title", "due", "title"] } : Env).toJson.canon ==
+      ({ absent with sets := some ["due", "title"] } : Env).toJson.canon) "sets is not canonical"
   IO.println "R1/R4/R6 canonical text runtime checks pass"
 
 /-- The answer `Records.recordAnswer` gives a record input written as text. -/

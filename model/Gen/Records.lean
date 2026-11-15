@@ -36,7 +36,10 @@ def envInput (e : Env) : J :=
     if xs.isEmpty then [] else [(k, .arr (xs.map .str))]
   .obj ([("kind", .str e.kind), ("observer", .str e.observer), ("emitted", .str e.emitted)] ++
     opt "occurred" e.occurred ++ set "about" e.about ++ opt "of" e.of ++ set "prev" e.prev ++
-    opt "under" e.under ++ set "erases" e.erases)
+    opt "under" e.under ++ set "erases" e.erases ++
+    match e.sets with
+    | some xs => [("sets", .arr (xs.map .str))]
+    | none => [])
 
 def textBytes (s : String) : List UInt8 := s.toUTF8.toList
 
@@ -72,11 +75,13 @@ structure Case where
   /-- Payloads that must all give the same commitment (members in different orders). -/
   payloads : List Json
   key : String := "kyle"
+  /-- The name the salt is drawn from, when it is another case's. -/
+  saltName : Option String := none
 
 def storedVector (c : Case) : Except String J := do
   let env := c.envs.headD default
   let payload := c.payloads.headD .null
-  let salt := saltFor c.name
+  let salt := saltFor (c.saltName.getD c.name)
   let seed := seedFor c.key
   let r ← match write env salt payload with
     | .ok w => pure w.stored
@@ -290,6 +295,29 @@ def storedCases : List Case := [
   { name := "14-of-natural-key", laws := ["record.id", "record.of"],
     envs := [{ note with of := some "task:auth-flow", about := ["topic:auth"] }],
     payloads := [.obj [("body", .str "start the auth flow")]] },
+  -- `sets` is a set, canonical as `about` is, and a root may state it
+  { name := "15-sets-are-sets", laws := ["record.id", "record.sets", "record.keys"],
+    envs := [
+      { note with sets := some ["title", "status", "due"] },
+      { note with sets := some ["due", "title", "status"] },
+      { note with sets := some ["status", "title", "due", "title", "status"] }],
+    payloads := [.obj [("title", .str "Write the spec"), ("status", .str "open"), ("due", .str "2026-11-20")]] },
+  -- an empty `sets` sets nothing, a pure join, and is written; `17` is the
+  -- same record without it, with the same salt and payload, and another id
+  { name := "16-sets-empty", laws := ["record.id", "record.keys"],
+    envs := [{ note with of := some r1Id, prev := [r1Id], sets := some [] }],
+    payloads := [.obj []] },
+  { name := "17-sets-absent", laws := ["record.id", "record.keys"],
+    envs := [{ note with of := some r1Id, prev := [r1Id] }],
+    payloads := [.obj []], saltName := some "16-sets-empty" },
+  -- nothing compares `sets` with the payload: a declared key the payload
+  -- lacks is unset, and a payload that is not an object unsets every one
+  { name := "18-sets-key-not-in-payload", laws := ["record.keys"],
+    envs := [{ note with of := some r1Id, prev := [r1Id], sets := some ["status"] }],
+    payloads := [.obj [("title", .str "Write the spec, then the vectors")]] },
+  { name := "19-sets-payload-not-object", laws := ["record.keys"],
+    envs := [{ note with sets := some ["status", "title"] }],
+    payloads := [.str "done"] },
   { name := "38-native-shortest-tie", laws := ["record.canonical"],
     envs := [note], payloads := [.obj [
       ("positive", .number ⟨0x43143ff3c1cb0959⟩),
@@ -314,7 +342,10 @@ def refusedCases : List (String × Env) := [
   ("41-of-missing", { note with prev := [r1Id] }),
   ("42-about-before-of", { note with about := ["auth"], of := some "auth" }),
   ("43-of-before-prev", { note with of := some "auth", prev := ["topic:auth"] }),
-  ("44-erases-before-of-missing", { note with prev := [r1Id], erases := ["topic:auth"] })] ++
+  ("44-erases-before-of-missing", { note with prev := [r1Id], erases := ["topic:auth"] }),
+  ("45-sets-empty-name", { note with sets := some ["title", ""] }),
+  ("46-erases-before-sets", { note with erases := ["topic:auth"], sets := some [""] }),
+  ("47-sets-before-of-missing", { note with prev := [r1Id], sets := some [""] })] ++
   ["+00:00", "-00:00", "+01:00", "-23:59"].zipIdx.map (fun (z, i) =>
     (s!"r4-offset-{i}", note ("2026-10-21T00:00:00" ++ z))) ++
   ["2026-10-21T00:00:60Z", "2016-12-31T23:59:60Z", "2026-10-21T00:00:00.0Z",
@@ -514,7 +545,17 @@ def shapeCases : List (String × J × String) :=
     one "shape-under-null" (w "under" .null) "under-not-record-id",
     ("shape-salt-null", shapeInput "shape-salt-null" [rawNote] (some .null), "salt-not-16-bytes"),
     -- a set member that is an array is not text, whatever it holds
-    one "shape-about-nested" (w "about" (.arr [.arr [.str "@missing"]])) "about-not-typed" ]
+    one "shape-about-nested" (w "about" (.arr [.arr [.str "@missing"]])) "about-not-typed",
+    -- `sets`: not an array, a member not text, or an empty name
+    one "shape-sets-text" (w "sets" (.str "title")) "sets-not-keys",
+    one "shape-sets-object" (w "sets" (.obj [("title", .bool true)])) "sets-not-keys",
+    one "shape-sets-null" (w "sets" .null) "sets-not-keys",
+    one "shape-sets-member-number" (w "sets" (.arr [.str "title", .int 7])) "sets-not-keys",
+    one "shape-sets-member-null" (w "sets" (.arr [.null])) "sets-not-keys",
+    one "shape-sets-nested" (w "sets" (.arr [.arr [.str "title"]])) "sets-not-keys",
+    one "shape-sets-empty-name" (w "sets" (.arr [.str ""])) "sets-not-keys",
+    one "shape-erases-before-sets" (w "sets" (.int 7) (w "erases" (.int 7))) "erases-not-record-id",
+    one "shape-sets-before-of-missing" (w "sets" (.int 7) (w "prev" (.arr [rid]))) "sets-not-keys" ]
 
 /-- Empty sets are the canonical form of leaving them out: the same record. -/
 def emptySetsInput : J :=
@@ -582,8 +623,17 @@ def selfCheck : Except String Unit := do
       fun s => base32 (textBytes s)))
     ", co, cpng, cpnmu, cpnmuog, cpnmuoj1, cpnmuoj1e8"
 
+/-- The id a stored case's first envelope and payload name. -/
+def caseId (c : Case) : String :=
+  idOf H (c.envs.headD default) (commitOf H (saltFor (c.saltName.getD c.name)) (c.payloads.headD .null))
+
 def vectors : Except String (List (String × J)) := do
   selfCheck
+  -- absent and empty `sets` name different records
+  match storedCases.find? (·.name == "16-sets-empty"), storedCases.find? (·.name == "17-sets-absent") with
+  | some a, some b =>
+    if caseId a == caseId b then throw "record/16-sets-empty: an empty sets names the record without it"
+  | _, _ => throw "record/16-sets-empty: a case is missing"
   let stored ← storedCases.mapM fun c => do pure (c.name, ← storedVector c)
   let refused ← refusedCases.mapM fun (n, e) => do pure (n, ← refusedVector n e)
   let payloads ← refusedPayloads.mapM fun (n, p) => do pure (n, ← refusedVector n note p)

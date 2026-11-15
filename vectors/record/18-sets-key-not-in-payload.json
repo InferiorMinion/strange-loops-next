@@ -1,0 +1,37 @@
+{
+  "vector": "18-sets-key-not-in-payload",
+  "layer": "record",
+  "laws": ["record.keys"],
+  "source": "model",
+  "input": {
+    "envs": [
+      {
+        "kind": "note",
+        "observer": "sl:u11o5kditce56otma2ksbsnff7n6t0ftgbrmt4sp0j5d1riusfr0",
+        "emitted": "2026-10-21T09:30:00Z",
+        "of": "r:iivodlg66vgkad2knrdqob3e4obh28sea6omq5kk0u25t925276g",
+        "prev": ["r:iivodlg66vgkad2knrdqob3e4obh28sea6omq5kk0u25t925276g"],
+        "sets": ["status"]
+      }
+    ],
+    "payloads": [
+      {
+        "title": "Write the spec, then the vectors"
+      }
+    ],
+    "salt": "2egvcl4sek91dfspv1u876ko2c",
+    "seed": "9f08h2p00frdgijchip196fmah9l5mj1mu6fb126m5g1sk1ok1t0"
+  },
+  "expect": {
+    "env_canonical": "{\"emitted\":\"2026-10-21T09:30:00Z\",\"kind\":\"note\",\"observer\":\"sl:u11o5kditce56otma2ksbsnff7n6t0ftgbrmt4sp0j5d1riusfr0\",\"of\":\"r:iivodlg66vgkad2knrdqob3e4obh28sea6omq5kk0u25t925276g\",\"prev\":[\"r:iivodlg66vgkad2knrdqob3e4obh28sea6omq5kk0u25t925276g\"],\"sets\":[\"status\"]}",
+    "payload_canonical": "{\"title\":\"Write the spec, then the vectors\"}",
+    "commit": "h:9amu7j972h8l84h03etmd56phm40k5behqbc6qjlgnqgebh54tug",
+    "id_preimage": "{\"commit\":\"h:9amu7j972h8l84h03etmd56phm40k5behqbc6qjlgnqgebh54tug\",\"env\":{\"emitted\":\"2026-10-21T09:30:00Z\",\"kind\":\"note\",\"observer\":\"sl:u11o5kditce56otma2ksbsnff7n6t0ftgbrmt4sp0j5d1riusfr0\",\"of\":\"r:iivodlg66vgkad2knrdqob3e4obh28sea6omq5kk0u25t925276g\",\"prev\":[\"r:iivodlg66vgkad2knrdqob3e4obh28sea6omq5kk0u25t925276g\"],\"sets\":[\"status\"]}}",
+    "id": "r:ngjmgia5hbrisa40b6nnqsgt53iiva8hsfo2vuhve036l5jnaqqg",
+    "signing_input": "loops/record/v1:r:ngjmgia5hbrisa40b6nnqsgt53iiva8hsfo2vuhve036l5jnaqqg",
+    "key": "k:ovcj4qlctbgluf826r7ll53hlfshn31ulq0tue2alhbkil6k16qg",
+    "ed25519": "fv0dgor84bmc0ij2bfke19da9ts50pf5m0u4soojd6cqtopn13f3rrsc1dmf4l85ldfgq7tup3lr4lttrh6a1vbaph9aricec6veg1o",
+    "line": "{\"env\":{\"emitted\":\"2026-10-21T09:30:00Z\",\"kind\":\"note\",\"observer\":\"sl:u11o5kditce56otma2ksbsnff7n6t0ftgbrmt4sp0j5d1riusfr0\",\"of\":\"r:iivodlg66vgkad2knrdqob3e4obh28sea6omq5kk0u25t925276g\",\"prev\":[\"r:iivodlg66vgkad2knrdqob3e4obh28sea6omq5kk0u25t925276g\"],\"sets\":[\"status\"]},\"id\":\"r:ngjmgia5hbrisa40b6nnqsgt53iiva8hsfo2vuhve036l5jnaqqg\",\"payload\":{\"title\":\"Write the spec, then the vectors\"},\"salt\":\"2egvcl4sek91dfspv1u876ko2c\",\"sig\":{\"ed25519\":\"fv0dgor84bmc0ij2bfke19da9ts50pf5m0u4soojd6cqtopn13f3rrsc1dmf4l85ldfgq7tup3lr4lttrh6a1vbaph9aricec6veg1o\",\"key\":\"k:ovcj4qlctbgluf826r7ll53hlfshn31ulq0tue2alhbkil6k16qg\"}}",
+    "erased_line": "{\"commit\":\"h:9amu7j972h8l84h03etmd56phm40k5behqbc6qjlgnqgebh54tug\",\"env\":{\"emitted\":\"2026-10-21T09:30:00Z\",\"kind\":\"note\",\"observer\":\"sl:u11o5kditce56otma2ksbsnff7n6t0ftgbrmt4sp0j5d1riusfr0\",\"of\":\"r:iivodlg66vgkad2knrdqob3e4obh28sea6omq5kk0u25t925276g\",\"prev\":[\"r:iivodlg66vgkad2knrdqob3e4obh28sea6omq5kk0u25t925276g\"],\"sets\":[\"status\"]},\"id\":\"r:ngjmgia5hbrisa40b6nnqsgt53iiva8hsfo2vuhve036l5jnaqqg\",\"sig\":{\"ed25519\":\"fv0dgor84bmc0ij2bfke19da9ts50pf5m0u4soojd6cqtopn13f3rrsc1dmf4l85ldfgq7tup3lr4lttrh6a1vbaph9aricec6veg1o\",\"key\":\"k:ovcj4qlctbgluf826r7ll53hlfshn31ulq0tue2alhbkil6k16qg\"}}"
+  }
+}
