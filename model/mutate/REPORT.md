@@ -1,5 +1,36 @@
 # Lean model mutation report
 
+## `sets`: the ten new entries and six whose targets moved, at `132e06a`
+
+The catalogue has 250 entries: 240 and ten that mutate `sets` in the envelope, its reader, the writer's codes and the batch.
+`finish-envelope-env-tojson` keeps its site, which is now `Loops.Env.baseJson`, and is retargeted there.
+The full catalogue is not rerun. Node 25.9 runs the ten new entries and the six whose definitions the change touched, with `--only`, in one run, with a 900-second timeout.
+
+| Entry | Wrong rule | Outcome | Where |
+|---|---|---|---|
+| `sets-not-keys-skipped` | a `sets` that is not keys accepted | rejected by build | `Env.problem_sets` |
+| `sets-empty-name-accepted` | an empty name, so an unreadable member, accepted | rejected by build | `unreadable_refused` |
+| `sets-before-erases` | `sets-not-keys` checked before `erases-not-record-id` | rejected by build | `Env.problem_sets_not_keys` |
+| `sets-after-of-missing` | `sets-not-keys` checked after `of-missing` | rejected by build | `Env.problem_sets_not_keys` |
+| `sets-write-code-after-of-missing` | `sets-not-keys` ranked after `of-missing` in a batch | generator assertion | `batch/80-sets-before-of-missing: rotation 0 gives (some of-missing)` |
+| `sets-empty-left-out` | an empty `sets` left out of the canonical envelope | rejected by build | `setsJson_eq` |
+| `sets-not-canonical` | members in the writer's order, repeats kept | rejected by build | `setsJson_eq` |
+| `sets-field-unknown` | `sets` an unknown envelope field | generator assertion | `record/shape-sets-text: the model answers envelope-field-unknown` |
+| `sets-read-dropped` | the reader drops `sets` | rejected by build | `Read.envOf_sets_mistyped` |
+| `sets-key-as-label` | a key that looks like a label replaced by its id | rejected by build | `substEnv_congr` |
+| `finish-envelope-env-tojson` | (unchanged) | killed by vector | `batch/01`, `02`, `record/02`, `03`, `11` |
+| `wide-envelope-011` | (unchanged) | rejected by build | `Env.problem_unreadable` |
+| `d8-of-not-typed-skipped` | (unchanged) | rejected by build | `Env.problem_unreadable` |
+| `d8-of-missing-skipped` | (unchanged) | rejected by build | `Env.problem_of` |
+| `step1-envelope-keys-remove` | (unchanged) | generator assertion | `R6 raw keys must precede envelope values` |
+| `read-missing-kind-filled` | (unchanged) | rejected by build | `Read.envOf_missing` |
+
+No entry survives.
+Build rejections are not semantic proof kills; the entries rejected by build were not applied by hand.
+The runner exits 1 for the generator assertions; no timeout or infrastructure failure occurs.
+It restored the source after each entry and rebuilt the baseline at the end.
+Raw results and logs were kept under the ignored `rust/target/scratch` and deleted once this summary was written.
+
 ## `under-unknown`: the four new entries, at `9b5f552`
 
 The catalogue has 240 entries: 236 and four that mutate the new `under-unknown` check in `Loops.checkPrev`.

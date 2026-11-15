@@ -622,6 +622,100 @@ fn an_under_target_is_held_whatever_its_shown_state() {
 }
 
 #[test]
+fn sets_is_stated_on_either_path_and_kept_without_the_payload() {
+    let s = Store::new("sets");
+    let sets = |id: &str| s.json(&["get", id]);
+    let root = s.ok(&[
+        "emit",
+        "task",
+        "--sets",
+        "title",
+        "--sets",
+        "status",
+        "--sets",
+        "title",
+        "title=Write the spec",
+        "status=open",
+    ]);
+    assert_eq!(
+        at(&sets(&root), &["env", "sets"]),
+        &Json::Arr(vec![Json::Str("status".into()), Json::Str("title".into())])
+    );
+    // An empty `sets` is stated with --sets-nothing, and written; a revision's
+    // `of` is still filled in from what it replaces.
+    let join = s.ok(&["emit", "task", "--prev", &root, "--sets-nothing"]);
+    assert_eq!(at(&sets(&join), &["env", "sets"]), &Json::Arr(vec![]));
+    assert_eq!(text(&sets(&join), &["env", "of"]), root);
+    // A declared key the payload lacks is written; nothing compares them.
+    let status = s.ok(&[
+        "emit",
+        "task",
+        "--prev",
+        &join,
+        "--sets",
+        "status",
+        "title=renamed",
+    ]);
+    assert_eq!(text(&sets(&status), &["env", "of"]), root);
+    // Without either flag the emit states no `sets`.
+    let whole = s.ok(&["emit", "task", "--prev", &status, "title=whole"]);
+    assert!(!s.ok(&["get", &whole]).contains("\"sets\""));
+    // A changeset line states `sets` itself, empty or not; a key is never a label.
+    s.ok_with(
+        &["emit", "-"],
+        "{\"label\":\"@a\",\"kind\":\"task\",\"sets\":[]}\n{\"kind\":\"task\",\"of\":\"@a\",\"prev\":[\"@a\"],\"sets\":[\"@a\"],\"payload\":\"done\"}\n",
+    );
+    let held = s.ok(&["export"]);
+    assert!(held.contains("\"sets\":[\"@a\"]"));
+    assert_eq!(
+        s.fails(&["emit", "task", "--sets", "", "x"], ""),
+        (1, "refused: sets-not-keys".into())
+    );
+    for (bad, code) in [
+        (r#"{"kind":"task","sets":"title"}"#, "sets-not-keys"),
+        (r#"{"kind":"task","sets":["title",7]}"#, "sets-not-keys"),
+        (r#"{"kind":"task","sets":[""]}"#, "sets-not-keys"),
+        // After erases, before of-missing, across the changeset.
+        (
+            "{\"kind\":\"task\",\"sets\":null}\n{\"kind\":\"task\",\"erases\":[\"x\"]}",
+            "erases-not-record-id",
+        ),
+        (
+            "{\"label\":\"@a\",\"kind\":\"task\"}\n{\"kind\":\"task\",\"prev\":[\"@a\"]}\n{\"kind\":\"task\",\"sets\":7}",
+            "sets-not-keys",
+        ),
+    ] {
+        assert_eq!(
+            s.fails(&["emit", "-"], &format!("{bad}\n")),
+            (1, format!("refused: {code}")),
+            "{bad}"
+        );
+    }
+    for args in [
+        ["emit", "task", "--sets", "title", "--sets-nothing"],
+        ["emit", "task", "--sets-nothing", "--sets", "title"],
+    ] {
+        assert_eq!(s.fails(&args, "").0, 2, "{args:?}");
+    }
+    assert_eq!(s.ok(&["export"]), held, "nothing is written");
+
+    // The envelope survives erasure, `sets` with it; withheld too.
+    s.ok(&["erase", &status]);
+    let erased = s.ok(&["get", &status]);
+    assert!(erased.contains("\"sets\":[\"status\"]") && !erased.contains("\"payload\""));
+    let other = Store::new("sets-withheld");
+    let line = s
+        .ok(&["export"])
+        .lines()
+        .find(|line| line.contains(&status[2..]) && !line.contains("\"erasure\""))
+        .expect("the erased line")
+        .to_owned();
+    other.ok_with(&["import"], &format!("{line}\n"));
+    let withheld = other.ok(&["get", &status]);
+    assert!(withheld.contains("\"sets\":[\"status\"]") && !withheld.contains("\"payload\""));
+}
+
+#[test]
 fn two_stores_converge_by_export_and_import() {
     let (a, b) = (Store::new("sync-a"), Store::new("sync-b"));
     let thing = "repo:strange-loops";

@@ -28,7 +28,7 @@ async function* jsonFiles(dir) {
 test('generation is deterministic, varied, balanced, and independent of scheduling', () => {
   const corpus = FAMILIES.flatMap(f => Array.from({ length: 8 }, (_, i) => generate('stable', i, f)));
   assert.equal(createHash('sha256').update(JSON.stringify(corpus)).digest('hex'),
-    '890ae3396843682c399872717cae1be22ee2b3158b44d4d91c0c00624ed0a34e');
+    '5dd00e9800ad54d764c1e040f36e477bd9a4f39ef152fb36ba25e2407c3cafed');
   const layers = new Set();
   for (const family of FAMILIES) {
     const seen = new Set();

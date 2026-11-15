@@ -24,6 +24,8 @@ pub enum Error {
     UnderNotRecordId,
     /// An erasure target breaks the record id grammar.
     ErasesNotRecordId,
+    /// A `sets` value is not an array, or a member is not text or is empty.
+    SetsNotKeys,
     /// The envelope has `prev` but states no `of`.
     OfMissing,
     /// The salt does not contain exactly 16 bytes.
@@ -47,6 +49,7 @@ impl Error {
             Self::PrevNotRecordId => "prev-not-record-id",
             Self::UnderNotRecordId => "under-not-record-id",
             Self::ErasesNotRecordId => "erases-not-record-id",
+            Self::SetsNotKeys => "sets-not-keys",
             Self::OfMissing => "of-missing",
             Self::SaltNot16Bytes => "salt-not-16-bytes",
             Self::MemberDuplicate => "member-duplicate",

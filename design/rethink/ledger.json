@@ -53,7 +53,7 @@
     "group": "Layer 0 · the record",
     "status": "settled",
     "claim": "R5: Typed references use a lower-case prefix, and sets sort by UTF-16 code units.",
-    "why": "References use <code>prefix:value</code>. Set normalization also removes repeats and omits empty sets."
+    "why": "References use <code>prefix:value</code>. Set normalization also removes repeats and omits empty sets, except <code>sets</code>, where an empty set is written as <code>[]</code>: absent and empty differ there."
   },
   {
     "kind": "decision",
@@ -193,7 +193,7 @@
     "group": "Things",
     "status": "settled",
     "claim": "D8b: <code>about</code> only mentions; it never makes a head.",
-    "why": "<code>where</code> and <code>collect</code> still read it, so everything said about a thing stays a fold. <code>from.about</code> is a mention test and <code>from.of</code> takes a thing's records. A link is a thing whose <code>about</code> names both ends. Kyle, 2026-11-10; built with D8a. D8c, keys a record declares it sets, is ruled and not built."
+    "why": "<code>where</code> and <code>collect</code> still read it, so everything said about a thing stays a fold. <code>from.about</code> is a mention test and <code>from.of</code> takes a thing's records. A link is a thing whose <code>about</code> names both ends. Kyle, 2026-11-10; built with D8a. D8c, keys a record declares it sets, is ruled; its envelope field <code>sets</code> is built, and the keyed fold is not."
   },
   {
     "kind": "decision",

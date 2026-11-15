@@ -175,6 +175,20 @@ def unknownBoth := draft none "batch-ub2"
     under := some grantId }
   (.obj [])
 
+-- `sets` holds key names, not references: a member that starts with `@` is a
+-- key, never a label, so it is neither replaced nor looked up. An empty
+-- `sets` is written, and nothing compares a record's keys with another's.
+def setsRoot := draft (some "@t") "batch-st"
+  { kind := "task", observer := kyle, emitted := at0, sets := some ["title", "status"] }
+  (.obj [("title", .str "Write the spec"), ("status", .str "open")])
+def setsJoin := draft none "batch-sj"
+  { kind := "task", observer := kyle, emitted := at0, of := some "@t", prev := ["@t"], sets := some [] }
+  (.obj [])
+def setsLabelKey := draft none "batch-sk"
+  { kind := "task", observer := kyle, emitted := at0, of := some "@t", prev := ["@t"],
+    sets := some ["status", "@t", "@nowhere", "status"] }
+  (.obj [("status", .str "done")])
+
 structure Case where
   name : String
   laws : List String
@@ -228,7 +242,8 @@ def cases : List Case := [
   ⟨"74-under-unknown-before-prev-unrelated", ["batch.refuse", "batch.refuse-order"],
     [decide1, unrelated, underUnheld]⟩,
   ⟨"75-write-before-under-unknown", ["batch.refuse", "batch.refuse-order"],
-    [bigNumber, underUnheld]⟩
+    [bigNumber, underUnheld]⟩,
+  ⟨"76-sets-in-batch", ["batch.meaning", "record.keys"], [setsRoot, setsJoin, setsLabelKey]⟩
 ]
 
 /-- In the chains, `@c` names the id of `@m`'s envelope with `@g`'s id in place
@@ -266,9 +281,10 @@ def checkMeaning (ds : List Draft) (rs : List Stored) : Bool :=
 def sortStr (xs : List String) : List String := sortBy utf16 xs
 
 /-- The same batch listed differently: every rotation of its drafts, and each
-with every draft's `prev` reversed (a set, so its order must not matter). -/
+with every draft's `prev` and `sets` reversed (sets, so their order must not matter). -/
 def variants (ds : List Draft) : List (List Draft) :=
-  let rev := ds.map fun d => { d with env := { d.env with prev := d.env.prev.reverse } }
+  let rev := ds.map fun d =>
+    { d with env := { d.env with prev := d.env.prev.reverse, sets := d.env.sets.map List.reverse } }
   rotations ds ++ rotations rev
 
 /-- A held record: its id, its `of` when it has one, and its `prev`. -/
@@ -389,7 +405,15 @@ def shapeCases : List (String × List J × String) :=
     ("61-about-null", [d, setEnv "about" (some .null) e], "about-not-typed"),
     ("62-prev-null", [d, setEnv "prev" (some .null) (setEnv "of" (some (.str "@d")) e)], "prev-not-record-id"),
     ("63-under-null", [d, setEnv "under" (some .null) e], "under-not-record-id"),
-    ("64-salt-null", [d, setMember "salt" (some .null) e], "salt-not-16-bytes") ]
+    ("64-salt-null", [d, setMember "salt" (some .null) e], "salt-not-16-bytes"),
+    -- `sets`: after `erases-not-record-id` and before `of-missing`, across the batch
+    ("77-sets-text", [d, setEnv "sets" (some (.str "title")) e], "sets-not-keys"),
+    ("78-sets-empty-name", [d, setEnv "sets" (some (.arr [.str "title", .str ""])) e], "sets-not-keys"),
+    ("79-erases-before-sets", [setEnv "sets" (some (.int 7)) d, setEnv "erases" (some (.arr [.str "topic:auth"])) e],
+      "erases-not-record-id"),
+    ("80-sets-before-of-missing", [d, setEnv "sets" (some (.arr [.null])) e, jDraft noOf], "sets-not-keys"),
+    ("81-labels-before-sets", [setEnv "sets" (some .null) (jDraft cites)], "label-unknown"),
+    ("82-sets-before-prev-unknown", [setEnv "sets" (some (.arr [.int 7])) (jDraft unknownPrev)], "sets-not-keys") ]
 
 /-- The model's answer for drafts as written: a refusal code, or `none` when
 the batch is written. A decoding error is a fault in the case. -/

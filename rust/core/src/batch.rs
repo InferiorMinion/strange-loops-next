@@ -195,7 +195,7 @@ pub fn subst_opt(
 
 /// Lean: `Loops.substEnv`, model/Loops/Batch.lean.
 /// Replaces labels in about, of, prev and under only; all other envelope
-/// fields, `erases` among them, keep their original values.
+/// fields, `erases` and `sets` among them, keep their original values.
 pub fn subst_env(env: &Env, mapping: impl Fn(&str) -> Option<String>) -> Option<Env> {
     Some(Env {
         about: subst(&env.about, &mapping)?,
@@ -378,10 +378,11 @@ fn writer_priority(error: stored::Error) -> u8 {
         stored::Error::PrevNotRecordId => 7,
         stored::Error::UnderNotRecordId => 8,
         stored::Error::ErasesNotRecordId => 9,
-        stored::Error::OfMissing => 10,
-        stored::Error::SaltNot16Bytes => 11,
-        stored::Error::MemberDuplicate => 12,
-        stored::Error::NumberOutOfRange => 13,
+        stored::Error::SetsNotKeys => 10,
+        stored::Error::OfMissing => 11,
+        stored::Error::SaltNot16Bytes => 12,
+        stored::Error::MemberDuplicate => 13,
+        stored::Error::NumberOutOfRange => 14,
     }
 }
 
@@ -774,8 +775,31 @@ mod tests {
         );
     }
 
+    #[test]
+    fn a_key_in_sets_is_never_a_label() {
+        let mut root = draft(Some("@t"));
+        root.env.sets = Some(texts(&["title"]));
+        let mut join = draft(None);
+        join.env.of = Some("@t".into());
+        join.env.prev = texts(&["@t"]);
+        join.env.sets = Some(texts(&["@t", "@nowhere", "@t"]));
+        let written = resolve_batch(&hash, &no_held, &[join, root]).expect("keys are not labels");
+        assert_eq!(
+            written[0].stored().env.sets,
+            Some(texts(&["@t", "@nowhere", "@t"]))
+        );
+        assert!(
+            written[0]
+                .stored()
+                .env
+                .to_json()
+                .canon()
+                .contains("\"sets\":[\"@nowhere\",\"@t\"]")
+        );
+    }
+
     fn invalid_drafts() -> Vec<(Draft, stored::Error, &'static str)> {
-        let mut ds = vec![draft(None); 13];
+        let mut ds = vec![draft(None); 14];
         ds[0].env.kind.clear();
         ds[1].env.observer = "bad".into();
         ds[2].env.emitted = "bad".into();
@@ -785,10 +809,11 @@ mod tests {
         ds[6].env.prev = texts(&["bad"]);
         ds[7].env.under = Some("bad".into());
         ds[8].env.erases = texts(&["bad"]);
-        ds[9].env.prev = vec![format!("r:{}", crate::base32::base32(&[0; 32]))];
-        ds[10].salt.clear();
-        ds[11].payload = duplicate_payload();
-        ds[12].payload = big_payload();
+        ds[9].env.sets = Some(texts(&["title", ""]));
+        ds[10].env.prev = vec![format!("r:{}", crate::base32::base32(&[0; 32]))];
+        ds[11].salt.clear();
+        ds[12].payload = duplicate_payload();
+        ds[13].payload = big_payload();
         let errors = [
             (stored::Error::KindEmpty, "kind-empty"),
             (stored::Error::ObserverNotTyped, "observer-not-typed"),
@@ -799,6 +824,7 @@ mod tests {
             (stored::Error::PrevNotRecordId, "prev-not-record-id"),
             (stored::Error::UnderNotRecordId, "under-not-record-id"),
             (stored::Error::ErasesNotRecordId, "erases-not-record-id"),
+            (stored::Error::SetsNotKeys, "sets-not-keys"),
             (stored::Error::OfMissing, "of-missing"),
             (stored::Error::SaltNot16Bytes, "salt-not-16-bytes"),
             (stored::Error::MemberDuplicate, "member-duplicate"),

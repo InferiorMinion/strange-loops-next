@@ -382,6 +382,30 @@ export function generate(seed, index, family) {
       input.drafts = d % 2 ? [...ds, beside] : [beside, ...ds];
     }
   }
+  // `sets` in a changeset, each case in a fixed slot: not an array, an empty
+  // name, its place after `erases-not-record-id` and before `of-missing`
+  // across drafts in both orders, a key that looks like a label, which is a
+  // key, and an empty `sets`, which is written.
+  if (family === 'batch' && index % 64 >= 56) {
+    const d = index % 64 - 56, ds = input.drafts, last = ds.at(-1);
+    nearMiss = ['sets-not-array', 'sets-empty-name', 'erases-before-sets-first', 'erases-before-sets-last',
+      'sets-before-of-missing-first', 'sets-before-of-missing-last', 'sets-label-key', 'sets-empty'][d];
+    scheduled = true;
+    // Undo the random label cycle and `of` faults above, so the slot alone decides.
+    ds[0].env.about = ds[0].env.about.filter(a => a !== '@d0');
+    for (const x of ds.slice(1)) x.env.of = ds[0].env.of ?? '@d0';
+    if (d === 0) last.env.sets = rng.pick(['title', null, 7, { title: true }]);
+    if (d === 1) last.env.sets = ['title', ''];
+    if (d >= 2 && d < 6) {
+      last.env.sets = d < 4 ? [7] : [''];
+      const beside = { label: '@beside', env: { ...clone(ds[0].env), prev: [] }, salt: ds[0].salt, payload: { beside: d } };
+      if (d < 4) beside.env.erases = ['t:item'];
+      else { delete beside.env.of; beside.env.prev = ['@d0']; }
+      input.drafts = d % 2 ? [...ds, beside] : [beside, ...ds];
+    }
+    if (d === 6) last.env.sets = ['@d0', '@nowhere', 'n', '@d0'];
+    if (d === 7) last.env.sets = [];
+  }
   // One draft's envelope is not an object, or left out, or the draft is not an
   // object, beside another draft whose envelope has an unknown key, in both
   // orders: the unknown key is refused, whichever comes first.
@@ -502,6 +526,27 @@ export function generate(seed, index, family) {
       if (d === 10) { input.envs = [clean, noKind]; input.payloads = [null]; }
       if (d === 11) { input.envs = [clean]; input.payloads = [1, Number.MAX_SAFE_INTEGER + 1]; }
     }
+    // `sets`, in slots of the cycles of 256 that issue #1's shapes leave free:
+    // each way to be `sets-not-keys`, its place after `erases-not-record-id`
+    // and before `of-missing`, and sets that are written: empty, a key the
+    // payload lacks, beside a payload that is not an object, and variants in
+    // other orders with repeats.
+    const setsSlots = [37, 38, 42, 43, 56, 57, 58, 59, 60, 61, 62, 63];
+    if (index % 256 >= 128 && setsSlots.includes(slot)) {
+      const d = setsSlots.indexOf(slot), target = `r:${'0'.repeat(52)}`;
+      const { of: _of, ...root } = clean;
+      nearMiss = ['sets-text', 'sets-null', 'sets-object', 'sets-member-number', 'sets-member-null',
+        'sets-empty-name', 'erases-before-sets', 'sets-before-of-missing', 'sets-empty', 'sets-key-not-in-payload',
+        'sets-payload-not-object', 'sets-variants'][d];
+      scheduled = true;
+      input.envs = [[{ ...clean, sets: 'title' }], [{ ...clean, sets: null }], [{ ...clean, sets: { title: true } }],
+        [{ ...clean, sets: ['title', 7] }], [{ ...clean, sets: [null] }], [{ ...clean, sets: ['title', ''] }],
+        [{ ...clean, erases: ['t:item'], sets: [''] }], [{ ...root, prev: [target], sets: [7] }],
+        [{ ...clean, sets: [] }], [{ ...clean, sets: ['missing'] }], [{ ...clean, sets: ['status', 'title'] }],
+        [{ ...clean, sets: ['title', 'status', '@d0'] }, { ...clean, sets: ['@d0', 'status', 'title', 'status'] }]][d];
+      if (d === 9) input.payloads = [{ title: 'kept' }];
+      if (d === 10) input.payloads = ['done'];
+    }
   }
   // A separate one-in-eight draw probes an independent input boundary.
   if (!scheduled && rng.int(8) === 0) {
@@ -568,6 +613,30 @@ export function generate(seed, index, family) {
         : { $number: rng.pick([`${k}.0`, `${k * 10}e-1`, `${k}E0`, k ? `${k}.000` : '-0', `${k}.5`]) });
     }
     for (const order of input.orders) for (const r of order) if (ranks.has(r.id)) r.fields.rank = clone(ranks.get(r.id));
+  }
+  // `sets` on records and drafts no slot schedules, drawn last so every earlier
+  // draw stays as it was: absent, empty, some key names with repeats, or now
+  // and then not keys. A record's variants hold the same set in another order.
+  const isObject = v => v !== null && typeof v === 'object' && !Array.isArray(v);
+  const drawSets = () => {
+    const roll = rng.int(10);
+    if (roll < 5) return undefined;
+    if (roll === 5) return [];
+    if (roll < 9) return Array.from({ length: 1 + rng.int(3) }, () => rng.pick(['title', 'status', 'n', 'text', '@d0', '😀', 'z']));
+    return rng.pick(['title', null, 7, [''], ['n', 7], [null]]);
+  };
+  if (!scheduled && family === 'record' && Array.isArray(input.envs)) {
+    const sets = drawSets();
+    if (sets !== undefined) input.envs.forEach((env, i) => {
+      if (isObject(env)) env.sets = i && Array.isArray(sets) && sets.length ? [...shuffled(sets, rng), sets[0]] : clone(sets);
+    });
+  }
+  if (!scheduled && family === 'batch') {
+    for (const d of input.drafts) {
+      if (!isObject(d) || !isObject(d.env)) continue;
+      const sets = drawSets();
+      if (sets !== undefined) d.env.sets = sets;
+    }
   }
   return { layer, input, fuzz: { seed: String(seed), index, family, nearMiss } };
 }

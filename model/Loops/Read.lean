@@ -104,7 +104,8 @@ def envOf (kvs : List (String × Json)) : Env :=
     of := (kvs.lookup "of").map textOr,
     prev := ((kvs.lookup "prev").map textsOr).getD [],
     under := (kvs.lookup "under").map textOr,
-    erases := ((kvs.lookup "erases").map textsOr).getD [] }
+    erases := ((kvs.lookup "erases").map textsOr).getD [],
+    sets := (kvs.lookup "sets").map textsOr }
 
 /-- The envelope `envOf` reads from an object's members, once `object` has
 checked that no name repeats. -/

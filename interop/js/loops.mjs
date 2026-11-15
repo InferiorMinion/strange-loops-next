@@ -102,6 +102,9 @@ export function envJson(env) {
   // `of`, like `occurred` and `under`, is left out when absent, so a record
   // without it keeps its bytes and id.
   if (env.of !== undefined) out.of = env.of;
+  // `sets` is written when stated, empty or not: absent means the record is
+  // read whole, and empty means it sets nothing.
+  if (env.sets !== undefined) out.sets = canonSet(env.sets);
   return out;
 }
 
@@ -192,7 +195,9 @@ const typedRef = (s) => /^[a-z][a-z0-9-]*:./su.test(s);
 const recordId = (s) => {
   try { fixedBytes(s, "r:", 32); return true; } catch { return false; }
 };
-const ENV_KEYS = new Set(["kind", "observer", "emitted", "occurred", "about", "of", "prev", "under", "erases"]);
+// A key name in `sets`: non-empty text.
+const keyName = (s) => typeof s === "string" && s !== "";
+const ENV_KEYS = new Set(["kind", "observer", "emitted", "occurred", "about", "of", "prev", "under", "erases", "sets"]);
 
 // The envelope's own fields, read by name: after the shape check there are no others.
 const envUnicodeProblem = (env) =>
@@ -233,7 +238,7 @@ export function readEnv(raw) {
     emitted: has("emitted") ? textOr(raw.emitted) : UNREADABLE,
   };
   for (const k of ["occurred", "of", "under"]) if (has(k)) env[k] = textOr(raw[k]);
-  for (const k of ["about", "prev", "erases"]) if (has(k)) env[k] = textsOr(raw[k]);
+  for (const k of ["about", "prev", "erases", "sets"]) if (has(k)) env[k] = textsOr(raw[k]);
   return env;
 }
 
@@ -247,8 +252,8 @@ export function readSalt(text) {
 
 // The writer's envelope checks, in the model's order (`Env.problem`,
 // model/Loops/Envelope.lean). `of` is one typed reference, checked right after
-// `about`; a record with `prev` and no `of` is refused last, once every field
-// is well formed.
+// `about`; `sets` holds non-empty key names, checked after `erases`; a record
+// with `prev` and no `of` is refused last, once every field is well formed.
 export function problem(env) {
   if (!env.kind) return "kind-empty";
   if (!typedRef(env.observer)) return "observer-not-typed";
@@ -259,6 +264,7 @@ export function problem(env) {
   if (!(env.prev ?? []).every(recordId)) return "prev-not-record-id";
   if (env.under !== undefined && !recordId(env.under)) return "under-not-record-id";
   if (!(env.erases ?? []).every(recordId)) return "erases-not-record-id";
+  if (env.sets !== undefined && !(Array.isArray(env.sets) && env.sets.every(keyName))) return "sets-not-keys";
   if ((env.prev ?? []).length && env.of === undefined) return "of-missing";
   return null;
 }

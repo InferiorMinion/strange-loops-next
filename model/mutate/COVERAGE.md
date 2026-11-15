@@ -12,6 +12,7 @@ Following `prev` on count, sum, min and max retargets two entries (`wide-spec-06
 Issue #1 retargets four entries at the shape stage and labels in `under`, and adds ten: 229 entries total with both.
 `by` adds seven: 236 entries total with all three.
 `under-unknown` adds four: 240 entries total.
+`sets` adds ten: 250 entries total. `finish-envelope-env-tojson` is retargeted at `Loops.Env.baseJson`, where its site now is.
 The raw-reader ordering mutations target library definitions under `Loops`.
 The cheap runner uses those fourteen replacements and the four former D6 survivors.
 It requires runtime failures after successful builds.
@@ -47,7 +48,7 @@ The catalogue includes existing entries without definition metadata.
 - `Loops.isLabel`: covered by `wide-batch-003`
 - `Loops.subst`: covered by `finish-batch-subst`
 - `Loops.substOpt`: covered by `d8-subst-of-skipped`
-- `Loops.substEnv`: covered by `under-subst-skipped`
+- `Loops.substEnv`: covered by `under-subst-skipped`, `sets-key-as-label`
 - `Loops.Draft.refs`: covered by `wide-batch-004`, `under-refs-skipped`
 - `Loops.Draft.commit`: excluded: It delegates to commitOf. No direct eligible operation.
 - `Loops.Draft.ready`: covered by `wide-batch-005`
@@ -58,11 +59,16 @@ The catalogue includes existing entries without definition metadata.
 
 ## model/Loops/Envelope.lean
 
-- `Loops.Env.toJson`: covered by `finish-envelope-env-tojson`
+- `Loops.Env.setsJson`: covered by `sets-empty-left-out`, `sets-not-canonical`
+- `Loops.Env.baseJson`: covered by `finish-envelope-env-tojson`
+- `Loops.Env.toJson`: excluded: It joins `Loops.Env.baseJson` and `Loops.Env.setsJson`. No direct eligible operation.
 - `Loops.isLowerAlnum`: covered by `wide-envelope-008`
 - `Loops.typedRef`: covered by `wide-envelope-009`
 - `Loops.recordId`: covered by `wide-envelope-010`
-- `Loops.Env.problem`: covered by `wide-envelope-011`, `d8-of-not-typed-skipped`, `d8-of-missing-skipped`
+- `Loops.envelopeFields`: covered by `sets-field-unknown`
+- `Loops.keyName`: covered by `sets-empty-name-accepted`
+- `Loops.Env.keysNamed`: excluded: It applies `Loops.keyName` to each declared key. `sets-empty-name-accepted` mutates what it applies and `sets-not-keys-skipped` its use.
+- `Loops.Env.problem`: covered by `wide-envelope-011`, `d8-of-not-typed-skipped`, `d8-of-missing-skipped`, `sets-not-keys-skipped`, `sets-before-erases`, `sets-after-of-missing`
 - `Loops.envelopeKeysProblem`: covered by `step1-envelope-keys-remove`
 - `Loops.envelopesShapeProblem`: covered by `shape-not-object-skipped`, `shape-not-object-before-unknown`
 - `Loops.draftEnvs`: covered by `shape-draft-without-env-passes`
@@ -72,7 +78,7 @@ The catalogue includes existing entries without definition metadata.
 
 - `Loops.Read.textOr`: covered by `read-wrong-type-accepted`
 - `Loops.Read.textsOr`: covered by `read-wrong-set-empty`
-- `Loops.Read.envOf`: covered by `read-missing-kind-filled`
+- `Loops.Read.envOf`: covered by `read-missing-kind-filled`, `sets-read-dropped`
 - `Loops.Read.salt`: covered by `read-salt-not-text-filled`, `read-salt-not-base32-filled`
 
 ## model/Loops/Families.lean
@@ -291,7 +297,7 @@ The catalogue includes existing entries without definition metadata.
 - `Loops.erase`: excluded: It constructs an erased stored record. No direct eligible operation.
 - `Loops.writeProblem`: covered by `stored-salt-check`
 - `Loops.Written.stored`: excluded: It delegates to make. No direct eligible operation.
-- `Loops.writeCodes`: excluded: It is a fixed list of refusal codes. No direct eligible operation.
+- `Loops.writeCodes`: covered by `sets-write-code-after-of-missing`
 - `Loops.firstRefusal`: covered by `stored-refusal-last`
 - `Loops.write`: covered by `finish-stored-write`
 - `Loops.opens`: covered by `wide-stored-081`

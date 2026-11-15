@@ -208,6 +208,7 @@ fn refusal_precedence_is_exact() {
     e.prev = vec!["no".into()];
     e.under = Some("no".into());
     e.erases = vec!["no".into()];
+    e.sets = Some(vec![String::new()]);
     let duplicate = Json::Obj(vec![
         (
             "x".into(),
@@ -229,6 +230,7 @@ fn refusal_precedence_is_exact() {
         Error::PrevNotRecordId,
         Error::UnderNotRecordId,
         Error::ErasesNotRecordId,
+        Error::SetsNotKeys,
         Error::OfMissing,
     ];
     for code in codes {
@@ -243,6 +245,7 @@ fn refusal_precedence_is_exact() {
             Error::PrevNotRecordId => e.prev = vec![format!("r:{}", "0".repeat(52))],
             Error::UnderNotRecordId => e.under = None,
             Error::ErasesNotRecordId => e.erases.clear(),
+            Error::SetsNotKeys => e.sets = Some(Vec::new()),
             Error::OfMissing => e.of = Some("t:x".into()),
             _ => unreachable!("envelope error"),
         }

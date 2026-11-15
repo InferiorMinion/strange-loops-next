@@ -1,0 +1,31 @@
+{
+  "vector": "19-sets-payload-not-object",
+  "layer": "record",
+  "laws": ["record.keys"],
+  "source": "model",
+  "input": {
+    "envs": [
+      {
+        "kind": "note",
+        "observer": "sl:u11o5kditce56otma2ksbsnff7n6t0ftgbrmt4sp0j5d1riusfr0",
+        "emitted": "2026-10-21T09:30:00Z",
+        "sets": ["status", "title"]
+      }
+    ],
+    "payloads": ["done"],
+    "salt": "j1falirlg8qd6mg3iue6utn34o",
+    "seed": "9f08h2p00frdgijchip196fmah9l5mj1mu6fb126m5g1sk1ok1t0"
+  },
+  "expect": {
+    "env_canonical": "{\"emitted\":\"2026-10-21T09:30:00Z\",\"kind\":\"note\",\"observer\":\"sl:u11o5kditce56otma2ksbsnff7n6t0ftgbrmt4sp0j5d1riusfr0\",\"sets\":[\"status\",\"title\"]}",
+    "payload_canonical": "\"done\"",
+    "commit": "h:njvu3hskp9cgprmg7o5ihm65dfkcrt2se3fsblvstn8sp98mlffg",
+    "id_preimage": "{\"commit\":\"h:njvu3hskp9cgprmg7o5ihm65dfkcrt2se3fsblvstn8sp98mlffg\",\"env\":{\"emitted\":\"2026-10-21T09:30:00Z\",\"kind\":\"note\",\"observer\":\"sl:u11o5kditce56otma2ksbsnff7n6t0ftgbrmt4sp0j5d1riusfr0\",\"sets\":[\"status\",\"title\"]}}",
+    "id": "r:rsd58ejmoub10mai94q4edkqmp85a5ir15al0b6cg8om9vdk1950",
+    "signing_input": "loops/record/v1:r:rsd58ejmoub10mai94q4edkqmp85a5ir15al0b6cg8om9vdk1950",
+    "key": "k:ovcj4qlctbgluf826r7ll53hlfshn31ulq0tue2alhbkil6k16qg",
+    "ed25519": "kn2d0e5pm2avecv937g8bo3lb7aq9ehtcvpgud2drv8vm7a4551d7lttvp49op5to5oro0c3papf1ddadsnegfbgigir26vsv10uq08",
+    "line": "{\"env\":{\"emitted\":\"2026-10-21T09:30:00Z\",\"kind\":\"note\",\"observer\":\"sl:u11o5kditce56otma2ksbsnff7n6t0ftgbrmt4sp0j5d1riusfr0\",\"sets\":[\"status\",\"title\"]},\"id\":\"r:rsd58ejmoub10mai94q4edkqmp85a5ir15al0b6cg8om9vdk1950\",\"payload\":\"done\",\"salt\":\"j1falirlg8qd6mg3iue6utn34o\",\"sig\":{\"ed25519\":\"kn2d0e5pm2avecv937g8bo3lb7aq9ehtcvpgud2drv8vm7a4551d7lttvp49op5to5oro0c3papf1ddadsnegfbgigir26vsv10uq08\",\"key\":\"k:ovcj4qlctbgluf826r7ll53hlfshn31ulq0tue2alhbkil6k16qg\"}}",
+    "erased_line": "{\"commit\":\"h:njvu3hskp9cgprmg7o5ihm65dfkcrt2se3fsblvstn8sp98mlffg\",\"env\":{\"emitted\":\"2026-10-21T09:30:00Z\",\"kind\":\"note\",\"observer\":\"sl:u11o5kditce56otma2ksbsnff7n6t0ftgbrmt4sp0j5d1riusfr0\",\"sets\":[\"status\",\"title\"]},\"id\":\"r:rsd58ejmoub10mai94q4edkqmp85a5ir15al0b6cg8om9vdk1950\",\"sig\":{\"ed25519\":\"kn2d0e5pm2avecv937g8bo3lb7aq9ehtcvpgud2drv8vm7a4551d7lttvp49op5to5oro0c3papf1ddadsnegfbgigir26vsv10uq08\",\"key\":\"k:ovcj4qlctbgluf826r7ll53hlfshn31ulq0tue2alhbkil6k16qg\"}}"
+  }
+}

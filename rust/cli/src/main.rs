@@ -31,7 +31,7 @@ usage: loops [-C <dir>] <verb> ...
   init                          make .loops/ here
   emit <kind> [field=text | field:=json]... [\"message\"]
        [--of <thing>] [--about <thing>]... [--prev <id>]... [--erases <id>]...
-       [--occurred <when>] [--under <id>]
+       [--occurred <when>] [--under <id>] [--sets <key>]... [--sets-nothing]
                                 a revision without --of is of what it replaces
   emit -                        drafts as JSONL on stdin: one changeset
   get <id>                      one record

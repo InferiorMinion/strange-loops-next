@@ -950,7 +950,7 @@
     "before": "| ys => [(k, .arr (ys.map .str))]",
     "after": "| ys => [(k, .arr (ys.reverse.map .str))]",
     "reason": "Reverse the canonical set.",
-    "definition": "Loops.Env.toJson"
+    "definition": "Loops.Env.baseJson"
   },
   {
     "id": "finish-families-acc-fold",
@@ -1887,5 +1887,85 @@
     "after": "(held u).isNone",
     "reason": "Look an under target up in the store only, not in the batch.",
     "definition": "Loops.checkPrev"
+  },
+  {
+    "id": "sets-not-keys-skipped",
+    "file": "Envelope.lean",
+    "before": "else if !e.keysNamed then some \"sets-not-keys\"",
+    "after": "else if false then some \"sets-not-keys\"",
+    "reason": "Accept a sets that is not a set of key names.",
+    "definition": "Loops.Env.problem"
+  },
+  {
+    "id": "sets-empty-name-accepted",
+    "file": "Envelope.lean",
+    "before": "def keyName (s : String) : Bool := !s.isEmpty",
+    "after": "def keyName (_ : String) : Bool := true",
+    "reason": "Accept an empty key name, and so an unreadable member, in sets.",
+    "definition": "Loops.keyName"
+  },
+  {
+    "id": "sets-before-erases",
+    "file": "Envelope.lean",
+    "before": "  else if !e.erases.all recordId then some \"erases-not-record-id\"\n  else if !e.keysNamed then some \"sets-not-keys\"\n",
+    "after": "  else if !e.keysNamed then some \"sets-not-keys\"\n  else if !e.erases.all recordId then some \"erases-not-record-id\"\n",
+    "reason": "Check sets before erases.",
+    "definition": "Loops.Env.problem"
+  },
+  {
+    "id": "sets-after-of-missing",
+    "file": "Envelope.lean",
+    "before": "  else if !e.keysNamed then some \"sets-not-keys\"\n  else if !e.prev.isEmpty && e.of.isNone then some \"of-missing\"\n",
+    "after": "  else if !e.prev.isEmpty && e.of.isNone then some \"of-missing\"\n  else if !e.keysNamed then some \"sets-not-keys\"\n",
+    "reason": "Check sets after of-missing.",
+    "definition": "Loops.Env.problem"
+  },
+  {
+    "id": "sets-write-code-after-of-missing",
+    "file": "Stored.lean",
+    "before": "\"sets-not-keys\", \"of-missing\", \"salt-not-16-bytes\"",
+    "after": "\"of-missing\", \"sets-not-keys\", \"salt-not-16-bytes\"",
+    "reason": "Rank sets-not-keys after of-missing among a batch's refusals.",
+    "definition": "Loops.writeCodes"
+  },
+  {
+    "id": "sets-empty-left-out",
+    "file": "Envelope.lean",
+    "before": "  | some xs => [(\"sets\", .arr ((canonSet xs).map .str))]",
+    "after": "  | some xs => if xs.isEmpty then [] else [(\"sets\", .arr ((canonSet xs).map .str))]",
+    "reason": "Leave an empty sets out of the canonical envelope, as the other sets are.",
+    "definition": "Loops.Env.setsJson"
+  },
+  {
+    "id": "sets-not-canonical",
+    "file": "Envelope.lean",
+    "before": ".arr ((canonSet xs).map .str)",
+    "after": ".arr (xs.map .str)",
+    "reason": "Write sets in the writer's order, with repeats.",
+    "definition": "Loops.Env.setsJson"
+  },
+  {
+    "id": "sets-field-unknown",
+    "file": "Envelope.lean",
+    "before": "\"under\", \"erases\", \"sets\"]",
+    "after": "\"under\", \"erases\"]",
+    "reason": "Refuse sets as an unknown envelope field.",
+    "definition": "Loops.envelopeFields"
+  },
+  {
+    "id": "sets-read-dropped",
+    "file": "Loops/Read.lean",
+    "before": "sets := (kvs.lookup \"sets\").map textsOr }",
+    "after": "sets := none }",
+    "reason": "Read an envelope without its sets.",
+    "definition": "Loops.Read.envOf"
+  },
+  {
+    "id": "sets-key-as-label",
+    "file": "Batch.lean",
+    "before": "  pure { e with about, of, prev, under }",
+    "after": "  pure { e with about, of, prev, under, sets := e.sets.map (·.map fun k => if isLabel k then (σ k).getD k else k) }",
+    "reason": "Replace a key in sets that looks like a label with the id it names.",
+    "definition": "Loops.substEnv"
   }
 ]

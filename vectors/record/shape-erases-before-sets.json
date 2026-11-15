@@ -1,0 +1,24 @@
+{
+  "vector": "shape-erases-before-sets",
+  "layer": "record",
+  "laws": ["record.shape", "record.refuse"],
+  "source": "model",
+  "input": {
+    "envs": [
+      {
+        "kind": "note",
+        "observer": "sl:u11o5kditce56otma2ksbsnff7n6t0ftgbrmt4sp0j5d1riusfr0",
+        "emitted": "2026-10-21T09:30:00Z",
+        "erases": 7,
+        "sets": 7
+      }
+    ],
+    "salt": "utl033qi7cejkhpkba7btnrur4",
+    "payloads": [
+      {}
+    ]
+  },
+  "expect": {
+    "refused": "erases-not-record-id"
+  }
+}

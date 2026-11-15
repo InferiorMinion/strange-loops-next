@@ -15,6 +15,14 @@ id or a natural key. It is optional and, like `occurred` and `under`, left out
 when absent, so a record without it keeps its bytes. Only a root leaves it
 out: a record with `prev` states `of` (`of-missing`). `about` names the things
 a record mentions; it never says what the record is an emit of.
+
+`sets` names the top-level payload keys a record sets: a set of key names,
+canonical as `about` is. It is optional, and absent and empty differ. A record
+without it is read whole; one with an empty `sets` sets nothing, a pure join.
+So the canonical envelope writes `"sets": []`, the one set left in when empty.
+Each name is non-empty text (`sets-not-keys`). Nothing compares it with the
+payload: a declared key the payload lacks is unset, and the envelope stays
+checkable without its payload.
 -/
 
 namespace Loops
@@ -29,9 +37,17 @@ structure Env where
   prev     : List String := []
   under    : Option String := none
   erases   : List String := []
+  sets     : Option (List String) := none
   deriving Repr, Inhabited
 
-def Env.toJson (e : Env) : Json :=
+/-- `sets` as the canonical envelope writes it: left out when absent, and
+written when stated, empty or not, since absent and empty differ. -/
+def Env.setsJson : Option (List String) → List (String × Json)
+  | some xs => [("sets", .arr ((canonSet xs).map .str))]
+  | none => []
+
+/-- Every field but `sets`, as the canonical envelope writes them. -/
+def Env.baseJson (e : Env) : List (String × Json) :=
   let opt (k : String) : Option String → List (String × Json)
     | some v => [(k, .str v)]
     | none => []
@@ -39,9 +55,11 @@ def Env.toJson (e : Env) : Json :=
     match canonSet xs with
     | [] => []
     | ys => [(k, .arr (ys.map .str))]
-  .obj ([("kind", .str e.kind), ("observer", .str e.observer), ("emitted", .str e.emitted)] ++
+  [("kind", .str e.kind), ("observer", .str e.observer), ("emitted", .str e.emitted)] ++
     opt "occurred" e.occurred ++ set "about" e.about ++ opt "of" e.of ++ set "prev" e.prev ++ opt "under" e.under ++
-    set "erases" e.erases)
+    set "erases" e.erases
+
+def Env.toJson (e : Env) : Json := .obj (e.baseJson ++ Env.setsJson e.sets)
 
 /-! ## Validation -/
 
@@ -59,9 +77,19 @@ def recordId (s : String) : Bool :=
   | 'r' :: ':' :: rest => byteText 32 (String.ofList rest)
   | _ => false
 
+/-- An envelope's fields, by name. -/
+def envelopeFields : List String :=
+  ["kind", "observer", "emitted", "occurred", "about", "of", "prev", "under", "erases", "sets"]
+
+/-- A key name in `sets`: non-empty text, so a spec can name it. -/
+def keyName (s : String) : Bool := !s.isEmpty
+
+/-- Every key `sets` declares is a key name; true when `sets` is absent. -/
+def Env.keysNamed (e : Env) : Bool := (e.sets.map (·.all keyName)).getD true
+
 /-- Check raw envelope keys before decoding values. Typed `Env` has no unknown fields. -/
 def envelopeKeysProblem (kvs : List (String × Json)) : Option String :=
-  if kvs.all (fun (k, _) => ["kind", "observer", "emitted", "occurred", "about", "of", "prev", "under", "erases"].contains k)
+  if kvs.all (fun (k, _) => envelopeFields.contains k)
   then none else some "envelope-field-unknown"
 
 /-- Check every raw envelope's keys before decoding any envelope value.
@@ -121,6 +149,7 @@ def Env.problem (e : Env) : Option String :=
   else if !e.prev.all recordId then some "prev-not-record-id"
   else if !(e.under.map recordId).getD true then some "under-not-record-id"
   else if !e.erases.all recordId then some "erases-not-record-id"
+  else if !e.keysNamed then some "sets-not-keys"
   else if !e.prev.isEmpty && e.of.isNone then some "of-missing"
   else none
 

@@ -15,7 +15,7 @@ written down here so they can be changed on purpose.
 loops init                          make .loops/ here
 loops emit <kind> [field=text | field:=json]... ["message"]
       [--of <thing>] [--about <thing>]... [--prev <id>]... [--erases <id>]...
-      [--occurred <when>] [--under <id>]
+      [--occurred <when>] [--under <id>] [--sets <key>]... [--sets-nothing]
 loops emit -                        drafts as JSONL on stdin: one changeset
 loops get <id>                      one record
 loops of <thing>                    a thing's winner, its other heads, how many records are of it
@@ -48,6 +48,7 @@ loops whoami
   `export --of` takes the records of a thing and `export --about` those that
   mention it, as a spec's `from.of` and `from.about` do.
 * A revision written without `--of` is of what it replaces; see choice 9.
+* `--sets` names a key the emit sets; see choice 10.
 * Every answer is JSON or an id. Lenses are a later step, so `--json` is accepted and changes nothing.
 
 ## On disk
@@ -137,6 +138,14 @@ held. A segment whose name is not the hash of its bytes is listed as altered.
    in, that this path refuses `prev-unknown` itself, that `export --about`
    is a mention filter and `export --of` a thing filter, and that the verb
    that shows a thing is `loops of`, which replaced `loops about`.
+10. **`--sets <key>` once per key, and `--sets-nothing` for an empty set.**
+    `sets` holds key names, so `--sets` takes a key as typed, as `--about`
+    takes a mention, and repeats. An emit without either flag states no
+    `sets` and is read whole; `--sets-nothing` states `"sets": []`, an emit
+    that sets no key. The two together are a usage error. `--sets ""` is the
+    writer's `sets-not-keys`. Nothing is filled in. `emit -` takes `sets` as
+    a line's envelope field, as written; a key that starts with `@` is a key,
+    not a label.
 
 ## Checked by
 
@@ -149,7 +158,8 @@ records (`of-not-root`, and `about` making no head). `rust/cli/tests/walk.rs`
 drives the binary: emit, revise, fork, fold, erase; a labelled changeset and its
 refusals; `of` filled in for a revision, `--of`, and `of-not-root` and
 `prev-unrelated` against the store; `under-unknown`, and an erased and a
-withheld `under` target held; a mention making no head; two stores
+withheld `under` target held; `sets` on either path, empty included, and
+kept on an erased and a withheld record; a mention making no head; two stores
 converging; exit codes. Expected answers come from the
 vectors or from the walk's own statements, not from the code.
 

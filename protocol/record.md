@@ -18,6 +18,7 @@ vectors in `vectors/record/`.
 | `prev` | no | a set of record ids this one replaces |
 | `under` | no | the record id of the grant it acts on |
 | `erases` | no | a set of record ids whose payloads this one erases |
+| `sets` | no | a set of key names: the top-level payload keys this one sets |
 
 * A **typed reference** is `prefix:value`.
   The prefix starts with a lower-case letter and holds lower-case letters, digits and hyphens.
@@ -29,12 +30,21 @@ vectors in `vectors/record/`.
   A fraction is `.` followed by 1 to 9 digits, with a nonzero last digit.
   Numeric offsets are refused. A writer can put its local offset in the payload.
 * **`occurred`** is a span of time. Its grammar is below.
-* **Sets** (`about`, `prev`, `erases`) have one canonical form: sorted by UTF-16 code
+* **Sets** (`about`, `prev`, `erases`, `sets`) have one canonical form: sorted by UTF-16 code
   units, repeats removed, and left out when empty.
+  `sets` is the one exception: it is left out only when absent, and an empty one is written `"sets": []`.
 * **`of`** holds one typed reference, a record id or a natural key such as `task:42`.
   Like `occurred` and `under`, it is left out when absent, so a record without it keeps its bytes and id.
   Only a root leaves it out: a root has no `of` and no `prev`.
   A record with `prev` states `of` (`of-missing`).
+* **`sets`** names the top-level payload keys a record sets.
+  A **key name** is non-empty text.
+  Absent and empty differ: a record without `sets` is read whole, and one with `"sets": []` sets nothing, a pure join.
+  They are different records, with different ids.
+  Nothing compares `sets` with the payload: a declared key the payload lacks is written, and so is a payload that is not an object beside a non-empty `sets`.
+  The envelope stays checkable without its payload.
+  A root or a revision may declare any keys; nothing compares one record's `sets` with another's.
+  A key that starts with `@` is a key, not a label.
 
 The envelope reader refuses fields outside this table.
 Fields the core does not read belong in the payload; otherwise the id would silently omit them.
@@ -42,7 +52,7 @@ Fields the core does not read belong in the payload; otherwise the id would sile
 The envelope reader uses these refusal codes: `envelope-field-unknown`, `envelope-not-object`,
 `kind-empty`, `observer-not-typed`, `emitted-not-rfc3339`, `occurred-not-span`,
 `about-not-typed`, `of-not-typed`, `prev-not-record-id`, `under-not-record-id`,
-`erases-not-record-id`, `of-missing`.
+`erases-not-record-id`, `sets-not-keys`, `of-missing`.
 These are the only codes for an envelope.
 It checks them in that order.
 `of-missing` comes last: it reads `prev` and `of` together, after each has its own check.
@@ -62,7 +72,9 @@ A required field left out, or any field whose value has the wrong JSON type, is 
 | `prev` | allowed | `prev-not-record-id` (not an array, or a member not text) |
 | `under` | allowed | `under-not-record-id` (not text) |
 | `erases` | allowed | `erases-not-record-id` (not an array, or a member not text) |
+| `sets` | allowed | `sets-not-keys` (not an array, or a member not text) |
 
+`sets-not-keys` also refuses a member that is the empty string, which names no key.
 `null` is a value of the wrong type, not a field left out.
 So `{"observer": 7}` is refused with `kind-empty`, and `{"kind": "note", "observer": 7, "emitted": 7}` with `observer-not-typed`.
 Text comes second: every string and member name is Unicode scalar values.
@@ -100,7 +112,7 @@ Every number must have magnitude at most 2^53 − 1, whole or not.
 A number spelling past binary64's range is such a number: it stays a number until this last check.
 No reader refuses it earlier or under another name.
 A batch writes each record through the same checks.
-A draft in a batch may name another draft by its label in `about`, `of`, `prev` or `under`; never in `erases`.
+A draft in a batch may name another draft by its label in `about`, `of`, `prev` or `under`; never in `erases`, and `sets` holds keys, not labels.
 A label in `under` takes part in cycles as the others do, so a grant and a record acting under it can be written together.
 A draft's envelope that is not an object, or a draft without one, is refused with `envelope-not-object` in the shape stage.
 A draft that is not an object, an unknown draft member, a label that is not text and a draft without a payload are malformed input, with no refusal code.
