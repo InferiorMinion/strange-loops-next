@@ -586,6 +586,102 @@ The batch writer and the CLI's single-record path check it against the same stor
 No existing vector changed meaning: every earlier batch vector's `under` names a batch member by label.
 The CLI walk pins an erased and a withheld stored target.
 
+### Step 4: the cut, design note
+
+**Draft by margins-claude, 2026-11-15, for Kyle's rulings before any code.** Nothing here is built.
+Every choice that is Kyle's is marked **Open**, with a recommendation and the alternatives.
+The coordinator asked the questions; the experiment and the proofs are in the margins repo: `sl-py/cut.py` (seed `cut-1`, 200 stores for each configuration) and `lean/Convex.lean`, section `Cut`.
+The stores are two or three keyed things written by three replicas that sync, with pure joins, whole-read emits, erasures and now and then a `prev` that crosses things.
+Each replica's clock is off by up to a stated number of minutes, and an emit comes every one to six minutes.
+
+**The problem.** A tick is a fold at a cut, and step 4's exit is a content tick that recomputes to the same hash on two machines.
+The fold laws say the set decides. None says which sets are worth folding, and D8c made that matter: a part of a keyed thing can read a record as live that the whole has replaced.
+`emitted` is the writer's claim, so a record can name in `prev` a record with a later `emitted`, and then the records emitted by some time hold a record without what it was written on.
+
+**Terms.** A *part* is some of what a store holds. A part is *closed downward* when it holds every held record that one of its members names in `prev`.
+The *prefix* at T is the records emitted by T. *Down* is the prefix and everything it reaches through `prev`: the least part closed downward that holds the prefix. *Held back* is the records of the prefix whose whole ancestry is in it: the greatest such part inside the prefix.
+
+#### 1. A cut is a part closed downward
+
+- **Proved** (`down_reads`): a part closed downward reads a record as live for a key exactly when no setter of the key *in the part* is above it in the whole. That is what a holder of exactly those records reads, with nothing missing between them. It is a state the store could have been in.
+- **Proved** (`down_closed`, `cut_slice_reads`): under the writer's rule with the envelope as a key, a part closed downward holds what the writers of its records held, so `keyed.anchored` applies to it: its live records, read alone, read as it does. `keyed.slice` and `keyed.spec-slice` then apply as to any holding.
+- **The law is over the rule, not over `Anchored`.** `Anchored` says every record names every record under it that is live *now*. A holding can be anchored now and have a past that is not (`cut.py`, by hand: four records). `Anchoring` is the premise that carries to a cut, so the law to state is "`Anchoring`, and a part closed downward, give `ClosedOver`", beside `anchored_of_written`.
+- **Admission agrees.** A part closed downward holds the target a record is refused for, so it refuses what the whole refuses (down and held back, with anchored writers: 0 of 28,414 cuts; a bare prefix admitted such a record in 3 of 3,504 cuts at an hour's skew).
+- **A slice holds the present.** A holder of live records alone cannot answer for a past: what was live then is not in what is live now. A cut needs the history up to it.
+- **Open:** a cut is a part closed downward over `prev`, or a slice of one as the slice laws define it. The alternative is to let a tick fold any set and say nothing of what it reads.
+
+#### 2. "As of `emitted`"
+
+With anchored writers and wall clocks:
+
+| clocks off by up to | cuts | prefix not closed downward | prefix reads a record live under a setter it holds | down or held back does |
+|---|---:|---:|---:|---:|
+| 0 min | 3,702 | 0 | 0 | 0 |
+| 2 min | 3,521 | 0 | 0 | 0 |
+| 10 min | 3,562 | 15 | 3 | 0 |
+| 60 min | 3,504 | 480 | 96 | 0 |
+
+- **Proved** (`prefix_down`, `mono_of_prefixes`): every prefix is closed downward exactly when no record names a record with a later `emitted`.
+- Where the prefix is not closed downward, down and held back each give other answers than it (480 and 478 of the 480 cuts), and they are two different parts. Down includes records emitted after T that a record of the prefix builds on. Held back leaves out records emitted before T that build on a later one.
+- Held back is the prefix of another clock (`heldOf_prefix`): a record's own `emitted` or the latest in its ancestry, whichever is later. That is what a writer rule "never emit earlier than what you name" would have written. With that rule in the writers, every prefix was closed downward (0 of 14,125).
+- **The cut is about claims either way.** With clocks two minutes off, no prefix was open, and 1,011 of 3,521 cuts still were not the keyed state the writers together had at that minute. No choice here makes `emitted` the time.
+- **Open, recommended: as of T is down.** It trusts the claims it is asked about: a record emitted before T was written on what it names, so that was there too, whatever its own clock said. It changes no record, no writer and no refusal. Its heads are all records of the prefix.
+  - **Held back** in the reader: also closed downward, and a backdated record gains nothing by it. One record with a clock far ahead hides everything built on it from every earlier cut.
+  - **A writer rule** on `emitted`: binds honest writers only, and makes `emitted` something other than the observer's now. A record with a clock far ahead pulls the `emitted` of everything built on it forward for good.
+  - **An admission rule** (refuse a record that names a later-emitted one): binds readers, drops an honest record for another writer's clock, and is a new refusal, so a slice must carry the targets of what it refuses, as `keyed.spec-slice` learned for `prev-unrelated`.
+  - **The bare prefix**, with the artefact stated: 96 of 3,504 cuts at an hour's skew read a state no holder could have read, and 13 held a thing that was not anchored.
+- The bound should read as `below` does, as a window's end is. The experiment took T itself in, which changes nothing here.
+
+#### 3. `emitted` against holding, and what a content tick folds
+
+- **They are two questions.** With true clocks, what a replica held at a minute and the `emitted` prefix of what it holds now were different sets in 5,539 of 12,892 (replica, minute) pairs, every one by late arrivals, and gave another keyed state in 5,514. With clocks ten minutes off it was 7,360 of 12,747, and 2,263 of those held a record claimed after the minute.
+- **Holding is not a fold's parameter.** Nothing in a record says when it arrived, and a place keeps its segments as a set, not in an order ([place](rust/PLACE.md)). So "what did this store hold at T" has an answer only where a witness tick was taken at T. Its `covers` is the answer.
+- **What was held need not be closed downward.** When a sync appends in the order written, every prefix of a place's own order was (0 of 6,563). In any order, 1,208 of 6,683 were not. A slice is not closed downward on purpose. A witness tick records what was held and claims no more, as the design says.
+- **Open, recommended: a content tick folds a set named outright.** Its `covers` is a cut or a slice of one, chosen by the records: the closure of what a record cites, what a marker record names, a window (5), or "as of `emitted`" by the rule of 2. A cut that a record names needs no clock at all: it is down of the ids named. Then `emitted` is one way to choose `covers` and never a parameter of a fold.
+- **So no fold changes.** "Folds take as of for both times" ([horizons](design/rethink/sections/15-horizons.html)) costs one function on the held set, applied before settling, and the `where` of 5. Every slot, the keyed ones included, runs as built over the cut.
+
+#### 4. An erasure after the cut
+
+- **The built rule covers it.** Settling inside the cut reads a form held without its payload, and with no eraser in the set, as withheld. Envelope folds count it and payload folds leave it unread. Nothing new is needed.
+- **Equal openings give equal results**, by `settle.set`: a holder that lost a payload to a later eraser and one that never received it hold the same form. Of 396 cuts with a covered record erased after the cut, a holder that settles everything it holds and then cuts differed in 331 from one that cuts and then settles, and only in the word: `erased` where the other says `withheld`. Cutting first agrees with Kyle's ruling of 2026-11-10 that withheld is in the end the same state as erased.
+- **`covers` names ids, not openings.** A holder before the erasure and one after it computed different results for the same `covers` in 342 of the 396 cuts. With `shown` left out of the result it was 299, and never in a slot that lists ids (latest-by with no payload test, collect); only where a value reads a payload (a payload test, a sum, `by` on a payload field).
+- The design expects the first kind to survive: "a result made of references still can be [recomputed]" ([resolution](design/rethink/sections/08-resolution.html)), "erasing the note in the team store changed nothing in any tick" ([example](design/rethink/sections/14-example.html)), and the five states of a reference in the context walk are the reader's, not the tick's. As built, every listed id carries `shown`, so every listing result changes on erasure.
+- **Open, recommended:** the canonical result (D7) lists ids without `shown`; a reading says what its reader holds. And the input key names which covered ids were folded open, so one key never names two results. The alternative keeps `shown` in the hashed result; then no result with a list in it outlives an erasure of a listed record, and the two design sentences above need changing.
+
+#### 5. The second time
+
+- **The `occurred` cut acts after the heads, the `emitted` cut before settling.** A window is a test on the current records, which is what a `where` on `env.occurred` already is. "What did we believe in 2019 about 2009" is the cut of 2 at 2019 and then that `where`.
+- **A window taken first is wrong.** Folding "the records whose occurred starts in the span" gave another answer than the `where` in 601 of 660 (store, window) pairs, and in 428 showed as current a record that a revision had moved out of the window. With `spec.slice`'s additions (erasers, targets, successors, their targets) every slot that reads records as written or by heads agreed, and the keyed slots differed in 383. With every record of the things touched, none differed.
+- So the "By window" row in [resolution](design/rethink/sections/08-resolution.html) names what the window *selects*. Its `covers` is the slice of that, as `spec.slice` and `keyed.spec-slice` give it. A late record still ticks again, and so does a revision that moves a covered thing out.
+- **Open:** how a window is spelled. An `env.occurred` test passes neither bound on a record without `occurred`, and [record](protocol/record.md) says a window places such a record at its `emitted`. Recommended: a window is `where` on the span content order already uses, under its own field name; the alternative makes `window` a second mechanism beside `where`.
+- **Open:** `occurred` on a keyed thing. The envelope is read from the heads, and `loops emit` copies `about` from them but not `occurred`. So setting `status` on a thing that occurred in 2009 moves it to the minute of the update, out of every window on 2009. Recommended: copy `occurred` as `about` is copied, when the heads agree, with a flag to state another or none. The alternative says a record's `occurred` is that record's alone, and a writer restates it.
+
+#### 6. D7 and the shapes that exist
+
+Every result in `vectors/spec/run` is made of these: an object with fixed member names; a map by thing, group key or payload key; a list of `{"id", "shown"}`; an integer; and `null`.
+
+- **An integer sits in three places:** `value`, `unread` and `ungrouped`. `value` is `null` for a min or max that read nothing. No position holds an integer and also text.
+- **No result holds a payload value**, a fraction, or a boolean. A group key is already text ("1" for the number and the text).
+- So decimal integer strings under JCS cover keyed state (`keys`, `whole`, `heads`), groups with `ungrouped` and `unread`, and every other shape, and position alone tells an integer from text: no tag is needed. JCS's member order is the order `groups` and `keys` are already written in. A list's order is part of the result.
+- **Outside:** the CLI's `--values` view puts payloads in the answer. If it ever becomes protocol, a position would hold text or a number, and then the codec needs a tag and the number rule of layer 0.
+- **Open:** if "typed" in the ruling means a tag on each integer, none is needed yet; say whether the codec carries one anyway. And 4 decides whether `shown` is in the bytes.
+- The hashed result is a vertex's whole result, every slot. A per-slot hash is finer and nothing asks for it.
+
+#### 7. Unanchored records
+
+`emit -` fills nothing in (ruled 2026-11-13), so a collector writing through it leaves unanchored records, and the horizons want collectors in any language.
+
+- With writers that name only what they build on, the live records of a thing read otherwise alone than with the rest in 1,602 of 3,701 cuts, with true clocks. With anchored writers, down and held back: 0 of 28,414 cuts.
+- So a tick over such a thing cannot take its live records for `covers`. It needs every record between them (`keyed.convex`), which grows with the history. That is the cost of the ruling once ticks exist, and it is paid for each thing a collector writes.
+- **Open, recommended:** keep `emit -` as ruled, and give the changeset path a way to ask for the filler (`loops_place::fill` already holds it), so a collector that wants compact ticks states one option. The alternatives: nothing, and such things are covered whole; or `emit -` fills by default, which unrules 2026-11-13.
+
+#### Not here
+
+- **`under`.** A record under a grant with a later `emitted` raises the same question for standing (step 3): does a cut hold the grant.
+- **The slice of a cut across things.** A cut closed downward is a holding like any other, so `spec.slice` and `keyed.spec-slice` say what its `covers` is. The sweeps were not rerun over cuts.
+- **Boundaries and markers**, the runner, and what verifying a deep tick tree costs.
+- **The lens laws against the keyed fold** (the coordinator's second suggestion) are the next experiment.
+
 ### Retained boundaries
 
 These boundaries trace existing domains and premises; they do not create new protocol choices.
