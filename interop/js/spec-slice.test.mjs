@@ -46,28 +46,37 @@ const answer = (spec, forms) => runSpec(spec, settle(forms));
 // The spec slice, and for each thing the spec touches (it takes a record of
 // it): the thing's live records whole; the envelopes of its admitted records
 // lying between two records the part holds of it, so that what is held of the
-// thing is convex over `prev` and so witnessed; and the envelope of whatever
-// erases a record the part holds of it. `drop` leaves one of the three out.
+// thing is convex over `prev` and so witnessed; the envelope of whatever
+// erases a record the part holds of it; and, for a record of it that the part
+// holds and the whole refuses, the envelopes of what it names in `prev`, so
+// that the part refuses it too (KeyedPart.of_targets). What one step adds the
+// others read: a refused record's target is held like any record of its thing,
+// with what lies between and what erases it. So the steps run until nothing is
+// added. `drop` leaves one of the first three out.
 function cover(spec, forms, drop) {
-  const base = slice(spec, forms).part;
-  const held = new Set(base.map((f) => f.id));
   const { admitted } = admit(settle(forms));
-  const touched = new Set(forms.filter((f) => takes(spec, f)).map(thingOf));
-  const whole = new Set(), envelopes = new Set();
-  for (const t of touched) {
-    const rs = admitted.filter((r) => thingOf(r) === t);
-    const up = new Map(rs.map((r) => [r.id, new Set(above(rs, r).map((q) => q.id))]));
-    const lives = drop === "live" ? [] : rs.filter((r) => live(rs, r)).map((r) => r.id);
-    const sent = new Set([...rs.filter((r) => held.has(r.id)).map((r) => r.id), ...lives]);
-    const between = drop === "between" ? [] : rs.filter((m) =>
-      [...up.get(m.id)].some((b) => sent.has(b)) && [...sent].some((a) => up.get(a).has(m.id))).map((m) => m.id);
-    for (const i of lives) whole.add(i);
-    for (const i of between) envelopes.add(i);
-    const mine = new Set([...sent, ...between]);
-    if (drop !== "erasers") for (const f of forms) if ((f.erases ?? []).some((e) => mine.has(e))) envelopes.add(f.id);
-  }
+  const ok = new Set(admitted.map((r) => r.id));
+  const thing = new Map(forms.map((f) => [f.id, thingOf(f)]));
   const taken = new Set(forms.filter((f) => takes(spec, f)).map((f) => f.id));
-  return forms.flatMap((f) => (taken.has(f.id) || whole.has(f.id) ? [f] : held.has(f.id) || envelopes.has(f.id) ? [envelope(f)] : []));
+  const touched = new Set([...taken].map((i) => thing.get(i)));
+  const whole = new Set(), envelopes = new Set(slice(spec, forms).part.map((f) => f.id));
+  const has = (i) => whole.has(i) || envelopes.has(i);
+  for (let n = -1; n !== whole.size + envelopes.size;) {
+    n = whole.size + envelopes.size;
+    for (const t of touched) {
+      const rs = admitted.filter((r) => thingOf(r) === t);
+      const up = new Map(rs.map((r) => [r.id, new Set(above(rs, r).map((q) => q.id))]));
+      if (drop !== "live") for (const r of rs) if (live(rs, r)) whole.add(r.id);
+      const sent = rs.filter((r) => has(r.id)).map((r) => r.id);
+      if (drop !== "between") for (const m of rs)
+        if ([...up.get(m.id)].some((b) => sent.includes(b)) && sent.some((a) => up.get(a).has(m.id))) envelopes.add(m.id);
+      for (const f of forms) {
+        if (drop !== "erasers" && (f.erases ?? []).some((e) => thing.get(e) === t && has(e))) envelopes.add(f.id);
+        if (thing.get(f.id) === t && !ok.has(f.id) && has(f.id)) for (const p of f.prev ?? []) envelopes.add(p);
+      }
+    }
+  }
+  return forms.flatMap((f) => (taken.has(f.id) || whole.has(f.id) ? [f] : envelopes.has(f.id) ? [envelope(f)] : []));
 }
 
 // A task `a`. A note `d` of `a`'s thing replaces it. A note `c` of `a`'s thing
@@ -91,6 +100,32 @@ test("a spec slice is not enough for a slot that follows keys: it reads a live s
   assert.deepEqual(Object.keys(answer(spec, slice(spec, whole).part).state.things["task:k1"].keys), ["est", "status"]);
   assert.deepEqual(answer(spec, cover(spec, whole)), want);
   assert.notDeepEqual(answer(spec, cover(spec, whole, "live")), want);
+});
+
+// `m` sets `title`. `x` sets `status`; `w`, from `x`, sets `other`; `n`, from
+// `w`, sets both, so `x` and `w` are dead. `f`, a note, names `x` and `y`, and
+// `y` is of another thing: the whole refuses `f`. `g`, a task, names `f`, so
+// the spec slice brings `f`. The part holds `x` and `y` to refuse `f` as the
+// whole does, and then `w`, which lies between `x` and `n`: without it `x`
+// has no setter of `status` above it and reads as live beside `n`.
+test("what a refused record names is held like any record of its thing", () => {
+  const r = (n, kind, of, sets, prev = []) =>
+    ({ id: id(n), kind, observer: "sl:x", about: [], of, prev: prev.map(id), emitted: `2020-01-01T00:00:0${n}Z`, sets, value: "", n, fields: {} });
+  const m = r(1, "note", "task:k1", ["title"]), x = r(2, "note", "task:k1", ["status"]), w = r(3, "note", "task:k1", ["other"], [2]);
+  const n = r(4, "note", "task:k1", ["status", "other"], [3]), y = r(5, "note", "task:k2", ["title"]);
+  const f = r(6, "note", "task:k1", ["pri"], [2, 5]), g = r(7, "task", "task:k1", ["est"], [6]);
+  const spec = parseSpec({ vertex: "v", from: [{ store: ".", kind: ["task"] }], fold: { state: { "latest-by": "of", follow: "keys" } } }).parsed;
+  const whole = [m, x, w, n, y, f, g], want = answer(spec, whole);
+  const keys = (a) => Object.keys(a.state.things["task:k1"].keys);
+  assert.deepEqual(admit(settle(whole)).admitted.map((q) => q.id), [m, x, w, n, y, g].map((q) => q.id));
+  assert.deepEqual(keys(want), ["est", "other", "status", "title"]);
+  // The spec slice alone holds `g` and `f`, admits `f`, and reads the key it sets.
+  assert.deepEqual(slice(spec, whole).part.map((q) => q.id), [f.id, g.id]);
+  assert.deepEqual(keys(answer(spec, slice(spec, whole).part)), ["est", "pri"]);
+  assert.deepEqual(cover(spec, whole).map((q) => q.id), [m, x, w, n, y, f, g].map((q) => q.id));
+  assert.deepEqual(answer(spec, cover(spec, whole)), want);
+  assert.deepEqual(cover(spec, whole, "between").map((q) => q.id), [m, x, n, y, f, g].map((q) => q.id));
+  assert.notDeepEqual(answer(spec, cover(spec, whole, "between")), want);
 });
 
 test("the records a spec takes are not enough: a successor it does not take replaces one", () => {

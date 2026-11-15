@@ -28,7 +28,7 @@ async function* jsonFiles(dir) {
 test('generation is deterministic, varied, balanced, and independent of scheduling', () => {
   const corpus = FAMILIES.flatMap(f => Array.from({ length: 8 }, (_, i) => generate('stable', i, f)));
   assert.equal(createHash('sha256').update(JSON.stringify(corpus)).digest('hex'),
-    '7d8cc7f8e2dab910b8a4c8165e7494e1dc34ff0b4577106bc0b2280b07751d2a');
+    '4cd4e0183795ce379ea4cffc4d93cefa46943bf014d793d6477f56d933e77e77');
   const layers = new Set();
   for (const family of FAMILIES) {
     const seen = new Set();
@@ -131,7 +131,8 @@ test('keyed latest-by slots read things with sets, chains, forks, joins and unhe
 test('count, sum, min, max and collect follow keys over forks, setters, groups and unread things', async () => {
   const { parseSpec, runSpec } = await import('../js/spec.mjs');
   const seen = { forkOnce: 0, twoSettersUnread: 0, sumRead: 0, liveBeyondHeads: 0, limited: 0,
-    twoGroups: 0, payloadGroups: 0, ungrouped: 0, unreadThings: 0, unreadKey: 0, differsFromPrev: 0 };
+    twoGroups: 0, payloadGroups: 0, ungrouped: 0, unreadThings: 0, unreadKey: 0, differsFromPrev: 0,
+    beyondLimit: 0 };
   for (let i = 0; i < 1024; i++) {
     const v = generate('keyed-slots', i, 'spec');
     if (v.layer !== 'spec/run') continue;
@@ -145,6 +146,8 @@ test('count, sum, min, max and collect follow keys over forks, setters, groups a
     seen.sumRead += out['keys-total'].value !== 0;
     seen.liveBeyondHeads += all.heads.length > out.now.value;
     seen.limited += items.heads.length < all.heads.length;
+    // The limit counts things: the things listed whole hold more records than it.
+    seen.beyondLimit += out['keys-first-items'].heads.length > parsed.fold['keys-first-items'].limit;
     seen.twoGroups += Object.keys(out['keys-by-mention'].groups).length > 1;
     seen.payloadGroups += Object.keys(out['keys-by-tag'].groups).length > 0;
     seen.ungrouped += out['keys-by-mention'].ungrouped > 0;

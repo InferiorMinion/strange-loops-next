@@ -2,7 +2,7 @@
 
 Run `node model/mutate/run.mjs --list` to inspect the catalogue.
 Listing validates every replacement against the current source without changing files.
-The runner tests check all 291 entries and their unique source sites.
+The runner tests check all 295 entries and their unique source sites.
 The catalogue retains 187 original entries, retires two mutations, and adds eight guard mutations.
 Six more entries cover the D1 base boundary and the D2 code-unit reader.
 Nine more cover D8's `of`: the thing, the two envelope checks, `of-not-root`, the batch thing check, labels in `of`, `from.of` and `env.of`.
@@ -13,6 +13,7 @@ Four more cover `under-unknown`: the check skipped, made before `prev-unknown` o
 Ten more cover `sets`: the refusal skipped, an empty name accepted, the check made before `erases` or after `of-missing`, its rank after `of-missing` in a batch, an empty set left out, members in the writer's order, the field unknown or not read, and a key taken for a label.
 Twenty more cover latest-by following `keys`: liveness per key, a whole-read record setting every key, the envelope among the keys, the upward reach, the three lists, selection by heads, payload tests over live setters, unknown on disagreement, on an unheld setter and the absent field, the unread count, the grammar, the parsed form, the slot run as `prev`, and `sets` kept on a withheld record; `coverage-spec-slotfollow` is retargeted at the parser's new value.
 Twenty-one more cover count, sum, min, max and collect following `keys`: selection by heads, a field read from its one live setter, the unread count, collect's live records and limit, payload and envelope keys under `by`, the unread and ungrouped things, the slots run as records or as `prev`, the pool, `FoldType.follow` and the parser; eleven older entries are retargeted at the new `follow` type, and `keys-follow-anywhere` now refuses `keys` off latest-by.
+Four more cover a keyed collect's limit counting things: a limit over records, things chosen and then their records cut, things ordered by their oldest live records, and a thing counted once per live record; `keys-slots-collect-heads` and `keys-slots-collect-no-limit` are retargeted at the collect's new site.
 The source paths may name the Loops or Gen root; flat filenames still name Loops sources.
 Run `node model/mutate/run.mjs --only things-prev-or,things-drop-may` to select mutations.
 Use `--shard i/n` to run every nth selected entry, starting at the ith; the n shards are disjoint and together cover the selection.
