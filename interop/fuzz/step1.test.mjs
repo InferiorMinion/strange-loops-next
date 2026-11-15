@@ -97,6 +97,33 @@ test('under target boundaries remain scheduled across seeds and refuse by name',
   }
 });
 
+test('sets boundaries remain scheduled across seeds and refuse by name', () => {
+  const record = [[37, 'sets-text', 'sets-not-keys'], [38, 'sets-null', 'sets-not-keys'],
+    [42, 'sets-object', 'sets-not-keys'], [43, 'sets-member-number', 'sets-not-keys'],
+    [56, 'sets-member-null', 'sets-not-keys'], [57, 'sets-empty-name', 'sets-not-keys'],
+    [58, 'erases-before-sets', 'erases-not-record-id'], [59, 'sets-before-of-missing', 'sets-not-keys'],
+    [60, 'sets-empty', []], [61, 'sets-key-not-in-payload', ['missing']],
+    [62, 'sets-payload-not-object', ['status', 'title']], [63, 'sets-variants', ['@d0', 'status', 'title']]];
+  const batch = [[56, 'sets-not-array', 'sets-not-keys'], [57, 'sets-empty-name', 'sets-not-keys'],
+    [58, 'erases-before-sets-first', 'erases-not-record-id'], [59, 'erases-before-sets-last', 'erases-not-record-id'],
+    [60, 'sets-before-of-missing-first', 'sets-not-keys'], [61, 'sets-before-of-missing-last', 'sets-not-keys'],
+    [62, 'sets-label-key', ['@d0', '@nowhere', 'n']], [63, 'sets-empty', []]];
+  for (const seed of ['a', 'b', 'c', 'd']) {
+    for (const [family, cases, base] of [['record', record, 128], ['batch', batch, 256]]) {
+      for (const [slot, name, want] of cases) {
+        const v = generate(seed, base + slot, family);
+        assert.equal(v.fuzz.nearMiss, name);
+        const text = JSON.stringify(v);
+        const [answer] = evaluateJS(JSON.parse(text), text);
+        if (typeof want === 'string') { assert.deepEqual(answer, { refused: want }, `${family} ${name}`); continue; }
+        // Written: the canonical envelope states `sets`, empty or not, in UTF-16 order.
+        const env = JSON.parse(family === 'record' ? answer.env_canonical : answer.records.at(-1).env_canonical);
+        assert.deepEqual(env.sets, want, `${family} ${name}`);
+      }
+    }
+  }
+});
+
 test('record preflight and writer refusal precede seed decoding', () => {
   const env = { kind: '', observer: 'o:x', emitted: '2024-01-01T00:00:00Z' };
   const input = { envs: [env], payloads: [null], salt: '00000000000000000000000000', seed: '!' };
