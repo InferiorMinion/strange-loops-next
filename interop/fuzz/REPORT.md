@@ -2,12 +2,60 @@
 
 ## Scope
 
-This report covers the JS, Lean, and Rust campaign over the generator after count, sum, min, max and collect came to follow `keys`, reading things, and keyed slots came to carry two and three payload tests.
-It also preserves the `keyed-slots-1`, `keyed-1`, `sets-1`, `under-1`, `issue-7-1`, `by-collect-1`, `by-shape-1`, `shape-follow-1` and `by-1` campaigns, the two issue #1 campaigns, the `follow-2` campaign, the D8a and D8b campaign, the D1–D6 campaign, the Step-1 campaign and earlier two-way campaigns as historical findings.
-Their counts are historical: the generator changed with D8, with issue #1, with `follow`, with `by`, with issue #7, with `under-unknown`, with `sets`, with `"follow": "keys"` on latest-by, with it on the other fold types and with several payload tests on keyed slots, so the same seeds now generate different inputs.
+This report covers the JS, Lean, and Rust campaign over the generator after a keyed collect's `limit` came to count things, each listed whole.
+It also preserves the `keyed-slots-2`, `keyed-slots-1`, `keyed-1`, `sets-1`, `under-1`, `issue-7-1`, `by-collect-1`, `by-shape-1`, `shape-follow-1` and `by-1` campaigns, the two issue #1 campaigns, the `follow-2` campaign, the D8a and D8b campaign, the D1–D6 campaign, the Step-1 campaign and earlier two-way campaigns as historical findings.
+Their counts are historical: the generator changed with D8, with issue #1, with `follow`, with `by`, with issue #7, with `under-unknown`, with `sets`, with `"follow": "keys"` on latest-by, with it on the other fold types, with several payload tests on keyed slots and with keyed collects whose limit falls inside a thing, so the same seeds now generate different inputs.
 The harness covers record, fold, spec, realm, scenario, batch, and lens inputs.
 
-## Keyed slots with several payload tests: three-way campaign
+## A keyed collect's limit over things: three-way campaign
+
+Source commit: `fe57cb6`, after Kyle's ruling of 2026-11-15 that a collect following `keys` counts things in its `limit`, each listed whole, and after the generator learned two more such collects: `keys-first-items`, with a limit of one or two, and `keys-by-observer-items`, with a limit of one under `by` `env.observer`.
+Node 25.9 checks 5,600 cases with seed `collect-limit-1`: 800 cases per family.
+The run uses 88 chunks and takes 288.71 seconds.
+Exit 0: no implementation disagrees on any case.
+The retained [summary](evidence/collect-limit-1/summary.json) supports these counts.
+Run `python3 interop/fuzz/summarize.py report` from the repository root.
+
+| Family | Cases | Match | Protocol refusal | Shared decoder refusal | Mismatch |
+|---|---:|---:|---:|---:|---:|
+| record | 800 | 53 | 720 | 27 | 0 |
+| fold | 800 | 706 | 0 | 94 | 0 |
+| spec | 800 | 686 | 58 | 56 | 0 |
+| realm | 800 | 714 | 0 | 86 | 0 |
+| scenario | 800 | 692 | 0 | 108 | 0 |
+| batch | 800 | 200 | 588 | 12 | 0 |
+| lens | 800 | 587 | 213 | 0 | 0 |
+| Total | 5,600 | 3,638 | 1,579 | 383 | 0 |
+
+All 383 decoder refusals occur in both Lean and Rust.
+For the record and batch families JavaScript is called on them too and throws, so the 27 record and 12 batch ones are all three agreeing that the input is malformed, which is still not protocol agreement.
+No reduction runs, because no mismatch exists.
+The [mismatch list](evidence/collect-limit-1/d1-mismatches.json) keeps the historical D1 example and holds no case.
+
+As JavaScript answers them, of the 344 spec runs that parse, 149 list more records under `keys-first-items` than its limit, a thing's live records past the limit listed with it, and in the same 149 the first records of the unlimited list, cut at the limit, differ from it; 187 hold a group of `keys-by-observer-items` with more than one record under its limit of one.
+
+Each wrong port was made in the JavaScript witness, run two-way on the same seed over the 800 spec and the 800 scenario cases with `--family spec` or `--family scenario` and `--no-shrink`, and reverted; the correct witness gives no mismatch there.
+The last column counts the vector checks of `node interop/js/check.mjs vectors` the port fails.
+
+| Wrong port | Spec | Scenario | Vector checks |
+|---|---:|---:|---:|
+| collect: the limit counts records, as first built | 191 | 223 | 52 |
+| collect: the limit counts things, then the list is cut at the limit | 191 | 223 | 52 |
+| collect: the things with the oldest live records taken | 85 | 88 | 46 |
+| collect: the limit applied before grouping, to the things of every group at once | 90 | 79 | 30 |
+
+The first two ports give the same answers, and must: the first `k` records of the newest-first list are of at most `k` things, all among the first `k` things, so cutting the whole things' records at `k` leaves exactly those records. Choosing things and then cutting records is the limit over records.
+The `collect: the limit counts things, not records` port of the campaign below is the rule now, and the limit over records the wrong port.
+Raw logs and per-case files were written under the session's scratch directory and deleted after the summary was recorded.
+
+```sh
+node interop/fuzz/run.mjs --rust --seed collect-limit-1 --n 5600 --shrink-trials 80 --out rust/target/scratch/fuzz-collect-limit-1
+python3 interop/fuzz/summarize.py campaign rust/target/scratch/fuzz-collect-limit-1 collect-limit-1
+```
+
+## HISTORICAL Keyed slots with several payload tests: three-way campaign
+
+This campaign predates a keyed collect's limit counting things; the generator and that rule changed after it.
 
 Source commit: `05e4737`, after the generator learned keyed slots with two and three payload tests, of every fold type, on top of `keyed-slots-1`'s generator.
 Node 25.9 checks 5,600 cases with seed `keyed-slots-2`: 800 cases per family.

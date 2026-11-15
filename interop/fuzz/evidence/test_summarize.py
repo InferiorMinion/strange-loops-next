@@ -13,7 +13,12 @@ spec.loader.exec_module(summarize)
 class EvidenceTest(unittest.TestCase):
     def test_retained_artifacts(self):
         result = summarize.report()
-        self.assertEqual(list(result['campaigns']), ['by-1', 'by-collect-1', 'by-shape-1', 'd1-d6-1', 'd8ab-1', 'follow-2', 'issue-7-1', 'keyed-1', 'keyed-slots-1', 'keyed-slots-2', 'sets-1', 'shape-follow-1', 'shape-under-1', 'shape-under-2', 'step1-3', 'under-1'])
+        self.assertEqual(list(result['campaigns']), ['by-1', 'by-collect-1', 'by-shape-1', 'collect-limit-1', 'd1-d6-1', 'd8ab-1', 'follow-2', 'issue-7-1', 'keyed-1', 'keyed-slots-1', 'keyed-slots-2', 'sets-1', 'shape-follow-1', 'shape-under-1', 'shape-under-2', 'step1-3', 'under-1'])
+        current = result['campaigns']['collect-limit-1']
+        self.assertEqual(current['totals'], {'cases': 5600, 'match': 3638, 'protocol-refusal': 1579,
+                                             'decoder-refusal': 383, 'mismatch': 0})
+        self.assertEqual(current['families']['spec'], {'cases': 800, 'match': 686, 'protocol-refusal': 58,
+                                                       'decoder-refusal': 56, 'mismatch': 0})
         current = result['campaigns']['keyed-slots-2']
         self.assertEqual(current['totals'], {'cases': 5600, 'match': 3629, 'protocol-refusal': 1590,
                                              'decoder-refusal': 381, 'mismatch': 0})
