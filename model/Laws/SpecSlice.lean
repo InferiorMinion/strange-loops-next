@@ -474,9 +474,12 @@ theorem followed_slice (hm : EnvOnly may) (hF : Forms W) (h : SpecSlice sp S W)
     ((wholeHeads_distinct (realm_addressed may W)).filter _) (wholeHeads_taken_slice hm hF h)
 
 /-- A slot without `by` gives the same value over the slice, for any selection
-within what the spec takes. -/
+within what the spec takes. A latest-by that follows `keys` reads records the
+spec does not take, live setters of other kinds among them; this slice does not
+hold them, and its slice law is not stated. -/
 theorem Slot.plain_slice (hm : EnvOnly may) (hF : Forms W) (h : SpecSlice sp S W)
-    {sel : Record → Bool} (hsel : ∀ r, sel r = true → sp.takes r = true) (s : Slot) :
+    {sel : Record → Bool} (hsel : ∀ r, sel r = true → sp.takes r = true) (s : Slot)
+    (hk : s.type ≠ .latestBy .keys) :
     s.plain sel (realm may S) = s.plain sel (realm may W) := by
   have hS : Distinct (realm may S) := admit_distinct may (settle_distinct S)
   have hW : Distinct (realm may W) := admit_distinct may (settle_distinct W)
@@ -501,6 +504,7 @@ theorem Slot.plain_slice (hm : EnvOnly may) (hF : Forms W) (h : SpecSlice sp S W
     · rw [followed_slice hm hF h hsel]
     · rw [acc]
   · exact latestOf_slice hm hF h hsel _
+  · rename_i he; exact absurd he hk
   · exact collectOf_slice hm hF h hsel _ _ _
 
 /-- What a slot reads, among the records the spec takes, is the same in the
@@ -554,7 +558,8 @@ slot without `by` with a selection within what the spec takes, a group's key
 reads only a taken record, and the keys, the unread and the ungrouped count
 taken records. -/
 theorem Slot.grouped_slice (hm : EnvOnly may) (hF : Forms W) (h : SpecSlice sp S W) (s : Slot)
-    (b : By) : s.grouped b sp.takes (realm may S) = s.grouped b sp.takes (realm may W) := by
+    (hk : s.type ≠ .latestBy .keys) (b : By) :
+    s.grouped b sp.takes (realm may S) = s.grouped b sp.takes (realm may W) := by
   have ne : ∀ r, s.ev sp.takes r = .yes → s.ev sp.takes r ≠ .no := fun r e => by rw [e]; decide
   have keys : groupKeys b (s.ev sp.takes) (s.pool (realm may S)) =
       groupKeys b (s.ev sp.takes) (s.pool (realm may W)) := by
@@ -578,25 +583,28 @@ theorem Slot.grouped_slice (hm : EnvOnly may) (hF : Forms W) (h : SpecSlice sp S
   congr 1
   exact map_congr_left fun g _ => by
     rw [Slot.plain_slice hm hF h (sel := inGroup b (s.ev sp.takes) g)
-      (fun r hr => s.ev_takes (ne r (by simp only [inGroup, Bool.and_eq_true, beq_iff_eq] at hr; exact hr.1)))]
+      (fun r hr => s.ev_takes (ne r (by simp only [inGroup, Bool.and_eq_true, beq_iff_eq] at hr; exact hr.1)))
+      { name := s.name, type := s.type } hk]
 
-/-- Every slot gives the same value over the slice. -/
-theorem Slot.run_slice (hm : EnvOnly may) (hF : Forms W) (h : SpecSlice sp S W) (s : Slot) :
+/-- Every slot but a latest-by that follows `keys` gives the same value over the slice. -/
+theorem Slot.run_slice (hm : EnvOnly may) (hF : Forms W) (h : SpecSlice sp S W) (s : Slot)
+    (hk : s.type ≠ .latestBy .keys) :
     s.run sp.takes (realm may S) = s.run sp.takes (realm may W) := by
   unfold Slot.run
   split
-  · exact s.plain_slice hm hF h (fun _ e => e)
-  · exact s.grouped_slice hm hF h _
+  · exact s.plain_slice hm hF h (fun _ e => e) hk
+  · exact s.grouped_slice hm hF h hk _
 
 /-- **A spec slice answers for its spec.** Running the spec over the slice
 gives what running it over everything held gives: every slot, the values, the
 current records with what is shown of each, and the unread counts. -/
-theorem Spec.run_slice (hm : EnvOnly may) (hF : Forms W) (h : SpecSlice sp S W) :
+theorem Spec.run_slice (hm : EnvOnly may) (hF : Forms W) (h : SpecSlice sp S W)
+    (hk : ∀ s ∈ sp.slots, s.type ≠ .latestBy .keys) :
     sp.run (settle S) may = sp.run (settle W) may := by
   unfold Spec.run
-  exact map_congr_left fun s _ => by
+  exact map_congr_left fun s hs => by
     rw [show admit may (settle S) = realm may S from rfl, show admit may (settle W) = realm may W from rfl,
-      Slot.run_slice hm hF h s]
+      Slot.run_slice hm hF h s (hk s hs)]
 
 end Slots
 
@@ -613,7 +621,7 @@ as current. -/
 
 def ss.spec : Spec :=
   { vertex := "v", sources := [{ store := ".", kinds := ["task"] }],
-    slots := [{ name := "current", type := .latestBy }] }
+    slots := [{ name := "current", type := .latestBy .prev }] }
 
 def ss.a : Record :=
   { id := 1, kind := "task", observer := "sl:x", of := some "k1", value := "", prev := [], emitted := default }

@@ -323,7 +323,7 @@ def By.Fits : By → Prop
 /-- The fold types `by` may group: count, sum, min, max and collect,
 following `prev` or not; every fold type but latest-by. -/
 def FoldType.Groups : FoldType → Prop
-  | .latestBy => False
+  | .latestBy _ => False
   | _ => True
 
 def Slot.Fits (s : Slot) : Prop :=
@@ -471,14 +471,14 @@ theorem Slot.toJson_distinct {s : Slot} (h : s.Fits) : s.toJson.2.keysDistinct =
         simp [Slot.toJson, he, Json.keysDistinct_obj, hw, followJson, byJson]
     | count follow | sum _ follow | min _ follow | max _ follow =>
       cases follow <;> cases group <;> simp [Slot.toJson, he, Json.keysDistinct_obj, hw, followJson, byJson]
-    | latestBy => cases group <;> simp [Slot.toJson, he, Json.keysDistinct_obj, hw, byJson]
+    | latestBy f => cases f <;> cases group <;> simp [Slot.toJson, he, Json.keysDistinct_obj, hw, byJson, Follow.name]
   · cases type with
     | collect follow limit =>
       cases follow <;> cases limit <;> cases group <;>
         simp [Slot.toJson, he, Json.keysDistinct_obj, followJson, byJson]
     | count follow | sum _ follow | min _ follow | max _ follow =>
       cases follow <;> cases group <;> simp [Slot.toJson, he, Json.keysDistinct_obj, followJson, byJson]
-    | latestBy => cases group <;> simp [Slot.toJson, he, Json.keysDistinct_obj, byJson]
+    | latestBy f => cases f <;> cases group <;> simp [Slot.toJson, he, Json.keysDistinct_obj, byJson, Follow.name]
 
 /-- A `by` as rendered parses back, unless the fold type takes none. -/
 theorem slotBy_name (path t : String) {b : By} (hb : b.Fits) :
@@ -505,8 +505,9 @@ theorem parseSlot_toJson {s : Slot} (h : s.Fits) : parseSlot s.name s.toJson.2 =
         cases follow <;>
         simp_all [Slot.toJson, parseSlot, slotType, slotFollow, slotLimit, slotBy, byJson, foldType, slotTests, checkKeys, slotKeys, foldTypes, List.lookup, bind, Except.bind, pure,
           Except.pure, FoldType.Fits, fieldArg, Functor.map, Except.map, followJson]
-      | latestBy =>
-        simp_all [Slot.toJson, parseSlot, slotType, slotFollow, slotLimit, slotBy, byJson, foldType, slotTests, checkKeys, slotKeys, foldTypes, List.lookup, bind, Except.bind, pure, Except.pure, FoldType.Fits]
+      | latestBy f =>
+        cases f <;>
+        simp_all [Slot.toJson, parseSlot, slotType, slotFollow, slotLimit, slotBy, byJson, foldType, slotTests, checkKeys, slotKeys, foldTypes, List.lookup, bind, Except.bind, pure, Except.pure, FoldType.Fits, Follow.name]
     · have h0 : tests = [] := by simpa using he
       subst h0
       cases type with
@@ -517,8 +518,9 @@ theorem parseSlot_toJson {s : Slot} (h : s.Fits) : parseSlot s.name s.toJson.2 =
         cases follow <;>
         simp_all [Slot.toJson, parseSlot, slotType, slotFollow, slotLimit, slotBy, byJson, foldType, slotTests, checkKeys, slotKeys, foldTypes, List.lookup, bind, Except.bind, pure,
           Except.pure, FoldType.Fits, fieldArg, Functor.map, Except.map, followJson]
-      | latestBy =>
-        simp_all [Slot.toJson, parseSlot, slotType, slotFollow, slotLimit, slotBy, byJson, foldType, slotTests, checkKeys, slotKeys, foldTypes, List.lookup, bind, Except.bind, pure, Except.pure, FoldType.Fits]
+      | latestBy f =>
+        cases f <;>
+        simp_all [Slot.toJson, parseSlot, slotType, slotFollow, slotLimit, slotBy, byJson, foldType, slotTests, checkKeys, slotKeys, foldTypes, List.lookup, bind, Except.bind, pure, Except.pure, FoldType.Fits, Follow.name]
   | some b =>
     obtain ⟨hb, hgr⟩ := hgb b rfl
     have hB : ∀ t, slotBy (memberPath (some "fold") name) t (some (.str b.name)) =
@@ -536,7 +538,7 @@ theorem parseSlot_toJson {s : Slot} (h : s.Fits) : parseSlot s.name s.toJson.2 =
         cases follow <;>
         simp_all [Slot.toJson, parseSlot, slotType, slotFollow, slotLimit, byJson, foldType, slotTests, checkKeys, slotKeys, foldTypes, List.lookup, bind, Except.bind, pure,
           Except.pure, FoldType.Fits, fieldArg, Functor.map, Except.map, followJson]
-      | latestBy => exact absurd hgr id
+      | latestBy _ => exact absurd hgr id
     · have h0 : tests = [] := by simpa using he
       subst h0
       cases type with
@@ -547,7 +549,7 @@ theorem parseSlot_toJson {s : Slot} (h : s.Fits) : parseSlot s.name s.toJson.2 =
         cases follow <;>
         simp_all [Slot.toJson, parseSlot, slotType, slotFollow, slotLimit, byJson, foldType, slotTests, checkKeys, slotKeys, foldTypes, List.lookup, bind, Except.bind, pure,
           Except.pure, FoldType.Fits, fieldArg, Functor.map, Except.map, followJson]
-      | latestBy => exact absurd hgr id
+      | latestBy _ => exact absurd hgr id
 
 theorem Source.toJson_distinct (s : Source) : s.toJson.keysDistinct = true := by
   rcases s with ⟨store, kinds, about, of⟩
@@ -689,7 +691,7 @@ theorem slotLimit_pos {p t : String} {o : Option Json} {k : Nat}
     · exact absurd h refuse_ne_ok
   · exact absurd h refuse_ne_ok
 
-theorem foldType_fits {p t : String} {follow : Bool} {limit : Option Nat} {arg : Json} {ty : FoldType}
+theorem foldType_fits {p t : String} {follow : Option Follow} {limit : Option Nat} {arg : Json} {ty : FoldType}
     (h : foldType p t follow limit arg = .ok ty) (hl : ∀ k, limit = some k → 0 < k) : ty.Fits := by
   unfold foldType at h
   split at h <;> simp only [Except.pure_eq_ok, Except.map_eq_ok] at h
@@ -727,7 +729,7 @@ theorem slotBy_fits {p t : String} {o : Option Json} {g : Option By}
   · exact absurd h refuse_ne_ok
 
 /-- The fold types the parser lets `by` group are the ones `by` may group. -/
-theorem foldType_groups {p t : String} {follow : Bool} {limit : Option Nat} {arg : Json} {ty : FoldType}
+theorem foldType_groups {p t : String} {follow : Option Follow} {limit : Option Nat} {arg : Json} {ty : FoldType}
     (h : foldType p t follow limit arg = .ok ty)
     (hg : ¬(t = "latest-by")) : ty.Groups := by
   unfold foldType at h

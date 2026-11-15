@@ -791,6 +791,12 @@ def jGroup : GroupValue → J
       | none => .null), ("unread", .num r.unread)]
   | .heads hs u => .obj [("heads", jShownIds hs), ("unread", .num u)]
 
+/-- A thing's keyed state: each declared key's live setters, the live
+whole-read emits and the heads. -/
+def jKeyed (k : KeyedView) : J :=
+  .obj [("keys", .obj (k.keys.map fun (n, hs) => (n, jShownIds hs))), ("whole", jShownIds k.whole),
+    ("heads", jShownIds k.heads)]
+
 def jSlot : SlotValue → J
   | .nat r => jGroup (.nat r)
   | .int r => jGroup (.int r)
@@ -798,6 +804,7 @@ def jSlot : SlotValue → J
   | .heads hs u => jGroup (.heads hs u)
   | .things ts u => .obj [("things", .obj (ts.map fun (t, hs) => (t, jShownIds hs))),
       ("unread", .num u)]
+  | .keyed ts u => .obj [("things", .obj (ts.map fun (t, k) => (t, jKeyed k))), ("unread", .num u)]
   | .groups gs u m => .obj [("groups", .obj (gs.map fun (g, v) => (g, jGroup v))),
       ("unread", .num u), ("ungrouped", .num m)]
 

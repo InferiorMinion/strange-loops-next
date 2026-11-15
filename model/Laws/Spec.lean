@@ -1,6 +1,7 @@
 import Loops.Spec
 import Laws.Families
 import Laws.Things
+import Laws.Live
 
 /-!
 # Laws of the spec
@@ -417,6 +418,7 @@ theorem Slot.plain_set_decides (s : Slot) (sel : Record → Bool) {xs ys : List 
     · exact congrArg _ (Acc.followed_set_decides _ _ hx.addressed hy.addressed h)
     · exact congrArg _ (Acc.select_set_decides _ _ hx hy h)
   · exact latestOf_set_decides _ _ hx.addressed hy.addressed h
+  · exact keyedOf_set_decides _ _ hx.addressed hy.addressed h
   · exact collectOf_set_decides _ _ _ _ hx.addressed hy.addressed h
 
 /-! ## Grouping with `by` -/
