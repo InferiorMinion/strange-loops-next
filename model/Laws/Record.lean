@@ -351,22 +351,20 @@ theorem canonSet_eq {xs ys : List String} (h : ∀ s, s ∈ xs ↔ s ∈ ys) : c
   intro a
   rw [mem_sortBy (fun a _ b _ e => utf16_inj e), mem_sortBy (fun a _ b _ e => utf16_inj e), h]
 
-/-- Two declarations of keys that are the same: both absent, or both stated
-with the same members. Absent and empty are not the same. -/
-def SameKeys : Option (List String) → Option (List String) → Prop
-  | none, none => True
-  | some xs, some ys => ∀ s, s ∈ xs ↔ s ∈ ys
-  | _, _ => False
-
-theorem setsJson_eq {a b : Option (List String)} (h : SameKeys a b) : Env.setsJson a = Env.setsJson b := by
+/-- Two declarations of the same keys write the same: both absent, or both
+stated with the same members. Absent and empty are not the same. -/
+theorem setsJson_eq {a b : Option (List String)}
+    (h : a.isSome = b.isSome ∧ ∀ s, s ∈ a.getD [] ↔ s ∈ b.getD []) : Env.setsJson a = Env.setsJson b := by
   match a, b, h with
   | none, none, _ => rfl
-  | some xs, some ys, h => simp only [Env.setsJson, canonSet_eq h]
+  | some xs, some ys, ⟨_, h⟩ => simp only [Option.getD_some] at h; simp only [Env.setsJson, canonSet_eq h]
+  | none, some _, ⟨h, _⟩ => simp at h
+  | some _, none, ⟨h, _⟩ => simp at h
 
 theorem env_sets {e e' : Env} (hk : e.kind = e'.kind) (ho : e.observer = e'.observer)
     (he : e.emitted = e'.emitted) (hoc : e.occurred = e'.occurred) (hu : e.under = e'.under)
     (hof : e.of = e'.of) (ha : ∀ s, s ∈ e.about ↔ s ∈ e'.about) (hp : ∀ s, s ∈ e.prev ↔ s ∈ e'.prev)
-    (hx : ∀ s, s ∈ e.erases ↔ s ∈ e'.erases) (hs : SameKeys e.sets e'.sets) :
+    (hx : ∀ s, s ∈ e.erases ↔ s ∈ e'.erases) (hs : e.sets.isSome = e'.sets.isSome ∧ ∀ s, s ∈ e.sets.getD [] ↔ s ∈ e'.sets.getD []) :
     e.toJson.canon = e'.toJson.canon := by
   simp only [Env.toJson, Env.baseJson, hk, ho, he, hoc, hu, hof, canonSet_eq ha, canonSet_eq hp,
     canonSet_eq hx, setsJson_eq hs]
@@ -376,7 +374,7 @@ theorem id_sets (H : Hash) {e e' : Env} (commit : String) (hk : e.kind = e'.kind
     (ho : e.observer = e'.observer) (he : e.emitted = e'.emitted) (hoc : e.occurred = e'.occurred)
     (hu : e.under = e'.under) (hof : e.of = e'.of) (ha : ∀ s, s ∈ e.about ↔ s ∈ e'.about)
     (hp : ∀ s, s ∈ e.prev ↔ s ∈ e'.prev) (hx : ∀ s, s ∈ e.erases ↔ s ∈ e'.erases)
-    (hs : SameKeys e.sets e'.sets) :
+    (hs : e.sets.isSome = e'.sets.isSome ∧ ∀ s, s ∈ e.sets.getD [] ↔ s ∈ e'.sets.getD []) :
     idOf H e commit = idOf H e' commit := by
   have : e.toJson = e'.toJson := by
     simp only [Env.toJson, Env.baseJson, hk, ho, he, hoc, hu, hof, canonSet_eq ha, canonSet_eq hp,
