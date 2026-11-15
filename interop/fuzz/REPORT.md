@@ -2,12 +2,142 @@
 
 ## Scope
 
-This report covers the JS, Lean, and Rust campaign over the generator after latest-by came to follow `keys`, reading each thing by its live setters.
-It also preserves the `sets-1`, `under-1`, `issue-7-1`, `by-collect-1`, `by-shape-1`, `shape-follow-1` and `by-1` campaigns, the two issue #1 campaigns, the `follow-2` campaign, the D8a and D8b campaign, the D1–D6 campaign, the Step-1 campaign and earlier two-way campaigns as historical findings.
-Their counts are historical: the generator changed with D8, with issue #1, with `follow`, with `by`, with issue #7, with `under-unknown`, with `sets` and with `"follow": "keys"`, so the same seeds now generate different inputs.
+This report covers the JS, Lean, and Rust campaign over the generator after count, sum, min, max and collect came to follow `keys`, reading things, and keyed slots came to carry two and three payload tests.
+It also preserves the `keyed-slots-1`, `keyed-1`, `sets-1`, `under-1`, `issue-7-1`, `by-collect-1`, `by-shape-1`, `shape-follow-1` and `by-1` campaigns, the two issue #1 campaigns, the `follow-2` campaign, the D8a and D8b campaign, the D1–D6 campaign, the Step-1 campaign and earlier two-way campaigns as historical findings.
+Their counts are historical: the generator changed with D8, with issue #1, with `follow`, with `by`, with issue #7, with `under-unknown`, with `sets`, with `"follow": "keys"` on latest-by, with it on the other fold types and with several payload tests on keyed slots, so the same seeds now generate different inputs.
 The harness covers record, fold, spec, realm, scenario, batch, and lens inputs.
 
-## Latest-by following `keys`: three-way campaign
+## Keyed slots with several payload tests: three-way campaign
+
+Source commit: `05e4737`, after the generator learned keyed slots with two and three payload tests, of every fold type, on top of `keyed-slots-1`'s generator.
+Node 25.9 checks 5,600 cases with seed `keyed-slots-2`: 800 cases per family.
+The run uses 88 chunks and takes 164.31 seconds.
+Exit 0: no implementation disagrees on any case.
+The retained [summary](evidence/keyed-slots-2/summary.json) supports these counts.
+Run `python3 interop/fuzz/summarize.py report` from the repository root.
+
+| Family | Cases | Match | Protocol refusal | Shared decoder refusal | Mismatch |
+|---|---:|---:|---:|---:|---:|
+| record | 800 | 54 | 719 | 27 | 0 |
+| fold | 800 | 703 | 0 | 97 | 0 |
+| spec | 800 | 695 | 53 | 52 | 0 |
+| realm | 800 | 711 | 0 | 89 | 0 |
+| scenario | 800 | 696 | 0 | 104 | 0 |
+| batch | 800 | 199 | 589 | 12 | 0 |
+| lens | 800 | 571 | 229 | 0 | 0 |
+| Total | 5,600 | 3,629 | 1,590 | 381 | 0 |
+
+All 381 decoder refusals occur in both Lean and Rust.
+For the record and batch families JavaScript is called on them too and throws, so the 27 record and 12 batch ones are all three agreeing that the input is malformed, which is still not protocol agreement.
+The 52 spec ones are the `bad-edtf` near miss, whose spec is refused.
+No reduction runs, because no mismatch exists.
+The [mismatch list](evidence/keyed-slots-2/d1-mismatches.json) keeps the historical D1 example and holds no case.
+
+Every generated spec has, beside the six keyed latest-by slots, twenty-one slots that follow `keys`: count, sum, min, max and collect, with and without `where` (payload tests, envelope tests, an `absent` test on a field no record has, a test on `value`), collect with `limit`, and `by` on `env.about:t`, `env.observer`, `env.kind`, `tag`, `flag` and `rank`.
+Seven of them, a latest-by and one or two of each other fold type, ask two or three payload tests of a thing, over `flag`, `score`, `tag`, `n`, `value` and `rank`, which the records set with `sets`; so one test can answer no while another answers unknown, from setters that disagree or are not held.
+A spec/parse near miss in one of eighty puts `limit` on a count, sum, min or max that follows `keys` (`limit-invalid`), or misspells `keys` on one of four slots (`follow-invalid`).
+As JavaScript answers them, of the 348 spec runs that parse, 123 hold a thing for which one of a slot's payload tests answers no and another unknown; 130 count fewer things following `keys` than heads following `prev`, 212 sum `n` differently over things than over heads, 129 leave more of that sum unread, 122 have more live records than heads, 139 put a thing in two groups by mention, and 123 leave a thing unread to a grouped max by an unheld setter of `flag`.
+
+Each wrong port was made in the JavaScript witness, run two-way on the same seed over the 800 spec and the 800 scenario cases with `--family spec` or `--family scenario` and `--no-shrink`, and reverted; the correct witness gives no mismatch there.
+The last column counts the vector checks of `node interop/js/check.mjs vectors` the port fails, for the two ports `spec/run/50` was added to pin and the one this generator was changed to reach.
+
+| Wrong port | Spec | Scenario | Vector checks |
+|---|---:|---:|---:|
+| count: a thing counted once per chosen head | 130 | 84 | |
+| count: a thing whose tests are unknown is not unread | 144 | 376 | |
+| sum: one of two live setters read | 71 | 24 | |
+| sum: the field read from the chosen heads | 138 | 224 | |
+| sum: a thing with no live setter of the field not unread | 107 | 284 | |
+| min: two live setters read, the least kept | 144 | 337 | |
+| min: the field read from every live record, declared or not | 206 | 340 | |
+| max: the field read from the newest record that sets it, replaced or not | 74 | 58 | |
+| max: a live setter not held passed over | 5 | 2 | 17 (0 before `spec/run/50`) |
+| collect: the chosen heads listed, not the live records | 125 | 143 | |
+| collect: the limit counts things, not records | 150 | 72 | |
+| collect: an unknown thing unread once per live record | 108 | 132 | |
+| `by`: a payload key read from the chosen heads | 208 | 387 | |
+| `by`: a payload setter not held passed over | 143 | 416 | 51 (17 before `spec/run/50`) |
+| `by`: an envelope key read from every live record | 95 | 117 | |
+| `by`: a forked thing in a group once per chosen head | 119 | 67 | |
+| `by`: a thing with no key not counted ungrouped | 198 | 559 | |
+| `where`: an unknown test outranks one answering no, asked of a thing | 108 | 264 | 13 |
+
+The weakest, a max that passes over an unheld live setter, changes an answer only when a thing has two live setters of `n` and exactly one is not held; `spec/run/50` pins it, with a sum and a min beside it and a withheld and an erased setter each, and the same for a `by` key.
+The `where` port was found by margins-claude after `keyed-1`: it failed 13 vector checks and none of that generator's fuzz checks, since no keyed slot then asked two payload tests of a thing.
+The spec-slice sweep in `interop/js/spec-slice.test.mjs` leaves every slot that follows `keys` out, since `spec.slice` does not cover them.
+Raw logs and per-case files were written under the session's scratch directory and deleted after the summary was recorded.
+
+```sh
+node interop/fuzz/run.mjs --rust --seed keyed-slots-2 --n 5600 --shrink-trials 80 --out rust/target/scratch/fuzz-keyed-slots-2
+python3 interop/fuzz/summarize.py campaign rust/target/scratch/fuzz-keyed-slots-2 keyed-slots-2
+```
+
+## HISTORICAL Count, sum, min, max and collect following `keys`: three-way campaign
+
+This campaign predates keyed slots with several payload tests; the generator changed after it.
+
+Source commit: `16cfb76`, after the generator learned count, sum, min, max and collect following `keys`, with `by`, `where` and `limit`.
+Node 25.9 checks 5,600 cases with seed `keyed-slots-1`: 800 cases per family.
+The run uses 88 chunks and takes 135.76 seconds.
+Exit 0: no implementation disagrees on any case.
+The retained [summary](evidence/keyed-slots-1/summary.json) supports these counts.
+Run `python3 interop/fuzz/summarize.py report` from the repository root.
+
+| Family | Cases | Match | Protocol refusal | Shared decoder refusal | Mismatch |
+|---|---:|---:|---:|---:|---:|
+| record | 800 | 60 | 713 | 27 | 0 |
+| fold | 800 | 708 | 0 | 92 | 0 |
+| spec | 800 | 693 | 53 | 54 | 0 |
+| realm | 800 | 688 | 0 | 112 | 0 |
+| scenario | 800 | 704 | 0 | 96 | 0 |
+| batch | 800 | 196 | 592 | 12 | 0 |
+| lens | 800 | 558 | 242 | 0 | 0 |
+| Total | 5,600 | 3,607 | 1,600 | 393 | 0 |
+
+All 393 decoder refusals occur in both Lean and Rust.
+For the record and batch families JavaScript is called on them too and throws, so the 27 record and 12 batch ones are all three agreeing that the input is malformed, which is still not protocol agreement.
+The 54 spec ones are the `bad-edtf` near miss, whose spec is refused.
+No reduction runs, because no mismatch exists.
+The [mismatch list](evidence/keyed-slots-1/d1-mismatches.json) keeps the historical D1 example and holds no case.
+
+Every generated spec has, beside the six keyed latest-by slots, fourteen slots that follow `keys`: count, sum, min, max and collect, with and without `where` (payload tests, envelope tests, an `absent` test on a field no record has, a test on `value`), collect with `limit`, and `by` on `env.about:t`, `env.observer`, `env.kind`, `tag`, `flag` and `rank`.
+A spec/parse near miss in one of eighty puts `limit` on a count, sum, min or max that follows `keys` (`limit-invalid`), or misspells `keys` on one of four slots (`follow-invalid`).
+As JavaScript answers them, of the 346 spec runs that parse, 131 count fewer things following `keys` than heads following `prev`, 202 sum `n` differently over things than over heads, 125 leave more of that sum unread, 107 have more live records than heads, 145 put a thing in two groups by mention, and 118 leave a thing unread to a grouped max by an unheld setter of `flag`.
+
+Each wrong port was made in the JavaScript witness, run two-way on the same seed over the 800 spec and the 800 scenario cases with `--family spec` or `--family scenario` and `--no-shrink`, and reverted; the correct witness gives no mismatch there.
+
+| Wrong port | Spec | Scenario |
+|---|---:|---:|
+| count: a thing counted once per chosen head | 131 | 106 |
+| count: a thing whose tests are unknown is not unread | 130 | 419 |
+| sum: one of two live setters read | 80 | 25 |
+| sum: the field read from the chosen heads | 121 | 210 |
+| sum: a thing with no live setter of the field not unread | 95 | 277 |
+| min: two live setters read, the least kept | 141 | 350 |
+| min: the field read from every live record, declared or not | 205 | 346 |
+| max: the field read from the newest record that sets it, replaced or not | 65 | 46 |
+| max: a live setter not held passed over | 11 | 0 |
+| collect: the chosen heads listed, not the live records | 113 | 139 |
+| collect: the limit counts things, not records | 120 | 83 |
+| collect: an unknown thing unread once per live record | 62 | 105 |
+| `by`: a payload key read from the chosen heads | 180 | 376 |
+| `by`: a payload setter not held passed over | 132 | 449 |
+| `by`: an envelope key read from every live record | 77 | 110 |
+| `by`: a forked thing in a group once per chosen head | 108 | 84 |
+| `by`: a thing with no key not counted ungrouped | 197 | 561 |
+
+The weakest, a max that passes over an unheld live setter, differs on 11 spec cases and no scenario case: it changes an answer only when a thing has two live setters of `n` and exactly one of them is not held.
+The spec-slice sweep in `interop/js/spec-slice.test.mjs` leaves every slot that follows `keys` out, since `spec.slice` does not cover them.
+Raw logs and per-case files were written under the session's scratch directory and deleted after the summary was recorded.
+
+```sh
+node interop/fuzz/run.mjs --rust --seed keyed-slots-1 --n 5600 --shrink-trials 80 --out rust/target/scratch/fuzz-keyed-slots-1
+python3 interop/fuzz/summarize.py campaign rust/target/scratch/fuzz-keyed-slots-1 keyed-slots-1
+```
+
+## HISTORICAL Latest-by following `keys`: three-way campaign
+
+This campaign predates count, sum, min, max and collect following `keys`; the generator changed after it.
 
 Source commit: `5fcf2e8`, after the generator learned latest-by following `keys`, and `sets` and joins on the records a reader holds.
 Node 25.9 checks 5,600 cases with seed `keyed-1`: 800 cases per family.

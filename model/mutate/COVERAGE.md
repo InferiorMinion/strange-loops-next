@@ -14,6 +14,7 @@ Issue #1 retargets four entries at the shape stage and labels in `under`, and ad
 `under-unknown` adds four: 240 entries total.
 `sets` adds ten: 250 entries total. `finish-envelope-env-tojson` is retargeted at `Loops.Env.baseJson`, where its site now is.
 Latest-by following `keys` adds twenty, over `Loops/Live.lean` and the keyed slot in `Loops/Spec.lean`: 270 entries total. `coverage-spec-slotfollow` is retargeted at `slotFollow`'s new result.
+Count, sum, min, max and collect following `keys` add twenty-one: 291 entries total. `follow` on those fold types became an `Option Follow`, so eleven entries are retargeted at their new sites (`wide-spec-069`, `follow-pool-every`, `follow-pool-heads-always`, `follow-count-every`, `follow-max-every`, `follow-sum-parse-dropped`, `follow-json-inverted`, `follow-count-envelope-first`, `follow-count-unknown-first`, `keys-follow-anywhere`, `keys-written-as-prev`); the four that name `Loops.Slot.run` now name `Loops.Slot.plain`, where their site is.
 The raw-reader ordering mutations target library definitions under `Loops`.
 The cheap runner uses those fourteen replacements and the four former D6 survivors.
 It requires runtime failures after successful builds.
@@ -184,6 +185,9 @@ The catalogue includes existing entries without definition metadata.
 - `Loops.live`: covered by `keys-env-not-live`, `keys-whole-always-live`
 - `Loops.liveKeys`: covered by `keys-from-heads`
 - `Loops.keyedIn`: covered by `keys-whole-not-live`, `keys-heads-are-live`
+- `Loops.recordsOf`: excluded: It filters a thing's records with no choice, and `keys-slots-every-record-chooses` reads its uses
+- `Loops.setters`: covered by `keys-slots-replaced-setters`
+- `Loops.liveIn`: covered by `keys-slots-every-record-listed`
 
 ## model/Loops/Occurred.lean
 
@@ -247,8 +251,16 @@ The catalogue includes existing entries without definition metadata.
 - `Loops.payTest`: covered by `wide-spec-061`
 - `Loops.latestOf`: covered by `spec-unread-duplicates`, `spec-drop-head-choice`
 - `Loops.collectOf`: covered by `spec-drop-collect-choice`, `spec-collect-unknown-yes`
-- `Loops.accPool`: covered by `follow-pool-every`, `follow-pool-heads-always`
-- `Loops.Slot.run`: covered by `wide-spec-062`, `follow-count-every`, `follow-max-every`, `follow-count-envelope-first`, `follow-count-unknown-first`
+- `Loops.accPool`: covered by `follow-pool-every`, `follow-pool-heads-always`, `keys-slots-pool-swapped`
+- `Loops.Slot.run`: covered by `wide-spec-062`, `keys-slots-grouped-as-records`
+- `Loops.Slot.plain`: covered by `follow-count-every`, `follow-max-every`, `follow-count-envelope-first`, `follow-count-unknown-first`, `keys-slots-count-as-records`, `keys-slots-sum-over-heads`, `keys-slots-collect-as-prev`
+- `Loops.FoldType.follow`: covered by `keys-slots-collect-not-following`
+- `Loops.thingEv`: covered by `keys-slots-every-record-chooses`, `keys-slots-unchosen-unknown`
+- `Loops.soleSetter`: covered by `keys-slots-first-of-two-setters`
+- `Loops.Acc.overThings`: covered by `keys-slots-unreadable-not-unread`
+- `Loops.keyedValue`: covered by `keys-slots-count-unknown-dropped`, `keys-slots-collect-heads`, `keys-slots-collect-no-limit`
+- `Loops.By.thingKeys`: covered by `keys-slots-payload-key-from-heads`, `keys-slots-envelope-key-every-head`, `keys-slots-unheld-key-read`
+- `Loops.Slot.keyedGrouped`: covered by `keys-slots-unreadable-key-dropped`, `keys-slots-ungrouped-dropped`
 - `Loops.Source.takes`: covered by `spec-source-all-any`, `d8-source-of-by-about`
 - `Loops.Spec.takes`: covered by `wide-spec-063`
 - `Loops.Spec.select`: covered by `wide-spec-064`
@@ -272,9 +284,9 @@ The catalogue includes existing entries without definition metadata.
 - `Loops.checkKeys`: covered by `wide-spec-066`
 - `Loops.fieldArg`: covered by `wide-spec-067`
 - `Loops.slotType`: covered by `finish-spec-slottype`
-- `Loops.slotFollow`: covered by `coverage-spec-slotfollow`
+- `Loops.slotFollow`: covered by `coverage-spec-slotfollow`, `keys-follow-anywhere`
 - `Loops.slotLimit`: covered by `wide-spec-068`
-- `Loops.foldType`: covered by `wide-spec-069`, `follow-sum-parse-dropped`
+- `Loops.foldType`: covered by `wide-spec-069`, `follow-sum-parse-dropped`, `keys-slots-count-parsed-unfollowed`
 - `Loops.slotTests`: covered by `coverage-spec-slottests`
 - `Loops.parseSlot`: covered by `coverage-spec-parseslot`
 - `Loops.parseKinds`: covered by `coverage-spec-parsekinds`

@@ -79,6 +79,34 @@ function spec(rng, rs) {
       'keyed-tag': { 'latest-by': 'of', follow: 'keys', where: { tag: { not: 'tag-1' }, 'env.observer': { not: 'o:0' } } },
       'keyed-missing': { 'latest-by': 'of', follow: 'keys', where: { missing: { absent: true } } },
       'keyed-value': { 'latest-by': 'of', follow: 'keys', where: { value: { is: 'yes' } } },
+      // Count, sum, min, max and collect following keys read things: heads
+      // choose, each payload test and each numeric field asks the field's
+      // live setters, and `by` reads a payload key from them and an envelope
+      // key from the chosen heads.
+      'keys-count': { count: true, follow: 'keys' },
+      'keys-flagged': { count: true, follow: 'keys', where: { flag: { is: true } } },
+      'keys-total': { sum: 'n', follow: 'keys' },
+      'keys-least': { min: 'score', follow: 'keys', where: { 'env.kind': { not: 'erase' } } },
+      'keys-greatest': { max: 'n', follow: 'keys', where: { tag: { not: 'tag-1' } } },
+      'keys-items': { collect: true, follow: 'keys', limit: 1 + rng.int(4) },
+      'keys-observed-items': { collect: true, follow: 'keys', where: { 'env.observer': { not: 'o:0' }, missing: { absent: true } } },
+      'keys-by-mention': { count: true, follow: 'keys', by: 'env.about:t' },
+      'keys-by-observer-total': { sum: 'n', follow: 'keys', by: 'env.observer' },
+      'keys-by-tag': { count: true, follow: 'keys', by: 'tag', where: { flag: { is: true } } },
+      'keys-by-flag-greatest': { max: 'score', follow: 'keys', by: 'flag' },
+      'keys-by-kind-least': { min: 'n', follow: 'keys', by: 'env.kind', where: { value: { not: 'no' } } },
+      'keys-by-rank-items': { collect: true, follow: 'keys', limit: 1 + rng.int(3), by: 'rank' },
+      'keys-by-mention-items': { collect: true, follow: 'keys', by: 'env.about:t', where: { score: { 'at-least': 3 } } },
+      // Two or three payload tests asked of one thing, over fields the records
+      // set with `sets`: one can answer no while another answers unknown, and
+      // no outranks unknown, as in a `where` map.
+      'keyed-flag-score': { 'latest-by': 'of', follow: 'keys', where: { flag: { is: true }, score: { 'at-least': 3 } } },
+      'keys-flag-score': { count: true, follow: 'keys', where: { flag: { is: true }, score: { 'at-least': 3 } } },
+      'keys-tag-flag-total': { sum: 'n', follow: 'keys', where: { tag: { not: 'tag-1' }, flag: { is: false } } },
+      'keys-three-least': { min: 'score', follow: 'keys', where: { flag: { is: true }, tag: { is: 'tag-2' }, n: { 'at-least': 0 } } },
+      'keys-score-value-greatest': { max: 'n', follow: 'keys', where: { score: { below: 5 }, value: { not: 'no' } } },
+      'keys-flag-score-items': { collect: true, follow: 'keys', where: { flag: { is: false }, score: { 'at-least': 2 } } },
+      'keys-flag-score-by-tag': { count: true, follow: 'keys', by: 'tag', where: { flag: { is: true }, score: { below: 6 }, rank: { present: true } } },
     },
   };
 }
@@ -581,7 +609,7 @@ export function generate(seed, index, family) {
         if (layer === 'spec/parse') {
           const choice = rng.int(10);
           nearMiss = ['spec-repeat', 'latest-by-about', 'from-of-untyped', 'follow-not-prev',
-            'by-on-latest-by', 'by-not-text', 'by-bad-prefix', 'by-env-other', 'follow-keys-elsewhere',
+            'by-on-latest-by', 'by-not-text', 'by-bad-prefix', 'by-env-other', 'follow-keys-limit',
             'follow-keys-spelling'][choice];
           if (choice === 0) input = { spec_text: '{"vertex":"a","vertex":"b","from":[{"store":"s:x"}]}' };
           if (choice === 1) input.spec.fold.heads['latest-by'] = 'about';
@@ -591,9 +619,9 @@ export function generate(seed, index, family) {
           if (choice === 5) input.spec.fold['by-tag-items'].by = rng.pick([true, 3, null]);
           if (choice === 6) input.spec.fold['by-mention'].by = rng.pick(['env.about:', 'env.about:T', 'env.about:t:0']);
           if (choice === 7) input.spec.fold['by-kind'].by = rng.pick(['env.of', 'env.about', 'env.', '']);
-          // `keys` is latest-by's alone, and spelled exactly.
-          if (choice === 8) input.spec.fold[rng.pick(['now', 'now-total', 'now-least', 'now-greatest', 'items', 'count'])].follow = 'keys';
-          if (choice === 9) input.spec.fold.keyed.follow = rng.pick(['key', 'Keys', ['keys'], true]);
+          // Following keys, `limit` stays collect's, and `keys` is spelled exactly.
+          if (choice === 8) input.spec.fold[rng.pick(['keys-count', 'keys-total', 'keys-least', 'keys-greatest', 'keys-by-tag'])].limit = 1 + rng.int(3);
+          if (choice === 9) input.spec.fold[rng.pick(['keyed', 'keys-count', 'keys-items', 'keys-by-mention'])].follow = rng.pick(['key', 'Keys', ['keys'], true]);
         } else { nearMiss = 'bad-edtf'; input.spec.fold.chosen.where = { 'env.occurred': { is: '2024-13' } }; }
         break;
       case 'fold':

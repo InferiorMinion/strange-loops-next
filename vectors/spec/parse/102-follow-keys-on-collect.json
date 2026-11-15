@@ -20,7 +20,19 @@
     }
   },
   "expect": {
-    "refused": "follow-invalid",
-    "path": "fold.c.follow"
+    "parsed": {
+      "vertex": "x",
+      "from": [
+        {
+          "store": "."
+        }
+      ],
+      "fold": {
+        "c": {
+          "collect": true,
+          "follow": "keys"
+        }
+      }
+    }
   }
 }

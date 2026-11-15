@@ -6,6 +6,7 @@ import Laws.Families
 import Laws.Live
 import Laws.LiveSlice
 import Laws.Spec
+import Laws.KeyedSlots
 import Laws.Slice
 import Laws.SpecSlice
 import Laws.By

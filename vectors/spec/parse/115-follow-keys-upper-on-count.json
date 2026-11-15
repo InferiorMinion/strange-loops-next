@@ -1,5 +1,5 @@
 {
-  "vector": "106-follow-keys-before-argument",
+  "vector": "115-follow-keys-upper-on-count",
   "layer": "spec/parse",
   "laws": ["spec.parse"],
   "source": "model",
@@ -13,8 +13,8 @@
       ],
       "fold": {
         "c": {
-          "sum": "",
-          "follow": "keys"
+          "count": true,
+          "follow": "Keys"
         }
       }
     }

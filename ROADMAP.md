@@ -6,21 +6,21 @@ The tree has three implementations: Lean, JavaScript, and Rust.
 Step 1 applies the six settled rulings before records exist.
 All three implement the settled decisions D1–D6, and D8a and D8b.
 All three carry D8c's `sets` in the envelope and refuse one that is not a set of key names (`sets-not-keys`).
-All three read a thing by its live setters for `{"latest-by": "of", "follow": "keys"}`; the other slots that follow `keys` are not built.
+All three read a thing by its live setters in every slot that follows `keys`: latest-by, and count, sum, min, max and collect, with `by` or without.
 All three refuse every envelope shape by name (issue #1) and let a label stand in `under`.
 All three writers refuse an `under` target they do not hold (`under-unknown`).
 All three let count, sum, min and max follow `prev` (issue #3), and group count, sum, min, max and collect with `by` (issue #2).
-The law index has 101 entries, 957 theorems, and 6 boundary witnesses.
+The law index has 104 entries, 1006 theorems, and 6 boundary witnesses.
 See [the law index](design/laws/laws.json) and [proof and boundary data](design/laws/).
 These proofs apply only under their stated premises.
 
-The tree has 586 JSON fixtures: 574 generated fixtures and 12 standard fixtures.
-Lean replays 565 generated fixtures; 9 occurred fixtures use separate checks.
+The tree has 600 JSON fixtures: 588 generated fixtures and 12 standard fixtures.
+Lean replays 579 generated fixtures; 9 occurred fixtures use separate checks.
 Rust checks every fixture, six JCS byte pairs, 4,000 binary64 cases, and 128 SUPERCOP signing cases with ed25519-dalek.
-Rust passes 165 tests; JavaScript passes 6,743 vector checks and 38 regression and law tests.
+Rust passes 167 tests; JavaScript passes 6,944 vector checks and 39 regression and law tests.
 Both also check that `spec/run` answers write their members, group, thing and key names included, in the model's order; JavaScript checks `fold/latest-by` answers' thing keys too.
 JavaScript refuses a held record's invalid `emitted` or `occurred` before it answers, as the Lean and Rust readers do.
-The fuzz suite passes 58 tests.
+The fuzz suite passes 60 tests.
 See [vectors](vectors/README.md), [Rust boundaries](rust/GAPS.md), and [the mutation report](model/mutate/REPORT.md).
 These checks provide bounded evidence, not complete JCS or cryptographic correctness.
 They do not certify browser accessibility, external links, or official ASD dictionary compliance.
@@ -32,26 +32,27 @@ Numeric folds read safe whole values only.
 Raw constructors and theorem premises retain separate domains.
 
 The gates pass locally on Node 25.9, and CI runs every gate on Node 22.
-The `keyed-1` campaign, over the generator after latest-by came to follow `keys`, checks 5,600 cases, 800 per family, in 95.69 seconds.
-It reports 3,585 matches, 1,614 protocol refusals, 401 shared decoder refusals, and no mismatch.
-Twelve wrong ports of the keyed latest-by in the JavaScript witness each give mismatches on the same seed, over its 800 spec and 800 scenario cases: from 24 and 14 (above only one step) to 237 and 440 (a whole-read emit setting only what it names); the table is in [the campaign report](interop/fuzz/REPORT.md).
-The `sets-1`, `under-1`, `issue-7-1`, `by-collect-1`, `by-shape-1`, `by-1`, `shape-follow-1`, `shape-under-2` and `follow-2` campaigns, each over an earlier generator, found no mismatch either.
+The `keyed-slots-2` campaign, over the generator after count, sum, min, max and collect came to follow `keys` and keyed slots came to ask two and three payload tests of a thing, checks 5,600 cases, 800 per family, in 164.31 seconds.
+It reports 3,629 matches, 1,590 protocol refusals, 381 shared decoder refusals, and no mismatch.
+Eighteen wrong ports in the JavaScript witness, two to four for each fold type, five for `by` and one for the combination of a thing's payload tests, each give mismatches on the same seed, over its 800 spec and 800 scenario cases: from 5 and 2 (a max passing over an unheld live setter, which `spec/run/50` now also pins) to 198 and 559 (a thing with no key not counted ungrouped); an unknown test outranking one answering no gives 108 and 264. The table is in [the campaign report](interop/fuzz/REPORT.md).
+The `keyed-slots-1` campaign, over the generator before keyed slots asked several payload tests, found no mismatch either, nor did the `keyed-1`, `sets-1`, `under-1`, `issue-7-1`, `by-collect-1`, `by-shape-1`, `by-1`, `shape-follow-1`, `shape-under-2` and `follow-2` campaigns, each over an earlier generator.
 Decoder refusals are not agreement; for record and batch inputs JavaScript must also report them as malformed.
-The generator carries issue #1's shapes and labels in `under`, followed count, sum, min and max slots, grouped slots, keys written as number text (issue #7), an unknown key beside an envelope that is not an object, `under` targets held or not, `sets` in record and changeset envelopes, latest-by following `keys`, and `sets` and joins on the records a reader holds, so the same seeds now generate different inputs; earlier campaigns' counts are historical.
+The generator carries issue #1's shapes and labels in `under`, followed count, sum, min and max slots, grouped slots, keys written as number text (issue #7), an unknown key beside an envelope that is not an object, `under` targets held or not, `sets` in record and changeset envelopes, latest-by following `keys`, count, sum, min, max and collect following `keys` with `by`, `where` and `limit`, keyed slots with two and three payload tests, and `sets` and joins on the records a reader holds, so the same seeds now generate different inputs; earlier campaigns' counts are historical.
 The `d8ab-1` and `d1-d6-1` campaigns found no mismatch.
 The 42 duplicate-base lens mismatches of the `step1-3` campaign are the class D1 settles.
 `interop/fuzz/summarize.py` derives these counts from tracked summaries.
 See [the campaign report](interop/fuzz/REPORT.md) for the scripts and current and historical results.
 The CI seed `ci-1` checks 28 three-way cases without mismatches.
 
-The mutation catalogue has 270 entries, including six for the D1 and D2 definitions, nine for D8's `of`, nine for `follow` on count, sum, min and max, ten for issue #1's shapes and labels in `under`, seven for `by`, four for `under-unknown`, ten for `sets`, and twenty for latest-by following `keys`.
-Ten earlier entries are retargeted at `of` and the one thing it names, three at the `follow` grammar, and four at the shape stage and labels in `under`.
+The mutation catalogue has 291 entries, including six for the D1 and D2 definitions, nine for D8's `of`, nine for `follow` on count, sum, min and max, ten for issue #1's shapes and labels in `under`, seven for `by`, four for `under-unknown`, ten for `sets`, twenty for latest-by following `keys`, and twenty-one for count, sum, min, max and collect following `keys`.
+Ten earlier entries are retargeted at `of` and the one thing it names, three at the `follow` grammar, four at the shape stage and labels in `under`, and eleven at the `follow` type on count, sum, min, max and collect.
 It retires the redundant positive-offset guard under R4 and the entry for the deleted `stripZeros` family.
 The last full run covers the 210 entries before issue #1 and `follow`. After the merge, the 25 entries the two changes add or retarget, run alone with `--only`, give 17 build rejections, three vector differences and five generator assertions, and no survivor.
 The seven `by` entries, rerun alone on the tree merged with issue #1, give six build rejections and one vector difference, and no survivor.
 The four `under-unknown` entries, run alone, give three vector differences and one generator assertion, and no survivor.
 The ten `sets` entries and the six whose definitions `sets` touched, run alone, give twelve build rejections, one vector difference and three generator assertions, and no survivor.
 The twenty keyed entries and the ten whose definitions the keyed slot touched, run alone, give 27 build rejections and three vector differences, and no survivor.
+The twenty-one entries for the other slots that follow `keys`, the eleven retargeted and five more whose definitions they touched, run alone, give 36 build rejections and one vector difference, and no survivor.
 The full run reports 165 build rejections, 28 vector differences, 15 generator assertion exceptions, and 2 survivors.
 The runner exits 1 for assertion exceptions; no timeout or infrastructure failure occurs.
 Of the nine D8 entries, six fail the build, two change batch vectors, and one stops at a generator assertion.
@@ -66,7 +67,7 @@ See [the mutation report](model/mutate/REPORT.md) for outcomes, restoration chec
 ## Step 2: the first product slice
 
 `loops-place` and the `loops` CLI emit, read and fold for one person, signed, over `.loops/`.
-Stored lines match the model's record vectors byte for byte; 21 tests drive the place and the binary.
+Stored lines match the model's record vectors byte for byte; 22 tests drive the place and the binary.
 The layout, the CLI and their refusal codes are a working proposal, not protocol.
 [`rust/PLACE.md`](rust/PLACE.md) lists what is implemented and the ten choices made on the way.
 Two of them need the model: what a place is has no law, and a payload reaches a fold only as `value`, `n` and top-level fields.
@@ -175,7 +176,7 @@ Never round or cap current model outputs.
 ### D8: Items, mentions and declared keys
 
 Kyle ruled this on 2026-11-10.
-D8a and D8b are built across the model, vectors, JavaScript and Rust; of D8c, `sets` is built in the envelope, liveness per key and latest-by following `keys`, and the slice laws for one keyed thing; count, sum, min, max, collect and `by` following `keys`, the slice law for a spec with a keyed slot and the writer's anchor rule are not.
+D8a and D8b are built across the model, vectors, JavaScript and Rust; of D8c, `sets` is built in the envelope, liveness per key, latest-by following `keys`, count, sum, min, max, collect and `by` following `keys`, and the slice laws for one keyed thing; the slice law for a spec with a keyed slot and the writer's anchor rule are not.
 It changes the settled envelope, so it lands as R1–R6 and D1–D6 did: model, vectors, JavaScript, Rust, then protocol and pages.
 **Finding:** Two apps built on the product slice hit one wall on 2026-11-10.
 The orchestration dry run is in [Scenarios](design/rethink/sections/13-scenarios.html), step 8; margins-claude's `work` app is described in its notes on merge request !12.
@@ -281,7 +282,7 @@ Nothing compares `sets` with the payload or with another record's: a declared ke
 No fold, spec or lens reads it yet; it is carried, hashed into the id, stored, read back and shown, and an erased or withheld record keeps it with its envelope.
 The law is `record.keys`; `record.sets` now covers `sets` too.
 `record/15`–`19`, `45`–`47` and `shape-sets-*`, and `batch/76`–`82`, pin it.
-The keyed fold, liveness per key and their laws are built in the next paragraph; the slice laws for one thing in the paragraph after it; the other slots that follow `keys`, the slice law for a spec with a keyed slot and the anchor rule in `loops emit` are not.
+The keyed fold, liveness per key and their laws are built in the next paragraph, the other slots that follow `keys` in the one after it, and the slice laws for one thing in the one after that; the slice law for a spec with a keyed slot and the anchor rule in `loops emit` are not.
 **Implementer choices, for Kyle to confirm:**
 - `sets` holds keys, not labels: in a changeset a key that starts with `@` is written as given, neither replaced nor looked up (`batch/76`).
 - A held record's `sets` is checked as its other fields are: a stored line whose `sets` is not keys is refused with the writer's code, and one in another order is not canonical. The reader's record in fold, realm, scenario and spec vectors carries `sets` since the keyed fold below.
@@ -290,7 +291,7 @@ The keyed fold, liveness per key and their laws are built in the next paragraph;
 
 **Built, 2026-11-14: latest-by following `keys`**, section 2 of the design note below and the part of section 3 a latest-by slot needs to select.
 `{"latest-by": "of", "follow": "keys"}` reads each thing by its live setters; `"prev"` keeps its meaning and its result.
-`"follow": "keys"` on count, sum, min, max and collect is refused with `follow-invalid`, at the check that refuses any other value; those slots are not built yet.
+`"follow": "keys"` on count, sum, min, max and collect was refused with `follow-invalid` until the next paragraph's slice built them.
 The reader's record carries `sets`, and settling, withholding and erasure keep it with the envelope.
 Liveness is worked out where heads are: after settling and admission, per thing, over the admitted records of it (`Loops/Live.lean`).
 A record is above another when its `prev` names it or a record above it, through those records; a setter of a key is live for it when nothing above it sets the key; live for the envelope is a head; live is live for some key, the envelope among them.
@@ -299,8 +300,7 @@ The result per thing is `{"keys", "whole", "heads"}`, as in the note's example, 
 `thingTest` (`Cond.onThing` per test) takes a thing's records and is what the next slice's count, sum, min, max, collect and `by` can ask.
 The laws are `keyed.live`, `keyed.fold` and `keyed.select`; `spec.set` covers the keyed slot. `spec.slice` does not: `Spec.run_slice` takes a spec with no keyed slot, since a keyed slot reads live setters the spec does not take, and the spec-slice sweep finds slices that answer it differently.
 `spec/parse/97`–`110`, `spec/run/31`–`41` and `scenario/keys-01-settled-setter` pin it; the CLI walk reads a keyed thing through `loops fold`.
-Count, sum, min, max, collect and `by` following `keys`, the slice law for a spec with a keyed slot, and the anchor rule and copied `about` in `loops emit` are not built.
-The slice laws for one thing are built in the paragraph after these choices.
+The slice law for a spec with a keyed slot, and the anchor rule and copied `about` in `loops emit`, are not built.
 **Implementer choices, for Kyle to confirm:**
 - A field no record of the thing sets is absent, as a missing field in a held payload is: `is`, `present`, `at-least` and `below` answer no, `not` and `absent` answer yes (`spec/run/40`, `task:13`). A live setter that declares a field its payload lacks reads it as absent too.
 - A chosen thing whose payload tests answer unknown counts once in `unread`; `unread` counts things, not records.
@@ -310,6 +310,23 @@ The slice laws for one thing are built in the paragraph after these choices.
 - `value` and `n`, which the reader's record always holds, are payload keys like the others: a record with `sets` sets them only when it declares them, and a field no record sets is absent even when it is `value`.
 - `Spec.run_slice` and `Slot.run_slice` take a premise that no slot is a latest-by following `keys`, rather than a slice law for it.
 - The law names `keyed.live`, `keyed.fold` and `keyed.select`, and `follow` as a value of a new type `Follow` on latest-by in the model, while the accumulating folds keep a flag.
+
+**Built, 2026-11-14: count, sum, min, max and collect following `keys`**, section 3 of the design note below.
+`"follow": "keys"` is accepted on every fold type; `follow-invalid` refuses any value but `"prev"` and `"keys"`, at the same check. `spec/parse/98`–`102` are now accepted forms, `106` and `107` pin the argument and `limit` checked after `"keys"`, and `111`–`115` pin the forms with `by`, `where` and `limit` and the refusals left.
+Such a slot reads things, selected as latest-by following `keys` selects them (`thingEv`): `from` and the envelope tests choose heads, each alone, and the payload tests are asked of the thing over each field's live setters.
+Count counts the selected things; sum, min and max read the field from its one live setter (`soleSetter`); collect lists the selected things' live records (`liveIn`). The results keep the shapes of the same slots without `follow`; nothing forced a change.
+With `by`, a payload key is read from each live setter of the field and an envelope key from each chosen head (`By.thingKeys`), and each group is the slot without `by` over its things (`Slot.keyedGrouped`).
+The laws are `keyed.slots`, `keyed.by` and `keyed.whole-read`: when every record is read whole and every thing has one head, each such slot, grouped or not, gives what the same slot following `prev` gives (`Slot.keys_as_prev`). `spec.set` covers them; `spec.slice` does not, and its premise now leaves out every slot that follows `keys`, as the spec-slice sweep does.
+`spec/run/42`–`50` pin it, `42` being the note's count of open tasks beside the same count following `prev`; the CLI walk counts, sums and collects through `loops fold`.
+The slice law for a spec with a keyed slot, and the anchor rule and copied `about` in `loops emit` (section 5), are not built; the slice laws for one thing are in the paragraph after these choices.
+**Implementer choices, for Kyle to confirm:**
+- A field with no live setter is unread to sum, min and max, as a record without the field is; so is one whose live setter holds no safe whole number there. A record with `sets` that does not declare the field is no setter of it, so a field its payload holds but does not declare is unread too (`spec/run/44`, `task:5`).
+- `unread` counts things, each at most once in a slot: a thing whose tests are unknown, or a selected thing whose field or key cannot be read. Within a group, a thing whose field cannot be read adds to that group's `unread`, as a record does.
+- Collect's `limit` applies to the one newest-first list of the selected things' live records, not to things, as it applies to matching records without `follow`; under `by`, within each group. So a limit can list some of a thing's live records and not others (`spec/run/47`).
+- Collect writes one list across things in content order, the shape it has without `follow`; it does not group the records by thing.
+- A group's own `unread` counts only things whose field cannot be read there; a thing whose tests are unknown is unread at the top, as an unknown record is.
+- `follow` on count, sum, min, max and collect is an `Option Follow` in the model, replacing the flag; `FoldType.follow` reads it. `By.count_partition` and its neighbours take a premise that the count does not follow `keys`; over things the partition is `By.keyedAccounting`.
+- The law names `keyed.slots`, `keyed.by` and `keyed.whole-read`, and the renamed vectors `spec/parse/106-argument-after-follow-keys-on-sum` and `107-limit-after-follow-keys-on-count`.
 
 **Built, 2026-11-14: the slice laws for one keyed thing**, section 4 of the design note below, in `model/Laws/LiveSlice.lean` (margins-claude).
 They are laws only: no definition a reader runs changes, and no vector.
@@ -549,7 +566,7 @@ Each step extends the model laws, computes protocol vectors, then implements Rus
 | --- | --- | --- |
 | 0, done | The Lean spike: Count and LatestBy, one lens combinator, 23 vectors | The first laws are proved |
 | 1, done | Protocol and vectors for layer 0: canonical bytes, salt and commitment, id, signature | The model and the JS writer agree on every vector; Rust checks all fixture families and external standards |
-| 2 | Emit, read, fold for one person: JSONL segment, JSON spec, the two fold families, `"follow": "prev"`, `by`, a signing key, signing by default. `of` names a record's one thing, an id or a natural key; `about` only mentions. D8a and D8b are built; of D8c, `sets` is built in the envelope and latest-by following `keys`, and the other slots that follow `keys` are not. | It does the old CLI's workable job, signed |
+| 2 | Emit, read, fold for one person: JSONL segment, JSON spec, the two fold families, `"follow": "prev"`, `by`, a signing key, signing by default. `of` names a record's one thing, an id or a natural key; `about` only mentions. D8a and D8b are built; of D8c, `sets` is built in the envelope, and every slot that follows `keys`; the keyed slice laws and the writer's anchor rule are not. | It does the old CLI's workable job, signed |
 | 3 | Standing: declarations, admission, stances, grants, presence key, retire through; then name tables and `resolve-by` | A strict store rejects visibly; a steward's changeset takes effect |
 | 4 | Ticks: content and witness, boundaries, markers | A content tick recomputes to the same hash on two machines |
 | 5 | Sharing: the git layout, then segment-list sync | Two clones converge |
