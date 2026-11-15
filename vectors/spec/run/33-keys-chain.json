@@ -1,0 +1,228 @@
+{
+  "vector": "33-keys-chain",
+  "layer": "spec/run",
+  "laws": ["spec.set", "keyed.live", "keyed.fold"],
+  "source": "model",
+  "input": {
+    "spec": {
+      "vertex": "tasks",
+      "from": [
+        {
+          "store": ".",
+          "kind": ["task"]
+        }
+      ],
+      "fold": {
+        "state": {
+          "latest-by": "of",
+          "follow": "keys"
+        },
+        "heads": {
+          "latest-by": "of",
+          "follow": "prev"
+        }
+      }
+    },
+    "orders": [
+      [
+        {
+          "id": "r:00000000000000000000000000000000000000000000000004gg",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:2",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:01:40Z",
+          "occurred": "2026-10-01T00:01:40Z",
+          "n": 0,
+          "fields": {
+            "title": "a",
+            "status": "open",
+            "est": 3
+          }
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000004h0",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:2",
+          "value": "",
+          "prev": ["r:00000000000000000000000000000000000000000000000004gg"],
+          "emitted": "2026-10-01T00:03:20Z",
+          "occurred": "2026-10-01T00:03:20Z",
+          "sets": ["status"],
+          "n": 0,
+          "fields": {
+            "status": "closed"
+          }
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000004hg",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:2",
+          "value": "",
+          "prev": ["r:00000000000000000000000000000000000000000000000004h0"],
+          "emitted": "2026-10-01T00:05:00Z",
+          "occurred": "2026-10-01T00:05:00Z",
+          "sets": ["title"],
+          "n": 0,
+          "fields": {
+            "title": "b"
+          }
+        }
+      ],
+      [
+        {
+          "id": "r:00000000000000000000000000000000000000000000000004h0",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:2",
+          "value": "",
+          "prev": ["r:00000000000000000000000000000000000000000000000004gg"],
+          "emitted": "2026-10-01T00:03:20Z",
+          "occurred": "2026-10-01T00:03:20Z",
+          "sets": ["status"],
+          "n": 0,
+          "fields": {
+            "status": "closed"
+          }
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000004hg",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:2",
+          "value": "",
+          "prev": ["r:00000000000000000000000000000000000000000000000004h0"],
+          "emitted": "2026-10-01T00:05:00Z",
+          "occurred": "2026-10-01T00:05:00Z",
+          "sets": ["title"],
+          "n": 0,
+          "fields": {
+            "title": "b"
+          }
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000004gg",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:2",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:01:40Z",
+          "occurred": "2026-10-01T00:01:40Z",
+          "n": 0,
+          "fields": {
+            "title": "a",
+            "status": "open",
+            "est": 3
+          }
+        }
+      ],
+      [
+        {
+          "id": "r:00000000000000000000000000000000000000000000000004hg",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:2",
+          "value": "",
+          "prev": ["r:00000000000000000000000000000000000000000000000004h0"],
+          "emitted": "2026-10-01T00:05:00Z",
+          "occurred": "2026-10-01T00:05:00Z",
+          "sets": ["title"],
+          "n": 0,
+          "fields": {
+            "title": "b"
+          }
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000004gg",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:2",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:01:40Z",
+          "occurred": "2026-10-01T00:01:40Z",
+          "n": 0,
+          "fields": {
+            "title": "a",
+            "status": "open",
+            "est": 3
+          }
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000004h0",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:2",
+          "value": "",
+          "prev": ["r:00000000000000000000000000000000000000000000000004gg"],
+          "emitted": "2026-10-01T00:03:20Z",
+          "occurred": "2026-10-01T00:03:20Z",
+          "sets": ["status"],
+          "n": 0,
+          "fields": {
+            "status": "closed"
+          }
+        }
+      ]
+    ]
+  },
+  "expect": {
+    "state": {
+      "things": {
+        "task:2": {
+          "keys": {
+            "status": [
+              {
+                "id": "r:00000000000000000000000000000000000000000000000004h0",
+                "shown": "here"
+              }
+            ],
+            "title": [
+              {
+                "id": "r:00000000000000000000000000000000000000000000000004hg",
+                "shown": "here"
+              }
+            ]
+          },
+          "whole": [
+            {
+              "id": "r:00000000000000000000000000000000000000000000000004gg",
+              "shown": "here"
+            }
+          ],
+          "heads": [
+            {
+              "id": "r:00000000000000000000000000000000000000000000000004hg",
+              "shown": "here"
+            }
+          ]
+        }
+      },
+      "unread": 0
+    },
+    "heads": {
+      "things": {
+        "task:2": [
+          {
+            "id": "r:00000000000000000000000000000000000000000000000004hg",
+            "shown": "here"
+          }
+        ]
+      },
+      "unread": 0
+    }
+  }
+}

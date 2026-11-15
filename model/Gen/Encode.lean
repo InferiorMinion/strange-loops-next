@@ -62,7 +62,10 @@ def jRecord (r : Record) : J :=
     (match r.occurred with
       | some c => [("occurred", .str c.text)]
       | none => []) ++
-    (if r.erases.isEmpty then [] else [("erases", .arr (r.erases.map (.str ∘ idText)))])
+    (if r.erases.isEmpty then [] else [("erases", .arr (r.erases.map (.str ∘ idText)))]) ++
+    (match r.sets with
+      | some ks => [("sets", .arr (ks.map .str))]
+      | none => [])
   let fields := if r.fields.isEmpty then [] else [("fields", .obj (r.fields.map fun (k, v) => (k, jVal v)))]
   match r.shown with
   | .here => .obj (env ++ [("value", .str r.value)] ++ rest ++ [("n", match r.nNumber with | some n => .number n | none => .int r.n)] ++ fields)

@@ -65,6 +65,30 @@ pub(super) fn slot(v: SlotValue) -> Json {
             ),
             ("unread", integer(unread)),
         ]),
+        SlotValue::Keyed { things, unread } => object(vec![
+            (
+                "things",
+                Json::Obj(
+                    things
+                        .into_iter()
+                        .map(|(t, k)| {
+                            let keys = k
+                                .keys
+                                .into_iter()
+                                .map(|(n, hs)| (n, shown_ids(hs)))
+                                .collect();
+                            let view = object(vec![
+                                ("keys", Json::Obj(keys)),
+                                ("whole", shown_ids(k.whole)),
+                                ("heads", shown_ids(k.heads)),
+                            ]);
+                            (t, view)
+                        })
+                        .collect(),
+                ),
+            ),
+            ("unread", integer(unread)),
+        ]),
         SlotValue::Groups {
             groups,
             unread,

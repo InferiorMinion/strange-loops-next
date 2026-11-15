@@ -1,0 +1,27 @@
+{
+  "vector": "107-follow-keys-before-limit",
+  "layer": "spec/parse",
+  "laws": ["spec.parse"],
+  "source": "model",
+  "input": {
+    "spec": {
+      "vertex": "x",
+      "from": [
+        {
+          "store": "."
+        }
+      ],
+      "fold": {
+        "c": {
+          "count": true,
+          "limit": 0,
+          "follow": "keys"
+        }
+      }
+    }
+  },
+  "expect": {
+    "refused": "follow-invalid",
+    "path": "fold.c.follow"
+  }
+}

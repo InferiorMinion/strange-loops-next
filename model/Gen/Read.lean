@@ -295,8 +295,8 @@ def fieldsOf (path : String) (j : Json) : Dec (List (String × Val)) := do
     pure (k, ← valOf (dot path k) v)
 
 def recordKeys : List String :=
-  ["id", "kind", "observer", "about", "of", "value", "prev", "under", "emitted", "occurred", "erases", "n",
-    "fields", "shown"]
+  ["id", "kind", "observer", "about", "of", "value", "prev", "under", "emitted", "occurred", "erases", "sets",
+    "n", "fields", "shown"]
 
 /-- A record as a reader holds it. A missing payload is written as `shown`
 with no `value`, `n` or `fields`, and reads back as `Record.withhold` or
@@ -318,8 +318,12 @@ def record (path : String) (j : Json) : Dec Record := do
   let emitted ← stampOf (dot path "emitted") (← req path kvs "emitted")
   let occurred ← opt kvs "occurred" (claimOf (dot path "occurred"))
   let erases ← (opt kvs "erases" (each (dot path "erases") recordId)).map (·.getD [])
+  let sets ← opt kvs "sets" (each (dot path "sets") fun p j => do
+    let k ← text p j
+    if k.isEmpty then bad p "a key name is not empty" else pure k)
   let shown ← (opt kvs "shown" (shownOf (dot path "shown"))).map (·.getD .here)
-  let base : Record := { id, kind, observer, about, of, value := "", prev, under, occurred, emitted, erases, shown }
+  let base : Record :=
+    { id, kind, observer, about, of, value := "", prev, under, occurred, emitted, erases, sets, shown }
   match shown with
   | .here =>
     let value ← text (dot path "value") (← req path kvs "value")

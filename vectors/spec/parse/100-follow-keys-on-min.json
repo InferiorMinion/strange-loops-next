@@ -1,0 +1,26 @@
+{
+  "vector": "100-follow-keys-on-min",
+  "layer": "spec/parse",
+  "laws": ["spec.parse"],
+  "source": "model",
+  "input": {
+    "spec": {
+      "vertex": "x",
+      "from": [
+        {
+          "store": "."
+        }
+      ],
+      "fold": {
+        "c": {
+          "min": "est",
+          "follow": "keys"
+        }
+      }
+    }
+  },
+  "expect": {
+    "refused": "follow-invalid",
+    "path": "fold.c.follow"
+  }
+}

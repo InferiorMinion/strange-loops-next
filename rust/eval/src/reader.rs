@@ -125,7 +125,7 @@ pub(super) fn record(path: &str, j: &Json) -> Result<Record, String> {
         path,
         &[
             "id", "kind", "observer", "about", "of", "value", "prev", "under", "emitted",
-            "occurred", "erases", "n", "fields", "shown",
+            "occurred", "erases", "sets", "n", "fields", "shown",
         ],
         j,
     )?;
@@ -166,6 +166,15 @@ pub(super) fn record(path: &str, j: &Json) -> Result<Record, String> {
         .map(|j| ids(&p("erases"), j))
         .transpose()?
         .unwrap_or_default();
+    let sets = optional(kvs, "sets")
+        .map(|j| {
+            let keys = texts(&p("sets"), j)?;
+            match keys.iter().position(String::is_empty) {
+                Some(i) => Err(format!("{}[{i}]: a key name is not empty", p("sets"))),
+                None => Ok(keys),
+            }
+        })
+        .transpose()?;
     let shown = optional(kvs, "shown")
         .map(|j| shown(&p("shown"), j))
         .transpose()?
@@ -181,6 +190,7 @@ pub(super) fn record(path: &str, j: &Json) -> Result<Record, String> {
         emitted,
         occurred,
         erases,
+        sets,
         shown,
         ..Record::default()
     };

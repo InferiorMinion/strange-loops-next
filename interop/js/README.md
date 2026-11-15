@@ -19,6 +19,8 @@ A label may stand in `about`, `of`, `prev` or `under`; never in `erases`.
 A record is of one thing: its `of`, read as written, or without `of` its own id (`fold.mjs`, `thingOf`).
 Heads, admission (`realm.mjs`), the writer's `prev` checks (`batch.mjs`) and a spec's `latest-by` and `from.of` all read that.
 `about` only mentions; `from.about` and `env.about` test it as written, and it never makes a head.
+A latest-by that follows `keys` reads each thing by its live setters (`fold.mjs`, `above`, `liveFor`, `live`, `keyedOf`), over the records of the thing that were admitted.
+`from` and the envelope tests choose heads; `thingAnswer` (`spec.mjs`) asks each payload test of every live setter of its field.
 
 ## Raw text
 
@@ -53,7 +55,7 @@ These readers check no other field of a held record.
 
 A spec's slots are answered in the order the spec writes them, as in the model.
 An object's own enumeration puts integer-like names first, so the parsed `fold` and the answer `runSpec` builds keep the written order beside their members, read by `slotNames`.
-`slotsText` writes the slots in that order, and the keys of `groups` and `things` in UTF-16 code-unit order (`jsonText`).
+`slotsText` writes the slots in that order, and the keys of `groups`, of `things` and of a keyed thing's `keys` in UTF-16 code-unit order (`jsonText`).
 A spec given as a value has only its enumeration order; read it from text with `parseSpecText` to keep the written one.
 `check-spec.mjs` checks the member order of `spec/run` answers, and `check-fold.mjs` that of `fold/latest-by` answers.
 

@@ -71,6 +71,12 @@ def rotations (xs : List Record) : List (List Record) :=
 def jShownIds (rs : List Record) : J :=
   .arr (rs.map fun r => .obj [("id", .str (idText r.id)), ("shown", jShown r.shown)])
 
+def jIds (hs : List (RecordId × Shown)) : J :=
+  .arr (hs.map fun (i, sh) => .obj [("id", .str (idText i)), ("shown", jShown sh)])
+
+def jKeyed (k : KeyedView) : J :=
+  .obj [("keys", .obj (k.keys.map fun (n, hs) => (n, jIds hs))), ("whole", jIds k.whole), ("heads", jIds k.heads)]
+
 def jSlot : SlotValue → J
   | .nat r => .obj [("value", .num r.value), ("unread", .num r.unread)]
   | .int r => .obj [("value", .int r.value), ("unread", .num r.unread)]
@@ -81,6 +87,7 @@ def jSlot : SlotValue → J
       .obj [("id", .str (idText i)), ("shown", jShown sh)])), ("unread", .num u)]
   | .things ts u => .obj [("things", .obj (ts.map fun (t, hs) => (t, .arr (hs.map fun (i, sh) =>
       .obj [("id", .str (idText i)), ("shown", jShown sh)])))), ("unread", .num u)]
+  | .keyed ts u => .obj [("things", .obj (ts.map fun (t, k) => (t, jKeyed k))), ("unread", .num u)]
   | .groups gs u m => .obj [("groups", .obj (gs.map fun (g, v) => (g, match v with
       | .nat r => .obj [("value", .num r.value), ("unread", .num r.unread)]
       | .int r => .obj [("value", .int r.value), ("unread", .num r.unread)]

@@ -276,6 +276,7 @@ impl Line {
             emitted: Stamp::of(&env.emitted)
                 .expect("a held line's emitted passed the envelope's instant check"),
             erases: ids(&env.erases),
+            sets: env.sets.as_deref().map(loops::json::canon_set),
             ..Record::default()
         };
         let Some(payload) = self.payload() else {

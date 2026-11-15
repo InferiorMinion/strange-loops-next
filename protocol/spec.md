@@ -60,7 +60,7 @@ and optionally:
 
 | Key | Holds | On |
 |---|---|---|
-| `follow` | `"prev"` | any; always written on `latest-by` |
+| `follow` | `"prev"` on any; `"keys"` on `latest-by` | any; always written on `latest-by` |
 | `limit` | a whole number, at least 1 | `collect` |
 | `by` | what to group by, below | `count`, `sum`, `min`, `max`, `collect`, following or not |
 | `where` | a `where` map, below | any |
@@ -91,6 +91,42 @@ Every head of a forked thing is current, so each one counts.
 An erased or withheld head is still current, and only its envelope is held.
 `count` counts it, since counting reads no payload; a payload test on it answers unknown, and the head is unread.
 `sum`, `min` and `max` cannot read its field, so it is unread to them.
+
+## `latest-by` following `keys`
+
+`{"latest-by": "of", "follow": "keys"}` reads each thing by its live setters, where `"follow": "prev"` reads it by its heads.
+`"follow": "keys"` on count, sum, min, max and collect is not built yet; it is refused with `follow-invalid`.
+
+A record *sets* key `k` when `k` is in its `sets`, or when it has no `sets`: a record read whole sets every key.
+`"sets": []` sets no key; such a record is a pure join.
+A record is *above* another when its `prev` names it, or names a record above it, through the admitted records of their thing the reader holds.
+A `prev` naming a record the reader does not hold reaches nothing.
+A setter of `k` is *live for `k`* when no record above it sets `k`.
+Every record sets the envelope, so a record is live for the envelope when nothing is above it: it is a head.
+A record is *live* when it is live for some key, the envelope among them.
+So every head is live, and a record read whole is live until a record read whole is above it.
+An erased or withheld record keeps its envelope, `sets` included: it still sets its keys, and only its `shown` changes.
+Liveness is worked out where heads are: after settling and admission, per thing, over everything held, before any slot selects.
+
+The slot holds `{"things": {<thing>: {"keys": {<key>: [...]}, "whole": [...], "heads": [...]}}, "unread": n}`.
+Each list holds `{"id", "shown"}` entries, newest first in content order.
+`keys` has an entry for every key some live record of the thing declares in its `sets`, and under it every live setter of that key, records read whole included.
+`whole` lists the live records read whole. A key with no entry is read from them.
+`heads` lists the thing's heads, as `"follow": "prev"` gives them; a pure-join head is listed there and nowhere else.
+`keys` is written in UTF-16 code-unit order of its key names.
+More than one setter under a key is two live setters of it; the core declares no conflict and compares no values.
+For a thing whose records are all read whole, `keys` is empty and `whole` and `heads` are its heads.
+
+`from` and the envelope tests choose heads, each head alone, as under `"follow": "prev"`.
+A thing is selected when one of its heads is chosen.
+The payload tests are then asked of the thing: each test on a payload field is asked of every live setter of that field, whether or not `from` takes it.
+A record with `sets` is asked only about the keys it declares; a payload key it does not declare is not read.
+When every live setter gives the same answer, that is the test's answer.
+When they give different answers, or one of them is erased or withheld, the test answers unknown.
+When no record of the thing sets the field, it is absent, as a missing field in a held payload is: `is`, `present`, `at-least` and `below` answer no, and `not` and `absent` answer yes.
+The tests then combine as a `where` map does.
+A selected thing whose tests answer yes is in `things` with its whole keyed state, every head listed whether chosen or not.
+One whose tests answer unknown adds one to `unread`.
 
 ## `by`
 
@@ -215,9 +251,10 @@ Checks run in this order, and the first that fails is the refusal:
    2. an unknown key: `unknown-key` at `fold.<name>.<key>`;
    3. not exactly one fold type: `fold-type`;
    4. `follow`: `follow-missing` on latest-by without it, `follow-invalid`
-      when it isn't `"prev"`, on any fold type; at `fold.<name>.follow`.
+      when it isn't `"prev"`, or `"keys"` on latest-by; at `fold.<name>.follow`.
       This check stays after the fold type and before `limit` and the
-      argument, so `{"sum": "", "follow": "next"}` is refused at `follow`;
+      argument, so `{"sum": "", "follow": "next"}` and
+      `{"sum": "", "follow": "keys"}` are refused at `follow`;
    5. `limit`: `limit-invalid` when it isn't a whole number of at least 1,
       or the fold type isn't collect; at `fold.<name>.limit`;
    6. `by`: `by-invalid` at `fold.<name>.by` when it isn't text, is empty,
@@ -241,7 +278,7 @@ These are the only codes.
 They keep `vertex` and `from`.
 Each source has `store`, then supplied `kind`, `about` and `of`.
 Each `fold` slot keeps its fold type, its `follow` as written, supplied `limit`, `by` as written and written `where`.
-Latest-by always writes `follow`.
+Latest-by always writes `follow`, `"prev"` or `"keys"` as given.
 Times keep their spelling. Carried keys and `note` are dropped. An accepted spec's parsed form parses back to itself.
 The parser gives exactly the specs that fit (`spec.parse` in [`laws.md`](laws.md)). That is a law
 about what the parser gives; which JSON it accepts is this page, pinned by

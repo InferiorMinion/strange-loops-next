@@ -45,6 +45,7 @@ vectors in `vectors/record/`.
   The envelope stays checkable without its payload.
   A root or a revision may declare any keys; nothing compares one record's `sets` with another's.
   A key that starts with `@` is a key, not a label.
+  A latest-by that follows `keys` reads it ([`spec.md`](spec.md)).
 
 The envelope reader refuses fields outside this table.
 Fields the core does not read belong in the payload; otherwise the id would silently omit them.

@@ -1,5 +1,51 @@
 # Lean model mutation report
 
+## Latest-by following `keys`: the twenty new entries and ten whose definitions moved, at `4a3817f`
+
+The catalogue has 270 entries: 250 and twenty that mutate liveness per key (`Loops/Live.lean`) and the keyed slot, its selection, its grammar and its parsed form (`Loops/Spec.lean`).
+`coverage-spec-slotfollow` is retargeted at `slotFollow`'s new result, `some .prev`.
+The full catalogue is not rerun. Node 25.9 runs the twenty new entries and the ten whose definitions the change touched (`slotFollow`, `foldType`, `Slot.toJson`, `Slot.plain`), with `--only`, in one run, with a 900-second timeout.
+
+| Entry | Wrong rule | Outcome | Where |
+|---|---|---|---|
+| `keys-live-for-no-above` | every setter of a key live, replaced or not | rejected by build | `liveFor_iff` |
+| `keys-whole-sets-nothing` | a whole-read record sets no key | rejected by build | `live_iff` |
+| `keys-env-not-live` | the envelope not among the keys a record is live for | rejected by build | `live_congr` |
+| `keys-whole-always-live` | a whole-read record live under a whole-read record above it | rejected by build | `live_congr` |
+| `keys-above-direct` | above only what names a record directly | rejected by build | `mem_above` |
+| `keys-upward-one-step` | the upward reach stops after one record | rejected by build | `mem_upward` |
+| `keys-from-heads` | only the heads' declared keys listed | rejected by build | `keyedIn_keys` |
+| `keys-whole-not-live` | every whole-read record listed as whole | rejected by build | `keyedIn_whole` |
+| `keys-heads-are-live` | the live records listed as the heads | rejected by build | `head_live` |
+| `keys-chosen-by-live` | a live whole-read record chooses the thing | rejected by build | `keyedOf_things` |
+| `keys-tests-on-heads` | payload tests asked of the heads | rejected by build | `Cond.onThing_congr` |
+| `keys-unheld-skipped` | a setter not held passed over | rejected by build | `Cond.onThing_payload` |
+| `keys-unset-unknown` | a field no record sets answers unknown | rejected by build | `Cond.onThing_payload` |
+| `keys-differ-yes` | held setters that disagree answer yes | rejected by build | `Tri.agree_congr` |
+| `keys-unread-no` | a thing whose tests answer no counted unread | rejected by build | `keyedOf_unread` |
+| `keys-follow-anywhere` | `follow: keys` accepted on every fold type | killed by vector | `spec/parse/98`–`102`, `106`, `107` |
+| `keys-parsed-as-prev` | a keyed latest-by parsed as following `prev` | rejected by build | `parseSlot_toJson` |
+| `keys-written-as-prev` | a keyed latest-by written as following `prev` | rejected by build | `parseSlot_toJson` |
+| `keys-run-as-prev` | a keyed latest-by run as following `prev` | rejected by build | `Slot.plain_set_decides` |
+| `keys-withhold-drops-sets` | a withheld record loses `sets` | rejected by build | `withhold_envelope` |
+| `coverage-spec-slotfollow` | (retargeted) `follow` only on collect and latest-by | rejected by build | `parseSlot_toJson` |
+| `wide-spec-062` | (unchanged) | rejected by build | `Slot.plain_slice` |
+| `wide-spec-069` | (unchanged) | killed by vector | `spec/parse/64` |
+| `finish-spec-slot-tojson` | (unchanged) | rejected by build | `Slot.toJson_distinct` |
+| `follow-count-every` | (unchanged) | rejected by build | `count_group` |
+| `follow-max-every` | (unchanged) | killed by vector | `spec/run/16`, `18`, `24` |
+| `follow-sum-parse-dropped` | (unchanged) | rejected by build | `parseSlot_toJson` |
+| `follow-count-not-written` | (unchanged) | rejected by build | `parseSlot_toJson` |
+| `follow-count-envelope-first` | (unchanged) | rejected by build | `Slot.plain_set_decides` |
+| `follow-count-unknown-first` | (unchanged) | rejected by build | `Slot.plain_slice` |
+
+No entry survives.
+Twenty-seven are rejected by build and three killed by vectors.
+Build rejections are not semantic proof kills; the entries rejected by build were not applied by hand.
+The runner exits 0: no generator assertion, timeout or infrastructure failure occurs.
+It restored the source after each entry and rebuilt the baseline at the end.
+Raw results and logs were kept under the session's scratch directory and deleted once this summary was written.
+
 ## `sets`: the ten new entries and six whose targets moved, at `132e06a`
 
 The catalogue has 250 entries: 240 and ten that mutate `sets` in the envelope, its reader, the writer's codes and the batch.

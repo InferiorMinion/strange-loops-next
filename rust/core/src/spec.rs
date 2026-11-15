@@ -4,11 +4,32 @@ use crate::{
     families::{self, Result as FoldResult, Tri},
     fold::{LatestBy, whole_heads},
     json::{Json, canon_set},
+    live::{Keyed, keyed_in, live_for},
     number::{Int, MAX_EXACT, Nat},
     record::{Digest, Record, Shown, Val},
-    things::{admit, ids_of, per_thing},
+    things::{admit, ids_of, per_thing, things_of},
     where_::{Cond, EnvField, Field, Refusal, RefusalCode, Tests, parse_where},
 };
+
+/// Lean: `Loops.Follow`, model/Loops/Spec.lean.
+/// How a slot over heads reads supersession: as a thing's heads, or as its live setters.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Follow {
+    /// A thing is its heads.
+    Prev,
+    /// A thing is its live setters.
+    Keys,
+}
+impl Follow {
+    /// Lean: `Loops.Follow.name`, model/Loops/Spec.lean.
+    /// Returns `follow` as written.
+    pub const fn name(self) -> &'static str {
+        match self {
+            Self::Prev => "prev",
+            Self::Keys => "keys",
+        }
+    }
+}
 
 /// Lean: `Loops.FoldType`, model/Loops/Spec.lean.
 /// A slot uses one fold from this closed vocabulary.
@@ -40,8 +61,11 @@ pub enum FoldType {
         /// Reads the whole-reader heads instead of all records.
         follow: bool,
     },
-    /// Reports selected current heads for each thing.
-    LatestBy,
+    /// Reports selected current heads, or following `keys` the keyed state, for each thing.
+    LatestBy {
+        /// How each thing's supersession is read.
+        follow: Follow,
+    },
     /// Reports selected records newest first.
     Collect {
         /// Uses current per-thing heads instead of all records.
@@ -167,6 +191,33 @@ pub enum GroupValue {
     },
 }
 
+/// Lean: `Loops.KeyedView`, model/Loops/Spec.lean.
+/// A thing's keyed state as a slot shows it.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct KeyedView {
+    /// Each declared key's live setters, newest first.
+    pub keys: Vec<(String, Vec<(Digest, Shown)>)>,
+    /// The live whole-read emits, newest first.
+    pub whole: Vec<(Digest, Shown)>,
+    /// The thing's heads, newest first.
+    pub heads: Vec<(Digest, Shown)>,
+}
+impl Keyed {
+    /// Lean: `Loops.Keyed.view`, model/Loops/Spec.lean.
+    /// Each record by its id and what the reader holds of it.
+    pub fn view(&self) -> KeyedView {
+        KeyedView {
+            keys: self
+                .keys
+                .iter()
+                .map(|(k, hs)| (k.clone(), shown_ids(hs)))
+                .collect(),
+            whole: shown_ids(&self.whole),
+            heads: shown_ids(&self.heads),
+        }
+    }
+}
+
 /// Lean: `Loops.SlotValue`, model/Loops/Spec.lean.
 /// A slot result keeps its value and unread count.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -192,6 +243,13 @@ pub enum SlotValue {
         /// Counts distinct ids only for addressed input (equal ids imply equal records).
         unread: Nat,
     },
+    /// Latest-by following `keys`: each selected thing's keyed state.
+    Keyed {
+        /// Each selected thing and its whole keyed state.
+        things: Vec<(String, KeyedView)>,
+        /// The chosen things whose payload tests were unknown.
+        unread: Nat,
+    },
     /// A slot with `by`: each group by key in canonical order, then the top unread and ungrouped counts.
     Groups {
         /// Each group's key and what the slot holds over it.
@@ -213,7 +271,9 @@ impl SlotValue {
             Self::Int(r) => GroupValue::Int(r),
             Self::Opt(r) => GroupValue::Opt(r),
             Self::Heads { heads, unread } => GroupValue::Heads { heads, unread },
-            Self::Things { unread, .. } | Self::Groups { unread, .. } => GroupValue::Heads {
+            Self::Things { unread, .. }
+            | Self::Keyed { unread, .. }
+            | Self::Groups { unread, .. } => GroupValue::Heads {
                 heads: Vec::new(),
                 unread,
             },
@@ -295,6 +355,71 @@ pub fn latest_of(sel: impl Fn(&Record) -> bool, cs: &[Cond], xs: &[Record]) -> S
     SlotValue::Things {
         things,
         unread: Nat(ids_of(&unknown).len().into()),
+    }
+}
+
+/// Lean: `Loops.Tri.agree`, model/Loops/Spec.lean.
+/// The answer every setter gives, `Unknown` when they differ, `none` with no setter.
+pub fn agree(ts: &[Tri], none: Tri) -> Tri {
+    if ts.is_empty() {
+        none
+    } else if ts.iter().all(|t| *t == Tri::Yes) {
+        Tri::Yes
+    } else if ts.iter().all(|t| *t == Tri::No) {
+        Tri::No
+    } else {
+        Tri::Unknown
+    }
+}
+
+impl Cond {
+    /// Lean: `Loops.Cond.onThing`, model/Loops/Spec.lean.
+    /// A payload test asked of a thing's records `rs`: of every live setter of
+    /// its field. With no setter the field is absent. An envelope test is not
+    /// asked here.
+    pub fn on_thing(&self, rs: &[Record]) -> Tri {
+        match &self.field {
+            Field::Env(_) => Tri::Yes,
+            Field::Payload(f) => agree(
+                &rs.iter()
+                    .filter(|r| live_for(rs, f, r))
+                    .map(|r| self.eval(r))
+                    .collect::<Vec<_>>(),
+                Tri::of_bool(self.op.test(&[])),
+            ),
+        }
+    }
+}
+
+/// Lean: `Loops.thingTest`, model/Loops/Spec.lean.
+/// A thing's payload tests: every one holds of the thing.
+pub fn thing_test(cs: &[Cond], rs: &[Record]) -> Tri {
+    cs.iter()
+        .filter(|c| !c.field.on_envelope())
+        .rfold(Tri::Yes, |t, c| c.on_thing(rs).and(t))
+}
+
+/// Lean: `Loops.keyedOf`, model/Loops/Spec.lean.
+/// Each thing one of whose heads `from` and the envelope tests choose, and
+/// whose payload tests hold of it; a chosen thing that answers unknown is unread once.
+pub fn keyed_of(sel: impl Fn(&Record) -> bool, cs: &[Cond], xs: &[Record]) -> SlotValue {
+    let mut things = Vec::new();
+    let mut unread = 0usize;
+    for t in things_of(xs) {
+        let k = keyed_in(&t, xs);
+        if !k.heads.iter().any(|h| chosen(&sel, cs, h)) {
+            continue;
+        }
+        let rs: Vec<Record> = xs.iter().filter(|r| r.is_of(&t)).cloned().collect();
+        match thing_test(cs, &rs) {
+            Tri::Yes => things.push((t, k.view())),
+            Tri::Unknown => unread += 1,
+            Tri::No => {}
+        }
+    }
+    SlotValue::Keyed {
+        things,
+        unread: Nat(unread.into()),
     }
 }
 
@@ -399,7 +524,7 @@ impl Slot {
             | FoldType::Min { follow, .. }
             | FoldType::Max { follow, .. }
             | FoldType::Collect { follow, .. } => acc_pool(*follow, xs),
-            FoldType::LatestBy => xs.to_vec(),
+            FoldType::LatestBy { .. } => xs.to_vec(),
         }
     }
 
@@ -456,7 +581,12 @@ impl Slot {
             FoldType::Max { field, follow } => {
                 SlotValue::Opt(families::max_on(field).select(ev, &acc_pool(*follow, xs)))
             }
-            FoldType::LatestBy => latest_of(sel, &cs, xs),
+            FoldType::LatestBy {
+                follow: Follow::Prev,
+            } => latest_of(sel, &cs, xs),
+            FoldType::LatestBy {
+                follow: Follow::Keys,
+            } => keyed_of(sel, &cs, xs),
             FoldType::Collect { follow, limit } => {
                 collect_of(sel, &cs, *follow, limit.as_ref(), xs)
             }
@@ -489,9 +619,9 @@ impl Slot {
             FoldType::Max { field, follow } => {
                 with_follow(("max".into(), Json::Str(field.clone())), *follow)
             }
-            FoldType::LatestBy => vec![
+            FoldType::LatestBy { follow } => vec![
                 ("latest-by".into(), Json::Str("of".into())),
-                ("follow".into(), Json::Str("prev".into())),
+                ("follow".into(), Json::Str(follow.name().into())),
             ],
             FoldType::Collect { follow, limit } => {
                 let mut out = with_follow(("collect".into(), Json::Bool(true)), *follow);
@@ -751,18 +881,20 @@ pub fn slot_type<'a>(path: &str, kvs: &'a [(String, Json)]) -> Result<&'a (Strin
     }
 }
 /// Lean: `Loops.slotFollow`, model/Loops/Spec.lean.
-/// Parses the explicit prev link, which any fold type may carry and latest-by must.
+/// Parses `follow`: `"prev"`, which any fold type may carry, or `"keys"`, on
+/// latest-by; latest-by must carry one.
 ///
 /// # Errors
-/// Returns follow-missing on latest-by, or follow-invalid for any value but `"prev"`.
-pub fn slot_follow(path: &str, t: &str, j: Option<&Json>) -> Result<bool, Refusal> {
+/// Returns follow-missing on latest-by, or follow-invalid for any other value.
+pub fn slot_follow(path: &str, t: &str, j: Option<&Json>) -> Result<Option<Follow>, Refusal> {
     match j {
         None if t == "latest-by" => Err(refuse(
             RefusalCode::FollowMissing,
             &format!("{path}.follow"),
         )),
-        None => Ok(false),
-        Some(Json::Str(s)) if s == "prev" => Ok(true),
+        None => Ok(None),
+        Some(Json::Str(s)) if s == "prev" => Ok(Some(Follow::Prev)),
+        Some(Json::Str(s)) if s == "keys" && t == "latest-by" => Ok(Some(Follow::Keys)),
         Some(_) => Err(refuse(
             RefusalCode::FollowInvalid,
             &format!("{path}.follow"),
@@ -805,24 +937,22 @@ pub fn slot_by(path: &str, t: &str, j: Option<&Json>) -> Result<Option<By>, Refu
 ///
 /// # Errors
 /// Returns fold-argument at path.type for an invalid argument or unknown fold type.
-#[expect(
-    clippy::fn_params_excessive_bools,
-    reason = "Lean foldType takes the explicit follow flag"
-)]
 pub fn fold_type(
     path: &str,
     t: &str,
-    follow: bool,
+    follow: Option<Follow>,
     limit: Option<Nat>,
     arg: &Json,
 ) -> Result<FoldType, Refusal> {
     let p = format!("{path}.{t}");
+    let latest = follow.unwrap_or(Follow::Prev);
+    let follow = follow.is_some();
     match (t, arg) {
         ("count", Json::Bool(true)) => Ok(FoldType::Count { follow }),
         ("sum", f) => field_arg(&p, f).map(|field| FoldType::Sum { field, follow }),
         ("min", f) => field_arg(&p, f).map(|field| FoldType::Min { field, follow }),
         ("max", f) => field_arg(&p, f).map(|field| FoldType::Max { field, follow }),
-        ("latest-by", Json::Str(s)) if s == "of" => Ok(FoldType::LatestBy),
+        ("latest-by", Json::Str(s)) if s == "of" => Ok(FoldType::LatestBy { follow: latest }),
         ("collect", Json::Bool(true)) => Ok(FoldType::Collect { follow, limit }),
         _ => Err(refuse(RefusalCode::FoldArgument, &p)),
     }

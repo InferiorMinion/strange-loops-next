@@ -90,8 +90,33 @@ private def byErasureCase : Except String J := do
     [("before", [x]), ("after", [x, y]), ("withheld-x", [x.withhold, y])] base (render base)
     ["spec.set", "by.after-admission", "by.accounting", "result.unread"]
 
+-- Latest-by following `keys` reads what settling keeps. W is read whole; B
+-- sets `status` from it. A place holding B withheld, or a bare erased copy of
+-- B with no eraser, leaves B withheld; E erases it. In each, B keeps its
+-- envelope and `sets`: it is still live for `status`, which is unknown, while
+-- `title` is still read from W.
+private def keyedSettleCase : Except String J := do
+  let w : Record := { Gen.RealmVectors.r (fixtureId 0x1a1) "task" (some "task:1") 100 with
+    value := "write the note", fields := [("status", .str "open"), ("title", .str "note")] }
+  let b : Record := { Gen.RealmVectors.r (fixtureId 0x1a2) "task" (some "task:1") 200 [fixtureId 0x1a1] with
+    sets := some ["status"], fields := [("status", .str "closed")] }
+  let e : Record := { Gen.RealmVectors.r (fixtureId 0x1a3) "erasure" none 300 with erases := [fixtureId 0x1a2] }
+  let spj : Json := .obj [("vertex", .str "tasks"), ("from", .arr [.obj [("store", .str "."), ("kind", .arr [.str "task"])]]),
+    ("fold", .obj [
+      ("state", .obj [("latest-by", .str "of"), ("follow", .str "keys")]),
+      ("closed", .obj [("latest-by", .str "of"), ("follow", .str "keys"),
+        ("where", .obj [("status", .obj [("is", .str "closed")])])]),
+      ("note", .obj [("latest-by", .str "of"), ("follow", .str "keys"),
+        ("where", .obj [("title", .obj [("is", .str "note")])])])])]
+  -- the lens reads the head, B, before and after the last step
+  let base : List Section := [⟨"task:1".toList, [b.value.toList]⟩]
+  scenario "keys-01-settled-setter" "task:1" spj [w, b, e]
+    [("before", [w]), ("set", [w, b]), ("withheld", [w, b.withhold]), ("erased-alone", [w, b.erase]),
+      ("erased", [w, b, e])] base (render base)
+    ["spec.set", "keyed.live", "keyed.fold", "keyed.select", "settle.erased", "result.unread"]
+
 def vectors : Except String (List (String × J)) := do
   return [("gap01-gap06-admission", ← admissionCase), ("gap11-line-adapter", ← linesCase),
-    ("by-01-erased-in-another-group", ← byErasureCase)]
+    ("by-01-erased-in-another-group", ← byErasureCase), ("keys-01-settled-setter", ← keyedSettleCase)]
 
 end Gen.RulingVectors

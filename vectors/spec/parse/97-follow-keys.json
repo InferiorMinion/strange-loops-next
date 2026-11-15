@@ -1,0 +1,72 @@
+{
+  "vector": "97-follow-keys",
+  "layer": "spec/parse",
+  "laws": ["spec.parse"],
+  "source": "model",
+  "input": {
+    "spec": {
+      "vertex": "x",
+      "from": [
+        {
+          "store": ".",
+          "kind": ["task"]
+        }
+      ],
+      "fold": {
+        "state": {
+          "follow": "keys",
+          "latest-by": "of"
+        },
+        "open": {
+          "latest-by": "of",
+          "follow": "keys",
+          "where": {
+            "status": {
+              "is": "open"
+            },
+            "env.observer": {
+              "is": "sl:kyle"
+            }
+          }
+        },
+        "heads": {
+          "latest-by": "of",
+          "follow": "prev"
+        }
+      }
+    }
+  },
+  "expect": {
+    "parsed": {
+      "vertex": "x",
+      "from": [
+        {
+          "store": ".",
+          "kind": ["task"]
+        }
+      ],
+      "fold": {
+        "state": {
+          "latest-by": "of",
+          "follow": "keys"
+        },
+        "open": {
+          "latest-by": "of",
+          "follow": "keys",
+          "where": {
+            "status": {
+              "is": "open"
+            },
+            "env.observer": {
+              "is": "sl:kyle"
+            }
+          }
+        },
+        "heads": {
+          "latest-by": "of",
+          "follow": "prev"
+        }
+      }
+    }
+  }
+}

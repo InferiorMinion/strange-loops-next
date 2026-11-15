@@ -51,7 +51,7 @@ function reading(field, r) {
   }
 }
 
-const payloadReading = (field, r) => {
+export const payloadReading = (field, r) => {
   const p = payloadOf(r);
   return p === null ? { type: "value", held: false } : { type: "value", held: true, v: Object.hasOwn(p, field) ? p[field] : undefined };
 };

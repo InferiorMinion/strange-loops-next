@@ -1,0 +1,27 @@
+{
+  "vector": "108-limit-on-keyed-latest-by",
+  "layer": "spec/parse",
+  "laws": ["spec.parse"],
+  "source": "model",
+  "input": {
+    "spec": {
+      "vertex": "x",
+      "from": [
+        {
+          "store": "."
+        }
+      ],
+      "fold": {
+        "c": {
+          "latest-by": "of",
+          "follow": "keys",
+          "limit": 2
+        }
+      }
+    }
+  },
+  "expect": {
+    "refused": "limit-invalid",
+    "path": "fold.c.limit"
+  }
+}

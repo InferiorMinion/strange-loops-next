@@ -166,6 +166,116 @@ const GROUPED: &str = r#"{"vertex":"per-project","from":[{"store":".","kind":["t
   "now":{"count":true,"follow":"prev","by":"env.about:project"},
   "list":{"collect":true,"follow":"prev","by":"env.about:project"}}}"#;
 
+const KEYED: &str = r#"{"vertex":"tasks","from":[{"store":".","kind":["task"]}],"fold":{
+  "state":{"latest-by":"of","follow":"keys"},
+  "open":{"latest-by":"of","follow":"keys","where":{"status":{"is":"open"}}},
+  "open-heads":{"latest-by":"of","follow":"prev","where":{"status":{"is":"open"}}}}}"#;
+
+/// The things a latest-by slot holds.
+fn things(j: &Json, slot: &str) -> usize {
+    let Json::Obj(kvs) = at(j, &[slot, "things"]) else {
+        panic!("{slot} has no things")
+    };
+    kvs.len()
+}
+
+/// The ids a keyed thing lists, from a slot's `things`.
+fn ids(j: &Json, path: &[&str]) -> Vec<String> {
+    let Json::Arr(xs) = at(j, path) else {
+        panic!("{path:?} is not a list")
+    };
+    xs.iter().map(|x| text(x, &["id"]).to_owned()).collect()
+}
+
+#[test]
+fn latest_by_follows_keys_through_the_live_setters() {
+    let s = Store::new("keyed");
+    let fold = || parse_json(&s.ok_with(&["fold", "-"], KEYED)).expect("JSON");
+    let root = s.ok(&[
+        "emit",
+        "task",
+        "--of",
+        "task:1",
+        "status=open",
+        "title=Write",
+        "Write the spec",
+    ]);
+    let title = s.ok(&[
+        "emit",
+        "task",
+        "--prev",
+        &root,
+        "--sets",
+        "title",
+        "title=Rewrite",
+    ]);
+    // The head sets only `title`; `status` is still read from the root, which
+    // is read whole and live for every key the head does not set.
+    let slots = fold();
+    let state = ["state", "things", "task:1"];
+    assert_eq!(
+        ids(&slots, &[&state[..], &["keys", "title"]].concat()),
+        std::slice::from_ref(&title)
+    );
+    assert_eq!(
+        ids(&slots, &[&state[..], &["whole"]].concat()),
+        std::slice::from_ref(&root)
+    );
+    assert_eq!(
+        ids(&slots, &[&state[..], &["heads"]].concat()),
+        std::slice::from_ref(&title)
+    );
+    assert_eq!(things(&slots, "open"), 1);
+    assert_eq!(things(&slots, "open-heads"), 0);
+    // A concurrent emit sets `status`: two heads, each live for its key.
+    let status = s.ok(&[
+        "emit",
+        "task",
+        "--prev",
+        &root,
+        "--sets",
+        "status",
+        "status=done",
+    ]);
+    let slots = fold();
+    assert_eq!(
+        ids(&slots, &[&state[..], &["keys", "status"]].concat()),
+        std::slice::from_ref(&status)
+    );
+    assert_eq!(len(&slots, &[&state[..], &["heads"]].concat()), 2);
+    assert_eq!(things(&slots, "open"), 0);
+    // Erased, the setter keeps its envelope and `sets`: `status` is unknown.
+    s.json(&["erase", &status[2..12], "not ours to say"]);
+    let slots = fold();
+    assert_eq!(at(&slots, &["open", "unread"]), &Json::Int(1_i64.into()));
+    assert_eq!(
+        ids(&slots, &[&state[..], &["keys", "status"]].concat()),
+        std::slice::from_ref(&status)
+    );
+    // A pure join settles both heads and sets nothing: it is the one head, and
+    // the two setters stay live for their keys.
+    let join = s.ok(&[
+        "emit",
+        "task",
+        "--prev",
+        &title,
+        "--prev",
+        &status,
+        "--sets-nothing",
+    ]);
+    let slots = fold();
+    assert_eq!(ids(&slots, &[&state[..], &["heads"]].concat()), [join]);
+    assert_eq!(
+        ids(&slots, &[&state[..], &["keys", "status"]].concat()),
+        [status]
+    );
+    assert_eq!(
+        ids(&slots, &[&state[..], &["keys", "title"]].concat()),
+        [title]
+    );
+    assert_eq!(ids(&slots, &[&state[..], &["whole"]].concat()), [root]);
+}
+
 #[test]
 fn count_groups_by_mention_over_every_record_and_over_the_heads() {
     let s = Store::new("per-project");
