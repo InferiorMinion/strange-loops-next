@@ -233,3 +233,49 @@ fn only_a_payload_objects_top_level_primitives_are_read() {
     // The envelope a reader gets is the canonical one.
     assert!(r.about.is_empty() && r.of.is_none() && r.prev.is_empty() && r.erases.is_empty());
 }
+
+#[test]
+fn a_held_line_keeps_sets_as_written_canonically_and_refuses_one_that_is_not_keys() {
+    let line = |name: &str| {
+        accepted()
+            .into_iter()
+            .find(|(path, _, _)| path.ends_with(name))
+            .map(|(_, line, _)| line)
+            .expect("vector")
+    };
+    let empty = line("16-sets-empty.json");
+    let keys = line("15-sets-are-sets.json");
+    for held in [empty.clone(), empty.erased()] {
+        let text = held.render();
+        assert!(text.contains("\"sets\":[]"), "an empty sets is written");
+        assert_eq!(
+            Line::parse(&text).map(|l| l.env().sets.clone()),
+            Ok(Some(Vec::new()))
+        );
+        // Absent is another record: the id no longer matches.
+        assert_eq!(
+            Line::parse(&text.replace(",\"sets\":[]", "")),
+            Err(Refusal::IdMismatch)
+        );
+        // Not keys, in the writer's place, whatever the payload.
+        for bad in ["[\"\"]", "[7]", "\"title\"", "null"] {
+            assert_eq!(
+                Line::parse(&text.replace("\"sets\":[]", &format!("\"sets\":{bad}"))),
+                Err(Refusal::Write(stored::Error::SetsNotKeys)),
+                "{bad}"
+            );
+        }
+    }
+    // The envelope survives erasure, `sets` with it.
+    assert_eq!(keys.erased().env().sets, keys.env().sets);
+    // Another order names the same record, but is not the canonical spelling.
+    let text = keys.render();
+    assert!(text.contains("\"sets\":[\"due\",\"status\",\"title\"]"));
+    assert_eq!(
+        Line::parse(&text.replace(
+            "\"sets\":[\"due\",\"status\",\"title\"]",
+            "\"sets\":[\"title\",\"due\",\"status\"]"
+        )),
+        Err(Refusal::NotCanonical)
+    );
+}

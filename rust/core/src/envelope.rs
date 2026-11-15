@@ -44,7 +44,7 @@ pub const SHAPE_CODES: [&str; 2] = ["envelope-field-unknown", "envelope-not-obje
 /// Returns `ShapeError::FieldUnknown` if any member name is unknown.
 pub fn check_keys<'a>(keys: impl IntoIterator<Item = &'a str>) -> Result<(), ShapeError> {
     const KEYS: &[&str] = &[
-        "kind", "observer", "emitted", "occurred", "about", "of", "prev", "under", "erases",
+        "kind", "observer", "emitted", "occurred", "about", "of", "prev", "under", "erases", "sets",
     ];
     if keys.into_iter().any(|key| !KEYS.contains(&key)) {
         Err(ShapeError::FieldUnknown)
@@ -146,6 +146,7 @@ pub(crate) fn decode_values(path: &str, j: &Json) -> Result<Env, crate::read::Er
         prev: set("prev"),
         under: optional(kvs, "under").map(text_or),
         erases: set("erases"),
+        sets: optional(kvs, "sets").map(texts_or),
     })
 }
 
@@ -183,6 +184,10 @@ pub struct Env {
     pub under: Option<String>,
     /// The text ids of the records whose payloads this record erases.
     pub erases: Vec<String>,
+    /// The top-level payload keys this record sets, if it says. Absent and
+    /// empty differ: without it the record is read whole, and an empty set
+    /// sets nothing.
+    pub sets: Option<Vec<String>>,
 }
 /// Lean: `Loops.typedRef`, model/Loops/Envelope.lean.
 /// Checks a lowercase ASCII prefix and a nonempty value after the first colon.
@@ -195,6 +200,11 @@ pub fn typed_ref(s: &str) -> bool {
         && chars.next().is_some_and(|c| c.is_ascii_lowercase())
         && chars.all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == b'-')
 }
+/// Lean: `Loops.keyName`, model/Loops/Envelope.lean.
+/// A key name in `sets`: non-empty text.
+pub fn key_name(s: &str) -> bool {
+    !s.is_empty()
+}
 /// Lean: `Loops.recordId`, model/Loops/Envelope.lean.
 /// Checks the `r:` prefix and canonical encoding of a 32-byte digest.
 pub fn record_id(s: &str) -> bool {
@@ -205,7 +215,8 @@ pub fn record_id(s: &str) -> bool {
 impl Env {
     /// Lean: `Loops.Env.toJson`, model/Loops/Envelope.lean.
     /// Writes the envelope, sorts its set fields, and removes repeats.
-    /// Omits empty sets and optional fields with no value.
+    /// Omits empty sets and optional fields with no value, except `sets`,
+    /// which is written when stated, empty or not (Lean `Env.setsJson`).
     pub fn to_json(&self) -> Json {
         let mut xs = vec![
             ("kind".into(), Json::Str(self.kind.clone())),
@@ -242,6 +253,12 @@ impl Env {
                 ),
             ));
         }
+        if let Some(keys) = &self.sets {
+            xs.push((
+                "sets".into(),
+                Json::Arr(json::canon_set(keys).into_iter().map(Json::Str).collect()),
+            ));
+        }
         Json::Obj(xs)
     }
     /// Lean: `Loops.Env.problem`, model/Loops/Envelope.lean.
@@ -269,6 +286,12 @@ impl Env {
             Some(Error::UnderNotRecordId)
         } else if !self.erases.iter().all(|s| record_id(s)) {
             Some(Error::ErasesNotRecordId)
+        } else if self
+            .sets
+            .as_ref()
+            .is_some_and(|keys| !keys.iter().all(|s| key_name(s)))
+        {
+            Some(Error::SetsNotKeys)
         } else if !self.prev.is_empty() && self.of.is_none() {
             Some(Error::OfMissing)
         } else {
@@ -337,6 +360,7 @@ mod raw_tests {
             ("prev", Error::PrevNotRecordId, false),
             ("under", Error::UnderNotRecordId, false),
             ("erases", Error::ErasesNotRecordId, false),
+            ("sets", Error::SetsNotKeys, false),
         ];
         for (key, code, required) in fields {
             let wrong = [
@@ -363,6 +387,51 @@ mod raw_tests {
         assert_eq!(read_salt(Some(&Json::Int(7_i64.into()))), Vec::<u8>::new());
         assert_eq!(read_salt(Some(&Json::Str("!".into()))), Vec::<u8>::new());
         assert_eq!(read_salt(Some(&Json::Str("00".into()))), vec![0]);
+    }
+
+    #[test]
+    fn sets_is_canonical_and_written_when_stated_even_empty() {
+        let base = || Env {
+            kind: "note".into(),
+            observer: "o:test".into(),
+            emitted: "2026-10-21T00:00:00Z".into(),
+            ..Env::default()
+        };
+        let with = |keys: &[&str]| Env {
+            sets: Some(keys.iter().map(|&k| k.to_owned()).collect()),
+            ..base()
+        };
+        assert_eq!(
+            with(&["title", "due", "title"]).to_json().canon(),
+            with(&["due", "title"]).to_json().canon()
+        );
+        assert!(with(&[]).to_json().canon().ends_with(",\"sets\":[]}"));
+        assert!(!base().to_json().canon().contains("sets"));
+        assert_ne!(with(&[]).to_json().canon(), base().to_json().canon());
+        assert_eq!(with(&[]).problem(), None);
+        assert_eq!(with(&["@d", "status"]).problem(), None);
+        assert_eq!(with(&["title", ""]).problem(), Some(Error::SetsNotKeys));
+        // After `erases`, before `of-missing`.
+        let mut e = with(&[""]);
+        e.erases = vec!["x".into()];
+        assert_eq!(e.problem(), Some(Error::ErasesNotRecordId));
+        e.erases.clear();
+        e.prev = vec![format!("r:{}", "0".repeat(52))];
+        assert_eq!(e.problem(), Some(Error::SetsNotKeys));
+        e.sets = Some(Vec::new());
+        assert_eq!(e.problem(), Some(Error::OfMissing));
+        let read_sets = |sets: Json| {
+            let Json::Obj(mut kvs) = base().to_json() else {
+                unreachable!("an envelope is an object")
+            };
+            kvs.push(("sets".into(), sets));
+            read("env", &Json::Obj(kvs)).expect("an object envelope reads")
+        };
+        assert_eq!(read_sets(Json::Arr(vec![])).sets, Some(Vec::new()));
+        assert_eq!(
+            read_sets(Json::Str("title".into())).problem(),
+            Some(Error::SetsNotKeys)
+        );
     }
 
     #[test]
