@@ -2,12 +2,71 @@
 
 ## Scope
 
-This report covers the JS, Lean, and Rust campaign over the generator after the envelope came to carry `sets`, the payload keys a record sets.
-It also preserves the `under-1`, `issue-7-1`, `by-collect-1`, `by-shape-1`, `shape-follow-1` and `by-1` campaigns, the two issue #1 campaigns, the `follow-2` campaign, the D8a and D8b campaign, the D1–D6 campaign, the Step-1 campaign and earlier two-way campaigns as historical findings.
-Their counts are historical: the generator changed with D8, with issue #1, with `follow`, with `by`, with issue #7, with `under-unknown` and with `sets`, so the same seeds now generate different inputs.
+This report covers the JS, Lean, and Rust campaign over the generator after latest-by came to follow `keys`, reading each thing by its live setters.
+It also preserves the `sets-1`, `under-1`, `issue-7-1`, `by-collect-1`, `by-shape-1`, `shape-follow-1` and `by-1` campaigns, the two issue #1 campaigns, the `follow-2` campaign, the D8a and D8b campaign, the D1–D6 campaign, the Step-1 campaign and earlier two-way campaigns as historical findings.
+Their counts are historical: the generator changed with D8, with issue #1, with `follow`, with `by`, with issue #7, with `under-unknown`, with `sets` and with `"follow": "keys"`, so the same seeds now generate different inputs.
 The harness covers record, fold, spec, realm, scenario, batch, and lens inputs.
 
-## `sets`: three-way campaign
+## Latest-by following `keys`: three-way campaign
+
+Source commit: `5fcf2e8`, after the generator learned latest-by following `keys`, and `sets` and joins on the records a reader holds.
+Node 25.9 checks 5,600 cases with seed `keyed-1`: 800 cases per family.
+The run uses 88 chunks and takes 95.69 seconds.
+Exit 0: no implementation disagrees on any case.
+The retained [summary](evidence/keyed-1/summary.json) supports these counts.
+Run `python3 interop/fuzz/summarize.py report` from the repository root.
+
+| Family | Cases | Match | Protocol refusal | Shared decoder refusal | Mismatch |
+|---|---:|---:|---:|---:|---:|
+| record | 800 | 55 | 718 | 27 | 0 |
+| fold | 800 | 699 | 0 | 101 | 0 |
+| spec | 800 | 683 | 52 | 65 | 0 |
+| realm | 800 | 701 | 0 | 99 | 0 |
+| scenario | 800 | 703 | 0 | 97 | 0 |
+| batch | 800 | 185 | 603 | 12 | 0 |
+| lens | 800 | 559 | 241 | 0 | 0 |
+| Total | 5,600 | 3,585 | 1,614 | 401 | 0 |
+
+All 401 decoder refusals occur in both Lean and Rust.
+For the record and batch families JavaScript is called on them too and throws, so the 27 record and 12 batch ones are all three agreeing that the input is malformed, which is still not protocol agreement.
+The 65 spec ones are the `bad-edtf` near miss, whose spec is refused.
+No reduction runs, because no mismatch exists.
+The [mismatch list](evidence/keyed-1/d1-mismatches.json) keeps the historical D1 example and holds no case.
+
+Every generated spec has six latest-by slots that follow `keys`: one without `where`, and five with a payload test, an envelope test beside a payload test, two envelope and payload tests, an `absent` test on a field no record has, and a test on `value`.
+The records of every spec run, scenario and realm case draw `sets` last, so each earlier draw is as it was: read whole half the time, `"sets": []`, or some of the payload's keys and a key no record has; one record in three with a `prev` also names an earlier record of its own thing, a join, and half of those set nothing.
+A spec/parse near miss in one of eighty sets `follow` to `keys` on another fold type, or misspells it on latest-by; both answer `follow-invalid`.
+As JavaScript answers them, the 335 spec runs that parse hold 467 keyed things: 111 have a live record that is not a head, 68 two live setters of one key, 130 two heads, and 171 a live setter that is erased or withheld; 283 runs carry `sets` and 74 a join, 48 of them a pure one.
+The 2,035 scenario steps hold 1,843 keyed things: 238, 93, 186 and 1,101 of the same.
+
+Each wrong port was made in the JavaScript witness, run two-way on the same seed over the 800 spec and the 800 scenario cases with `--family spec` or `--family scenario` and `--no-shrink`, and reverted; the correct witness gives no mismatch there.
+
+| Wrong port | Spec | Scenario |
+|---|---:|---:|
+| Every setter of a key listed, replaced or not | 148 | 186 |
+| Above only what names a record directly | 24 | 14 |
+| A whole-read emit sets no key it does not name | 237 | 440 |
+| A whole-read emit above a setter does not replace it | 96 | 103 |
+| Every live record chooses the thing, not only its heads | 27 | 52 |
+| Payload tests asked of the heads | 179 | 369 |
+| Setters that differ answer yes when one does | 26 | 14 |
+| A setter not held passed over when another answers | 43 | 38 |
+| A field no record sets answers unknown | 132 | 347 |
+| A record with `sets` asked about keys it does not declare | 167 | 350 |
+| A selected thing lists only its chosen heads | 37 | 26 |
+| An unknown thing unread once per chosen head | 74 | 89 |
+
+The spec-slice sweep in `interop/js/spec-slice.test.mjs` leaves the keyed slots out, since `spec.slice` does not cover them, and counts the stores where a spec slice answers them differently from the whole.
+Raw logs and per-case files were written under the session's scratch directory and deleted after the summary was recorded.
+
+```sh
+node interop/fuzz/run.mjs --rust --seed keyed-1 --n 5600 --shrink-trials 80 --out rust/target/scratch/fuzz-keyed-1
+python3 interop/fuzz/summarize.py campaign rust/target/scratch/fuzz-keyed-1 keyed-1
+```
+
+## HISTORICAL `sets`: three-way campaign
+
+This campaign predates latest-by following `keys`; the generator changed after it.
 
 Source commit: `68a85c3`, after the generator learned `sets`.
 Node 25.9 checks 5,600 cases with seed `sets-1`: 800 cases per family.
