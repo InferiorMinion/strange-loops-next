@@ -1,15 +1,26 @@
 //! What `loops emit` fills in on the single-record path, before the batch
-//! writer checks the draft: `of`, the anchor and `about`.
+//! writer checks the draft: `of`, `sets`, the anchor and `about`.
 //!
 //! The protocol never infers any of them. Each is written into the envelope
 //! at write time, and nothing reads it in later. A changeset (`loops emit -`)
-//! states its own `of`, `prev` and `about`, and nothing here touches it.
+//! states its own `of`, `sets`, `prev` and `about`, and nothing here touches it.
 use loops::{
     batch::{self, Draft},
-    json::canon_set,
+    json::{Json, canon_set},
     live,
     record::{Record, id_text},
 };
+
+/// Where a draft's `sets` comes from.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Sets {
+    /// The draft states its `sets`, empty included, or states that it is
+    /// read whole and so has none.
+    Stated,
+    /// The draft states nothing, so an emit of a thing the writer holds a
+    /// record of sets the keys its payload names.
+    Named,
+}
 
 /// Where a draft's `about` comes from.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -52,6 +63,28 @@ pub fn of(
         }
         _ => Err(batch::Error::PrevUnrelated),
     }
+}
+
+/// With [`Sets::Named`], an emit of a thing `realm` holds a record of sets
+/// the top-level keys its payload names, in canonical order: none names an
+/// empty `sets`, a pure join. A root, and the first record of a thing `realm`
+/// holds nothing of, keep no `sets` and are read whole, as is a payload that
+/// is not an object.
+pub fn sets(realm: &[Record], mut draft: Draft, sets: Sets) -> Draft {
+    if sets == Sets::Stated || draft.env.sets.is_some() {
+        return draft;
+    }
+    let Some(thing) = draft.env.of.as_deref().filter(|t| !batch::is_label(t)) else {
+        return draft;
+    };
+    if !realm.iter().any(|r| r.is_of(thing)) {
+        return draft;
+    }
+    if let Json::Obj(members) = &draft.payload {
+        let names: Vec<String> = members.iter().map(|(name, _)| name.clone()).collect();
+        draft.env.sets = Some(canon_set(&names));
+    }
+    draft
 }
 
 /// The anchor rule and the whole `about`, over `realm`, the records the

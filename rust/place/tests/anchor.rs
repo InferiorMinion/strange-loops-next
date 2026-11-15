@@ -3,8 +3,10 @@
 //! them, answer every slot that follows `keys` as the whole store does.
 //!
 //! Each emit goes the single-record path's way: `fill::of`, `fill::anchor`,
-//! the batch writer against what the writer holds, then a signature. An
-//! erasure goes `loops erase`'s way, a root with `erases` and nothing filled in.
+//! the batch writer against what the writer holds, then a signature. Each
+//! states its own `sets`, as `--sets`, `--sets-nothing` or `--whole` does, so
+//! `fill::sets` fills nothing in. An erasure goes `loops erase`'s way, a root
+//! with `erases` and nothing filled in.
 use loops::{
     batch::{self, Draft},
     envelope::Env,
