@@ -117,6 +117,10 @@ fn strings(j: &Json, path: &[&str]) -> Vec<String> {
         other => panic!("{path:?}: {other:?}"),
     }
 }
+/// The ids of the heads `loops of` shows, newest first: the first is the winner.
+fn head_ids(state: &Json) -> Vec<String> {
+    ids(state, &["heads"])
+}
 fn len(j: &Json, path: &[&str]) -> usize {
     match at(j, path) {
         Json::Arr(items) => items.len(),
@@ -434,11 +438,10 @@ fn emit_revise_fork_fold_and_erase() {
         &Json::Arr(vec![Json::Str("lang:rust".into())])
     );
     let state = s.json(&["of", thing]);
-    assert_eq!(text(&state, &["winner", "id"]), second);
-    assert_eq!(len(&state, &["others"]), 0);
+    assert_eq!(head_ids(&state), [second]);
     // A mention makes no head.
     let mentioned = s.json(&["of", "lang:rust"]);
-    assert_eq!(at(&mentioned, &["winner"]), &Json::Null);
+    assert_eq!(len(&mentioned, &["heads"]), 0);
     assert_eq!(at(&mentioned, &["records"]), &Json::Int(0_i64.into()));
     // The verb that shows a thing is `of`; `about` names no verb.
     assert_eq!(s.fails(&["about", thing], "").0, 2);
@@ -449,8 +452,8 @@ fn emit_revise_fork_fold_and_erase() {
         ))
         .remove(0);
     let state = s.json(&["of", thing]);
-    assert_eq!(text(&state, &["winner", "id"]), fork);
-    assert_eq!(len(&state, &["others"]), 1);
+    assert_eq!(head_ids(&state)[0], fork);
+    assert_eq!(len(&state, &["heads"]), 2);
     assert_eq!(at(&state, &["records"]), &Json::Int(3_i64.into()));
 
     // A fold reads the same set: counts cover history, latest-by the heads.
@@ -486,7 +489,7 @@ fn emit_revise_fork_fold_and_erase() {
     assert_eq!(at(&slots, &["weight", "value"]), &Json::Int(3_i64.into()));
     assert_eq!(at(&slots, &["weight", "unread"]), &Json::Int(1_i64.into()));
     assert_eq!(at(&slots, &["settled", "unread"]), &Json::Int(1_i64.into()));
-    assert_eq!(text(&s.json(&["of", thing]), &["winner", "id"]), fork);
+    assert_eq!(head_ids(&s.json(&["of", thing]))[0], fork);
     let check = s.json(&["check"]);
     assert_eq!(
         (len(&check, &["refused"]), len(&check, &["altered"])),
@@ -514,12 +517,12 @@ fn a_batch_is_one_changeset_and_labels_name_its_records() {
         &Json::Arr(vec![Json::Str(text(&records[0], &["id"]).into())])
     );
     let state = s.json(&["of", "repo:strange-loops"]);
-    assert_eq!(text(&state, &["winner", "id"]), text(&records[2], &["id"]));
+    assert_eq!(head_ids(&state), [text(&records[2], &["id"])]);
     // The note mentions the first decision, which is of the repo: neither the
     // mention nor the decision's id makes a thing with records of it.
     let mentioned = s.json(&["of", text(&records[0], &["id"])]);
     assert_eq!(at(&mentioned, &["records"]), &Json::Int(0_i64.into()));
-    assert_eq!(at(&mentioned, &["winner"]), &Json::Null);
+    assert_eq!(len(&mentioned, &["heads"]), 0);
     assert_eq!(
         s.ok(&["export", "--about", text(&records[0], &["id"])]),
         s.ok(&["export", "--kind", "note"])
@@ -666,8 +669,7 @@ fn a_revision_is_of_what_it_replaces_and_the_store_decides_of_not_root() {
         assert_eq!(text(&s.json(&["get", id]), &["env", "of"]), root);
     }
     let state = s.json(&["of", &root]);
-    assert_eq!(text(&state, &["winner", "id"]), again);
-    assert_eq!(len(&state, &["others"]), 0);
+    assert_eq!(head_ids(&state), std::slice::from_ref(&again));
     assert_eq!(at(&state, &["records"]), &Json::Int(3_i64.into()));
 
     // What the writer holds decides `of-not-root` and `prev-unrelated`, from the store.
@@ -697,7 +699,7 @@ fn a_revision_is_of_what_it_replaces_and_the_store_decides_of_not_root() {
     assert_eq!(s.ok(&["export"]), held);
     // An `of` naming a root is a revision's thing, stated rather than filled in.
     let stated = s.ok(&["emit", "note", "--of", &root, "--prev", &again, "fourth"]);
-    assert_eq!(text(&s.json(&["of", &root]), &["winner", "id"]), stated);
+    assert_eq!(head_ids(&s.json(&["of", &root])), [stated]);
 }
 
 #[test]
@@ -823,8 +825,8 @@ fn sets_is_stated_on_either_path_and_kept_without_the_payload() {
         "title=renamed",
     ]);
     assert_eq!(text(&sets(&status), &["env", "of"]), root);
-    // Without either flag the emit states no `sets`.
-    let whole = s.ok(&["emit", "task", "--prev", &status, "title=whole"]);
+    // `--whole` states no `sets`: the emit is read whole.
+    let whole = s.ok(&["emit", "task", "--prev", &status, "--whole", "title=whole"]);
     assert!(!s.ok(&["get", &whole]).contains("\"sets\""));
     // A changeset line states `sets` itself, empty or not; a key is never a label.
     s.ok_with(
@@ -860,6 +862,10 @@ fn sets_is_stated_on_either_path_and_kept_without_the_payload() {
     for args in [
         ["emit", "task", "--sets", "title", "--sets-nothing"],
         ["emit", "task", "--sets-nothing", "--sets", "title"],
+        ["emit", "task", "--whole", "--sets", "title"],
+        ["emit", "task", "--sets", "title", "--whole"],
+        ["emit", "task", "--whole", "--sets-nothing", "x"],
+        ["emit", "task", "--sets-nothing", "--whole", "x"],
     ] {
         assert_eq!(s.fails(&args, "").0, 2, "{args:?}");
     }
@@ -889,10 +895,25 @@ fn two_stores_converge_by_export_and_import() {
     b.ok_with(&["import"], &a.ok(&["export"]));
     // Each revises what both hold, apart; a third record exists only in b.
     // A revision is of what it replaces, filled in from the imported line.
-    let from_a = a.ok(&["emit", "decision", "--prev", &root, "a's revision"]);
-    let from_b = b.ok(&["emit", "decision", "--prev", &root, "b's revision"]);
+    // Each revision is read whole, so it leaves the root no key.
+    let from_a = a.ok(&[
+        "emit",
+        "decision",
+        "--prev",
+        &root,
+        "--whole",
+        "a's revision",
+    ]);
+    let from_b = b.ok(&[
+        "emit",
+        "decision",
+        "--prev",
+        &root,
+        "--whole",
+        "b's revision",
+    ]);
     // An emit of the thing names every live record of it b holds: b's revision.
-    let note = b.ok(&["emit", "note", "--of", thing, "only b so far"]);
+    let note = b.ok(&["emit", "note", "--of", thing, "--whole", "only b so far"]);
     assert_eq!(
         strings(&b.json(&["get", &note]), &["env", "prev"]),
         std::slice::from_ref(&from_b)
@@ -914,17 +935,14 @@ fn two_stores_converge_by_export_and_import() {
     assert_eq!(sa, sb);
     // Two heads: a's revision and b's note, which replaced b's revision.
     // The note that only mentions the thing is not one of them.
-    assert_eq!(len(&sa, &["others"]), 1);
+    assert_eq!(len(&sa, &["heads"]), 2);
     assert_eq!(at(&sa, &["records"]), &Json::Int(4_i64.into()));
     assert!(!a.ok(&["export", "--of", thing]).contains("said in passing"));
     assert!(
         a.ok(&["export", "--about", thing])
             .contains("said in passing")
     );
-    let mut heads = vec![text(&sa, &["winner", "id"])];
-    if let Json::Arr(others) = at(&sa, &["others"]) {
-        heads.extend(others.iter().map(|line| text(line, &["id"])));
-    }
+    let mut heads = head_ids(&sa);
     heads.sort_unstable();
     let mut expected = [from_a.as_str(), note.as_str()];
     expected.sort_unstable();
@@ -1109,7 +1127,7 @@ fn an_emit_names_every_live_record_of_its_thing_and_carries_its_about() {
     assert_eq!(at(&slots, &["per-project", "groups", "x", "value"]), &n(2));
     assert_eq!(live_of(&s, "task:1").len(), 3);
     // A whole-read emit names the same records and is then the only live one.
-    let again = anchored_emit(&s, "task:1", &["status=open", "title=Again"]);
+    let again = anchored_emit(&s, "task:1", &["--whole", "status=open", "title=Again"]);
     assert_eq!(live_of(&s, "task:1"), std::slice::from_ref(&again));
     let state = parse_json(&s.ok_with(&["fold", "-"], KEYED)).expect("JSON");
     let task = ["state", "things", "task:1"];
@@ -1156,7 +1174,7 @@ fn an_emit_over_a_merged_fork_names_both_heads_and_every_mention() {
         strings(&a.json(&["get", &join]), &["env", "about"]),
         ["project:x", "project:y"]
     );
-    assert_eq!(len(&a.json(&["of", "task:1"]), &["others"]), 0);
+    assert_eq!(head_ids(&a.json(&["of", "task:1"])), [join]);
     assert_anchored(&a);
 }
 
@@ -1276,10 +1294,396 @@ fn a_changeset_fills_nothing_in_and_reads_whole() {
     assert!(!line.contains("\"prev\"") && !line.contains("\"about\""));
     // Unanchored, it is a second head and a second live setter of `status`:
     // the two disagree, so the task's status is unknown, not wrong.
-    assert_eq!(len(&s.json(&["of", "task:1"]), &["others"]), 1);
+    assert_eq!(len(&s.json(&["of", "task:1"]), &["heads"]), 2);
     let slots = parse_json(&s.ok_with(&["fold", "-"], OPEN)).expect("JSON");
     assert_eq!(
         tally(&slots, "open"),
         (Json::Int(0_i64.into()), Json::Int(1_i64.into()))
+    );
+}
+
+/// The answer with what `--values` adds taken out: each listed record's
+/// `payload`, and a keyed thing's `values`, `setters` and `unheld`.
+fn without_values(j: &Json) -> Json {
+    match j {
+        Json::Obj(members) => Json::Obj(
+            members
+                .iter()
+                .filter(|(k, _)| !["payload", "values", "setters", "unheld"].contains(&k.as_str()))
+                .map(|(k, v)| (k.clone(), without_values(v)))
+                .collect(),
+        ),
+        Json::Arr(items) => Json::Arr(items.iter().map(without_values).collect()),
+        other => other.clone(),
+    }
+}
+fn str_json(text: &str) -> Json {
+    Json::Str(text.into())
+}
+/// Each setter's id and value, from `setters.<key>`.
+fn setter_values(j: &Json, path: &[&str]) -> Vec<(String, Option<Json>)> {
+    let Json::Arr(xs) = at(j, path) else {
+        panic!("{path:?} is not a list")
+    };
+    xs.iter()
+        .map(|x| {
+            let Json::Obj(members) = x else {
+                panic!("a setter")
+            };
+            let value = members
+                .iter()
+                .find(|(k, _)| k == "value")
+                .map(|(_, v)| v.clone());
+            (text(x, &["id"]).to_owned(), value)
+        })
+        .collect()
+}
+fn has(j: &Json, path: &[&str], name: &str) -> bool {
+    matches!(at(j, path), Json::Obj(members) if members.iter().any(|(k, _)| k == name))
+}
+
+const PROJECT: &str = r#"{"vertex":"project","from":[{"store":"."}],"fold":{
+  "open":{"latest-by":"of","follow":"keys","where":{"status":{"is":"open"}}},
+  "heads":{"latest-by":"of","follow":"prev","where":{"env.kind":{"is":"decision"}}},
+  "open-tasks":{"count":true,"follow":"keys","where":{"env.kind":{"is":"task"},"status":{"is":"open"}}},
+  "log":{"collect":true,"where":{"env.kind":{"is":"log"}}}}}"#;
+
+#[test]
+fn a_session_reads_values_and_an_update_sets_only_the_fields_it_names() {
+    let s = Store::new("session");
+    for (kind, thing, name, message) in [
+        (
+            "task",
+            "task:fix-login",
+            "fix-login",
+            "Login fails on expired token",
+        ),
+        (
+            "task",
+            "task:bench-oom",
+            "bench-oom",
+            "Workbench OOM, lost sessions",
+        ),
+        (
+            "decision",
+            "decision:auth-jwt",
+            "auth-jwt",
+            "Short-lived JWTs",
+        ),
+    ] {
+        let first = s.ok(&[
+            "emit",
+            kind,
+            "--of",
+            thing,
+            "--about",
+            "project:loops",
+            &format!("name={name}"),
+            "status=open",
+            message,
+        ]);
+        // The first record of a thing is read whole.
+        assert!(!s.ok(&["get", &first]).contains("\"sets\""));
+    }
+    s.ok(&["emit", "log", "cargo cache locked"]);
+    // The old habit: re-emit the field that changed, and nothing else.
+    let done = s.ok(&["emit", "task", "--of", "task:bench-oom", "status=done"]);
+    assert_eq!(
+        strings(&s.json(&["get", &done]), &["env", "sets"]),
+        ["status"]
+    );
+    let state = s.json(&["of", "task:bench-oom"]);
+    assert_eq!(
+        at(&state, &["values"]),
+        &Json::Obj(vec![
+            ("name".into(), str_json("bench-oom")),
+            ("status".into(), str_json("done")),
+            ("text".into(), str_json("Workbench OOM, lost sessions")),
+        ])
+    );
+    assert_eq!(strings(&state, &["about"]), ["project:loops"]);
+    assert_eq!(head_ids(&state), [done]);
+    assert_eq!(at(&state, &["records"]), &Json::Int(2_i64.into()));
+    // An emit naming no field sets none: a pure join, here moving the task.
+    let moved = s.ok(&[
+        "emit",
+        "task",
+        "--of",
+        "task:fix-login",
+        "--about",
+        "project:x",
+    ]);
+    assert_eq!(
+        at(&s.json(&["get", &moved]), &["env", "sets"]),
+        &Json::Arr(vec![])
+    );
+    let state = s.json(&["of", "task:fix-login"]);
+    assert_eq!(text(&state, &["values", "name"]), "fix-login");
+    assert_eq!(strings(&state, &["about"]), ["project:x"]);
+
+    // One read at the start of a session: each open item's name and status.
+    fs::create_dir_all(s.dir.join(".loops/vertices")).expect("vertices");
+    fs::write(s.dir.join(".loops/vertices/project.json"), PROJECT).expect("spec");
+    let read = s.json(&["read", "project", "--values"]);
+    let open =
+        |thing: &str, key: &str| text(&read, &["open", "things", thing, "values", key]).to_owned();
+    assert_eq!(
+        [
+            open("task:fix-login", "name"),
+            open("task:fix-login", "status")
+        ],
+        ["fix-login", "open"]
+    );
+    assert_eq!(open("decision:auth-jwt", "text"), "Short-lived JWTs");
+    assert_eq!(things(&read, "open"), 2, "bench-oom is done");
+    let decision = at(&read, &["heads", "things", "decision:auth-jwt"]);
+    let Json::Arr(heads) = decision else {
+        panic!("heads")
+    };
+    assert_eq!(text(&heads[0], &["payload", "name"]), "auth-jwt");
+    let Json::Arr(log) = at(&read, &["log", "heads"]) else {
+        panic!("log")
+    };
+    assert_eq!(text(&log[0], &["payload", "text"]), "cargo cache locked");
+    // Without --values the answer is the protocol's, byte for byte, and
+    // --values only adds to it.
+    let plain = s.ok(&["read", "project"]);
+    assert_eq!(plain, s.ok_with(&["fold", "-"], PROJECT));
+    assert_eq!(without_values(&read).canon(), plain);
+    assert_eq!(s.ok_with(&["fold", "-", "--values"], PROJECT), read.canon());
+}
+
+const STATE: &str = r#"{"vertex":"state","from":[{"store":".","kind":["task"]}],"fold":{
+  "state":{"latest-by":"of","follow":"keys"}}}"#;
+
+#[test]
+fn a_key_with_two_live_setters_shows_each_value_with_its_id() {
+    let (a, b) = (Store::new("values-a"), Store::new("values-b"));
+    a.ok(&[
+        "emit",
+        "task",
+        "--of",
+        "task:1",
+        "status=open",
+        "title=Write",
+    ]);
+    b.ok_with(&["import"], &a.ok(&["export"]));
+    // Apart, each sets `status`; merged, both are live for it.
+    let done = a.ok(&["emit", "task", "--of", "task:1", "status=done"]);
+    let held = b.ok(&["emit", "task", "--of", "task:1", "status=held"]);
+    a.ok_with(&["import"], &b.ok(&["export"]));
+    let state = a.json(&["of", "task:1"]);
+    assert_eq!(text(&state, &["values", "title"]), "Write");
+    assert!(!has(&state, &["values"], "status"), "no winner is picked");
+    let mut got = setter_values(&state, &["setters", "status"]);
+    got.sort_by(|x, y| x.0.cmp(&y.0));
+    let mut expected = vec![
+        (done, Some(str_json("done"))),
+        (held, Some(str_json("held"))),
+    ];
+    expected.sort_by(|x, y| x.0.cmp(&y.0));
+    assert_eq!(got, expected);
+    // The keyed slot shows the same values beside its keyed state.
+    let read = parse_json(&a.ok_with(&["fold", "-", "--values"], STATE)).expect("JSON");
+    let thing = at(&read, &["state", "things", "task:1"]);
+    for member in ["values", "setters"] {
+        assert_eq!(at(thing, &[member]), at(&state, &[member]));
+    }
+    assert_eq!(len(thing, &["heads"]), 2);
+}
+
+#[test]
+fn an_erased_or_withheld_live_setter_shows_as_unknown() {
+    let s = Store::new("values-erased");
+    let root = s.ok(&[
+        "emit",
+        "task",
+        "--of",
+        "task:1",
+        "status=open",
+        "title=Write",
+    ]);
+    let done = s.ok(&["emit", "task", "--of", "task:1", "status=done"]);
+    s.ok(&["erase", &done]);
+    let state = s.json(&["of", "task:1"]);
+    assert_eq!(text(&state, &["values", "title"]), "Write");
+    assert!(!has(&state, &["values"], "status"));
+    assert_eq!(
+        setter_values(&state, &["setters", "status"]),
+        [(done.clone(), None)]
+    );
+    // A store holding the setter without its eraser holds it withheld.
+    let other = Store::new("values-withheld");
+    let lines: String = s
+        .ok(&["export"])
+        .lines()
+        .filter(|l| !l.contains("\"erasure\""))
+        .flat_map(|l| [l, "\n"])
+        .collect();
+    other.ok_with(&["import"], &lines);
+    let state = other.json(&["of", "task:1"]);
+    assert!(!has(&state, &["values"], "status"));
+    let Json::Arr(setters) = at(&state, &["setters", "status"]) else {
+        panic!("setters")
+    };
+    assert_eq!(text(&setters[0], &["shown"]), "withheld");
+    // An erased record read whole hides every key it sets: it is listed as unheld.
+    s.ok(&["erase", &root]);
+    let state = s.json(&["of", "task:1"]);
+    assert_eq!(at(&state, &["values"]), &Json::Obj(vec![]));
+    assert_eq!(ids(&state, &["unheld"]), [root]);
+    assert_eq!(
+        setter_values(&state, &["setters", "status"]),
+        [(done, None)]
+    );
+}
+
+#[test]
+fn an_undeclared_key_is_not_shown_and_whole_replaces_everything() {
+    let s = Store::new("values-declared");
+    s.ok(&[
+        "emit",
+        "task",
+        "--of",
+        "task:1",
+        "status=open",
+        "title=Write",
+        "Write it",
+    ]);
+    // The emit declares `status` and `title`: `colour` is in its payload and
+    // not read, and `title`, declared and missing, is unset.
+    let stated = s.ok(&[
+        "emit",
+        "task",
+        "--of",
+        "task:1",
+        "--sets",
+        "status",
+        "--sets",
+        "title",
+        "status=done",
+        "colour=red",
+    ]);
+    let state = s.json(&["of", "task:1"]);
+    assert_eq!(
+        at(&state, &["values"]),
+        &Json::Obj(vec![
+            ("status".into(), str_json("done")),
+            ("text".into(), str_json("Write it")),
+        ])
+    );
+    assert!(!has(&state, &["values"], "colour") && !has(&state, &["values"], "title"));
+    // A collect lists the record's payload as it is stored.
+    let live = parse_json(&s.ok_with(
+        &["fold", "-", "--values"],
+        r#"{"vertex":"v","from":[{"store":".","of":"task:1"}],"fold":{"live":{"collect":true,"follow":"keys"}}}"#,
+    ))
+    .expect("JSON");
+    let Json::Arr(records) = at(&live, &["live", "heads"]) else {
+        panic!("heads")
+    };
+    assert_eq!(text(&records[0], &["id"]), stated);
+    assert_eq!(text(&records[0], &["payload", "colour"]), "red");
+    // --whole states no `sets`: the emit replaces everything.
+    let whole = s.ok(&["emit", "task", "--of", "task:1", "--whole", "status=done"]);
+    assert!(!s.ok(&["get", &whole]).contains("\"sets\""));
+    let state = s.json(&["of", "task:1"]);
+    assert_eq!(
+        at(&state, &["values"]),
+        &Json::Obj(vec![("status".into(), str_json("done"))])
+    );
+    assert_eq!(head_ids(&state), [whole]);
+    // --whole beside --sets or --sets-nothing is a usage error; so is a
+    // second argument to read or fold, and nothing is written.
+    let held = s.ok(&["export"]);
+    for args in [
+        &[
+            "emit", "task", "--of", "task:1", "--whole", "--sets", "status", "status=x",
+        ][..],
+        &[
+            "emit",
+            "task",
+            "--of",
+            "task:1",
+            "--sets-nothing",
+            "--whole",
+        ],
+        &["read", "project", "other", "--values"],
+        &["fold", "-", "-"],
+        &["of", "task:1", "--values"],
+    ] {
+        assert_eq!(s.fails(args, "").0, 2, "{args:?}");
+    }
+    assert_eq!(s.ok(&["export"]), held);
+}
+
+const GROUPED_VALUES: &str = r#"{"vertex":"grouped","from":[{"store":".","kind":["task"]}],"fold":{
+  "by-project":{"collect":true,"follow":"keys","by":"env.about:project"},
+  "heads-by-status":{"collect":true,"follow":"prev","by":"status"},
+  "n":{"count":true,"follow":"keys","by":"status"}}}"#;
+
+#[test]
+fn a_grouped_slot_writes_the_values_inside_each_group() {
+    let s = Store::new("values-grouped");
+    s.ok(&[
+        "emit",
+        "task",
+        "--of",
+        "task:1",
+        "--about",
+        "project:x",
+        "status=open",
+        "One",
+    ]);
+    let two = s.ok(&[
+        "emit",
+        "task",
+        "--of",
+        "task:2",
+        "--about",
+        "project:y",
+        "status=open",
+        "Two",
+    ]);
+    let closed = s.ok(&["emit", "task", "--of", "task:2", "status=done"]);
+    let read = parse_json(&s.ok_with(&["fold", "-", "--values"], GROUPED_VALUES)).expect("JSON");
+    assert_eq!(
+        without_values(&read).canon(),
+        s.ok_with(&["fold", "-"], GROUPED_VALUES)
+    );
+    // Following keys, task 2's live records are its whole-read root and the
+    // record that set `status`; each is listed with its payload.
+    let Json::Arr(y) = at(&read, &["by-project", "groups", "y", "heads"]) else {
+        panic!("y")
+    };
+    let listed: Vec<(&str, &Json)> = y
+        .iter()
+        .map(|r| (text(r, &["id"]), at(r, &["payload"])))
+        .collect();
+    assert_eq!(
+        listed,
+        [
+            (
+                closed.as_str(),
+                &Json::Obj(vec![("status".into(), str_json("done"))])
+            ),
+            (
+                two.as_str(),
+                &Json::Obj(vec![
+                    ("status".into(), str_json("open")),
+                    ("text".into(), str_json("Two")),
+                ])
+            ),
+        ]
+    );
+    // Over heads, each group's records carry their payloads too.
+    let Json::Arr(open) = at(&read, &["heads-by-status", "groups", "open", "heads"]) else {
+        panic!("open")
+    };
+    assert_eq!(text(&open[0], &["payload", "text"]), "One");
+    // A count has no ids, so nothing is added.
+    assert_eq!(
+        at(&read, &["n"]).canon(),
+        at(&without_values(&read), &["n"]).canon()
     );
 }

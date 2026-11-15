@@ -7,7 +7,10 @@ use loops::{
     envelope::{self, Env},
     json::Json,
 };
-use loops_place::{fill::About, key};
+use loops_place::{
+    fill::{About, Sets},
+    key,
+};
 
 fn new_salt() -> Result<Vec<u8>, Fail> {
     key::salt().map_err(|e| Fail::System(e.to_string()))
@@ -17,14 +20,17 @@ fn new_salt() -> Result<Vec<u8>, Fail> {
 /// `field=text` is always text and `field:=json` a JSON value, as `HTTPie` writes them.
 /// `link` resolves a record id the person typed; `thing` resolves what `--of` names.
 /// The draft comes back with whether it states its `about`: with `--about`,
-/// once or more, or `--no-about` for none; without either it is copied.
+/// once or more, or `--no-about` for none; without either it is copied. And
+/// with whether it states its `sets`: with `--sets`, once or more,
+/// `--sets-nothing` for none, or `--whole` for a whole-read emit; without
+/// any of them it sets the keys it names, when its thing is held.
 pub(crate) fn from_args(
     args: &[String],
     now: &str,
     observer: &str,
     link: impl Fn(&str) -> Result<String, Fail>,
     thing: impl Fn(&str) -> Result<String, Fail>,
-) -> Result<(Draft, About), Fail> {
+) -> Result<(Draft, About, Sets), Fail> {
     let mut env = Env {
         emitted: now.to_owned(),
         observer: observer.to_owned(),
@@ -35,6 +41,7 @@ pub(crate) fn from_args(
     let mut fields: Vec<(String, Json)> = Vec::new();
     let mut message = None;
     let mut nothing = false;
+    let mut whole = false;
     let mut no_about = false;
     let mut rest = args.iter();
     while let Some(arg) = rest.next() {
@@ -51,13 +58,15 @@ pub(crate) fn from_args(
             "--erases" => env.erases.push(link(&value()?)?),
             "--under" => env.under = Some(link(&value()?)?),
             // `--sets` names one key the emit sets; `--sets-nothing` states an
-            // empty `sets`, an emit that sets no key. Without either the emit
-            // states no `sets` and is read whole.
+            // empty `sets`, an emit that sets no key; `--whole` states no
+            // `sets`, an emit read whole. Without any of them an emit of a
+            // held thing sets the keys it names (`fill::sets`).
             "--sets" => env.sets.get_or_insert_with(Vec::new).push(value()?),
             "--sets-nothing" => {
                 nothing = true;
                 env.sets.get_or_insert_with(Vec::new);
             }
+            "--whole" => whole = true,
             "--occurred" => env.occurred = Some(value()?),
             "--observer" => env.observer = value()?,
             "--emitted" => env.emitted = value()?,
@@ -87,6 +96,9 @@ pub(crate) fn from_args(
     if nothing && env.sets.as_ref().is_some_and(|keys| !keys.is_empty()) {
         return Err(usage("--sets-nothing takes no --sets beside it"));
     }
+    if whole && env.sets.is_some() {
+        return Err(usage("--whole takes no --sets or --sets-nothing beside it"));
+    }
     if no_about && !env.about.is_empty() {
         return Err(usage("--no-about takes no --about beside it"));
     }
@@ -99,6 +111,11 @@ pub(crate) fn from_args(
     if let Some(message) = message {
         fields.push(("text".to_owned(), Json::Str(message)));
     }
+    let sets = if whole || env.sets.is_some() {
+        Sets::Stated
+    } else {
+        Sets::Named
+    };
     let draft = Draft {
         label: None,
         env,
@@ -108,7 +125,7 @@ pub(crate) fn from_args(
         },
         payload: Json::Obj(fields),
     };
-    Ok((draft, about))
+    Ok((draft, about, sets))
 }
 
 fn shape(line: usize, what: &str) -> Fail {
