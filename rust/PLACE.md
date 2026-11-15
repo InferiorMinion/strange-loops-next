@@ -17,12 +17,13 @@ loops init                          make .loops/ here
 loops emit <kind> [field=text | field:=json]... ["message"]
       [--of <thing>] [--about <thing>]... [--no-about] [--prev <id>]...
       [--erases <id>]... [--occurred <when>] [--under <id>]
-      [--sets <key>]... [--sets-nothing]
+      [--sets <key>]... [--sets-nothing] [--whole]
 loops emit -                        drafts as JSONL on stdin: one changeset
 loops get <id>                      one record
-loops of <thing>                    a thing's winner, its other heads, how many records are of it
-loops read <vertex>                 fold .loops/vertices/<vertex>.json
-loops fold <spec.json | ->          fold a spec given as a file
+loops of <thing>                    a thing's values, its about, its heads, how many records are of it
+loops read <vertex> [--values]      fold .loops/vertices/<vertex>.json
+loops fold <spec.json | -> [--values]
+                                    fold a spec given as a file
 loops erase <id>... ["why"]         emit an erasure, and drop the openings held here
 loops export [--kind <k>] [--of <thing>] [--about <thing>]
 loops import [<file> | -]
@@ -50,12 +51,19 @@ loops whoami
   `export --of` takes the records of a thing and `export --about` those that
   mention it, as a spec's `from.of` and `from.about` do.
 * A revision written without `--of` is of what it replaces; see choice 9.
-* `--sets` names a key the emit sets; see choice 10.
+* `--sets` names a key the emit sets; see choice 10. An emit of a thing the
+  store holds a record of sets the fields it names, unless `--sets`,
+  `--sets-nothing` or `--whole` states otherwise; see choice 15.
 * An emit of a thing names in `prev` every live record of that thing the
   store holds, beside any `--prev`; see choice 11.
 * An emit of a thing carries the thing's whole `about`, copied from its heads
   unless `--about` or `--no-about` states it; see choices 12 and 13.
-* `emit -` fills nothing in: a changeset states its own `of`, `prev` and `about`.
+* `emit -` fills nothing in: a changeset states its own `of`, `sets`, `prev` and `about`.
+* `loops of` shows a thing's values, each key's from its live setters, beside
+  its `about` and its heads; `read` and `fold` write the values beside the
+  ids with `--values`. The values view is the CLI's, not the protocol's: a
+  fold answers ids, and without `--values` `read` and `fold` answer exactly
+  that. See choices 16 and 17.
 * Every answer is JSON or an id. Lenses are a later step, so `--json` is accepted and changes nothing.
 
 ## On disk
@@ -147,12 +155,12 @@ held. A segment whose name is not the hash of its bytes is listed as altered.
    that shows a thing is `loops of`, which replaced `loops about`.
 10. **`--sets <key>` once per key, and `--sets-nothing` for an empty set.**
     `sets` holds key names, so `--sets` takes a key as typed, as `--about`
-    takes a mention, and repeats. An emit without either flag states no
-    `sets` and is read whole; `--sets-nothing` states `"sets": []`, an emit
-    that sets no key. The two together are a usage error. `--sets ""` is the
-    writer's `sets-not-keys`. Nothing is filled in. `emit -` takes `sets` as
-    a line's envelope field, as written; a key that starts with `@` is a key,
-    not a label.
+    takes a mention, and repeats. `--sets-nothing` states `"sets": []`, an
+    emit that sets no key. The two together are a usage error. `--sets ""`
+    is the writer's `sets-not-keys`. Either flag states `sets` as given, and
+    nothing is filled in over it; an emit with neither is choice 15's.
+    `emit -` takes `sets` as a line's envelope field, as written; a key that
+    starts with `@` is a key, not a label.
 
 11. **`emit` fills in the anchor.** The anchor rule of D8c (`ROADMAP.md`,
     the design note's section 5): every emit sets the envelope, so an emit of
@@ -185,10 +193,68 @@ held. A segment whose name is not the hash of its bytes is listed as altered.
     mentions nothing until an emit names something again. The two together
     are a usage error, as `--sets` with `--sets-nothing` is.
 14. **The filler is in `loops-place`.** `loops_place::fill` fills in `of`
-    (choice 9) and then the anchor and `about` (choices 11–13), over what a
-    store holds, and `loops emit` calls it before the batch check. It sits
-    beside the CLI's other uses of a store so a test can drive the writer's
-    rule over a few hundred emits without starting the binary for each.
+    (choice 9), then `sets` (choice 15), then the anchor and `about`
+    (choices 11–13), over what a store holds, and `loops emit` calls it
+    before the batch check. It sits beside the CLI's other uses of a store so
+    a test can drive the writer's rule over a few hundred emits without
+    starting the binary for each.
+15. **An emit of a held thing sets the fields it names; `--whole` states a
+    whole-read emit.** Kyle ruled on 2026-11-15 that re-emitting
+    `status=done` updates `status` and keeps the other fields. So on the
+    single-record path an emit of a thing the store holds a record of, which
+    states neither `--sets` nor `--sets-nothing`, is given the top-level
+    payload keys it names as its `sets`: each `field=text`, each
+    `field:=json`, and `text` for the bare message, in canonical order. The
+    thing is `--of`, or what `--prev` replaces (choice 9); held means a
+    record of it is in the store as `loops fold` reads it, settled and
+    admitted, an erased or withheld one included. `--whole` states no `sets`:
+    the emit is read whole and replaces everything, as choice 11 says. It is
+    a usage error beside `--sets` or `--sets-nothing`.
+    A root, and the first record of a thing the store holds nothing of, are
+    not emits of a held thing: they keep no `sets` and are read whole, so they
+    set every key they name. `--whole` changes nothing there.
+    An emit of a held thing that names no field is given `"sets": []`, a pure
+    join, as `--sets-nothing` gives: it moves the thing with `--about` or
+    `--no-about`, or joins its heads, and sets no key. A whole-read emit of
+    nothing, which unsets every key, takes `--whole`. `--erases` and
+    `--under` change nothing here. The payload on this path is always an
+    object, so the keys it names are always its members; a repeated field is
+    the writer's `member-duplicate`. `emit -` fills nothing in.
+16. **`loops of` shows the thing's values.** It answers `{"thing", "about",
+    "heads", "records", "values", "setters"?, "unheld"?}`. `about` is the union
+    of the heads' mentions, as an emit copies it (choice 12). `heads` are the
+    thing's heads as shown lines, newest first, so the first is the winner a
+    latest-by that follows `prev` names and the rest are what `others` was;
+    `records` counts the records of the thing. The values are read from the
+    live setters, as `loops::live` gives them over the store settled and
+    admitted:
+    - the keys are those some live record declares and the top-level keys of
+      each held live record read whole; a record with `sets` gives only the
+      keys it declares, so an undeclared payload key is not shown;
+    - `values` maps a key to its value when its one live setter is held and
+      holds the key; a key whose one held setter lacks it is unset, and not
+      written;
+    - `setters` maps every other key to its live setters, newest first, each
+      `{"id", "shown", "value"?}`: two or more setters, each with its value
+      and none picked or merged, or a setter whose payload is erased or
+      withheld, which shows its `shown` and no value. Nothing compares values;
+    - `unheld` lists the live records read whole that are erased or withheld,
+      `{"id", "shown"}`: what keys they set beside those written is unknown.
+    `setters` and `unheld` are written only when they hold something.
+17. **`--values` writes the values beside the ids.** `loops read <vertex>
+    --values` and `loops fold <spec> --values` answer the protocol's result
+    with members added where the protocol has none: each thing of a
+    latest-by that follows `keys` gains `values`, `setters` and `unheld` as
+    `loops of` writes them, beside `keys`, `whole` and `heads`; each
+    `{"id", "shown"}` entry that a latest-by following `prev` or a collect
+    lists gains `payload`, the record's payload as stored, when its `shown`
+    is `here`. Inside a slot with `by` each group's list gains the same.
+    Counts, sums, minima and maxima list no ids and gain nothing. Taking
+    those members out gives the protocol's answer byte for byte, and without
+    `--values` that answer is all `read` and `fold` write. The members sit
+    beside what they read so one read at the start of a session shows each
+    item's fields, and none of their names is one the protocol writes at that
+    place, so the answer is not mistaken for a fold's.
 
 ## Checked by
 
@@ -211,6 +277,17 @@ through the note's history, a whole-read emit above keyed ones, a fork merged
 by export and import, an erased and a withheld live record, a root and a first
 record; `about` copied, replaced by `--about` and emptied by `--no-about`, and
 a moved task changing group; and a changeset that fills nothing in.
+It also replays a session: tasks and a decision with names, statuses and
+messages, an update by `status=done` alone that keeps the name and message,
+`sets` inferred and an emit naming no field written as a pure join, and one
+`read --values` that shows each open item's name and status, equal without
+the added members to `read` without `--values`. It shows a key with two live
+setters from a fork merged by export and import, each with its value and
+neither picked; an erased and a withheld live setter as unknown, and an
+erased whole-read record as `unheld`; an undeclared payload key not shown, a
+declared one missing as unset, and `--whole` replacing everything; usage
+errors for `--whole` beside `--sets` or `--sets-nothing`; and grouped slots
+with payloads inside each group.
 `rust/place/tests/anchor.rs` writes 300 random emits as `loops emit` writes
 them, one writer and then two that merge now and then, and requires each
 history to be anchored (every record above a live record names it) and each
