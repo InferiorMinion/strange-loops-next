@@ -144,6 +144,7 @@ The safe input range does not limit the sum accumulator.
 
 A `where` map is an object of at least one field, each naming an object of
 at least one test: an operator and its argument. An envelope field starts `env.` and names `kind`, `observer`, `about`, `of`, `prev`, `under`, `erases`, `emitted` or `occurred`.
+`sets` is not among them: no test reads it.
 A payload field has a nonempty name that does not start `env.`.
 
 | Operator | Argument |

@@ -112,6 +112,7 @@ Collect counts unread candidates before applying its limit.
 `input.drafts` is one changeset.
 Each draft has an optional `label` (`@name`), an envelope, a `salt` and a payload.
 `about`, `of`, `prev` and `under` may use labels; `erases` may not.
+`sets` holds key names, never labels: a key that starts with `@` is written as given (`batch/76`).
 `input.held` lists store-held records: each `id`, its `of` when it has one, and its `prev`.
 Writers require every `prev` and `under` target in the batch or held store state.
 A batch member counts by its label or its id; a `held` entry carries no shown state, so an erased or withheld record is held like any other.
@@ -195,6 +196,10 @@ Put-get additionally requires distinct base ids and the exact same ordered id li
 The two stored lines show forms before and after erasure.
 The signed message uses the exact prefix `loops/record/v1:`.
 
+`sets` is canonical as `about` is, except that an empty one is written `"sets": []`.
+`record/16` and `17` are the same envelope, salt and payload with an empty `sets` and without one: two records, two ids.
+`record/18` declares a key its payload lacks and `19` declares keys beside a payload that is not an object; both are written.
+Every stored record vector's `erased_line` keeps the envelope, `sets` included.
 A refused vector's `expect.refused` names the shape, text or writer refusal from `protocol/record.md`.
 The `shape-*` vectors give envelopes as written: one that is not an object (`envelope-not-object`), a required field left out, or a field of the wrong JSON type, which gets that field's own code.
 A `salt` left out, not text, or not canonical base32hex refuses with `salt-not-16-bytes`.

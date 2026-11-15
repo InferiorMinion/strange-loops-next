@@ -12,6 +12,7 @@ A draft object without an `env` has an envelope that is not an object.
 `readSalt` reads a salt that is not base32hex text as no bytes, which refuses as `salt-not-16-bytes`.
 A batch draft that is not an object, has a label that is not text or has no payload is malformed input: it throws.
 A label may stand in `about`, `of`, `prev` or `under`; never in `erases`.
+`sets` holds key names; a key that starts with `@` is not a label.
 
 ## Things
 

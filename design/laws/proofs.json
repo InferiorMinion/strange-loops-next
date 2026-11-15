@@ -116,7 +116,7 @@
   "Loops.unreadable_refused":
   {"uses": [],
    "states":
-   "Loops.unreadable.isEmpty = true ∧ Loops.typedRef Loops.unreadable = false ∧ Loops.validEmitted Loops.unreadable = false ∧ Loops.occurredSpan? Loops.unreadable = none ∧ Loops.recordId Loops.unreadable = false",
+   "Loops.unreadable.isEmpty = true ∧ Loops.typedRef Loops.unreadable = false ∧ Loops.validEmitted Loops.unreadable = false ∧ Loops.occurredSpan? Loops.unreadable = none ∧ Loops.recordId Loops.unreadable = false ∧ Loops.keyName Loops.unreadable = false",
    "module": "Laws.Write"},
   "Loops.unbase32_eq_some_iff":
   {"uses": ["Loops.unbase32_base32"],
@@ -131,6 +131,11 @@
   {"uses": [],
    "states":
    "∀ {n : Nat}, n < 55296 ∨ 57343 < n ∧ n < 1114112 → (Char.ofNat n).toNat = n",
+   "module": "Laws.Record"},
+  "Loops.toJson_sets":
+  {"uses": [],
+   "states":
+   "∀ (e : Loops.Env) (s : Option (List String)), { kind := e.kind, observer := e.observer, emitted := e.emitted, occurred := e.occurred, about := e.about, of := e.of, prev := e.prev, under := e.under, erases := e.erases, sets := s }.toJson = Loops.Json.obj (e.baseJson ++ Loops.Env.setsJson s)",
    "module": "Laws.Record"},
   "Loops.thingsOf_view":
   {"uses": ["Loops.canonSet_eq", "Loops.thing_view"],
@@ -479,6 +484,16 @@
   {"uses": ["Loops.idsOf_sorted", "Loops.pick_id"],
    "states": "∀ (xs : List Loops.Record), Loops.Distinct (Loops.settle xs)",
    "module": "Laws.Things"},
+  "Loops.sets_empty_ne_absent":
+  {"uses": ["Loops.toJson_sets"],
+   "states":
+   "∀ (e : Loops.Env), { kind := e.kind, observer := e.observer, emitted := e.emitted, occurred := e.occurred, about := e.about, of := e.of, prev := e.prev, under := e.under, erases := e.erases, sets := some [] }.toJson ≠ { kind := e.kind, observer := e.observer, emitted := e.emitted, occurred := e.occurred, about := e.about, of := e.of, prev := e.prev, under := e.under, erases := e.erases }.toJson",
+   "module": "Laws.Record"},
+  "Loops.setsJson_eq":
+  {"uses": ["Loops.canonSet_eq"],
+   "states":
+   "∀ {a b : Option (List String)}, (a.isSome = b.isSome ∧ ∀ (s : String), s ∈ a.getD [] ↔ s ∈ b.getD []) → Loops.Env.setsJson a = Loops.Env.setsJson b",
+   "module": "Laws.Record"},
   "Loops.select_as_latest":
   {"uses": ["Loops.Cond.all_envelope_ne", "Loops.Cond.all_split"],
    "states":
@@ -1288,9 +1303,9 @@
    "∀ (xs : List Loops.Record), Loops.idsOf xs = List.foldl (fun ns n => Loops.insertId n ns) [] (List.map (fun x => x.id) xs)",
    "module": "Laws.Things"},
   "Loops.id_sets":
-  {"uses": ["Loops.canonSet_eq"],
+  {"uses": ["Loops.canonSet_eq", "Loops.setsJson_eq"],
    "states":
-   "∀ (H : Loops.Hash) {e e' : Loops.Env} (commit : String), e.kind = e'.kind → e.observer = e'.observer → e.emitted = e'.emitted → e.occurred = e'.occurred → e.under = e'.under → e.of = e'.of → (∀ (s : String), s ∈ e.about ↔ s ∈ e'.about) → (∀ (s : String), s ∈ e.prev ↔ s ∈ e'.prev) → (∀ (s : String), s ∈ e.erases ↔ s ∈ e'.erases) → Loops.idOf H e commit = Loops.idOf H e' commit",
+   "∀ (H : Loops.Hash) {e e' : Loops.Env} (commit : String), e.kind = e'.kind → e.observer = e'.observer → e.emitted = e'.emitted → e.occurred = e'.occurred → e.under = e'.under → e.of = e'.of → (∀ (s : String), s ∈ e.about ↔ s ∈ e'.about) → (∀ (s : String), s ∈ e.prev ↔ s ∈ e'.prev) → (∀ (s : String), s ∈ e.erases ↔ s ∈ e'.erases) → (e.sets.isSome = e'.sets.isSome ∧ ∀ (s : String), s ∈ e.sets.getD [] ↔ s ∈ e'.sets.getD []) → Loops.idOf H e commit = Loops.idOf H e' commit",
    "module": "Laws.Record"},
   "Loops.id_order":
   {"uses": ["Loops.digestDigits_lt"],
@@ -1486,9 +1501,9 @@
    "∀ {xs ys : List (String × Loops.Json)}, (∀ (k : String), k ∈ List.map Prod.fst xs ↔ k ∈ List.map Prod.fst ys) → Loops.envelopeKeysProblem xs = Loops.envelopeKeysProblem ys",
    "module": "Laws.Write"},
   "Loops.env_sets":
-  {"uses": ["Loops.canonSet_eq"],
+  {"uses": ["Loops.canonSet_eq", "Loops.setsJson_eq"],
    "states":
-   "∀ {e e' : Loops.Env}, e.kind = e'.kind → e.observer = e'.observer → e.emitted = e'.emitted → e.occurred = e'.occurred → e.under = e'.under → e.of = e'.of → (∀ (s : String), s ∈ e.about ↔ s ∈ e'.about) → (∀ (s : String), s ∈ e.prev ↔ s ∈ e'.prev) → (∀ (s : String), s ∈ e.erases ↔ s ∈ e'.erases) → e.toJson.canon = e'.toJson.canon",
+   "∀ {e e' : Loops.Env}, e.kind = e'.kind → e.observer = e'.observer → e.emitted = e'.emitted → e.occurred = e'.occurred → e.under = e'.under → e.of = e'.of → (∀ (s : String), s ∈ e.about ↔ s ∈ e'.about) → (∀ (s : String), s ∈ e.prev ↔ s ∈ e'.prev) → (∀ (s : String), s ∈ e.erases ↔ s ∈ e'.erases) → (e.sets.isSome = e'.sets.isSome ∧ ∀ (s : String), s ∈ e.sets.getD [] ↔ s ∈ e'.sets.getD []) → e.toJson.canon = e'.toJson.canon",
    "module": "Laws.Record"},
   "Loops.entitled_view":
   {"uses":
@@ -1855,7 +1870,7 @@
   {"uses":
    ["Loops.Env.problem_unreadable", "Loops.Writable.env", "Loops.Written.ok"],
    "states":
-   "∀ (w : Loops.Written), ¬(w.env.kind = Loops.unreadable ∨ w.env.observer = Loops.unreadable ∨ w.env.emitted = Loops.unreadable ∨ w.env.occurred = some Loops.unreadable ∨ Loops.unreadable ∈ w.env.about ∨ w.env.of = some Loops.unreadable ∨ Loops.unreadable ∈ w.env.prev ∨ w.env.under = some Loops.unreadable ∨ Loops.unreadable ∈ w.env.erases)",
+   "∀ (w : Loops.Written), ¬(w.env.kind = Loops.unreadable ∨ w.env.observer = Loops.unreadable ∨ w.env.emitted = Loops.unreadable ∨ w.env.occurred = some Loops.unreadable ∨ Loops.unreadable ∈ w.env.about ∨ w.env.of = some Loops.unreadable ∨ Loops.unreadable ∈ w.env.prev ∨ w.env.under = some Loops.unreadable ∨ Loops.unreadable ∈ w.env.erases ∨ ∃ xs, w.env.sets = some xs ∧ Loops.unreadable ∈ xs)",
    "module": "Laws.Read"},
   "Loops.Written.mk.sizeOf_spec":
   {"uses": [],
@@ -2740,6 +2755,14 @@
   {"uses": [],
    "states":
    "∀ {j : Option Loops.Json}, (Loops.Read.salt j).length = 16 → ∃ s bs, j = some (Loops.Json.str s) ∧ Loops.unbase32 s = some bs ∧ bs.length = 16",
+   "module": "Laws.Read"},
+  "Loops.Read.envOf_sets_mistyped":
+  {"uses":
+   ["Loops.Env.problem_unreadable",
+    "Loops.Json.arr.injEq",
+    "Loops.Read.textOr_unreadable"],
+   "states":
+   "∀ {kvs : List (String × Loops.Json)} {j : Loops.Json}, List.lookup \"sets\" kvs = some j → ((∀ (xs : List Loops.Json), j ≠ Loops.Json.arr xs) ∨ ∃ xs x, j = Loops.Json.arr xs ∧ x ∈ xs ∧ ∀ (s : String), x ≠ Loops.Json.str s) → (Loops.Read.envOf kvs).problem ≠ none",
    "module": "Laws.Read"},
   "Loops.Read.envOf_set_mistyped":
   {"uses":
@@ -3949,8 +3972,22 @@
   "Loops.Env.problem_unreadable":
   {"uses": ["Loops.unreadable_refused"],
    "states":
-   "∀ {e : Loops.Env}, e.kind = Loops.unreadable ∨ e.observer = Loops.unreadable ∨ e.emitted = Loops.unreadable ∨ e.occurred = some Loops.unreadable ∨ Loops.unreadable ∈ e.about ∨ e.of = some Loops.unreadable ∨ Loops.unreadable ∈ e.prev ∨ e.under = some Loops.unreadable ∨ Loops.unreadable ∈ e.erases → e.problem ≠ none",
+   "∀ {e : Loops.Env}, (e.kind = Loops.unreadable ∨ e.observer = Loops.unreadable ∨ e.emitted = Loops.unreadable ∨ e.occurred = some Loops.unreadable ∨ Loops.unreadable ∈ e.about ∨ e.of = some Loops.unreadable ∨ Loops.unreadable ∈ e.prev ∨ e.under = some Loops.unreadable ∨ Loops.unreadable ∈ e.erases ∨ ∃ xs, e.sets = some xs ∧ Loops.unreadable ∈ xs) → e.problem ≠ none",
    "module": "Laws.Read"},
+  "Loops.Env.problem_sets_not_keys":
+  {"uses": [],
+   "states":
+   "∀ {e : Loops.Env}, e.problem = some \"sets-not-keys\" → e.erases.all Loops.recordId = true ∧ e.keysNamed = false",
+   "module": "Laws.Write"},
+  "Loops.Env.problem_sets":
+  {"uses": [],
+   "states": "∀ {e : Loops.Env}, e.problem = none → e.keysNamed = true",
+   "module": "Laws.Write"},
+  "Loops.Env.problem_of_missing_sets":
+  {"uses": [],
+   "states":
+   "∀ {e : Loops.Env}, e.problem = some \"of-missing\" → e.keysNamed = true",
+   "module": "Laws.Write"},
   "Loops.Env.problem_of":
   {"uses": [],
    "states":
@@ -3968,17 +4005,17 @@
   "Loops.Env.mk.sizeOf_spec":
   {"uses": [],
    "states":
-   "∀ (kind observer emitted : String) (occurred : Option String) (about : List String) (of : Option String) (prev : List String) (under : Option String) (erases : List String), sizeOf { kind := kind, observer := observer, emitted := emitted, occurred := occurred, about := about, of := of, prev := prev, under := under, erases := erases } = 1 + sizeOf kind + sizeOf observer + sizeOf emitted + sizeOf occurred + sizeOf about + sizeOf of + sizeOf prev + sizeOf under + sizeOf erases",
+   "∀ (kind observer emitted : String) (occurred : Option String) (about : List String) (of : Option String) (prev : List String) (under : Option String) (erases : List String) (sets : Option (List String)), sizeOf { kind := kind, observer := observer, emitted := emitted, occurred := occurred, about := about, of := of, prev := prev, under := under, erases := erases, sets := sets } = 1 + sizeOf kind + sizeOf observer + sizeOf emitted + sizeOf occurred + sizeOf about + sizeOf of + sizeOf prev + sizeOf under + sizeOf erases + sizeOf sets",
    "module": "Loops.Envelope"},
   "Loops.Env.mk.injEq":
   {"uses": ["Loops.Env.mk.inj"],
    "states":
-   "∀ (kind observer emitted : String) (occurred : Option String) (about : List String) (of : Option String) (prev : List String) (under : Option String) (erases : List String) (kind_1 observer_1 emitted_1 : String) (occurred_1 : Option String) (about_1 : List String) (of_1 : Option String) (prev_1 : List String) (under_1 : Option String) (erases_1 : List String), ({ kind := kind, observer := observer, emitted := emitted, occurred := occurred, about := about, of := of, prev := prev, under := under, erases := erases } = { kind := kind_1, observer := observer_1, emitted := emitted_1, occurred := occurred_1, about := about_1, of := of_1, prev := prev_1, under := under_1, erases := erases_1 }) = (kind = kind_1 ∧ observer = observer_1 ∧ emitted = emitted_1 ∧ occurred = occurred_1 ∧ about = about_1 ∧ of = of_1 ∧ prev = prev_1 ∧ under = under_1 ∧ erases = erases_1)",
+   "∀ (kind observer emitted : String) (occurred : Option String) (about : List String) (of : Option String) (prev : List String) (under : Option String) (erases : List String) (sets : Option (List String)) (kind_1 observer_1 emitted_1 : String) (occurred_1 : Option String) (about_1 : List String) (of_1 : Option String) (prev_1 : List String) (under_1 : Option String) (erases_1 : List String) (sets_1 : Option (List String)), ({ kind := kind, observer := observer, emitted := emitted, occurred := occurred, about := about, of := of, prev := prev, under := under, erases := erases, sets := sets } = { kind := kind_1, observer := observer_1, emitted := emitted_1, occurred := occurred_1, about := about_1, of := of_1, prev := prev_1, under := under_1, erases := erases_1, sets := sets_1 }) = (kind = kind_1 ∧ observer = observer_1 ∧ emitted = emitted_1 ∧ occurred = occurred_1 ∧ about = about_1 ∧ of = of_1 ∧ prev = prev_1 ∧ under = under_1 ∧ erases = erases_1 ∧ sets = sets_1)",
    "module": "Loops.Envelope"},
   "Loops.Env.mk.inj":
   {"uses": [],
    "states":
-   "∀ {kind observer emitted : String} {occurred : Option String} {about : List String} {of : Option String} {prev : List String} {under : Option String} {erases : List String} {kind_1 observer_1 emitted_1 : String} {occurred_1 : Option String} {about_1 : List String} {of_1 : Option String} {prev_1 : List String} {under_1 : Option String} {erases_1 : List String}, { kind := kind, observer := observer, emitted := emitted, occurred := occurred, about := about, of := of, prev := prev, under := under, erases := erases } = { kind := kind_1, observer := observer_1, emitted := emitted_1, occurred := occurred_1, about := about_1, of := of_1, prev := prev_1, under := under_1, erases := erases_1 } → kind = kind_1 ∧ observer = observer_1 ∧ emitted = emitted_1 ∧ occurred = occurred_1 ∧ about = about_1 ∧ of = of_1 ∧ prev = prev_1 ∧ under = under_1 ∧ erases = erases_1",
+   "∀ {kind observer emitted : String} {occurred : Option String} {about : List String} {of : Option String} {prev : List String} {under : Option String} {erases : List String} {sets : Option (List String)} {kind_1 observer_1 emitted_1 : String} {occurred_1 : Option String} {about_1 : List String} {of_1 : Option String} {prev_1 : List String} {under_1 : Option String} {erases_1 : List String} {sets_1 : Option (List String)}, { kind := kind, observer := observer, emitted := emitted, occurred := occurred, about := about, of := of, prev := prev, under := under, erases := erases, sets := sets } = { kind := kind_1, observer := observer_1, emitted := emitted_1, occurred := occurred_1, about := about_1, of := of_1, prev := prev_1, under := under_1, erases := erases_1, sets := sets_1 } → kind = kind_1 ∧ observer = observer_1 ∧ emitted = emitted_1 ∧ occurred = occurred_1 ∧ about = about_1 ∧ of = of_1 ∧ prev = prev_1 ∧ under = under_1 ∧ erases = erases_1 ∧ sets = sets_1",
    "module": "Loops.Envelope"},
   "Loops.Draft.mk.sizeOf_spec":
   {"uses": [],
