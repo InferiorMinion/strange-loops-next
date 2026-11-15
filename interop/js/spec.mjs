@@ -195,9 +195,8 @@ function slotOf(name, n) {
   const [type] = types;
   const [follow, limit, by, where] = ["follow", "limit", "by", "where"].map((k) => get(n, k));
   if (type === "latest-by" && follow === undefined) refuse("follow-missing", [...at, "follow"]);
-  // Every fold type may follow prev; latest-by must follow prev or keys.
-  if (follow !== undefined && follow !== "prev" && !(follow === "keys" && type === "latest-by"))
-    refuse("follow-invalid", [...at, "follow"]);
+  // Every fold type may follow prev or keys; latest-by must follow one.
+  if (follow !== undefined && follow !== "prev" && follow !== "keys") refuse("follow-invalid", [...at, "follow"]);
   if (limit !== undefined && (!(Number.isSafeInteger(limit) && limit >= 1) || type !== "collect")) refuse("limit-invalid", [...at, "limit"]);
   // by: after limit, before the argument; every fold type but latest-by, following or not.
   if (by !== undefined && (byOf(by) === null || type === "latest-by"))
@@ -360,12 +359,85 @@ function keyedLatest(keyed, spec, slot) {
   return { things, unread };
 }
 
+// The things a slot that follows keys reads: each thing one of whose heads
+// `from` and the envelope tests choose, alone, with its records, its chosen
+// heads, and what its payload tests answer, asked of the thing.
+function keyedThings(keyed, spec, slot) {
+  const env = envelopeTests(slot.where), out = [];
+  for (const [, { rs, state }] of keyed) {
+    const chosen = state.heads.filter((h) => takes(spec, h) && answer(env, h) === YES);
+    if (chosen.length) out.push({ rs, chosen, answer: thingAnswer(slot.where, rs) });
+  }
+  return out;
+}
+
+// Count, sum, min, max or collect over selected things, with `unread` things
+// already counted. Count counts the things. Sum, min and max read the field
+// from a thing's one live setter: with none, or two or more (the same number
+// or not; no values are compared), the thing is unread, as it is when that
+// setter's payload is not held or holds no whole number there. Collect lists
+// the things' live records, newest first, at most `limit` of them.
+function overThings(slot, things, unread) {
+  if ("count" in slot) return { value: things.length, unread };
+  for (const type of ["sum", "min", "max"]) if (type in slot) {
+    const field = slot[type];
+    const sole = things.map(({ rs }) => rs.filter((r) => F.liveFor(rs, field, r)))
+      .filter((ss) => ss.length === 1).map(([r]) => r);
+    const r = F[type](sole, { field });
+    return { value: r.value, unread: unread + things.length - sole.length + r.unread };
+  }
+  const live = things.flatMap(({ rs }) => rs.filter((r) => F.live(rs, r))).sort(F.newestFirst).map(shownOf);
+  return { heads: slot.limit === undefined ? live : live.slice(0, slot.limit), unread };
+}
+
+// A slot that follows keys, without `by`: a selected thing whose tests are
+// unknown is unread once.
+function keyedPlain(slot, spec, ctx) {
+  const things = keyedThings(ctx.keyed(), spec, slot);
+  return overThings(slot, things.filter((t) => t.answer === YES), things.filter((t) => t.answer === UNKNOWN).length);
+}
+
+// The groups a selected thing joins, each once, sorted: for a payload field,
+// the key of each of the field's live setters, null when one of them is not
+// held; for an envelope key, the key of each chosen head, never null.
+function thingKeys(by, { rs, chosen }) {
+  const b = byOf(by), keys = new Set();
+  for (const r of b.field === undefined ? chosen : rs.filter((r) => F.liveFor(rs, b.field, r))) {
+    const k = keysOf(by, r);
+    if (k === null) return null;
+    for (const x of k) keys.add(x);
+  }
+  return [...keys].sort(utf16Order);
+}
+
+// A slot that follows keys, with `by`: each selected thing joins the group of
+// each of its keys, once in each, and each group is the slot without `by` over
+// its things. Unknown tests and unreadable keys are unread at the top, once a
+// thing; a thing without a key is ungrouped.
+function keyedGrouped(slot, spec, ctx) {
+  const members = new Map();
+  let unread = 0, ungrouped = 0;
+  for (const t of keyedThings(ctx.keyed(), spec, slot)) {
+    if (t.answer === UNKNOWN) { unread++; continue; }
+    if (t.answer !== YES) continue;
+    const keys = thingKeys(slot.by, t);
+    if (keys === null) unread++;
+    else if (keys.length === 0) ungrouped++;
+    else for (const k of keys) members.set(k, [...(members.get(k) ?? []), t]);
+  }
+  const groups = Object.create(null);
+  for (const k of [...members.keys()].sort(utf16Order)) groups[k] = overThings(slot, members.get(k), 0);
+  return { groups, unread, ungrouped };
+}
+
 // Accumulating slots select, then fold the records `from` takes. Slots over
 // heads (latest-by, and collect, count, sum, min and max following prev)
 // supersede over every record held, then choose among the heads, so selection
 // never brings back what was superseded. Without follow they take every
-// selected record.
+// selected record. Following keys, count, sum, min, max and collect read things.
 function runSlot(slot, spec, ctx) {
+  if (slot.follow === "keys" && !("latest-by" in slot))
+    return slot.by === undefined ? keyedPlain(slot, spec, ctx) : keyedGrouped(slot, spec, ctx);
   return slot.by === undefined ? plainSlot(slot, spec, ctx) : grouped(slot, spec, ctx);
 }
 
