@@ -4651,6 +4651,11 @@
    "states":
    "∀ (path : Option String) (xs : List Loops.Json), Loops.Json.repeatIn path xs = none ↔ Loops.Json.allDistinct xs = true",
    "module": "Laws.Parse"},
+  "Loops.Json.repeatIn_first":
+  {"uses": [],
+   "states":
+   "∀ (path : Option String) {pre : List Loops.Json} {x : Loops.Json} (rest : List Loops.Json) {p : String}, (∀ (y : Loops.Json), y ∈ pre → Loops.Json.repeatAt path y = none) → Loops.Json.repeatAt path x = some p → Loops.Json.repeatIn path (pre ++ x :: rest) = some p",
+   "module": "Laws.Parse"},
   "Loops.Json.repeatIn.eq_def":
   {"uses": ["Loops.Json.brecOn_1.eq"],
    "states":

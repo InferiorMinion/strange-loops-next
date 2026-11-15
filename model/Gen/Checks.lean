@@ -265,6 +265,14 @@ def rulingChecks : IO Unit := do
   let vote := { r with id := fixtureId 2, kind := "vote" }
   ensure (sp.select [r, vote, r.withhold] == [r, r.withhold]) "D6 Spec.select is not the records the spec takes"
   ensure (sp.select [vote] == []) "D6 Spec.select keeps a record the spec does not take"
+  -- An opening checks against the commitment of the record written with it, and no other salt or payload does.
+  let salt : List UInt8 := (List.range 16).map (·.toUInt8)
+  let payload := Json.obj [("status", .str "open"), ("est", .int 3)]
+  let commit := (make { kind := "note", observer := "o:test", emitted := "2026-10-21T00:00:00Z" } salt payload).commit Gen.Records.H
+  ensure (opens Gen.Records.H commit salt payload) "a written record's opening does not check against its commitment"
+  ensure (!opens Gen.Records.H commit salt (.obj [("status", .str "open"), ("est", .int 4)])) "another payload opens the commitment"
+  ensure (!opens Gen.Records.H commit (salt.map (· + 1)) payload) "another salt opens the commitment"
+  ensure (!opens Gen.Records.H (commit ++ "0") salt payload) "the opening checks against another commitment"
   IO.println "D1-D6 ruling runtime checks pass"
 
 def main (args : List String) : IO Unit := do
