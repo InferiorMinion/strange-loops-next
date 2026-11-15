@@ -131,6 +131,8 @@ ci-image:
   image: rust:1.100-bookworm
   variables:
     CARGO_HOME: $CI_PROJECT_DIR/.cargo-home
+    # No incremental state: it only grows the cached rust/target on the runner.
+    CARGO_INCREMENTAL: "0"
   cache:
     key: rust
     paths: [.cargo-home/registry, rust/target]
