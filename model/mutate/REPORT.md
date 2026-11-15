@@ -24,6 +24,12 @@ The runner exits 0: no generator assertion, timeout or infrastructure failure oc
 It restored the source after each entry and rebuilt the baseline at the end.
 Raw results and logs were kept under the session's scratch directory and deleted once this summary was written.
 
+At that commit no stated law said which things are kept, only that at most `k` are, each whole: `keyedValue_collect_limit` holds of the oldest things too, and `keys-slots-limit-oldest-first` was rejected where `mem_wholeThings` restates the definition and where `wholeThings_distinct` names its first `k` records.
+`wholeThings_newest` and `keyedValue_collect_newest` now state it: over a list sorted newest first, a listed thing has a record newer than every record left out; at the slot, a live record of a selected thing that is left out is older than some live record of each listed thing.
+The oldest-first rule falsifies both. On `spec/run/51`'s records the oldest things with a limit of 1 list `task:a`, whose live records are at 00:01:40, 00:05:00 and 00:08:20, and leave out `task:e`'s live record at 00:09:20. For any two records `a` and `e` of different things, `e` newer, the mutated `wholeThings (some 1) [e, a]` is `[a]`, and no record of `a`'s thing is newer than `e`.
+That last statement was checked by hand: with the entry applied to `Loops/Spec.lean` and `mem_wholeThings` restated over `thingsInOrder rs.reverse`, a scratch file outside the tree proves the statement of `wholeThings_newest` false whenever two such records exist, and it does not build against the unmutated definition. The mutated build then fails at `wholeThings_things`, `wholeThings_newest`, `wholeThings_distinct` and `keyedValue_collect_limit`, whose proofs the restatement does not reach. The source was restored afterwards.
+The runner still reports the first build error. Run alone with `--only` after the new laws, the entry is rejected by build at `Laws/KeyedSlots.lean:222` (`mem_wholeThings`), with a second error at `wholeThings_distinct`; it is not a semantic proof kill there. The new laws are what state the property it breaks.
+
 ## Count, sum, min, max and collect following `keys`: the twenty-one new entries and sixteen whose definitions moved, at `cd2e9ca`
 
 The catalogue has 291 entries: 270 and twenty-one that mutate the slots that follow `keys` (`thingEv`, `soleSetter`, `Acc.overThings`, `keyedValue`, `By.thingKeys`, `Slot.keyedGrouped`, `Slot.run`, `Slot.plain`, `accPool`, `FoldType.follow`, `foldType`) and `setters` and `liveIn` (`Loops/Live.lean`).

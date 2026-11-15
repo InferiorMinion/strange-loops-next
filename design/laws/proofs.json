@@ -170,6 +170,11 @@
    "states":
    "∀ {k : Nat} {rs : List Loops.Record}, (∀ (r : Loops.Record), r ∈ Loops.wholeThings (some k) rs → r.thing ∈ List.take k (Loops.thingsInOrder rs)) ∧ (List.take k (Loops.thingsInOrder rs)).length ≤ k ∧ (List.take k (Loops.thingsInOrder rs)).Nodup",
    "module": "Laws.KeyedSlots"},
+  "Loops.wholeThings_newest":
+  {"uses": ["Loops.mem_wholeThings", "Loops.thingsInOrder_newest"],
+   "states":
+   "∀ {k : Nat} {rs : List Loops.Record}, List.Pairwise Loops.Newer rs → ∀ {r q : Loops.Record}, r ∈ Loops.wholeThings (some k) rs → q ∈ rs → ¬q ∈ Loops.wholeThings (some k) rs → ∃ p, p ∈ rs ∧ p.thing = r.thing ∧ Loops.Newer p q",
+   "module": "Laws.KeyedSlots"},
   "Loops.wholeThings_distinct":
   {"uses": ["Loops.thingsInOrder_distinct"],
    "states":
@@ -325,6 +330,16 @@
   "Loops.thingsInOrder_nodup":
   {"uses": [],
    "states": "∀ (rs : List Loops.Record), (Loops.thingsInOrder rs).Nodup",
+   "module": "Laws.KeyedSlots"},
+  "Loops.thingsInOrder_newest":
+  {"uses": ["Loops.thingsInOrder_filter"],
+   "states":
+   "∀ {rs : List Loops.Record}, List.Pairwise Loops.Newer rs → ∀ {k : Nat} {t : String}, t ∈ List.take k (Loops.thingsInOrder rs) → ∀ {q : Loops.Record}, q ∈ rs → ¬q.thing ∈ List.take k (Loops.thingsInOrder rs) → ∃ p, p ∈ rs ∧ p.thing = t ∧ Loops.Newer p q",
+   "module": "Laws.KeyedSlots"},
+  "Loops.thingsInOrder_filter":
+  {"uses": [],
+   "states":
+   "∀ (rs : List Loops.Record) (a : String), Loops.thingsInOrder (List.filter (fun x => x.thing != a) rs) = List.filter (fun x => x != a) (Loops.thingsInOrder rs)",
    "module": "Laws.KeyedSlots"},
   "Loops.thingsInOrder_distinct":
   {"uses": [],
@@ -1749,6 +1764,21 @@
   {"uses": [],
    "states":
    "∀ (f : Option Loops.Follow) (limit : Option Nat) (xs : List Loops.Record) (ev : String → Loops.Tri), ∃ hs, Loops.keyedValue (Loops.FoldType.collect f limit) xs ev = Loops.SlotValue.heads hs (List.filter (fun x => ev x == Loops.Tri.unknown) (Loops.thingsOf xs)).length",
+   "module": "Laws.KeyedSlots"},
+  "Loops.keyedValue_collect_newest":
+  {"uses":
+   ["Loops.Addressed.unlinked",
+    "Loops.LatestBy.Inv.heads_sorted",
+    "Loops.LatestBy.inv_of",
+    "Loops.Newer.unlinked",
+    "Loops.SlotValue.heads.injEq",
+    "Loops.liveIn_sub",
+    "Loops.liveIn_thing",
+    "Loops.mem_newestFirst_iff",
+    "Loops.mem_wholeThings",
+    "Loops.wholeThings_newest"],
+   "states":
+   "∀ {xs : List Loops.Record}, Loops.Addressed xs → ∀ (f : Option Loops.Follow) (ev : String → Loops.Tri) (k : Nat) {hs : List (Loops.RecordId × Loops.Shown)} {u : Nat}, Loops.keyedValue (Loops.FoldType.collect f (some k)) xs ev = Loops.SlotValue.heads hs u → ∀ {t t' : String} {r q : Loops.Record}, r ∈ Loops.liveIn xs t → (r.id, r.shown) ∈ hs → t' ∈ Loops.thingsOf xs → ev t' = Loops.Tri.yes → q ∈ Loops.liveIn xs t' → ¬(q.id, q.shown) ∈ hs → ∃ p, p ∈ Loops.liveIn xs t ∧ Loops.Newer p q",
    "module": "Laws.KeyedSlots"},
   "Loops.keyedValue_collect_limit":
   {"uses":
@@ -3980,6 +4010,11 @@
   {"uses": [],
    "states": "∀ {n : Loops.Number}, n.inRange = true → n.finite = true",
    "module": "Laws.Write"},
+  "Loops.Newer.unlinked":
+  {"uses": [],
+   "states":
+   "∀ {a b : Loops.Record}, Loops.Newer a.unlinked b.unlinked ↔ Loops.Newer a b",
+   "module": "Laws.KeyedSlots"},
   "Loops.Newer.trans":
   {"uses": ["Loops.Span.before_trans"],
    "states":

@@ -183,6 +183,41 @@ theorem thingsInOrder_distinct {rs : List Record} (h : (rs.map Record.thing).Nod
     exact filter_eq_self.2 fun t ht => by
       simp only [bne_iff_ne, ne_eq]; rintro rfl; exact hr ht
 
+/-- Leaving out the records of one thing leaves out that thing and keeps the
+order of the others. -/
+theorem thingsInOrder_filter (rs : List Record) (a : String) :
+    thingsInOrder (rs.filter (·.thing != a)) = (thingsInOrder rs).filter (· != a) := by
+  induction rs with
+  | nil => rfl
+  | cons r rs ih =>
+    by_cases e : r.thing = a
+    · simp only [filter_cons, e, bne_self_eq_false, Bool.false_eq_true, ↓reduceIte, ih,
+        thingsInOrder, filter_filter, Bool.and_self]
+    · have e' : (r.thing != a) = true := by simpa using e
+      simp only [filter_cons, e', ↓reduceIte, thingsInOrder, ih, filter_filter, Bool.and_comm]
+
+/-- Over a list sorted newest first, a thing among the first `k` has a record
+newer than every record of a thing not among them. -/
+theorem thingsInOrder_newest {rs : List Record} (hs : rs.Pairwise Newer) {k : Nat} {t : String}
+    (ht : t ∈ (thingsInOrder rs).take k) {q : Record} (hq : q ∈ rs)
+    (hn : q.thing ∉ (thingsInOrder rs).take k) : ∃ p ∈ rs, p.thing = t ∧ Newer p q :=
+  match rs, k, hs, ht, hq, hn with
+  | [], _, _, ht, _, _ => by simp [thingsInOrder] at ht
+  | _ :: _, 0, _, ht, _, _ => by simp at ht
+  | r :: rs, k + 1, hs, ht, hq, hn => by
+    obtain ⟨hr, hs⟩ := pairwise_cons.1 hs
+    simp only [thingsInOrder, take_succ_cons, mem_cons, not_or] at ht hn
+    obtain ⟨hnr, hn⟩ := hn
+    have hq : q ∈ rs := (mem_cons.1 hq).resolve_left fun e => hnr (e ▸ rfl)
+    rcases ht with rfl | ht
+    · exact ⟨r, mem_cons_self, rfl, hr q hq⟩
+    · rw [← thingsInOrder_filter] at ht hn
+      obtain ⟨p, hp, e, hpq⟩ := thingsInOrder_newest (hs.filter _) ht
+        (mem_filter.2 ⟨hq, by simpa using hnr⟩) hn
+      exact ⟨p, mem_cons_of_mem _ (mem_filter.1 hp).1, e, hpq⟩
+termination_by rs.length
+decreasing_by simp only [length_cons]; have := length_filter_le (·.thing != r.thing) rs; omega
+
 theorem mem_wholeThings {k : Nat} {rs : List Record} {r : Record} :
     r ∈ wholeThings (some k) rs ↔ r ∈ rs ∧ r.thing ∈ (thingsInOrder rs).take k := by
   simp [wholeThings, mem_filter]
@@ -201,6 +236,13 @@ theorem wholeThings_things {k : Nat} {rs : List Record} :
       ((thingsInOrder rs).take k).length ≤ k ∧ ((thingsInOrder rs).take k).Nodup :=
   ⟨fun _ hr => (mem_wholeThings.1 hr).2, length_take_le _ _,
     (take_sublist _ _).nodup (thingsInOrder_nodup rs)⟩
+
+/-- **The things listed are the newest**: over records sorted newest first, a
+listed record's thing has a record newer than every record left out. -/
+theorem wholeThings_newest {k : Nat} {rs : List Record} (hs : rs.Pairwise Newer) {r q : Record}
+    (hr : r ∈ wholeThings (some k) rs) (hq : q ∈ rs) (hn : q ∉ wholeThings (some k) rs) :
+    ∃ p ∈ rs, p.thing = r.thing ∧ Newer p q :=
+  thingsInOrder_newest hs (mem_wholeThings.1 hr).2 hq fun h => hn (mem_wholeThings.2 ⟨hq, h⟩)
 
 /-- When the records are of distinct things, a limit over things is a limit over records. -/
 theorem wholeThings_distinct {l : Option Nat} {rs : List Record} (h : (rs.map Record.thing).Nodup) :
@@ -242,7 +284,7 @@ lists exactly the live records of at most `k` selected things, every live record
 of each, and leaves out a selected thing with a live record only when it lists
 `k` things. The things are the first `k` in the newest-first list of the
 selected things' live records, so a thing whose newest live record is newer
-comes first. -/
+comes first (`keyedValue_collect_newest`). -/
 theorem keyedValue_collect_limit {xs : List Record} (hx : Addressed xs) (f : Option Follow)
     (ev : String → Tri) (k : Nat) {hs : List (RecordId × Shown)} {u : Nat}
     (h : keyedValue (.collect f (some k)) xs ev = .heads hs u) :
@@ -289,6 +331,47 @@ theorem keyedValue_collect_limit {xs : List Record} (hx : Addressed xs) (f : Opt
       obtain ⟨ht, he⟩ := hsel t hT
       exact ⟨q.unlinked, mem_wholeThings.2 ⟨(hmem _).2 ⟨t, ht, he, q, hq, rfl⟩,
         (liveIn_thing hq).symm ▸ hT⟩, rfl⟩
+
+/-- Content order does not read `prev`. -/
+theorem Newer.unlinked {a b : Record} : Newer a.unlinked b.unlinked ↔ Newer a b := Iff.rfl
+
+/-- **Collect following `keys` with a limit lists the things with the newest
+live records**: a live record of a selected thing that it leaves out is older
+than some live record of each thing it lists. -/
+theorem keyedValue_collect_newest {xs : List Record} (hx : Addressed xs) (f : Option Follow)
+    (ev : String → Tri) (k : Nat) {hs : List (RecordId × Shown)} {u : Nat}
+    (h : keyedValue (.collect f (some k)) xs ev = .heads hs u) {t t' : String} {r q : Record}
+    (hr : r ∈ liveIn xs t) (hl : (r.id, r.shown) ∈ hs) (ht' : t' ∈ thingsOf xs) (he' : ev t' = .yes)
+    (hq : q ∈ liveIn xs t') (hn : (q.id, q.shown) ∉ hs) : ∃ p ∈ liveIn xs t, Newer p q := by
+  simp only [keyedValue, SlotValue.heads.injEq] at h
+  obtain ⟨rfl, -⟩ := h
+  have ha : Addressed (((thingsOf xs).filter (ev · == .yes)).flatMap (liveIn xs)) := fun a ha b hb =>
+    hx a (by obtain ⟨_, _, ha⟩ := mem_flatMap.1 ha; exact liveIn_sub ha) b
+      (by obtain ⟨_, _, hb⟩ := mem_flatMap.1 hb; exact liveIn_sub hb)
+  have hsort : (newestFirst (((thingsOf xs).filter (ev · == .yes)).flatMap (liveIn xs))).Pairwise Newer :=
+    (LatestBy.inv_of ha.unlinked).heads_sorted
+  generalize hL : newestFirst (((thingsOf xs).filter (ev · == .yes)).flatMap (liveIn xs)) = L at hsort hl hn
+  have hmem : ∀ r, r ∈ L ↔ ∃ t ∈ thingsOf xs, ev t = .yes ∧ ∃ q ∈ liveIn xs t, r = q.unlinked := by
+    intro r
+    rw [← hL, mem_newestFirst_iff ha]
+    simp only [mem_flatMap, mem_filter, beq_iff_eq]
+    constructor
+    · rintro ⟨q, ⟨t, ⟨ht, he⟩, hq⟩, rfl⟩; exact ⟨t, ht, he, q, hq, rfl⟩
+    · rintro ⟨t, ht, he, q, hq, rfl⟩; exact ⟨q, ⟨t, ⟨ht, he⟩, hq⟩, rfl⟩
+  -- `r` is listed, and `q` is not
+  have hrw : r.unlinked ∈ wholeThings (some k) L := by
+    obtain ⟨r', hr', e⟩ := mem_map.1 hl
+    obtain ⟨_, -, -, q', hq', rfl⟩ := (hmem r').1 (mem_wholeThings.1 hr').1
+    obtain ⟨ei, -⟩ := Prod.mk.inj e
+    rwa [← hx q' (liveIn_sub hq') r (liveIn_sub hr) ei]
+  have hqn : q.unlinked ∉ wholeThings (some k) L := fun hw =>
+    hn (mem_map.2 ⟨q.unlinked, hw, rfl⟩)
+  obtain ⟨p, hp, e, hpq⟩ :=
+    wholeThings_newest hsort hrw ((hmem _).2 ⟨t', ht', he', q, hq, rfl⟩) hqn
+  obtain ⟨t₀, -, -, p', hp', rfl⟩ := (hmem p).1 hp
+  have e₀ : t₀ = t := (liveIn_thing hp' : p'.thing = t₀).symm.trans
+    (e.trans (liveIn_thing hr : r.thing = t))
+  exact ⟨p', e₀ ▸ hp', Newer.unlinked.1 hpq⟩
 
 /-! ## `by` over things -/
 
