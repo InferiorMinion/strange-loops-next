@@ -67,6 +67,17 @@ impl Store {
             String::from_utf8_lossy(&out.stderr).trim_end().to_owned(),
         )
     }
+    /// The ids an `emit -` changeset wrote, in line order.
+    fn changeset(&self, drafts: &str) -> Vec<String> {
+        let out = parse_json(&self.ok_with(&["emit", "-"], drafts)).expect("JSON");
+        let Json::Arr(records) = at(&out, &["records"]) else {
+            panic!("records")
+        };
+        records
+            .iter()
+            .map(|r| text(r, &["id"]).to_owned())
+            .collect()
+    }
     fn segments(&self) -> Vec<PathBuf> {
         let mut found = Vec::new();
         for dir in fs::read_dir(self.dir.join(".loops/segments")).expect("segments") {
@@ -90,6 +101,19 @@ fn at<'a>(j: &'a Json, path: &[&str]) -> &'a Json {
 fn text<'a>(j: &'a Json, path: &[&str]) -> &'a str {
     match at(j, path) {
         Json::Str(s) => s,
+        other => panic!("{path:?}: {other:?}"),
+    }
+}
+/// A list of text, such as an envelope's `prev` or `about`.
+fn strings(j: &Json, path: &[&str]) -> Vec<String> {
+    match at(j, path) {
+        Json::Arr(items) => items
+            .iter()
+            .map(|x| match x {
+                Json::Str(s) => s.clone(),
+                other => panic!("{path:?}: {other:?}"),
+            })
+            .collect(),
         other => panic!("{path:?}: {other:?}"),
     }
 }
@@ -132,25 +156,14 @@ fn count_and_sum_follow_the_heads() {
         "n:=3",
         "Open",
     ]);
-    // Two revisions of the first: a fork, and both heads are current.
-    s.ok(&[
-        "emit",
-        "task",
-        "--prev",
-        &first,
-        "status=open",
-        "n:=5",
-        "Bigger",
-    ]);
-    let fork = s.ok(&[
-        "emit",
-        "task",
-        "--prev",
-        &first,
-        "status=done",
-        "n:=1",
-        "Done",
-    ]);
+    // Two revisions that each name only the first: a fork, and both heads
+    // are current. `loops emit` would name the one in the other, so the fork
+    // is a changeset that states its own `prev`.
+    let pair = s.changeset(&format!(
+        "{{\"kind\":\"task\",\"of\":\"task:1\",\"prev\":[\"{first}\"],\"payload\":{{\"status\":\"open\",\"n\":5,\"text\":\"Bigger\"}}}}\n\
+         {{\"kind\":\"task\",\"of\":\"task:1\",\"prev\":[\"{first}\"],\"payload\":{{\"status\":\"done\",\"n\":1,\"text\":\"Done\"}}}}\n"
+    ));
+    let fork = &pair[1];
     let slots = parse_json(&s.ok_with(&["fold", "-"], FOLLOW)).expect("JSON");
     let got = ["all", "now", "open", "est"].map(|k| tally(&slots, k));
     assert_eq!(got, [n(3, 0), n(2, 0), n(1, 0), n(6, 0)]);
@@ -227,16 +240,12 @@ fn latest_by_follows_keys_through_the_live_setters() {
     );
     assert_eq!(things(&slots, "open"), 1);
     assert_eq!(things(&slots, "open-heads"), 0);
-    // A concurrent emit sets `status`: two heads, each live for its key.
-    let status = s.ok(&[
-        "emit",
-        "task",
-        "--prev",
-        &root,
-        "--sets",
-        "status",
-        "status=done",
-    ]);
+    // A concurrent emit sets `status`: two heads, each live for its key. It
+    // names only the root, so it is a changeset that states its own `prev`.
+    let status = s.changeset(&format!(
+        "{{\"kind\":\"task\",\"of\":\"task:1\",\"prev\":[\"{root}\"],\"sets\":[\"status\"],\"payload\":{{\"status\":\"done\"}}}}\n"
+    ))
+    .remove(0);
     let slots = fold();
     assert_eq!(
         ids(&slots, &[&state[..], &["keys", "status"]].concat()),
@@ -253,16 +262,12 @@ fn latest_by_follows_keys_through_the_live_setters() {
         std::slice::from_ref(&status)
     );
     // A pure join settles both heads and sets nothing: it is the one head, and
-    // the two setters stay live for their keys.
-    let join = s.ok(&[
-        "emit",
-        "task",
-        "--prev",
-        &title,
-        "--prev",
-        &status,
-        "--sets-nothing",
-    ]);
+    // the two setters stay live for their keys. `loops emit` names every live
+    // record of the thing, the root among them, without a `--prev`.
+    let join = s.ok(&["emit", "task", "--of", "task:1", "--sets-nothing"]);
+    let mut live = vec![root.clone(), title.clone(), status.clone()];
+    live.sort();
+    assert_eq!(strings(&s.json(&["get", &join]), &["env", "prev"]), live);
     let slots = fold();
     assert_eq!(ids(&slots, &[&state[..], &["heads"]].concat()), [join]);
     assert_eq!(
@@ -314,14 +319,18 @@ fn count_sum_and_collect_follow_keys_through_the_things() {
     assert_eq!(got, [n(1, 0), n(1, 0), n(1, 0), n(0, 0), n(3, 0)]);
     assert_eq!(ids(&slots, &["live", "heads"]), [title, root.clone()]);
     // A concurrent emit sets `n`: two heads, one thing, and `n` read from it.
-    let five = s.ok(&["emit", "task", "--prev", &root, "--sets", "n", "n:=5"]);
+    // It names only the root, so it is a changeset.
+    let only_root = format!(
+        "{{\"kind\":\"task\",\"of\":\"task:1\",\"prev\":[\"{root}\"],\"sets\":[\"n\"],\"payload\":{{\"n\":5}}}}\n"
+    );
+    let five = s.changeset(&only_root).remove(0);
     let slots = fold();
     let got = ["tasks", "heads", "est"].map(|k| tally(&slots, k));
     assert_eq!(got, [n(1, 0), n(2, 0), n(5, 0)]);
     assert_eq!(len(&slots, &["live", "heads"]), 3);
     // Another sets `n` too: two live setters, so the sum cannot read it,
     // although no values are compared.
-    s.ok(&["emit", "task", "--prev", &root, "--sets", "n", "n:=5"]);
+    s.changeset(&only_root);
     let slots = fold();
     let got = ["tasks", "heads", "est"].map(|k| tally(&slots, k));
     assert_eq!(got, [n(1, 0), n(3, 0), n(0, 1)]);
@@ -433,17 +442,12 @@ fn emit_revise_fork_fold_and_erase() {
     assert_eq!(at(&mentioned, &["records"]), &Json::Int(0_i64.into()));
     // The verb that shows a thing is `of`; `about` names no verb.
     assert_eq!(s.fails(&["about", thing], "").0, 2);
-    let fork = s.ok(&[
-        "emit",
-        "decision",
-        "--of",
-        thing,
-        "--prev",
-        &first,
-        "status=settled",
-        "n:=4",
-        "Zig",
-    ]);
+    // A fork names only the first, so it is a changeset that states its `prev`.
+    let fork = s
+        .changeset(&format!(
+            "{{\"kind\":\"decision\",\"of\":\"{thing}\",\"prev\":[\"{first}\"],\"payload\":{{\"status\":\"settled\",\"n\":4,\"text\":\"Zig\"}}}}\n"
+        ))
+        .remove(0);
     let state = s.json(&["of", thing]);
     assert_eq!(text(&state, &["winner", "id"]), fork);
     assert_eq!(len(&state, &["others"]), 1);
@@ -887,7 +891,12 @@ fn two_stores_converge_by_export_and_import() {
     // A revision is of what it replaces, filled in from the imported line.
     let from_a = a.ok(&["emit", "decision", "--prev", &root, "a's revision"]);
     let from_b = b.ok(&["emit", "decision", "--prev", &root, "b's revision"]);
-    b.ok(&["emit", "note", "--of", thing, "only b so far"]);
+    // An emit of the thing names every live record of it b holds: b's revision.
+    let note = b.ok(&["emit", "note", "--of", thing, "only b so far"]);
+    assert_eq!(
+        strings(&b.json(&["get", &note]), &["env", "prev"]),
+        [from_b.clone()]
+    );
     // A record that only mentions the thing is none of its heads.
     b.ok(&["emit", "note", "--about", thing, "said in passing"]);
     assert_ne!(a.ok(&["export"]), b.ok(&["export"]));
@@ -903,9 +912,9 @@ fn two_stores_converge_by_export_and_import() {
     // Both now show the same fork, with the same winner.
     let (sa, sb) = (a.json(&["of", thing]), b.json(&["of", thing]));
     assert_eq!(sa, sb);
-    // Three heads: the two revisions fork, and b's note was never replaced.
+    // Two heads: a's revision and b's note, which replaced b's revision.
     // The note that only mentions the thing is not one of them.
-    assert_eq!(len(&sa, &["others"]), 2);
+    assert_eq!(len(&sa, &["others"]), 1);
     assert_eq!(at(&sa, &["records"]), &Json::Int(4_i64.into()));
     assert!(!a.ok(&["export", "--of", thing]).contains("said in passing"));
     assert!(
@@ -916,7 +925,10 @@ fn two_stores_converge_by_export_and_import() {
     if let Json::Arr(others) = at(&sa, &["others"]) {
         heads.extend(others.iter().map(|line| text(line, &["id"])));
     }
-    assert!(heads.contains(&from_a.as_str()) && heads.contains(&from_b.as_str()));
+    heads.sort_unstable();
+    let mut expected = [from_a.as_str(), note.as_str()];
+    expected.sort_unstable();
+    assert_eq!(heads, expected);
     // Importing again adds nothing, and a line that doesn't check adds nothing at all.
     let before = a.segments().len();
     a.ok_with(&["import"], &b.ok(&["export"]));
