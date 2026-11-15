@@ -10,6 +10,7 @@ All three read a thing by its live setters in every slot that follows `keys`: la
 All three refuse every envelope shape by name (issue #1) and let a label stand in `under`.
 All three writers refuse an `under` target they do not hold (`under-unknown`).
 `loops emit` follows D8c's anchor rule: an emit of a thing names in `prev` every live record of it the store holds, and carries the thing's whole `about`.
+An emit of a thing the store holds sets the fields it names, and `loops of`, `read --values` and `fold --values` show each key's value from its live setters.
 All three let count, sum, min and max follow `prev` (issue #3), and group count, sum, min, max and collect with `by` (issue #2).
 The law index has 105 entries, 1041 theorems, and 6 boundary witnesses.
 See [the law index](design/laws/laws.json) and [proof and boundary data](design/laws/).
@@ -18,7 +19,7 @@ These proofs apply only under their stated premises.
 The tree has 600 JSON fixtures: 588 generated fixtures and 12 standard fixtures.
 Lean replays 579 generated fixtures; 9 occurred fixtures use separate checks.
 Rust checks every fixture, six JCS byte pairs, 4,000 binary64 cases, and 128 SUPERCOP signing cases with ed25519-dalek.
-Rust passes 174 tests; JavaScript passes 6,944 vector checks and 40 regression and law tests.
+Rust passes 179 tests; JavaScript passes 6,944 vector checks and 40 regression and law tests.
 Both also check that `spec/run` answers write their members, group, thing and key names included, in the model's order; JavaScript checks `fold/latest-by` answers' thing keys too.
 JavaScript refuses a held record's invalid `emitted` or `occurred` before it answers, as the Lean and Rust readers do.
 The fuzz suite passes 60 tests.
@@ -68,9 +69,9 @@ See [the mutation report](model/mutate/REPORT.md) for outcomes, restoration chec
 ## Step 2: the first product slice
 
 `loops-place` and the `loops` CLI emit, read and fold for one person, signed, over `.loops/`.
-Stored lines match the model's record vectors byte for byte; 29 tests drive the place and the binary.
+Stored lines match the model's record vectors byte for byte; 34 tests drive the place and the binary.
 The layout, the CLI and their refusal codes are a working proposal, not protocol.
-[`rust/PLACE.md`](rust/PLACE.md) lists what is implemented and the fourteen choices made on the way.
+[`rust/PLACE.md`](rust/PLACE.md) lists what is implemented and the seventeen choices made on the way.
 Two of them need the model: what a place is has no law, and a payload reaches a fold only as `value`, `n` and top-level fields.
 
 **Built, 2026-11-11: `"follow": "prev"` on count, sum, min and max (issue #3).**
@@ -102,6 +103,27 @@ Ordering or top-N across groups, buckets and windows, and `by` on latest-by are 
 **Implementer choices, confirmed by Kyle 2026-11-11:**
 - Groups are written in UTF-16 order of their keys, the order canonical JSON and `thingsOf` use.
 - The four law names, and `by` checked before the fold's argument as the issue proposed.
+
+**Built, 2026-11-15: values beside ids, and an emit that sets the fields it names.**
+The step-2 exit check, against the old CLI's day-to-day jobs, found two gaps in "the old CLI's workable job".
+A fold answers `{"id", "shown"}` lists, so a session that used to start with `sl read project` and see each item's name, status and message needed one `loops get` per setter.
+And re-emitting `name=x status=done`, the old tool's way to update, was read whole, so it silently dropped every field it did not restate.
+Kyle ruled on 2026-11-15: `loops of <thing>` shows the keyed state with each key's value from its live setters, and `read` and `fold` take an option that writes those values beside the ids; and on the single-record path an emit of an existing thing sets the fields it names, with a flag for a whole-read emit, while `emit -` fills nothing in.
+Both are built in `rust/cli` and `loops_place::fill` (`rust/PLACE.md`, choices 15–17). Nothing in the model, the vectors, JavaScript, the core or `loops-eval` changed.
+`loops of` answers the thing's `about`, its heads newest first, its record count and its `values`, read through the core's `live`: a key with one held live setter shows its value; a key with two or more shows each setter's id and value under `setters`, none picked and none merged; a live setter whose payload is erased or withheld shows its `shown` and no value; an erased or withheld live record read whole is listed as `unheld`; a record with `sets` gives only the keys it declares.
+`read --values` and `fold --values` add the same members to each thing of a latest-by that follows `keys`, and a `payload` to each held record a latest-by that follows `prev` or a collect lists, inside each group too; without the option the answer is the protocol's, byte for byte.
+An emit of a thing the store holds a record of, stating neither `--sets` nor `--sets-nothing`, is given the top-level keys it names as `sets`; `--whole` states a whole-read emit and is a usage error beside either.
+The CLI walk replays the exit check's session with the new defaults: an update by `status=done` alone keeps the name and message, and one `read --values` shows each open item's name and status. It also covers a fork merged from two stores shown with both values, an erased and a withheld live setter, an undeclared key, `--whole`, the usage errors and grouped slots. The exit check's other findings (specs written by hand, prefix scans, `ls`, relative times) are not ruled and not built.
+**Implementer choices, for Kyle to confirm:**
+- The flags are `--values` and `--whole`.
+- The first record of a thing, and a root, stay whole-read: they set every key they name. `--whole` there changes nothing.
+- An emit of a held thing that names no field is given `"sets": []`, a pure join, as `--sets-nothing` gives: `loops emit task --of task:1 --about project:y` moves the task and sets nothing. A whole-read emit of nothing takes `--whole`. `--erases` and `--under` change nothing about the inference.
+- Held means a record of the thing is in the store as a fold reads it, settled and admitted, an erased or withheld one included.
+- `loops of` answers `{"thing", "about", "heads", "records", "values", "setters"?, "unheld"?}`: `heads` are shown lines newest first and replace `winner` and `others`, the first head being the winner; `setters` and `unheld` are written only when they hold something. `about` is the union of the heads' mentions.
+- A key whose one held live setter lacks it is unset and not written; a key with several setters is written under `setters` even when none of them holds it.
+- The keys shown are those some live record declares and the top-level keys of each held live record read whole. What an `unheld` record read whole sets is unknown and not guessed.
+- `--values` adds members, never changes one: `values`, `setters` and `unheld` beside a keyed thing's `keys`, `whole` and `heads`, and `payload` on an `{"id", "shown"}` entry whose `shown` is `here`, the payload as stored, declared keys or not. Counts, sums, minima and maxima gain nothing.
+- Existing walk tests that meant a whole-read emit of an existing thing now say `--whole`: the two-store walk's revisions and note, the whole-read emit above keyed ones, and the emit in the `sets` walk that states no `sets`. Walk tests that read `winner` and `others` from `loops of` read `heads`.
 
 ## Decisions for the human
 
@@ -287,7 +309,7 @@ The keyed fold, liveness per key and their laws are built in the next paragraph,
 **Implementer choices, for Kyle to confirm:**
 - `sets` holds keys, not labels: in a changeset a key that starts with `@` is written as given, neither replaced nor looked up (`batch/76`).
 - A held record's `sets` is checked as its other fields are: a stored line whose `sets` is not keys is refused with the writer's code, and one in another order is not canonical. The reader's record in fold, realm, scenario and spec vectors carries `sets` since the keyed fold below.
-- `loops emit` takes `--sets <key>`, once per key, and `--sets-nothing` for an empty set; the two together are a usage error, and `--sets ""` is the writer's `sets-not-keys`. `emit -` takes `sets` as a line's envelope field. Nothing is filled in.
+- `loops emit` takes `--sets <key>`, once per key, and `--sets-nothing` for an empty set; the two together are a usage error, and `--sets ""` is the writer's `sets-not-keys`. `emit -` takes `sets` as a line's envelope field. Nothing is filled in over either flag; an emit with neither is given the keys it names when its thing is held (Step 2, built 2026-11-15).
 - A `where` test cannot name `env.sets`: no test reads it.
 
 **Built, 2026-11-14: latest-by following `keys`**, section 2 of the design note below and the part of section 3 a latest-by slot needs to select.
