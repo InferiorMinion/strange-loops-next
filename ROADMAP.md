@@ -14,13 +14,13 @@ The law index has 99 entries, 951 theorems, and 6 boundary witnesses.
 See [the law index](design/laws/laws.json) and [proof and boundary data](design/laws/).
 These proofs apply only under their stated premises.
 
-The tree has 599 JSON fixtures: 587 generated fixtures and 12 standard fixtures.
-Lean replays 578 generated fixtures; 9 occurred fixtures use separate checks.
+The tree has 600 JSON fixtures: 588 generated fixtures and 12 standard fixtures.
+Lean replays 579 generated fixtures; 9 occurred fixtures use separate checks.
 Rust checks every fixture, six JCS byte pairs, 4,000 binary64 cases, and 128 SUPERCOP signing cases with ed25519-dalek.
-Rust passes 167 tests; JavaScript passes 6,910 vector checks and 39 regression and law tests.
+Rust passes 167 tests; JavaScript passes 6,944 vector checks and 39 regression and law tests.
 Both also check that `spec/run` answers write their members, group, thing and key names included, in the model's order; JavaScript checks `fold/latest-by` answers' thing keys too.
 JavaScript refuses a held record's invalid `emitted` or `occurred` before it answers, as the Lean and Rust readers do.
-The fuzz suite passes 59 tests.
+The fuzz suite passes 60 tests.
 See [vectors](vectors/README.md), [Rust boundaries](rust/GAPS.md), and [the mutation report](model/mutate/REPORT.md).
 These checks provide bounded evidence, not complete JCS or cryptographic correctness.
 They do not certify browser accessibility, external links, or official ASD dictionary compliance.
@@ -32,12 +32,12 @@ Numeric folds read safe whole values only.
 Raw constructors and theorem premises retain separate domains.
 
 The gates pass locally on Node 25.9, and CI runs every gate on Node 22.
-The `keyed-slots-1` campaign, over the generator after count, sum, min, max and collect came to follow `keys`, checks 5,600 cases, 800 per family, in 135.76 seconds.
-It reports 3,607 matches, 1,600 protocol refusals, 393 shared decoder refusals, and no mismatch.
-Seventeen wrong ports of those slots in the JavaScript witness, two to four for each fold type and five for `by`, each give mismatches on the same seed, over its 800 spec and 800 scenario cases: from 11 and 0 (a max passing over an unheld live setter) to 197 and 561 (a thing with no key not counted ungrouped); the table is in [the campaign report](interop/fuzz/REPORT.md).
-The `keyed-1`, `sets-1`, `under-1`, `issue-7-1`, `by-collect-1`, `by-shape-1`, `by-1`, `shape-follow-1`, `shape-under-2` and `follow-2` campaigns, each over an earlier generator, found no mismatch either.
+The `keyed-slots-2` campaign, over the generator after count, sum, min, max and collect came to follow `keys` and keyed slots came to ask two and three payload tests of a thing, checks 5,600 cases, 800 per family, in 164.31 seconds.
+It reports 3,629 matches, 1,590 protocol refusals, 381 shared decoder refusals, and no mismatch.
+Eighteen wrong ports in the JavaScript witness, two to four for each fold type, five for `by` and one for the combination of a thing's payload tests, each give mismatches on the same seed, over its 800 spec and 800 scenario cases: from 5 and 2 (a max passing over an unheld live setter, which `spec/run/50` now also pins) to 198 and 559 (a thing with no key not counted ungrouped); an unknown test outranking one answering no gives 108 and 264. The table is in [the campaign report](interop/fuzz/REPORT.md).
+The `keyed-slots-1` campaign, over the generator before keyed slots asked several payload tests, found no mismatch either, nor did the `keyed-1`, `sets-1`, `under-1`, `issue-7-1`, `by-collect-1`, `by-shape-1`, `by-1`, `shape-follow-1`, `shape-under-2` and `follow-2` campaigns, each over an earlier generator.
 Decoder refusals are not agreement; for record and batch inputs JavaScript must also report them as malformed.
-The generator carries issue #1's shapes and labels in `under`, followed count, sum, min and max slots, grouped slots, keys written as number text (issue #7), an unknown key beside an envelope that is not an object, `under` targets held or not, `sets` in record and changeset envelopes, latest-by following `keys`, count, sum, min, max and collect following `keys` with `by`, `where` and `limit`, and `sets` and joins on the records a reader holds, so the same seeds now generate different inputs; earlier campaigns' counts are historical.
+The generator carries issue #1's shapes and labels in `under`, followed count, sum, min and max slots, grouped slots, keys written as number text (issue #7), an unknown key beside an envelope that is not an object, `under` targets held or not, `sets` in record and changeset envelopes, latest-by following `keys`, count, sum, min, max and collect following `keys` with `by`, `where` and `limit`, keyed slots with two and three payload tests, and `sets` and joins on the records a reader holds, so the same seeds now generate different inputs; earlier campaigns' counts are historical.
 The `d8ab-1` and `d1-d6-1` campaigns found no mismatch.
 The 42 duplicate-base lens mismatches of the `step1-3` campaign are the class D1 settles.
 `interop/fuzz/summarize.py` derives these counts from tracked summaries.
@@ -317,7 +317,7 @@ Such a slot reads things, selected as latest-by following `keys` selects them (`
 Count counts the selected things; sum, min and max read the field from its one live setter (`soleSetter`); collect lists the selected things' live records (`liveIn`). The results keep the shapes of the same slots without `follow`; nothing forced a change.
 With `by`, a payload key is read from each live setter of the field and an envelope key from each chosen head (`By.thingKeys`), and each group is the slot without `by` over its things (`Slot.keyedGrouped`).
 The laws are `keyed.slots`, `keyed.by` and `keyed.whole-read`: when every record is read whole and every thing has one head, each such slot, grouped or not, gives what the same slot following `prev` gives (`Slot.keys_as_prev`). `spec.set` covers them; `spec.slice` does not, and its premise now leaves out every slot that follows `keys`, as the spec-slice sweep does.
-`spec/run/42`–`49` pin it, `42` being the note's count of open tasks beside the same count following `prev`; the CLI walk counts, sums and collects through `loops fold`.
+`spec/run/42`–`50` pin it, `42` being the note's count of open tasks beside the same count following `prev`; the CLI walk counts, sums and collects through `loops fold`.
 The slice laws of section 4, the heads law among them, and the anchor rule and copied `about` in `loops emit` (section 5), are not built.
 **Implementer choices, for Kyle to confirm:**
 - A field with no live setter is unread to sum, min and max, as a record without the field is; so is one whose live setter holds no safe whole number there. A record with `sets` that does not declare the field is no setter of it, so a field its payload holds but does not declare is unread too (`spec/run/44`, `task:5`).
