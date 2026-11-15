@@ -45,6 +45,7 @@ Ids use layer 0's encoding, but these fixture digests are made up.
 The `n` field supplies held safe-whole numbers to the raw sum and extrema fixtures.
 Selected-reader semantics do not redefine these raw primitives.
 Optional `observer`, `erases` and `fields` supply the observer, erased ids and further payload fields.
+An optional `sets` is the envelope's, kept when the payload is not: a reader record of any family may carry it, and only a latest-by that follows `keys` reads it.
 A hidden payload uses `shown` (`withheld` or `erased`) instead of `value`, `n` and `fields`.
 
 ## `fold/heads`
@@ -101,6 +102,11 @@ Supersession runs per thing over the admitted set before selection.
 Collect, count, sum, min and max without `follow` take every selected record, superseded or not.
 With it, every head of a forked thing counts; count counts an erased or withheld head by its envelope, and sum, min and max count it unread (`spec/run/16`–`18`).
 A slot with `by` gives `{"groups": {<key>: <result>}, "unread": n, "ungrouped": m}`, each `<result>` shaped as the slot without `by` (`spec/run/21`–`25`).
+A latest-by with `"follow": "keys"` gives `{"things": {<thing>: {"keys": {<key>: [...]}, "whole": [...], "heads": [...]}}, "unread": n}` (`spec/run/31`–`41`).
+A record's optional `sets` lists the keys it sets: without it the record is read whole, and `"sets": []` sets none.
+`keys` lists each key some live record declares, with its live setters; `whole` the live records read whole; `heads` the heads; each newest first.
+`from` and envelope tests choose heads; each payload test is asked of every live setter of its field, and a thing whose tests are unknown is unread once.
+`scenario/keys-01-settled-setter` reads a setter withheld, erased without its eraser and erased.
 Settling, admission and heads come first, over every record; each group is the slot without `by` or `where` over the records selected into it, so a collect's `limit` is per group.
 A `where` that answers unknown, or a payload key on a payload not held, adds to the top-level `unread`; a key readably absent adds to `ungrouped`; a record with two keys is in two groups.
 A whole number key is written in decimal and a boolean as `true` or `false`, so text `"1"` and the number 1 share group `1`.

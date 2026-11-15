@@ -67,13 +67,13 @@
       "purpose": "Hold one answer.",
       "state": "A name, one fold, and optionally <code>where</code>, <code>follow</code>, <code>limit</code> and <code>by</code>.",
       "principle": "With each id supplied once, the same record set gives every slot the same value. A slot over heads returns only records that remain heads of at least one thing, and a count, sum, min or max over heads folds every current record and nothing else. A slot with <code>by</code> splits what it selects into groups, each the slot's own answer over its records, and accounts for every selected record.",
-      "laws": ["spec.set", "spec.after-supersession", "spec.follow", "by.set", "by.accounting"]
+      "laws": ["spec.set", "spec.after-supersession", "spec.follow", "keyed.select", "by.set", "by.accounting"]
     },
     {
       "word": "fold",
       "status": "proved",
       "purpose": "Turn a set of records into state.",
-      "state": "One of six: <code>count</code>, <code>sum</code>, <code>min</code>, <code>max</code>, <code>latest-by</code>, <code>collect</code>. The first four accumulate. Latest-by runs over heads. The others run over heads when they follow <code>prev</code>; otherwise they read every selected record.",
+      "state": "One of six: <code>count</code>, <code>sum</code>, <code>min</code>, <code>max</code>, <code>latest-by</code>, <code>collect</code>. The first four accumulate. Latest-by runs over heads, or following <code>keys</code> over each thing's live setters. The others run over heads when they follow <code>prev</code>; otherwise they read every selected record.",
       "principle": "The read path hands each id over once. Commuting accumulators accept a new record incrementally. Over-head proofs use cached LatestBy state, not just a cached answer.",
       "laws": ["acc.set", "heads.set", "latest-by.converge"]
     },
@@ -121,7 +121,7 @@
     { "word": "take", "family": "read", "status": "proved", "says": "A source takes the records its store, kinds, mention and thing choose.", "laws": ["spec.select"] },
     { "word": "test", "family": "read", "status": "proved", "says": "A <code>where</code> test answers yes, no, or, on a payload the reader lacks, unknown.", "laws": ["where.total", "view.refines"] },
     { "word": "fold", "family": "read", "status": "proved", "says": "Turn what was taken into a slot's value.", "laws": ["acc.set", "heads.set"] },
-    { "word": "follow", "family": "read", "status": "proved", "says": "Walk <code>prev</code> within a thing to its heads: what nothing of it replaces.", "laws": ["latest-by.order", "thing.local"] },
+    { "word": "follow", "family": "read", "status": "proved", "says": "Walk <code>prev</code> within a thing to its heads: what nothing of it replaces. Following <code>keys</code>, latest-by reads a thing by its live setters: for each key, the setters nothing above them replaces for that key.", "laws": ["latest-by.order", "thing.local", "keyed.live"] },
     { "word": "group", "family": "read", "status": "proved", "says": "Split what a slot selects by a key read from each record: its kind, its observer, what it mentions under a prefix, or a payload field. After settling, admission and the heads, never before.", "laws": ["by.after-admission", "by.accounting", "by.partition"] },
     { "word": "render", "family": "text", "status": "proved", "says": "Render keyed sections with nonempty, distinct ids. Audience-aware views remain planned.", "laws": ["lens.escaping"] },
     { "word": "parse", "family": "text", "status": "proved", "says": "Read edited text back, refusing what it can't read.", "laws": ["lens.round-trip", "lens.refuse"] },
@@ -147,7 +147,7 @@
     "verbs": ["emit", "refuse", "settle", "admit", "take", "test", "fold", "follow", "tick", "render", "parse", "apply"],
     "rows": [
       { "noun": "record", "cells": { "emit": "written", "refuse": "a bad envelope or payload", "settle": "one per id", "admit": "entitled to its prev", "take": "by envelope", "test": "env. or payload", "fold": "into slots", "follow": "via prev", "apply": "what an edit becomes" } },
-      { "noun": "thing", "cells": { "follow": "its heads", "fold": "latest-by of" } },
+      { "noun": "thing", "cells": { "follow": "its heads, or its live setters", "fold": "latest-by of" } },
       { "noun": "store", "cells": { "emit": "appended to", "take": "named by a source", "settle": "its places" } },
       { "noun": "view", "cells": { "settle": "made by", "admit": "made by", "test": "unknown when withheld", "fold": "same heads" } },
       { "noun": "spec", "cells": { "refuse": "first broken rule", "parse": "into its parsed form" } },
