@@ -17,7 +17,7 @@ const labelsOf = (d) => [...(d.env.about ?? []), d.env.of, ...(d.env.prev ?? [])
 const WRITE_CODES = [
   "kind-empty", "observer-not-typed", "emitted-not-rfc3339", "occurred-not-span",
   "about-not-typed", "of-not-typed", "prev-not-record-id", "under-not-record-id",
-  "erases-not-record-id", "of-missing", "salt-not-16-bytes", "member-duplicate", "number-out-of-range",
+  "erases-not-record-id", "sets-not-keys", "of-missing", "salt-not-16-bytes", "member-duplicate", "number-out-of-range",
 ];
 
 // A record id that names nothing, standing in for a label while a draft is

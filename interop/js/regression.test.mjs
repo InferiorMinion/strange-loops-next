@@ -98,7 +98,7 @@ test("an envelope's shape refuses by name: not an object, a field left out or of
   assert.equal(refused([{ ...noKind, observer: 7 }]), "kind-empty");
   const fields = { kind: "kind-empty", observer: "observer-not-typed", emitted: "emitted-not-rfc3339",
     occurred: "occurred-not-span", about: "about-not-typed", of: "of-not-typed", prev: "prev-not-record-id",
-    under: "under-not-record-id", erases: "erases-not-record-id" };
+    under: "under-not-record-id", erases: "erases-not-record-id", sets: "sets-not-keys" };
   for (const [k, code] of Object.entries(fields)) {
     for (const v of [7, null, true, {}, [7]]) assert.equal(refused([{ ...writerEnv, [k]: v }]), code, `${k}: ${JSON.stringify(v)}`);
   }
@@ -222,6 +222,31 @@ test("of is a known envelope key, checked by value after the shape", () => {
   const draft = (env, salt = base32(writerSalt)) => ({ env, salt, payload: {} });
   assert.deepEqual(resolveBatch([draft({ ...writerEnv, prev: [id(1)] }, base32(new Uint8Array(15)))], [{ id: id(1), prev: [] }]), { refused: "of-missing" });
   assert.deepEqual(resolveBatch([draft({ ...writerEnv, of: "@nobody" })], []), { refused: "label-unknown" });
+});
+
+test("sets holds key names, canonical as about is, and an empty one is written", () => {
+  const line = (env) => JSON.parse(seal(env, writerSalt, {}, writerSeed).line).env;
+  const id = (env) => seal(env, writerSalt, {}, writerSeed).id;
+  assert.deepEqual(line({ ...writerEnv, sets: ["title", "due", "title"] }).sets, ["due", "title"]);
+  assert.equal(id({ ...writerEnv, sets: ["title", "due"] }), id({ ...writerEnv, sets: ["due", "title", "due"] }));
+  // Absent and empty differ: an empty sets is written, and names another record.
+  assert.deepEqual(line({ ...writerEnv, sets: [] }).sets, []);
+  assert.equal("sets" in line(writerEnv), false);
+  assert.notEqual(id({ ...writerEnv, sets: [] }), id(writerEnv));
+  // Not an array, a member that is not text, or an empty name.
+  for (const sets of [7, null, "title", {}, [7], [null], [["title"]], [""], ["title", ""]]) {
+    assert.equal(problem({ ...writerEnv, sets }), "sets-not-keys", JSON.stringify(sets));
+  }
+  // After erases, before of-missing; nothing reads the payload.
+  assert.equal(problem({ ...writerEnv, erases: ["x"], sets: [""] }), "erases-not-record-id");
+  assert.equal(problem({ ...writerEnv, prev: [id(writerEnv)], sets: [7] }), "sets-not-keys");
+  assert.equal(problem({ ...writerEnv, sets: ["status"] }), null);
+  assert.ok(seal({ ...writerEnv, sets: ["status"] }, writerSalt, "done", writerSeed).id);
+  // A key that looks like a label is a key: a batch neither replaces nor looks it up.
+  const d = (label, env) => ({ ...(label && { label }), env: { ...writerEnv, ...env }, salt: base32(writerSalt), payload: {} });
+  const { records } = resolveBatch([d("@t", {}), d(null, { of: "@t", prev: ["@t"], sets: ["@t", "@nowhere"] })], []);
+  assert.deepEqual(JSON.parse(records[1].env_canonical).sets, ["@nowhere", "@t"]);
+  assert.deepEqual(resolveBatch([d(null, { sets: [""] }), d(null, { erases: ["x"] })], []), { refused: "erases-not-record-id" });
 });
 
 test("raw shape precedes every variant value, batch label and seed", () => {
