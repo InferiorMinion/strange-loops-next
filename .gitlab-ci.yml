@@ -127,7 +127,8 @@ ci-image:
 
 .rust:
   stage: check
-  image: rust:1-bookworm
+  # The release rust/rust-toolchain.toml names.
+  image: rust:1.100-bookworm
   variables:
     CARGO_HOME: $CI_PROJECT_DIR/.cargo-home
   cache:
@@ -136,6 +137,7 @@ ci-image:
     policy: $CACHE_POLICY
   before_script:
     - rustup component add rustfmt clippy
+    - (cd rust && rustc --version)
     - export PATH="$CARGO_HOME/bin:$PATH"
 
 rust:

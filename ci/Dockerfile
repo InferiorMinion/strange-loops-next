@@ -1,5 +1,6 @@
 # The CI image for the model gate: Node 22, elan with the pinned Lean toolchain,
-# and a minimal stable Rust for the loops-eval build.
+# and Rust for the loops-eval build: the release rust/rust-toolchain.toml names,
+# with the components it lists, so that no job downloads them.
 #
 # .gitlab-ci.yml builds it with LEAN_TOOLCHAIN read from model/lean-toolchain,
 # and rebuilds it whenever this file or that one changes. If the two ever
@@ -19,5 +20,6 @@ RUN test -n "$LEAN_TOOLCHAIN" \
  && curl -sSfL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh \
     | sh -s -- -y --no-modify-path --default-toolchain "$LEAN_TOOLCHAIN" \
  && curl -sSf https://sh.rustup.rs \
-    | sh -s -- -y --no-modify-path --profile minimal --default-toolchain stable \
+    | sh -s -- -y --no-modify-path --profile minimal --default-toolchain 1.100.0 \
+         --component rustfmt --component clippy \
  && lean --version && cargo --version && node --version

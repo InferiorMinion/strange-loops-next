@@ -1,0 +1,10 @@
+# The Rust release every gate uses, here and in CI. Kyle, 2026-11-13: pinned,
+# after Rust 1.100's clippy failed main on code no merge request had touched.
+# rustup reads this file for every cargo run under rust/. The CI images
+# (.gitlab-ci.yml, ci/Dockerfile, .github/workflows/ci.yml) name the same
+# release so that no job downloads it; if they fall behind, this file still
+# decides. To move to a new release, change it here and in those three.
+[toolchain]
+channel = "1.100.0"
+components = ["rustfmt", "clippy"]
+profile = "minimal"
