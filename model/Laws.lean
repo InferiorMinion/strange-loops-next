@@ -20,3 +20,4 @@ import Laws.Order
 import Laws.IdText
 import Laws.IdSource
 import Laws.Read
+import Laws.KeyedSpecSlice
