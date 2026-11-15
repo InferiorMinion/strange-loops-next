@@ -847,6 +847,11 @@
    "states":
    "∀ {sp : Loops.Spec} {S W : List Loops.Record} {may : Loops.Record → Loops.Record → Bool}, Loops.EnvOnly may → Loops.Forms W → Loops.SpecSlice sp S W → ∀ {r : Loops.Record}, r ∈ Loops.realm may W → sp.takes r = true → ∀ (t : String), (∃ q, q ∈ Loops.realm may S ∧ q.isOf t = true ∧ r.id ∈ q.prev) ↔ ∃ q, q ∈ Loops.realm may W ∧ q.isOf t = true ∧ r.id ∈ q.prev",
    "module": "Laws.SpecSlice"},
+  "Loops.refused_needs_targets":
+  {"uses": [],
+   "states":
+   "Loops.SpecSlice Loops.ks.spec [Loops.rf.f, Loops.rf.g] [Loops.rf.y, Loops.rf.f, Loops.rf.g] ∧ Loops.ks.spec.run (Loops.settle [Loops.rf.f, Loops.rf.g]) ≠ Loops.ks.spec.run (Loops.settle [Loops.rf.y, Loops.rf.f, Loops.rf.g])",
+   "module": "Laws.KeyedSpecSlice"},
   "Loops.refuse_ne_ok":
   {"uses": [],
    "states":
@@ -4577,6 +4582,11 @@
    "states":
    "∀ {may : Loops.Record → Loops.Record → Bool} {t : String} {S W : List Loops.Record}, Loops.KeyedPart may t S W → ∀ (r : Loops.Record), r ∈ S → r ∈ W",
    "module": "Laws.LiveSlice"},
+  "Loops.KeyedPart.of_targets":
+  {"uses": ["Loops.SameEnvelope.refl", "Loops.entitled_part"],
+   "states":
+   "∀ {may : Loops.Record → Loops.Record → Bool} {S W : List Loops.Record}, Loops.EnvOnly may → ∀ {t : String}, Loops.Forms W → (∀ (r : Loops.Record), r ∈ S → r ∈ W) → (∀ (a : Loops.Record), a ∈ S → a.isOf t = true → ∀ (b : Loops.Record), b ∈ W → b.id = a.id → b ∈ S) → (∀ (a : Loops.Record), a ∈ S → a.isOf t = true → ∀ (e : Loops.Record), e ∈ W → e.erases.contains a.id = true → e ∈ S) → (∀ (r : Loops.Record), r ∈ Loops.settle W → r.isOf t = true → (∃ a, a ∈ S ∧ a.id = r.id) → Loops.entitled may (Loops.settle W) r = true ∨ ∀ (q : Loops.Record), q ∈ W → q.id ∈ r.prev → q ∈ S) → Loops.KeyedPart may t S W",
+   "module": "Laws.KeyedSpecSlice"},
   "Loops.KeyedPart.forms":
   {"uses": [],
    "states":
@@ -4590,7 +4600,7 @@
   "Loops.KeyedPart.admitted":
   {"uses": [],
    "states":
-   "∀ {may : Loops.Record → Loops.Record → Bool} {t : String} {S W : List Loops.Record}, Loops.KeyedPart may t S W → ∀ (r : Loops.Record), r ∈ Loops.settle W → r.isOf t = true → (∃ a, a ∈ S ∧ a.id = r.id) → Loops.entitled may (Loops.settle W) r = true",
+   "∀ {may : Loops.Record → Loops.Record → Bool} {t : String} {S W : List Loops.Record}, Loops.KeyedPart may t S W → ∀ (r : Loops.Record), r ∈ Loops.settle W → r.isOf t = true → (∃ a, a ∈ S ∧ a.id = r.id) → Loops.entitled may (Loops.settle S) r = true → Loops.entitled may (Loops.settle W) r = true",
    "module": "Laws.LiveSlice"},
   "Loops.KeyedCover.things":
   {"uses": [],
