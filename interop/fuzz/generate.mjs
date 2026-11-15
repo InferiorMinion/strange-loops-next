@@ -107,6 +107,11 @@ function spec(rng, rs) {
       'keys-score-value-greatest': { max: 'n', follow: 'keys', where: { score: { below: 5 }, value: { not: 'no' } } },
       'keys-flag-score-items': { collect: true, follow: 'keys', where: { flag: { is: false }, score: { 'at-least': 2 } } },
       'keys-flag-score-by-tag': { count: true, follow: 'keys', by: 'tag', where: { flag: { is: true }, score: { below: 6 }, rank: { present: true } } },
+      // A collect's limit following keys counts things, each listed whole: a
+      // limit of one or two falls inside a thing's live records, and under
+      // `by` within each group, where a forked thing is in two.
+      'keys-first-items': { collect: true, follow: 'keys', limit: 1 + rng.int(2) },
+      'keys-by-observer-items': { collect: true, follow: 'keys', limit: 1, by: 'env.observer' },
     },
   };
 }
