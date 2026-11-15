@@ -81,10 +81,10 @@ test("a time that is no span refuses the whole, not only a slice that orders it"
 // kind that the generator can exercise must matter at least once.
 test("a spec slice answers as the whole, over generated specs and stores", () => {
   const seen = { pairs: 0, partial: 0, erasers: 0, targets: 0, successors: 0, followed: 0, followedMatters: 0, grouped: 0, groupedMatters: 0, groupedHeads: 0, threw: 0, keyed: 0, keyedDiffers: 0 };
-  // A latest-by that follows keys is outside spec.slice: it reads live setters
-  // the spec does not take, so this slice need not hold them (Slot.run_slice
-  // takes no such slot). The sweep checks the other slots, and counts how often
-  // the keyed ones differ over this slice.
+  // A slot that follows keys, of any fold type, is outside spec.slice: it reads
+  // live setters the spec does not take, so this slice need not hold them
+  // (Slot.run_slice takes no such slot). The sweep checks the other slots, and
+  // counts how often the keyed ones differ over this slice.
   const keyedOf = (spec) => Object.entries(spec.fold).filter(([, s]) => s.follow === "keys").map(([n]) => n);
   const unkeyed = (spec) => ({ ...spec, fold: Object.fromEntries(Object.entries(spec.fold).filter(([, s]) => s.follow !== "keys")) });
   // The slots that follow prev and accumulate: count, sum, min and max.
