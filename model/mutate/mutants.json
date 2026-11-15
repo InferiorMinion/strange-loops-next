@@ -950,7 +950,7 @@
     "before": "| ys => [(k, .arr (ys.map .str))]",
     "after": "| ys => [(k, .arr (ys.reverse.map .str))]",
     "reason": "Reverse the canonical set.",
-    "definition": "Loops.Env.toJson"
+    "definition": "Loops.Env.baseJson"
   },
   {
     "id": "finish-families-acc-fold",
