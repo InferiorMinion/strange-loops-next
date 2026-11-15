@@ -254,6 +254,15 @@
    "states":
    "∀ (rs : List Loops.Record) (ids : List Loops.RecordId), Loops.upward rs ids = match _hf : List.find? (fun q => !ids.contains q.id && Loops.namesIn ids q) rs with | none => ids | some q => Loops.upward rs (q.id :: ids)",
    "module": "Loops.Live"},
+  "Loops.untaken_of_forms":
+  {"uses":
+   ["Loops.Spec.takes_env",
+    "Loops.isOf_env",
+    "Loops.mem_admit",
+    "Loops.settle_form"],
+   "states":
+   "∀ {may : Loops.Record → Loops.Record → Bool} {S : List Loops.Record} (sp : Loops.Spec) {t : String}, (∀ (a : Loops.Record), a ∈ S → a.isOf t = true → sp.takes a = false) → ∀ (r : Loops.Record), r ∈ Loops.recordsOf t (Loops.realm may S) → sp.takes r = false",
+   "module": "Laws.KeyedSpecSlice"},
   "Loops.unreadable_refused":
   {"uses": [],
    "states":
@@ -278,6 +287,11 @@
    "states":
    "∀ (e : Loops.Env) (s : Option (List String)), { kind := e.kind, observer := e.observer, emitted := e.emitted, occurred := e.occurred, about := e.about, of := e.of, prev := e.prev, under := e.under, erases := e.erases, sets := s }.toJson = Loops.Json.obj (e.baseJson ++ Loops.Env.setsJson s)",
    "module": "Laws.Record"},
+  "Loops.things_filter":
+  {"uses": ["Loops.Covers.sub", "Loops.canon_ext", "Loops.mem_thingsOf"],
+   "states":
+   "∀ {ys xs : List Loops.Record} {evy evx : String → Loops.Tri}, (∀ (t : String), Loops.Covers t ys xs ∨ evy t = Loops.Tri.no ∧ evx t = Loops.Tri.no) → (∀ (t : String), Loops.Covers t ys xs → evy t = evx t) → (∀ (t : String), Loops.Covers t ys xs → evx t ≠ Loops.Tri.no → t ∈ Loops.thingsOf ys) → ∀ (v : Loops.Tri), v ≠ Loops.Tri.no → List.filter (fun x => evy x == v) (Loops.thingsOf ys) = List.filter (fun x => evx x == v) (Loops.thingsOf xs)",
+   "module": "Laws.KeyedSpecSlice"},
   "Loops.thingsOf_view":
   {"uses": ["Loops.canonSet_eq", "Loops.thing_view"],
    "states":
@@ -323,6 +337,11 @@
    "states":
    "∀ {sel : Loops.Record → Bool} {cs : List Loops.Cond} {xs : List Loops.Record} {t : String}, Loops.thingEv sel cs xs t = Loops.Tri.yes ↔ (∃ h, h ∈ (Loops.stateIn t xs).heads ∧ Loops.chosen sel cs h = true) ∧ Loops.thingTest cs (Loops.recordsOf t xs) = Loops.Tri.yes",
    "module": "Laws.KeyedSlots"},
+  "Loops.thingEv_untaken":
+  {"uses": [],
+   "states":
+   "∀ {zs : List Loops.Record} {t : String} {sel : Loops.Record → Bool} (cs : List Loops.Cond), (∀ (r : Loops.Record), r ∈ (Loops.stateIn t zs).heads → sel r = false) → Loops.thingEv sel cs zs t = Loops.Tri.no",
+   "module": "Laws.KeyedSpecSlice"},
   "Loops.thingEv_unchosen":
   {"uses": [],
    "states":
@@ -334,6 +353,12 @@
    "states":
    "∀ (sel : Loops.Record → Bool) (cs : List Loops.Cond) {xs ys : List Loops.Record}, Loops.Addressed xs → Loops.Addressed ys → (∀ (r : Loops.Record), r ∈ xs ↔ r ∈ ys) → Loops.thingEv sel cs xs = Loops.thingEv sel cs ys",
    "module": "Laws.Spec"},
+  "Loops.thingEv_in":
+  {"uses":
+   ["Loops.Covers.live", "Loops.mem_stateIn_heads_iff", "Loops.mem_thingsOf"],
+   "states":
+   "∀ {ys xs : List Loops.Record} {t : String}, Loops.Addressed xs → Loops.Covers t ys xs → ∀ {sel : Loops.Record → Bool} {cs : List Loops.Cond}, Loops.thingEv sel cs xs t ≠ Loops.Tri.no → t ∈ Loops.thingsOf ys",
+   "module": "Laws.KeyedSpecSlice"},
   "Loops.target_needs_witness":
   {"uses": [],
    "states":
@@ -1278,6 +1303,11 @@
    "states":
    "∀ {rs : List Loops.Record} {ids : List Loops.RecordId} {i : Loops.RecordId}, i ∈ Loops.upward rs ids ↔ Loops.Reach rs ids i",
    "module": "Laws.Live"},
+  "Loops.mem_thingsOf":
+  {"uses": ["Loops.isOf_iff", "Loops.mem_canonSet"],
+   "states":
+   "∀ {zs : List Loops.Record} {t : String}, t ∈ Loops.thingsOf zs ↔ ∃ r, r ∈ zs ∧ r.isOf t = true",
+   "module": "Laws.KeyedSpecSlice"},
   "Loops.mem_stateIn_heads_iff":
   {"uses":
    ["Loops.LatestBy.Inv.heads_mem",
@@ -1628,6 +1658,11 @@
    "states":
    "∀ {kvs : List (String × Loops.Json)}, (Loops.Json.obj kvs).keysDistinct = true → (List.map (fun x => x.fst) kvs).Nodup",
    "module": "Laws.Write"},
+  "Loops.keyed_slot_needs_live":
+  {"uses": [],
+   "states":
+   "Loops.SpecSlice Loops.ks.spec [Loops.ks.n, Loops.ks.h] [Loops.ks.m, Loops.ks.n, Loops.ks.h] ∧ Loops.ks.spec.run (Loops.settle [Loops.ks.n, Loops.ks.h]) ≠ Loops.ks.spec.run (Loops.settle [Loops.ks.m, Loops.ks.n, Loops.ks.h])",
+   "module": "Laws.KeyedSpecSlice"},
   "Loops.keyed_slice_needs_erasers":
   {"uses": [],
    "states":
@@ -1644,6 +1679,18 @@
    "states":
    "∀ (ty : Loops.FoldType) (ev : String → Loops.Tri) {xs ys : List Loops.Record}, Loops.Addressed xs → Loops.Addressed ys → (∀ (r : Loops.Record), r ∈ xs ↔ r ∈ ys) → Loops.keyedValue ty xs ev = Loops.keyedValue ty ys ev",
    "module": "Laws.Spec"},
+  "Loops.keyedValue_part":
+  {"uses":
+   ["Loops.Acc.overThings_part",
+    "Loops.Covers.keyedIn",
+    "Loops.Covers.liveIn",
+    "Loops.Covers.soleSetter",
+    "Loops.liveIn_sub",
+    "Loops.newestFirst_eq",
+    "Loops.things_filter"],
+   "states":
+   "∀ {ys xs : List Loops.Record} {evy evx : String → Loops.Tri}, Loops.Addressed xs → Loops.Addressed ys → ∀ (ty : Loops.FoldType), (∀ (t : String), Loops.Covers t ys xs ∨ evy t = Loops.Tri.no ∧ evx t = Loops.Tri.no) → (∀ (t : String), Loops.Covers t ys xs → evy t = evx t) → (∀ (t : String), Loops.Covers t ys xs → evx t ≠ Loops.Tri.no → t ∈ Loops.thingsOf ys) → Loops.keyedValue ty ys evy = Loops.keyedValue ty xs evx",
+   "module": "Laws.KeyedSpecSlice"},
   "Loops.keyedValue_count":
   {"uses": [],
    "states":
@@ -1693,6 +1740,11 @@
    "states":
    "∀ (sel : Loops.Record → Bool) (cs : List Loops.Cond) {xs ys : List Loops.Record}, Loops.Addressed xs → Loops.Addressed ys → (∀ (r : Loops.Record), r ∈ xs ↔ r ∈ ys) → Loops.keyedOf sel cs xs = Loops.keyedOf sel cs ys",
    "module": "Laws.Live"},
+  "Loops.keyedOf_as_value":
+  {"uses": ["Loops.keyedIn_heads"],
+   "states":
+   "∀ (sel : Loops.Record → Bool) (cs : List Loops.Cond) (zs : List Loops.Record), Loops.keyedOf sel cs zs = Loops.keyedValue (Loops.FoldType.latestBy Loops.Follow.keys) zs (Loops.thingEv sel cs zs)",
+   "module": "Laws.KeyedSpecSlice"},
   "Loops.keyedIn_whole_read":
   {"uses":
    ["Loops.LatestBy.Inv.heads_sorted",
@@ -2055,11 +2107,21 @@
    "states":
    "∀ {p t : String} {follow : Option Loops.Follow} {limit : Option Nat} {arg : Loops.Json} {ty : Loops.FoldType}, Loops.foldType p t follow limit arg = Except.ok ty → (∀ (k : Nat), limit = some k → 0 < k) → ty.Fits",
    "module": "Laws.Parse"},
+  "Loops.flatMap_congr_mem":
+  {"uses": [],
+   "states":
+   "∀ {α : Type u_1} {β : Type u_2} {f g : α → List β} {l : List α}, (∀ (a : α), a ∈ l → f a = g a) → List.flatMap f l = List.flatMap g l",
+   "module": "Laws.KeyedSpecSlice"},
   "Loops.firstRefusal_set":
   {"uses": [],
    "states":
    "∀ {cs ds : List String}, (∀ (c : String), c ∈ cs ↔ c ∈ ds) → (∀ (c : String), c ∈ cs → c ∈ Loops.writeCodes) → Loops.firstRefusal cs = Loops.firstRefusal ds",
    "module": "Laws.Write"},
+  "Loops.filter_and":
+  {"uses": [],
+   "states":
+   "∀ {α : Type u_1} (L : List α) (p q : α → Bool), List.filter (fun a => p a && q a) L = List.filter q (List.filter p L)",
+   "module": "Laws.KeyedSpecSlice"},
   "Loops.filterMap_some_eq":
   {"uses": [],
    "states":
@@ -2070,6 +2132,11 @@
    "states":
    "∀ {α β : Type} (g : α → Option β) (l : List α), List.filterMap g (List.filter (fun a => (g a).isSome) l) = List.filterMap g l",
    "module": "Laws.SpecSlice"},
+  "Loops.filterMap_congr_mem":
+  {"uses": [],
+   "states":
+   "∀ {α : Type u_1} {β : Type u_2} {f g : α → Option β} {l : List α}, (∀ (a : α), a ∈ l → f a = g a) → List.filterMap f l = List.filterMap g l",
+   "module": "Laws.KeyedSpecSlice"},
   "Loops.fieldArg_ok":
   {"uses": ["Loops.Except.pure_eq_ok", "Loops.refuse_ne_ok"],
    "states":
@@ -2256,6 +2323,20 @@
    "states":
    "∀ {cs : List Char} {a b : Int}, Loops.dateDays? cs = some (a, b) → a < b",
    "module": "Laws.Time"},
+  "Loops.covers_of_live":
+  {"uses":
+   ["Loops.Witnessed.congr",
+    "Loops.anchored_witnessed",
+    "Loops.covers_of_keyedPart",
+    "Loops.realm_part"],
+   "states":
+   "∀ {may : Loops.Record → Loops.Record → Bool} {S W : List Loops.Record}, Loops.EnvOnly may → ∀ {t : String}, Loops.Forms W → Loops.KeyedPart may t S W → Loops.NoCycle (Loops.recordsOf t (Loops.realm may W)) → Loops.Anchored (Loops.recordsOf t (Loops.realm may W)) → (∀ (r : Loops.Record), r ∈ Loops.recordsOf t (Loops.realm may W) → Loops.live (Loops.recordsOf t (Loops.realm may W)) r = true → ∃ a, a ∈ S ∧ a.id = r.id) → (∀ (r : Loops.Record), r ∈ Loops.recordsOf t (Loops.realm may W) → (∃ a, a ∈ S ∧ a.id = r.id) → Loops.live (Loops.recordsOf t (Loops.realm may W)) r = true) → Loops.Covers t (Loops.realm may S) (Loops.realm may W)",
+   "module": "Laws.KeyedSpecSlice"},
+  "Loops.covers_of_keyedPart":
+  {"uses": ["Loops.realm_part"],
+   "states":
+   "∀ {may : Loops.Record → Loops.Record → Bool} {S W : List Loops.Record}, Loops.EnvOnly may → ∀ {t : String}, Loops.Forms W → Loops.KeyedPart may t S W → (∀ (r : Loops.Record), r ∈ Loops.recordsOf t (Loops.realm may W) → Loops.live (Loops.recordsOf t (Loops.realm may W)) r = true → ∃ a, a ∈ S ∧ a.id = r.id) → (∀ (o : Option String), Loops.Witnessed (Loops.recordsOf t (Loops.realm may S)) (Loops.recordsOf t (Loops.realm may W)) o) → Loops.Covers t (Loops.realm may S) (Loops.realm may W)",
+   "module": "Laws.KeyedSpecSlice"},
   "Loops.count_keys":
   {"uses": [],
    "states":
@@ -2993,11 +3074,22 @@
    "states":
    "∀ {f : Loops.Record → Loops.Record}, Loops.View f → ∀ (sp : Loops.Spec) (xs : List Loops.Record), sp.select (List.map f xs) = List.map f (sp.select xs)",
    "module": "Laws.Spec"},
+  "Loops.Spec.run_slice_keyed":
+  {"uses":
+   ["Loops.Slot.keyed_cover", "Loops.Slot.run_slice", "Loops.realm_addressed"],
+   "states":
+   "∀ {may : Loops.Record → Loops.Record → Bool} {S W : List Loops.Record} {sp : Loops.Spec}, Loops.EnvOnly may → Loops.Forms W → Loops.SpecSlice sp S W → Loops.KeyedCover sp.takes (Loops.realm may S) (Loops.realm may W) → sp.run (Loops.settle S) may = sp.run (Loops.settle W) may",
+   "module": "Laws.KeyedSpecSlice"},
   "Loops.Spec.run_slice":
   {"uses": ["Loops.Slot.run_slice"],
    "states":
    "∀ {sp : Loops.Spec} {S W : List Loops.Record} {may : Loops.Record → Loops.Record → Bool}, Loops.EnvOnly may → Loops.Forms W → Loops.SpecSlice sp S W → (∀ (s : Loops.Slot), s ∈ sp.slots → s.type.follow ≠ some Loops.Follow.keys) → sp.run (Loops.settle S) may = sp.run (Loops.settle W) may",
    "module": "Laws.SpecSlice"},
+  "Loops.Spec.run_keyed":
+  {"uses": ["Loops.Slot.keyed_cover", "Loops.realm_addressed"],
+   "states":
+   "∀ {may : Loops.Record → Loops.Record → Bool} {S W : List Loops.Record} (sp : Loops.Spec), (∀ (s : Loops.Slot), s ∈ sp.slots → s.type.follow = some Loops.Follow.keys) → Loops.KeyedCover sp.takes (Loops.realm may S) (Loops.realm may W) → sp.run (Loops.settle S) may = sp.run (Loops.settle W) may",
+   "module": "Laws.KeyedSpecSlice"},
   "Loops.Spec.reparse":
   {"uses": ["Loops.Spec.ofJson_fits", "Loops.Spec.ofJson_toJson"],
    "states":
@@ -3310,6 +3402,15 @@
    "states":
    "∀ (s : Loops.Slot), (∀ (f : Loops.Follow), s.type ≠ Loops.FoldType.latestBy f) → ∀ (sel : Loops.Record → Bool) (xs : List Loops.Record), { name := s.name, type := Loops.FoldType.following Loops.Follow.keys s.type, tests := s.tests, group := s.group }.plain sel xs = Loops.keyedValue (Loops.FoldType.following Loops.Follow.keys s.type) xs (Loops.thingEv sel s.tests.conds xs)",
    "module": "Laws.KeyedSlots"},
+  "Loops.Slot.plain_keyed":
+  {"uses":
+   ["Loops.Covers.thingEv",
+    "Loops.keyedOf_as_value",
+    "Loops.keyedValue_part",
+    "Loops.thingEv_in"],
+   "states":
+   "∀ {ys xs : List Loops.Record}, Loops.Addressed xs → Loops.Addressed ys → ∀ (s : Loops.Slot) (sel : Loops.Record → Bool), s.type.follow = some Loops.Follow.keys → (∀ (t : String), Loops.Covers t ys xs ∨ Loops.thingEv sel s.tests.conds ys t = Loops.Tri.no ∧ Loops.thingEv sel s.tests.conds xs t = Loops.Tri.no) → s.plain sel ys = s.plain sel xs",
+   "module": "Laws.KeyedSpecSlice"},
   "Loops.Slot.mk.sizeOf_spec":
   {"uses": [],
    "states":
@@ -3348,6 +3449,16 @@
    "states":
    "∀ {xs : List Loops.Record}, Loops.Addressed xs → (∀ (r : Loops.Record), r ∈ xs → r.sets = none) → (∀ (t : String), t ∈ Loops.thingsOf xs → ∃ h, (Loops.stateIn t xs).heads = [h]) → ∀ (s : Loops.Slot), (∀ (f : Loops.Follow), s.type ≠ Loops.FoldType.latestBy f) → ∀ (sel : Loops.Record → Bool), { name := s.name, type := Loops.FoldType.following Loops.Follow.keys s.type, tests := s.tests, group := s.group }.run sel xs = { name := s.name, type := Loops.FoldType.following Loops.Follow.prev s.type, tests := s.tests, group := s.group }.run sel xs",
    "module": "Laws.KeyedSlots"},
+  "Loops.Slot.keyed_cover":
+  {"uses":
+   ["Loops.KeyedCover.things",
+    "Loops.Slot.keyedGrouped_part",
+    "Loops.Slot.plain_keyed",
+    "Loops.mem_stateIn_heads_iff",
+    "Loops.thingEv_untaken"],
+   "states":
+   "∀ {ys xs : List Loops.Record} {sel : Loops.Record → Bool}, Loops.Addressed xs → Loops.Addressed ys → Loops.KeyedCover sel ys xs → ∀ (s : Loops.Slot), s.type.follow = some Loops.Follow.keys → s.run sel ys = s.run sel xs",
+   "module": "Laws.KeyedSpecSlice"},
   "Loops.Slot.keyedGrouped_set_decides":
   {"uses":
    ["Loops.keyedValue_set_decides",
@@ -3357,6 +3468,18 @@
    "states":
    "∀ (s : Loops.Slot) (b : Loops.By) (sel : Loops.Record → Bool) {xs ys : List Loops.Record}, Loops.Addressed xs → Loops.Addressed ys → (∀ (r : Loops.Record), r ∈ xs ↔ r ∈ ys) → s.keyedGrouped b sel xs = s.keyedGrouped b sel ys",
    "module": "Laws.Spec"},
+  "Loops.Slot.keyedGrouped_part":
+  {"uses":
+   ["Loops.Covers.thingEv",
+    "Loops.Covers.thingKeys",
+    "Loops.filter_and",
+    "Loops.flatMap_congr_mem",
+    "Loops.keyedValue_part",
+    "Loops.thingEv_in",
+    "Loops.things_filter"],
+   "states":
+   "∀ {ys xs : List Loops.Record}, Loops.Addressed xs → Loops.Addressed ys → ∀ (s : Loops.Slot) (b : Loops.By) (sel : Loops.Record → Bool), (∀ (t : String), Loops.Covers t ys xs ∨ Loops.thingEv sel s.tests.conds ys t = Loops.Tri.no ∧ Loops.thingEv sel s.tests.conds xs t = Loops.Tri.no) → s.keyedGrouped b sel ys = s.keyedGrouped b sel xs",
+   "module": "Laws.KeyedSpecSlice"},
   "Loops.Slot.keyedGrouped_eq":
   {"uses": [],
    "states":
@@ -4369,6 +4492,11 @@
    "states":
    "∀ {may : Loops.Record → Loops.Record → Bool} {t : String} {S W : List Loops.Record}, Loops.KeyedPart may t S W → ∀ (r : Loops.Record), r ∈ Loops.settle W → r.isOf t = true → (∃ a, a ∈ S ∧ a.id = r.id) → Loops.entitled may (Loops.settle W) r = true",
    "module": "Laws.LiveSlice"},
+  "Loops.KeyedCover.things":
+  {"uses": [],
+   "states":
+   "∀ {sel : Loops.Record → Bool} {ys xs : List Loops.Record}, Loops.KeyedCover sel ys xs → ∀ (t : String), Loops.Covers t ys xs ∨ (∀ (r : Loops.Record), r ∈ Loops.recordsOf t ys → sel r = false) ∧ ∀ (r : Loops.Record), r ∈ (Loops.stateIn t xs).heads → sel r = false",
+   "module": "Laws.KeyedSpecSlice"},
   "Loops.Keyed.mk.sizeOf_spec":
   {"uses": [],
    "states":
@@ -5008,6 +5136,92 @@
    "states":
    "∀ {xs : List Loops.Record}, Loops.Distinct xs → Loops.Addressed xs",
    "module": "Laws.Families"},
+  "Loops.Covers.witnessed":
+  {"uses": [],
+   "states":
+   "∀ {t : String} {ys xs : List Loops.Record}, Loops.Covers t ys xs → ∀ (o : Option String), Loops.Witnessed (Loops.recordsOf t ys) (Loops.recordsOf t xs) o",
+   "module": "Laws.KeyedSpecSlice"},
+  "Loops.Covers.thingTest":
+  {"uses": ["Loops.Covers.onThing"],
+   "states":
+   "∀ {t : String} {ys xs : List Loops.Record}, Loops.Covers t ys xs → ∀ (cs : List Loops.Cond), Loops.thingTest cs (Loops.recordsOf t ys) = Loops.thingTest cs (Loops.recordsOf t xs)",
+   "module": "Laws.KeyedSpecSlice"},
+  "Loops.Covers.thingKeys":
+  {"uses": ["Loops.Covers.heads", "Loops.Covers.setters"],
+   "states":
+   "∀ {t : String} {ys xs : List Loops.Record}, Loops.Covers t ys xs → Loops.Addressed xs → Loops.Addressed ys → ∀ (b : Loops.By) (sel : Loops.Record → Bool) (cs : List Loops.Cond), b.thingKeys sel cs ys t = b.thingKeys sel cs xs t",
+   "module": "Laws.KeyedSpecSlice"},
+  "Loops.Covers.thingEv":
+  {"uses": ["Loops.Covers.heads", "Loops.Covers.thingTest"],
+   "states":
+   "∀ {t : String} {ys xs : List Loops.Record}, Loops.Covers t ys xs → Loops.Addressed xs → Loops.Addressed ys → ∀ (sel : Loops.Record → Bool) (cs : List Loops.Cond), Loops.thingEv sel cs ys t = Loops.thingEv sel cs xs t",
+   "module": "Laws.KeyedSpecSlice"},
+  "Loops.Covers.sub":
+  {"uses": [],
+   "states":
+   "∀ {t : String} {ys xs : List Loops.Record}, Loops.Covers t ys xs → ∀ (r : Loops.Record), r ∈ Loops.recordsOf t ys → r ∈ Loops.recordsOf t xs",
+   "module": "Laws.KeyedSpecSlice"},
+  "Loops.Covers.soleSetter":
+  {"uses": ["Loops.Covers.setters"],
+   "states":
+   "∀ {t : String} {ys xs : List Loops.Record}, Loops.Covers t ys xs → Loops.Addressed xs → Loops.Addressed ys → ∀ (f : String), Loops.soleSetter ys f t = Loops.soleSetter xs f t",
+   "module": "Laws.KeyedSpecSlice"},
+  "Loops.Covers.setters":
+  {"uses":
+   ["Loops.Covers.mem_liveFor",
+    "Loops.addressed_filter",
+    "Loops.addressed_recordsOf",
+    "Loops.orderHeads_set_decides"],
+   "states":
+   "∀ {t : String} {ys xs : List Loops.Record}, Loops.Covers t ys xs → Loops.Addressed xs → Loops.Addressed ys → ∀ (f : String), Loops.setters (Loops.recordsOf t ys) f = Loops.setters (Loops.recordsOf t xs) f",
+   "module": "Laws.KeyedSpecSlice"},
+  "Loops.Covers.onThing":
+  {"uses": ["Loops.Covers.mem_liveFor", "Loops.Tri.agree_congr"],
+   "states":
+   "∀ {t : String} {ys xs : List Loops.Record}, Loops.Covers t ys xs → ∀ (c : Loops.Cond), c.onThing (Loops.recordsOf t ys) = c.onThing (Loops.recordsOf t xs)",
+   "module": "Laws.KeyedSpecSlice"},
+  "Loops.Covers.mem_liveFor":
+  {"uses":
+   ["Loops.Covers.liveK", "Loops.Covers.mem_filter", "Loops.live_iff_liveK"],
+   "states":
+   "∀ {t : String} {ys xs : List Loops.Record}, Loops.Covers t ys xs → ∀ (f : String) (r : Loops.Record), r ∈ List.filter (Loops.liveFor (Loops.recordsOf t ys) f) (Loops.recordsOf t ys) ↔ r ∈ List.filter (Loops.liveFor (Loops.recordsOf t xs) f) (Loops.recordsOf t xs)",
+   "module": "Laws.KeyedSpecSlice"},
+  "Loops.Covers.mem_filter":
+  {"uses": ["Loops.Covers.live", "Loops.Covers.sub"],
+   "states":
+   "∀ {t : String} {ys xs : List Loops.Record}, Loops.Covers t ys xs → ∀ {p q : Loops.Record → Bool}, (∀ (a : Loops.Record), a ∈ Loops.recordsOf t ys → p a = q a) → (∀ (a : Loops.Record), a ∈ Loops.recordsOf t xs → q a = true → Loops.live (Loops.recordsOf t xs) a = true) → ∀ (r : Loops.Record), r ∈ List.filter p (Loops.recordsOf t ys) ↔ r ∈ List.filter q (Loops.recordsOf t xs)",
+   "module": "Laws.KeyedSpecSlice"},
+  "Loops.Covers.liveK":
+  {"uses":
+   ["Loops.Covers.sub", "Loops.Covers.witnessed", "Loops.witnessed_iff"],
+   "states":
+   "∀ {t : String} {ys xs : List Loops.Record}, Loops.Covers t ys xs → ∀ (o : Option String) (a : Loops.Record), a ∈ Loops.recordsOf t ys → Loops.liveK (Loops.recordsOf t ys) o a = Loops.liveK (Loops.recordsOf t xs) o a",
+   "module": "Laws.KeyedSpecSlice"},
+  "Loops.Covers.liveIn":
+  {"uses":
+   ["Loops.Covers.liveK", "Loops.Covers.mem_filter", "Loops.live_iff_liveK"],
+   "states":
+   "∀ {t : String} {ys xs : List Loops.Record}, Loops.Covers t ys xs → ∀ (r : Loops.Record), r ∈ Loops.liveIn ys t ↔ r ∈ Loops.liveIn xs t",
+   "module": "Laws.KeyedSpecSlice"},
+  "Loops.Covers.live":
+  {"uses": [],
+   "states":
+   "∀ {t : String} {ys xs : List Loops.Record}, Loops.Covers t ys xs → ∀ (r : Loops.Record), r ∈ Loops.recordsOf t xs → Loops.live (Loops.recordsOf t xs) r = true → r ∈ Loops.recordsOf t ys",
+   "module": "Laws.KeyedSpecSlice"},
+  "Loops.Covers.keyedIn":
+  {"uses":
+   ["Loops.Covers.live",
+    "Loops.Covers.sub",
+    "Loops.Covers.witnessed",
+    "Loops.keyedIn_part"],
+   "states":
+   "∀ {t : String} {ys xs : List Loops.Record}, Loops.Covers t ys xs → Loops.Addressed xs → Loops.Addressed ys → Loops.keyedIn t ys = Loops.keyedIn t xs",
+   "module": "Laws.KeyedSpecSlice"},
+  "Loops.Covers.heads":
+  {"uses": ["Loops.Covers.keyedIn"],
+   "states":
+   "∀ {t : String} {ys xs : List Loops.Record}, Loops.Covers t ys xs → Loops.Addressed xs → Loops.Addressed ys → (Loops.stateIn t ys).heads = (Loops.stateIn t xs).heads",
+   "module": "Laws.KeyedSpecSlice"},
   "Loops.Count.select_value":
   {"uses": ["Loops.Count.fold_eq"],
    "states":
@@ -5543,6 +5757,11 @@
    "states":
    "∀ {σ : Type} (f : Loops.Acc σ) (pick : String → Option Loops.Record) (ev : String → Loops.Tri) (ts : List String), (f.overThings pick ev ts).unread = (List.filter (fun t => ev t == Loops.Tri.unknown || ev t == Loops.Tri.yes && !Option.any f.readable (pick t)) ts).length",
    "module": "Laws.KeyedSlots"},
+  "Loops.Acc.overThings_part":
+  {"uses": ["Loops.filterMap_congr_mem"],
+   "states":
+   "∀ {evy evx : String → Loops.Tri} {σ : Type} (f : Loops.Acc σ) {py px : String → Option Loops.Record} {ty tx : List String}, List.filter (fun x => evy x == Loops.Tri.yes) ty = List.filter (fun x => evx x == Loops.Tri.yes) tx → List.filter (fun x => evy x == Loops.Tri.unknown) ty = List.filter (fun x => evx x == Loops.Tri.unknown) tx → (∀ (t : String), t ∈ List.filter (fun x => evx x == Loops.Tri.yes) tx → py t = px t) → f.overThings py evy ty = f.overThings px evx tx",
+   "module": "Laws.KeyedSpecSlice"},
   "Loops.Acc.mk.sizeOf_spec":
   {"uses": [],
    "states":
