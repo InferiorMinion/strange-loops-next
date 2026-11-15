@@ -3,10 +3,11 @@
 //! The verbs follow the design's CLI. Exit codes: 0 ok, 1 refused (with its
 //! code), 2 a usage error, 3 the file system or the system's randomness failed.
 mod draft;
+mod values;
 
 use loops::{
     batch, envelope,
-    json::Json,
+    json::{Json, canon_set},
     record::{Record, Shown, id_text},
     spec::Spec,
     things,
@@ -25,6 +26,7 @@ use std::{
     path::{Path, PathBuf},
     process::ExitCode,
 };
+use values::View;
 
 const USAGE: &str = "\
 usage: loops [-C <dir>] <verb> ...
@@ -33,16 +35,22 @@ usage: loops [-C <dir>] <verb> ...
   emit <kind> [field=text | field:=json]... [\"message\"]
        [--of <thing>] [--about <thing>]... [--no-about] [--prev <id>]...
        [--erases <id>]... [--occurred <when>] [--under <id>]
-       [--sets <key>]... [--sets-nothing]
+       [--sets <key>]... [--sets-nothing] [--whole]
                                 a revision without --of is of what it replaces;
                                 an emit names every live record of its thing
                                 held here, and copies its heads' about unless
-                                --about or --no-about states it
+                                --about or --no-about states it; an emit of a
+                                thing held here sets the fields it names unless
+                                --sets, --sets-nothing or --whole states it
   emit -                        drafts as JSONL on stdin: one changeset
   get <id>                      one record
-  of <thing>                    a thing's current state: the records of it
-  read <vertex>                 fold .loops/vertices/<vertex>.json
-  fold <spec.json | ->          fold a spec given as a file
+  of <thing>                    a thing's values, each key's from its live
+                                setters; its about, its heads, and how many
+                                records are of it
+  read <vertex> [--values]      fold .loops/vertices/<vertex>.json
+  fold <spec.json | -> [--values]
+                                fold a spec given as a file; --values writes
+                                the values beside the ids
   erase <id>... [\"why\"]         emit an erasure, and drop the openings held here
   export [--kind <k>] [--of <thing>] [--about <thing>]   stored lines, oldest first
   import [<file> | -]           add stored lines; a store is the union
@@ -286,18 +294,21 @@ fn emit(start: &Path, args: &[String]) -> Result<(), Fail> {
             .collect();
         return say(&object(vec![("records", Json::Arr(records))]).canon());
     }
-    let (draft, about) = draft::from_args(
+    let (draft, about, sets) = draft::from_args(
         args,
         &now,
         &key.public(),
         |given| link(&held, given),
         |given| thing_ref(&held, given),
     )?;
-    // A revision without `--of` is of what it replaces; then the emit names
-    // every live record of its thing held here, and copies the heads' `about`
-    // unless it states its own. A refusal here precedes the writer's others.
+    // A revision without `--of` is of what it replaces; then an emit of a
+    // thing held here sets the keys it names unless it states its `sets`; it
+    // names every live record of its thing held here, and copies the heads'
+    // `about` unless it states its own. A refusal here precedes the writer's others.
     let draft = fill::of(&|id: &str| held.writer_view(id), draft).map_err(|e| refused(e.code()))?;
-    let draft = fill::anchor(&realm(&held), draft, about);
+    let admitted = realm(&held);
+    let draft = fill::sets(&admitted, draft, sets);
+    let draft = fill::anchor(&admitted, draft, about);
     let lines = write_changeset(&place, &held, &key, &[draft])?;
     say(lines.first().map_or("", Line::id))
 }
@@ -376,56 +387,69 @@ fn of(start: &Path, args: &[String]) -> Result<(), Fail> {
         one_id(&held, thing)?
     };
     // A thing's records are those of it, by `of` or a root's own id; a record
-    // that only mentions it in `about` is not one of them.
+    // that only mentions it in `about` is not one of them. Its values are
+    // read from its live setters, and its envelope from its heads, newest
+    // first: the first is the winner a latest-by that follows `prev` names.
     let admitted = realm(&held);
-    let state = things::state_in(&thing, &admitted);
-    let lines = |records: &[Record]| {
-        Json::Arr(
-            records
-                .iter()
-                .filter_map(|r| shown_line(&held, r))
-                .collect(),
-        )
-    };
-    say(&object(vec![
+    let heads = things::state_in(&thing, &admitted).heads;
+    let mentions: Vec<String> = heads.iter().flat_map(|r| r.about.clone()).collect();
+    let mut members = vec![
         ("thing", text(&thing)),
         (
-            "winner",
-            state
-                .winner()
-                .and_then(|r| shown_line(&held, r))
-                .unwrap_or(Json::Null),
+            "about",
+            Json::Arr(canon_set(&mentions).into_iter().map(text).collect()),
         ),
-        ("others", lines(state.others())),
+        (
+            "heads",
+            Json::Arr(heads.iter().filter_map(|r| shown_line(&held, r)).collect()),
+        ),
         (
             "records",
             count(admitted.iter().filter(|r| r.is_of(&thing)).count()),
         ),
-    ])
-    .canon())
+    ];
+    members.extend(values::thing(&held, &admitted, &thing));
+    say(&object(members).canon())
 }
 
-fn fold_text(start: &Path, spec: &str) -> Result<(), Fail> {
+/// `--values` among a verb's arguments, and the arguments without it.
+fn view(args: &[String]) -> (View, Vec<&String>) {
+    let rest: Vec<&String> = args.iter().filter(|a| *a != "--values").collect();
+    if rest.len() == args.len() {
+        (View::Ids, rest)
+    } else {
+        (View::Values, rest)
+    }
+}
+fn fold_text(start: &Path, spec: &str, view: View) -> Result<(), Fail> {
     let json = loops_eval::parse_json(spec).map_err(|e| refused(format!("spec-not-json: {e}")))?;
     let spec = Spec::of_json(&json).map_err(|e| refused(format!("{} at {}", e.code(), e.path)))?;
     let held = find_store(start)?.read()?;
-    say(&loops_eval::slots_json(spec.run(&held.settled())).canon())
+    let slots = loops_eval::slots_json(spec.run(&held.settled()));
+    match view {
+        View::Ids => say(&slots.canon()),
+        View::Values => say(&values::fold(&held, &realm(&held), &spec, slots).canon()),
+    }
 }
 fn fold(start: &Path, args: &[String]) -> Result<(), Fail> {
-    let [file] = args else {
-        return Err(usage("fold takes one spec file, or - for stdin"));
+    let (view, args) = view(args);
+    let [file] = args.as_slice() else {
+        return Err(usage(
+            "fold takes one spec file, or - for stdin, and may take --values",
+        ));
     };
     let mut spec = String::new();
-    if file == "-" {
+    if *file == "-" {
         io::stdin().read_to_string(&mut spec)?;
     } else {
         spec = fs::read_to_string(start.join(file))?;
     }
-    fold_text(start, &spec)
+    fold_text(start, &spec, view)
 }
 fn read(start: &Path, args: &[String]) -> Result<(), Fail> {
-    let [vertex] = args else {
-        return Err(usage("read takes one vertex name"));
+    let (view, args) = view(args);
+    let [vertex] = args.as_slice() else {
+        return Err(usage("read takes one vertex name, and may take --values"));
     };
     if vertex.contains(['/', '\\']) || vertex.starts_with('.') {
         return Err(usage("a vertex name is a file name without its .json"));
@@ -439,7 +463,7 @@ fn read(start: &Path, args: &[String]) -> Result<(), Fail> {
             e.into()
         }
     })?;
-    fold_text(start, &spec)
+    fold_text(start, &spec, view)
 }
 
 fn export(start: &Path, args: &[String]) -> Result<(), Fail> {
