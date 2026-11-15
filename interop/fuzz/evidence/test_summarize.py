@@ -98,12 +98,18 @@ class EvidenceTest(unittest.TestCase):
         self.assertEqual(campaign['totals']['cases'], 5600)
         self.assertEqual(campaign['totals']['mismatch'], 42)
         self.assertEqual(campaign['families']['lens']['mismatch'], 42)
-        self.assertEqual(list(result['mutations']), ['mutations-d1-d6', 'mutations-d8ab', 'mutations-fixes2'])
-        current = result['mutations']['mutations-d8ab']
-        self.assertEqual(current['total'], 210)
-        self.assertEqual(current['outcomes'], {'error': 15, 'killed-by-vector': 28, 'rejected-by-build': 165, 'survived': 2})
+        self.assertEqual(list(result['mutations']), ['mutations-d1-d6', 'mutations-d8ab', 'mutations-d8c', 'mutations-fixes2'])
+        current = result['mutations']['mutations-d8c']
+        self.assertEqual(current['total'], 291)
+        self.assertEqual(current['outcomes'], {'error': 22, 'killed-by-vector': 24, 'rejected-by-build': 243, 'survived': 2})
         self.assertEqual(current['survivors'], ['finish-json-hexdigit', 'last-spec-tests-conds'])
         self.assertEqual(current['guards']['d8-of-not-root-skipped'], 'killed-by-vector')
+        self.assertEqual(current['guards']['d8-unrelated-ignores-target-of'], 'killed-by-vector')
+        before = result['mutations']['mutations-d8ab']
+        self.assertEqual(before['total'], 210)
+        self.assertEqual(before['outcomes'], {'error': 15, 'killed-by-vector': 28, 'rejected-by-build': 165, 'survived': 2})
+        self.assertEqual(before['survivors'], ['finish-json-hexdigit', 'last-spec-tests-conds'])
+        self.assertEqual(before['guards']['d8-of-not-root-skipped'], 'killed-by-vector')
         earlier = result['mutations']['mutations-d1-d6']
         self.assertEqual(earlier['total'], 201)
         self.assertEqual(earlier['outcomes'], {'error': 15, 'killed-by-vector': 27, 'rejected-by-build': 157, 'survived': 2})

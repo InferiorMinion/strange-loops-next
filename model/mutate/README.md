@@ -29,7 +29,7 @@ The full catalogue runs in GitLab CI, on request: start a pipeline with the vari
 `model-mutants-full` runs it in four shards and `mutation-report` joins them; results and logs are artifacts.
 There each command gets 600 seconds, or `MUTATION_TIMEOUT` seconds when that variable is set.
 With `MUTATION_ONLY` set to a comma-separated list of ids, the shards run those entries alone and the report checks those; `merge.mjs --only` takes the same list.
-It is not a gate. It takes hours on one machine, so it is not run on the workbench.
+It is not a gate. It takes hours on one machine; four shards on one runner took about eighty minutes each on 2026-11-15.
 See [REPORT.md](REPORT.md) for audited outcomes and the known generator assertion.
 
 The runner requires clean candidate source files in the index and worktree.
