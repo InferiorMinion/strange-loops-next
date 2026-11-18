@@ -16,10 +16,15 @@
 // The build fails when
 //   - a law's theorem takes a vocabulary premise that is not page-wide, not listed on the law
 //     and not the law's subject;
-//   - a law lists a premise none of its theorems takes, or one that is page-wide or its subject;
+//   - a law lists a premise none of its theorems takes, only its exempt theorems take, or one
+//     that is page-wide or its subject;
 //   - a theorem takes a hypothesis shaped like a named predicate (`Foo xs`) or a `.Nodup` that
 //     the vocabulary doesn't know, so a new hypothesis can't slip in unclassified;
 //   - the vocabulary, a subject list or `premises.exempt` names something no theorem takes.
+//
+// `premises.exempt` names theorems whose premises their law needn't say, each with a reason:
+// a step inside a law's proof that takes a premise the law itself does not need. A law
+// premise that only exempt theorems take is listed on no law.
 //
 // What it does NOT catch, and no build check here could:
 //   - what a hypothesis quantifies over. `stateIn_local` lets only the records not of t
@@ -118,6 +123,7 @@ export function checkPremises({ data, rows, resolved, graph, fail }) {
       if (!vocab[name]) fail(`${r.key}: premise ${name} isn't in laws.json premises.vocabulary`);
       if (vocab[name].where !== "law") fail(`${r.key}: ${name} is ${vocab[name].where === "page" ? "said page-wide" : "the subject of other laws"}; a law lists only the premises it alone needs`);
       if (!t.has(name)) fail(`${r.key}: lists the premise ${name}, which none of its theorems takes`);
+      else if (t.get(name).every((th) => th in exempt)) fail(`${r.key}: lists the premise ${name}, which only its exempt theorems (${t.get(name).join(", ")}) take; the law holds without it`);
     }
   }
 
@@ -125,7 +131,10 @@ export function checkPremises({ data, rows, resolved, graph, fail }) {
   for (const [name, v] of Object.entries(vocab)) {
     const users = rows.filter((r) => taken.get(r.key).has(name)).map((r) => r.key);
     if (!users.length) fail(`premises.${name}: no law's theorem takes it; take it off the vocabulary`);
-    if (v.where === "law" && !users.some((k) => (data.laws[k].premises ?? []).includes(name))) fail(`premises.${name}: no law lists it`);
+    // A law premise that only exempt theorems take is said by no law, on purpose.
+    const takers = rows.flatMap((r) => taken.get(r.key).get(name) ?? []);
+    const onlyExempt = takers.every((th) => th in exempt);
+    if (v.where === "law" && !onlyExempt && !users.some((k) => (data.laws[k].premises ?? []).includes(name))) fail(`premises.${name}: no law lists it`);
     for (const k of v.laws ?? []) {
       if (!lawKeys.has(k)) fail(`premises.${name}: ${k} is no law`);
       if (!users.includes(k)) fail(`premises.${name}: ${k} is listed as having it for its subject, but none of its theorems takes it`);
