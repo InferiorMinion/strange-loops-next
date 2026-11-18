@@ -74,6 +74,8 @@ const MUTANTS = [
   ["a subject list naming a law whose theorems don't take it", "design/laws/laws.json", json((d) => { d.premises.vocabulary.View.laws.push("count.perm"); })],
   ["a subject premise dropped from its law's list", "design/laws/laws.json", json((d) => { d.premises.vocabulary.View.laws = d.premises.vocabulary.View.laws.filter((k) => k !== "spec.select"); })],
   ["an exemption its theorem no longer needs", "design/laws/laws.json", json((d) => { d.premises.exempt["Spec.view_state"] = "x"; })],
+  ["a list-level step's premise said by no law and not exempt", "design/laws/laws.json", json((d) => { delete d.premises.exempt.wholeThings_distinct; })],
+  ["keyed.slots claiming a premise only an exempt step takes", "design/laws/laws.json", json((d) => { d.laws["keyed.slots"].premises = ["SortedNewest"]; })],
   ["digest law restores the obsolete bound premise", "design/laws/laws.json", json((d) => { d.laws["id.digest"].premises = ["BoundedId"]; })],
   ["digest vocabulary restores the obsolete bound", "design/laws/laws.json", json((d) => { d.premises.vocabulary.BoundedId = { where: "law", says: "each id is less than 2<sup>256</sup>" }; })],
   ["spec state without its envelope-only rule", "design/laws/laws.json", json((d) => { delete d.laws["spec.after-supersession"].premises; })],
