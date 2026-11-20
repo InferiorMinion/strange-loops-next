@@ -187,7 +187,7 @@
   "implementations": [
     {"name": "the model", "what": "<code>lake exe gen</code> computes protocol-vector answers. The theorem files separately prove the listed laws.", "dirs": "*"},
     {"name": "the JS implementation", "what": "<code>interop/js/check.mjs</code> checks all fixtures, including standards", "dirs": "*", "checker": "interop/js/check.mjs"},
-    {"name": "the Rust implementation", "what": "The Rust workspace checks every fixture family but <code>result</code>, which it does not read yet, and external standards", "dirs": ["record", "occurred", "byte-text", "fold", "lens", "batch", "spec", "realm", "scenario", "standard"]}
+    {"name": "the Rust implementation", "what": "The Rust workspace checks all fixture families and external standards", "dirs": "*"}
   ],
   "demos": [
     {"law": "count.perm", "vector": "fold/count/02-three", "kind": "orders", "change": "Deliver them in another order", "stays": "count"},

@@ -5,7 +5,7 @@
 Run `lake exe gen ../vectors` from `model/`; never edit these fixtures by hand.
 CI regenerates them and fails on any difference.
 `standard/` holds external standards data; see its README.
-JS checks all fixture families and standards, and the Rust workspace all but `result/`, which it does not read yet.
+JS and the Rust workspace check all fixture families and standards.
 
 Every file has the same envelope:
 

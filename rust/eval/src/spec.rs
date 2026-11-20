@@ -111,6 +111,29 @@ pub(super) fn parsed(j: &Json) -> Result<Spec, String> {
     }
     Ok(sp)
 }
+/// A `spec/run` input's spec, run over each arrival order: `Spec.run`'s
+/// slot values, one list per order. `result` vectors read the same input.
+pub(crate) fn runs(input: &Json) -> Result<Vec<Vec<(String, SlotValue)>>, String> {
+    let kvs = members("input", &["spec", "orders"], input)?;
+    let sp = parsed(required("input", kvs, "spec")?)?;
+    let orders = list("input.orders", required("input", kvs, "orders")?)?;
+    if orders.is_empty() {
+        return Err("input.orders: no arrival order".into());
+    }
+    orders
+        .iter()
+        .enumerate()
+        .map(|(i, o)| {
+            let path = format!("input.orders[{i}]");
+            let xs = list(&path, o)?
+                .iter()
+                .enumerate()
+                .map(|(k, r)| record(&format!("{path}[{k}]"), r))
+                .collect::<Result<Vec<_>, _>>()?;
+            Ok(sp.run(&xs))
+        })
+        .collect()
+}
 /// Gen.SpecVectors.parseVector/runVector, model/Gen/Spec.lean.
 /// Checks the closed dispatch and retains raw spec text before parsing.
 pub(crate) fn answers(layer: &str, input: &Json) -> Result<Vec<Json>, String> {
@@ -138,29 +161,10 @@ pub(crate) fn answers(layer: &str, input: &Json) -> Result<Vec<Json>, String> {
             };
             Ok(vec![answer])
         }
-        "spec/run" => {
-            let kvs = members("input", &["spec", "orders"], input)?;
-            let sp = parsed(required("input", kvs, "spec")?)?;
-            let orders = list("input.orders", required("input", kvs, "orders")?)?;
-            if orders.is_empty() {
-                return Err("input.orders: no arrival order".into());
-            }
-            orders
-                .iter()
-                .enumerate()
-                .map(|(i, o)| {
-                    let path = format!("input.orders[{i}]");
-                    let xs = list(&path, o)?
-                        .iter()
-                        .enumerate()
-                        .map(|(k, r)| record(&format!("{path}[{k}]"), r))
-                        .collect::<Result<Vec<_>, _>>()?;
-                    Ok(Json::Obj(
-                        sp.run(&xs).into_iter().map(|(n, v)| (n, slot(v))).collect(),
-                    ))
-                })
-                .collect()
-        }
+        "spec/run" => Ok(runs(input)?
+            .into_iter()
+            .map(|r| Json::Obj(r.into_iter().map(|(n, v)| (n, slot(v))).collect()))
+            .collect()),
         _ => Err(format!("unknown spec layer {layer}")),
     }
 }

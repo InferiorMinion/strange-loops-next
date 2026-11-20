@@ -75,6 +75,10 @@ require magnitude at most 2^53 − 1 for every `Number`, whole or not.
 Raw `Json::Int` obeys the same bound; refusal priority is unchanged.
 Canonical formatting covers all finite binary64 values, independently of writing. Exact accumulated integer outputs are not
 rounded through the input decoder.
+The canonical result (`loops::result`, D7) writes every integer as a decimal string from the unbounded value, so
+binary64 never touches it; its reader `int_of` takes exactly those strings. The laws that say its bytes lose `shown`
+and nothing else are Lean's (`model/Laws/Result.lean`); Rust checks them on the `result` vectors and its own tests,
+not for every input.
 
 Rust converts native shortest formatting to ECMAScript notation.
 It applies exact midpoint tie-to-even correction.
