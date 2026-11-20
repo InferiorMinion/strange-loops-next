@@ -16,6 +16,7 @@ Issue #1 retargets four entries at the shape stage and labels in `under`, and ad
 Latest-by following `keys` adds twenty, over `Loops/Live.lean` and the keyed slot in `Loops/Spec.lean`: 270 entries total. `coverage-spec-slotfollow` is retargeted at `slotFollow`'s new result.
 Count, sum, min, max and collect following `keys` add twenty-one: 291 entries total. `follow` on those fold types became an `Option Follow`, so eleven entries are retargeted at their new sites (`wide-spec-069`, `follow-pool-every`, `follow-pool-heads-always`, `follow-count-every`, `follow-max-every`, `follow-sum-parse-dropped`, `follow-json-inverted`, `follow-count-envelope-first`, `follow-count-unknown-first`, `keys-follow-anywhere`, `keys-written-as-prev`); the four that name `Loops.Slot.run` now name `Loops.Slot.plain`, where their site is.
 A keyed collect's `limit` counting things adds four, over `Loops.keyedValue`, `Loops.wholeThings` and `Loops.thingsInOrder`: 295 entries total. `keys-slots-collect-heads` and `keys-slots-collect-no-limit` are retargeted at the collect's new site.
+The canonical result (D7) adds eighteen, over `model/Loops/Result.lean`: 313 entries total. Sixteen change what the codec writes or reads; two, `result-unshown-keeps-shown` and `result-unshown-groups-kept`, change only what the laws compare, since nothing that runs sets `shown` aside.
 The raw-reader ordering mutations target library definitions under `Loops`.
 The cheap runner uses those fourteen replacements and the four former D6 survivors.
 It requires runtime failures after successful builds.
@@ -338,6 +339,31 @@ The catalogue includes existing entries without definition metadata.
 - `Loops.write`: covered by `finish-stored-write`
 - `Loops.opens`: covered by `wide-stored-081`
 - `Loops.signingInput`: excluded: It concatenates and encodes text. No direct eligible operation.
+
+## model/Loops/Result.lean
+
+- `Loops.digitChar`: covered by `result-digit-offset`
+- `Loops.revDigits`: covered by `result-digits-dropped`
+- `Loops.natDigits`: covered by `result-digits-unreversed`
+- `Loops.intText`: covered by `result-negative-off-by-one`
+- `Loops.digitVal?`: covered by `result-digit-range`
+- `Loops.revValue`: covered by `result-value-order`
+- `Loops.natOf?`: covered by `result-leading-zero`
+- `Loops.intOf?`: covered by `result-negative-read-positive`
+- `Loops.intJson`: excluded: It wraps `intText` in a JSON string; writing `toString` there instead is the same text, so the only eligible change is equivalent.
+- `Loops.idsJson`: covered by `result-ids-reversed`
+- `Loops.GroupValue.result`: covered by `result-null-as-zero`
+- `Loops.KeyedView.result`: covered by `result-keyed-heads-whole`
+- `Loops.SlotValue.result`: covered by `result-groups-counts-swapped`, `result-things-first-head`
+- `Loops.resultJson`: covered by `result-first-slot-only`
+- `Loops.resultText`: excluded: It applies `Json.canon`, which the `Json.lean` entries cover. No direct eligible operation.
+- `Loops.resultBytes`: excluded: It applies `utf8`. No direct eligible operation.
+- `Loops.resultLabel`: covered by `result-label-version`
+- `Loops.resultPreimage`: covered by `result-hash-unframed`
+- `Loops.resultHash`: excluded: It composes the hash, base32hex and the `h:` prefix, as `Loops.commitOf` does. No direct eligible operation.
+- `Loops.unshownIds`: covered by `result-unshown-keeps-shown`
+- `Loops.GroupValue.unshown`, `Loops.KeyedView.unshown`, `Loops.unshownResult`: excluded: Each applies `unshownIds` or `SlotValue.unshown` by shape, which those entries mutate.
+- `Loops.SlotValue.unshown`: covered by `result-unshown-groups-kept`
 
 ## model/Loops/Things.lean
 
