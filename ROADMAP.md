@@ -13,15 +13,16 @@ All three writers refuse an `under` target they do not hold (`under-unknown`).
 `loops emit` follows D8c's anchor rule: an emit of a thing names in `prev` every live record of it the store holds, and carries the thing's whole `about`.
 An emit of a thing the store holds sets the fields it names, and `loops of`, `read --values` and `fold --values` show each key's value from its live setters.
 A CLI verb that answers from a store with a line or a segment that does not check writes its answer and is then refused `store-not-clean` (Kyle, 2026-11-20).
+All three write a vertex's canonical result and its hash (D7): integers as decimal text, ids without `shown`. No CLI verb shows it yet.
 All three let count, sum, min and max follow `prev` (issue #3), and group count, sum, min, max and collect with `by` (issue #2).
-The law index has 107 entries, 1082 theorems, and 6 boundary witnesses.
+The law index has 111 entries, 1196 theorems, and 6 boundary witnesses.
 See [the law index](design/laws/laws.json) and [proof and boundary data](design/laws/).
 These proofs apply only under their stated premises.
 
-The tree has 606 JSON fixtures: 594 generated fixtures and 12 standard fixtures.
-Lean replays 585 generated fixtures; 9 occurred fixtures use separate checks.
+The tree has 629 JSON fixtures: 617 generated fixtures and 12 standard fixtures.
+Lean replays 608 generated fixtures; 9 occurred fixtures use separate checks.
 Rust checks every fixture, six JCS byte pairs, 4,000 binary64 cases, and 128 SUPERCOP signing cases with ed25519-dalek.
-Rust passes 182 tests; JavaScript passes 6,979 vector checks and 41 regression and law tests.
+Rust passes 190 tests; JavaScript passes 7,173 vector checks and 49 regression and law tests.
 Both also check that `spec/run` answers write their members, group, thing and key names included, in the model's order; JavaScript checks `fold/latest-by` answers' thing keys too.
 JavaScript refuses a held record's invalid `emitted` or `occurred` before it answers, as the Lean and Rust readers do.
 The fuzz suite passes 60 tests.
@@ -48,7 +49,7 @@ The 42 duplicate-base lens mismatches of the `step1-3` campaign are the class D1
 See [the campaign report](interop/fuzz/REPORT.md) for the scripts and current and historical results.
 The CI seed `ci-1` checks 28 three-way cases without mismatches.
 
-The mutation catalogue has 295 entries, including six for the D1 and D2 definitions, nine for D8's `of`, nine for `follow` on count, sum, min and max, ten for issue #1's shapes and labels in `under`, seven for `by`, four for `under-unknown`, ten for `sets`, twenty for latest-by following `keys`, twenty-one for count, sum, min, max and collect following `keys`, and four for a keyed collect's limit counting things.
+The mutation catalogue has 314 entries, including nineteen for the result codec, six for the D1 and D2 definitions, nine for D8's `of`, nine for `follow` on count, sum, min and max, ten for issue #1's shapes and labels in `under`, seven for `by`, four for `under-unknown`, ten for `sets`, twenty for latest-by following `keys`, twenty-one for count, sum, min, max and collect following `keys`, and four for a keyed collect's limit counting things.
 Ten earlier entries are retargeted at `of` and the one thing it names, three at the `follow` grammar, four at the shape stage and labels in `under`, eleven at the `follow` type on count, sum, min, max and collect, and two at a keyed collect's new site.
 It retires the redundant positive-offset guard under R4 and the entry for the deleted `stripZeros` family.
 The last full run, in CI on 2026-11-15, covers the 291 entries before a keyed collect's limit counted things: 243 build rejections, 24 vector differences, 22 generator assertion exceptions, and 2 survivors.
@@ -181,7 +182,7 @@ Kyle confirmed the landed choices on 2026-11-10:
 the name `string-not-unicode` and its stage after raw shape, the reuse of `number-out-of-range`, the same overflow handling for spec arguments, and D1 refusing duplicates only.
 D1's name `base-id-duplicate`, D5's refused-payload fault, and the Rust stand-in are implementer choices.
 See [record rules](protocol/record.md), [the lens contract](protocol/lens.md), and [Rust boundaries](rust/GAPS.md).
-D7 below remains open and unchanged.
+D7 below is built since 2026-11-20.
 
 ### Settled: binary64 standards and writer range
 
@@ -194,7 +195,7 @@ See [Rust numeric boundaries](rust/GAPS.md) and [record rules](protocol/record.m
 
 ### D7: Canonical result encoding
 
-Kyle chose the recommendation below on 2026-11-11. It is not built, and changes no current behavior until it is; step 4's ticks need it.
+Kyle chose the recommendation below on 2026-11-11, and on 2026-11-20 ruled that no integer carries a tag and that `shown` is not in the bytes (the cut note, sections 4 and 6). It is built, below, and changes no reading; step 4's ticks need it.
 The [open design](design/rethink/sections/16-open.html) prefers JCS for results.
 Exact, unbounded `Sum` outputs include `9007199254740993` in `phase2-exact-output`.
 Neither current tests nor the model define a canonical result hash codec.
@@ -203,6 +204,29 @@ Raw JCS numeric rounding cannot preserve every `Int`.
 **Effects:** These choices produce different bytes, hashes, and schemas.
 **Recommendation:** Define a separate versioned result codec using typed decimal integer strings under JCS.
 Never round or cap current model outputs.
+
+**Built, 2026-11-20: the codec, version 1.** [`protocol/result.md`](protocol/result.md) defines it; the model is `model/Loops/Result.lean`, with a JavaScript witness (`interop/js/result.mjs`) and the Rust core (`rust/core/src/result.rs`).
+The canonical result is one JSON object of the spec's slots, every one. An integer is a string of its decimal digits, at `value`, `unread` and `ungrouped` and nowhere else; a listed record is its id text; the bytes are JCS in UTF-8.
+The hash is `"h:"` and the base32hex of SHA-256 over the label `loops/result-hash/v1:` and then the bytes.
+The 23 vectors in `vectors/result/` give the canonical text and the hash for 16 `spec/run` inputs and 7 new ones: a sum of −2^54, a sum of zero, slots that read nothing, a grouped slot with `ungrouped` and `unread`, and one holding held, withheld and erased, whose bytes are equal.
+No CLI verb shows a result hash; the tick work decides that.
+The laws:
+- `result.exact`: an integer of any size has one text, and the reader accepts no other.
+- `result.shown`: two results that differ only in `shown` have the same text, bytes and hash.
+- `result.canonical`: for two runs of one spec, the bytes are equal exactly when the results are equal with `shown` set aside. The premise is that the spec names each slot once, which every parsed spec does.
+  It is not true of two arbitrary results: no fold tag is written, so a count and a sum that hold the same number write the same JSON, and an empty latest-by reads as an empty keyed one. The bytes name a result only together with its spec.
+- `result.no-commit`: no result's hashed bytes are a 16-byte salt and then a canonical payload, so a result hash is never a record's commitment. The label is 21 bytes for that reason. A first draft used a 16-byte label, and a record with that salt and the result as its payload had the result's hash.
+
+**Implementer choices, for Kyle to confirm:**
+- A result hash is spelled `h:`, as a commitment is. Only their hashed bytes keep them apart. It could have a typed prefix of its own.
+- The label `loops/result-hash/v1:`. A later version's label must not be 16 bytes, and must leave no JSON value after its first 16 bytes.
+- A listed record is its id text alone, not `{"id": …}`.
+- The bytes hold the slots only: no vertex name and no version member. The version is in the label.
+- Slots are in JCS order, not the order the spec writes them.
+- No fold tag is written.
+- The vector family is a new `vectors/result/` over a subset of the `spec/run` inputs.
+- The law names, beside the existing `result.unread` and `result.full`.
+- The full mutation catalogue has not run over the nineteen new entries; two of them (`result-unshown-keeps-shown`, `result-unshown-groups-kept`) are expected to be refused by the build alone.
 
 ### D8: Items, mentions and declared keys
 
@@ -826,7 +850,6 @@ Costs are S, M, or L for relative effort, not schedules.
 | --- | --- | --- | --- |
 | Ask without a hand-written spec: a scan by name prefix, `ls`, relative times | Day-to-day use of the CLI | M: CLI only | Left by the step-2 exit check; nothing here is ruled |
 | Integrate a workbench page | Readers build scenarios and try vector presets | M: UI, validation, browser tests | Use the JS interpreter and scenario-vector presets; version localStorage drafts; never treat them as canonical storage |
-| Define result encoding and Lean encoding vectors | Reproducible result bytes and hashes without losing exact integers | L: codec, schemas, and cross-runtime vectors | Human decision D7; preserve unbounded model outputs |
 | Turn horizons into Lean scenario vectors | Tests concrete compositions and exposes missing premises | L: model and scenario work | Start with minimal compositions of existing core; mark new boundary, tick, and service premises unimplemented before proof claims |
 | Prove binary64 roundtrip, then shortest | Strengthens assurance beyond sampled standard cases | L: formal number reasoning | Existing canonical formatter; neither proof blocks the settled standard choice |
 | Bridge source and fold records to hashes | Connects text, record bytes, IDs, and fold outputs | L: byte-level model and evidence | Defined source and writer boundaries; do not assume SHA correctness from bounded IDs |
