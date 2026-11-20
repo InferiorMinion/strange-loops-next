@@ -1,7 +1,7 @@
 // Run every vector against the JS implementation, which CI does: layer 0
 // (record, occurred, and the standards' own test data) against loops.mjs, and
 // each reader family through its checker (check-fold, check-lens,
-// check-batch, check-spec, check-realm, check-scenario), each also runnable
+// check-batch, check-spec, check-realm, check-scenario, check-result), each also runnable
 // alone. Every directory of model-written vectors must have a family here,
 // and each family must read every .json file in it, so a new family or a
 // skipped file fails rather than passing unchecked. The last line is the total.
@@ -20,6 +20,7 @@ import * as batch from "./check-batch.mjs";
 import * as spec from "./check-spec.mjs";
 import * as realm from "./check-realm.mjs";
 import * as scenario from "./check-scenario.mjs";
+import * as result from "./check-result.mjs";
 
 // Layer 0 compares strings exactly, as it always has, rather than canonical JSON.
 function exact() {
@@ -154,7 +155,7 @@ function checkByteText(dir) {
 const FAMILIES = [
   ["record", checkRecord], ["occurred", checkOccurred], ["byte-text", checkByteText],
   ["fold", fold.check], ["lens", lens.check], ["batch", batch.check],
-  ["spec", spec.check], ["realm", realm.check], ["scenario", scenario.check],
+  ["spec", spec.check], ["realm", realm.check], ["scenario", scenario.check], ["result", result.check],
 ];
 // Not written by the model: its files aren't all vectors, so it isn't counted.
 const STANDARD = "standard";
