@@ -95,5 +95,6 @@ A later label must keep this.
 ## Outside the codec
 
 * The reading: `{"id", "shown"}` entries and JSON numbers, as the CLI prints and `spec/run` pins.
+  A reading is not a source for the canonical result. It writes an integer as a JSON number, and a reader that takes JSON numbers as binary64 loses digits past 2^53: the reading of `phase2-exact-output` holds 9007199254740993. The canonical result is computed from the run, which holds every digit.
 * `--values`, which prints payload values beside ids. It is a view of the CLI. No canonical result holds a payload value, a fraction or a boolean; if one ever must, a position would hold text or a number, and the codec would need a tag and layer 0's number rule.
 * A tick, and whatever it records beside a result. The codec turns a result into bytes and a hash, and nothing more.
