@@ -18,6 +18,9 @@ downward stand beside every part.
 * **Held back is the prefix of another clock** (`heldOf_prefix`): a record is
   held back at a time exactly when it and everything held under it were
   emitted by then.
+* **A prefix that is not closed downward reads wrongly**
+  (`prefix_reads_wrongly`): it can hold the record that replaced another and
+  read the other as live.
 -/
 
 namespace Loops
@@ -107,5 +110,29 @@ theorem heldOf_prefix {T : Moment} {a : Record} :
   rw [mem_heldOf, mem_upTo, and_assoc]
   exact and_congr_right fun _ => and_congr_right fun _ =>
     ⟨fun h c hc hac => (mem_upTo.1 (h c hc hac)).2, fun h c hc hac => mem_upTo.2 ⟨hc, h c hc hac⟩⟩
+
+/-! **A prefix that is not closed downward reads wrongly.** `a ← b ← c`, where
+`a` and `c` set `status` and the writer of `b` had a clock five seconds fast.
+The prefix at one second is `a` and `c`. It holds `c`, which replaced `a`, and
+reads `a` as live for `status`: the path from `c` down to `a` goes through `b`.
+Down at that time is all three, and reads as the whole does. -/
+
+def sk.a : Record :=
+  { id := 1, kind := "task", observer := "sl:x", of := some "k1", value := "", prev := [],
+    emitted := ⟨"1970-01-01T00:00:00Z", [0], by decide⟩, sets := some ["status"] }
+def sk.b : Record :=
+  { id := 2, kind := "task", observer := "sl:x", of := some "k1", value := "", prev := [1],
+    emitted := ⟨"1970-01-01T00:00:05Z", [5], by decide⟩, sets := some ["title"] }
+def sk.c : Record :=
+  { id := 3, kind := "task", observer := "sl:x", of := some "k1", value := "", prev := [2],
+    emitted := ⟨"1970-01-01T00:00:01Z", [1], by decide⟩, sets := some ["status"] }
+def sk.all : List Record := [sk.a, sk.b, sk.c]
+
+theorem prefix_reads_wrongly :
+    upTo sk.all [1] = [sk.a, sk.c] ∧ ¬Down (upTo sk.all [1]) sk.all ∧
+      liveFor (upTo sk.all [1]) "status" sk.a = true ∧ liveFor sk.all "status" sk.a = false ∧
+      downOf sk.all (upTo sk.all [1]) = sk.all := by
+  refine ⟨by decide +kernel, fun h => ?_, by decide +kernel, by decide +kernel, by decide +kernel⟩
+  exact absurd (h.names sk.c (by decide +kernel) sk.b (by decide +kernel) (by decide +kernel)) (by decide +kernel)
 
 end Loops

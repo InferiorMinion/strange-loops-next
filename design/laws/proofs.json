@@ -1134,6 +1134,11 @@
    "states":
    "∀ {t : String} {xs : List Loops.Record}, Loops.Addressed xs → ∀ {r : Loops.Record}, r.sets = some [] → (∀ (e : String × List Loops.Record), e ∈ (Loops.keyedIn t xs).keys → ¬r ∈ e.snd) ∧ ¬r ∈ (Loops.keyedIn t xs).whole",
    "module": "Laws.Live"},
+  "Loops.prefix_reads_wrongly":
+  {"uses": ["Loops.Down.names"],
+   "states":
+   "Loops.upTo Loops.sk.all [1] = [Loops.sk.a, Loops.sk.c] ∧ ¬Loops.Down (Loops.upTo Loops.sk.all [1]) Loops.sk.all ∧ Loops.liveFor (Loops.upTo Loops.sk.all [1]) \"status\" Loops.sk.a = true ∧ Loops.liveFor Loops.sk.all \"status\" Loops.sk.a = false ∧ Loops.downOf Loops.sk.all (Loops.upTo Loops.sk.all [1]) = Loops.sk.all",
+   "module": "Laws.Cut"},
   "Loops.prefix_down_iff":
   {"uses": ["Loops.Down.names", "Loops.mem_upTo"],
    "states":
