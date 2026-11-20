@@ -1,7 +1,7 @@
 {
   "vector": "r01-negative-past-2-53",
   "layer": "result",
-  "laws": ["result.canonical", "result.exact"],
+  "laws": ["result.canonical", "result.exact", "result.no-commit"],
   "source": "model",
   "input": {
     "spec": {
@@ -146,6 +146,6 @@
   },
   "expect": {
     "canonical": "{\"count\":{\"unread\":\"0\",\"value\":\"3\"},\"max\":{\"unread\":\"0\",\"value\":\"-2\"},\"min\":{\"unread\":\"0\",\"value\":\"-9007199254740991\"},\"sum\":{\"unread\":\"0\",\"value\":\"-18014398509481984\"}}",
-    "hash": "h:s8a2vrhm60qm8tutbn2d9u8j8q32ucjhren2g07as9qp4j9gq1sg"
+    "hash": "h:4uqnkr6crqtcngqq5p0p3le58cmkt0b69i8q3it1qh6634qgtf90"
   }
 }

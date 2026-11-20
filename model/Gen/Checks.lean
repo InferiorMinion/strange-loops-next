@@ -287,7 +287,7 @@ def resultCodecChecks : IO Unit := do
     ensure (intOf? text == none) s!"result integer reader takes {text}"
   ensure (intText (-18014398509481984) == "-18014398509481984" && intText 0 == "0")
     "result integer text"
-  ensure (resultLabel == "loops/result/v1:" && resultLabel.utf8ByteSize == 16) "result label"
+  ensure (resultLabel == "loops/result-hash/v1:" && resultLabel.utf8ByteSize == 21) "result label"
 
 def main (args : List String) : IO Unit := do
   canonicalTextChecks

@@ -64,11 +64,29 @@ test("a list keeps its order and a map is in UTF-16 order", () => {
     '{"g":{"groups":{"":{"unread":"0","value":"1"},"10":{"unread":"0","value":"1"},"2":{"unread":"0","value":"1"}},"ungrouped":"0","unread":"0"}}');
 });
 
+test("a result hash is no record commitment", () => {
+  // commit = SHA-256(salt ‖ JCS(payload)) with a 16-byte salt. A 16-byte label
+  // would let a record with that salt and the result as payload commit to the
+  // result's preimage; this one is 21 bytes, and past 16 bytes is no JSON.
+  assert.equal(Buffer.byteLength(RESULT_LABEL, "utf8"), 21);
+  const out = runSpec(specOf({ n: { count: true } }), [task(1, "task:1")]);
+  const text = resultText(out);
+  const preimage = Buffer.from(RESULT_LABEL + text, "utf8");
+  assert.throws(() => JSON.parse(preimage.subarray(16).toString("utf8")));
+  const salt = preimage.subarray(0, 16), commitOfValue = (bytes) => "h:" + base32(createHash("sha256").update(bytes).digest());
+  assert.notEqual(resultHash(out), commitOfValue(Buffer.concat([salt, Buffer.from(text, "utf8")])));
+  // The 16-byte label of the first draft: past it, the preimage was the result's JCS,
+  // so a record with that label as salt and the result as payload had its digest.
+  const old = Buffer.from("loops/result/v1:", "utf8");
+  assert.equal(old.length, 16);
+  assert.doesNotThrow(() => JSON.parse(Buffer.concat([old, Buffer.from(text, "utf8")]).subarray(16).toString("utf8")));
+});
+
 test("the hash frames the canonical bytes with the codec's version", () => {
   const out = { n: { value: 3, unread: 0 } };
   const text = '{"n":{"unread":"0","value":"3"}}';
   assert.equal(resultText(out), text);
-  assert.equal(RESULT_LABEL, "loops/result/v1:");
+  assert.equal(RESULT_LABEL, "loops/result-hash/v1:");
   const want = "h:" + base32(createHash("sha256").update(Buffer.from(RESULT_LABEL + text, "utf8")).digest());
   assert.equal(resultHash(out), want);
   // Unframed bytes are another hash.

@@ -1,7 +1,7 @@
 {
   "vector": "45-keys-by-payload",
   "layer": "result",
-  "laws": ["result.canonical"],
+  "laws": ["result.canonical", "result.no-commit"],
   "source": "model",
   "input": {
     "spec": {
@@ -2324,6 +2324,6 @@
   },
   "expect": {
     "canonical": "{\"count\":{\"groups\":{\"closed\":{\"unread\":\"0\",\"value\":\"2\"},\"done\":{\"unread\":\"0\",\"value\":\"1\"},\"open\":{\"unread\":\"0\",\"value\":\"1\"}},\"ungrouped\":\"2\",\"unread\":\"1\"},\"count-heads\":{\"groups\":{\"closed\":{\"unread\":\"0\",\"value\":\"3\"},\"done\":{\"unread\":\"0\",\"value\":\"1\"},\"open\":{\"unread\":\"0\",\"value\":\"1\"}},\"ungrouped\":\"2\",\"unread\":\"1\"},\"est\":{\"groups\":{\"closed\":{\"unread\":\"0\",\"value\":\"5\"},\"done\":{\"unread\":\"0\",\"value\":\"2\"},\"open\":{\"unread\":\"0\",\"value\":\"1\"}},\"ungrouped\":\"2\",\"unread\":\"1\"},\"records\":{\"groups\":{\"closed\":{\"heads\":[\"r:00000000000000000000000000000000000000000000000008s0\",\"r:00000000000000000000000000000000000000000000000008rg\",\"r:00000000000000000000000000000000000000000000000008qg\",\"r:00000000000000000000000000000000000000000000000008q0\",\"r:00000000000000000000000000000000000000000000000008r0\",\"r:00000000000000000000000000000000000000000000000008pg\"],\"unread\":\"0\"},\"done\":{\"heads\":[\"r:00000000000000000000000000000000000000000000000008qg\",\"r:00000000000000000000000000000000000000000000000008q0\",\"r:00000000000000000000000000000000000000000000000008pg\"],\"unread\":\"0\"},\"open\":{\"heads\":[\"r:00000000000000000000000000000000000000000000000008p0\",\"r:00000000000000000000000000000000000000000000000008og\"],\"unread\":\"0\"}},\"ungrouped\":\"2\",\"unread\":\"1\"},\"tasks\":{\"unread\":\"0\",\"value\":\"6\"}}",
-    "hash": "h:sjpm44rloonbng2r7cg001tpifcl0av90cjn0vq5b875fp2etajg"
+    "hash": "h:tkjebk4bioqgsuss7daign92tcre7vm2ul1rsh7tcjnhnhbpnqc0"
   }
 }

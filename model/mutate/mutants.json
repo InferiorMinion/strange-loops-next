@@ -2443,9 +2443,17 @@
   {
     "id": "result-label-version",
     "file": "Result.lean",
-    "before": "def resultLabel : String := \"loops/result/v1:\"",
-    "after": "def resultLabel : String := \"loops/result/v2:\"",
+    "before": "def resultLabel : String := \"loops/result-hash/v1:\"",
+    "after": "def resultLabel : String := \"loops/result-hash/v2:\"",
     "reason": "Frame the hash with another version.",
+    "definition": "Loops.resultLabel"
+  },
+  {
+    "id": "result-label-16-bytes",
+    "file": "Result.lean",
+    "before": "def resultLabel : String := \"loops/result-hash/v1:\"",
+    "after": "def resultLabel : String := \"loops/result/v1:\"",
+    "reason": "Frame the hash with a 16-byte label, a commitment's salt length.",
     "definition": "Loops.resultLabel"
   },
   {

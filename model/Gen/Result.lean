@@ -20,7 +20,9 @@ others are new: integers past 2^53 either way, zero, `null`, empty lists and
 maps, and holdings that differ only in what is shown.
 
 Gen checks, before it writes a vector, that every arrival order gives the same
-text, and that the cases of one `same` group give the same text while their
+text; that past its first 16 bytes the preimage reads as no JSON, so it is no
+record's commitment preimage (`result.no-commit`); and that the cases of one
+`same` group give the same text while their
 readings differ: a reader that holds a payload, one that has it withheld and
 one that had it erased hold the same result.
 -/
@@ -161,10 +163,17 @@ def resultOf (c : ResultCase) : Except String (List (String × SlotValue)) := do
   let first := results.headD []
   if !(results.all fun r => resultText r == resultText first) then
     throw s!"result/{c.name}: arrival orders disagree"
+  -- A commitment hashes 16 salt bytes and a payload's JCS: past 16 bytes, the
+  -- preimage must not read as JSON (`resultPreimage_ne_commit` says why).
+  let past16 := String.ofList ((resultLabel ++ resultText first).toList.drop 16)
+  if (resultLabel ++ resultText first).utf8ByteSize - past16.utf8ByteSize != 16 then
+    throw s!"result/{c.name}: the label's first 16 characters are not 16 bytes"
+  if (Read.parseJson past16).isOk then
+    throw s!"result/{c.name}: the preimage is a salt and a JSON value"
   return first
 
 def resultVector (c : ResultCase) (r : List (String × SlotValue)) : J :=
-  vector c.name "result" c.laws
+  vector c.name "result" (c.laws ++ ["result.no-commit"])
     (.obj [("spec", Records.ofJson c.spec),
       ("orders", .arr ((rotations c.records).map fun o => .arr (o.map (jRecordRaw (rawSpellings c.name)))))])
     (resultExpect r)

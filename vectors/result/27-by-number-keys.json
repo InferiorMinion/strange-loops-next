@@ -1,7 +1,7 @@
 {
   "vector": "27-by-number-keys",
   "layer": "result",
-  "laws": ["result.canonical", "result.exact"],
+  "laws": ["result.canonical", "result.exact", "result.no-commit"],
   "source": "model",
   "input": {
     "spec": {
@@ -2587,6 +2587,6 @@
   },
   "expect": {
     "canonical": "{\"per-k\":{\"groups\":{\"-9007199254740991\":{\"unread\":\"0\",\"value\":\"1\"},\"0\":{\"unread\":\"0\",\"value\":\"1\"},\"1\":{\"unread\":\"0\",\"value\":\"2\"},\"1000\":{\"unread\":\"0\",\"value\":\"1\"},\"1000000000000000\":{\"unread\":\"0\",\"value\":\"1\"},\"9007199254740991\":{\"unread\":\"0\",\"value\":\"1\"},\"false\":{\"unread\":\"0\",\"value\":\"2\"},\"true\":{\"unread\":\"0\",\"value\":\"2\"}},\"ungrouped\":\"2\",\"unread\":\"0\"},\"plain\":{\"unread\":\"0\",\"value\":\"13\"}}",
-    "hash": "h:a1luq23c72ulrrhoivs4q8comcittt4m8a055tj6phqjsenuh580"
+    "hash": "h:lrjpko1ke1k1f3tuj550s2412hojtmj81k58dpibm3di3797km40"
   }
 }

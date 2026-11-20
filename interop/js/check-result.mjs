@@ -55,6 +55,12 @@ export function check(dir) {
     const text = v.expect.canonical;
     t.expect(`${n} canonical text is JCS of itself`, canonical(JSON.parse(text)), text);
     t.expect(`${n} canonical positions`, positions(JSON.parse(text)), []);
+    // A commitment hashes 16 salt bytes and then JCS: the preimage past its
+    // first 16 bytes must be no JSON, so it is no commitment's preimage.
+    const past16 = Buffer.concat([Buffer.from(R.RESULT_LABEL, "utf8"), Buffer.from(text, "utf8")]).subarray(16).toString("utf8");
+    let isJson = true;
+    try { JSON.parse(past16); } catch { isJson = false; }
+    t.expect(`${n} preimage is no salt and JSON value`, isJson, false);
   }
   return t;
 }

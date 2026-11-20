@@ -1,7 +1,7 @@
 {
   "vector": "gap14-field-types",
   "layer": "result",
-  "laws": ["result.canonical", "result.exact"],
+  "laws": ["result.canonical", "result.exact", "result.no-commit"],
   "source": "model",
   "input": {
     "spec": {
@@ -1198,6 +1198,6 @@
   },
   "expect": {
     "canonical": "{\"max\":{\"unread\":\"6\",\"value\":\"2\"},\"min\":{\"unread\":\"6\",\"value\":\"-3\"},\"sum\":{\"unread\":\"6\",\"value\":\"1\"}}",
-    "hash": "h:f3pbp7mpa27uu4h5ogrpr7hegtqviigho470e1qhfai2hcma7heg"
+    "hash": "h:otifa2mmlerhvakk1egpeme6dq01dikdkbshep5bfbkc1eu9q18g"
   }
 }

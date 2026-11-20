@@ -4,6 +4,8 @@
    "states":
    "∀ (start start_1 : Nat), start = start_1 → ∀ (stop stop_1 : Nat), stop = stop_1 → ∀ (step step_1 : Nat) (e_step : step = step_1) (step_pos : 0 < step), [start:stop:step] = [start_1:stop_1:step_1]",
    "module": "Laws.IdSource"},
+  "Loops.zeroPoint_toList":
+  {"uses": [], "states": "\"0.\".toList = ['0', '.']", "module": "Laws.Result"},
   "Loops.writeProblem_salt":
   {"uses": [],
    "states":
@@ -227,9 +229,22 @@
    "states":
    "∀ {α : Sort u_1} (answer : List Loops.Record → α) {xs ys : List Loops.Record}, Loops.Addressed xs → Loops.Addressed ys → (∀ (r : Loops.Record), r ∈ xs ↔ r ∈ ys) → answer (Loops.wholeHeads xs) = answer (Loops.wholeHeads ys)",
    "module": "Laws.Spec"},
+  "Loops.utf8_length_16":
+  {"uses": ["Loops.utf8_eq"],
+   "states": "(Loops.utf8 \"loops/result-has\").length = 16",
+   "module": "Laws.Result"},
   "Loops.utf8_injective":
   {"uses": ["Loops.toList_loop"],
    "states": "∀ {a b : String}, Loops.utf8 a = Loops.utf8 b → a = b",
+   "module": "Laws.Result"},
+  "Loops.utf8_eq":
+  {"uses": ["Loops.toList_loop"],
+   "states": "∀ (s : String), Loops.utf8 s = s.toByteArray.data.toList",
+   "module": "Laws.Result"},
+  "Loops.utf8_append":
+  {"uses": ["Loops.utf8_eq"],
+   "states":
+   "∀ (a b : String), Loops.utf8 (a ++ b) = Loops.utf8 a ++ Loops.utf8 b",
    "module": "Laws.Result"},
   "Loops.utf16_inj_list":
   {"uses": ["Loops.utf16Char_cons"],
@@ -311,6 +326,11 @@
   {"uses": [],
    "states": "∀ (bs : List UInt8), Loops.unbase32 (Loops.base32 bs) = some bs",
    "module": "Laws.Base32"},
+  "Loops.toNat_pos_of_window":
+  {"uses": [],
+   "states":
+   "∀ {p : Int}, (decide (0 < p) && decide (p ≤ 21)) = true → 0 < p.toNat",
+   "module": "Laws.Result"},
   "Loops.toNat_ofNat_valid":
   {"uses": [],
    "states":
@@ -970,10 +990,25 @@
    "states":
    "∀ {r q : List (String × Loops.SlotValue)}, (List.map (fun x => x.fst) r).Nodup → (List.map (fun x => x.fst) q).Nodup → (∀ (p : String × Loops.SlotValue), p ∈ r → p.snd.Ordered) → (∀ (p : String × Loops.SlotValue), p ∈ q → p.snd.Ordered) → (Loops.resultText r = Loops.resultText q ↔ ∀ (m : String × Loops.Json), m ∈ Loops.resultMembers r ↔ m ∈ Loops.resultMembers q)",
    "module": "Laws.Result"},
+  "Loops.resultPreimage_ne_commit":
+  {"uses":
+   ["Loops.Json.canon_head",
+    "Loops.resultLabel_split",
+    "Loops.utf8_append",
+    "Loops.utf8_injective",
+    "Loops.utf8_length_16"],
+   "states":
+   "∀ (r : List (String × Loops.SlotValue)) {salt : List UInt8}, salt.length = 16 → ∀ (payload : Loops.Json), Loops.resultPreimage r ≠ salt ++ Loops.utf8 payload.canon",
+   "module": "Laws.Result"},
   "Loops.resultMembers_inj":
   {"uses": ["Loops.eq_of_mem_of_nodup_map", "Loops.utf16_inj"],
    "states":
    "∀ {r : List (String × Loops.SlotValue)}, (List.map (fun x => x.fst) r).Nodup → ∀ (a : String × Loops.Json), a ∈ Loops.resultMembers r → ∀ (b : String × Loops.Json), b ∈ Loops.resultMembers r → Loops.utf16 a.fst = Loops.utf16 b.fst → a = b",
+   "module": "Laws.Result"},
+  "Loops.resultLabel_split":
+  {"uses": ["Loops.utf8_append"],
+   "states":
+   "Loops.utf8 Loops.resultLabel = Loops.utf8 \"loops/result-has\" ++ Loops.utf8 \"h/v1:\"",
    "module": "Laws.Result"},
   "Loops.resultHash_of_unshown":
   {"uses": ["Loops.resultText_unshown"],
@@ -1494,6 +1529,21 @@
    "states":
    "∀ {xs : List Loops.Record}, Loops.Addressed xs → Loops.Distinct (Loops.newestFirst xs)",
    "module": "Laws.Spec"},
+  "Loops.natText_take_head":
+  {"uses": ["Loops.natText_head"],
+   "states":
+   "∀ (m k : Nat), 0 < k → ∀ (rest : List Char), ∃ c cs, List.take k (toString m).toList ++ rest = c :: cs ∧ Loops.jsonHead c",
+   "module": "Laws.Result"},
+  "Loops.natText_head":
+  {"uses": [],
+   "states":
+   "∀ (m : Nat), ∃ c cs, (toString m).toList = c :: cs ∧ c.isDigit = true",
+   "module": "Laws.Result"},
+  "Loops.natText_append_head":
+  {"uses": ["Loops.natText_head"],
+   "states":
+   "∀ (m : Nat) (rest : List Char), ∃ c cs, (toString m).toList ++ rest = c :: cs ∧ Loops.jsonHead c",
+   "module": "Laws.Result"},
   "Loops.natOf?_natDigits":
   {"uses":
    ["Loops.natDigits_zero",
@@ -1529,6 +1579,8 @@
    "states":
    "∀ {n : Nat} {s1 s2 : Int} {f1 f2 : List Int}, Loops.Stripped f1 → Loops.Stripped f2 → f1.length ≤ n → f2.length ≤ n → (s1 :: f1 < s2 :: f2 ↔ Loops.momentScaled n s1 f1 < Loops.momentScaled n s2 f2)",
    "module": "Laws.Time"},
+  "Loops.minus_toList":
+  {"uses": [], "states": "\"-\".toList = ['-']", "module": "Laws.Result"},
   "Loops.minus_not_mem_natDigits":
   {"uses": ["Loops.digitChar_toNat", "Loops.mem_revDigits"],
    "states": "∀ (n : Nat), ¬'-' ∈ Loops.natDigits n",
@@ -4577,6 +4629,14 @@
   {"uses": [],
    "states": "∀ {n : Loops.Number}, n.inRange = true → n.finite = true",
    "module": "Laws.Write"},
+  "Loops.Number.canon_head":
+  {"uses":
+   ["Loops.natText_append_head",
+    "Loops.natText_take_head",
+    "Loops.toNat_pos_of_window"],
+   "states":
+   "∀ (n : Loops.Number), ∃ c cs, n.canon.toList = c :: cs ∧ Loops.jsonHead c",
+   "module": "Laws.Result"},
   "Loops.NoCycle.part":
   {"uses": ["Loops.above_sub"],
    "states":
@@ -5435,6 +5495,16 @@
   {"uses": ["Loops.Json.canon_prefix"],
    "states":
    "∀ {a b : Loops.Json}, a.Plain → b.Plain → a.canon = b.canon → a = b",
+   "module": "Laws.Result"},
+  "Loops.Json.canon_head":
+  {"uses":
+   ["Loops.Number.canon_head",
+    "Loops.canon_arr",
+    "Loops.canon_str",
+    "Loops.minus_toList",
+    "Loops.natText_append_head"],
+   "states":
+   "∀ (j : Loops.Json), ∃ c cs, j.canon.toList = c :: cs ∧ Loops.jsonHead c",
    "module": "Laws.Result"},
   "Loops.Json.canonMembers.eq_def":
   {"uses": ["Loops.Json.brecOn_2.eq"],

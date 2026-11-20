@@ -21,6 +21,11 @@ import Laws.Parse
   thing, group key or payload key, which every slot already lists in UTF-16
   order, and the fixed members are written in JCS order.
 
+* **A result hash is no commitment** (`result.no-commit`). The preimage is
+  never a 16-byte salt and then a JSON value's canonical bytes, which is what a
+  record's commitment hashes: the label is 21 bytes, its 17th byte is `h`, and
+  no canonical JSON text starts with `h`.
+
 The text is injective on the JSON the codec writes (`Json.canon_injective`):
 `null`, text, arrays, and objects whose members are in UTF-16 order, each named
 once. No other JSON is claimed here.
@@ -1075,5 +1080,117 @@ theorem Spec.resultPreimage_parsed_iff {j : Json} {sp : Spec} (h : Spec.ofJson j
     resultPreimage (sp.run xs may) = resultPreimage (sp.run ys may') ↔
       unshownResult (sp.run xs may) = unshownResult (sp.run ys may') :=
   Spec.resultPreimage_run_iff (Spec.ofJson_fits h).2.2.2.1 xs ys may may'
+
+/-! ## A result hash is no commitment
+
+A commitment hashes a 16-byte salt and then a payload's canonical bytes
+(`commitOf`). If the label were 16 bytes, a record whose salt is the label and
+whose payload is the canonical result would commit to the result's own
+preimage. The label is 21 bytes, so the preimage's 17th byte is `h`, and no
+canonical JSON text starts with `h`. -/
+
+/-- What a canonical JSON text can start with. -/
+def jsonHead (c : Char) : Prop :=
+  c = 'n' ∨ c = 't' ∨ c = 'f' ∨ c = '"' ∨ c = '[' ∨ c = '{' ∨ c = '-' ∨ c.isDigit
+
+theorem natText_head (m : Nat) : ∃ c cs, (toString m).toList = c :: cs ∧ c.isDigit := by
+  rw [Nat.toString_eq_ofList_toDigits, String.toList_ofList]
+  obtain ⟨c, cs, e⟩ := List.exists_cons_of_ne_nil (Nat.toDigits_ne_nil (n := m) (b := 10))
+  exact ⟨c, cs, e, Nat.isDigit_of_mem_toDigits (by decide) (by decide) (e ▸ mem_cons_self)⟩
+
+theorem natText_take_head (m k : Nat) (hk : 0 < k) (rest : List Char) :
+    ∃ c cs, (toString m).toList.take k ++ rest = c :: cs ∧ jsonHead c := by
+  obtain ⟨c, cs, e, hc⟩ := natText_head m
+  obtain ⟨k', rfl⟩ : ∃ k', k = k' + 1 := ⟨k - 1, by omega⟩
+  rw [e]
+  exact ⟨c, _, rfl, by simp [jsonHead, hc]⟩
+
+theorem natText_append_head (m : Nat) (rest : List Char) :
+    ∃ c cs, (toString m).toList ++ rest = c :: cs ∧ jsonHead c := by
+  obtain ⟨c, cs, e, hc⟩ := natText_head m
+  rw [e]
+  exact ⟨c, _, rfl, by simp [jsonHead, hc]⟩
+
+theorem toNat_pos_of_window {p : Int} (h : (decide (0 < p) && decide (p ≤ 21)) = true) : 0 < p.toNat := by
+  simp only [Bool.and_eq_true, decide_eq_true_eq] at h; omega
+
+theorem minus_toList : ("-" : String).toList = ['-'] := rfl
+
+theorem zeroPoint_toList : ("0." : String).toList = ['0', '.'] := rfl
+
+set_option maxHeartbeats 4000000 in
+/-- A number's canonical text starts with `-` or a digit, or is `null`. -/
+theorem Number.canon_head (n : Number) : ∃ c cs, n.canon.toList = c :: cs ∧ jsonHead c := by
+  unfold Number.canon
+  split
+  · exact ⟨'n', _, rfl, Or.inl rfl⟩
+  split
+  · exact ⟨'0', _, rfl, by simp [jsonHead]⟩
+  simp only [Id.run, pure]
+  repeat' split
+  all_goals simp only [String.toList_append, String.toList_ofList, String.empty_append, List.append_assoc,
+    minus_toList, zeroPoint_toList, List.cons_append, List.nil_append, String.toList_empty]
+  all_goals first
+    | exact natText_append_head _ _
+    | exact natText_take_head _ _ (by decide) _
+    | (refine natText_take_head _ _ (toNat_pos_of_window ?_) _; assumption)
+    | exact ⟨'-', _, rfl, by simp [jsonHead]⟩
+    | exact ⟨'0', _, rfl, by simp [jsonHead]⟩
+
+/-- **No canonical JSON text starts with `h`**: it starts with `n`, `t`, `f`,
+a quote, a bracket, a brace, `-` or a digit. -/
+theorem Json.canon_head (j : Json) : ∃ c cs, j.canon.toList = c :: cs ∧ jsonHead c := by
+  cases j with
+  | null => exact ⟨'n', _, rfl, by simp [jsonHead]⟩
+  | bool b =>
+    cases b
+    · exact ⟨'f', _, rfl, by simp [jsonHead]⟩
+    · exact ⟨'t', _, rfl, by simp [jsonHead]⟩
+  | int i =>
+    cases i with
+    | ofNat m =>
+      simp only [Json.canon]
+      show ∃ c cs, (Nat.repr m).toList = c :: cs ∧ jsonHead c
+      rw [← Nat.toString_eq_repr]
+      simpa using natText_append_head m []
+    | negSucc m =>
+      simp only [Json.canon]
+      show ∃ c cs, ("-" ++ Nat.repr (m + 1)).toList = c :: cs ∧ jsonHead c
+      exact ⟨'-', (Nat.repr (m + 1)).toList, by rw [String.toList_append, minus_toList]; rfl,
+        by simp [jsonHead]⟩
+  | number n => simp only [Json.canon]; exact Number.canon_head n
+  | str s => exact ⟨'"', _, by rw [canon_str]; rfl, by simp [jsonHead]⟩
+  | arr xs => exact ⟨'[', _, by rw [canon_arr]; rfl, by simp [jsonHead]⟩
+  | obj kvs => exact ⟨'{', _, by simp only [Json.canon, String.toList_append]; rfl, by simp [jsonHead]⟩
+
+theorem utf8_eq (s : String) : utf8 s = s.toByteArray.data.toList := by
+  simp [utf8, String.toUTF8, ByteArray.toList, toList_loop]
+
+theorem utf8_append (a b : String) : utf8 (a ++ b) = utf8 a ++ utf8 b := by
+  rw [utf8_eq, utf8_eq, utf8_eq, String.toByteArray_append, ByteArray.toList_data_append]
+
+theorem resultLabel_split : utf8 resultLabel = utf8 "loops/result-has" ++ utf8 "h/v1:" := by
+  rw [← utf8_append]; rfl
+
+theorem utf8_length_16 : (utf8 "loops/result-has").length = 16 := by rw [utf8_eq]; rfl
+
+/-- **A result hash's preimage is no commitment's**: for no 16-byte salt and no
+JSON value is it the salt followed by the value's canonical bytes. So no
+record commits to the preimage of a result hash, whatever its salt and payload,
+and the two hashes, both written `h:`, are never one digest by construction. -/
+theorem resultPreimage_ne_commit (r : List (String × SlotValue)) {salt : List UInt8} (hs : salt.length = 16)
+    (payload : Json) : resultPreimage r ≠ salt ++ utf8 payload.canon := by
+  intro h
+  rw [resultPreimage, resultLabel_split, List.append_assoc] at h
+  have hd := congrArg (List.drop 16) h
+  rw [List.drop_left' utf8_length_16, List.drop_left' hs, resultBytes, ← utf8_append] at hd
+  have e := congrArg String.toList (utf8_injective hd)
+  obtain ⟨c, cs, hc, hj⟩ := Json.canon_head payload
+  rw [hc, String.toList_append] at e
+  have : c = 'h' := by
+    have := congrArg List.head? e
+    simpa using this.symm
+  subst this
+  simp [jsonHead] at hj
 
 end Loops

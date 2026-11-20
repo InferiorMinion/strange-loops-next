@@ -1,7 +1,7 @@
 {
   "vector": "11-hidden-numbers",
   "layer": "result",
-  "laws": ["result.canonical"],
+  "laws": ["result.canonical", "result.no-commit"],
   "source": "model",
   "input": {
     "spec": {
@@ -137,6 +137,6 @@
   },
   "expect": {
     "canonical": "{\"count\":{\"unread\":\"0\",\"value\":\"2\"},\"max\":{\"unread\":\"2\",\"value\":null},\"min\":{\"unread\":\"2\",\"value\":null},\"sum\":{\"unread\":\"2\",\"value\":\"0\"}}",
-    "hash": "h:su53mrsa27rqagnqcgd5k5gk6e79brq9vpirtut671ctgecs991g"
+    "hash": "h:jeufhumpmm8bae0ad1kl8l586kcecfsmi48b7r816o51mpcbrdrg"
   }
 }

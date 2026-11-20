@@ -1,7 +1,7 @@
 {
   "vector": "12-readable-extrema",
   "layer": "result",
-  "laws": ["result.canonical"],
+  "laws": ["result.canonical", "result.no-commit"],
   "source": "model",
   "input": {
     "spec": {
@@ -90,6 +90,6 @@
   },
   "expect": {
     "canonical": "{\"hi\":{\"unread\":\"0\",\"value\":\"5\"},\"lo\":{\"unread\":\"0\",\"value\":\"3\"}}",
-    "hash": "h:jottua6e192hce6d8352vlcgg14ni0mrhjnk3o46quiihoop0ifg"
+    "hash": "h:g1skid86lq1tp5nual23llbkp6otc96hl8hk44hlfke63shgdhr0"
   }
 }

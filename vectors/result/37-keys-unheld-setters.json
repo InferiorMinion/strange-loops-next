@@ -1,7 +1,7 @@
 {
   "vector": "37-keys-unheld-setters",
   "layer": "result",
-  "laws": ["result.canonical", "result.shown"],
+  "laws": ["result.canonical", "result.shown", "result.no-commit"],
   "source": "model",
   "input": {
     "spec": {
@@ -254,6 +254,6 @@
   },
   "expect": {
     "canonical": "{\"est-absent\":{\"things\":{\"task:5\":{\"heads\":[\"r:000000000000000000000000000000000000000000000000059g\"],\"keys\":{\"status\":[\"r:0000000000000000000000000000000000000000000000000590\"],\"title\":[\"r:000000000000000000000000000000000000000000000000059g\"]},\"whole\":[\"r:000000000000000000000000000000000000000000000000058g\"]}},\"unread\":\"0\"},\"open\":{\"things\":{},\"unread\":\"1\"},\"state\":{\"things\":{\"task:5\":{\"heads\":[\"r:000000000000000000000000000000000000000000000000059g\"],\"keys\":{\"status\":[\"r:0000000000000000000000000000000000000000000000000590\"],\"title\":[\"r:000000000000000000000000000000000000000000000000059g\"]},\"whole\":[\"r:000000000000000000000000000000000000000000000000058g\"]}},\"unread\":\"0\"}}",
-    "hash": "h:lnm8l239vu7fe9pn3r3aciabbhijjaj2vfj7fbocormd6uinckm0"
+    "hash": "h:122m3fnd9jsbbbr45uambbcqlpd17i46p6pp88m5do8me0ktu0h0"
   }
 }

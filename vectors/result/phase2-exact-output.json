@@ -1,7 +1,7 @@
 {
   "vector": "phase2-exact-output",
   "layer": "result",
-  "laws": ["result.canonical", "result.exact"],
+  "laws": ["result.canonical", "result.exact", "result.no-commit"],
   "source": "model",
   "input": {
     "spec": {
@@ -89,6 +89,6 @@
   },
   "expect": {
     "canonical": "{\"field\":{\"unread\":\"0\",\"value\":\"9007199254740993\"},\"n\":{\"unread\":\"0\",\"value\":\"9007199254740993\"}}",
-    "hash": "h:ivcr70dism670hu6h5nf0bbestr968r91p4b8s8h3ukmfqvc1g70"
+    "hash": "h:nhlthha6iamh35od7fked2pm2iv8t2r56aog1fa52rl5dirb1vr0"
   }
 }

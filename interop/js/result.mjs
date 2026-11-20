@@ -8,12 +8,12 @@
 // sits only at `value`, `unread` and `ungrouped`; `value` is null for a min or
 // max that read nothing. Listed records are their ids alone, without `shown`.
 // The bytes are JCS (RFC 8785) of that JSON, in UTF-8; the hash is SHA-256 of
-// the label `loops/result/v1:` and the bytes, written `h:` and base32hex.
+// the label `loops/result-hash/v1:` and the bytes, written `h:` and base32hex.
 
 import { createHash } from "node:crypto";
 import { base32, canonical } from "./loops.mjs";
 
-export const RESULT_LABEL = "loops/result/v1:";
+export const RESULT_LABEL = "loops/result-hash/v1:";
 
 // An integer as the codec writes it: decimal digits, `-` before a negative,
 // `0` for zero (never `-0`). Anything that is not an exact integer is refused.

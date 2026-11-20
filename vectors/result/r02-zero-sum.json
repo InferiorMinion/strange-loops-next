@@ -1,7 +1,7 @@
 {
   "vector": "r02-zero-sum",
   "layer": "result",
-  "laws": ["result.canonical", "result.exact"],
+  "laws": ["result.canonical", "result.exact", "result.no-commit"],
   "source": "model",
   "input": {
     "spec": {
@@ -84,6 +84,6 @@
   },
   "expect": {
     "canonical": "{\"count\":{\"unread\":\"0\",\"value\":\"2\"},\"max\":{\"unread\":\"0\",\"value\":\"5\"},\"min\":{\"unread\":\"0\",\"value\":\"-5\"},\"sum\":{\"unread\":\"0\",\"value\":\"0\"}}",
-    "hash": "h:asbmo8n8iuhulkoltkipac72v2si35nmfeu9mj3leflg5d2uko3g"
+    "hash": "h:n56ibcdd60e52k0cm100cgkei73ql13q7v859d21jnq80r357dgg"
   }
 }

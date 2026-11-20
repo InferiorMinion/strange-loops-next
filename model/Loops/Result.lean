@@ -21,9 +21,11 @@ version 1. It is separate from the reading a reader prints, and it is versioned.
   UTF-8. A map's members are by thing, group key or payload key, which every
   slot already writes in UTF-16 order, so JCS keeps that order; the slots and
   each fixed-member object are sorted by JCS.
-* **The hash** is `H("loops/result/v1:" ‖ bytes)`, written `h:` and base32hex,
+* **The hash** is `H("loops/result-hash/v1:" ‖ bytes)`, written `h:` and base32hex,
   as the signature frames an id with `loops/record/v1:`. The label names the
-  codec's version.
+  codec's version. It is 21 bytes, not 16: a commitment hashes a 16-byte salt
+  and then JCS, and past 16 bytes this preimage is no JSON
+  (`resultPreimage_ne_commit`), so no record commits to it.
 
 `protocol/result.md` is the codec this implements.
 -/
@@ -125,7 +127,7 @@ def resultText (r : List (String × SlotValue)) : String := (resultJson r).canon
 def resultBytes (r : List (String × SlotValue)) : List UInt8 := utf8 (resultText r)
 
 /-- The codec's version, which frames what is hashed. -/
-def resultLabel : String := "loops/result/v1:"
+def resultLabel : String := "loops/result-hash/v1:"
 
 /-- What the result hash covers: the label, then the canonical bytes. -/
 def resultPreimage (r : List (String × SlotValue)) : List UInt8 := utf8 resultLabel ++ resultBytes r
