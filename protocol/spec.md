@@ -5,6 +5,7 @@ A vertex's spec is JSON.
 `fold` names slots, each with one fold type and an optional `where`. This page is normative: it is the grammar `Spec.ofJson`
 (`model/Loops/Spec.lean`) implements. What the slots then hold is in
 [`laws.md`](laws.md), and the vectors in `vectors/spec/` pin both.
+A vertex's whole result as canonical bytes, and its hash, are in [`result.md`](result.md).
 
 ## The spec
 
