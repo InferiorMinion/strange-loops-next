@@ -2,6 +2,9 @@
 //!
 //! The verbs follow the design's CLI. Exit codes: 0 ok, 1 refused (with its
 //! code), 2 a usage error, 3 the file system or the system's randomness failed.
+//! A verb that answers from the store's records writes its answer from the
+//! lines that check, then is refused `store-not-clean` when a line or a
+//! segment did not.
 mod draft;
 mod values;
 
@@ -95,6 +98,42 @@ fn say(value: &str) -> Result<(), Fail> {
     let mut out = io::stdout().lock();
     writeln!(out, "{value}")?;
     Ok(())
+}
+
+/// What is wrong with a store that does not check, or `None` when it checks:
+/// the code, and how many lines were refused and segments altered.
+fn unclean(held: &Held) -> Option<String> {
+    let (lines, segments) = (held.refused().len(), held.altered().len());
+    if lines == 0 && segments == 0 {
+        return None;
+    }
+    let plural = |n: usize, one: &str| format!("{n} {one}{}", if n == 1 { "" } else { "s" });
+    Some(format!(
+        "store-not-clean: {} refused, {} altered; `loops check` lists them",
+        plural(lines, "line"),
+        plural(segments, "segment")
+    ))
+}
+/// The end of a verb that answers from the store: its answer, written from
+/// the lines that checked, then `store-not-clean` when the store does not
+/// check. The verb's own refusal or failure stands, and a reader that left
+/// does not hide an unclean store.
+fn answered(held: &Held, answer: Result<(), Fail>) -> Result<(), Fail> {
+    match answer {
+        Ok(()) | Err(Fail::Closed) => unclean(held).map_or(answer, |why| Err(refused(why))),
+        Err(fail) => Err(fail),
+    }
+}
+/// A writer that reads the store to fill in and check what it writes warns
+/// when the store does not check, and goes on.
+#[expect(
+    clippy::print_stderr,
+    reason = "An unclean store is said beside a writer's answer."
+)]
+fn warn_unclean(held: &Held) {
+    if let Some(why) = unclean(held) {
+        eprintln!("warning: {why}");
+    }
 }
 
 /// Finds the nearest `.loops/` at or above `start`, as git finds `.git`.
@@ -274,6 +313,7 @@ fn write_changeset(
 fn emit(start: &Path, args: &[String]) -> Result<(), Fail> {
     let place = find_store(start)?;
     let held = place.read()?;
+    warn_unclean(&held);
     let key = signing_key(Missing::Make)?;
     let now = clock::now().ok_or_else(|| Fail::System("the clock is outside 1970–9999".into()))?;
     if args == ["-"] {
@@ -316,6 +356,7 @@ fn emit(start: &Path, args: &[String]) -> Result<(), Fail> {
 fn erase(start: &Path, args: &[String]) -> Result<(), Fail> {
     let place = find_store(start)?;
     let held = place.read()?;
+    warn_unclean(&held);
     let key = signing_key(Missing::Make)?;
     let now = clock::now().ok_or_else(|| Fail::System("the clock is outside 1970–9999".into()))?;
     let mut ids = Vec::new();
@@ -373,7 +414,7 @@ fn get(start: &Path, args: &[String]) -> Result<(), Fail> {
         .find(|r| id_text(&r.id) == id)
         .ok_or_else(|| refused(format!("id-unknown: {given}")))?;
     let line = shown_line(&held, &record).ok_or_else(|| refused(format!("id-unknown: {given}")))?;
-    say(&line.canon())
+    answered(&held, say(&line.canon()))
 }
 
 fn of(start: &Path, args: &[String]) -> Result<(), Fail> {
@@ -409,7 +450,7 @@ fn of(start: &Path, args: &[String]) -> Result<(), Fail> {
         ),
     ];
     members.extend(values::thing(&held, &admitted, &thing));
-    say(&object(members).canon())
+    answered(&held, say(&object(members).canon()))
 }
 
 /// `--values` among a verb's arguments, and the arguments without it.
@@ -426,10 +467,11 @@ fn fold_text(start: &Path, spec: &str, view: View) -> Result<(), Fail> {
     let spec = Spec::of_json(&json).map_err(|e| refused(format!("{} at {}", e.code(), e.path)))?;
     let held = find_store(start)?.read()?;
     let slots = loops_eval::slots_json(spec.run(&held.settled()));
-    match view {
+    let answer = match view {
         View::Ids => say(&slots.canon()),
         View::Values => say(&values::fold(&held, &realm(&held), &spec, slots).canon()),
-    }
+    };
+    answered(&held, answer)
 }
 fn fold(start: &Path, args: &[String]) -> Result<(), Fail> {
     let (view, args) = view(args);
@@ -489,18 +531,16 @@ fn export(start: &Path, args: &[String]) -> Result<(), Fail> {
     let mut records = held.settled();
     records.sort_by(content_order);
     let mut out = io::stdout().lock();
-    for record in records {
-        if kind.is_some_and(|k| *k != record.kind)
-            || thing.is_some_and(|t| !record.is_of(t))
-            || mention.is_some_and(|t| !record.about.contains(t))
-        {
-            continue;
-        }
-        if let Some(line) = shown_line(&held, &record) {
-            writeln!(out, "{}", line.canon())?;
-        }
-    }
-    Ok(())
+    let written = records
+        .iter()
+        .filter(|record| {
+            kind.is_none_or(|k| *k == record.kind)
+                && thing.is_none_or(|t| record.is_of(t))
+                && mention.is_none_or(|t| record.about.contains(t))
+        })
+        .filter_map(|record| shown_line(&held, record))
+        .try_for_each(|line| writeln!(out, "{}", line.canon()));
+    answered(&held, written.map_err(Fail::from))
 }
 
 fn import(start: &Path, args: &[String]) -> Result<(), Fail> {
@@ -538,6 +578,9 @@ fn import(start: &Path, args: &[String]) -> Result<(), Fail> {
 
 fn check(start: &Path) -> Result<(), Fail> {
     let held = find_store(start)?.read()?;
+    answered(&held, say(&check_report(&held).canon()))
+}
+fn check_report(held: &Held) -> Json {
     let refusals = held
         .refused()
         .iter()
@@ -549,7 +592,7 @@ fn check(start: &Path) -> Result<(), Fail> {
             ])
         })
         .collect();
-    say(&object(vec![
+    object(vec![
         ("segments", count(held.segments())),
         ("lines", count(held.lines().len())),
         ("records", count(held.settled().len())),
@@ -568,12 +611,6 @@ fn check(start: &Path) -> Result<(), Fail> {
             Json::Arr(held.altered().iter().map(text).collect()),
         ),
     ])
-    .canon())?;
-    if held.refused().is_empty() && held.altered().is_empty() {
-        Ok(())
-    } else {
-        Err(refused("store-not-clean"))
-    }
 }
 
 fn run(args: &[String]) -> Result<(), Fail> {

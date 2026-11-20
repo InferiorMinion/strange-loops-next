@@ -1007,6 +1007,155 @@ fn usage_refusals_and_a_missing_store_exit_apart() {
     assert_eq!(nowhere.fails(&["export"], "").0, 2);
 }
 
+/// What a verb writes on stdout and stderr, and its exit code.
+fn answer(s: &Store, args: &[&str], stdin: &str) -> (i32, String, String) {
+    let out = s.run(args, stdin);
+    (
+        out.status.code().expect("exit code"),
+        String::from_utf8(out.stdout).expect("UTF-8"),
+        String::from_utf8_lossy(&out.stderr).trim_end().to_owned(),
+    )
+}
+/// A store that holds `lines` and nothing else, so every line checks.
+fn holding(name: &str, lines: &str) -> Store {
+    let s = Store::new(name);
+    s.ok_with(&["import"], lines);
+    fs::create_dir_all(s.dir.join(".loops/vertices")).expect("vertices");
+    fs::write(s.dir.join(".loops/vertices/decisions.json"), SPEC).expect("spec");
+    s
+}
+/// Each verb that answers from the store writes, byte for byte, what the
+/// clean store answers, then is refused as `loops check` is; the clean store
+/// exits 0 and says nothing on stderr.
+fn answers_then_refuses(s: &Store, clean: &Store, verbs: &[(&[&str], &str)], why: &str) {
+    for (args, stdin) in verbs {
+        let (code, out, err) = answer(clean, args, stdin);
+        assert_eq!((code, err.as_str()), (0, ""), "{args:?} on the clean store");
+        assert_eq!(
+            answer(s, args, stdin),
+            (1, out, format!("refused: {why}")),
+            "{args:?}"
+        );
+    }
+}
+
+#[test]
+fn a_verb_that_answers_from_a_store_that_does_not_check_answers_then_refuses() {
+    let s = Store::new("tampered");
+    let thing = "repo:strange-loops";
+    let kept = s.ok(&[
+        "emit",
+        "decision",
+        "--of",
+        thing,
+        "status=leaning",
+        "n:=1",
+        "Go",
+    ]);
+    let changed = s.ok(&[
+        "emit",
+        "decision",
+        "--prev",
+        &kept,
+        "status=settled",
+        "n:=2",
+        "Rust",
+    ]);
+    fs::create_dir_all(s.dir.join(".loops/vertices")).expect("vertices");
+    fs::write(s.dir.join(".loops/vertices/decisions.json"), SPEC).expect("spec");
+    let mut remaining = String::new();
+    for line in s.ok(&["export"]).lines().filter(|l| !l.contains("Rust")) {
+        remaining.push_str(line);
+        remaining.push('\n');
+    }
+    let clean = holding("tampered-clean", &remaining);
+    // A tamperer changes the second decision's text in place: its line no
+    // longer checks, and its segment's name is no longer its hash.
+    let segment = s
+        .segments()
+        .into_iter()
+        .find(|p| fs::read_to_string(p).expect("segment").contains("Rust"))
+        .expect("the second decision's segment");
+    let bytes = fs::read_to_string(&segment).expect("segment");
+    fs::write(&segment, bytes.replace("Rust", "Zig!")).expect("tampered");
+
+    let why = "store-not-clean: 1 line refused, 1 segment altered; `loops check` lists them";
+    let verbs: &[(&[&str], &str)] = &[
+        (&["read", "decisions"], ""),
+        (&["read", "decisions", "--values"], ""),
+        (&["fold", "-"], SPEC),
+        (&["fold", "-", "--values"], SPEC),
+        (&["of", thing], ""),
+        (&["get", &kept], ""),
+        (&["export"], ""),
+        (&["export", "--of", thing], ""),
+    ];
+    answers_then_refuses(&s, &clean, verbs, why);
+    // The answer is the first decision's alone.
+    let (_, out, _) = answer(&s, &["of", thing], "");
+    assert_eq!(
+        head_ids(&parse_json(&out).expect("JSON")),
+        std::slice::from_ref(&kept)
+    );
+    // The changed line is not held, so the verb's own refusal stands.
+    assert_eq!(
+        s.fails(&["get", &changed], ""),
+        (1, format!("refused: id-unknown: {changed}"))
+    );
+    // `loops check` lists the line and the segment, and is refused the same way.
+    let (code, out, err) = answer(&s, &["check"], "");
+    assert_eq!((code, err), (1, format!("refused: {why}")));
+    let report = parse_json(&out).expect("JSON");
+    assert_eq!(
+        (len(&report, &["refused"]), len(&report, &["altered"])),
+        (1, 1)
+    );
+    // A writer warns and goes on: what it writes is its own.
+    let (code, id, err) = answer(&s, &["emit", "note", "--about", thing, "seen"], "");
+    assert_eq!((code, err), (0, format!("warning: {why}")));
+    assert!(id.starts_with("r:"));
+}
+
+#[test]
+fn a_segment_altered_with_every_line_checking_is_refused_after_the_answer() {
+    let s = Store::new("cut");
+    let ids = s.changeset(concat!(
+        "{\"kind\":\"decision\",\"of\":\"repo:a\",\"payload\":{\"status\":\"open\",\"n\":1}}\n",
+        "{\"kind\":\"decision\",\"of\":\"repo:b\",\"payload\":{\"status\":\"open\",\"n\":2}}\n",
+    ));
+    // One line is cut from the changeset's segment: what is left checks.
+    let [segment] = s.segments().try_into().expect("one segment");
+    let bytes = fs::read_to_string(&segment).expect("segment");
+    let first = bytes.lines().next().expect("a line");
+    fs::write(&segment, format!("{first}\n")).expect("cut");
+    let clean = holding("cut-clean", &format!("{first}\n"));
+    fs::create_dir_all(s.dir.join(".loops/vertices")).expect("vertices");
+    fs::write(s.dir.join(".loops/vertices/decisions.json"), SPEC).expect("spec");
+    let held = ids
+        .iter()
+        .find(|id| first.contains(id.as_str()))
+        .expect("the line kept");
+
+    let why = "store-not-clean: 0 lines refused, 1 segment altered; `loops check` lists them";
+    let verbs: &[(&[&str], &str)] = &[
+        (&["read", "decisions"], ""),
+        (&["fold", "-"], SPEC),
+        (&["of", "repo:a"], ""),
+        (&["of", "repo:b"], ""),
+        (&["get", held], ""),
+        (&["export"], ""),
+    ];
+    answers_then_refuses(&s, &clean, verbs, why);
+    let (code, out, err) = answer(&s, &["check"], "");
+    assert_eq!((code, err), (1, format!("refused: {why}")));
+    let report = parse_json(&out).expect("JSON");
+    assert_eq!(
+        (len(&report, &["refused"]), len(&report, &["altered"])),
+        (0, 1)
+    );
+    assert_eq!(at(&report, &["records"]), &Json::Int(1_i64.into()));
+}
+
 /// The live records of one thing, as a collect that follows `keys` lists them.
 fn live_of(s: &Store, thing: &str) -> Vec<String> {
     let spec = format!(

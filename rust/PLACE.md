@@ -65,6 +65,10 @@ loops whoami
   fold answers ids, and without `--values` `read` and `fold` answer exactly
   that. See choices 16 and 17.
 * Every answer is JSON or an id. Lenses are a later step, so `--json` is accepted and changes nothing.
+* `read`, `fold`, `of`, `get` and `export` answer from the lines that check,
+  and are then refused `store-not-clean` when a line was refused or a
+  segment is altered, as `check` is; `emit` and `erase` warn and go on. See
+  choice 18.
 
 ## On disk
 
@@ -84,6 +88,7 @@ Reading checks every line: the envelope and the writer's checks, the id
 against the envelope and commitment, the signature against the id, and the
 canonical spelling. A line that fails is listed by `loops check`, never
 held. A segment whose name is not the hash of its bytes is listed as altered.
+Every verb that reads the store says when either happened (choice 18).
 
 ## Choices made here, each cheap to change until stores exist
 
@@ -255,6 +260,29 @@ held. A segment whose name is not the hash of its bytes is listed as altered.
     beside what they read so one read at the start of a session shows each
     item's fields, and none of their names is one the protocol writes at that
     place, so the answer is not mistaken for a fold's.
+18. **A verb that answers from a store that does not check answers, then is
+    refused.** Kyle ruled on 2026-11-20 that a verb that answers from the
+    store must warn and exit non-zero when the store is not clean; before,
+    only `loops check` said so. `read`, `fold`, `of`, `get` and `export`
+    write their answer as before, from the lines that check, so the answer
+    is what a store holding only those lines gives, byte for byte. Then,
+    when a line was refused or a segment is altered, they are refused with
+    `check`'s code, exit 1, and stderr says, with the two counts:
+
+    ```
+    refused: store-not-clean: 1 line refused, 1 segment altered; `loops check` lists them
+    ```
+
+    `check` writes its report and ends with the same refusal, from the same
+    function. A clean store adds nothing. A refusal of the verb's own, such
+    as `id-unknown` for the id of a refused line, is said instead, and a
+    reader that closes stdout does not hide an unclean store. `emit` and
+    `erase` read the store to fill in and check what they write, so a
+    refused line can leave a record unnamed in `prev` or make a target
+    `prev-unknown`. They say the same words on stderr as
+    `warning: store-not-clean: …` before they write, and their answer and
+    exit code are unchanged. `import` does not read the store and says
+    nothing.
 
 ## Checked by
 
@@ -287,7 +315,11 @@ neither picked; an erased and a withheld live setter as unknown, and an
 erased whole-read record as `unheld`; an undeclared payload key not shown, a
 declared one missing as unset, and `--whole` replacing everything; usage
 errors for `--whole` beside `--sets` or `--sets-nothing`; and grouped slots
-with payloads inside each group.
+with payloads inside each group. Over a store with one line changed in
+place, and over one with a line cut from a segment, `read`, `fold`, `of`,
+`get` and `export` write what a store holding only the remaining lines
+answers, then exit 1 with `store-not-clean`; that store exits 0 with nothing
+on stderr, `check` lists the line or the segment, and `emit` warns and writes.
 `rust/place/tests/anchor.rs` writes 300 random emits as `loops emit` writes
 them, one writer and then two that merge now and then, and requires each
 history to be anchored (every record above a live record names it) and each

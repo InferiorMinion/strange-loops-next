@@ -12,6 +12,7 @@ All three refuse every envelope shape by name (issue #1) and let a label stand i
 All three writers refuse an `under` target they do not hold (`under-unknown`).
 `loops emit` follows D8c's anchor rule: an emit of a thing names in `prev` every live record of it the store holds, and carries the thing's whole `about`.
 An emit of a thing the store holds sets the fields it names, and `loops of`, `read --values` and `fold --values` show each key's value from its live setters.
+A CLI verb that answers from a store with a line or a segment that does not check writes its answer and is then refused `store-not-clean` (Kyle, 2026-11-20).
 All three let count, sum, min and max follow `prev` (issue #3), and group count, sum, min, max and collect with `by` (issue #2).
 The law index has 105 entries, 1060 theorems, and 6 boundary witnesses.
 See [the law index](design/laws/laws.json) and [proof and boundary data](design/laws/).
@@ -20,7 +21,7 @@ These proofs apply only under their stated premises.
 The tree has 606 JSON fixtures: 594 generated fixtures and 12 standard fixtures.
 Lean replays 585 generated fixtures; 9 occurred fixtures use separate checks.
 Rust checks every fixture, six JCS byte pairs, 4,000 binary64 cases, and 128 SUPERCOP signing cases with ed25519-dalek.
-Rust passes 180 tests; JavaScript passes 6,979 vector checks and 41 regression and law tests.
+Rust passes 182 tests; JavaScript passes 6,979 vector checks and 41 regression and law tests.
 Both also check that `spec/run` answers write their members, group, thing and key names included, in the model's order; JavaScript checks `fold/latest-by` answers' thing keys too.
 JavaScript refuses a held record's invalid `emitted` or `occurred` before it answers, as the Lean and Rust readers do.
 The fuzz suite passes 60 tests.
@@ -126,7 +127,8 @@ The CLI walk replays the exit check's session with the new defaults: an update b
 **Closed, 2026-11-20.** Kyle ruled that step 2 meets its exit criterion, "It does the old CLI's workable job, signed".
 The replay of the exit check's session passes on `main`: an update that names one field keeps the others, `read --values` shows the content, a keyed collect's `limit` lists the newest thing whole, and `check` finds nothing.
 Of what the exit check left, none blocks:
-- `read` leaves out a stored line that fails its check, says nothing and exits 0; only `check` reports it. Kyle: a small fix, to warn and exit non-zero. Not built.
+- `read` left out a stored line that fails its check, said nothing and exited 0; only `check` reported it. Kyle: a small fix, to warn and exit non-zero. **Built, 2026-11-20:** `read`, `fold`, `of`, `get` and `export` write their answer from the lines that check and are then refused `store-not-clean`, exit 1, when a line was refused or a segment is altered, as `check` is; `emit` and `erase` warn on stderr and go on ([place](rust/PLACE.md), choice 18).
+  **Implementer choices, for Kyle to confirm:** the rule covers every verb that answers from the store, not `read` alone, so `get` of a record that checks is refused too when another line does not; the answer is still written before the refusal; a verb's own refusal, such as `id-unknown` for the id of a refused line, is said instead; `check`'s stderr line now carries the two counts; `emit` and `erase` warn and keep their exit code; `import` does not read the store and says nothing.
 - A hand-written JSON spec for each question, no scan by name prefix, no `ls` and no relative times: [next work](#next-work-by-value).
 - An import of the old tool's stores, and what its `combine` and `discover` vertices did, wait until they are wanted.
 - The old Python `loops` is first on `PATH` on Kyle's machine. That is not the repository's to settle.
@@ -814,7 +816,6 @@ Costs are S, M, or L for relative effort, not schedules.
 
 | Work | Value | Cost | Dependencies and blocking choices |
 | --- | --- | --- | --- |
-| Make `read` report a stored line that fails its check | A changed line cannot leave an answer silently | S: the CLI and its walk | Kyle, 2026-11-20: warn and exit non-zero |
 | Ask without a hand-written spec: a scan by name prefix, `ls`, relative times | Day-to-day use of the CLI | M: CLI only | Left by the step-2 exit check; nothing here is ruled |
 | Integrate a workbench page | Readers build scenarios and try vector presets | M: UI, validation, browser tests | Use the JS interpreter and scenario-vector presets; version localStorage drafts; never treat them as canonical storage |
 | Define result encoding and Lean encoding vectors | Reproducible result bytes and hashes without losing exact integers | L: codec, schemas, and cross-runtime vectors | Human decision D7; preserve unbounded model outputs |
