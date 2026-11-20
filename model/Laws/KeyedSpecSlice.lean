@@ -470,6 +470,21 @@ theorem KeyedPart.of_targets (hm : EnvOnly may) {t : String} (hF : Forms W)
     · exact h
     · rw [← entitled_part hm hF sub (SameEnvelope.refl r) h]; exact he
 
+/-- **A cut refuses what the whole refuses.** A part closed downward holds what
+each of its records names in `prev`, so it holds the target a record is
+refused for. With every form of the thing's records it holds and what erases
+them, it is a part the slice laws apply to, and nothing is asked about
+admission. -/
+theorem KeyedPart.of_down (hm : EnvOnly may) {t : String} (hF : Forms W) (h : Down S W)
+    (forms : ∀ a ∈ S, a.isOf t = true → ∀ b ∈ W, b.id = a.id → b ∈ S)
+    (erasers : ∀ a ∈ S, a.isOf t = true → ∀ e ∈ W, e.erases.contains a.id = true → e ∈ S) :
+    KeyedPart may t S W :=
+  KeyedPart.of_targets hm hF h.part forms erasers fun r hr _ ⟨a, ha, e⟩ => .inr fun q hq hqr => by
+    obtain ⟨i, -, hp⟩ := List.mem_filterMap.1 hr
+    obtain ⟨b, hb, -, hrb⟩ := pick_form hp
+    have hba := (hF b hb a (h.part a ha) (by rw [e, ← hrb.id])).1
+    exact h.names a ha q hq (by rw [← hba.prev, ← hrb.prev]; exact hqr)
+
 /-- A part that holds no form of a record of the thing that the spec takes
 folds no record of the thing that the spec takes. -/
 theorem untaken_of_forms (sp : Spec) {t : String}

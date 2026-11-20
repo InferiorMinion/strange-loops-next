@@ -4620,6 +4620,17 @@
    "states":
    "∀ {may : Loops.Record → Loops.Record → Bool} {S W : List Loops.Record}, Loops.EnvOnly may → ∀ {t : String}, Loops.Forms W → (∀ (r : Loops.Record), r ∈ S → r ∈ W) → (∀ (a : Loops.Record), a ∈ S → a.isOf t = true → ∀ (b : Loops.Record), b ∈ W → b.id = a.id → b ∈ S) → (∀ (a : Loops.Record), a ∈ S → a.isOf t = true → ∀ (e : Loops.Record), e ∈ W → e.erases.contains a.id = true → e ∈ S) → (∀ (r : Loops.Record), r ∈ Loops.settle W → r.isOf t = true → (∃ a, a ∈ S ∧ a.id = r.id) → Loops.entitled may (Loops.settle W) r = true ∨ ∀ (q : Loops.Record), q ∈ W → q.id ∈ r.prev → q ∈ S) → Loops.KeyedPart may t S W",
    "module": "Laws.KeyedSpecSlice"},
+  "Loops.KeyedPart.of_down":
+  {"uses":
+   ["Loops.Down.names",
+    "Loops.Down.part",
+    "Loops.KeyedPart.of_targets",
+    "Loops.SameEnvelope.id",
+    "Loops.SameEnvelope.prev",
+    "Loops.pick_form"],
+   "states":
+   "∀ {may : Loops.Record → Loops.Record → Bool} {S W : List Loops.Record}, Loops.EnvOnly may → ∀ {t : String}, Loops.Forms W → Loops.Down S W → (∀ (a : Loops.Record), a ∈ S → a.isOf t = true → ∀ (b : Loops.Record), b ∈ W → b.id = a.id → b ∈ S) → (∀ (a : Loops.Record), a ∈ S → a.isOf t = true → ∀ (e : Loops.Record), e ∈ W → e.erases.contains a.id = true → e ∈ S) → Loops.KeyedPart may t S W",
+   "module": "Laws.KeyedSpecSlice"},
   "Loops.KeyedPart.forms":
   {"uses": [],
    "states":

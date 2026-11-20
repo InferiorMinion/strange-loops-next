@@ -14,7 +14,7 @@ All three writers refuse an `under` target they do not hold (`under-unknown`).
 An emit of a thing the store holds sets the fields it names, and `loops of`, `read --values` and `fold --values` show each key's value from its live setters.
 A CLI verb that answers from a store with a line or a segment that does not check writes its answer and is then refused `store-not-clean` (Kyle, 2026-11-20).
 All three let count, sum, min and max follow `prev` (issue #3), and group count, sum, min, max and collect with `by` (issue #2).
-The law index has 106 entries, 1070 theorems, and 6 boundary witnesses.
+The law index has 106 entries, 1071 theorems, and 6 boundary witnesses.
 See [the law index](design/laws/laws.json) and [proof and boundary data](design/laws/).
 These proofs apply only under their stated premises.
 
@@ -620,7 +620,7 @@ The *prefix* at T is the records emitted by T. *Down* is the prefix and everythi
 - **Admission agrees.** A part closed downward holds the target a record is refused for, so it refuses what the whole refuses (down and held back, with anchored writers: 0 of 28,414 cuts; a bare prefix admitted such a record in 3 of 3,504 cuts at an hour's skew).
 - **A slice holds the present.** A holder of live records alone cannot answer for a past: what was live then is not in what is live now. A cut needs the history up to it.
 - **Ruled, 2026-11-20:** a cut is a part closed downward over `prev`, or a slice of one as the slice laws define it. The alternative was to let a tick fold any set and say nothing of what it reads. Kyle: this fits "reality happened", and a fold of any set would still need a bound in time, with nothing gained.
-- **Built, 2026-11-20: the law over the model** (`keyed.cut`, in `model/Laws/LiveSlice.lean`, margins-claude). `Down S W` is a part of `W` that holds every record of `W` its records name. `down_reads` is the reading above, over the model's liveness. `closedOver_of_down`: with `Anchoring` over a closed holding with no cycle, a part closed downward is closed, because a writer names every record it holds that is live there and every other record it holds is under one of those. `anchored_of_down` then gives the part anchored names, so `anchored_slice` applies to it. The port needed no premise the note does not state. Not yet in the model: that such a part refuses what the whole refuses (`KeyedPart`), and `down` and held back (2).
+- **Built, 2026-11-20: the law over the model** (`keyed.cut`, in `model/Laws/LiveSlice.lean`, margins-claude). `Down S W` is a part of `W` that holds every record of `W` its records name. `down_reads` is the reading above, over the model's liveness. `closedOver_of_down`: with `Anchoring` over a closed holding with no cycle, a part closed downward is closed, because a writer names every record it holds that is live there and every other record it holds is under one of those. `anchored_of_down` then gives the part anchored names, so `anchored_slice` applies to it. `KeyedPart.of_down`: such a part holds what its records name, so with the forms and erasers of the records of a thing it holds it is a `KeyedPart`, and the slice laws ask nothing more about admission. The port needed no premise the note does not state. Not yet in the model: `down` and held back (2).
 
 #### 2. "As of `emitted`"
 
