@@ -7,6 +7,7 @@ import Gen.Batch
 import Gen.Realm
 import Gen.Scenario
 import Gen.Read
+import Gen.Result
 
 /-!
 # Run: the model's answer for an input
@@ -22,7 +23,7 @@ written input back, as an implementation receives it, so CI checks that each
 input as written gives its `expect`.
 
 It reads `fold/*`, `lens/section`, `spec/parse`, `spec/run`, `record`,
-`batch`, `realm`, `scenario` and `byte-text`. Not `occurred`: its span vectors and its
+`batch`, `realm`, `scenario`, `byte-text` and `result`. Not `occurred`: its span vectors and its
 order vector share one input shape, a list of texts, so the input doesn't
 say which question it asks.
 
@@ -148,6 +149,14 @@ def specRunRun (input : Json) : Dec J := do
   let os ← orders "input.orders" (← req "input" kvs "orders")
   agreed "input.orders" (os.map fun xs => J.obj ((sp.run xs).map fun (n, v) => (n, SpecVectors.jSlot v)))
 
+/-- A result vector's input is a `spec/run` input; its answer is the canonical
+text and hash. -/
+def resultRun (input : Json) : Dec J := do
+  let kvs ← members? "input" ["spec", "orders"] input
+  let sp ← specOf "input.spec" (← req "input" kvs "spec")
+  let os ← orders "input.orders" (← req "input" kvs "orders")
+  agreed "input.orders" (os.map fun xs => ResultVectors.resultExpect (sp.run xs))
+
 /-- What the store holds besides the batch: each id with its `of` and `prev`. -/
 def heldEntry (path : String) (j : Json) : Dec (String × Held) := do
   let kvs ← members? path ["id", "of", "prev"] j
@@ -251,7 +260,7 @@ def byteTextRun (input : Json) : Dec J := do
 /-! ## Dispatch -/
 
 /-- The layers `run` reads, and the directories under a vectors dir that hold them. -/
-def layerDirs : List String := ["fold", "lens", "spec", "record", "batch", "realm", "scenario", "byte-text"]
+def layerDirs : List String := ["fold", "lens", "spec", "record", "batch", "realm", "scenario", "byte-text", "result"]
 
 def answer (layer : String) (input : Json) : Dec J :=
   match foldAnswer layer with
@@ -261,6 +270,7 @@ def answer (layer : String) (input : Json) : Dec J :=
     | "lens/section" => lensRun input
     | "spec/parse" => specParseRun input
     | "spec/run" => specRunRun input
+    | "result" => resultRun input
     | "record" => recordRun input
     | "byte-text" => byteTextRun input
     | "batch" => batchRun input

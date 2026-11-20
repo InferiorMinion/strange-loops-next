@@ -1,11 +1,11 @@
 # Vectors
 
 `model/` writes the protocol fixture families:
-`fold/`, `lens/`, `record/`, `byte-text/`, `spec/`, `batch/`, `realm/`, `occurred/` and `scenario/`.
+`fold/`, `lens/`, `record/`, `byte-text/`, `spec/`, `batch/`, `realm/`, `occurred/`, `scenario/` and `result/`.
 Run `lake exe gen ../vectors` from `model/`; never edit these fixtures by hand.
 CI regenerates them and fails on any difference.
 `standard/` holds external standards data; see its README.
-JS and the Rust workspace check all fixture families and standards.
+JS checks all fixture families and standards, and the Rust workspace all but `result/`, which it does not read yet.
 
 Every file has the same envelope:
 
@@ -115,6 +115,16 @@ A `where` that answers unknown, or a payload key on a payload not held, adds to 
 A whole number key is written in decimal and a boolean as `true` or `false`, so text `"1"` and the number 1 share group `1`.
 `scenario/by-01-erased-in-another-group` settles forms: an eraser in another group still erases.
 Collect counts unread candidates before applying its limit.
+
+## `result`
+
+`input.spec` and `input.orders` follow `spec/run`; sixteen inputs are `spec/run`'s own, under the same names, and the `r` cases are new.
+`expect.canonical` is the vertex's whole result as canonical text, and `expect.hash` its hash, as [`protocol/result.md`](../protocol/result.md) defines them.
+Every arrival order gives both.
+The text lists ids without `shown`, writes each integer as a decimal string, and is JCS, so its slots are in UTF-16 order.
+`r01` sums past −2^53, `r02` sums to `"0"`, `r03` reads nothing: zero, `null`, an empty list and an empty map.
+`r04` has a grouped slot whose `ungrouped` and `unread` differ.
+`r05`, `r06` and `r07` hold one result three ways, a record's payload held, withheld and erased: their texts and hashes are equal and their readings are not; `gen` checks both.
 
 ## `batch`
 
