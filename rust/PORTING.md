@@ -8,7 +8,7 @@ and the immutable model/vector snapshot determine behavior.
 
 - `loops` (`core`) contains the pure model: JSON canonicalization, numbers,
   envelopes/stored records, time/occurred, folds, where/spec, things, lens,
-  and batch. Its only normal dependency is arbitrary-precision integers.
+  batch, and the canonical result (`loops::result`, D7). Its only normal dependency is arbitrary-precision integers.
   Its existing batch unit characterization additionally uses SHA-256 as a
   **dev-dependency**, not part of the core API.
 - `loops-eval` (`eval`) owns the moved fixture readers and family adapters.
@@ -26,6 +26,11 @@ evaluate(text: &str) -> Result<loops::json::Json, loops_eval::Error>
 ```
 
 `slots_json` renders a spec's slot values as the `spec/run` vectors write them; the `loops` CLI prints it.
+That is a reading, with `shown` and JSON numbers. `loops::result` writes the canonical result of
+`protocol/result.md`: every integer as decimal text from the unbounded `Int` and `Nat`, never through
+`f64` or a fixed-width integer, and every listed record by id alone. Its hash takes the hash function as a
+parameter, as `commit_of` does; the `result` layer of `answers` gives `{"canonical", "hash"}` with SHA-256
+for a `spec/run` input in every arrival order. No CLI verb prints a result hash yet.
 `loops-place` and `loops-cli` sit outside this boundary; see `PLACE.md`.
 
 `Error` is a concrete error implementing `Display` and `std::error::Error`.
@@ -123,17 +128,18 @@ There is no deferred-family or skipped-file allowlist:
 
 | Family | JSON files |
 | --- | ---: |
-| record | 180 |
+| record | 197 |
 | occurred | 9 |
 | byte-text | 5 |
 | fold | 50 |
-| spec | 161 |
+| spec | 206 |
 | realm | 16 |
-| scenario | 6 |
+| scenario | 7 |
 | lens | 21 |
-| batch | 67 |
+| batch | 83 |
+| result | 23 |
 | standard | 12 |
-| **Total** | **527** |
+| **Total** | **629** |
 
 All evaluator families are checked against immutable fixture answers,
 including every listed arrival order. A record's variants are checked against

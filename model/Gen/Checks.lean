@@ -275,6 +275,20 @@ def rulingChecks : IO Unit := do
   ensure (!opens Gen.Records.H (commit ++ "0") salt payload) "the opening checks against another commitment"
   IO.println "D1-D6 ruling runtime checks pass"
 
+/-- The result codec's integer reader (D7), which only laws use otherwise: it
+reads back the text `intText` writes and nothing else. -/
+def resultCodecChecks : IO Unit := do
+  for i in [(0 : Int), 7, 10, 12, -12, 100, 9007199254740993, -18014398509481984,
+      123456789012345678901234567890] do
+    ensure (intOf? (intText i) == some i) s!"result integer {i} does not read back"
+  for (text, i) in [("0", (0 : Int)), ("12", 12), ("-12", -12), ("9007199254740993", 9007199254740993)] do
+    ensure (intOf? text == some i) s!"result integer text {text} misread"
+  for text in ["", "-", "-0", "007", "00", "+1", "1:", ":", "1e3", " 1", "1 ", "1.0", "0x10", "--1"] do
+    ensure (intOf? text == none) s!"result integer reader takes {text}"
+  ensure (intText (-18014398509481984) == "-18014398509481984" && intText 0 == "0")
+    "result integer text"
+  ensure (resultLabel == "loops/result-hash/v1:" && resultLabel.utf8ByteSize == 21) "result label"
+
 def main (args : List String) : IO Unit := do
   canonicalTextChecks
   rulingChecks
@@ -420,4 +434,5 @@ def main (args : List String) : IO Unit := do
   let c := { base with id := fixtureId 13, of := some "t:b", prev := [fixtureId 11] }
   ensure (((wholeHeads [a, c]).map (·.id)) == [fixtureId 13, fixtureId 11])
     "global supersession removes another thing's head"
+  resultCodecChecks
   IO.println s!"runtime checks pass; {count} RFC binary64 bit patterns pass"

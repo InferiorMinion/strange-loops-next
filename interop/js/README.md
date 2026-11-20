@@ -60,6 +60,14 @@ An object's own enumeration puts integer-like names first, so the parsed `fold` 
 A spec given as a value has only its enumeration order; read it from text with `parseSpecText` to keep the written one.
 `check-spec.mjs` checks the member order of `spec/run` answers, and `check-fold.mjs` that of `fold/latest-by` answers.
 
+## The canonical result
+
+`result.mjs` writes a `runSpec` answer as the canonical result of [`protocol/result.md`](../../protocol/result.md), and hashes it.
+It reads the answer's shape from its member names and writes ids alone, without `shown`.
+An integer becomes its decimal text through `BigInt`: a `Number` is taken only while it is a safe integer, and a `BigInt` sum past 2^53 keeps every digit; no integer goes through `JSON.stringify`.
+`canonical` then writes the JCS text, so member order is its sort, which is UTF-16 code-unit order.
+`check-result.mjs` checks every `result` vector in every arrival order, and reads each expected text back: JCS of itself, no JSON number in it, an integer text at `value`, `unread` and `ungrouped` alone.
+
 ## Text
 
 `seal`, `writeText`, `canonical` and `resolveBatch` refuse a lone surrogate with `string-not-unicode`.

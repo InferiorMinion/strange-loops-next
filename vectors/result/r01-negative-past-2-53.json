@@ -1,0 +1,151 @@
+{
+  "vector": "r01-negative-past-2-53",
+  "layer": "result",
+  "laws": ["result.canonical", "result.exact", "result.no-commit"],
+  "source": "model",
+  "input": {
+    "spec": {
+      "vertex": "numbers",
+      "from": [
+        {
+          "store": ".",
+          "kind": ["task"]
+        }
+      ],
+      "fold": {
+        "count": {
+          "count": true
+        },
+        "sum": {
+          "sum": "n"
+        },
+        "min": {
+          "min": "n"
+        },
+        "max": {
+          "max": "n"
+        }
+      }
+    },
+    "orders": [
+      [
+        {
+          "id": "r:000000000000000000000000000000000000000000000000070g",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:n1",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:01:40Z",
+          "occurred": "2026-10-01T00:01:40Z",
+          "n": -9007199254740991
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000710",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:n2",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:01:50Z",
+          "occurred": "2026-10-01T00:01:50Z",
+          "n": -9007199254740991
+        },
+        {
+          "id": "r:000000000000000000000000000000000000000000000000071g",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:n3",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:02:00Z",
+          "occurred": "2026-10-01T00:02:00Z",
+          "n": -2
+        }
+      ],
+      [
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000710",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:n2",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:01:50Z",
+          "occurred": "2026-10-01T00:01:50Z",
+          "n": -9007199254740991
+        },
+        {
+          "id": "r:000000000000000000000000000000000000000000000000071g",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:n3",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:02:00Z",
+          "occurred": "2026-10-01T00:02:00Z",
+          "n": -2
+        },
+        {
+          "id": "r:000000000000000000000000000000000000000000000000070g",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:n1",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:01:40Z",
+          "occurred": "2026-10-01T00:01:40Z",
+          "n": -9007199254740991
+        }
+      ],
+      [
+        {
+          "id": "r:000000000000000000000000000000000000000000000000071g",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:n3",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:02:00Z",
+          "occurred": "2026-10-01T00:02:00Z",
+          "n": -2
+        },
+        {
+          "id": "r:000000000000000000000000000000000000000000000000070g",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:n1",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:01:40Z",
+          "occurred": "2026-10-01T00:01:40Z",
+          "n": -9007199254740991
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000710",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:n2",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:01:50Z",
+          "occurred": "2026-10-01T00:01:50Z",
+          "n": -9007199254740991
+        }
+      ]
+    ]
+  },
+  "expect": {
+    "canonical": "{\"count\":{\"unread\":\"0\",\"value\":\"3\"},\"max\":{\"unread\":\"0\",\"value\":\"-2\"},\"min\":{\"unread\":\"0\",\"value\":\"-9007199254740991\"},\"sum\":{\"unread\":\"0\",\"value\":\"-18014398509481984\"}}",
+    "hash": "h:4uqnkr6crqtcngqq5p0p3le58cmkt0b69i8q3it1qh6634qgtf90"
+  }
+}

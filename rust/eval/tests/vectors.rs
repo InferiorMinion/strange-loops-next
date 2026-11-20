@@ -16,6 +16,7 @@ const FAMILIES: &[(&str, usize)] = &[
     ("lens", 21),
     ("batch", 83),
     ("standard", 12),
+    ("result", 23),
 ];
 
 fn member<'a>(j: &'a Json, key: &str) -> &'a Json {
@@ -241,7 +242,7 @@ fn every_registered_json_and_every_arrival_order() {
     for (family, _) in FAMILIES {
         assert!(seen.iter().any(|s| s == family), "missing {family}");
     }
-    assert_eq!(checked, 606);
+    assert_eq!(checked, 629);
     overflowing.sort();
     assert_eq!(
         overflowing, OVERFLOWING,

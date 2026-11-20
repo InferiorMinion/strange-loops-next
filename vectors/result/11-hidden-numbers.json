@@ -1,0 +1,142 @@
+{
+  "vector": "11-hidden-numbers",
+  "layer": "result",
+  "laws": ["result.canonical", "result.no-commit"],
+  "source": "model",
+  "input": {
+    "spec": {
+      "vertex": "hidden-numbers",
+      "from": [
+        {
+          "store": ".",
+          "kind": ["task"]
+        }
+      ],
+      "fold": {
+        "count": {
+          "count": true
+        },
+        "sum": {
+          "sum": "n"
+        },
+        "min": {
+          "min": "n"
+        },
+        "max": {
+          "max": "n"
+        }
+      }
+    },
+    "orders": [
+      [
+        {
+          "id": "r:00000000000000000000000000000000000000000000000001r0",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:6",
+          "prev": [],
+          "emitted": "2026-10-01T00:01:40Z",
+          "occurred": "2026-10-01T00:01:40Z",
+          "shown": "withheld"
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000001rg",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:7",
+          "prev": [],
+          "emitted": "2026-10-01T00:03:20Z",
+          "occurred": "2026-10-01T00:03:20Z",
+          "shown": "erased"
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000001t0",
+          "kind": "erasure",
+          "observer": "sl:kyle",
+          "about": [],
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:05:00Z",
+          "erases": ["r:00000000000000000000000000000000000000000000000001rg"],
+          "n": 0
+        }
+      ],
+      [
+        {
+          "id": "r:00000000000000000000000000000000000000000000000001rg",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:7",
+          "prev": [],
+          "emitted": "2026-10-01T00:03:20Z",
+          "occurred": "2026-10-01T00:03:20Z",
+          "shown": "erased"
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000001t0",
+          "kind": "erasure",
+          "observer": "sl:kyle",
+          "about": [],
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:05:00Z",
+          "erases": ["r:00000000000000000000000000000000000000000000000001rg"],
+          "n": 0
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000001r0",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:6",
+          "prev": [],
+          "emitted": "2026-10-01T00:01:40Z",
+          "occurred": "2026-10-01T00:01:40Z",
+          "shown": "withheld"
+        }
+      ],
+      [
+        {
+          "id": "r:00000000000000000000000000000000000000000000000001t0",
+          "kind": "erasure",
+          "observer": "sl:kyle",
+          "about": [],
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:05:00Z",
+          "erases": ["r:00000000000000000000000000000000000000000000000001rg"],
+          "n": 0
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000001r0",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:6",
+          "prev": [],
+          "emitted": "2026-10-01T00:01:40Z",
+          "occurred": "2026-10-01T00:01:40Z",
+          "shown": "withheld"
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000001rg",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:7",
+          "prev": [],
+          "emitted": "2026-10-01T00:03:20Z",
+          "occurred": "2026-10-01T00:03:20Z",
+          "shown": "erased"
+        }
+      ]
+    ]
+  },
+  "expect": {
+    "canonical": "{\"count\":{\"unread\":\"0\",\"value\":\"2\"},\"max\":{\"unread\":\"2\",\"value\":null},\"min\":{\"unread\":\"2\",\"value\":null},\"sum\":{\"unread\":\"2\",\"value\":\"0\"}}",
+    "hash": "h:jeufhumpmm8bae0ad1kl8l586kcecfsmi48b7r816o51mpcbrdrg"
+  }
+}

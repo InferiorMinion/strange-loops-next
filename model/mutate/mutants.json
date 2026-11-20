@@ -2327,5 +2327,157 @@
     "after": "| \"count\", .bool true => pure (.count (fl.filter (· == .prev)))",
     "reason": "Parse a count that follows keys as one that does not follow.",
     "definition": "Loops.foldType"
+  },
+  {
+    "id": "result-digit-offset",
+    "file": "Result.lean",
+    "before": "Char.ofNat (48 + d)",
+    "after": "Char.ofNat (49 + d)",
+    "reason": "Write each digit one character off.",
+    "definition": "Loops.digitChar"
+  },
+  {
+    "id": "result-digits-dropped",
+    "file": "Result.lean",
+    "before": "digitChar (n % 10) :: revDigits (n / 10)",
+    "after": "digitChar (n % 10) :: revDigits (n / 100)",
+    "reason": "Drop every second digit of a long integer.",
+    "definition": "Loops.revDigits"
+  },
+  {
+    "id": "result-digits-unreversed",
+    "file": "Result.lean",
+    "before": "def natDigits (n : Nat) : List Char := (revDigits n).reverse",
+    "after": "def natDigits (n : Nat) : List Char := revDigits n",
+    "reason": "Write the least significant digit first.",
+    "definition": "Loops.natDigits"
+  },
+  {
+    "id": "result-negative-off-by-one",
+    "file": "Result.lean",
+    "before": "String.ofList ('-' :: natDigits (n + 1))",
+    "after": "String.ofList ('-' :: natDigits n)",
+    "reason": "Write a negative integer one nearer zero.",
+    "definition": "Loops.intText"
+  },
+  {
+    "id": "result-digit-range",
+    "file": "Result.lean",
+    "before": "if 48 ≤ c.toNat ∧ c.toNat ≤ 57 then",
+    "after": "if 48 ≤ c.toNat ∧ c.toNat ≤ 58 then",
+    "reason": "Read `:` as a digit.",
+    "definition": "Loops.digitVal?"
+  },
+  {
+    "id": "result-value-order",
+    "file": "Result.lean",
+    "before": "pure (10 * n + d)",
+    "after": "pure (n + 10 * d)",
+    "reason": "Read the digits in the wrong order.",
+    "definition": "Loops.revValue"
+  },
+  {
+    "id": "result-leading-zero",
+    "file": "Result.lean",
+    "before": "| c :: cs => if c = '0' then none else revValue (c :: cs).reverse",
+    "after": "| c :: cs => revValue (c :: cs).reverse",
+    "reason": "Read a text with a leading zero.",
+    "definition": "Loops.natOf?"
+  },
+  {
+    "id": "result-negative-read-positive",
+    "file": "Result.lean",
+    "before": "| some (n + 1) => some (Int.negSucc n)",
+    "after": "| some (n + 1) => some (Int.ofNat (n + 1))",
+    "reason": "Read a negative integer as its magnitude.",
+    "definition": "Loops.intOf?"
+  },
+  {
+    "id": "result-ids-reversed",
+    "file": "Result.lean",
+    "before": ".arr (hs.map fun h => .str (idText h.1))",
+    "after": ".arr (hs.reverse.map fun h => .str (idText h.1))",
+    "reason": "Write a list in the reverse of the slot's order.",
+    "definition": "Loops.idsJson"
+  },
+  {
+    "id": "result-null-as-zero",
+    "file": "Result.lean",
+    "before": "      | none => .null)]",
+    "after": "      | none => intJson 0)]",
+    "reason": "Write a min or max that read nothing as zero.",
+    "definition": "Loops.GroupValue.result"
+  },
+  {
+    "id": "result-keyed-heads-whole",
+    "file": "Result.lean",
+    "before": ".obj [(\"heads\", idsJson k.heads), (\"keys\",",
+    "after": ".obj [(\"heads\", idsJson k.whole), (\"keys\",",
+    "reason": "Write a keyed thing's whole-read emits as its heads.",
+    "definition": "Loops.KeyedView.result"
+  },
+  {
+    "id": "result-groups-counts-swapped",
+    "file": "Result.lean",
+    "before": "(\"ungrouped\", intJson m), (\"unread\", intJson u)]",
+    "after": "(\"ungrouped\", intJson u), (\"unread\", intJson m)]",
+    "reason": "Swap a grouped slot's ungrouped and unread counts.",
+    "definition": "Loops.SlotValue.result"
+  },
+  {
+    "id": "result-things-first-head",
+    "file": "Result.lean",
+    "before": "| .things ts u => .obj [(\"things\", .obj (ts.map fun p => (p.1, idsJson p.2)))",
+    "after": "| .things ts u => .obj [(\"things\", .obj (ts.map fun p => (p.1, idsJson (p.2.take 1))))",
+    "reason": "List only a forked thing's first head.",
+    "definition": "Loops.SlotValue.result"
+  },
+  {
+    "id": "result-first-slot-only",
+    "file": "Result.lean",
+    "before": "def resultJson (r : List (String × SlotValue)) : Json := .obj (r.map fun p => (p.1, p.2.result))",
+    "after": "def resultJson (r : List (String × SlotValue)) : Json := .obj ((r.map fun p => (p.1, p.2.result)).take 1)",
+    "reason": "Write only the first slot, not the whole result.",
+    "definition": "Loops.resultJson"
+  },
+  {
+    "id": "result-label-version",
+    "file": "Result.lean",
+    "before": "def resultLabel : String := \"loops/result-hash/v1:\"",
+    "after": "def resultLabel : String := \"loops/result-hash/v2:\"",
+    "reason": "Frame the hash with another version.",
+    "definition": "Loops.resultLabel"
+  },
+  {
+    "id": "result-label-16-bytes",
+    "file": "Result.lean",
+    "before": "def resultLabel : String := \"loops/result-hash/v1:\"",
+    "after": "def resultLabel : String := \"loops/result/v1:\"",
+    "reason": "Frame the hash with a 16-byte label, a commitment's salt length.",
+    "definition": "Loops.resultLabel"
+  },
+  {
+    "id": "result-hash-unframed",
+    "file": "Result.lean",
+    "before": "utf8 resultLabel ++ resultBytes r",
+    "after": "resultBytes r",
+    "reason": "Hash the canonical bytes without the label.",
+    "definition": "Loops.resultPreimage"
+  },
+  {
+    "id": "result-unshown-keeps-shown",
+    "file": "Result.lean",
+    "before": "hs.map fun h => (h.1, .here)",
+    "after": "hs",
+    "reason": "Keep what is shown when setting it aside.",
+    "definition": "Loops.unshownIds"
+  },
+  {
+    "id": "result-unshown-groups-kept",
+    "file": "Result.lean",
+    "before": "| .groups gs u m => .groups (gs.map fun p => (p.1, p.2.unshown)) u m",
+    "after": "| .groups gs u m => .groups gs u m",
+    "reason": "Keep what is shown in a grouped slot's lists.",
+    "definition": "Loops.SlotValue.unshown"
   }
 ]

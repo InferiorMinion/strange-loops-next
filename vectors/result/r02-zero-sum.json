@@ -1,0 +1,89 @@
+{
+  "vector": "r02-zero-sum",
+  "layer": "result",
+  "laws": ["result.canonical", "result.exact", "result.no-commit"],
+  "source": "model",
+  "input": {
+    "spec": {
+      "vertex": "numbers",
+      "from": [
+        {
+          "store": ".",
+          "kind": ["task"]
+        }
+      ],
+      "fold": {
+        "count": {
+          "count": true
+        },
+        "sum": {
+          "sum": "n"
+        },
+        "min": {
+          "min": "n"
+        },
+        "max": {
+          "max": "n"
+        }
+      }
+    },
+    "orders": [
+      [
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000720",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:z1",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:01:40Z",
+          "occurred": "2026-10-01T00:01:40Z",
+          "n": 5
+        },
+        {
+          "id": "r:000000000000000000000000000000000000000000000000072g",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:z2",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:01:50Z",
+          "occurred": "2026-10-01T00:01:50Z",
+          "n": -5
+        }
+      ],
+      [
+        {
+          "id": "r:000000000000000000000000000000000000000000000000072g",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:z2",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:01:50Z",
+          "occurred": "2026-10-01T00:01:50Z",
+          "n": -5
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000720",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "task:z1",
+          "value": "",
+          "prev": [],
+          "emitted": "2026-10-01T00:01:40Z",
+          "occurred": "2026-10-01T00:01:40Z",
+          "n": 5
+        }
+      ]
+    ]
+  },
+  "expect": {
+    "canonical": "{\"count\":{\"unread\":\"0\",\"value\":\"2\"},\"max\":{\"unread\":\"0\",\"value\":\"5\"},\"min\":{\"unread\":\"0\",\"value\":\"-5\"},\"sum\":{\"unread\":\"0\",\"value\":\"0\"}}",
+    "hash": "h:n56ibcdd60e52k0cm100cgkei73ql13q7v859d21jnq80r357dgg"
+  }
+}

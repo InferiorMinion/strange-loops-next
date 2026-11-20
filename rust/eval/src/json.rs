@@ -112,7 +112,7 @@ pub(crate) fn parse_overflowing(text: &str) -> Result<Json, Error> {
 pub(crate) fn parse_input(layer: &str, text: &str) -> Result<Json, Error> {
     match layer.split('/').next() {
         Some("record" | "batch") => parse_overflowing(text),
-        Some("spec") => {
+        Some("spec" | "result") => {
             let Envelope(entries) = serde_json::from_str(text)?;
             let members = entries
                 .into_iter()

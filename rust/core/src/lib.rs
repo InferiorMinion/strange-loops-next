@@ -13,6 +13,7 @@ pub mod number;
 pub mod occurred;
 pub mod read;
 pub mod record;
+pub mod result;
 pub mod spec;
 pub mod stored;
 pub mod things;
