@@ -944,6 +944,11 @@
    "states":
    "∀ {t : String} {xs : List Loops.Record}, Loops.Addressed xs → ∀ {r : Loops.Record}, r.sets = some [] → (∀ (e : String × List Loops.Record), e ∈ (Loops.keyedIn t xs).keys → ¬r ∈ e.snd) ∧ ¬r ∈ (Loops.keyedIn t xs).whole",
    "module": "Laws.Live"},
+  "Loops.prefix_down_iff":
+  {"uses": ["Loops.Down.names", "Loops.mem_upTo"],
+   "states":
+   "∀ {W : List Loops.Record}, (∀ (T : Loops.Moment), Loops.Down (Loops.upTo W T) W) ↔ Loops.NamesEarlier W",
+   "module": "Laws.Cut"},
   "Loops.pow10_pos":
   {"uses": [], "states": "∀ (n : Nat), 0 < 10 ^ n", "module": "Laws.Time"},
   "Loops.point_qualified":
@@ -1362,6 +1367,11 @@
    "states":
    "∀ {rs : List Loops.Record} {ids : List Loops.RecordId} {i : Loops.RecordId}, i ∈ Loops.upward rs ids ↔ Loops.Reach rs ids i",
    "module": "Laws.Live"},
+  "Loops.mem_upTo":
+  {"uses": [],
+   "states":
+   "∀ {W : List Loops.Record} {T : Loops.Moment} {a : Loops.Record}, a ∈ Loops.upTo W T ↔ a ∈ W ∧ a.emitted.moment ≤ T",
+   "module": "Laws.Cut"},
   "Loops.mem_thingsOf":
   {"uses": ["Loops.isOf_iff", "Loops.mem_canonSet"],
    "states":
@@ -1477,11 +1487,21 @@
    "states":
    "∀ {xs : List Loops.Record} {i : Loops.RecordId}, i ∈ Loops.idsOf xs ↔ ∃ r, r ∈ xs ∧ r.id = i",
    "module": "Laws.Things"},
+  "Loops.mem_heldOf":
+  {"uses": [],
+   "states":
+   "∀ {W P : List Loops.Record} {a : Loops.Record}, a ∈ Loops.heldOf W P ↔ a ∈ P ∧ ∀ (c : Loops.Record), c ∈ W → a ∈ Loops.above W c → c ∈ P",
+   "module": "Laws.Cut"},
   "Loops.mem_filter_congr":
   {"uses": [],
    "states":
    "∀ {A B : List Loops.Record} {p q : Loops.Record → Bool}, (∀ (r : Loops.Record), r ∈ A ↔ r ∈ B) → (∀ (r : Loops.Record), p r = q r) → ∀ (r : Loops.Record), r ∈ List.filter p A ↔ r ∈ List.filter q B",
    "module": "Laws.Live"},
+  "Loops.mem_downOf":
+  {"uses": [],
+   "states":
+   "∀ {W P : List Loops.Record} {a : Loops.Record}, a ∈ Loops.downOf W P ↔ a ∈ W ∧ (a ∈ P ∨ ∃ b, b ∈ P ∧ b ∈ Loops.above W a)",
+   "module": "Laws.Cut"},
   "Loops.mem_dedup_sub":
   {"uses": [],
    "states":
@@ -2094,6 +2114,21 @@
   {"uses": [],
    "states": "∀ (n : Loops.RecordId) (d : Nat), d ∈ Loops.idDigest n → d < 256",
    "module": "Laws.Id"},
+  "Loops.heldOf_prefix":
+  {"uses": ["Loops.mem_heldOf", "Loops.mem_upTo"],
+   "states":
+   "∀ {W : List Loops.Record} {T : Loops.Moment} {a : Loops.Record}, a ∈ Loops.heldOf W (Loops.upTo W T) ↔ a ∈ W ∧ a.emitted.moment ≤ T ∧ ∀ (c : Loops.Record), c ∈ W → a ∈ Loops.above W c → c.emitted.moment ≤ T",
+   "module": "Laws.Cut"},
+  "Loops.heldOf_greatest":
+  {"uses": ["Loops.Down.below", "Loops.mem_heldOf"],
+   "states":
+   "∀ {W P U : List Loops.Record}, Loops.Down U W → (∀ (r : Loops.Record), r ∈ U → r ∈ P) → ∀ (r : Loops.Record), r ∈ U → r ∈ Loops.heldOf W P",
+   "module": "Laws.Cut"},
+  "Loops.heldOf_down":
+  {"uses": ["Loops.above_of_names", "Loops.above_trans", "Loops.mem_heldOf"],
+   "states":
+   "∀ {W P : List Loops.Record}, (∀ (r : Loops.Record), r ∈ P → r ∈ W) → Loops.Down (Loops.heldOf W P) W",
+   "module": "Laws.Cut"},
   "Loops.heads_taken":
   {"uses":
    ["Loops.mem_stateIn_heads",
@@ -2368,6 +2403,20 @@
    "states":
    "∀ {S W : List Loops.Record}, Loops.Down S W → ∀ (o : Option String) (r : Loops.Record), Loops.liveK S o r = true ↔ Loops.setsK o r = true ∧ ∀ (q : Loops.Record), q ∈ S → q ∈ Loops.above W r → Loops.setsK o q = false",
    "module": "Laws.LiveSlice"},
+  "Loops.downOf_least":
+  {"uses": ["Loops.Down.below", "Loops.mem_downOf"],
+   "states":
+   "∀ {W P U : List Loops.Record}, Loops.Down U W → (∀ (r : Loops.Record), r ∈ P → r ∈ U) → ∀ (r : Loops.Record), r ∈ Loops.downOf W P → r ∈ U",
+   "module": "Laws.Cut"},
+  "Loops.downOf_holds":
+  {"uses": ["Loops.mem_downOf"],
+   "states":
+   "∀ {W P : List Loops.Record}, (∀ (r : Loops.Record), r ∈ P → r ∈ W) → ∀ (r : Loops.Record), r ∈ P → r ∈ Loops.downOf W P",
+   "module": "Laws.Cut"},
+  "Loops.downOf_down":
+  {"uses": ["Loops.above_of_names", "Loops.above_trans", "Loops.mem_downOf"],
+   "states": "∀ (W P : List Loops.Record), Loops.Down (Loops.downOf W P) W",
+   "module": "Laws.Cut"},
   "Loops.distinct_dedup":
   {"uses": ["Loops.dedup.eq_def", "Loops.mem_dedup_sub"],
    "states": "∀ (xs : List Loops.Record), Loops.Distinct (Loops.dedup xs)",
