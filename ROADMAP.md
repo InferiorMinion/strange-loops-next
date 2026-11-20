@@ -14,7 +14,7 @@ All three writers refuse an `under` target they do not hold (`under-unknown`).
 An emit of a thing the store holds sets the fields it names, and `loops of`, `read --values` and `fold --values` show each key's value from its live setters.
 A CLI verb that answers from a store with a line or a segment that does not check writes its answer and is then refused `store-not-clean` (Kyle, 2026-11-20).
 All three let count, sum, min and max follow `prev` (issue #3), and group count, sum, min, max and collect with `by` (issue #2).
-The law index has 105 entries, 1060 theorems, and 6 boundary witnesses.
+The law index has 107 entries, 1081 theorems, and 6 boundary witnesses.
 See [the law index](design/laws/laws.json) and [proof and boundary data](design/laws/).
 These proofs apply only under their stated premises.
 
@@ -620,6 +620,7 @@ The *prefix* at T is the records emitted by T. *Down* is the prefix and everythi
 - **Admission agrees.** A part closed downward holds the target a record is refused for, so it refuses what the whole refuses (down and held back, with anchored writers: 0 of 28,414 cuts; a bare prefix admitted such a record in 3 of 3,504 cuts at an hour's skew).
 - **A slice holds the present.** A holder of live records alone cannot answer for a past: what was live then is not in what is live now. A cut needs the history up to it.
 - **Ruled, 2026-11-20:** a cut is a part closed downward over `prev`, or a slice of one as the slice laws define it. The alternative was to let a tick fold any set and say nothing of what it reads. Kyle: this fits "reality happened", and a fold of any set would still need a bound in time, with nothing gained.
+- **Built, 2026-11-20: the law over the model** (`keyed.cut`, in `model/Laws/LiveSlice.lean`, margins-claude). `Down S W` is a part of `W` that holds every record of `W` its records name. `down_reads` is the reading above, over the model's liveness. `closedOver_of_down`: with `Anchoring` over a closed holding with no cycle, a part closed downward is closed, because a writer names every record it holds that is live there and every other record it holds is under one of those. `anchored_of_down` then gives the part anchored names, so `anchored_slice` applies to it. `KeyedPart.of_down`: such a part holds what its records name, so with the forms and erasers of the records of a thing it holds it is a `KeyedPart`, and the slice laws ask nothing more about admission. The port needed no premise the note does not state. `down` and held back are under 2.
 
 #### 2. "As of `emitted`"
 
@@ -637,6 +638,7 @@ With anchored writers and wall clocks:
 - Held back is the prefix of another clock (`heldOf_prefix`): a record's own `emitted` or the latest in its ancestry, whichever is later. That is what a writer rule "never emit earlier than what you name" would have written. With that rule in the writers, every prefix was closed downward (0 of 14,125).
 - **The cut is about claims either way.** With clocks two minutes off, no prefix was open, and 1,011 of 3,521 cuts still were not the keyed state the writers together had at that minute. No choice here makes `emitted` the time.
 - **Ruled, 2026-11-20: as of T is down.** It trusts the claims it is asked about: a record emitted before T was written on what it names, so that was there too, whatever its own clock said. It changes no record, no writer and no refusal. Its heads are all records of the prefix.
+- **Built, 2026-11-20: the laws over the model** (`cut.prefix`, in `model/Laws/Cut.lean`, margins-claude). `upTo W T` is the prefix, over `emitted` as the model compares it. `prefix_down_iff`: every prefix is closed downward exactly when no record names a record with a later `emitted`. `downOf W P` is `P` with every held record under it, closed downward and the least such part that holds `P` (`downOf_down`, `downOf_least`). `heldOf W P` is the records of `P` with every held record under them in `P`, closed downward and the greatest such part inside `P` (`heldOf_down`, `heldOf_greatest`). `heldOf_prefix`: a record is held back at T exactly when it and everything held under it were emitted by T. These are sets of records with no fold behind them: nothing in the model computes "as of" yet. The witness that a prefix can read wrongly is still margins' (`lean/Convex.lean`, `Skew`).
   The alternatives were:
   - **Held back** in the reader: also closed downward, and a backdated record gains nothing by it. One record with a clock far ahead hides everything built on it from every earlier cut.
   - **A writer rule** on `emitted`: binds honest writers only, and makes `emitted` something other than the observer's now. A record with a clock far ahead pulls the `emitted` of everything built on it forward for good.

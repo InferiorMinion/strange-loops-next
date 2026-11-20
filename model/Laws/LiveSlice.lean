@@ -26,6 +26,10 @@ replaced can look live. These laws say when a part reads as the whole does.
   (`anchored_of_written`): one that holds what the writers of its records
   held. A holder missing a record reads wrongly from its own live records
   (`closed_needed`).
+* **A cut** (`down_reads`, `closedOver_of_down`, `anchored_of_down`): a part
+  closed downward, one that holds every held record its records name, reads
+  as a past of the holding, and is closed when the holding is. So the rule
+  carries to it.
 
 Three of these need `prev` to have no cycle among the records held
 (`NoCycle`). An id is a hash of an envelope that holds its `prev`, so real
@@ -381,6 +385,94 @@ theorem anchored_of_written {saw : Record → List Record} {W : List Record} (ha
   obtain ⟨hyW, p, hp, hr⟩ := mem_above.1 hy
   have hxs : x ∈ saw y := saw_of_reach ha hw hc hx hr y hyW hp
   exact hw.rule y hyW x hxs (live_part (hc y hyW) hl)
+
+/-! ## A cut: a part closed downward
+
+A part is *closed downward* when it holds every held record one of its
+records names in `prev`. Such a part is a state the holding could have been
+in: it sees above a record exactly what the whole sees there among its own
+records, and it holds what the writers of its records held. So the writer's
+rule, which is over what each writer held and not over what is live now,
+carries to it, and its live records read alone read as it does. -/
+
+/-- `S` is a part of `W` that holds every record of `W` its records name. -/
+structure Down (S W : List Record) : Prop where
+  part : ∀ r ∈ S, r ∈ W
+  names : ∀ y ∈ S, ∀ x ∈ W, x.id ∈ y.prev → x ∈ S
+
+/-- Whatever reaches a name of a held record does so through held records. -/
+theorem Down.reach {S W : List Record} (h : Down S W) {r : Record} :
+    ∀ {i : RecordId}, Reach W [r.id] i → ∀ b ∈ S, i ∈ b.prev → Reach S [r.id] i := by
+  intro i hr
+  induction hr with
+  | base hi => exact fun _ _ _ => .base hi
+  | @up q p hq hp _ ih => exact fun b hb hqb => .up (h.names b hb q hq hqb) hp (ih q (h.names b hb q hq hqb) hp)
+
+/-- A part closed downward sees above a record what the whole sees there
+among the part's records. -/
+theorem Down.above_iff {S W : List Record} (h : Down S W) {r q : Record} :
+    q ∈ above S r ↔ q ∈ S ∧ q ∈ above W r := by
+  constructor
+  · exact fun hq => ⟨(mem_above.1 hq).1, above_sub h.part hq⟩
+  · rintro ⟨hqS, hq⟩
+    obtain ⟨-, p, hp, hr⟩ := mem_above.1 hq
+    exact mem_above.2 ⟨hqS, p, hp, h.reach hr q hqS hp⟩
+
+/-- A part closed downward holds every held record under one of its own. -/
+theorem Down.below {S W : List Record} (h : Down S W) {x b : Record} (hx : x ∈ W) (hb : b ∈ S)
+    (hxb : b ∈ above W x) : x ∈ S := by
+  obtain ⟨-, p, hp, hr⟩ := mem_above.1 hxb
+  have key : ∀ {i : RecordId}, Reach W [x.id] i → ∀ b ∈ S, i ∈ b.prev → x ∈ S := by
+    intro i hr
+    induction hr with
+    | base hi => exact fun b hb hib => h.names b hb x hx (mem_singleton.1 hi ▸ hib)
+    | @up q p hq hp _ ih => exact fun b hb hqb => ih q (h.names b hb q hq hqb) hp
+  exact key hr b hb hp
+
+/-- **A cut reads as a past.** A part closed downward reads a record as live
+for a key exactly when no setter of the key in the part is above it in the
+whole: what a holder of exactly those records reads, with nothing missing
+between them. -/
+theorem down_reads {S W : List Record} (h : Down S W) (o : Option String) (r : Record) :
+    liveK S o r = true ↔ setsK o r = true ∧ ∀ q ∈ S, q ∈ above W r → setsK o q = false := by
+  rw [liveK_iff]
+  exact and_congr_right fun _ =>
+    ⟨fun hl q hq hqa => hl q (h.above_iff.2 ⟨hq, hqa⟩), fun hl q hq => hl q (h.above_iff.1 hq).1 (h.above_iff.1 hq).2⟩
+
+theorem NoCycle.part {U W : List Record} (hW : NoCycle W) (h : ∀ q ∈ U, q ∈ W) : NoCycle U :=
+  fun r hr hra => hW r (h r hr) (above_sub h hra)
+
+theorem Anchoring.part {saw : Record → List Record} {U W : List Record} (hw : Anchoring saw W)
+    (h : ∀ q ∈ U, q ∈ W) : Anchoring saw U where
+  names := fun y hy => hw.names y (h y hy)
+  trans := fun y hy => hw.trans y (h y hy)
+  rule := fun y hy => hw.rule y (h y hy)
+
+/-- **A cut of a closed holding is closed.** Where the writers followed the
+rule, a part closed downward holds what the writers of its records held: a
+writer names every record it holds that is live there, and every other record
+it holds is under one of those. -/
+theorem closedOver_of_down {saw : Record → List Record} {S W : List Record} (hW : NoCycle W)
+    (hw : Anchoring saw W) (hc : ClosedOver saw W) (h : Down S W) : ClosedOver saw S := by
+  intro y hy x hx
+  have hyW := h.part y hy
+  have hV : ∀ q ∈ saw y, q ∈ W := hc y hyW
+  have named : ∀ b ∈ saw y, liveK (saw y) none b = true → b ∈ S := fun b hb hl =>
+    h.names y hy b (hV b hb) (hw.rule y hyW b hb (live_iff_liveK.2 ⟨none, hl⟩))
+  cases hl : liveK (saw y) none x with
+  | true => exact named x hx hl
+  | false =>
+    obtain ⟨b, hb, hlb⟩ := live_above (hW.part hV) none x rfl hl
+    exact h.below (hV x hx) (named b (mem_above.1 hb).1 hlb) (above_sub hV hb)
+
+/-- **The rule carries to a cut.** A part closed downward of a closed holding
+whose writers followed the rule has anchored names, so its live records read
+alone read every key as it does (`anchored_slice`). `Anchored` of the whole
+would not do: it is about what is live now. -/
+theorem anchored_of_down {saw : Record → List Record} {S W : List Record} (ha : Addressed W)
+    (hW : NoCycle W) (hw : Anchoring saw W) (hc : ClosedOver saw W) (h : Down S W) : Anchored S :=
+  anchored_of_written (fun a haS b hbS => ha a (h.part a haS) b (h.part b hbS)) (hw.part h.part)
+    (closedOver_of_down hW hw hc h)
 
 /-! ## The boundaries
 
