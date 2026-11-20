@@ -123,6 +123,14 @@ The CLI walk replays the exit check's session with the new defaults: an update b
 - `--values` adds members, never changes one: `values`, `setters` and `unheld` beside a keyed thing's `keys`, `whole` and `heads`, and `payload` on an `{"id", "shown"}` entry whose `shown` is `here`, the payload as stored, declared keys or not. Counts, sums, minima and maxima gain nothing.
 - Existing walk tests that meant a whole-read emit of an existing thing now say `--whole`: the two-store walk's revisions and note, the whole-read emit above keyed ones, and the emit in the `sets` walk that states no `sets`. Walk tests that read `winner` and `others` from `loops of` read `heads`.
 
+**Closed, 2026-11-20.** Kyle ruled that step 2 meets its exit criterion, "It does the old CLI's workable job, signed".
+The replay of the exit check's session passes on `main`: an update that names one field keeps the others, `read --values` shows the content, a keyed collect's `limit` lists the newest thing whole, and `check` finds nothing.
+Of what the exit check left, none blocks:
+- `read` leaves out a stored line that fails its check, says nothing and exits 0; only `check` reports it. Kyle: a small fix, to warn and exit non-zero. Not built.
+- A hand-written JSON spec for each question, no scan by name prefix, no `ls` and no relative times: [next work](#next-work-by-value).
+- An import of the old tool's stores, and what its `combine` and `discover` vertices did, wait until they are wanted.
+- The old Python `loops` is first on `PATH` on Kyle's machine. That is not the repository's to settle.
+
 ## Decisions for the human
 
 ### Settled: Step-1 rulings R1–R6
@@ -589,7 +597,8 @@ The CLI walk pins an erased and a withheld stored target.
 ### Step 4: the cut, design note
 
 **Draft by margins-claude, 2026-11-15, for Kyle's rulings before any code.** Nothing here is built. Section 8 was added the same day, after the lens experiment.
-Every choice that is Kyle's is marked **Open**, with a recommendation and the alternatives.
+Every choice that is Kyle's is marked **Open**, with a recommendation and the alternatives, or **Ruled** with the date.
+Kyle ruled on 2026-11-20 on sections 1 to 7, each time for the recommendation. Section 8 is still open: his remark is at its end.
 The coordinator asked the questions; the experiment and the proofs are in the margins repo: `sl-py/cut.py` (seed `cut-1`, 200 stores for each configuration) and `lean/Convex.lean`, section `Cut`.
 The stores are two or three keyed things written by three replicas that sync, with pure joins, whole-read emits, erasures and now and then a `prev` that crosses things.
 Each replica's clock is off by up to a stated number of minutes, and an emit comes every one to six minutes.
@@ -608,7 +617,7 @@ The *prefix* at T is the records emitted by T. *Down* is the prefix and everythi
 - **The law is over the rule, not over `Anchored`.** `Anchored` says every record names every record under it that is live *now*. A holding can be anchored now and have a past that is not (`cut.py`, by hand: four records). `Anchoring` is the premise that carries to a cut, so the law to state is "`Anchoring`, and a part closed downward, give `ClosedOver`", beside `anchored_of_written`.
 - **Admission agrees.** A part closed downward holds the target a record is refused for, so it refuses what the whole refuses (down and held back, with anchored writers: 0 of 28,414 cuts; a bare prefix admitted such a record in 3 of 3,504 cuts at an hour's skew).
 - **A slice holds the present.** A holder of live records alone cannot answer for a past: what was live then is not in what is live now. A cut needs the history up to it.
-- **Open:** a cut is a part closed downward over `prev`, or a slice of one as the slice laws define it. The alternative is to let a tick fold any set and say nothing of what it reads.
+- **Ruled, 2026-11-20:** a cut is a part closed downward over `prev`, or a slice of one as the slice laws define it. The alternative was to let a tick fold any set and say nothing of what it reads. Kyle: this fits "reality happened", and a fold of any set would still need a bound in time, with nothing gained.
 
 #### 2. "As of `emitted`"
 
@@ -625,7 +634,8 @@ With anchored writers and wall clocks:
 - Where the prefix is not closed downward, down and held back each give other answers than it (480 and 478 of the 480 cuts), and they are two different parts. Down includes records emitted after T that a record of the prefix builds on. Held back leaves out records emitted before T that build on a later one.
 - Held back is the prefix of another clock (`heldOf_prefix`): a record's own `emitted` or the latest in its ancestry, whichever is later. That is what a writer rule "never emit earlier than what you name" would have written. With that rule in the writers, every prefix was closed downward (0 of 14,125).
 - **The cut is about claims either way.** With clocks two minutes off, no prefix was open, and 1,011 of 3,521 cuts still were not the keyed state the writers together had at that minute. No choice here makes `emitted` the time.
-- **Open, recommended: as of T is down.** It trusts the claims it is asked about: a record emitted before T was written on what it names, so that was there too, whatever its own clock said. It changes no record, no writer and no refusal. Its heads are all records of the prefix.
+- **Ruled, 2026-11-20: as of T is down.** It trusts the claims it is asked about: a record emitted before T was written on what it names, so that was there too, whatever its own clock said. It changes no record, no writer and no refusal. Its heads are all records of the prefix.
+  The alternatives were:
   - **Held back** in the reader: also closed downward, and a backdated record gains nothing by it. One record with a clock far ahead hides everything built on it from every earlier cut.
   - **A writer rule** on `emitted`: binds honest writers only, and makes `emitted` something other than the observer's now. A record with a clock far ahead pulls the `emitted` of everything built on it forward for good.
   - **An admission rule** (refuse a record that names a later-emitted one): binds readers, drops an honest record for another writer's clock, and is a new refusal, so a slice must carry the targets of what it refuses, as `keyed.spec-slice` learned for `prev-unrelated`.
@@ -637,7 +647,7 @@ With anchored writers and wall clocks:
 - **They are two questions.** With true clocks, what a replica held at a minute and the `emitted` prefix of what it holds now were different sets in 5,539 of 12,892 (replica, minute) pairs, every one by late arrivals, and gave another keyed state in 5,514. With clocks ten minutes off it was 7,360 of 12,747, and 2,263 of those held a record claimed after the minute.
 - **Holding is not a fold's parameter.** Nothing in a record says when it arrived, and a place keeps its segments as a set, not in an order ([place](rust/PLACE.md)). So "what did this store hold at T" has an answer only where a witness tick was taken at T. Its `covers` is the answer.
 - **What was held need not be closed downward.** When a sync appends in the order written, every prefix of a place's own order was (0 of 6,563). In any order, 1,208 of 6,683 were not. A slice is not closed downward on purpose. A witness tick records what was held and claims no more, as the design says.
-- **Open, recommended: a content tick folds a set named outright.** Its `covers` is a cut or a slice of one, chosen by the records: the closure of what a record cites, what a marker record names, a window (5), or "as of `emitted`" by the rule of 2. A cut that a record names needs no clock at all: it is down of the ids named. Then `emitted` is one way to choose `covers` and never a parameter of a fold.
+- **Ruled, 2026-11-20: a content tick folds a set named outright.** Its `covers` is a cut or a slice of one, chosen by the records: the closure of what a record cites, what a marker record names, a window (5), or "as of `emitted`" by the rule of 2. A cut that a record names needs no clock at all: it is down of the ids named. Then `emitted` is one way to choose `covers` and never a parameter of a fold.
 - **So no fold changes.** "Folds take as of for both times" ([horizons](design/rethink/sections/15-horizons.html)) costs one function on the held set, applied before settling, and the `where` of 5. Every slot, the keyed ones included, runs as built over the cut.
 
 #### 4. An erasure after the cut
@@ -646,15 +656,15 @@ With anchored writers and wall clocks:
 - **Equal openings give equal results**, by `settle.set`: a holder that lost a payload to a later eraser and one that never received it hold the same form. Of 396 cuts with a covered record erased after the cut, a holder that settles everything it holds and then cuts differed in 331 from one that cuts and then settles, and only in the word: `erased` where the other says `withheld`. Cutting first agrees with Kyle's ruling of 2026-11-10 that withheld is in the end the same state as erased.
 - **`covers` names ids, not openings.** A holder before the erasure and one after it computed different results for the same `covers` in 342 of the 396 cuts. With `shown` left out of the result it was 299, and never in a slot that lists ids (latest-by with no payload test, collect); only where a value reads a payload (a payload test, a sum, `by` on a payload field).
 - The design expects the first kind to survive: "a result made of references still can be [recomputed]" ([resolution](design/rethink/sections/08-resolution.html)), "erasing the note in the team store changed nothing in any tick" ([example](design/rethink/sections/14-example.html)), and the five states of a reference in the context walk are the reader's, not the tick's. As built, every listed id carries `shown`, so every listing result changes on erasure.
-- **Open, recommended:** the canonical result (D7) lists ids without `shown`; a reading says what its reader holds. And the input key names which covered ids were folded open, so one key never names two results. The alternative keeps `shown` in the hashed result; then no result with a list in it outlives an erasure of a listed record, and the two design sentences above need changing.
+- **Ruled, 2026-11-20:** the canonical result (D7) lists ids without `shown`; a reading says what its reader holds. And the input key names which covered ids were folded open, so one key never names two results. The alternative kept `shown` in the hashed result; then no result with a list in it outlives an erasure of a listed record, and the two design sentences above would need changing.
 
 #### 5. The second time
 
 - **The `occurred` cut acts after the heads, the `emitted` cut before settling.** A window is a test on the current records, which is what a `where` on `env.occurred` already is. "What did we believe in 2019 about 2009" is the cut of 2 at 2019 and then that `where`.
 - **A window taken first is wrong.** Folding "the records whose occurred starts in the span" gave another answer than the `where` in 601 of 660 (store, window) pairs, and in 428 showed as current a record that a revision had moved out of the window. With `spec.slice`'s additions (erasers, targets, successors, their targets) every slot that reads records as written or by heads agreed, and the keyed slots differed in 383. With every record of the things touched, none differed.
 - So the "By window" row in [resolution](design/rethink/sections/08-resolution.html) names what the window *selects*. Its `covers` is the slice of that, as `spec.slice` and `keyed.spec-slice` give it. A late record still ticks again, and so does a revision that moves a covered thing out.
-- **Open:** how a window is spelled. An `env.occurred` test passes neither bound on a record without `occurred`, and [record](protocol/record.md) says a window places such a record at its `emitted`. Recommended: a window is `where` on the span content order already uses, under its own field name; the alternative makes `window` a second mechanism beside `where`.
-- **Open:** `occurred` on a keyed thing. The envelope is read from the heads, and `loops emit` copies `about` from them but not `occurred`. So setting `status` on a thing that occurred in 2009 moves it to the minute of the update, out of every window on 2009. Recommended: copy `occurred` as `about` is copied, when the heads agree, with a flag to state another or none. The alternative says a record's `occurred` is that record's alone, and a writer restates it.
+- **Ruled, 2026-11-20:** how a window is spelled. An `env.occurred` test passes neither bound on a record without `occurred`, and [record](protocol/record.md) says a window places such a record at its `emitted`. A window is a `where` on the span content order already uses, under its own field name; the alternative made `window` a second mechanism beside `where`. The field's name is not chosen. Not built.
+- **Ruled, 2026-11-20:** `occurred` on a keyed thing. The envelope is read from the heads, and `loops emit` copies `about` from them but not `occurred`. So setting `status` on a thing that occurred in 2009 moves it to the minute of the update, out of every window on 2009. `loops emit` is to copy `occurred` as `about` is copied, when the heads agree, with a flag to state another or none. Kyle: an emit in 2019 over an ADR of 2009 is a new occurrence when its writer states one; when it states none, the earlier `occurred` carries, because nothing about it changed. The alternative said a record's `occurred` is that record's alone, and a writer restates it. Not built.
 
 #### 6. D7 and the shapes that exist
 
@@ -664,7 +674,7 @@ Every result in `vectors/spec/run` is made of these: an object with fixed member
 - **No result holds a payload value**, a fraction, or a boolean. A group key is already text ("1" for the number and the text).
 - So decimal integer strings under JCS cover keyed state (`keys`, `whole`, `heads`), groups with `ungrouped` and `unread`, and every other shape, and position alone tells an integer from text: no tag is needed. JCS's member order is the order `groups` and `keys` are already written in. A list's order is part of the result.
 - **Outside:** the CLI's `--values` view puts payloads in the answer. If it ever becomes protocol, a position would hold text or a number, and then the codec needs a tag and the number rule of layer 0.
-- **Open:** if "typed" in the ruling means a tag on each integer, none is needed yet; say whether the codec carries one anyway. And 4 decides whether `shown` is in the bytes.
+- **Ruled, 2026-11-20: no tag.** If "typed" in the ruling means a tag on each integer, none is needed yet, and the codec carries none. By 4, `shown` is not in the bytes.
 - The hashed result is a vertex's whole result, every slot. A per-slot hash is finer and nothing asks for it.
 
 #### 7. Unanchored records
@@ -673,7 +683,7 @@ Every result in `vectors/spec/run` is made of these: an object with fixed member
 
 - With writers that name only what they build on, the live records of a thing read otherwise alone than with the rest in 1,602 of 3,701 cuts, with true clocks. With anchored writers, down and held back: 0 of 28,414 cuts.
 - So a tick over such a thing cannot take its live records for `covers`. It needs every record between them (`keyed.convex`), which grows with the history. That is the cost of the ruling once ticks exist, and it is paid for each thing a collector writes.
-- **Open, recommended:** keep `emit -` as ruled, and give the changeset path a way to ask for the filler (`loops_place::fill` already holds it), so a collector that wants compact ticks states one option. The alternatives: nothing, and such things are covered whole; or `emit -` fills by default, which unrules 2026-11-13.
+- **Ruled, 2026-11-20:** keep `emit -` as ruled, and give the changeset path a way to ask for the filler (`loops_place::fill` already holds it), so a collector that wants compact ticks states one option. The alternatives were: nothing, and such things are covered whole; or `emit -` fills by default, which unrules 2026-11-13. Not built.
 
 #### 8. An emit against a base
 
@@ -706,7 +716,8 @@ This is the coordinator's second suggestion, the lens laws, and it needs no lens
 - **Such an emit forks the envelope.** Every one of the 3,047 left two heads, 613 of them with no key in conflict. The walk's two edits of different facets from one tick ("the store has no fork") leave no key forked and two heads; a slot that follows `prev` shows a fork until an emit names both.
 - **A render keeps five states apart:** a value, empty (a live setter declares the key and holds nothing for it), a conflict, unknown (the one live setter is erased or withheld), and no section. Unknown shown as empty hides "clear it" from the diff. And 1,130 of 5,616 conflicts had sides showing the same value: a lens that prints one value there can never settle it, since retyping the value is no edit, while a sum reads the key as unread.
 - The bases here are old by construction (any earlier minute against the last), so the counts say how the cases split and not how often they come up.
-- **Open, recommended: the filler takes a base.** Wherever the filler runs (`loops emit`, and the changeset path if 7 is taken), a writer may state a base, a tick or ids, and the filler names that base's live records of the thing and copies `about` from its heads. With no base stated it does what it does now, and that is said plainly: an emit with no base claims its writer read everything the store holds. The alternatives: the single-record path stays as built and anything that writes from a base uses `emit -` and works out the base's live records itself, in whatever language it is written; or the filler always wants a base, and a person at the CLI has none to give.
+- **Open, recommended: the filler takes a base.** Not ruled on 2026-11-20. Wherever the filler runs (`loops emit`, and the changeset path if 7 is taken), a writer may state a base, a tick or ids, and the filler names that base's live records of the thing and copies `about` from its heads. With no base stated it does what it does now, and that is said plainly: an emit with no base claims its writer read everything the store holds. The alternatives: the single-record path stays as built and anything that writes from a base uses `emit -` and works out the base's live records itself, in whatever language it is written; or the filler always wants a base, and a person at the CLI has none to give.
+- **Kyle, 2026-11-20, not a ruling:** a base may be a property of a strict store, or something like one, so that an emit behind what the store holds would warn, fail, or be let through as the conflict.
 
 #### Not here
 
@@ -747,7 +758,7 @@ These mechanical corrections do not add protocol choices.
 
 ## Build sequence
 
-Steps 0 and 1 are done. Step 2's first slice is merged. Steps 2–6 are proposals.
+Steps 0, 1 and 2 are done: Kyle closed step 2 on 2026-11-20. Steps 3–6 are proposals.
 **Order, as Kyle set it on 2026-11-10:** finish step 2 with D8, then step 4 (ticks), then step 3 (standing) together with step 5 (sharing).
 Standing matters once records cross between people: sharing through git repositories across teams, and over HTTP.
 Everything wanted before that runs on one machine under one trust root.
@@ -759,7 +770,7 @@ Each step extends the model laws, computes protocol vectors, then implements Rus
 | --- | --- | --- |
 | 0, done | The Lean spike: Count and LatestBy, one lens combinator, 23 vectors | The first laws are proved |
 | 1, done | Protocol and vectors for layer 0: canonical bytes, salt and commitment, id, signature | The model and the JS writer agree on every vector; Rust checks all fixture families and external standards |
-| 2 | Emit, read, fold for one person: JSONL segment, JSON spec, the two fold families, `"follow": "prev"`, `by`, a signing key, signing by default. `of` names a record's one thing, an id or a natural key; `about` only mentions. D8a, D8b and D8c are built: `sets` in the envelope, every slot that follows `keys`, the slice laws for one keyed thing and for a spec with a keyed slot, and the writer's anchor rule. | It does the old CLI's workable job, signed |
+| 2, done | Emit, read, fold for one person: JSONL segment, JSON spec, the two fold families, `"follow": "prev"`, `by`, a signing key, signing by default. `of` names a record's one thing, an id or a natural key; `about` only mentions. D8a, D8b and D8c are built: `sets` in the envelope, every slot that follows `keys`, the slice laws for one keyed thing and for a spec with a keyed slot, and the writer's anchor rule. | It does the old CLI's workable job, signed |
 | 3 | Standing: declarations, admission, stances, grants, presence key, retire through; then name tables and `resolve-by` | A strict store rejects visibly; a steward's changeset takes effect |
 | 4 | Ticks: content and witness, boundaries, markers | A content tick recomputes to the same hash on two machines |
 | 5 | Sharing: the git layout, then segment-list sync | Two clones converge |
@@ -803,6 +814,8 @@ Costs are S, M, or L for relative effort, not schedules.
 
 | Work | Value | Cost | Dependencies and blocking choices |
 | --- | --- | --- | --- |
+| Make `read` report a stored line that fails its check | A changed line cannot leave an answer silently | S: the CLI and its walk | Kyle, 2026-11-20: warn and exit non-zero |
+| Ask without a hand-written spec: a scan by name prefix, `ls`, relative times | Day-to-day use of the CLI | M: CLI only | Left by the step-2 exit check; nothing here is ruled |
 | Integrate a workbench page | Readers build scenarios and try vector presets | M: UI, validation, browser tests | Use the JS interpreter and scenario-vector presets; version localStorage drafts; never treat them as canonical storage |
 | Define result encoding and Lean encoding vectors | Reproducible result bytes and hashes without losing exact integers | L: codec, schemas, and cross-runtime vectors | Human decision D7; preserve unbounded model outputs |
 | Turn horizons into Lean scenario vectors | Tests concrete compositions and exposes missing premises | L: model and scenario work | Start with minimal compositions of existing core; mark new boundary, tick, and service premises unimplemented before proof claims |
