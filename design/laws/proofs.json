@@ -2363,6 +2363,11 @@
    "states":
    "∀ {xs ys : List Loops.Json}, xs.Perm ys → Loops.draftsShapeProblem xs = Loops.draftsShapeProblem ys",
    "module": "Laws.Write"},
+  "Loops.down_reads":
+  {"uses": ["Loops.Down.above_iff", "Loops.liveK_iff"],
+   "states":
+   "∀ {S W : List Loops.Record}, Loops.Down S W → ∀ (o : Option String) (r : Loops.Record), Loops.liveK S o r = true ↔ Loops.setsK o r = true ∧ ∀ (q : Loops.Record), q ∈ S → q ∈ Loops.above W r → Loops.setsK o q = false",
+   "module": "Laws.LiveSlice"},
   "Loops.distinct_dedup":
   {"uses": ["Loops.dedup.eq_def", "Loops.mem_dedup_sub"],
    "states": "∀ (xs : List Loops.Record), Loops.Distinct (Loops.dedup xs)",
@@ -2521,6 +2526,20 @@
   {"uses": ["Loops.Anchoring.of_checks"],
    "states":
    "Loops.Anchoring Loops.cl.saw [Loops.cl.x, Loops.cl.y, Loops.cl.y2] ∧ ¬Loops.ClosedOver Loops.cl.saw [Loops.cl.x, Loops.cl.y, Loops.cl.y2] ∧ Loops.liveFor (Loops.liveOf [Loops.cl.x, Loops.cl.y, Loops.cl.y2]) \"a\" Loops.cl.x = true ∧ Loops.liveFor [Loops.cl.x, Loops.cl.y, Loops.cl.y2] \"a\" Loops.cl.x = false",
+   "module": "Laws.LiveSlice"},
+  "Loops.closedOver_of_down":
+  {"uses":
+   ["Loops.Anchoring.rule",
+    "Loops.Down.below",
+    "Loops.Down.names",
+    "Loops.Down.part",
+    "Loops.NoCycle.part",
+    "Loops.above_sub",
+    "Loops.live_above",
+    "Loops.live_iff_liveK",
+    "Loops.mem_above"],
+   "states":
+   "∀ {saw : Loops.Record → List Loops.Record} {S W : List Loops.Record}, Loops.NoCycle W → Loops.Anchoring saw W → Loops.ClosedOver saw W → Loops.Down S W → Loops.ClosedOver saw S",
    "module": "Laws.LiveSlice"},
   "Loops.chosen_takes":
   {"uses": [],
@@ -2689,6 +2708,15 @@
     "Loops.saw_of_reach"],
    "states":
    "∀ {saw : Loops.Record → List Loops.Record} {W : List Loops.Record}, Loops.Addressed W → Loops.Anchoring saw W → Loops.ClosedOver saw W → Loops.Anchored W",
+   "module": "Laws.LiveSlice"},
+  "Loops.anchored_of_down":
+  {"uses":
+   ["Loops.Anchoring.part",
+    "Loops.Down.part",
+    "Loops.anchored_of_written",
+    "Loops.closedOver_of_down"],
+   "states":
+   "∀ {saw : Loops.Record → List Loops.Record} {S W : List Loops.Record}, Loops.Addressed W → Loops.NoCycle W → Loops.Anchoring saw W → Loops.ClosedOver saw W → Loops.Down S W → Loops.Anchored S",
    "module": "Laws.LiveSlice"},
   "Loops.anchoredKeys_slice":
   {"uses":
@@ -4015,6 +4043,11 @@
   {"uses": [],
    "states": "∀ {n : Loops.Number}, n.inRange = true → n.finite = true",
    "module": "Laws.Write"},
+  "Loops.NoCycle.part":
+  {"uses": ["Loops.above_sub"],
+   "states":
+   "∀ {U W : List Loops.Record}, Loops.NoCycle W → (∀ (q : Loops.Record), q ∈ U → q ∈ W) → Loops.NoCycle U",
+   "module": "Laws.LiveSlice"},
   "Loops.Newer.unlinked":
   {"uses": [],
    "states":
@@ -5237,6 +5270,35 @@
    "states":
    "∀ {label : Option String} {env : Loops.Env} {salt : List UInt8} {payload : Loops.Json} {label_1 : Option String} {env_1 : Loops.Env} {salt_1 : List UInt8} {payload_1 : Loops.Json}, { label := label, env := env, salt := salt, payload := payload } = { label := label_1, env := env_1, salt := salt_1, payload := payload_1 } → label = label_1 ∧ env = env_1 ∧ salt = salt_1 ∧ payload = payload_1",
    "module": "Loops.Batch"},
+  "Loops.Down.reach":
+  {"uses": ["Loops.Down.names"],
+   "states":
+   "∀ {S W : List Loops.Record}, Loops.Down S W → ∀ {r : Loops.Record} {i : Loops.RecordId}, Loops.Reach W [r.id] i → ∀ (b : Loops.Record), b ∈ S → i ∈ b.prev → Loops.Reach S [r.id] i",
+   "module": "Laws.LiveSlice"},
+  "Loops.Down.part":
+  {"uses": [],
+   "states":
+   "∀ {S W : List Loops.Record}, Loops.Down S W → ∀ (r : Loops.Record), r ∈ S → r ∈ W",
+   "module": "Laws.LiveSlice"},
+  "Loops.Down.names":
+  {"uses": [],
+   "states":
+   "∀ {S W : List Loops.Record}, Loops.Down S W → ∀ (y : Loops.Record), y ∈ S → ∀ (x : Loops.Record), x ∈ W → x.id ∈ y.prev → x ∈ S",
+   "module": "Laws.LiveSlice"},
+  "Loops.Down.below":
+  {"uses": ["Loops.Down.names", "Loops.mem_above"],
+   "states":
+   "∀ {S W : List Loops.Record}, Loops.Down S W → ∀ {x b : Loops.Record}, x ∈ W → b ∈ S → b ∈ Loops.above W x → x ∈ S",
+   "module": "Laws.LiveSlice"},
+  "Loops.Down.above_iff":
+  {"uses":
+   ["Loops.Down.part",
+    "Loops.Down.reach",
+    "Loops.above_sub",
+    "Loops.mem_above"],
+   "states":
+   "∀ {S W : List Loops.Record}, Loops.Down S W → ∀ {r q : Loops.Record}, q ∈ Loops.above S r ↔ q ∈ S ∧ q ∈ Loops.above W r",
+   "module": "Laws.LiveSlice"},
   "Loops.Distinct.nodup":
   {"uses": [],
    "states": "∀ {xs : List Loops.Record}, Loops.Distinct xs → xs.Nodup",
@@ -5785,6 +5847,12 @@
   {"uses": [],
    "states":
    "∀ {saw : Loops.Record → List Loops.Record} {W : List Loops.Record}, Loops.Anchoring saw W → ∀ (y : Loops.Record), y ∈ W → ∀ (x : Loops.Record), x ∈ saw y → Loops.live (saw y) x = true → x.id ∈ y.prev",
+   "module": "Laws.LiveSlice"},
+  "Loops.Anchoring.part":
+  {"uses":
+   ["Loops.Anchoring.names", "Loops.Anchoring.rule", "Loops.Anchoring.trans"],
+   "states":
+   "∀ {saw : Loops.Record → List Loops.Record} {U W : List Loops.Record}, Loops.Anchoring saw W → (∀ (q : Loops.Record), q ∈ U → q ∈ W) → Loops.Anchoring saw U",
    "module": "Laws.LiveSlice"},
   "Loops.Anchoring.of_checks":
   {"uses": [],
