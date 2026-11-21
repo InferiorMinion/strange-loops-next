@@ -1452,13 +1452,16 @@ fn a_changeset_fills_nothing_in_and_reads_whole() {
 }
 
 /// The answer with what `--values` adds taken out: each listed record's
-/// `payload`, and a keyed thing's `values`, `setters` and `unheld`.
+/// envelope and payload, and a keyed thing's about and values.
 fn without_values(j: &Json) -> Json {
     match j {
         Json::Obj(members) => Json::Obj(
             members
                 .iter()
-                .filter(|(k, _)| !["payload", "values", "setters", "unheld"].contains(&k.as_str()))
+                .filter(|(k, _)| {
+                    !["env", "payload", "about", "values", "setters", "unheld"]
+                        .contains(&k.as_str())
+                })
                 .map(|(k, v)| (k.clone(), without_values(v)))
                 .collect(),
         ),
@@ -1590,6 +1593,7 @@ fn a_session_reads_values_and_an_update_sets_only_the_fields_it_names() {
         panic!("heads")
     };
     assert_eq!(text(&heads[0], &["payload", "name"]), "auth-jwt");
+    assert_eq!(strings(&heads[0], &["env", "about"]), ["project:loops"]);
     let Json::Arr(log) = at(&read, &["log", "heads"]) else {
         panic!("log")
     };
@@ -1619,7 +1623,15 @@ fn a_key_with_two_live_setters_shows_each_value_with_its_id() {
     b.ok_with(&["import"], &a.ok(&["export"]));
     // Apart, each sets `status`; merged, both are live for it.
     let done = a.ok(&["emit", "task", "--of", "task:1", "status=done"]);
-    let held = b.ok(&["emit", "task", "--of", "task:1", "status=held"]);
+    let held = b.ok(&[
+        "emit",
+        "task",
+        "--of",
+        "task:1",
+        "--about",
+        "project:b",
+        "status=held",
+    ]);
     a.ok_with(&["import"], &b.ok(&["export"]));
     let state = a.json(&["of", "task:1"]);
     assert_eq!(text(&state, &["values", "title"]), "Write");
@@ -1635,10 +1647,25 @@ fn a_key_with_two_live_setters_shows_each_value_with_its_id() {
     // The keyed slot shows the same values beside its keyed state.
     let read = parse_json(&a.ok_with(&["fold", "-", "--values"], STATE)).expect("JSON");
     let thing = at(&read, &["state", "things", "task:1"]);
-    for member in ["values", "setters"] {
+    for member in ["about", "values", "setters"] {
         assert_eq!(at(thing, &[member]), at(&state, &[member]));
     }
-    assert_eq!(len(thing, &["heads"]), 2);
+    let Json::Arr(heads) = at(thing, &["heads"]) else {
+        panic!("heads")
+    };
+    assert_eq!(heads.len(), 2);
+    for head in heads {
+        let record = a.json(&["get", text(head, &["id"])]);
+        assert_eq!(at(head, &["env"]), at(&record, &["env"]));
+        assert!(!has(head, &[], "payload"));
+    }
+    let plain = parse_json(&a.ok_with(&["fold", "-"], STATE)).expect("JSON");
+    for member in ["keys", "whole"] {
+        assert_eq!(
+            at(thing, &[member]),
+            at(&plain, &["state", "things", "task:1", member])
+        );
+    }
 }
 
 #[test]
@@ -1805,6 +1832,10 @@ fn a_grouped_slot_writes_the_values_inside_each_group() {
     let Json::Arr(y) = at(&read, &["by-project", "groups", "y", "heads"]) else {
         panic!("y")
     };
+    for entry in y {
+        let record = s.json(&["get", text(entry, &["id"])]);
+        assert_eq!(at(entry, &["env"]), at(&record, &["env"]));
+    }
     let listed: Vec<(&str, &Json)> = y
         .iter()
         .map(|r| (text(r, &["id"]), at(r, &["payload"])))
@@ -1835,4 +1866,34 @@ fn a_grouped_slot_writes_the_values_inside_each_group() {
         at(&read, &["n"]).canon(),
         at(&without_values(&read), &["n"]).canon()
     );
+}
+
+#[test]
+fn a_collect_keeps_the_envelope_when_the_payload_is_erased_or_withheld() {
+    const LOG: &str =
+        r#"{"vertex":"v","from":[{"store":".","kind":["note"]}],"fold":{"log":{"collect":true}}}"#;
+    let s = Store::new("collect-env");
+    let id = s.ok(&["emit", "note", "--about", "project:x", "hello"]);
+    let record = s.json(&["get", &id]);
+    let env = at(&record, &["env"]);
+    assert_ne!(text(env, &["emitted"]), "");
+    assert_ne!(text(env, &["observer"]), "");
+    assert_eq!(strings(env, &["about"]), ["project:x"]);
+
+    let check = |store: &Store, shown| {
+        let fold = parse_json(&store.ok_with(&["fold", "-", "--values"], LOG)).expect("JSON");
+        let Json::Arr(entries) = at(&fold, &["log", "heads"]) else {
+            panic!("heads")
+        };
+        assert_eq!(entries.len(), 1);
+        assert_eq!(text(&entries[0], &["shown"]), shown);
+        assert_eq!(at(&entries[0], &["env"]), env);
+        assert_eq!(has(&entries[0], &[], "payload"), shown == "here");
+    };
+    check(&s, "here");
+    s.ok(&["erase", &id]);
+    check(&s, "erased");
+    let other = Store::new("collect-env-withheld");
+    other.ok_with(&["import"], &s.ok(&["export", "--kind", "note"]));
+    check(&other, "withheld");
 }

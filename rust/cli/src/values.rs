@@ -3,7 +3,7 @@
 //! `fold --values` write it beside the ids.
 //!
 //! This is the CLI's reading, not the protocol's. A fold answers ids; here
-//! the payloads they name are joined in, from what the store holds. Liveness
+//! their envelopes and held payloads are joined in, from what the store holds. Liveness
 //! is the core's (`loops::live`), and nothing here compares two values.
 use loops::{
     json::{Json, canon_set},
@@ -63,9 +63,10 @@ fn setter(held: &Held, record: &Record, key: &str) -> Json {
     Json::Obj(members)
 }
 
-/// A thing’s values over the records held as a reader sees
+/// A thing's about and values over the records held as a reader sees
 /// them (settled, then admitted), as members to write beside its keyed state.
 ///
+/// The about is the union of the mentions on its heads.
 /// The keys are those some live record declares and the top-level keys of
 /// each held live record read whole; a record with `sets` gives only the
 /// keys it declares. Each key is read from its live setters (`live::setters`):
@@ -113,7 +114,13 @@ pub(crate) fn thing(held: &Held, state: &live::LiveState<'_>) -> Vec<(&'static s
             ])
         })
         .collect();
-    let mut out = vec![("values", Json::Obj(values))];
+    let mentions: Vec<_> = state
+        .heads()
+        .iter()
+        .flat_map(|r| r.about.iter().cloned())
+        .collect();
+    let about = Json::Arr(canon_set(&mentions).into_iter().map(Json::Str).collect());
+    let mut out = vec![("about", about), ("values", Json::Obj(values))];
     if !several.is_empty() {
         out.push(("setters", Json::Obj(several)));
     }
@@ -152,73 +159,74 @@ fn each_member(value: Json, f: impl Fn(&str, Json) -> Json) -> Json {
     }
 }
 
-/// A list of `{"id", "shown"}` entries, each held one given its `payload`.
-fn payloads(held: &Held, list: Json) -> Json {
-    let Json::Arr(entries) = list else {
-        return list;
-    };
-    Json::Arr(
-        entries
-            .into_iter()
-            .map(|entry| {
-                let Json::Obj(mut members) = entry else {
-                    return entry;
-                };
-                let text = |name: &str| {
-                    members.iter().find_map(|(k, v)| match v {
-                        Json::Str(s) if k == name => Some(s.clone()),
-                        _ => None,
-                    })
-                };
-                let here = text("shown").is_some_and(|s| s == "here");
-                let held_payload = text("id")
-                    .filter(|_| here)
-                    .and_then(|id| held.line(&id).and_then(|l| l.payload().cloned()));
-                if let Some(p) = held_payload {
-                    members.push(("payload".to_owned(), p));
-                }
-                Json::Obj(members)
-            })
-            .collect(),
-    )
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum EntryView {
+    Envelope,
+    EnvelopeAndPayload,
 }
 
-/// One slot's answer with the values joined in: a keyed thing's values
-/// beside its keyed state, and a held payload beside each listed record of a
-/// latest-by that follows `prev` and of a collect; inside each group alike.
+/// Add the stored envelope to each entry, and its held payload when requested.
+fn entries(held: &Held, list: Json, view: EntryView) -> Json {
+    let Json::Arr(mut entries) = list else {
+        return list;
+    };
+    for entry in &mut entries {
+        let Some(Json::Str(id)) = member(entry, "id") else {
+            continue;
+        };
+        let Some(line) = held.line(id) else {
+            continue;
+        };
+        let here = matches!(member(entry, "shown"), Some(Json::Str(s)) if s == "here");
+        if let Json::Obj(members) = entry {
+            members.push(("env".to_owned(), line.env().to_json()));
+            if view == EntryView::EnvelopeAndPayload && here {
+                if let Some(p) = line.payload() {
+                    members.push(("payload".to_owned(), p.clone()));
+                }
+            }
+        }
+    }
+    Json::Arr(entries)
+}
+
+/// Add each thing's about and values, and the envelopes of its heads.
+/// A collect or latest-by following `prev` also shows held payloads.
 fn slot(held: &Held, by_thing: &HashMap<String, Vec<&Record>>, slot: &Slot, value: Json) -> Json {
+    let records = |list| entries(held, list, EntryView::EnvelopeAndPayload);
     if slot.group.is_some() {
         return at_member(value, "groups", |groups| {
-            each_member(groups, |_, group| {
-                at_member(group, "heads", |list| payloads(held, list))
-            })
+            each_member(groups, |_, group| at_member(group, "heads", records))
         });
     }
     match slot.fold_type {
         FoldType::LatestBy {
             follow: Follow::Keys,
         } => at_member(value, "things", |things| {
-            each_member(things, |name, view| match view {
-                Json::Obj(mut members) => {
-                    members.extend(
-                        thing(
-                            held,
-                            &live::LiveState::new(by_thing.get(name).cloned().unwrap_or_default()),
-                        )
-                        .into_iter()
-                        .map(|(k, v)| (k.to_owned(), v)),
-                    );
-                    Json::Obj(members)
+            each_member(things, |name, view| {
+                match at_member(view, "heads", |list| {
+                    entries(held, list, EntryView::Envelope)
+                }) {
+                    Json::Obj(mut members) => {
+                        let state =
+                            live::LiveState::new(by_thing.get(name).cloned().unwrap_or_default());
+                        members.extend(
+                            thing(held, &state)
+                                .into_iter()
+                                .map(|(k, v)| (k.to_owned(), v)),
+                        );
+                        Json::Obj(members)
+                    }
+                    other => other,
                 }
-                other => other,
             })
         }),
         FoldType::LatestBy {
             follow: Follow::Prev,
         } => at_member(value, "things", |things| {
-            each_member(things, |_, list| payloads(held, list))
+            each_member(things, |_, list| records(list))
         }),
-        FoldType::Collect { .. } => at_member(value, "heads", |list| payloads(held, list)),
+        FoldType::Collect { .. } => at_member(value, "heads", records),
         FoldType::Count { .. }
         | FoldType::Sum { .. }
         | FoldType::Min { .. }
