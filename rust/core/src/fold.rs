@@ -16,34 +16,59 @@ pub fn count_fold(n: Nat, xs: &[Record]) -> Nat {
     xs.iter().fold(n, count_step)
 }
 /// Lean: `Loops.Sum.step`, model/Loops/Fold.lean.
-/// Adds the record's raw integer field to the state.
-pub fn sum_step(n: Int, r: &Record) -> Int {
-    Int(n.0 + &r.n.0)
+/// Incorporates a readable value into the state.
+pub fn sum_step(read: impl FnOnce(&Record) -> Option<Int>, state: Int, record: &Record) -> Int {
+    Int(state.0 + read(record).unwrap_or_default().0)
 }
 /// Lean: `Loops.Sum.fold`, model/Loops/Fold.lean.
-/// Adds every raw integer field, without a visibility check or size bound.
-pub fn sum_fold(n: Int, xs: &[Record]) -> Int {
-    xs.iter().fold(n, sum_step)
+/// Folds the values supplied by the reader, skipping missing values.
+pub fn sum_fold(read: impl Fn(&Record) -> Option<Int>, state: Int, xs: &[Record]) -> Int {
+    xs.iter()
+        .fold(state, |state, record| sum_step(&read, state, record))
 }
 /// Lean: `Loops.Min.step`, model/Loops/Fold.lean.
-/// Keeps the smaller raw integer, or starts with this record's integer.
-pub fn min_step(n: Option<Int>, r: &Record) -> Option<Int> {
-    Some(n.map_or_else(|| r.n.clone(), |n| n.min(r.n.clone())))
+/// Incorporates a readable value into the state.
+pub fn min_step(
+    read: impl FnOnce(&Record) -> Option<Int>,
+    state: Option<Int>,
+    record: &Record,
+) -> Option<Int> {
+    match (state, read(record)) {
+        (Some(current), Some(value)) => Some(current.min(value)),
+        (current, value) => current.or(value),
+    }
 }
 /// Lean: `Loops.Min.fold`, model/Loops/Fold.lean.
-/// Finds the smallest raw integer from the supplied optional state.
-pub fn min_fold(n: Option<Int>, xs: &[Record]) -> Option<Int> {
-    xs.iter().fold(n, min_step)
+/// Folds the values supplied by the reader, skipping missing values.
+pub fn min_fold(
+    read: impl Fn(&Record) -> Option<Int>,
+    state: Option<Int>,
+    xs: &[Record],
+) -> Option<Int> {
+    xs.iter()
+        .fold(state, |state, record| min_step(&read, state, record))
 }
 /// Lean: `Loops.Max.step`, model/Loops/Fold.lean.
-/// Keeps the larger raw integer, or starts with this record's integer.
-pub fn max_step(n: Option<Int>, r: &Record) -> Option<Int> {
-    Some(n.map_or_else(|| r.n.clone(), |n| n.max(r.n.clone())))
+/// Incorporates a readable value into the state.
+pub fn max_step(
+    read: impl FnOnce(&Record) -> Option<Int>,
+    state: Option<Int>,
+    record: &Record,
+) -> Option<Int> {
+    match (state, read(record)) {
+        (Some(current), Some(value)) => Some(current.max(value)),
+        (current, value) => current.or(value),
+    }
 }
 /// Lean: `Loops.Max.fold`, model/Loops/Fold.lean.
-/// Finds the largest raw integer from the supplied optional state.
-pub fn max_fold(n: Option<Int>, xs: &[Record]) -> Option<Int> {
-    xs.iter().fold(n, max_step)
+/// Folds the values supplied by the reader, skipping missing values.
+pub fn max_fold(
+    read: impl Fn(&Record) -> Option<Int>,
+    state: Option<Int>,
+    xs: &[Record],
+) -> Option<Int> {
+    xs.iter()
+        .fold(state, |state, record| max_step(&read, state, record))
 }
 /// Lean: `Loops.insertId`, model/Loops/Fold.lean.
 /// Inserts a digest before the first greater digest, or keeps the first equal digest.

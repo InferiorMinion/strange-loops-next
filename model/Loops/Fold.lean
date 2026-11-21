@@ -104,24 +104,32 @@ def Latest.others (s : LatestBy) : List Record := s.heads.drop 1
 
 /-! ## Sum, Min, Max
 
-Over an exact numeric field. Sum counts repeats, like Count; Min and Max
-don't.
+Over the exact number a read function gives for each record; a record it
+cannot read is skipped. Sum counts repeats, like Count; Min and Max don't.
 -/
 
-def Sum.step (s : Int) (r : Record) : Int := s + r.n
+def Sum.step (p : Record → Option Int) (s : Int) (r : Record) : Int :=
+  s + (p r).getD 0
 
-def Sum.fold (s : Int) (xs : List Record) : Int := xs.foldl Sum.step s
+def Sum.fold (p : Record → Option Int) (s : Int) (xs : List Record) : Int :=
+  xs.foldl (Sum.step p) s
 
-def Max.step : Option Int → Record → Option Int
-  | none, r => some r.n
-  | some m, r => some (max m r.n)
+def Max.step (p : Record → Option Int) (s : Option Int) (r : Record) : Option Int :=
+  match p r, s with
+  | some v, some m => some (max m v)
+  | some v, none => some v
+  | none, s => s
 
-def Max.fold (s : Option Int) (xs : List Record) : Option Int := xs.foldl Max.step s
+def Max.fold (p : Record → Option Int) (s : Option Int) (xs : List Record) : Option Int :=
+  xs.foldl (Max.step p) s
 
-def Min.step : Option Int → Record → Option Int
-  | none, r => some r.n
-  | some m, r => some (min m r.n)
+def Min.step (p : Record → Option Int) (s : Option Int) (r : Record) : Option Int :=
+  match p r, s with
+  | some v, some m => some (min m v)
+  | some v, none => some v
+  | none, s => s
 
-def Min.fold (s : Option Int) (xs : List Record) : Option Int := xs.foldl Min.step s
+def Min.fold (p : Record → Option Int) (s : Option Int) (xs : List Record) : Option Int :=
+  xs.foldl (Min.step p) s
 
 end Loops

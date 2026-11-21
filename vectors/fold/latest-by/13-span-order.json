@@ -12,11 +12,9 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "topic:auth",
-          "value": "v65",
           "prev": [],
           "emitted": "2026-10-01T00:01:00Z",
-          "occurred": "2026-10-01T00:00:00Z",
-          "n": 0
+          "occurred": "2026-10-01T00:00:00Z"
         },
         {
           "id": "r:0000000000000000000000000000000000000000000000000110",
@@ -24,11 +22,9 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "topic:auth",
-          "value": "v66",
           "prev": [],
           "emitted": "2026-10-01T00:00:30Z",
-          "occurred": "2026-10",
-          "n": 0
+          "occurred": "2026-10"
         },
         {
           "id": "r:000000000000000000000000000000000000000000000000011g",
@@ -36,11 +32,9 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "topic:auth",
-          "value": "v67",
           "prev": [],
           "emitted": "2026-10-01T00:00:10Z",
-          "occurred": "2026-10-01/..",
-          "n": 0
+          "occurred": "2026-10-01/.."
         },
         {
           "id": "r:0000000000000000000000000000000000000000000000000120",
@@ -48,11 +42,9 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "topic:auth",
-          "value": "v68",
           "prev": [],
           "emitted": "2026-10-01T00:00:20Z",
-          "occurred": "2026",
-          "n": 0
+          "occurred": "2026"
         }
       ],
       [
@@ -62,11 +54,9 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "topic:auth",
-          "value": "v66",
           "prev": [],
           "emitted": "2026-10-01T00:00:30Z",
-          "occurred": "2026-10",
-          "n": 0
+          "occurred": "2026-10"
         },
         {
           "id": "r:000000000000000000000000000000000000000000000000011g",
@@ -74,11 +64,9 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "topic:auth",
-          "value": "v67",
           "prev": [],
           "emitted": "2026-10-01T00:00:10Z",
-          "occurred": "2026-10-01/..",
-          "n": 0
+          "occurred": "2026-10-01/.."
         },
         {
           "id": "r:0000000000000000000000000000000000000000000000000120",
@@ -86,11 +74,9 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "topic:auth",
-          "value": "v68",
           "prev": [],
           "emitted": "2026-10-01T00:00:20Z",
-          "occurred": "2026",
-          "n": 0
+          "occurred": "2026"
         },
         {
           "id": "r:000000000000000000000000000000000000000000000000010g",
@@ -98,11 +84,9 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "topic:auth",
-          "value": "v65",
           "prev": [],
           "emitted": "2026-10-01T00:01:00Z",
-          "occurred": "2026-10-01T00:00:00Z",
-          "n": 0
+          "occurred": "2026-10-01T00:00:00Z"
         }
       ],
       [
@@ -112,11 +96,9 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "topic:auth",
-          "value": "v67",
           "prev": [],
           "emitted": "2026-10-01T00:00:10Z",
-          "occurred": "2026-10-01/..",
-          "n": 0
+          "occurred": "2026-10-01/.."
         },
         {
           "id": "r:0000000000000000000000000000000000000000000000000120",
@@ -124,11 +106,9 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "topic:auth",
-          "value": "v68",
           "prev": [],
           "emitted": "2026-10-01T00:00:20Z",
-          "occurred": "2026",
-          "n": 0
+          "occurred": "2026"
         },
         {
           "id": "r:000000000000000000000000000000000000000000000000010g",
@@ -136,11 +116,9 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "topic:auth",
-          "value": "v65",
           "prev": [],
           "emitted": "2026-10-01T00:01:00Z",
-          "occurred": "2026-10-01T00:00:00Z",
-          "n": 0
+          "occurred": "2026-10-01T00:00:00Z"
         },
         {
           "id": "r:0000000000000000000000000000000000000000000000000110",
@@ -148,11 +126,9 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "topic:auth",
-          "value": "v66",
           "prev": [],
           "emitted": "2026-10-01T00:00:30Z",
-          "occurred": "2026-10",
-          "n": 0
+          "occurred": "2026-10"
         }
       ],
       [
@@ -162,11 +138,9 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "topic:auth",
-          "value": "v68",
           "prev": [],
           "emitted": "2026-10-01T00:00:20Z",
-          "occurred": "2026",
-          "n": 0
+          "occurred": "2026"
         },
         {
           "id": "r:000000000000000000000000000000000000000000000000010g",
@@ -174,11 +148,9 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "topic:auth",
-          "value": "v65",
           "prev": [],
           "emitted": "2026-10-01T00:01:00Z",
-          "occurred": "2026-10-01T00:00:00Z",
-          "n": 0
+          "occurred": "2026-10-01T00:00:00Z"
         },
         {
           "id": "r:0000000000000000000000000000000000000000000000000110",
@@ -186,11 +158,9 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "topic:auth",
-          "value": "v66",
           "prev": [],
           "emitted": "2026-10-01T00:00:30Z",
-          "occurred": "2026-10",
-          "n": 0
+          "occurred": "2026-10"
         },
         {
           "id": "r:000000000000000000000000000000000000000000000000011g",
@@ -198,11 +168,9 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "topic:auth",
-          "value": "v67",
           "prev": [],
           "emitted": "2026-10-01T00:00:10Z",
-          "occurred": "2026-10-01/..",
-          "n": 0
+          "occurred": "2026-10-01/.."
         }
       ]
     ]

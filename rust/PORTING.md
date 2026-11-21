@@ -92,7 +92,7 @@ without a payload remain malformed input. The place's line reader takes the
 same envelope reader, so a stored line with a mistyped envelope field is
 now refused with the writer's code rather than `line-shape`. A batch draft
 may use a label in `about`, `of`, `prev` or `under`, never in `erases`. A
-batch fixture's `held` entries are `{"id", "of"?, "prev"}`, Lean `Held`. Numeric `n` and fields retain finite non-whole values
+batch fixture's `held` entries are `{"id", "of"?, "prev"}`, Lean `Held`. Reader records put every primitive member, including `n` and `value`, in the optional `fields` object. The fixture reader rejects both names at the record level. Numeric fields retain finite non-whole values
 without pretending they are readable integers. Successful record signing
 requires a canonical base32hex encoding of exactly 32 seed bytes.
 Byte text uses lowercase base32hex without padding. The decoder checks the
@@ -143,14 +143,14 @@ There is no deferred-family or skipped-file allowlist:
 | occurred | 9 |
 | byte-text | 5 |
 | fold | 50 |
-| spec | 206 |
+| spec | 210 |
 | realm | 16 |
 | scenario | 7 |
 | lens | 21 |
 | batch | 83 |
 | result | 23 |
 | standard | 12 |
-| **Total** | **629** |
+| **Total** | **633** |
 
 All evaluator families are checked against immutable fixture answers,
 including every listed arrival order. A record's variants are checked against

@@ -41,13 +41,19 @@ def jVal : Val → J
   | .number n => .number n
   | .bool b => .bool b
 
+/-- The text explicitly supplied by a fixture that displays a record as a section. -/
+def fixtureText (r : Record) : Except String String :=
+  match r.get "value" with
+  | some (.str text) => .ok text
+  | _ => .error s!"fixture record {idText r.id} needs a text field named value"
+
 def jShown : Shown → J
   | .here => .str "here"
   | .withheld => .str "withheld"
   | .erased => .str "erased"
 
 /-- A record as a reader holds it. A missing payload is written as `shown`,
-with no `value` or `n`. -/
+without `fields`. -/
 def jRecord (r : Record) : J :=
   let env := [("id", .str (idText r.id)), ("kind", .str r.kind), ("observer", .str r.observer),
     ("about", .arr (r.about.map .str))] ++
@@ -68,7 +74,7 @@ def jRecord (r : Record) : J :=
       | none => [])
   let fields := if r.fields.isEmpty then [] else [("fields", .obj (r.fields.map fun (k, v) => (k, jVal v)))]
   match r.shown with
-  | .here => .obj (env ++ [("value", .str r.value)] ++ rest ++ [("n", match r.nNumber with | some n => .number n | none => .int r.n)] ++ fields)
+  | .here => .obj (env ++ rest ++ fields)
   | s => .obj (env ++ rest ++ [("shown", jShown s)])
 
 /-- Each thing and its state: its heads newest first, its winner and its fork. -/

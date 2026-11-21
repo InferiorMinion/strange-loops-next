@@ -179,7 +179,7 @@ mod tests {
 
     #[test]
     fn differing_orders_are_not_silently_selected() {
-        let form = r#"{"id":"r:0000000000000000000000000000000000000000000000000000","kind":"","observer":"","about":[],"prev":[],"emitted":"2026-01-01T00:00:00Z","value":"","n":0}"#;
+        let form = r#"{"id":"r:0000000000000000000000000000000000000000000000000000","kind":"","observer":"","about":[],"prev":[],"emitted":"2026-01-01T00:00:00Z"}"#;
         let input = format!(r#"{{"orders":[[],[{form}]]}}"#);
         assert_eq!(
             answers("fold/count", &parse_json(&input).expect("JSON"))

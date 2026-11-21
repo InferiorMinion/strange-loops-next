@@ -1,6 +1,6 @@
 # Payload values, design note
 
-Moved here from `ROADMAP.md` on 2026-11-21, unchanged but for links. **Ruled by Kyle on 2026-11-21: every one of the seven choices, each for the recommendation.** The rulings and his note on a list with two live setters are in [the changelog](../CHANGELOG.md) under that date. Nothing is built yet.
+Moved here from `ROADMAP.md` on 2026-11-21, unchanged but for links. **Ruled by Kyle on 2026-11-21: every one of the seven choices, each for the recommendation.** The rulings and his note on a list with two live setters are in [the changelog](../CHANGELOG.md) under that date. Choice 2 (`value` and `n`) is built; the others are not yet.
 
 **Draft by margins-claude, 2026-11-21, for Kyle's rulings before any tick is built.** Nothing here is built.
 Every choice that is Kyle's is marked **Open**, with a recommendation and the alternatives.
@@ -29,14 +29,14 @@ Four records in a scratch store, folded by `loops` built from `15c9422`:
 
 | Slot | Answer | What a reader would expect |
 |---|---|---|
-| count where `value` present | 4 | 2 (or 1, if a number is no `value`) |
+| count where `value` present | 4 | 2 |
 | count where `value` is `""` | 3 | 0 |
 | count where `n` present | 4 | 2 |
 | count where `n` is 0 | 3 | 0 |
 | `min` of `n` | 0, unread 0 | 4, unread 3 |
 | `max` of `m` (no record has it) | null, unread 4 | as answered |
-| count by `n` | group `"0"`: 3, group `"4"`: 1 | group `"4"`: 1, ungrouped 3 |
-| count by `value` | group `""`: 3, group `"hello"`: 1 | group `"hello"`: 1, ungrouped 3 |
+| count by `n` | group `"0"`: 3, group `"4"`: 1 | groups `"4"` and `"5"`: 1 each, ungrouped 2 |
+| count by `value` | group `""`: 3, group `"hello"`: 1 | groups `"7"` and `"hello"`: 1 each, ungrouped 2 |
 | count where `routes` present | 0 | 1 |
 | count where `routes` absent | 4 | 3 |
 | count where `routes` is `"svc:a"` | 0 | 1, if a list reads as a set |
@@ -44,6 +44,8 @@ Four records in a scratch store, folded by `loops` built from `15c9422`:
 | count where `meta` present, `gone` present | 0, 0 | open (section 4) |
 | count where `ratio` present | 1 | as answered |
 | `sum` of `ratio` | 0, unread 4 | as answered |
+
+**Corrected 2026-11-21, when the change was built.** The last column of three rows was wrong as first written: under ordinary fields, `t:2`'s `n: "5"` is a written text field and its `value: 7` a written number, so each is present and has a group key. The rows said "group `"4"`: 1, ungrouped 3", "group `"hello"`: 1, ungrouped 3" and "2 (or 1, if a number is no `value`)". The error was the table's (margins-claude), not a different rule; the examples Kyle ruled on have no mixed types.
 
 `loops of t:3` shows every one of these values, so the store keeps them and the fold does not read them. The `min` row is the one that gives a wrong number with no sign of it: `n` reads differently from a field of any other name (`max` of `m` over the same records is null with 4 unread), and the text `"5"` under `n` reads as the number 0.
 

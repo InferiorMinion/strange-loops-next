@@ -243,10 +243,8 @@ impl Line {
 
     /// The record the core's readers take.
     ///
-    /// The core reads a payload as `value`, `n` and named `fields`, so only a
-    /// payload object's top-level text, numbers and booleans are readable:
-    /// a text `value` and a numeric `n` fill the two built-in fields, and
-    /// every other such member becomes a named field. Nested values, nulls,
+    /// Each top-level text, numeric or boolean member of a payload object
+    /// becomes a named field with its written value. Nested values, nulls,
     /// and payloads that are not objects stay in the line, unread by `where`
     /// tests and folds. A line without its opening reads as erased, which
     /// settling shows as withheld unless a held record erases it.
@@ -285,17 +283,14 @@ impl Line {
         let mut record = envelope;
         if let Json::Obj(members) = payload {
             for (name, value) in members {
-                match (name.as_str(), value) {
-                    ("value", Json::Str(s)) => record.value.clone_from(s),
-                    ("n", Json::Int(i)) => record.n = i.clone(),
-                    ("n", Json::Number(x)) => record.n_number = Some(*x),
-                    ("value" | "n", _) => {}
-                    (_, Json::Str(s)) => record.fields.push((name.clone(), Val::Str(s.clone()))),
-                    (_, Json::Int(i)) => record.fields.push((name.clone(), Val::Int(i.clone()))),
-                    (_, Json::Number(x)) => record.fields.push((name.clone(), Val::Number(*x))),
-                    (_, Json::Bool(b)) => record.fields.push((name.clone(), Val::Bool(*b))),
-                    _ => {}
-                }
+                let field = match value {
+                    Json::Str(s) => Val::Str(s.clone()),
+                    Json::Int(i) => Val::Int(i.clone()),
+                    Json::Number(x) => Val::Number(*x),
+                    Json::Bool(b) => Val::Bool(*b),
+                    _ => continue,
+                };
+                record.fields.push((name.clone(), field));
             }
         }
         record

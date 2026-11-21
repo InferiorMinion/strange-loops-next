@@ -82,13 +82,13 @@ def numbersSpec : Json := o [("vertex", s "numbers"),
 
 -- Two of the least values the writer takes, and one more: the sum is past
 -- -2^53, and every integer written is negative.
-def neg1 : Record := { task (fixtureId 0x1c1) "task:n1" 100 [] with n := -9007199254740991 }
-def neg2 : Record := { task (fixtureId 0x1c2) "task:n2" 110 [] with n := -9007199254740991 }
-def neg3 : Record := { task (fixtureId 0x1c3) "task:n3" 120 [] with n := -2 }
+def neg1 : Record := task (fixtureId 0x1c1) "task:n1" 100 [("n", .int (-9007199254740991))]
+def neg2 : Record := task (fixtureId 0x1c2) "task:n2" 110 [("n", .int (-9007199254740991))]
+def neg3 : Record := task (fixtureId 0x1c3) "task:n3" 120 [("n", .int (-2))]
 
 -- A sum that comes back to zero: `0`, never `-0`.
-def zero1 : Record := { task (fixtureId 0x1c4) "task:z1" 100 [] with n := 5 }
-def zero2 : Record := { task (fixtureId 0x1c5) "task:z2" 110 [] with n := -5 }
+def zero1 : Record := task (fixtureId 0x1c4) "task:z1" 100 [("n", .int 5)]
+def zero2 : Record := task (fixtureId 0x1c5) "task:z2" 110 [("n", .int (-5))]
 
 -- Nothing is selected: zero, `null` for min and max, an empty list and an
 -- empty map. The one record is a note, which `from` does not take.
@@ -100,7 +100,7 @@ def nothingSpec : Json := o [("vertex", s "nothing"),
     ("state", o [("latest-by", s "of"), ("follow", s "keys")]),
     ("per-status", o [("count", .bool true), ("by", s "status")])])]
 
-def nothing1 : Record := { task (fixtureId 0x1c6) "task:x" 100 [("status", .str "open")] with kind := "note", n := 4 }
+def nothing1 : Record := { task (fixtureId 0x1c6) "task:x" 100 [("status", .str "open"), ("n", .int 4)] with kind := "note" }
 
 -- A grouped slot with something in each place: two groups, two records with
 -- no key (ungrouped), and one whose key is on a payload the reader does not

@@ -480,13 +480,13 @@ theorem anchored_of_down {saw : Record → List Record} {S W : List Record} (ha 
 also names `a`. The part `{a, c}` is witnessed and not convex: `b` lies between. -/
 
 def lv.a : Record :=
-  { id := 1, kind := "task", observer := "sl:x", of := some "k1", value := "", prev := [], emitted := default,
+  { id := 1, kind := "task", observer := "sl:x", of := some "k1", prev := [], emitted := default,
     sets := some ["status"] }
 def lv.b : Record :=
-  { id := 2, kind := "task", observer := "sl:x", of := some "k1", value := "", prev := [1], emitted := default,
+  { id := 2, kind := "task", observer := "sl:x", of := some "k1", prev := [1], emitted := default,
     sets := some ["status"] }
 def lv.c : Record :=
-  { id := 3, kind := "task", observer := "sl:x", of := some "k1", value := "", prev := [2, 1], emitted := default,
+  { id := 3, kind := "task", observer := "sl:x", of := some "k1", prev := [2, 1], emitted := default,
     sets := some ["status"] }
 
 theorem convex_not_needed :
@@ -501,13 +501,13 @@ under it that shares a payload key with it, and the live records `{t, s2}`,
 read alone, take `t` for a head. -/
 
 def hd.t : Record :=
-  { id := 1, kind := "task", observer := "sl:x", of := some "k1", value := "", prev := [], emitted := default,
+  { id := 1, kind := "task", observer := "sl:x", of := some "k1", prev := [], emitted := default,
     sets := some ["title"] }
 def hd.s1 : Record :=
-  { id := 2, kind := "task", observer := "sl:x", of := some "k1", value := "", prev := [1], emitted := default,
+  { id := 2, kind := "task", observer := "sl:x", of := some "k1", prev := [1], emitted := default,
     sets := some ["status"] }
 def hd.s2 : Record :=
-  { id := 3, kind := "task", observer := "sl:x", of := some "k1", value := "", prev := [2], emitted := default,
+  { id := 3, kind := "task", observer := "sl:x", of := some "k1", prev := [2], emitted := default,
     sets := some ["status"] }
 
 theorem heads_need_env :
@@ -522,16 +522,16 @@ sets `b`; `y2` sets `a`. Every writer followed the rule, and `y2`'s writer held
 it, and from its live records alone reads `x` as live for `a` too. -/
 
 def cl.x : Record :=
-  { id := 1, kind := "task", observer := "sl:x", of := some "k1", value := "", prev := [], emitted := default,
+  { id := 1, kind := "task", observer := "sl:x", of := some "k1", prev := [], emitted := default,
     sets := some ["a", "b"] }
 def cl.y : Record :=
-  { id := 2, kind := "task", observer := "sl:x", of := some "k1", value := "", prev := [1], emitted := default,
+  { id := 2, kind := "task", observer := "sl:x", of := some "k1", prev := [1], emitted := default,
     sets := some ["a"] }
 def cl.z : Record :=
-  { id := 3, kind := "task", observer := "sl:x", of := some "k1", value := "", prev := [2, 1], emitted := default,
+  { id := 3, kind := "task", observer := "sl:x", of := some "k1", prev := [2, 1], emitted := default,
     sets := some ["b"] }
 def cl.y2 : Record :=
-  { id := 4, kind := "task", observer := "sl:x", of := some "k1", value := "", prev := [3, 2], emitted := default,
+  { id := 4, kind := "task", observer := "sl:x", of := some "k1", prev := [3, 2], emitted := default,
     sets := some ["a"] }
 
 /-- What each writer held. -/
@@ -841,19 +841,19 @@ the thing's keyed state. Add the records they name, `d` and `y2`, and `d`
 reads as a live setter of `status`: nothing held shows `y3` above it. -/
 
 def tg.d : Record :=
-  { id := 1, kind := "task", observer := "sl:x", of := some "k1", value := "", prev := [], emitted := default,
+  { id := 1, kind := "task", observer := "sl:x", of := some "k1", prev := [], emitted := default,
     sets := some ["status"] }
 def tg.x : Record :=
-  { id := 2, kind := "task", observer := "sl:y", of := some "k1", value := "", prev := [1], emitted := default,
+  { id := 2, kind := "task", observer := "sl:y", of := some "k1", prev := [1], emitted := default,
     sets := some ["note"] }
 def tg.y1 : Record :=
-  { id := 3, kind := "task", observer := "sl:x", of := some "k1", value := "", prev := [1], emitted := default,
+  { id := 3, kind := "task", observer := "sl:x", of := some "k1", prev := [1], emitted := default,
     sets := some ["status"] }
 def tg.y2 : Record :=
-  { id := 4, kind := "task", observer := "sl:x", of := some "k1", value := "", prev := [3], emitted := default,
+  { id := 4, kind := "task", observer := "sl:x", of := some "k1", prev := [3], emitted := default,
     sets := some ["status"] }
 def tg.y3 : Record :=
-  { id := 5, kind := "task", observer := "sl:x", of := some "k1", value := "", prev := [4], emitted := default,
+  { id := 5, kind := "task", observer := "sl:x", of := some "k1", prev := [4], emitted := default,
     sets := some ["status"] }
 def tg.all : List Record := [tg.d, tg.x, tg.y1, tg.y2, tg.y3]
 
@@ -868,10 +868,10 @@ theorem target_needs_witness :
 record of `k1`. Without it the part reads that record's payload as here. -/
 
 def er.x : Record :=
-  { id := 1, kind := "task", observer := "sl:x", of := some "k1", value := "v", prev := [], emitted := default,
+  { id := 1, kind := "task", observer := "sl:x", of := some "k1", fields := [("value", .str "v")], prev := [], emitted := default,
     sets := some ["status"] }
 def er.e : Record :=
-  { id := 2, kind := "note", observer := "sl:x", of := some "k2", value := "", prev := [], emitted := default,
+  { id := 2, kind := "note", observer := "sl:x", of := some "k2", prev := [], emitted := default,
     erases := [1] }
 
 theorem keyed_slice_needs_erasers :

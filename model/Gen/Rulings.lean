@@ -52,7 +52,7 @@ private def scenario (name thing : String) (spj : Json) (pool : List Record)
 private def countSpec : Json := Gen.SpecVectors.fromOf (.obj [("store", .str ".")])
 private def r (id : RecordId) (thing : String) (t : Nat) (value : String) (prev : List RecordId := [])
     (ok : Reads t := by decide) : Record :=
-  { Gen.RealmVectors.r id "note" (some thing) t prev (ok := ok) with value }
+  { Gen.RealmVectors.r id "note" (some thing) t prev (ok := ok) with fields := [("value", .str value)] }
 
 private def admissionCase : Except String J := do
   let a := r (fixtureId 52) "thing:A" 100 "base"
@@ -66,8 +66,8 @@ private def linesCase : Except String J := do
   let a := r (fixtureId 0x91) "thing:A" 100 "one\r\ntwo\n"
   let b := r (fixtureId 0x92) "thing:A" 200 "\nnext\n" [fixtureId 0x91]
   let body (value : String) : List Line := (value.splitOn "\n").map String.toList
-  let base : List Section := [⟨"thing:A".toList, body a.value⟩]
-  let changed : List Section := [⟨"thing:A".toList, body b.value⟩]
+  let base : List Section := [⟨"thing:A".toList, body (← fixtureText a)⟩]
+  let changed : List Section := [⟨"thing:A".toList, body (← fixtureText b)⟩]
   scenario "gap11-line-adapter" "thing:A" countSpec [a, b]
     [("before", [a]), ("after", [a, b])] base (render changed)
 
@@ -76,16 +76,16 @@ private def linesCase : Except String J := do
 -- where its eraser is not.
 private def byErasureCase : Except String J := do
   let x : Record := { Gen.RealmVectors.r (fixtureId 0x3a) "task" (some "task:1") 100 (about := ["project:x"]) with
-    value := "five", n := 5 }
+    fields := [("value", .str "five"), ("n", .int 5)] }
   let y : Record := { Gen.RealmVectors.r (fixtureId 0x3b) "task" (some "task:2") 200 (about := ["project:y"]) with
-    value := "one", n := 1, erases := [fixtureId 0x3a] }
+    fields := [("value", .str "one"), ("n", .int 1)], erases := [fixtureId 0x3a] }
   let spj : Json := .obj [("vertex", .str "per-project"), ("from", .arr [.obj [("store", .str ".")]]),
     ("fold", .obj [
       ("sum", .obj [("sum", .str "n"), ("by", .str "env.about:project")]),
       ("current", .obj [("sum", .str "n"), ("follow", .str "prev"), ("by", .str "env.about:project")]),
       ("count", .obj [("count", .bool true), ("by", .str "env.about:project")]),
       ("plain", .obj [("sum", .str "n")])])]
-  let base : List Section := [⟨"task:1".toList, [x.value.toList]⟩]
+  let base : List Section := [⟨"task:1".toList, [(← fixtureText x).toList]⟩]
   scenario "by-01-erased-in-another-group" "task:1" spj [x, y]
     [("before", [x]), ("after", [x, y]), ("withheld-x", [x.withhold, y])] base (render base)
     ["spec.set", "by.after-admission", "by.accounting", "result.unread"]
@@ -97,9 +97,9 @@ private def byErasureCase : Except String J := do
 -- `title` is still read from W.
 private def keyedSettleCase : Except String J := do
   let w : Record := { Gen.RealmVectors.r (fixtureId 0x1a1) "task" (some "task:1") 100 with
-    value := "write the note", fields := [("status", .str "open"), ("title", .str "note")] }
+    fields := [("value", .str "write the note"), ("status", .str "open"), ("title", .str "note")] }
   let b : Record := { Gen.RealmVectors.r (fixtureId 0x1a2) "task" (some "task:1") 200 [fixtureId 0x1a1] with
-    sets := some ["status"], fields := [("status", .str "closed")] }
+    sets := some ["status"], fields := [("status", .str "closed"), ("value", .str "")] }
   let e : Record := { Gen.RealmVectors.r (fixtureId 0x1a3) "erasure" none 300 with erases := [fixtureId 0x1a2] }
   let spj : Json := .obj [("vertex", .str "tasks"), ("from", .arr [.obj [("store", .str "."), ("kind", .arr [.str "task"])]]),
     ("fold", .obj [
@@ -109,7 +109,7 @@ private def keyedSettleCase : Except String J := do
       ("note", .obj [("latest-by", .str "of"), ("follow", .str "keys"),
         ("where", .obj [("title", .obj [("is", .str "note")])])])])]
   -- the lens reads the head, B, before and after the last step
-  let base : List Section := [⟨"task:1".toList, [b.value.toList]⟩]
+  let base : List Section := [⟨"task:1".toList, [(← fixtureText b).toList]⟩]
   scenario "keys-01-settled-setter" "task:1" spj [w, b, e]
     [("before", [w]), ("set", [w, b]), ("withheld", [w, b.withhold]), ("erased-alone", [w, b.erase]),
       ("erased", [w, b, e])] base (render base)

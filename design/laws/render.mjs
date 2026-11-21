@@ -53,9 +53,10 @@ export function renderLaws(root) {
     const rec = (label, r, again) => {
       const thing = r.of != null ? r.of.replace(/^[a-z]+:/, "") : label(r.id);
       const after = r.prev.length ? ` · after ${heads(label, r.prev)}` : "";
+      const value = r.shown ?? r.fields?.value;
       return `<div class="rec${r.shown ? ` ${r.shown}` : ""}" data-k="${label(r.id)}" title="${esc(r.id)}">` +
         `<div class="rid"><b>${label(r.id)}</b><span>${r.emitted.slice(11, 19)}</span></div>` +
-        `<div class="val${r.shown ? ` ${r.shown}` : ""}">${r.shown ?? esc(r.value)}</div>` +
+        (value === undefined ? "" : `<div class="val${r.shown ? ` ${r.shown}` : ""}">${esc(String(value))}</div>`) +
         `<div class="tag">${again ? "again · " : ""}${esc(thing)}${after}</div></div>`;
     };
     const order = (label, o) => {

@@ -14,9 +14,11 @@ fn rec(n: u8, thing: &str) -> Record {
     Record {
         id: id(n),
         of: Some(thing.into()),
-        value: format!("payload {n}"),
-        n: Int::from(i64::from(n)),
-        fields: vec![("extra".into(), Val::Bool(true))],
+        fields: vec![
+            ("value".into(), Val::Str(format!("payload {n}"))),
+            ("n".into(), Val::Int(Int::from(i64::from(n)))),
+            ("extra".into(), Val::Bool(true)),
+        ],
         ..Record::default()
     }
 }

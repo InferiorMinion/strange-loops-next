@@ -291,15 +291,14 @@ def valOf (path : String) : Json → Dec Val
 def fieldsOf (path : String) (j : Json) : Dec (List (String × Val)) := do
   let kvs ← object path j
   kvs.mapM fun (k, v) => do
-    if k == "value" || k == "n" then bad path s!"\"{k}\" is a payload field of its own, not one of fields"
     pure (k, ← valOf (dot path k) v)
 
 def recordKeys : List String :=
-  ["id", "kind", "observer", "about", "of", "value", "prev", "under", "emitted", "occurred", "erases", "sets",
-    "n", "fields", "shown"]
+  ["id", "kind", "observer", "about", "of", "prev", "under", "emitted", "occurred", "erases", "sets",
+    "fields", "shown"]
 
 /-- A record as a reader holds it. A missing payload is written as `shown`
-with no `value`, `n` or `fields`, and reads back as `Record.withhold` or
+with no `fields`, and reads back as `Record.withhold` or
 `Record.erase` leave it. -/
 def record (path : String) (j : Json) : Dec Record := do
   let kvs ← members? path recordKeys j
@@ -323,20 +322,13 @@ def record (path : String) (j : Json) : Dec Record := do
     if k.isEmpty then bad p "a key name is not empty" else pure k)
   let shown ← (opt kvs "shown" (shownOf (dot path "shown"))).map (·.getD .here)
   let base : Record :=
-    { id, kind, observer, about, of, value := "", prev, under, occurred, emitted, erases, sets, shown }
+    { id, kind, observer, about, of, prev, under, occurred, emitted, erases, sets, shown }
   match shown with
   | .here =>
-    let value ← text (dot path "value") (← req path kvs "value")
-    let nVal ← valOf (dot path "n") (← req path kvs "n")
-    let (n, nNumber) ← match nVal with
-      | .int i => pure (i, none)
-      | .number x => pure (0, some x)
-      | _ => bad (dot path "n") "expected a number"
     let fields ← (opt kvs "fields" (fieldsOf (dot path "fields"))).map (·.getD [])
-    pure { base with value, n, nNumber, fields }
+    pure { base with fields }
   | _ =>
-    for k in ["value", "n", "fields"] do
-      if (kvs.lookup k).isSome then bad path s!"its payload isn't here, so it carries no \"{k}\""
+    if (kvs.lookup "fields").isSome then bad path "its payload isn't here, so it carries no fields"
     pure base
 
 def records (path : String) : Json → Dec (List Record) := each path record

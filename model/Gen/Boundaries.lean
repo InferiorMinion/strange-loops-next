@@ -28,8 +28,8 @@ structure Case where
   removed : String × String
 
 def r (id : RecordId) (value : String) (fields : List (String × Val) := []) : Record :=
-  { id, kind := "task", observer := "sl:ada", about := ["task:1"], value, prev := [],
-    emitted := stampAt 100, fields }
+  { id, kind := "task", observer := "sl:ada", about := ["task:1"], prev := [],
+    emitted := stampAt 100, fields := ("value", .str value) :: fields }
 
 def tri : Tri → String
   | .yes => "yes"
@@ -48,7 +48,8 @@ def lensOut : Option (List Lens.Outcome) → String
 
 def sec (id body : String) : Lens.Section := ⟨id.toList, [body.toList]⟩
 
-def ids (rs : List Record) : String := ", ".intercalate (rs.map fun x => s!"{x.value}")
+def ids (rs : List Record) : Except String String := do
+  return ", ".intercalate (← rs.mapM fixtureText)
 
 def cases : Except String (List Case) := do
   -- result.full: every record readable to the fold
@@ -68,14 +69,14 @@ def cases : Except String (List Case) := do
   let one := r (fixtureId 7) "first"
   let other := r (fixtureId 8) "second"
   let twin := { r (fixtureId 7) "second" with }
-  let winner (xs : List Record) : String :=
+  let winner (xs : List Record) : Except String String := do
     match (LatestBy.fold .empty xs).winner with
-    | some w => s!"winner {w.value}"
-    | none => "no winner"
-  let distinct := s!"{winner [one, other]} either way"
-  unless winner [one, other] == winner [other, one] do throw "latest-by.set: held side depends on order"
-  let a := winner [one, twin]
-  let b := winner [twin, one]
+    | some w => return s!"winner {← fixtureText w}"
+    | none => return "no winner"
+  let distinct := s!"{← winner [one, other]} either way"
+  unless (← winner [one, other]) == (← winner [other, one]) do throw "latest-by.set: held side depends on order"
+  let a ← winner [one, twin]
+  let b ← winner [twin, one]
   if a == b then throw "latest-by.set: two records under one id agree anyway"
   -- lens.no-op: the base's section ids are distinct
   let base := [sec "decision:auth" "Passkeys.", sec "decision:cache" "No cache."]
@@ -109,8 +110,8 @@ def cases : Except String (List Case) := do
       removed := ("the same tests, the payload withheld", pair here.withhold) },
     { law := "latest-by.set", premise := "within one store an id names one record",
       input := "two records under one id: a reader that doesn't check ids against content could hold them",
-      holds := (s!"records {ids [one, other]} under two ids, in either order", distinct),
-      removed := (s!"records {ids [one, twin]} under one id: one order, then the other", s!"{a}, then {b}") },
+      holds := (s!"records {← ids [one, other]} under two ids, in either order", distinct),
+      removed := (s!"records {← ids [one, twin]} under one id: one order, then the other", s!"{a}, then {b}") },
     { law := "lens.no-op", premise := "the base's section ids are distinct",
       input := "not produced when each thing is rendered once",
       holds := ("parse an unedited render of two sections", lensOut clean),

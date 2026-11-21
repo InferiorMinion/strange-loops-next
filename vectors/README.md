@@ -33,7 +33,7 @@ Fold each order separately; each must produce `expect`.
   `about` never makes a head.
 * Latest: the `winner` and `others` of the combined, distinct-id per-thing heads.
 * Sum: the number.
-* Extrema: `min` and `max`, each `null` when nothing was folded.
+* Extrema: `min` and `max`, each `null` when no input had a readable `n`.
 
 Each record's `about` is a set of the things it mentions.
 A record may carry `of`, the one thing it is an emit of; a record without it is of its own id.
@@ -42,11 +42,14 @@ Content order compares span start, span end, `emitted`, then id digest bytes.
 A record without `occurred` has an instant span at its `emitted`.
 Newest first reverses this whole order.
 Ids use layer 0's encoding, but these fixture digests are made up.
-The `n` field supplies held safe-whole numbers to the raw sum and extrema fixtures.
-Selected-reader semantics do not redefine these raw primitives.
-Optional `observer`, `erases` and `fields` supply the observer, erased ids and further payload fields.
+The optional `fields` object holds the written primitive payload fields, including
+`value` and `n`. Omitting the object gives a held record with no fields.
+A top-level `value` or `n` on a reader record is an unknown member.
+The raw sum and extrema fixtures read `fields.n` through the safe-whole reader.
+An omitted or unreadable field contributes no value. The accumulated integer is exact.
+The envelope supplies the observer and may name erased ids in `erases`.
 An optional `sets` is the envelope's, kept when the payload is not: a reader record of any family may carry it, and only a slot that follows `keys` reads it.
-A hidden payload uses `shown` (`withheld` or `erased`) instead of `value`, `n` and `fields`.
+A hidden payload uses `shown` (`withheld` or `erased`) and omits `fields`.
 
 ## `fold/heads`
 
@@ -179,7 +182,7 @@ Write `settled` and `admitted` in ascending id digest-byte order.
 
 `input.lens.base` holds base sections; `input.lens.text` holds edited lines.
 `expect.lens` holds rendered base, outcomes and applied sections.
-The scenario adapter splits head values at LF, keeping all parts, including empty parts.
+The scenario adapter requires a text field named `value` on a rendered head and splits it at LF, keeping all parts, including empty parts.
 It leaves CR unchanged.
 The lens itself does not split line elements.
 See [`protocol/lens.md`](../protocol/lens.md).

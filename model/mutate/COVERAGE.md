@@ -17,6 +17,7 @@ Latest-by following `keys` adds twenty, over `Loops/Live.lean` and the keyed slo
 Count, sum, min, max and collect following `keys` add twenty-one: 291 entries total. `follow` on those fold types became an `Option Follow`, so eleven entries are retargeted at their new sites (`wide-spec-069`, `follow-pool-every`, `follow-pool-heads-always`, `follow-count-every`, `follow-max-every`, `follow-sum-parse-dropped`, `follow-json-inverted`, `follow-count-envelope-first`, `follow-count-unknown-first`, `keys-follow-anywhere`, `keys-written-as-prev`); the four that name `Loops.Slot.run` now name `Loops.Slot.plain`, where their site is.
 A keyed collect's `limit` counting things adds four, over `Loops.keyedValue`, `Loops.wholeThings` and `Loops.thingsInOrder`: 295 entries total. `keys-slots-collect-heads` and `keys-slots-collect-no-limit` are retargeted at the collect's new site.
 The canonical result (D7) adds nineteen, over `model/Loops/Result.lean`: 314 entries total. Seventeen change what the codec writes or reads; two, `result-unshown-keeps-shown` and `result-unshown-groups-kept`, change only what the laws compare, since nothing that runs sets `shown` aside.
+Ordinary payload fields retarget thirteen entries at lookup, the shared numeric steps and folds, their named accumulators, and the maximum over heads. The catalogue retains 314 entries.
 The raw-reader ordering mutations target library definitions under `Loops`.
 The cheap runner uses those fourteen replacements and the four former D6 survivors.
 It requires runtime failures after successful builds.
@@ -93,7 +94,7 @@ The catalogue includes existing entries without definition metadata.
 - `Loops.Sum.acc`: covered by `extra-families-sum-acc`
 - `Loops.Max.acc`: covered by `extra-families-max-acc`
 - `Loops.Min.acc`: covered by `extra-families-min-acc`
-- `Loops.Sum.on`: covered by `wide-families-013`
+- `Loops.Sum.on`: exercised through the shared `Sum.step` and the named reader in the runtime checks
 - `Loops.Max.on`: covered by `wide-families-014`
 - `Loops.Min.on`: covered by `wide-families-015`
 - `Loops.OverHeads.fold`: excluded: It delegates to LatestBy.fold and answer. No direct eligible operation.
@@ -118,7 +119,7 @@ The catalogue includes existing entries without definition metadata.
 - `Loops.Latest.fold`: excluded: It delegates to LatestBy.fold. No direct eligible operation.
 - `Loops.Latest.winner`: covered by `extra-fold-latest-winner`
 - `Loops.Latest.others`: covered by `finish-fold-latest-others`
-- `Loops.Sum.step`: excluded: It adds two values. No direct eligible operation.
+- `Loops.Sum.step`: covered by `wide-families-013`
 - `Loops.Sum.fold`: covered by `finish-fold-sum-fold`
 - `Loops.Max.step`: covered by `wide-fold-019`
 - `Loops.Max.fold`: covered by `finish-fold-max-fold`

@@ -193,6 +193,9 @@ Settling, admission, the heads and liveness come first, over everything held.
 Every selected thing (every thing whose tests answer yes or unknown) is grouped, ungrouped or unread, exactly one of these.
 
 Sum, min, and max read only safe whole values from the named payload field.
+The names `value` and `n` follow the same rules as any payload field. In a held
+payload an omitted field is absent to `where`, ungrouped under `by`, and unread
+by a numeric slot. Written empty text and written zero are both present.
 Read each number using the layer 0 binary64 rule first.
 For each selected record, count an unavailable payload, missing field, or other value as unread.
 Do not convert text or booleans to numbers.

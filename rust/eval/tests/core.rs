@@ -524,7 +524,7 @@ fn hidden_payloads_and_unknown_counts_differ_by_slot() {
 fn run_keeps_raw_duplicate_ids_and_does_not_settle_or_dedup() {
     let a = rec(1);
     let b = Record {
-        value: "different".into(),
+        fields: vec![("value".into(), Val::Str("different".into()))],
         ..a.clone()
     };
     assert_eq!(spec::newest_first(&[a.clone(), b.clone()]).len(), 2);
@@ -596,9 +596,9 @@ fn run_keeps_raw_duplicate_ids_and_does_not_settle_or_dedup() {
 fn raw_limits_arguments_and_exact_sums_have_distinct_readability_boundaries() {
     let big = "340282366920938463463374607431768211457";
     let mut a = rec(1);
-    a.n = 9_007_199_254_740_991_i64.into();
+    a.fields = vec![("n".into(), Val::Int(9_007_199_254_740_991_i64.into()))];
     let mut b = rec(2);
-    b.n = a.n.clone();
+    b.fields.clone_from(&a.fields);
     let xs = [a.clone(), b.clone(), rec(3).withhold()];
     assert_eq!(
         slot(r#"{"sum":"n"}"#).run(|_| true, &xs),
@@ -610,14 +610,14 @@ fn raw_limits_arguments_and_exact_sums_have_distinct_readability_boundaries() {
     assert_eq!(
         slot(r#"{"min":"n"}"#).run(|_| true, &xs),
         SlotValue::Opt(FoldResult {
-            value: Some(a.n.clone()),
+            value: a.num("n"),
             unread: 1_u64.into()
         })
     );
     assert_eq!(
         slot(r#"{"max":"n"}"#).run(|_| true, &xs),
         SlotValue::Opt(FoldResult {
-            value: Some(a.n.clone()),
+            value: a.num("n"),
             unread: 1_u64.into()
         })
     );
@@ -640,7 +640,10 @@ fn raw_limits_arguments_and_exact_sums_have_distinct_readability_boundaries() {
     }
     let tests = slot(r#"{"count":true,"where":{"n":{"is":9007199254740991}}}"#);
     assert_eq!(tests.run(|_| true, &[a.clone(), b]), count(2, 0));
-    a.n = big.parse().expect("raw out-of-range integer");
+    a.fields = vec![(
+        "n".into(),
+        Val::Int(big.parse().expect("raw out-of-range integer")),
+    )];
     assert_eq!(
         slot(r#"{"sum":"n"}"#).run(|_| true, &[a]),
         SlotValue::Int(FoldResult {

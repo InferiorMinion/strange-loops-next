@@ -27,7 +27,7 @@ fn insertion_preserves_unchecked_tail() {
 fn equal_order_keys_do_not_deduplicate_distinct_records() {
     let a = Record::default();
     let b = Record {
-        value: "other".into(),
+        fields: vec![("value".into(), Val::Str("other".into()))],
         ..a.clone()
     };
     assert_eq!(
@@ -41,12 +41,9 @@ fn sum_is_unbounded() {
     let n: Int = "999999999999999999999999999999999999999999999999"
         .parse()
         .expect("integer");
-    let r = Record {
-        n,
-        ..Record::default()
-    };
+    let r = Record::default();
     assert_eq!(
-        fold::sum_fold(Int::default(), &[r.clone(), r]),
+        fold::sum_fold(|_| Some(n.clone()), Int::default(), &[r.clone(), r]),
         "1999999999999999999999999999999999999999999999998"
             .parse()
             .expect("integer")
@@ -56,13 +53,13 @@ fn sum_is_unbounded() {
 fn rec(number: u64, n: i64) -> Record {
     Record {
         id: id(number),
-        n: Int::from(n),
+        fields: vec![("n".into(), Val::Int(Int::from(n)))],
         ..Record::default()
     }
 }
 
 #[test]
-fn raw_folds_count_repeats_and_ignore_readability_but_select_does_not() {
+fn raw_folds_skip_unread_values_and_selection_counts_them() {
     let a = rec(1, 5);
     let b = Record {
         shown: Shown::Withheld,
@@ -75,9 +72,9 @@ fn raw_folds_count_repeats_and_ignore_readability_but_select_does_not() {
         "last form, not JS first"
     );
     assert_eq!(families::count_acc().fold(&xs), Nat::from(3));
-    assert_eq!(families::sum_acc().fold(&xs), Int::from(203_i64));
+    assert_eq!(families::sum_acc().fold(&xs), Int::from(5_i64));
     assert_eq!(families::min_acc().fold(&xs), Some(Int::from(5_i64)));
-    assert_eq!(families::max_acc().fold(&xs), Some(Int::from(99_i64)));
+    assert_eq!(families::max_acc().fold(&xs), Some(Int::from(5_i64)));
     let count = families::count_acc().select(|_| Tri::Yes, &xs);
     assert_eq!(count.value, Nat::from(3));
     assert_eq!(count.unread, Nat::default());
@@ -125,7 +122,7 @@ fn selection_counts_unknown_or_unreadable_once_and_excluded_never() {
 }
 
 #[test]
-fn numeric_on_uses_first_field_and_builtin_precedence() {
+fn numeric_on_uses_first_written_field_for_every_name() {
     let mut a = rec(1, 5);
     a.fields = vec![
         ("score".into(), Val::Int(Int::from(-7_i64))),
@@ -151,7 +148,7 @@ fn numeric_on_uses_first_field_and_builtin_precedence() {
         families::max_on("score").select(|_| Tri::Yes, &xs).unread,
         Nat::from(3)
     );
-    assert_eq!(families::sum_on("n").fold(&xs), Int::from(37_i64));
+    assert_eq!(families::sum_on("n").fold(&xs), Int::from(113_i64));
     assert_eq!(families::sum_on("absent").fold(&xs), Int::default());
     assert_eq!(families::min_on("absent").fold(&xs), None);
     assert_eq!(families::max_on("absent").fold(&xs), None);
@@ -179,16 +176,28 @@ fn batches_match_one_fold_and_limits_do_not_truncate_big_nats() {
             fold::count_fold(initial.clone(), &xs)
         );
         assert_eq!(
-            fold::sum_fold(fold::sum_fold(Int::from(17_i64), &xs[..i]), &xs[i..]),
-            fold::sum_fold(Int::from(17_i64), &xs)
+            fold::sum_fold(
+                |r| r.num("n"),
+                fold::sum_fold(|r| r.num("n"), Int::from(17_i64), &xs[..i]),
+                &xs[i..]
+            ),
+            fold::sum_fold(|r| r.num("n"), Int::from(17_i64), &xs)
         );
         assert_eq!(
-            fold::min_fold(fold::min_fold(Some(Int::from(17_i64)), &xs[..i]), &xs[i..]),
-            fold::min_fold(Some(Int::from(17_i64)), &xs)
+            fold::min_fold(
+                |r| r.num("n"),
+                fold::min_fold(|r| r.num("n"), Some(Int::from(17_i64)), &xs[..i]),
+                &xs[i..]
+            ),
+            fold::min_fold(|r| r.num("n"), Some(Int::from(17_i64)), &xs)
         );
         assert_eq!(
-            fold::max_fold(fold::max_fold(Some(Int::from(-17_i64)), &xs[..i]), &xs[i..]),
-            fold::max_fold(Some(Int::from(-17_i64)), &xs)
+            fold::max_fold(
+                |r| r.num("n"),
+                fold::max_fold(|r| r.num("n"), Some(Int::from(-17_i64)), &xs[..i]),
+                &xs[i..]
+            ),
+            fold::max_fold(|r| r.num("n"), Some(Int::from(-17_i64)), &xs)
         );
         let mut s = LatestBy::default();
         s.fold(&xs[..i]);
@@ -254,7 +263,7 @@ fn record_equality_includes_spelling_and_unchecked_state_stays_unchecked() {
         ..rec(1, 5)
     };
     let b = Record {
-        value: "different payload".into(),
+        fields: vec![("value".into(), Val::Str("different payload".into()))],
         ..a.clone()
     };
     assert!(!a.newer(&b) && !b.newer(&a));

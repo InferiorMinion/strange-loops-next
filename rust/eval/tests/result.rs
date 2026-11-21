@@ -1,7 +1,7 @@
 //! The canonical result (D7) against model/Loops/Result.lean and protocol/result.md.
 use loops::{
     json::Json,
-    record::{Digest, Record},
+    record::{Digest, Record, Val},
     result::{RESULT_LABEL, result_hash, result_preimage, result_text},
     spec::Spec,
 };
@@ -23,7 +23,7 @@ fn rec(n: u8, thing: &str) -> Record {
 }
 fn with_n(n: u8, thing: &str, value: i64) -> Record {
     let mut r = rec(n, thing);
-    r.n = value.into();
+    r.fields.push(("n".into(), Val::Int(value.into())));
     r
 }
 fn sha256(bytes: &[u8]) -> Vec<u8> {

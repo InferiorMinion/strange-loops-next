@@ -112,14 +112,12 @@ Every verb that reads the store says when either happened (choice 18).
    read: a fold reads the one store it is run in.
 5. **Admission permits every replacement** of a held, related record
    (`may = true`), as `Spec.run` does. Who may replace whom is standing's rule.
-6. **How a payload becomes what a fold reads.** The model's reader record
-   has a text `value`, a numeric `n` and named primitive `fields`
-   (`protocol/laws.md`, simplifications). `Line::record` reads a payload
-   object's top-level members: text `value` and numeric `n` fill the
-   built-ins, other text, numbers and booleans become fields. Nested values,
-   nulls and non-object payloads are held and unread. Two consequences to
-   settle with the model, not here: `value` and `n` always exist to a `where`
-   test (as `""` and `0`), and a nested payload can't be tested at all.
+6. **How a payload becomes what a fold reads.** `Line::record` puts each top-level
+   text, number or boolean member of a payload object into the reader's
+   `fields` under its written name. An omitted member is absent, including
+   `value` and `n`. The line retains lists, objects and nulls, and retains a
+   non-object payload whole. These supply no reader fields. The stored-to-reader
+   mapping is still outside the model.
 7. **New refusal codes**, outside the protocol's lists: for a line,
    `line-not-json`, `line-shape`, `commit-invalid`, `id-mismatch`,
    `key-invalid`, `signature-invalid`, `line-not-canonical`; for the CLI,

@@ -71,54 +71,44 @@
           "kind": "event",
           "observer": "sl:kyle",
           "about": ["event:81"],
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:01:40Z",
-          "occurred": "2026-10",
-          "n": 0
+          "occurred": "2026-10"
         },
         {
           "id": "r:0000000000000000000000000000000000000000000000000190",
           "kind": "event",
           "observer": "sl:kyle",
           "about": ["event:82"],
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:05:00Z",
-          "occurred": "2026-10-01T00:05:00Z",
-          "n": 0
+          "occurred": "2026-10-01T00:05:00Z"
         },
         {
           "id": "r:000000000000000000000000000000000000000000000000019g",
           "kind": "event",
           "observer": "sl:kyle",
           "about": ["event:83"],
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:01:50Z",
-          "occurred": "2026-10-01/2026-10-31",
-          "n": 0
+          "occurred": "2026-10-01/2026-10-31"
         },
         {
           "id": "r:00000000000000000000000000000000000000000000000001a0",
           "kind": "event",
           "observer": "sl:kyle",
           "about": ["event:84"],
-          "value": "",
           "prev": [],
-          "emitted": "2026-10-01T00:03:20Z",
-          "n": 0
+          "emitted": "2026-10-01T00:03:20Z"
         },
         {
           "id": "r:00000000000000000000000000000000000000000000000001ag",
           "kind": "event",
           "observer": "sl:kyle",
           "about": ["event:85"],
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:02:00Z",
-          "occurred": "2026-09",
-          "n": 0
+          "occurred": "2026-09"
         },
         {
           "id": "r:00000000000000000000000000000000000000000000000001b0",
@@ -135,22 +125,18 @@
           "kind": "event",
           "observer": "sl:kyle",
           "about": ["event:87"],
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:02:10Z",
-          "occurred": "2026-10-01T00:02:00Z/..",
-          "n": 0
+          "occurred": "2026-10-01T00:02:00Z/.."
         },
         {
           "id": "r:00000000000000000000000000000000000000000000000001c0",
           "kind": "event",
           "observer": "sl:kyle",
           "about": ["event:88"],
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:02:20Z",
-          "occurred": "2026-10-01",
-          "n": 0
+          "occurred": "2026-10-01"
         }
       ],
       [
@@ -159,43 +145,35 @@
           "kind": "event",
           "observer": "sl:kyle",
           "about": ["event:82"],
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:05:00Z",
-          "occurred": "2026-10-01T00:05:00Z",
-          "n": 0
+          "occurred": "2026-10-01T00:05:00Z"
         },
         {
           "id": "r:000000000000000000000000000000000000000000000000019g",
           "kind": "event",
           "observer": "sl:kyle",
           "about": ["event:83"],
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:01:50Z",
-          "occurred": "2026-10-01/2026-10-31",
-          "n": 0
+          "occurred": "2026-10-01/2026-10-31"
         },
         {
           "id": "r:00000000000000000000000000000000000000000000000001a0",
           "kind": "event",
           "observer": "sl:kyle",
           "about": ["event:84"],
-          "value": "",
           "prev": [],
-          "emitted": "2026-10-01T00:03:20Z",
-          "n": 0
+          "emitted": "2026-10-01T00:03:20Z"
         },
         {
           "id": "r:00000000000000000000000000000000000000000000000001ag",
           "kind": "event",
           "observer": "sl:kyle",
           "about": ["event:85"],
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:02:00Z",
-          "occurred": "2026-09",
-          "n": 0
+          "occurred": "2026-09"
         },
         {
           "id": "r:00000000000000000000000000000000000000000000000001b0",
@@ -212,33 +190,27 @@
           "kind": "event",
           "observer": "sl:kyle",
           "about": ["event:87"],
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:02:10Z",
-          "occurred": "2026-10-01T00:02:00Z/..",
-          "n": 0
+          "occurred": "2026-10-01T00:02:00Z/.."
         },
         {
           "id": "r:00000000000000000000000000000000000000000000000001c0",
           "kind": "event",
           "observer": "sl:kyle",
           "about": ["event:88"],
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:02:20Z",
-          "occurred": "2026-10-01",
-          "n": 0
+          "occurred": "2026-10-01"
         },
         {
           "id": "r:000000000000000000000000000000000000000000000000018g",
           "kind": "event",
           "observer": "sl:kyle",
           "about": ["event:81"],
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:01:40Z",
-          "occurred": "2026-10",
-          "n": 0
+          "occurred": "2026-10"
         }
       ],
       [
@@ -247,32 +219,26 @@
           "kind": "event",
           "observer": "sl:kyle",
           "about": ["event:83"],
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:01:50Z",
-          "occurred": "2026-10-01/2026-10-31",
-          "n": 0
+          "occurred": "2026-10-01/2026-10-31"
         },
         {
           "id": "r:00000000000000000000000000000000000000000000000001a0",
           "kind": "event",
           "observer": "sl:kyle",
           "about": ["event:84"],
-          "value": "",
           "prev": [],
-          "emitted": "2026-10-01T00:03:20Z",
-          "n": 0
+          "emitted": "2026-10-01T00:03:20Z"
         },
         {
           "id": "r:00000000000000000000000000000000000000000000000001ag",
           "kind": "event",
           "observer": "sl:kyle",
           "about": ["event:85"],
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:02:00Z",
-          "occurred": "2026-09",
-          "n": 0
+          "occurred": "2026-09"
         },
         {
           "id": "r:00000000000000000000000000000000000000000000000001b0",
@@ -289,44 +255,36 @@
           "kind": "event",
           "observer": "sl:kyle",
           "about": ["event:87"],
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:02:10Z",
-          "occurred": "2026-10-01T00:02:00Z/..",
-          "n": 0
+          "occurred": "2026-10-01T00:02:00Z/.."
         },
         {
           "id": "r:00000000000000000000000000000000000000000000000001c0",
           "kind": "event",
           "observer": "sl:kyle",
           "about": ["event:88"],
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:02:20Z",
-          "occurred": "2026-10-01",
-          "n": 0
+          "occurred": "2026-10-01"
         },
         {
           "id": "r:000000000000000000000000000000000000000000000000018g",
           "kind": "event",
           "observer": "sl:kyle",
           "about": ["event:81"],
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:01:40Z",
-          "occurred": "2026-10",
-          "n": 0
+          "occurred": "2026-10"
         },
         {
           "id": "r:0000000000000000000000000000000000000000000000000190",
           "kind": "event",
           "observer": "sl:kyle",
           "about": ["event:82"],
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:05:00Z",
-          "occurred": "2026-10-01T00:05:00Z",
-          "n": 0
+          "occurred": "2026-10-01T00:05:00Z"
         }
       ],
       [
@@ -335,21 +293,17 @@
           "kind": "event",
           "observer": "sl:kyle",
           "about": ["event:84"],
-          "value": "",
           "prev": [],
-          "emitted": "2026-10-01T00:03:20Z",
-          "n": 0
+          "emitted": "2026-10-01T00:03:20Z"
         },
         {
           "id": "r:00000000000000000000000000000000000000000000000001ag",
           "kind": "event",
           "observer": "sl:kyle",
           "about": ["event:85"],
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:02:00Z",
-          "occurred": "2026-09",
-          "n": 0
+          "occurred": "2026-09"
         },
         {
           "id": "r:00000000000000000000000000000000000000000000000001b0",
@@ -366,55 +320,45 @@
           "kind": "event",
           "observer": "sl:kyle",
           "about": ["event:87"],
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:02:10Z",
-          "occurred": "2026-10-01T00:02:00Z/..",
-          "n": 0
+          "occurred": "2026-10-01T00:02:00Z/.."
         },
         {
           "id": "r:00000000000000000000000000000000000000000000000001c0",
           "kind": "event",
           "observer": "sl:kyle",
           "about": ["event:88"],
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:02:20Z",
-          "occurred": "2026-10-01",
-          "n": 0
+          "occurred": "2026-10-01"
         },
         {
           "id": "r:000000000000000000000000000000000000000000000000018g",
           "kind": "event",
           "observer": "sl:kyle",
           "about": ["event:81"],
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:01:40Z",
-          "occurred": "2026-10",
-          "n": 0
+          "occurred": "2026-10"
         },
         {
           "id": "r:0000000000000000000000000000000000000000000000000190",
           "kind": "event",
           "observer": "sl:kyle",
           "about": ["event:82"],
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:05:00Z",
-          "occurred": "2026-10-01T00:05:00Z",
-          "n": 0
+          "occurred": "2026-10-01T00:05:00Z"
         },
         {
           "id": "r:000000000000000000000000000000000000000000000000019g",
           "kind": "event",
           "observer": "sl:kyle",
           "about": ["event:83"],
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:01:50Z",
-          "occurred": "2026-10-01/2026-10-31",
-          "n": 0
+          "occurred": "2026-10-01/2026-10-31"
         }
       ],
       [
@@ -423,11 +367,9 @@
           "kind": "event",
           "observer": "sl:kyle",
           "about": ["event:85"],
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:02:00Z",
-          "occurred": "2026-09",
-          "n": 0
+          "occurred": "2026-09"
         },
         {
           "id": "r:00000000000000000000000000000000000000000000000001b0",
@@ -444,65 +386,53 @@
           "kind": "event",
           "observer": "sl:kyle",
           "about": ["event:87"],
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:02:10Z",
-          "occurred": "2026-10-01T00:02:00Z/..",
-          "n": 0
+          "occurred": "2026-10-01T00:02:00Z/.."
         },
         {
           "id": "r:00000000000000000000000000000000000000000000000001c0",
           "kind": "event",
           "observer": "sl:kyle",
           "about": ["event:88"],
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:02:20Z",
-          "occurred": "2026-10-01",
-          "n": 0
+          "occurred": "2026-10-01"
         },
         {
           "id": "r:000000000000000000000000000000000000000000000000018g",
           "kind": "event",
           "observer": "sl:kyle",
           "about": ["event:81"],
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:01:40Z",
-          "occurred": "2026-10",
-          "n": 0
+          "occurred": "2026-10"
         },
         {
           "id": "r:0000000000000000000000000000000000000000000000000190",
           "kind": "event",
           "observer": "sl:kyle",
           "about": ["event:82"],
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:05:00Z",
-          "occurred": "2026-10-01T00:05:00Z",
-          "n": 0
+          "occurred": "2026-10-01T00:05:00Z"
         },
         {
           "id": "r:000000000000000000000000000000000000000000000000019g",
           "kind": "event",
           "observer": "sl:kyle",
           "about": ["event:83"],
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:01:50Z",
-          "occurred": "2026-10-01/2026-10-31",
-          "n": 0
+          "occurred": "2026-10-01/2026-10-31"
         },
         {
           "id": "r:00000000000000000000000000000000000000000000000001a0",
           "kind": "event",
           "observer": "sl:kyle",
           "about": ["event:84"],
-          "value": "",
           "prev": [],
-          "emitted": "2026-10-01T00:03:20Z",
-          "n": 0
+          "emitted": "2026-10-01T00:03:20Z"
         }
       ],
       [
@@ -521,76 +451,62 @@
           "kind": "event",
           "observer": "sl:kyle",
           "about": ["event:87"],
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:02:10Z",
-          "occurred": "2026-10-01T00:02:00Z/..",
-          "n": 0
+          "occurred": "2026-10-01T00:02:00Z/.."
         },
         {
           "id": "r:00000000000000000000000000000000000000000000000001c0",
           "kind": "event",
           "observer": "sl:kyle",
           "about": ["event:88"],
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:02:20Z",
-          "occurred": "2026-10-01",
-          "n": 0
+          "occurred": "2026-10-01"
         },
         {
           "id": "r:000000000000000000000000000000000000000000000000018g",
           "kind": "event",
           "observer": "sl:kyle",
           "about": ["event:81"],
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:01:40Z",
-          "occurred": "2026-10",
-          "n": 0
+          "occurred": "2026-10"
         },
         {
           "id": "r:0000000000000000000000000000000000000000000000000190",
           "kind": "event",
           "observer": "sl:kyle",
           "about": ["event:82"],
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:05:00Z",
-          "occurred": "2026-10-01T00:05:00Z",
-          "n": 0
+          "occurred": "2026-10-01T00:05:00Z"
         },
         {
           "id": "r:000000000000000000000000000000000000000000000000019g",
           "kind": "event",
           "observer": "sl:kyle",
           "about": ["event:83"],
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:01:50Z",
-          "occurred": "2026-10-01/2026-10-31",
-          "n": 0
+          "occurred": "2026-10-01/2026-10-31"
         },
         {
           "id": "r:00000000000000000000000000000000000000000000000001a0",
           "kind": "event",
           "observer": "sl:kyle",
           "about": ["event:84"],
-          "value": "",
           "prev": [],
-          "emitted": "2026-10-01T00:03:20Z",
-          "n": 0
+          "emitted": "2026-10-01T00:03:20Z"
         },
         {
           "id": "r:00000000000000000000000000000000000000000000000001ag",
           "kind": "event",
           "observer": "sl:kyle",
           "about": ["event:85"],
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:02:00Z",
-          "occurred": "2026-09",
-          "n": 0
+          "occurred": "2026-09"
         }
       ],
       [
@@ -599,76 +515,62 @@
           "kind": "event",
           "observer": "sl:kyle",
           "about": ["event:87"],
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:02:10Z",
-          "occurred": "2026-10-01T00:02:00Z/..",
-          "n": 0
+          "occurred": "2026-10-01T00:02:00Z/.."
         },
         {
           "id": "r:00000000000000000000000000000000000000000000000001c0",
           "kind": "event",
           "observer": "sl:kyle",
           "about": ["event:88"],
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:02:20Z",
-          "occurred": "2026-10-01",
-          "n": 0
+          "occurred": "2026-10-01"
         },
         {
           "id": "r:000000000000000000000000000000000000000000000000018g",
           "kind": "event",
           "observer": "sl:kyle",
           "about": ["event:81"],
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:01:40Z",
-          "occurred": "2026-10",
-          "n": 0
+          "occurred": "2026-10"
         },
         {
           "id": "r:0000000000000000000000000000000000000000000000000190",
           "kind": "event",
           "observer": "sl:kyle",
           "about": ["event:82"],
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:05:00Z",
-          "occurred": "2026-10-01T00:05:00Z",
-          "n": 0
+          "occurred": "2026-10-01T00:05:00Z"
         },
         {
           "id": "r:000000000000000000000000000000000000000000000000019g",
           "kind": "event",
           "observer": "sl:kyle",
           "about": ["event:83"],
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:01:50Z",
-          "occurred": "2026-10-01/2026-10-31",
-          "n": 0
+          "occurred": "2026-10-01/2026-10-31"
         },
         {
           "id": "r:00000000000000000000000000000000000000000000000001a0",
           "kind": "event",
           "observer": "sl:kyle",
           "about": ["event:84"],
-          "value": "",
           "prev": [],
-          "emitted": "2026-10-01T00:03:20Z",
-          "n": 0
+          "emitted": "2026-10-01T00:03:20Z"
         },
         {
           "id": "r:00000000000000000000000000000000000000000000000001ag",
           "kind": "event",
           "observer": "sl:kyle",
           "about": ["event:85"],
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:02:00Z",
-          "occurred": "2026-09",
-          "n": 0
+          "occurred": "2026-09"
         },
         {
           "id": "r:00000000000000000000000000000000000000000000000001b0",
@@ -687,65 +589,53 @@
           "kind": "event",
           "observer": "sl:kyle",
           "about": ["event:88"],
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:02:20Z",
-          "occurred": "2026-10-01",
-          "n": 0
+          "occurred": "2026-10-01"
         },
         {
           "id": "r:000000000000000000000000000000000000000000000000018g",
           "kind": "event",
           "observer": "sl:kyle",
           "about": ["event:81"],
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:01:40Z",
-          "occurred": "2026-10",
-          "n": 0
+          "occurred": "2026-10"
         },
         {
           "id": "r:0000000000000000000000000000000000000000000000000190",
           "kind": "event",
           "observer": "sl:kyle",
           "about": ["event:82"],
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:05:00Z",
-          "occurred": "2026-10-01T00:05:00Z",
-          "n": 0
+          "occurred": "2026-10-01T00:05:00Z"
         },
         {
           "id": "r:000000000000000000000000000000000000000000000000019g",
           "kind": "event",
           "observer": "sl:kyle",
           "about": ["event:83"],
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:01:50Z",
-          "occurred": "2026-10-01/2026-10-31",
-          "n": 0
+          "occurred": "2026-10-01/2026-10-31"
         },
         {
           "id": "r:00000000000000000000000000000000000000000000000001a0",
           "kind": "event",
           "observer": "sl:kyle",
           "about": ["event:84"],
-          "value": "",
           "prev": [],
-          "emitted": "2026-10-01T00:03:20Z",
-          "n": 0
+          "emitted": "2026-10-01T00:03:20Z"
         },
         {
           "id": "r:00000000000000000000000000000000000000000000000001ag",
           "kind": "event",
           "observer": "sl:kyle",
           "about": ["event:85"],
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:02:00Z",
-          "occurred": "2026-09",
-          "n": 0
+          "occurred": "2026-09"
         },
         {
           "id": "r:00000000000000000000000000000000000000000000000001b0",
@@ -762,11 +652,9 @@
           "kind": "event",
           "observer": "sl:kyle",
           "about": ["event:87"],
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:02:10Z",
-          "occurred": "2026-10-01T00:02:00Z/..",
-          "n": 0
+          "occurred": "2026-10-01T00:02:00Z/.."
         }
       ]
     ]

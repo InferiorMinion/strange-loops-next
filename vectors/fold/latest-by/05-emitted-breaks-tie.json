@@ -12,11 +12,9 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "topic:auth",
-          "value": "v22",
           "prev": [],
           "emitted": "2026-10-01T00:03:30Z",
-          "occurred": "2026-10-01T00:03:20Z",
-          "n": 0
+          "occurred": "2026-10-01T00:03:20Z"
         },
         {
           "id": "r:00000000000000000000000000000000000000000000000000cg",
@@ -24,11 +22,9 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "topic:auth",
-          "value": "v25",
           "prev": [],
           "emitted": "2026-10-01T00:03:25Z",
-          "occurred": "2026-10-01T00:03:20Z",
-          "n": 0
+          "occurred": "2026-10-01T00:03:20Z"
         }
       ],
       [
@@ -38,11 +34,9 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "topic:auth",
-          "value": "v25",
           "prev": [],
           "emitted": "2026-10-01T00:03:25Z",
-          "occurred": "2026-10-01T00:03:20Z",
-          "n": 0
+          "occurred": "2026-10-01T00:03:20Z"
         },
         {
           "id": "r:00000000000000000000000000000000000000000000000000b0",
@@ -50,11 +44,9 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "topic:auth",
-          "value": "v22",
           "prev": [],
           "emitted": "2026-10-01T00:03:30Z",
-          "occurred": "2026-10-01T00:03:20Z",
-          "n": 0
+          "occurred": "2026-10-01T00:03:20Z"
         }
       ]
     ]

@@ -253,7 +253,7 @@ def rulingChecks : IO Unit := do
   ensure (!(faulted (← recordAnswerOf (input (env ++ "," ++ env) "\"payloads\":[{\"a\":1,\"b\":2},{\"b\":2,\"a\":1}]" seed))))
     "D5 agreeing variants control fails"
   -- D6: the four concrete helpers.
-  let r : Record := { id := fixtureId 1, kind := "note", observer := "o:test", about := ["t:one"], value := "", prev := [], emitted := stampAt 0, n := 4, fields := [("est", .int 7), ("tag", .str "x")] }
+  let r : Record := { id := fixtureId 1, kind := "note", observer := "o:test", about := ["t:one"], prev := [], emitted := stampAt 0, fields := [("n", .int 4), ("est", .int 7), ("tag", .str "x")] }
   ensure ((Sum.on "est").step 5 r == 12) "D6 Sum.on control fails"
   for field in ["missing", "tag"] do
     ensure ((Sum.on field).step 5 r == 5) s!"D6 Sum.on moves on an unreadable field: {field}"
@@ -386,10 +386,17 @@ def main (args : List String) : IO Unit := do
   let fraction ← parsed "1.5"
   ensure (fraction.inRange && writeProblem env salt fraction == none) "layer0 refuses finite fraction"
   ensure (refused ((parseArg .payload "arg" fraction).mapError (·.code))) "test accepts nonwhole argument"
-  let base : Record := { id := fixtureId 1, kind := "note", observer := "o:test", about := ["t:one"], value := "", prev := [], emitted := stampAt 0, n := 1 }
+  let base : Record := { id := fixtureId 1, kind := "note", observer := "o:test", about := ["t:one"], prev := [], emitted := stampAt 0, fields := [("n", .int 1)] }
   let .obj kvs ← parsed (J.render 0 (jRecord base)) | throw (IO.userError "record is not an object")
   let changed (k : String) (v : Json) := Json.obj (kvs.map fun (name, old) => (name, if name == k then v else old))
-  let .ok fractional := Read.record "record" (changed "n" fraction)
+  for (key, val) in [("value", Json.str ""), ("n", Json.int 0)] do
+    ensure (refused (Read.record "record" (.obj ((key, val) :: kvs)))) s!"reader accepts flat {key}"
+  let empty := { base with fields := [] }
+  let .ok control := Read.record "record" (changed "fields" (.obj [("value", .str ""), ("n", .int 0)]))
+    | throw (IO.userError "decoder refuses written empty text or zero")
+  ensure (control.get "value" == some (.str "") && control.num "n" == some 0) "written empty text or zero lost"
+  ensure (empty.get "value" == none && empty.num "n" == none) "missing field reads as a default"
+  let .ok fractional := Read.record "record" (changed "fields" (.obj [("n", fraction)]))
     | throw (IO.userError "decoder refuses nonwhole n")
   ensure (fractional.num "n" == none) "numeric slot reads a fraction"
   let unsafeInt := { base with fields := [("est", .int 9007199254740992)] }
@@ -400,7 +407,7 @@ def main (args : List String) : IO Unit := do
   ensure (unsafeRecord.num "est" == none) "numeric field reads unsafe whole"
   let unsafeSum := (Sum.on "est").select (fun _ => .yes) [unsafeRecord]
   ensure (unsafeSum.unread == 1) "unsafe numeric field does not count unread"
-  let .ok unsafeN := Read.record "record" (changed "n" unsafeValue)
+  let .ok unsafeN := Read.record "record" (changed "fields" (.obj [("n", unsafeValue)]))
     | throw (IO.userError "decoder refuses unsafe n")
   ensure (unsafeN.num "n" == none && ((Sum.on "n").select (fun _ => .yes) [unsafeN]).unread == 1)
     "unsafe n does not count unread"

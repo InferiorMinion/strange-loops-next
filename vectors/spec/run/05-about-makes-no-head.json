@@ -79,11 +79,9 @@
           "observer": "sl:kyle",
           "about": ["task:2", "task:9"],
           "of": "task:2",
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:02:30Z",
           "occurred": "2026-10-01T00:02:30Z",
-          "n": 0,
           "fields": {
             "status": "open",
             "est": 5,
@@ -96,11 +94,9 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "task:2",
-          "value": "",
           "prev": ["r:000000000000000000000000000000000000000000000000011g"],
           "emitted": "2026-10-01T00:06:40Z",
           "occurred": "2026-10-01T00:06:40Z",
-          "n": 0,
           "fields": {
             "status": "closed"
           }
@@ -113,11 +109,9 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "task:2",
-          "value": "",
           "prev": ["r:000000000000000000000000000000000000000000000000011g"],
           "emitted": "2026-10-01T00:06:40Z",
           "occurred": "2026-10-01T00:06:40Z",
-          "n": 0,
           "fields": {
             "status": "closed"
           }
@@ -128,11 +122,9 @@
           "observer": "sl:kyle",
           "about": ["task:2", "task:9"],
           "of": "task:2",
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:02:30Z",
           "occurred": "2026-10-01T00:02:30Z",
-          "n": 0,
           "fields": {
             "status": "open",
             "est": 5,

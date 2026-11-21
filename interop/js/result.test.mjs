@@ -10,7 +10,7 @@ import { intText, intOf, resultText, resultHash, canonicalSlot, RESULT_LABEL } f
 
 const id = (n) => `r:${base32(Uint8Array.from({ length: 32 }, () => n))}`;
 const task = (n, of, fields = {}, prev = []) => ({
-  id: id(n), kind: "task", observer: "sl:kyle", of, prev, emitted: `2020-01-01T00:00:0${n}Z`, value: "", fields,
+  id: id(n), kind: "task", observer: "sl:kyle", of, prev, emitted: `2020-01-01T00:00:0${n}Z`, fields,
 });
 const specOf = (fold) => parseSpec({ vertex: "x", from: [{ store: "." }], fold }).parsed;
 
@@ -47,7 +47,7 @@ test("shown is not in the bytes", () => {
   const spec = specOf({ current: { "latest-by": "of", follow: "prev" }, every: { collect: true } });
   const a = task(1, "task:1", { status: "open" });
   const b = task(2, "task:1", { status: "closed" }, [a.id]);
-  const { value, fields, ...envelope } = b;
+  const { fields, ...envelope } = b;
   const withheld = { ...envelope, shown: "withheld" };
   const held = runSpec(spec, [a, b]), hidden = runSpec(spec, [a, withheld]);
   assert.notDeepEqual(held, hidden);

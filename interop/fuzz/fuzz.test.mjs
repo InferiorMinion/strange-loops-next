@@ -28,7 +28,7 @@ async function* jsonFiles(dir) {
 test('generation is deterministic, varied, balanced, and independent of scheduling', () => {
   const corpus = FAMILIES.flatMap(f => Array.from({ length: 8 }, (_, i) => generate('stable', i, f)));
   assert.equal(createHash('sha256').update(JSON.stringify(corpus)).digest('hex'),
-    '4cd4e0183795ce379ea4cffc4d93cefa46943bf014d793d6477f56d933e77e77');
+    'aa2902a673bda8ef2fae697fe9398dcc1f40d5962918ca6a0f86efe43690e5f4');
   const layers = new Set();
   for (const family of FAMILIES) {
     const seen = new Set();
@@ -58,14 +58,17 @@ test('raw numeric folds use readable records and specs use settled forms', () =>
   for (let i = 0; i < 128; i++) {
     const fold = generate('domains', i, 'fold');
     if (['fold/sum', 'fold/extrema'].includes(fold.layer)) {
-      for (const r of fold.input.orders[0]) assert.equal(r.shown ?? 'here', 'here');
+      for (const r of fold.input.orders[0]) {
+        assert.equal(r.shown ?? 'here', 'here');
+        assert.ok(Number.isSafeInteger(r.fields?.n));
+      }
     }
     const spec = generate('domains', i, 'spec');
     if (spec.layer !== 'spec/run') continue;
     const rs = spec.input.orders[0], erased = new Set(rs.flatMap(r => r.erases ?? []));
     for (const r of rs) {
       assert.equal(r.shown === 'erased', erased.has(r.id));
-      if (erased.has(r.id)) assert.equal(Object.hasOwn(r, 'n'), false);
+      if (erased.has(r.id)) assert.equal(Object.hasOwn(r, 'fields'), false);
     }
   }
 });
@@ -241,7 +244,7 @@ test('scheduled numeric records reach each reader without dependencies', () => {
     if (family === 'fold') assert.equal(vector.layer, 'fold/sum');
     if (family === 'spec') assert.equal(vector.layer, 'spec/run');
     const records = input.orders?.[0] ?? input.records ?? input.forms.slice(0, 3);
-    assert.deepEqual(records.map(r => r.n), [Number.MAX_SAFE_INTEGER, 2, -Number.MAX_SAFE_INTEGER]);
+    assert.deepEqual(records.map(r => r.fields.n), [Number.MAX_SAFE_INTEGER, 2, -Number.MAX_SAFE_INTEGER]);
     assert.equal(new Set(records.map(r => r.id)).size, 3);
     for (const r of records) {
       assert.match(r.id, /^r:[0-9a-v]{51}[0g]$/);
@@ -354,8 +357,8 @@ test('official gap17 vectors agree', async () => {
 // leaves the other thing's head standing in the folds; admission refuses it.
 test('adapters align per-thing heads and admission boundaries', async () => {
   const a = { id: `r:${'a'.repeat(51)}0`, kind: 'note', observer: 'o:x', about: ['t:x', 't:y'], of: 't:y',
-    prev: [], emitted: '2024-01-01T00:00:00Z', value: '', n: 9 };
-  const b = { ...a, id: `r:${'b'.repeat(51)}0`, about: ['t:y'], of: 't:x', prev: [a.id], n: 1 };
+    prev: [], emitted: '2024-01-01T00:00:00Z', fields: { n: 9 } };
+  const b = { ...a, id: `r:${'b'.repeat(51)}0`, about: ['t:y'], of: 't:x', prev: [a.id], fields: { n: 1 } };
   const orders = [[a, b], [b, a]];
   const vectors = ['fold/heads', 'fold/view'].map(layer => ({ layer, input: { orders } }));
   vectors.push({ layer: 'fold/latest', input: { orders } });
@@ -433,8 +436,8 @@ test('real Lean batch sorts recursive files and continues after decoding errors'
 
 test('shrinking bounds trials, repairs arrival sets, and persists both answers', async () => {
   const vector = { layer: 'fold/count', input: { orders: [
-    [{ id: 'a', value: 'long text' }, { id: 'b', value: 'more text' }],
-    [{ id: 'b', value: 'more text' }, { id: 'a', value: 'long text' }],
+    [{ id: 'a', fields: { value: 'long text' } }, { id: 'b', fields: { value: 'more text' } }],
+    [{ id: 'b', fields: { value: 'more text' } }, { id: 'a', fields: { value: 'long text' } }],
   ] } };
   const original = { status: 'mismatch', lean: 2, js: 3 };
   const result = await shrink(vector, original, async xs => xs.map(v => {
@@ -455,7 +458,7 @@ test('shrinking bounds trials, repairs arrival sets, and persists both answers',
     const sets = v.input.orders.map(o => o.map(r => JSON.stringify(r)).sort());
     for (const set of sets) assert.deepEqual(set, sets[0]);
   }
-  assert.ok(reduced.some(v => v.input.orders?.[0]?.some(r => r.id === 'a' && r.value === '')));
+  assert.ok(reduced.some(v => v.input.orders?.[0]?.some(r => r.id === 'a' && r.fields?.value === '')));
   for (const v of candidates(generate('stable', 0, 'scenario'))) {
     if (!Array.isArray(v.input?.steps)) continue;
     for (const step of v.input.steps) {

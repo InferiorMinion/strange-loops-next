@@ -533,13 +533,13 @@ def ks.spec : Spec :=
     slots := [{ name := "state", type := .latestBy .keys }] }
 
 def ks.m : Record :=
-  { id := 1, kind := "note", observer := "sl:x", of := some "k1", value := "", prev := [], emitted := default,
+  { id := 1, kind := "note", observer := "sl:x", of := some "k1", prev := [], emitted := default,
     sets := some ["title"] }
 def ks.n : Record :=
-  { id := 2, kind := "note", observer := "sl:x", of := some "k1", value := "", prev := [1], emitted := default,
+  { id := 2, kind := "note", observer := "sl:x", of := some "k1", prev := [1], emitted := default,
     sets := some ["status"] }
 def ks.h : Record :=
-  { id := 3, kind := "task", observer := "sl:x", of := some "k1", value := "", prev := [2], emitted := default,
+  { id := 3, kind := "task", observer := "sl:x", of := some "k1", prev := [2], emitted := default,
     sets := some ["est"] }
 
 theorem keyed_slot_needs_live :
@@ -556,13 +556,13 @@ It holds the one live record of `k1`, `g`. Without `y` it admits `f` and lists
 it as the live setter of `pri`; a reader of everything reads no `pri` at all. -/
 
 def rf.y : Record :=
-  { id := 1, kind := "note", observer := "sl:x", of := some "k2", value := "", prev := [], emitted := default,
+  { id := 1, kind := "note", observer := "sl:x", of := some "k2", prev := [], emitted := default,
     sets := some ["title"] }
 def rf.f : Record :=
-  { id := 2, kind := "note", observer := "sl:x", of := some "k1", value := "", prev := [1], emitted := default,
+  { id := 2, kind := "note", observer := "sl:x", of := some "k1", prev := [1], emitted := default,
     sets := some ["pri"] }
 def rf.g : Record :=
-  { id := 3, kind := "task", observer := "sl:x", of := some "k1", value := "", prev := [2], emitted := default,
+  { id := 3, kind := "task", observer := "sl:x", of := some "k1", prev := [2], emitted := default,
     sets := some ["est"] }
 
 theorem refused_needs_targets :

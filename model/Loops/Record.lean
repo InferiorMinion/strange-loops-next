@@ -39,7 +39,6 @@ structure Record where
   about    : List String := []
   /-- The one thing this record is an emit of, if it says. -/
   of       : Option String := none
-  value    : String
   prev     : List RecordId
   /-- The grant this record acts on, if any. -/
   under    : Option RecordId := none
@@ -52,13 +51,9 @@ structure Record where
   /-- The payload keys this record sets: `none` when it is read whole, which
   sets every key; `some []` for a pure join, which sets none. -/
   sets     : Option (List String) := none
-  /-- A numeric payload field the numeric folds read. Exact: an integer. -/
-  n        : Int := 0
-  /-- A nonwhole numeric payload overrides the fixture integer. -/
-  nNumber  : Option Number := none
-  /-- Further payload fields, by name. -/
+  /-- Payload fields in lookup order. -/
   fields   : List (String × Val) := []
-  /-- Whether the payload (`value`, `n`, `nNumber`, `fields`) is here for this reader. -/
+  /-- Whether the payload (`fields`) is here for this reader. -/
   shown    : Shown := .here
   deriving Repr, DecidableEq, Inhabited
 
@@ -107,16 +102,14 @@ structure View (f : Record → Record) : Prop where
   hides : ∀ r, f r = r ∨ (f r).shown ≠ .here
 
 def Record.withhold (r : Record) : Record :=
-  { r with value := "", n := 0, nNumber := none, fields := [], shown := .withheld }
+  { r with fields := [], shown := .withheld }
 
 def Record.erase (r : Record) : Record :=
-  { r with value := "", n := 0, nNumber := none, fields := [], shown := .erased }
+  { r with fields := [], shown := .erased }
 
-/-- A payload field by name: `value` and `n` always exist; others may not. -/
+/-- A payload field by name, if it was written. -/
 def Record.get (r : Record) (name : String) : Option Val :=
-  if name = "value" then some (.str r.value)
-  else if name = "n" then some (match r.nNumber with | some n => .number n | none => .int r.n)
-  else r.fields.lookup name
+  r.fields.lookup name
 
 /-- A payload field as an exact number, if the reader holds it and it is one. -/
 def Record.num (r : Record) (name : String) : Option Int :=

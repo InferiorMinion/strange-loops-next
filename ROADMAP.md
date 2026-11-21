@@ -18,11 +18,11 @@ The evidence and its counts are kept where they are made: [the law index](design
 
 ## Now
 
-Kyle ruled the payload values on 2026-11-21, so they are being built. The result hash's prefix, ruled the same day, is built.
+Kyle ruled the payload values on 2026-11-21, so they are being built, in two pieces. The result hash's prefix, ruled the same day, is built.
 
 | Order | Work | State | Waits on |
 | --- | --- | --- | --- |
-| 1 | **Payload values.** `value` and `n` become ordinary fields; a list reads as a set; the reading from a stored payload is stated in the model, with vectors. Each changes what some spec answers, so it comes before any tick pins a result hash. | Ruled 2026-11-21 ([the note](notes/2026-11-21-payload-values.md), with the examples the build must match). Being built. | Nothing |
+| 1 | **Payload values, the second piece.** The reading from a stored payload is stated in the model, with vectors; `present` means written; a list reads as a set under `is`, `not` and `by`, and is never a number. Each changes what some spec answers, so it comes before any tick pins a result hash. | Ruled 2026-11-21 ([the note](notes/2026-11-21-payload-values.md), with the examples the build must match). The first piece, `value` and `n` as ordinary fields, is built. This one is next. | Nothing |
 | 2 | **The tick record:** what a tick holds, how `covers` is stated and checked, and the input key. | The coordinator is writing the proposal. | The proposal, then Kyle ([preview](DECISIONS.md#being-prepared)); [W3, W4 and W5](DECISIONS.md#at-a-glance) before it is built |
 | 3 | **Step 4's ruled pieces** (list below). | Ruled 2026-11-20. Not built. | Some wait on the tick record |
 
@@ -63,6 +63,7 @@ None needs a ruling. Each is built when it is the cheapest useful thing to do.
 
 - `loops emit` takes `--` to end its options, and a verb makes a signing key without emitting (issue #11).
 - The full mutation catalogue runs over the result codec's nineteen entries.
+- The JavaScript sum is exact only to a signed 128-bit limit, and the law index calls it unbounded: make one of them true.
 
 ## All steps
 

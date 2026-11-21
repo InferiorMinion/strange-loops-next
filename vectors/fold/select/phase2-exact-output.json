@@ -17,11 +17,12 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "metric:load",
-          "value": "v37",
           "prev": [],
           "emitted": "2026-10-01T00:01:40Z",
           "occurred": "2026-10-01T00:01:40Z",
-          "n": 9007199254740991
+          "fields": {
+            "n": 9007199254740991
+          }
         },
         {
           "id": "r:00000000000000000000000000000000000000000000000000j0",
@@ -29,11 +30,12 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "metric:load",
-          "value": "v38",
           "prev": [],
           "emitted": "2026-10-01T00:01:50Z",
           "occurred": "2026-10-01T00:01:50Z",
-          "n": 2
+          "fields": {
+            "n": 2
+          }
         }
       ],
       [
@@ -43,11 +45,12 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "metric:load",
-          "value": "v38",
           "prev": [],
           "emitted": "2026-10-01T00:01:50Z",
           "occurred": "2026-10-01T00:01:50Z",
-          "n": 2
+          "fields": {
+            "n": 2
+          }
         },
         {
           "id": "r:00000000000000000000000000000000000000000000000000ig",
@@ -55,11 +58,12 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "metric:load",
-          "value": "v37",
           "prev": [],
           "emitted": "2026-10-01T00:01:40Z",
           "occurred": "2026-10-01T00:01:40Z",
-          "n": 9007199254740991
+          "fields": {
+            "n": 9007199254740991
+          }
         }
       ]
     ]

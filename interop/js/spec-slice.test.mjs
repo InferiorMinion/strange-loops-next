@@ -22,7 +22,7 @@ import { above, live, thingOf } from "./fold.mjs";
 import { formOf } from "./scenario.mjs";
 import { generate } from "../fuzz/generate.mjs";
 
-const PAYLOAD = ["value", "n", "fields"];
+const PAYLOAD = ["fields"];
 const envelope = (f) =>
   ({ ...Object.fromEntries(Object.entries(f).filter(([k]) => !PAYLOAD.includes(k))), shown: f.shown === "erased" ? "erased" : "withheld" });
 
@@ -83,7 +83,7 @@ function cover(spec, forms, drop) {
 // names `a` and also `b`, a note of another thing, so the whole refuses `c`.
 const id = (n) => `r:${base32(Uint8Array.from({ length: 32 }, () => n))}`;
 const rec = (n, kind, prev = []) =>
-  ({ id: id(n), kind, of: n === 2 ? "task:k2" : "task:k1", prev: prev.map(id), emitted: `2020-01-01T00:00:0${n}Z`, n });
+  ({ id: id(n), kind, of: n === 2 ? "task:k2" : "task:k1", prev: prev.map(id), emitted: `2020-01-01T00:00:0${n}Z` });
 const a = rec(1, "task"), b = rec(2, "note"), c = rec(3, "note", [1, 2]), d = rec(4, "note", [1]);
 const tasks = parseSpec({ vertex: "v", from: [{ store: ".", kind: ["task"] }], fold: { current: { "latest-by": "of", follow: "prev" } } }).parsed;
 
@@ -91,7 +91,7 @@ const tasks = parseSpec({ vertex: "v", from: [{ store: ".", kind: ["task"] }], f
 // sets `est` from `n`. The spec takes tasks, and its slice holds `h` and `n`.
 test("a spec slice is not enough for a slot that follows keys: it reads a live setter the spec does not take", () => {
   const r = (n, kind, sets, prev = []) =>
-    ({ id: id(n), kind, observer: "sl:x", about: [], of: "task:k1", prev: prev.map(id), emitted: `2020-01-01T00:00:0${n}Z`, sets, value: "", n, fields: {} });
+    ({ id: id(n), kind, observer: "sl:x", about: [], of: "task:k1", prev: prev.map(id), emitted: `2020-01-01T00:00:0${n}Z`, sets });
   const m = r(1, "note", ["title"]), n = r(2, "note", ["status"], [1]), h = r(3, "task", ["est"], [2]);
   const spec = parseSpec({ vertex: "v", from: [{ store: ".", kind: ["task"] }], fold: { state: { "latest-by": "of", follow: "keys" } } }).parsed;
   const whole = [m, n, h], want = answer(spec, whole);
@@ -110,7 +110,7 @@ test("a spec slice is not enough for a slot that follows keys: it reads a live s
 // has no setter of `status` above it and reads as live beside `n`.
 test("what a refused record names is held like any record of its thing", () => {
   const r = (n, kind, of, sets, prev = []) =>
-    ({ id: id(n), kind, observer: "sl:x", about: [], of, prev: prev.map(id), emitted: `2020-01-01T00:00:0${n}Z`, sets, value: "", n, fields: {} });
+    ({ id: id(n), kind, observer: "sl:x", about: [], of, prev: prev.map(id), emitted: `2020-01-01T00:00:0${n}Z`, sets });
   const m = r(1, "note", "task:k1", ["title"]), x = r(2, "note", "task:k1", ["status"]), w = r(3, "note", "task:k1", ["other"], [2]);
   const n = r(4, "note", "task:k1", ["status", "other"], [3]), y = r(5, "note", "task:k2", ["title"]);
   const f = r(6, "note", "task:k1", ["pri"], [2, 5]), g = r(7, "task", "task:k1", ["est"], [6]);

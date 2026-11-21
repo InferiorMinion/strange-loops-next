@@ -88,7 +88,7 @@ test('fold, spec, realm and scenario checkers reject wrong exact sums', async ()
     }
     const ids = [`r:${'0'.repeat(52)}`, `r:${'1'.repeat(51)}0`, `r:${'2'.repeat(51)}0`];
     const records = ids.map((id, i) => ({ id, kind: 'note', observer: 'o:x', emitted: `2024-01-01T00:00:0${i}Z`,
-      of: 't:x', prev: [], shown: 'here', value: '9007199254740993', n: [Number.MAX_SAFE_INTEGER, 2, 'UNSAFE_INPUT'][i] }));
+      of: 't:x', prev: [], shown: 'here', fields: { value: '9007199254740993', n: [Number.MAX_SAFE_INTEGER, 2, 'UNSAFE_INPUT'][i] } }));
     const spec = { ...sourceSpec, fold: { total: { sum: 'n' } } };
     const sum = { value: 'EXACT_SUM', unread: 1 };
     const settled = ids.map(id => ({ id, shown: 'here' }));

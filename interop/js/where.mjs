@@ -15,13 +15,9 @@ const flip = (a) => (a === YES ? NO : a === NO ? YES : UNKNOWN);
 // A record whose payload the reader doesn't hold says so in `shown`.
 export const held = (r) => r.shown === undefined || r.shown === "here";
 
-// The payload a record holds: `value`, `n` and the named `fields`; null when not held.
+// A held payload contains the fields the writer supplied.
 export function payloadOf(r) {
-  if (!held(r)) return null;
-  const p = { ...(r.fields ?? {}) };
-  if (r.value !== undefined) p.value = r.value;
-  if (r.n !== undefined) p.n = r.n;
-  return p;
+  return held(r) ? r.fields ?? {} : null;
 }
 
 // A whole number, as the numeric folds and at-least/below read one.

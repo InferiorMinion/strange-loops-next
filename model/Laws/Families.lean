@@ -120,9 +120,9 @@ theorem Acc.late {σ} (f : Acc σ) {xs ys : List Record} (r : Record)
   exact f.set_decides hx hy fun q => by rw [h]; simp
 
 theorem Count.acc_fold (xs : List Record) : Count.acc.fold xs = Count.fold 0 xs := rfl
-theorem Sum.acc_fold (xs : List Record) : Sum.acc.fold xs = Sum.fold 0 xs := rfl
-theorem Max.acc_fold (xs : List Record) : Max.acc.fold xs = Max.fold none xs := rfl
-theorem Min.acc_fold (xs : List Record) : Min.acc.fold xs = Min.fold none xs := rfl
+theorem Sum.acc_fold (xs : List Record) : Sum.acc.fold xs = Sum.fold (·.num "n") 0 xs := rfl
+theorem Max.acc_fold (xs : List Record) : Max.acc.fold xs = Max.fold (·.num "n") none xs := rfl
+theorem Min.acc_fold (xs : List Record) : Min.acc.fold xs = Min.fold (·.num "n") none xs := rfl
 
 /-! ## Folds over heads -/
 
@@ -145,11 +145,11 @@ theorem OverHeads.late {σ} (answer : LatestBy → σ) {xs ys : List Record} (r 
 /-! ## Why there are two families -/
 
 def cx.a : Record :=
-  { id := ⟨1, by decide⟩, kind := "load", observer := "sl:x", about := ["k1"], value := "", prev := [], emitted := default, n := 5 }
+  { id := ⟨1, by decide⟩, kind := "load", observer := "sl:x", about := ["k1"], prev := [], emitted := default, fields := [("n", .int 5)] }
 def cx.b : Record :=
-  { id := ⟨2, by decide⟩, kind := "load", observer := "sl:x", about := ["k2"], value := "", prev := [], emitted := default, n := 9 }
+  { id := ⟨2, by decide⟩, kind := "load", observer := "sl:x", about := ["k2"], prev := [], emitted := default, fields := [("n", .int 9)] }
 def cx.c : Record :=
-  { id := ⟨3, by decide⟩, kind := "load", observer := "sl:x", about := ["k2"], value := "", prev := [⟨2, by decide⟩], emitted := default, n := 1 }
+  { id := ⟨3, by decide⟩, kind := "load", observer := "sl:x", about := ["k2"], prev := [⟨2, by decide⟩], emitted := default, fields := [("n", .int 1)] }
 
 /-- Max's scalar state cannot maintain the maximum over changing heads.
 Max holds 9 after `[a, b]` and after `[b]`.
@@ -157,11 +157,11 @@ Once `c` supersedes `b`, the current maximum is 5 in one history and 1 in the ot
 No step from Max's scalar state can know which. -/
 theorem Max.cannot_follow_prev :
     ¬ ∃ g : Option Int → Record → Option Int, ∀ xs r, Distinct (xs ++ [r]) →
-      g (Max.fold none xs) r = (OverHeads.fold LatestBy.maxHeads (xs ++ [r])).value := by
+      g (Max.fold (·.num "n") none xs) r = (OverHeads.fold LatestBy.maxHeads (xs ++ [r])).value := by
   rintro ⟨g, hg⟩
   have h₁ := hg [cx.a, cx.b] cx.c (by unfold Distinct; decide)
   have h₂ := hg [cx.b] cx.c (by unfold Distinct; decide)
-  have e : Max.fold none [cx.a, cx.b] = Max.fold none [cx.b] := by decide
+  have e : Max.fold (·.num "n") none [cx.a, cx.b] = Max.fold (·.num "n") none [cx.b] := by decide
   rw [e, h₂] at h₁
   exact absurd h₁ (by decide)
 
@@ -374,7 +374,7 @@ these helpers have. -/
 /-- An unreadable field leaves the sum as it was. -/
 theorem Sum.on_step_missing {field : String} {r : Record} (s : Int) (h : r.num field = none) :
     (Sum.on field).step s r = s := by
-  simp [Sum.on, h]
+  simp [Sum.on, Sum.step, h]
 
 /-- Max reads a record exactly when its `n` is a held safe whole number. -/
 theorem Max.acc_readable (r : Record) : Max.acc.readable r = (r.num "n").isSome := rfl

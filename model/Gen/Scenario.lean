@@ -24,8 +24,8 @@ def a (xs : List Json) : Json := .arr xs
 
 /-- A decision of `decision:auth`, at `t` seconds into 2026-10-01. -/
 def decision (id : RecordId) (observer : String) (t : Nat) (value : String) (prev : List RecordId := [])
-    (erases : List RecordId := []) (ok : Reads t := by decide) : Record :=
-  { id, kind := "decision", observer, of := some "decision:auth", value, prev, erases,
+    (erases : List RecordId := []) (fields : List (String × Val) := []) (ok : Reads t := by decide) : Record :=
+  { id, kind := "decision", observer, of := some "decision:auth", fields := ("value", .str value) :: fields, prev, erases,
     emitted := stampAt t ok }
 
 -- Ada writes a decision, then revises it; Bo, holding only the first, revises
@@ -60,10 +60,6 @@ def steps : List (String × List Record) := [
   ("tick", upToE),
   ("back-to-text", records)
 ]
-
-/-- The lens step: the head rendered as a keyed section, and the text after Bo's edit. -/
-def lensBase : List Section := [⟨"decision:auth".toList, [dE.value.toList]⟩]
-def edited : List Line := ["::: decision:auth".toList, dF.value.toList, ":::".toList]
 
 def rotations (xs : List Record) : List (List Record) :=
   (List.range xs.length).map fun i => xs.drop i ++ xs.take i
@@ -129,14 +125,14 @@ def exactSumVector : Except String J := do
   let sp ← match Spec.ofJson spec with
     | .ok sp => pure sp
     | .error r => throw s!"scenario/{name}: spec refused {r.code} at {r.path}"
-  let first : Record := { decision (fixtureId 0xf1) "sl:ada" 100 "First." with
-    n := 9007199254740991, fields := [("est", .int 9007199254740991)] }
-  let second : Record := { decision (fixtureId 0xf2) "sl:bo" 110 "Second." with
-    n := 2, fields := [("est", .int 2)] }
+  let first : Record := decision (fixtureId 0xf1) "sl:ada" 100 "First."
+    (fields := [("n", .int 9007199254740991), ("est", .int 9007199254740991)])
+  let second : Record := decision (fixtureId 0xf2) "sl:bo" 110 "Second."
+    (fields := [("n", .int 2), ("est", .int 2)])
   let records := [first, second]
   let steps := [("safe-input", [first]), ("exact-output", records)]
-  let base : List Section := [⟨"decision:auth".toList, [first.value.toList]⟩]
-  let text := render [⟨"decision:auth".toList, [second.value.toList]⟩]
+  let base : List Section := [⟨"decision:auth".toList, [(← fixtureText first).toList]⟩]
+  let text := render [⟨"decision:auth".toList, [(← fixtureText second).toList]⟩]
   let some os := edit base text | throw s!"scenario/{name}: the edited text doesn't parse"
   let mut outs : List J := []
   for (label, forms) in steps do
@@ -191,8 +187,8 @@ def thingStateVector : Except String J := do
       if ts != [("decision:auth", [(second.id, .here)])] || unread != 0 then
         throw s!"scenario/{name}: the spec must give the one thing its own head"
     | _ => throw s!"scenario/{name}: expected a per-thing current slot"
-  let base : List Section := [⟨"decision:auth".toList, [first.value.toList]⟩]
-  let text := render [⟨"decision:auth".toList, [second.value.toList]⟩]
+  let base : List Section := [⟨"decision:auth".toList, [(← fixtureText first).toList]⟩]
+  let text := render [⟨"decision:auth".toList, [(← fixtureText second).toList]⟩]
   let some os := edit base text | throw s!"scenario/{name}: the edited text doesn't parse"
   return vector name "scenario" ["thing.local", "latest-by.order", "spec.set", "lens.put-get"]
     (.obj [("spec", Records.ofJson spec), ("thing", .str "decision:auth"),
@@ -218,11 +214,14 @@ def vectors : Except String (List (String × J)) := do
     outs := outs ++ [first]
   -- the lens step: rendering the head and parsing the edit gives one accepted
   -- section, whose body is the record that comes back
+  let accepted := (← fixtureText dF).toList
+  let lensBase : List Section := [⟨"decision:auth".toList, [(← fixtureText dE).toList]⟩]
+  let edited : List Line := ["::: decision:auth".toList, accepted, ":::".toList]
   let some os := edit lensBase edited
     | throw "scenario/01-decision: the edited text doesn't parse"
   match os with
   | [.accepted i b] =>
-    if i != "decision:auth".toList || b != [dF.value.toList] then
+    if i != "decision:auth".toList || b != [accepted] then
       throw "scenario/01-decision: the accepted edit isn't F's body"
   | _ => throw "scenario/01-decision: expected exactly one accepted edit"
   let input := J.obj [
