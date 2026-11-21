@@ -1,7 +1,7 @@
 # Rust port and fixture boundary
 
 The workspace separates the executable model from fixture/process adapters.
-No protocol rule is selected here; the accepted rulings in `ROADMAP.md`
+No protocol rule is selected here; the accepted rulings in `CHANGELOG.md`
 and the immutable model/vector snapshot determine behavior.
 
 ## Crates and public boundary
