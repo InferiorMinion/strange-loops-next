@@ -1438,6 +1438,96 @@ fn about_is_replaced_by_about_and_emptied_by_no_about() {
 }
 
 #[test]
+fn occurred_is_copied_replaced_and_cleared() {
+    let s = Store::new("occurred");
+    let base = s.ok(&[
+        "emit",
+        "task",
+        "--of",
+        "adr:7",
+        "--occurred",
+        "2009",
+        "title=ADR",
+    ]);
+    let updated = s.ok(&["emit", "task", "--of", "adr:7", "status=accepted"]);
+    assert_eq!(
+        text(&s.json(&["get", &updated]), &["env", "occurred"]),
+        "2009"
+    );
+
+    for args in [&["emit", "task"][..], &["emit", "task", "--of", "adr:8"]] {
+        let first = s.ok(args);
+        assert!(!has(&s.json(&["get", &first]), &["env"], "occurred"));
+    }
+
+    let changed = s.ok(&["emit", "task", "--prev", &updated, "--occurred", "2019"]);
+    assert_eq!(
+        text(&s.json(&["get", &changed]), &["env", "occurred"]),
+        "2019"
+    );
+    // The older, live title setter still states 2009. Only heads supply occurred.
+    let carried = s.ok(&["emit", "task", "--prev", &changed]);
+    let record = s.json(&["get", &carried]);
+    assert!(strings(&record, &["env", "prev"]).contains(&base));
+    assert_eq!(text(&record, &["env", "occurred"]), "2019");
+
+    let cleared = s.ok(&["emit", "task", "--of", "adr:7", "--no-occurred"]);
+    let later = s.ok(&["emit", "task", "--of", "adr:7"]);
+    for id in [cleared, later] {
+        assert!(!has(&s.json(&["get", &id]), &["env"], "occurred"));
+    }
+
+    let held = s.ok(&["export"]);
+    for flags in [
+        ["--occurred", "2009", "--no-occurred"],
+        ["--no-occurred", "--occurred", "2009"],
+    ] {
+        let (code, error) = s.fails(&[&["emit", "task"][..], &flags].concat(), "");
+        assert_eq!(code, 2);
+        assert!(error.contains("--no-occurred takes no --occurred beside it"));
+    }
+    assert_eq!(s.ok(&["export"]), held);
+}
+
+#[test]
+fn disagreeing_heads_supply_no_occurred() {
+    let a = Store::new("occurred-fork-a");
+    let b = Store::new("occurred-fork-b");
+    let base = a.ok(&["emit", "task", "--of", "adr:7"]);
+    b.ok_with(&["import"], &a.ok(&["export"]));
+    let left = a.ok(&["emit", "task", "--prev", &base, "--occurred", "2009"]);
+    let right = b.ok(&["emit", "task", "--prev", &base, "--occurred", "2019"]);
+    a.ok_with(&["import"], &b.ok(&["export"]));
+    let heads = head_ids(&a.json(&["of", "adr:7"]));
+    assert_eq!(heads.len(), 2);
+    assert!(heads.contains(&left) && heads.contains(&right));
+    let joined = a.ok(&["emit", "task", "--of", "adr:7"]);
+    assert!(!has(&a.json(&["get", &joined]), &["env"], "occurred"));
+}
+
+#[test]
+fn an_erased_or_withheld_head_supplies_occurred() {
+    let s = Store::new("occurred-erased");
+    let id = s.ok(&["emit", "task", "--of", "adr:7", "--occurred", "2009"]);
+    s.ok(&["erase", &id]);
+    let other = Store::new("occurred-withheld");
+    other.ok_with(&["import"], &s.ok(&["export", "--kind", "task"]));
+    for (store, shown) in [(&s, "erased"), (&other, "withheld")] {
+        let state = store.json(&["of", "adr:7"]);
+        let Json::Arr(unheld) = at(&state, &["unheld"]) else {
+            panic!("unheld records")
+        };
+        assert_eq!(text(&unheld[0], &["id"]), id);
+        assert_eq!(text(&unheld[0], &["shown"]), shown);
+        let next = store.ok(&["emit", "task", "--of", "adr:7"]);
+        assert_eq!(
+            text(&store.json(&["get", &next]), &["env", "occurred"]),
+            "2009"
+        );
+    }
+}
+
+#[test]
 fn an_erased_or_withheld_live_record_is_named_and_a_first_record_names_nothing() {
     let s = Store::new("anchor-erased");
     let w = anchored_emit(&s, "task:1", &["status=open", "title=Write"]);
@@ -1479,12 +1569,17 @@ fn an_erased_or_withheld_live_record_is_named_and_a_first_record_names_nothing()
 #[test]
 fn a_changeset_fills_nothing_in_and_reads_whole() {
     let s = Store::new("anchor-changeset");
-    anchored_emit(&s, "task:1", &["--about", "project:x", "status=open"]);
+    anchored_emit(
+        &s,
+        "task:1",
+        &["--about", "project:x", "--occurred", "2009", "status=open"],
+    );
     let loose = s
         .changeset("{\"kind\":\"task\",\"of\":\"task:1\",\"sets\":[\"status\"],\"payload\":{\"status\":\"done\"}}\n")
         .remove(0);
     let line = s.ok(&["get", &loose]);
     assert!(!line.contains("\"prev\"") && !line.contains("\"about\""));
+    assert!(!line.contains("\"occurred\""));
     // Unanchored, it is a second head and a second live setter of `status`:
     // the two disagree, so the task's status is unknown, not wrong.
     assert_eq!(len(&s.json(&["of", "task:1"]), &["heads"]), 2);

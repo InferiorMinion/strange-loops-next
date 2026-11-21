@@ -1,13 +1,15 @@
 //! What `loops emit` fills in on the single-record path, before the batch
-//! writer checks the draft: `of`, `sets`, the anchor and `about`.
+//! writer checks the draft: `of`, `sets`, the anchor, `about` and `occurred`.
 //!
 //! The protocol never infers any of them. Each is written into the envelope
 //! at write time, and nothing reads it in later. A changeset (`loops emit -`)
-//! states its own `of`, `sets`, `prev` and `about`, and nothing here touches it.
+//! states its own `of`, `sets`, `prev`, `about` and `occurred`,
+//! and nothing here touches it.
 use loops::{
     batch::{self, Draft},
     json::{Json, canon_set},
     live,
+    occurred::Claim,
     record::{Record, id_text},
 };
 
@@ -28,6 +30,15 @@ pub enum About {
     /// The draft states its whole `about`, empty included.
     Stated,
     /// The draft states none, so it is copied from the heads it builds on.
+    Copied,
+}
+
+/// Where a draft's `occurred` comes from.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Occurred {
+    /// The draft states its occurrence or explicitly leaves it absent.
+    Stated,
+    /// Copy the occurrence when every head states the same text.
     Copied,
 }
 
@@ -87,8 +98,8 @@ pub fn sets(realm: &[Record], mut draft: Draft, sets: Sets) -> Draft {
     draft
 }
 
-/// The anchor rule and the whole `about`, over `realm`, the records the
-/// writer holds as a reader sees them: settled, then admitted.
+/// The anchor rule, the whole `about` and the shared `occurred`, over the records
+/// the writer holds as a reader sees them: settled, then admitted.
 ///
 /// An emit of a thing names in `prev`, beside what it already names, every
 /// record of that thing in `realm` that is live for some key, the envelope
@@ -98,20 +109,63 @@ pub fn sets(realm: &[Record], mut draft: Draft, sets: Sets) -> Draft {
 ///
 /// With [`About::Copied`], `about` is the union of the mentions of the
 /// thing's heads, every one of which the emit now builds on.
-pub fn anchor(realm: &[Record], mut draft: Draft, about: About) -> Draft {
+/// With [`Occurred::Copied`], the emit carries `occurred` when every head
+/// states the same text.
+pub fn anchor(realm: &[Record], mut draft: Draft, about: About, occurred: Occurred) -> Draft {
     let Some(thing) = draft.env.of.clone().filter(|t| !batch::is_label(t)) else {
         return draft;
     };
     let state = live::LiveState::new(realm.iter().filter(|r| r.is_of(&thing)).collect());
     draft.env.prev.extend(state.live().map(|r| id_text(&r.id)));
     draft.env.prev = canon_set(&draft.env.prev);
+    if about == About::Stated && occurred == Occurred::Stated {
+        return draft;
+    }
+    let heads = state.heads();
     if about == About::Copied {
-        let mentions: Vec<String> = state
-            .heads()
-            .iter()
-            .flat_map(|r| r.about.iter().cloned())
-            .collect();
+        let mentions: Vec<String> = heads.iter().flat_map(|r| r.about.iter().cloned()).collect();
         draft.env.about = canon_set(&mentions);
     }
+    if occurred == Occurred::Copied {
+        let mut claims = heads.iter().map(|r| r.occurred.as_ref().map(Claim::text));
+        draft.env.occurred = claims
+            .next()
+            .flatten()
+            .filter(|text| claims.all(|other| other == Some(*text)))
+            .map(str::to_owned);
+    }
     draft
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use loops::record::Digest;
+
+    #[test]
+    fn occurred_requires_the_same_text_on_every_head() {
+        let head = |id, text: Option<&str>| Record {
+            id: Digest([id; 32]),
+            of: Some("task:1".into()),
+            occurred: text.map(|s| Claim::of(s).expect("valid occurrence")),
+            ..Record::default()
+        };
+        for (left, right, expected) in [
+            (Some("2009?"), Some("2009?"), Some("2009?")),
+            (Some("2009?"), Some("2009"), None),
+            (Some("2009"), None, None),
+            (None, Some("2009"), None),
+            (None, None, None),
+        ] {
+            let realm = [head(1, left), head(2, right)];
+            let mut draft = Draft::default();
+            draft.env.of.clone_from(&realm[0].of);
+            let filled = anchor(&realm, draft, About::Stated, Occurred::Copied);
+            assert_eq!(
+                filled.env.occurred.as_deref(),
+                expected,
+                "{left:?} {right:?}"
+            );
+        }
+    }
 }

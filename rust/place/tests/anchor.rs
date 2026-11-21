@@ -18,7 +18,7 @@ use loops::{
 };
 use loops_place::{
     dir::Dir,
-    fill::{self, About},
+    fill::{self, About, Occurred},
     key::{self, Key},
     line::{Line, hash},
 };
@@ -83,7 +83,7 @@ impl Replica {
         let draft = match about {
             Some(about) => {
                 let draft = fill::of(&view, draft).expect("of is filled in");
-                fill::anchor(&self.realm(), draft, about)
+                fill::anchor(&self.realm(), draft, about, Occurred::Copied)
             }
             None => draft,
         };
