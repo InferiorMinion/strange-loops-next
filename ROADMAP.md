@@ -9,7 +9,7 @@ What is next, in order. This file holds no history and no open questions.
 ## Where we are
 
 - **Steps 0, 1 and 2 are done.** Kyle closed step 2 on 2026-11-20: `loops` emits, reads and folds for one person, signed, over `.loops/`.
-- **Step 4 (ticks) has started.** The cut laws are in the model and the result codec is built. What a fold reads from a payload is settled and stated in the model (2026-11-21), so a tick can pin a result hash. The tick record is not designed yet.
+- **Step 4 (ticks) has started.** The cut laws are in the model and the result codec is built. What a fold reads from a payload is settled and stated in the model (2026-11-21), so a tick can pin a result hash. The tick record is proposed and not ruled ([TK1 to TK9](DECISIONS.md#the-tick-record)).
 - **Three implementations agree on every vector:** Lean (the model), JavaScript and Rust.
 - **One outside user:** rex-tools, a chat room over the `loops` CLI. It found a slow read path (fixed 2026-11-21) and a gap in `--values` (fixed the same day).
 - **The old Python `loops` is still first on `PATH`** on Kyle's machine, and his day-to-day stores are still the old ones.
@@ -18,11 +18,11 @@ The evidence and its counts are kept where they are made: [the law index](design
 
 ## Now
 
-The payload values and the result hash's prefix, ruled by Kyle on 2026-11-21, are built. Nothing is being built today: the tick record needs its proposal first.
+The payload values and the result hash's prefix, ruled by Kyle on 2026-11-21, are built. Nothing is being built today: the tick record waits on Kyle's rulings.
 
 | Order | Work | State | Waits on |
 | --- | --- | --- | --- |
-| 1 | **The tick record:** what a tick holds, how `covers` is stated and checked, and the input key. | The coordinator is writing the proposal. | The proposal, then Kyle ([preview](DECISIONS.md#being-prepared)); [W3, W4 and W5](DECISIONS.md#at-a-glance) before it is built |
+| 1 | **The tick record:** what a tick holds, how `covers` is stated and checked, and the input key. | Proposed 2026-11-21 as [TK1 to TK9](DECISIONS.md#the-tick-record), with [a note](notes/2026-11-21-tick-record.md). Not ruled. | Kyle: TK1 to TK9, and [W3, W4 and W5](DECISIONS.md#at-a-glance) before it is built |
 | 2 | **Step 4's ruled pieces** (list below). | Ruled 2026-11-20. Not built. | Some wait on the tick record |
 
 ### Step 4: ruled and not built
