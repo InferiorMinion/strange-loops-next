@@ -10,7 +10,7 @@ mod values;
 
 use loops::{
     batch, envelope,
-    json::{Json, canon_set},
+    json::Json,
     record::{Record, Shown, id_text},
     spec::Spec,
     things,
@@ -52,8 +52,10 @@ usage: loops [-C <dir>] <verb> ...
                                 records are of it
   read <vertex> [--values]      fold .loops/vertices/<vertex>.json
   fold <spec.json | -> [--values]
-                                fold a spec given as a file; --values writes
-                                the values beside the ids
+                                fold a spec from a file or stdin
+                                --values adds stored envelopes to listed heads,
+                                held payloads to collect and prev entries,
+                                and about and values to keyed things
   erase <id>... [\"why\"]         emit an erasure, and drop the openings held here
   export [--kind <k>] [--of <thing>] [--about <thing>]   stored lines, oldest first
   import [<file> | -]           add stored lines; a store is the union
@@ -433,13 +435,8 @@ fn of(start: &Path, args: &[String]) -> Result<(), Fail> {
     // first: the first is the winner a latest-by that follows `prev` names.
     let admitted = realm(&held);
     let heads = things::state_in(&thing, &admitted).heads;
-    let mentions: Vec<String> = heads.iter().flat_map(|r| r.about.clone()).collect();
     let mut members = vec![
         ("thing", text(&thing)),
-        (
-            "about",
-            Json::Arr(canon_set(&mentions).into_iter().map(text).collect()),
-        ),
         (
             "heads",
             Json::Arr(heads.iter().filter_map(|r| shown_line(&held, r)).collect()),

@@ -249,11 +249,13 @@ Every verb that reads the store says when either happened (choice 18).
 17. **`--values` writes the values beside the ids.** `loops read <vertex>
     --values` and `loops fold <spec> --values` answer the protocol's result
     with members added where the protocol has none: each thing of a
-    latest-by that follows `keys` gains `values`, `setters` and `unheld` as
-    `loops of` writes them, beside `keys`, `whole` and `heads`; each
+    latest-by that follows `keys` gains `about`, `values`, `setters` and `unheld`
+    as `loops of` writes them. Its `about` is empty when no head mentions
+    anything. Each entry in its `heads` gains `env`, the stored envelope
+    that `loops get` writes. Entries in `keys` and `whole` gain nothing. Each
     `{"id", "shown"}` entry that a latest-by following `prev` or a collect
-    lists gains `payload`, the record's payload as stored, when its `shown`
-    is `here`. Inside a slot with `by` each group's list gains the same.
+    lists gains `env` whatever its `shown`, and `payload` when it is `here`.
+    Inside a slot with `by` each group's list gains the same.
     Counts, sums, minima and maxima list no ids and gain nothing. Taking
     those members out gives the protocol's answer byte for byte, and without
     `--values` that answer is all `read` and `fold` write. The members sit
