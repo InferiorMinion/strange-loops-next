@@ -1,0 +1,12 @@
+{
+  "vector": "01-empty-object",
+  "layer": "payload",
+  "laws": ["payload.read"],
+  "source": "model",
+  "input": {
+    "payload": {}
+  },
+  "expect": {
+    "fields": {}
+  }
+}

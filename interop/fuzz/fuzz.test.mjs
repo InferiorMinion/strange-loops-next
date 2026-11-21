@@ -7,7 +7,7 @@ import { tmpdir } from 'node:os';
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { FAMILIES, FOLD_LAYERS, generate } from './generate.mjs';
-import { assess } from './evaluate.mjs';
+import { assess, evaluateJS } from './evaluate.mjs';
 import { equal, readVector } from '../answers.mjs';
 import { ROOT, batchVectors, executeBatch, parseResponses, warmLean } from './transport.mjs';
 import { candidates, sameDisagreement, shrink } from './shrink.mjs';
@@ -28,7 +28,7 @@ async function* jsonFiles(dir) {
 test('generation is deterministic, varied, balanced, and independent of scheduling', () => {
   const corpus = FAMILIES.flatMap(f => Array.from({ length: 8 }, (_, i) => generate('stable', i, f)));
   assert.equal(createHash('sha256').update(JSON.stringify(corpus)).digest('hex'),
-    'aa2902a673bda8ef2fae697fe9398dcc1f40d5962918ca6a0f86efe43690e5f4');
+    '9c591121f8593ca2c87044a182247806e4d89bafe0d0d5139f1b1b043fda4f88');
   const layers = new Set();
   for (const family of FAMILIES) {
     const seen = new Set();
@@ -52,6 +52,33 @@ test('generation is deterministic, varied, balanced, and independent of scheduli
   }
   for (const layer of FOLD_LAYERS) assert.ok(layers.has(`fold/${layer}`));
   assert.ok(layers.has('spec/run')); assert.ok(layers.has('spec/parse'));
+});
+
+test('raw payload replay keeps objects named $number and checks stored input', () => {
+  const raw = '{"layer":"payload","input":{"payload":{"x":{"$number":"80.0"}}}}';
+  assert.deepEqual(evaluateJS(JSON.parse(raw), raw), [{ fields: { x: { other: true } } }]);
+  for (const value of ['{"x":1,"x":2}', '[9007199254740992]']) {
+    const text = '{"layer":"payload","input":{"payload":' + value + '}}';
+    assert.throws(() => evaluateJS(JSON.parse(text), text), /member-duplicate|number-out-of-range/);
+  }
+});
+
+test('generated keyed forks distinguish overlapping and disjoint lists at live setters', () => {
+  const observed = new Set();
+  for (let i = 0; i < 128 && observed.size < 2; i++) {
+    const { input } = generate('routes', i, 'spec');
+    if (!input.spec?.fold?.['routes-a']) continue;
+    const setters = input.orders[0].filter(r => r.of === 'svc:list-fork' && r.sets.includes('routes'));
+    assert.equal(setters.length, 2);
+    if (setters.some(r => !r.fields)) continue;
+    assert.deepEqual(setters[0].prev, setters[1].prev);
+    const lists = setters.map(r => r.fields.routes);
+    assert.deepEqual(new Set(lists.flat()), new Set(['svc:a', 'svc:b']));
+    observed.add(lists.every(xs => xs.includes('svc:a')));
+    assert.equal(input.spec.fold['routes-a'].follow, 'keys');
+    assert.equal(input.spec.fold['routes-groups'].by, 'routes');
+  }
+  assert.deepEqual(observed, new Set([true, false]));
 });
 
 test('raw numeric folds use readable records and specs use settled forms', () => {

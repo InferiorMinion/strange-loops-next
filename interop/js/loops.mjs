@@ -300,7 +300,7 @@ export function verifyId(sig, id) {
 }
 
 // Writers bound magnitude, whole or not; numeric readers additionally require whole values.
-const inRange = (v) =>
+export const inRange = (v) =>
   typeof v === "number" ? Number.isFinite(v) && Math.abs(v) <= Number.MAX_SAFE_INTEGER
   : v !== null && typeof v === "object" ? Object.values(v).every(inRange)
   : true;

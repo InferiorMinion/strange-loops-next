@@ -1,0 +1,19 @@
+{
+  "vector": "13-no-readable-members",
+  "layer": "payload",
+  "laws": ["payload.read"],
+  "source": "model",
+  "input": {
+    "payload": {"empty":[],"opaque":[null,{},["hidden"],1.5]}
+  },
+  "expect": {
+    "fields": {
+      "empty": {
+        "many": []
+      },
+      "opaque": {
+        "many": []
+      }
+    }
+  }
+}

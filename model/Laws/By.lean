@@ -20,7 +20,7 @@ selected record goes:
   has (`By.memberships`): a record mentioning two projects is in both, once in
   each. So the groups add up to memberships, not records; when every selected
   record has at most one key (`By.OneKey`), they add up to records
-  (`By.accounting_single`), which every `by` but `env.about:<prefix>` guarantees
+  (`By.accounting_single`), which the kind and observer forms guarantee
   (`By.accounting_single_form`).
 * **No empty groups.** A group exists only where something was selected into
   it (`groupKeys_nonempty`).
@@ -48,23 +48,39 @@ theorem By.keys_nodup (b : By) (r : Record) : ((b.keys r).getD []).Nodup := by
   | payload f =>
     simp only [By.keys]
     split
-    · cases (r.get f).bind Val.key <;> simp
+    · cases h : r.get f with
+      | none => simp
+      | some v =>
+        cases v with
+        | one v => cases h : v.key <;> simp [HeldField.keys, h]
+        | many vs => exact canonSet_nodup _
+        | other => simp [HeldField.keys]
     · simp
 
-/-- Every `by` but `env.about:<prefix>` gives a record at most one key. -/
+/-- Grouping by kind or observer gives a record at most one key. -/
 def By.Single : By → Prop
-  | .about _ => False
-  | _ => True
+  | .kind | .observer => True
+  | _ => False
 
 theorem By.keys_single {b : By} (hb : b.Single) (r : Record) : ((b.keys r).getD []).length ≤ 1 := by
   cases b with
   | kind | observer => simp [By.keys]
-  | about p => cases hb
-  | payload f =>
-    simp only [By.keys]
-    split
-    · cases (r.get f).bind Val.key <;> simp
-    · simp
+  | about _ | payload _ => cases hb
+
+/-- A payload field which is absent or scalar or opaque has at most one key. -/
+theorem By.keys_single_nonlist (r : Record) (f : String)
+    (h : ∀ vs, r.get f ≠ some (.many vs)) :
+    (((By.payload f).keys r).getD []).length ≤ 1 := by
+  simp only [By.keys]
+  split
+  · cases hg : r.get f with
+    | none => decide
+    | some v =>
+      cases v with
+      | one v => cases hv : v.key <;> simp [HeldField.keys, hv]
+      | other => decide
+      | many vs => exact False.elim (h vs hg)
+  · decide
 
 /-! ## No empty groups -/
 
@@ -155,7 +171,7 @@ theorem By.memberships (b : By) (ev : Record → Tri) (pool : List Record) :
       simp [this, he]
 
 /-- Every record the slot selects has at most one key: a fact of the data,
-which every `by` but `env.about:<prefix>` guarantees (`By.OneKey.of_single`),
+which the kind and observer forms guarantee (`By.OneKey.of_single`),
 and which `env.about:project` meets over records that each mention one project. -/
 def By.OneKey (b : By) (ev : Record → Tri) (pool : List Record) : Prop :=
   ∀ r ∈ pool, ev r = .yes → ((b.keys r).getD []).length ≤ 1
@@ -187,7 +203,7 @@ theorem By.accounting_single {b : By} {ev : Record → Tri} {pool : List Record}
       (pool.filter (ev · != .no)).length := by
   rw [By.accounting b ev pool, By.memberships, sum_keys_single h]
 
-/-- So with any `by` but `env.about:<prefix>`. -/
+/-- So when grouping by kind or observer. -/
 theorem By.accounting_single_form {b : By} (hb : b.Single) (ev : Record → Tri) (pool : List Record) :
     ((groupKeys b ev pool).map fun g => (pool.filter (inGroup b ev g)).length).sum +
       (pool.filter fun r => ev r == .yes && b.keys r == some []).length +
@@ -259,7 +275,7 @@ theorem By.count_partition {f : Option Follow} (hf : f ≠ some .keys) {s : Slot
   simp only [Slot.pool, hs]
   exact length_ne_no _ _
 
-/-- So for a grouped count by any `by` but `env.about:<prefix>`. -/
+/-- So for a grouped count by kind or observer. -/
 theorem By.count_partition_form {f : Option Follow} (hf : f ≠ some .keys) {s : Slot} {b : By}
     (hb : b.Single) (sel : Record → Bool) (xs : List Record) (hs : s.type = .count f) :
     ∃ gs u m r, s.grouped b sel xs = .groups gs u m ∧ ({ s with group := none } : Slot).run sel xs = .nat r ∧

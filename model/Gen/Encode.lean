@@ -41,10 +41,15 @@ def jVal : Val → J
   | .number n => .number n
   | .bool b => .bool b
 
+def jHeld : HeldField → J
+  | .one v => jVal v
+  | .many vs => .arr (vs.map jVal)
+  | .other => .null
+
 /-- The text explicitly supplied by a fixture that displays a record as a section. -/
 def fixtureText (r : Record) : Except String String :=
   match r.get "value" with
-  | some (.str text) => .ok text
+  | some (.one (.str text)) => .ok text
   | _ => .error s!"fixture record {idText r.id} needs a text field named value"
 
 def jShown : Shown → J
@@ -72,7 +77,7 @@ def jRecord (r : Record) : J :=
     (match r.sets with
       | some ks => [("sets", .arr (ks.map .str))]
       | none => [])
-  let fields := if r.fields.isEmpty then [] else [("fields", .obj (r.fields.map fun (k, v) => (k, jVal v)))]
+  let fields := if r.fields.isEmpty then [] else [("fields", .obj (r.fields.map fun (k, v) => (k, jHeld v)))]
   match r.shown with
   | .here => .obj (env ++ rest ++ fields)
   | s => .obj (env ++ rest ++ [("shown", jShown s)])

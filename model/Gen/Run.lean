@@ -1,3 +1,4 @@
+import Gen.Payload
 import Loops
 import Gen.Json
 import Gen.Encode
@@ -260,7 +261,7 @@ def byteTextRun (input : Json) : Dec J := do
 /-! ## Dispatch -/
 
 /-- The layers `run` reads, and the directories under a vectors dir that hold them. -/
-def layerDirs : List String := ["fold", "lens", "spec", "record", "batch", "realm", "scenario", "byte-text", "result"]
+def layerDirs : List String := ["fold", "lens", "spec", "record", "batch", "realm", "scenario", "byte-text", "result", "payload"]
 
 def answer (layer : String) (input : Json) : Dec J :=
   match foldAnswer layer with
@@ -272,6 +273,7 @@ def answer (layer : String) (input : Json) : Dec J :=
     | "spec/run" => specRunRun input
     | "result" => resultRun input
     | "record" => recordRun input
+    | "payload" => Payload.answer input
     | "byte-text" => byteTextRun input
     | "batch" => batchRun input
     | "realm" => realmRun input

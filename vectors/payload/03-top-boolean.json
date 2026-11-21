@@ -1,0 +1,12 @@
+{
+  "vector": "03-top-boolean",
+  "layer": "payload",
+  "laws": ["payload.read"],
+  "source": "model",
+  "input": {
+    "payload": false
+  },
+  "expect": {
+    "fields": {}
+  }
+}

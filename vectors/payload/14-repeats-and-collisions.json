@@ -1,0 +1,63 @@
+{
+  "vector": "14-repeats-and-collisions",
+  "layer": "payload",
+  "laws": ["payload.read"],
+  "source": "model",
+  "input": {
+    "payload": {"x":["1",1,true,"true","😀","דּ",1],"y":[1,"דּ","😀","true",true,1,"1"]}
+  },
+  "expect": {
+    "fields": {
+      "x": {
+        "many": [
+          {
+            "text": "1"
+          },
+          {
+            "whole": "1"
+          },
+          {
+            "bool": true
+          },
+          {
+            "text": "true"
+          },
+          {
+            "text": "😀"
+          },
+          {
+            "text": "דּ"
+          },
+          {
+            "whole": "1"
+          }
+        ]
+      },
+      "y": {
+        "many": [
+          {
+            "whole": "1"
+          },
+          {
+            "text": "דּ"
+          },
+          {
+            "text": "😀"
+          },
+          {
+            "text": "true"
+          },
+          {
+            "bool": true
+          },
+          {
+            "whole": "1"
+          },
+          {
+            "text": "1"
+          }
+        ]
+      }
+    }
+  }
+}

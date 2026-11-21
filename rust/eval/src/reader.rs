@@ -3,7 +3,7 @@ use loops::{
     base32, envelope,
     json::Json,
     occurred::{Claim, Stamp},
-    record::{Digest, Record, Shown, Val, id_text},
+    record::{Digest, Held, Record, Shown, id_text, payload_fields},
 };
 
 /// Gen.Read.members? (model/Gen/Read.lean), duplicates before unknown members.
@@ -94,25 +94,14 @@ pub(super) fn shown(path: &str, j: &Json) -> Result<Shown, String> {
         _ => Err(format!("{path}: unknown shown")),
     }
 }
-fn fields(path: &str, j: &Json) -> Result<Vec<(String, Val)>, String> {
-    let Json::Obj(kvs) = j else {
+fn fields(path: &str, j: &Json) -> Result<Vec<(String, Held)>, String> {
+    if !matches!(j, Json::Obj(_)) {
         return Err(format!("{path}: expected fields object"));
-    };
-    // Reuse object duplicate validation, allowing precisely the written names.
-    let allowed: Vec<_> = kvs.iter().map(|(k, _)| k.as_str()).collect();
-    members(path, &allowed, j)?;
-    kvs.iter()
-        .map(|(k, v)| {
-            let val = match v {
-                Json::Str(s) => Val::Str(s.clone()),
-                Json::Int(i) => Val::Int(i.clone()),
-                Json::Number(n) => Val::Number(*n),
-                Json::Bool(b) => Val::Bool(*b),
-                _ => return Err(format!("{path}.{k}: expected primitive")),
-            };
-            Ok((k.clone(), val))
-        })
-        .collect()
+    }
+    if !j.keys_distinct() {
+        return Err(format!("{path}: repeated field"));
+    }
+    Ok(payload_fields(j))
 }
 
 /// Gen.Read.record (model/Gen/Read.lean), a strict reader form, not writer validation.
@@ -253,7 +242,7 @@ mod tests {
         .expect("fractional payload");
         assert!(matches!(
             fractional.get("n"),
-            Some(loops::record::Val::Number(_))
+            Some(loops::record::Held::One(loops::record::Val::Number(_)))
         ));
         assert_eq!(fractional.num("n"), None);
         let bad = crate::parse(&raw.replace("thing:a", "not typed"));

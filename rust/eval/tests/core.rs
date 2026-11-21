@@ -386,7 +386,7 @@ fn admission_uses_all_held_targets_original_input_and_envelopes() {
 #[test]
 fn supersession_precedes_sources_envelope_and_payload_tests() {
     let old = Record {
-        fields: vec![("status".into(), Val::Str("open".into()))],
+        fields: vec![("status".into(), Val::Str("open".into()).into())],
         ..rec(1)
     };
     let successor = Record {
@@ -524,7 +524,7 @@ fn hidden_payloads_and_unknown_counts_differ_by_slot() {
 fn run_keeps_raw_duplicate_ids_and_does_not_settle_or_dedup() {
     let a = rec(1);
     let b = Record {
-        fields: vec![("value".into(), Val::Str("different".into()))],
+        fields: vec![("value".into(), Val::Str("different".into()).into())],
         ..a.clone()
     };
     assert_eq!(spec::newest_first(&[a.clone(), b.clone()]).len(), 2);
@@ -596,7 +596,10 @@ fn run_keeps_raw_duplicate_ids_and_does_not_settle_or_dedup() {
 fn raw_limits_arguments_and_exact_sums_have_distinct_readability_boundaries() {
     let big = "340282366920938463463374607431768211457";
     let mut a = rec(1);
-    a.fields = vec![("n".into(), Val::Int(9_007_199_254_740_991_i64.into()))];
+    a.fields = vec![(
+        "n".into(),
+        Val::Int(9_007_199_254_740_991_i64.into()).into(),
+    )];
     let mut b = rec(2);
     b.fields.clone_from(&a.fields);
     let xs = [a.clone(), b.clone(), rec(3).withhold()];
@@ -642,7 +645,7 @@ fn raw_limits_arguments_and_exact_sums_have_distinct_readability_boundaries() {
     assert_eq!(tests.run(|_| true, &[a.clone(), b]), count(2, 0));
     a.fields = vec![(
         "n".into(),
-        Val::Int(big.parse().expect("raw out-of-range integer")),
+        Val::Int(big.parse().expect("raw out-of-range integer")).into(),
     )];
     assert_eq!(
         slot(r#"{"sum":"n"}"#).run(|_| true, &[a]),

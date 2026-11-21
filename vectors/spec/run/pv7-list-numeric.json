@@ -1,0 +1,1276 @@
+{
+  "vector": "pv7-list-numeric",
+  "layer": "spec/run",
+  "laws": ["numeric.safe-whole"],
+  "source": "model",
+  "input": {
+    "spec": {
+      "vertex": "pv7-list-numeric",
+      "from": [
+        {
+          "store": ".",
+          "kind": ["svc"]
+        }
+      ],
+      "fold": {
+        "sum": {
+          "sum": "ports"
+        },
+        "min": {
+          "min": "ports"
+        },
+        "max": {
+          "max": "ports"
+        }
+      }
+    },
+    "orders": [
+      [
+        {
+          "id": "r:000000000000000000000000000000000000000000000000000g",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:grafana",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"runs_on":"host:nuc1","watches":["svc:prometheus","svc:loki"]}
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000010",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:prometheus",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"runs_on":"host:nuc1","watches":["svc:node-exporter"]}
+        },
+        {
+          "id": "r:000000000000000000000000000000000000000000000000001g",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:loki",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"runs_on":"host:nuc2","watches":[],"notes":null,"labels":{"tier":"infra"}}
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000020",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:caddy",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"runs_on":"host:nuc2","ports":[80,443,8080]}
+        },
+        {
+          "id": "r:000000000000000000000000000000000000000000000000002g",
+          "kind": "backup",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "backup:nuc1",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"host":"nuc1","n":14}
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000030",
+          "kind": "backup",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "backup:nuc2",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"host":"nuc2","n":9}
+        },
+        {
+          "id": "r:000000000000000000000000000000000000000000000000003g",
+          "kind": "backup",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "backup:nas",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"host":"nas","status":"failed"}
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000040",
+          "kind": "backup",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "backup:pi",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"host":"pi","snapshots":3}
+        },
+        {
+          "id": "r:000000000000000000000000000000000000000000000000004g",
+          "kind": "setting",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "setting:dns",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"value":"1.1.1.1"}
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000050",
+          "kind": "setting",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "setting:ntp",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"value":"pool.ntp.org"}
+        },
+        {
+          "id": "r:000000000000000000000000000000000000000000000000005g",
+          "kind": "setting",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "setting:proxy",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"enabled":false}
+        }
+      ],
+      [
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000010",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:prometheus",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"runs_on":"host:nuc1","watches":["svc:node-exporter"]}
+        },
+        {
+          "id": "r:000000000000000000000000000000000000000000000000001g",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:loki",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"runs_on":"host:nuc2","watches":[],"notes":null,"labels":{"tier":"infra"}}
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000020",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:caddy",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"runs_on":"host:nuc2","ports":[80,443,8080]}
+        },
+        {
+          "id": "r:000000000000000000000000000000000000000000000000002g",
+          "kind": "backup",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "backup:nuc1",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"host":"nuc1","n":14}
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000030",
+          "kind": "backup",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "backup:nuc2",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"host":"nuc2","n":9}
+        },
+        {
+          "id": "r:000000000000000000000000000000000000000000000000003g",
+          "kind": "backup",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "backup:nas",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"host":"nas","status":"failed"}
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000040",
+          "kind": "backup",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "backup:pi",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"host":"pi","snapshots":3}
+        },
+        {
+          "id": "r:000000000000000000000000000000000000000000000000004g",
+          "kind": "setting",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "setting:dns",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"value":"1.1.1.1"}
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000050",
+          "kind": "setting",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "setting:ntp",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"value":"pool.ntp.org"}
+        },
+        {
+          "id": "r:000000000000000000000000000000000000000000000000005g",
+          "kind": "setting",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "setting:proxy",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"enabled":false}
+        },
+        {
+          "id": "r:000000000000000000000000000000000000000000000000000g",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:grafana",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"runs_on":"host:nuc1","watches":["svc:prometheus","svc:loki"]}
+        }
+      ],
+      [
+        {
+          "id": "r:000000000000000000000000000000000000000000000000001g",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:loki",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"runs_on":"host:nuc2","watches":[],"notes":null,"labels":{"tier":"infra"}}
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000020",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:caddy",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"runs_on":"host:nuc2","ports":[80,443,8080]}
+        },
+        {
+          "id": "r:000000000000000000000000000000000000000000000000002g",
+          "kind": "backup",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "backup:nuc1",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"host":"nuc1","n":14}
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000030",
+          "kind": "backup",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "backup:nuc2",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"host":"nuc2","n":9}
+        },
+        {
+          "id": "r:000000000000000000000000000000000000000000000000003g",
+          "kind": "backup",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "backup:nas",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"host":"nas","status":"failed"}
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000040",
+          "kind": "backup",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "backup:pi",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"host":"pi","snapshots":3}
+        },
+        {
+          "id": "r:000000000000000000000000000000000000000000000000004g",
+          "kind": "setting",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "setting:dns",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"value":"1.1.1.1"}
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000050",
+          "kind": "setting",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "setting:ntp",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"value":"pool.ntp.org"}
+        },
+        {
+          "id": "r:000000000000000000000000000000000000000000000000005g",
+          "kind": "setting",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "setting:proxy",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"enabled":false}
+        },
+        {
+          "id": "r:000000000000000000000000000000000000000000000000000g",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:grafana",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"runs_on":"host:nuc1","watches":["svc:prometheus","svc:loki"]}
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000010",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:prometheus",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"runs_on":"host:nuc1","watches":["svc:node-exporter"]}
+        }
+      ],
+      [
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000020",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:caddy",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"runs_on":"host:nuc2","ports":[80,443,8080]}
+        },
+        {
+          "id": "r:000000000000000000000000000000000000000000000000002g",
+          "kind": "backup",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "backup:nuc1",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"host":"nuc1","n":14}
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000030",
+          "kind": "backup",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "backup:nuc2",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"host":"nuc2","n":9}
+        },
+        {
+          "id": "r:000000000000000000000000000000000000000000000000003g",
+          "kind": "backup",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "backup:nas",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"host":"nas","status":"failed"}
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000040",
+          "kind": "backup",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "backup:pi",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"host":"pi","snapshots":3}
+        },
+        {
+          "id": "r:000000000000000000000000000000000000000000000000004g",
+          "kind": "setting",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "setting:dns",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"value":"1.1.1.1"}
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000050",
+          "kind": "setting",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "setting:ntp",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"value":"pool.ntp.org"}
+        },
+        {
+          "id": "r:000000000000000000000000000000000000000000000000005g",
+          "kind": "setting",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "setting:proxy",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"enabled":false}
+        },
+        {
+          "id": "r:000000000000000000000000000000000000000000000000000g",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:grafana",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"runs_on":"host:nuc1","watches":["svc:prometheus","svc:loki"]}
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000010",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:prometheus",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"runs_on":"host:nuc1","watches":["svc:node-exporter"]}
+        },
+        {
+          "id": "r:000000000000000000000000000000000000000000000000001g",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:loki",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"runs_on":"host:nuc2","watches":[],"notes":null,"labels":{"tier":"infra"}}
+        }
+      ],
+      [
+        {
+          "id": "r:000000000000000000000000000000000000000000000000002g",
+          "kind": "backup",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "backup:nuc1",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"host":"nuc1","n":14}
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000030",
+          "kind": "backup",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "backup:nuc2",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"host":"nuc2","n":9}
+        },
+        {
+          "id": "r:000000000000000000000000000000000000000000000000003g",
+          "kind": "backup",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "backup:nas",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"host":"nas","status":"failed"}
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000040",
+          "kind": "backup",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "backup:pi",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"host":"pi","snapshots":3}
+        },
+        {
+          "id": "r:000000000000000000000000000000000000000000000000004g",
+          "kind": "setting",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "setting:dns",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"value":"1.1.1.1"}
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000050",
+          "kind": "setting",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "setting:ntp",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"value":"pool.ntp.org"}
+        },
+        {
+          "id": "r:000000000000000000000000000000000000000000000000005g",
+          "kind": "setting",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "setting:proxy",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"enabled":false}
+        },
+        {
+          "id": "r:000000000000000000000000000000000000000000000000000g",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:grafana",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"runs_on":"host:nuc1","watches":["svc:prometheus","svc:loki"]}
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000010",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:prometheus",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"runs_on":"host:nuc1","watches":["svc:node-exporter"]}
+        },
+        {
+          "id": "r:000000000000000000000000000000000000000000000000001g",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:loki",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"runs_on":"host:nuc2","watches":[],"notes":null,"labels":{"tier":"infra"}}
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000020",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:caddy",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"runs_on":"host:nuc2","ports":[80,443,8080]}
+        }
+      ],
+      [
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000030",
+          "kind": "backup",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "backup:nuc2",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"host":"nuc2","n":9}
+        },
+        {
+          "id": "r:000000000000000000000000000000000000000000000000003g",
+          "kind": "backup",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "backup:nas",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"host":"nas","status":"failed"}
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000040",
+          "kind": "backup",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "backup:pi",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"host":"pi","snapshots":3}
+        },
+        {
+          "id": "r:000000000000000000000000000000000000000000000000004g",
+          "kind": "setting",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "setting:dns",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"value":"1.1.1.1"}
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000050",
+          "kind": "setting",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "setting:ntp",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"value":"pool.ntp.org"}
+        },
+        {
+          "id": "r:000000000000000000000000000000000000000000000000005g",
+          "kind": "setting",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "setting:proxy",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"enabled":false}
+        },
+        {
+          "id": "r:000000000000000000000000000000000000000000000000000g",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:grafana",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"runs_on":"host:nuc1","watches":["svc:prometheus","svc:loki"]}
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000010",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:prometheus",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"runs_on":"host:nuc1","watches":["svc:node-exporter"]}
+        },
+        {
+          "id": "r:000000000000000000000000000000000000000000000000001g",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:loki",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"runs_on":"host:nuc2","watches":[],"notes":null,"labels":{"tier":"infra"}}
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000020",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:caddy",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"runs_on":"host:nuc2","ports":[80,443,8080]}
+        },
+        {
+          "id": "r:000000000000000000000000000000000000000000000000002g",
+          "kind": "backup",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "backup:nuc1",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"host":"nuc1","n":14}
+        }
+      ],
+      [
+        {
+          "id": "r:000000000000000000000000000000000000000000000000003g",
+          "kind": "backup",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "backup:nas",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"host":"nas","status":"failed"}
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000040",
+          "kind": "backup",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "backup:pi",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"host":"pi","snapshots":3}
+        },
+        {
+          "id": "r:000000000000000000000000000000000000000000000000004g",
+          "kind": "setting",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "setting:dns",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"value":"1.1.1.1"}
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000050",
+          "kind": "setting",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "setting:ntp",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"value":"pool.ntp.org"}
+        },
+        {
+          "id": "r:000000000000000000000000000000000000000000000000005g",
+          "kind": "setting",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "setting:proxy",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"enabled":false}
+        },
+        {
+          "id": "r:000000000000000000000000000000000000000000000000000g",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:grafana",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"runs_on":"host:nuc1","watches":["svc:prometheus","svc:loki"]}
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000010",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:prometheus",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"runs_on":"host:nuc1","watches":["svc:node-exporter"]}
+        },
+        {
+          "id": "r:000000000000000000000000000000000000000000000000001g",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:loki",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"runs_on":"host:nuc2","watches":[],"notes":null,"labels":{"tier":"infra"}}
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000020",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:caddy",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"runs_on":"host:nuc2","ports":[80,443,8080]}
+        },
+        {
+          "id": "r:000000000000000000000000000000000000000000000000002g",
+          "kind": "backup",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "backup:nuc1",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"host":"nuc1","n":14}
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000030",
+          "kind": "backup",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "backup:nuc2",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"host":"nuc2","n":9}
+        }
+      ],
+      [
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000040",
+          "kind": "backup",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "backup:pi",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"host":"pi","snapshots":3}
+        },
+        {
+          "id": "r:000000000000000000000000000000000000000000000000004g",
+          "kind": "setting",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "setting:dns",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"value":"1.1.1.1"}
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000050",
+          "kind": "setting",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "setting:ntp",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"value":"pool.ntp.org"}
+        },
+        {
+          "id": "r:000000000000000000000000000000000000000000000000005g",
+          "kind": "setting",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "setting:proxy",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"enabled":false}
+        },
+        {
+          "id": "r:000000000000000000000000000000000000000000000000000g",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:grafana",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"runs_on":"host:nuc1","watches":["svc:prometheus","svc:loki"]}
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000010",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:prometheus",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"runs_on":"host:nuc1","watches":["svc:node-exporter"]}
+        },
+        {
+          "id": "r:000000000000000000000000000000000000000000000000001g",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:loki",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"runs_on":"host:nuc2","watches":[],"notes":null,"labels":{"tier":"infra"}}
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000020",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:caddy",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"runs_on":"host:nuc2","ports":[80,443,8080]}
+        },
+        {
+          "id": "r:000000000000000000000000000000000000000000000000002g",
+          "kind": "backup",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "backup:nuc1",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"host":"nuc1","n":14}
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000030",
+          "kind": "backup",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "backup:nuc2",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"host":"nuc2","n":9}
+        },
+        {
+          "id": "r:000000000000000000000000000000000000000000000000003g",
+          "kind": "backup",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "backup:nas",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"host":"nas","status":"failed"}
+        }
+      ],
+      [
+        {
+          "id": "r:000000000000000000000000000000000000000000000000004g",
+          "kind": "setting",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "setting:dns",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"value":"1.1.1.1"}
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000050",
+          "kind": "setting",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "setting:ntp",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"value":"pool.ntp.org"}
+        },
+        {
+          "id": "r:000000000000000000000000000000000000000000000000005g",
+          "kind": "setting",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "setting:proxy",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"enabled":false}
+        },
+        {
+          "id": "r:000000000000000000000000000000000000000000000000000g",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:grafana",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"runs_on":"host:nuc1","watches":["svc:prometheus","svc:loki"]}
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000010",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:prometheus",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"runs_on":"host:nuc1","watches":["svc:node-exporter"]}
+        },
+        {
+          "id": "r:000000000000000000000000000000000000000000000000001g",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:loki",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"runs_on":"host:nuc2","watches":[],"notes":null,"labels":{"tier":"infra"}}
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000020",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:caddy",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"runs_on":"host:nuc2","ports":[80,443,8080]}
+        },
+        {
+          "id": "r:000000000000000000000000000000000000000000000000002g",
+          "kind": "backup",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "backup:nuc1",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"host":"nuc1","n":14}
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000030",
+          "kind": "backup",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "backup:nuc2",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"host":"nuc2","n":9}
+        },
+        {
+          "id": "r:000000000000000000000000000000000000000000000000003g",
+          "kind": "backup",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "backup:nas",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"host":"nas","status":"failed"}
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000040",
+          "kind": "backup",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "backup:pi",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"host":"pi","snapshots":3}
+        }
+      ],
+      [
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000050",
+          "kind": "setting",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "setting:ntp",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"value":"pool.ntp.org"}
+        },
+        {
+          "id": "r:000000000000000000000000000000000000000000000000005g",
+          "kind": "setting",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "setting:proxy",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"enabled":false}
+        },
+        {
+          "id": "r:000000000000000000000000000000000000000000000000000g",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:grafana",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"runs_on":"host:nuc1","watches":["svc:prometheus","svc:loki"]}
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000010",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:prometheus",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"runs_on":"host:nuc1","watches":["svc:node-exporter"]}
+        },
+        {
+          "id": "r:000000000000000000000000000000000000000000000000001g",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:loki",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"runs_on":"host:nuc2","watches":[],"notes":null,"labels":{"tier":"infra"}}
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000020",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:caddy",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"runs_on":"host:nuc2","ports":[80,443,8080]}
+        },
+        {
+          "id": "r:000000000000000000000000000000000000000000000000002g",
+          "kind": "backup",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "backup:nuc1",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"host":"nuc1","n":14}
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000030",
+          "kind": "backup",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "backup:nuc2",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"host":"nuc2","n":9}
+        },
+        {
+          "id": "r:000000000000000000000000000000000000000000000000003g",
+          "kind": "backup",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "backup:nas",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"host":"nas","status":"failed"}
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000040",
+          "kind": "backup",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "backup:pi",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"host":"pi","snapshots":3}
+        },
+        {
+          "id": "r:000000000000000000000000000000000000000000000000004g",
+          "kind": "setting",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "setting:dns",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"value":"1.1.1.1"}
+        }
+      ],
+      [
+        {
+          "id": "r:000000000000000000000000000000000000000000000000005g",
+          "kind": "setting",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "setting:proxy",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"enabled":false}
+        },
+        {
+          "id": "r:000000000000000000000000000000000000000000000000000g",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:grafana",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"runs_on":"host:nuc1","watches":["svc:prometheus","svc:loki"]}
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000010",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:prometheus",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"runs_on":"host:nuc1","watches":["svc:node-exporter"]}
+        },
+        {
+          "id": "r:000000000000000000000000000000000000000000000000001g",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:loki",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"runs_on":"host:nuc2","watches":[],"notes":null,"labels":{"tier":"infra"}}
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000020",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:caddy",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"runs_on":"host:nuc2","ports":[80,443,8080]}
+        },
+        {
+          "id": "r:000000000000000000000000000000000000000000000000002g",
+          "kind": "backup",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "backup:nuc1",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"host":"nuc1","n":14}
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000030",
+          "kind": "backup",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "backup:nuc2",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"host":"nuc2","n":9}
+        },
+        {
+          "id": "r:000000000000000000000000000000000000000000000000003g",
+          "kind": "backup",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "backup:nas",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"host":"nas","status":"failed"}
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000040",
+          "kind": "backup",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "backup:pi",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"host":"pi","snapshots":3}
+        },
+        {
+          "id": "r:000000000000000000000000000000000000000000000000004g",
+          "kind": "setting",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "setting:dns",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"value":"1.1.1.1"}
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000050",
+          "kind": "setting",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "setting:ntp",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"value":"pool.ntp.org"}
+        }
+      ]
+    ]
+  },
+  "expect": {
+    "sum": {
+      "value": 0,
+      "unread": 4
+    },
+    "min": {
+      "value": null,
+      "unread": 4
+    },
+    "max": {
+      "value": null,
+      "unread": 4
+    }
+  }
+}

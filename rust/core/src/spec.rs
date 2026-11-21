@@ -172,8 +172,13 @@ impl By {
                         .collect::<Vec<_>>(),
                 ))
             }
-            Self::Payload(f) => (r.shown == Shown::Here)
-                .then(|| r.get(f).as_ref().and_then(val_key).into_iter().collect()),
+            Self::Payload(f) => (r.shown == Shown::Here).then(|| match r.get(f) {
+                Some(crate::record::Held::One(v)) => val_key(&v).into_iter().collect(),
+                Some(crate::record::Held::Many(vs)) => {
+                    canon_set(&vs.iter().filter_map(val_key).collect::<Vec<_>>())
+                }
+                _ => Vec::new(),
+            }),
         }
     }
     /// Gives what Lean `Loops.By.thingKeys` gives. Queries indexed setters or selected heads.
@@ -1722,13 +1727,13 @@ mod tests {
         // thing with two heads, and two live setters of `n` that hold the same
         // number.
         let root = Record {
-            fields: vec![("n".into(), Val::Int(Int::from(3_i64)))],
+            fields: vec![("n".into(), Val::Int(Int::from(3_i64)).into())],
             ..record(1, "thing:a", 1)
         };
         let set = |id, hour| Record {
             prev: vec![root.id],
             sets: Some(vec!["n".into()]),
-            fields: vec![("n".into(), Val::Int(Int::from(5_i64)))],
+            fields: vec![("n".into(), Val::Int(Int::from(5_i64)).into())],
             ..record(id, "thing:a", hour)
         };
         let xs = [root.clone(), set(2, 2), set(3, 3)];

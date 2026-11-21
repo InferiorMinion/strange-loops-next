@@ -42,8 +42,8 @@ fn field_reads_preserve_raw_lists_and_first_lookup() {
         under: Some(id(4)),
         erases: vec![id(8), id(8)],
         fields: vec![
-            ("score".into(), Val::Int(Int::from(6_i64))),
-            ("score".into(), Val::Bool(true)),
+            ("score".into(), Val::Int(Int::from(6_i64)).into()),
+            ("score".into(), Val::Bool(true).into()),
         ],
         ..Record::default()
     };

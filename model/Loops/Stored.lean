@@ -1,3 +1,4 @@
+import Loops.Record
 import Loops.Envelope
 import Loops.Base32
 
@@ -41,6 +42,37 @@ structure Stored where
   env  : Env
   body : Body
   deriving Repr
+
+/-- Legal equality arguments for an immediate list member. -/
+def Val.nameable : Val → Bool
+  | .str _ | .bool _ => true
+  | .int i => decide (-maxExact ≤ i ∧ i ≤ maxExact)
+  | .number _ => false
+
+def payloadScalar? : Json → Option Val
+  | .str s => some (.str s)
+  | .bool b => some (.bool b)
+  | .int i => some (.int i)
+  | .number n => some ((n.whole?.map Val.int).getD (.number n))
+  | _ => none
+
+def payloadMember? (j : Json) : Option Val :=
+  (payloadScalar? j).filter Val.nameable
+
+def readHeld : Json → HeldField
+  | .arr xs => .many (xs.filterMap payloadMember?)
+  | j => ((payloadScalar? j).map HeldField.one).getD .other
+
+/-- Every top-level object member supplies one field. -/
+def payloadFields : Json → List (String × HeldField)
+  | .obj kvs => kvs.map fun (k, v) => (k, readHeld v)
+  | _ => []
+
+/-- Supply the opening or erased form to its already decoded reader envelope. -/
+def Stored.readInto (s : Stored) (envelope : Record) : Record :=
+  match s.body with
+  | .opening _ p => { envelope with fields := payloadFields p, shown := .here }
+  | .erased _ => envelope.erase
 
 def Stored.commit (H : Hash) (r : Stored) : String :=
   match r.body with

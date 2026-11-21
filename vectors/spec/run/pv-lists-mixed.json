@@ -1,0 +1,404 @@
+{
+  "vector": "pv-lists-mixed",
+  "layer": "spec/run",
+  "laws": ["where.fields", "by.accounting", "numeric.safe-whole"],
+  "source": "model",
+  "input": {
+    "spec": {
+      "vertex": "pv-lists-mixed",
+      "from": [
+        {
+          "store": ".",
+          "kind": ["svc"]
+        }
+      ],
+      "fold": {
+        "by-x": {
+          "count": true,
+          "by": "x"
+        },
+        "present": {
+          "count": true,
+          "where": {
+            "x": {
+              "present": true
+            }
+          }
+        },
+        "empty": {
+          "count": true,
+          "where": {
+            "x": {
+              "is": ""
+            }
+          }
+        },
+        "bool": {
+          "count": true,
+          "where": {
+            "x": {
+              "is": true
+            }
+          }
+        },
+        "nested": {
+          "count": true,
+          "where": {
+            "x": {
+              "is": "nested"
+            }
+          }
+        },
+        "current": {
+          "sum": "n",
+          "follow": "prev"
+        },
+        "below": {
+          "count": true,
+          "where": {
+            "n": {
+              "below": 3
+            }
+          }
+        },
+        "by-n": {
+          "count": true,
+          "by": "n"
+        }
+      }
+    },
+    "orders": [
+      [
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000f0",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:mixed",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"x":[1,"1",true,"true","",false,1,"😀","דּ"],"n":2}
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000fg",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:permuted",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"x":["דּ","😀",1,false,"","true",true,"1",1],"n":[2]}
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000g0",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:none",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"x":[1.5,null,{},["nested"],9007199254740992],"n":null}
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000gg",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:empty",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"x":[],"n":{}}
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000h0",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:hidden",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "occurred": "2026-10-01T00:00:00Z",
+          "shown": "withheld"
+        }
+      ],
+      [
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000fg",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:permuted",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"x":["דּ","😀",1,false,"","true",true,"1",1],"n":[2]}
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000g0",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:none",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"x":[1.5,null,{},["nested"],9007199254740992],"n":null}
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000gg",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:empty",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"x":[],"n":{}}
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000h0",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:hidden",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "occurred": "2026-10-01T00:00:00Z",
+          "shown": "withheld"
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000f0",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:mixed",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"x":[1,"1",true,"true","",false,1,"😀","דּ"],"n":2}
+        }
+      ],
+      [
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000g0",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:none",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"x":[1.5,null,{},["nested"],9007199254740992],"n":null}
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000gg",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:empty",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"x":[],"n":{}}
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000h0",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:hidden",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "occurred": "2026-10-01T00:00:00Z",
+          "shown": "withheld"
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000f0",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:mixed",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"x":[1,"1",true,"true","",false,1,"😀","דּ"],"n":2}
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000fg",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:permuted",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"x":["דּ","😀",1,false,"","true",true,"1",1],"n":[2]}
+        }
+      ],
+      [
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000gg",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:empty",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"x":[],"n":{}}
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000h0",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:hidden",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "occurred": "2026-10-01T00:00:00Z",
+          "shown": "withheld"
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000f0",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:mixed",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"x":[1,"1",true,"true","",false,1,"😀","דּ"],"n":2}
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000fg",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:permuted",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"x":["דּ","😀",1,false,"","true",true,"1",1],"n":[2]}
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000g0",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:none",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"x":[1.5,null,{},["nested"],9007199254740992],"n":null}
+        }
+      ],
+      [
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000h0",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:hidden",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "occurred": "2026-10-01T00:00:00Z",
+          "shown": "withheld"
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000f0",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:mixed",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"x":[1,"1",true,"true","",false,1,"😀","דּ"],"n":2}
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000fg",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:permuted",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"x":["דּ","😀",1,false,"","true",true,"1",1],"n":[2]}
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000g0",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:none",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"x":[1.5,null,{},["nested"],9007199254740992],"n":null}
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000gg",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:empty",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"x":[],"n":{}}
+        }
+      ]
+    ]
+  },
+  "expect": {
+    "by-x": {
+      "groups": {
+        "": {
+          "value": 2,
+          "unread": 0
+        },
+        "1": {
+          "value": 2,
+          "unread": 0
+        },
+        "false": {
+          "value": 2,
+          "unread": 0
+        },
+        "true": {
+          "value": 2,
+          "unread": 0
+        },
+        "😀": {
+          "value": 2,
+          "unread": 0
+        },
+        "דּ": {
+          "value": 2,
+          "unread": 0
+        }
+      },
+      "unread": 1,
+      "ungrouped": 2
+    },
+    "present": {
+      "value": 4,
+      "unread": 1
+    },
+    "empty": {
+      "value": 2,
+      "unread": 1
+    },
+    "bool": {
+      "value": 2,
+      "unread": 1
+    },
+    "nested": {
+      "value": 0,
+      "unread": 1
+    },
+    "current": {
+      "value": 2,
+      "unread": 4
+    },
+    "below": {
+      "value": 1,
+      "unread": 1
+    },
+    "by-n": {
+      "groups": {
+        "2": {
+          "value": 2,
+          "unread": 0
+        }
+      },
+      "unread": 1,
+      "ungrouped": 2
+    }
+  }
+}

@@ -868,7 +868,7 @@ theorem target_needs_witness :
 record of `k1`. Without it the part reads that record's payload as here. -/
 
 def er.x : Record :=
-  { id := 1, kind := "task", observer := "sl:x", of := some "k1", fields := [("value", .str "v")], prev := [], emitted := default,
+  { id := 1, kind := "task", observer := "sl:x", of := some "k1", fields := [("value", .one (.str "v"))], prev := [], emitted := default,
     sets := some ["status"] }
 def er.e : Record :=
   { id := 2, kind := "note", observer := "sl:x", of := some "k2", prev := [], emitted := default,

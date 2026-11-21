@@ -145,11 +145,11 @@ theorem OverHeads.late {σ} (answer : LatestBy → σ) {xs ys : List Record} (r 
 /-! ## Why there are two families -/
 
 def cx.a : Record :=
-  { id := ⟨1, by decide⟩, kind := "load", observer := "sl:x", about := ["k1"], prev := [], emitted := default, fields := [("n", .int 5)] }
+  { id := ⟨1, by decide⟩, kind := "load", observer := "sl:x", about := ["k1"], prev := [], emitted := default, fields := [("n", .one (.int 5))] }
 def cx.b : Record :=
-  { id := ⟨2, by decide⟩, kind := "load", observer := "sl:x", about := ["k2"], prev := [], emitted := default, fields := [("n", .int 9)] }
+  { id := ⟨2, by decide⟩, kind := "load", observer := "sl:x", about := ["k2"], prev := [], emitted := default, fields := [("n", .one (.int 9))] }
 def cx.c : Record :=
-  { id := ⟨3, by decide⟩, kind := "load", observer := "sl:x", about := ["k2"], prev := [⟨2, by decide⟩], emitted := default, fields := [("n", .int 1)] }
+  { id := ⟨3, by decide⟩, kind := "load", observer := "sl:x", about := ["k2"], prev := [⟨2, by decide⟩], emitted := default, fields := [("n", .one (.int 1))] }
 
 /-- Max's scalar state cannot maintain the maximum over changing heads.
 Max holds 9 after `[a, b]` and after `[b]`.

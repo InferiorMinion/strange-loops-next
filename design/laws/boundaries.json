@@ -1,6 +1,19 @@
 {
   "cases": [
     {
+      "law": "by.partition",
+      "premise": "each selected record has at most one key",
+      "input": "one selected record in a count by routes",
+      "holds": {
+        "given": "routes is the text a",
+        "answer": "1 grouped membership"
+      },
+      "removed": {
+        "given": "routes holds the list [a, b]",
+        "answer": "2 grouped memberships"
+      }
+    },
+    {
       "law": "result.full",
       "premise": "every record is readable to the fold",
       "input": "a valid input: a payload can lack a field",

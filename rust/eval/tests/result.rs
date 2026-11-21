@@ -23,7 +23,7 @@ fn rec(n: u8, thing: &str) -> Record {
 }
 fn with_n(n: u8, thing: &str, value: i64) -> Record {
     let mut r = rec(n, thing);
-    r.fields.push(("n".into(), Val::Int(value.into())));
+    r.fields.push(("n".into(), Val::Int(value.into()).into()));
     r
 }
 fn sha256(bytes: &[u8]) -> Vec<u8> {
@@ -78,7 +78,10 @@ fn three_holdings_that_differ_in_shown_encode_alike() {
     let a = rec(1, "task:1");
     let mut b = rec(2, "task:1");
     b.prev = vec![a.id];
-    b.fields = vec![("status".into(), loops::record::Val::Str("closed".into()))];
+    b.fields = vec![(
+        "status".into(),
+        loops::record::Val::Str("closed".into()).into(),
+    )];
     let c = rec(3, "task:2");
     let mut eraser = rec(4, "note:1");
     eraser.kind = "erasure".into();

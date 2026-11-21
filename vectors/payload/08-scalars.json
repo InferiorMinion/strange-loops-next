@@ -1,0 +1,53 @@
+{
+  "vector": "08-scalars",
+  "layer": "payload",
+  "laws": ["payload.read"],
+  "source": "model",
+  "input": {
+    "payload": {"empty":"","txt":"abc","n":0,"__proto__":true,"10":false,"2":-7,"plus":4,"f":-1.5}
+  },
+  "expect": {
+    "fields": {
+      "10": {
+        "one": {
+          "bool": false
+        }
+      },
+      "2": {
+        "one": {
+          "whole": "-7"
+        }
+      },
+      "__proto__": {
+        "one": {
+          "bool": true
+        }
+      },
+      "empty": {
+        "one": {
+          "text": ""
+        }
+      },
+      "f": {
+        "one": {
+          "number": "-1.5"
+        }
+      },
+      "n": {
+        "one": {
+          "whole": "0"
+        }
+      },
+      "plus": {
+        "one": {
+          "whole": "4"
+        }
+      },
+      "txt": {
+        "one": {
+          "text": "abc"
+        }
+      }
+    }
+  }
+}

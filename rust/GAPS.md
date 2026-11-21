@@ -70,7 +70,7 @@ store string is preserved but does not cause I/O during pure execution.
 `Number` admits only finite binary64 bits. All RFC 8259 **input** lexemes round
 once through binary64, then safe-whole values normalize to `Int`. Non-whole
 and unsafe-whole numeric payloads are retained but unread by integer folds.
-Reader records hold only written payload fields. Raw sum and extrema accept a
+The core and the place use the same projection for all written payload fields, including lists, objects and null. The payload vectors exercise both paths. Raw sum and extrema accept a
 projection to optional arbitrary-precision integers. Record-facing adapters
 supply `Record::num`, including for the field named `n`.
 Raw core `Int` and `Nat` still allow exact unbounded construction. Writers

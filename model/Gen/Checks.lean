@@ -253,7 +253,7 @@ def rulingChecks : IO Unit := do
   ensure (!(faulted (← recordAnswerOf (input (env ++ "," ++ env) "\"payloads\":[{\"a\":1,\"b\":2},{\"b\":2,\"a\":1}]" seed))))
     "D5 agreeing variants control fails"
   -- D6: the four concrete helpers.
-  let r : Record := { id := fixtureId 1, kind := "note", observer := "o:test", about := ["t:one"], prev := [], emitted := stampAt 0, fields := [("n", .int 4), ("est", .int 7), ("tag", .str "x")] }
+  let r : Record := { id := fixtureId 1, kind := "note", observer := "o:test", about := ["t:one"], prev := [], emitted := stampAt 0, fields := [("n", .one (.int 4)), ("est", .one (.int 7)), ("tag", .one (.str "x"))] }
   ensure ((Sum.on "est").step 5 r == 12) "D6 Sum.on control fails"
   for field in ["missing", "tag"] do
     ensure ((Sum.on field).step 5 r == 5) s!"D6 Sum.on moves on an unreadable field: {field}"
@@ -289,7 +289,32 @@ def resultCodecChecks : IO Unit := do
     "result integer text"
   ensure (resultLabel == "loops/result-hash/v1:" && resultLabel.utf8ByteSize == 21) "result label"
 
+/-- Probe each projection boundary directly, including paths which a JSON
+parser or the downstream grouping buckets could otherwise normalize first. -/
+def payloadChecks : IO Unit := do
+  for op in ["at-least", "below"] do
+    ensure ((parseOp .refs "env.about" (op, .int 3)).isOk == false) "bound on envelope set"
+    ensure ((parseOp .payload "ports" (op, .int 3)).isOk) "bound on payload field"
+  let p ← parsed r#"{"opaque":null,"empty":[],"x":[2,3,2,"2",1.5,[9]]}"#
+  let r : Record := { (default : Record) with fields := payloadFields p, id := fixtureId 1 }
+  ensure ((payloadFields (.str "held")).isEmpty) "non-object field"
+  ensure (r.get "opaque" == some .other) "opaque member dropped"
+  ensure (payloadScalar? (.number (Number.ofScientific false 80 0)) == some (.int 80)) "binary64 whole"
+  ensure (r.get "x" == some (.many [.int 2,.int 3,.int 2,.str "2"])) "immediate list members"
+  let test (f : String) (op : Op) := (⟨.payload f, op⟩ : Cond).eval r
+  ensure (test "opaque" .present == .yes && test "empty" .present == .yes) "written presence"
+  ensure (test "x" (.is (.val (.int 3))) == .yes) "later list member"
+  ensure (test "x" (.atLeast (.val (.int 3))) == .no) "list lower bound"
+  ensure (test "x" (.below (.val (.int 3))) == .no) "list upper bound"
+  ensure ((By.payload "x").keys r == some ["2","3"]) "distinct converted keys"
+  ensure ((By.payload "x").keys r.withhold == none) "unavailable group key"
+  ensure (r.num "x" == none) "list numeric read"
+  let q := { r with id := fixtureId 2, fields := [("x", .many [.int 2])] }
+  let c : Cond := ⟨.payload "x", .is (.val (.int 3))⟩
+  ensure (c.onThing [r,q] == .unknown) "setter agreement"
+
 def main (args : List String) : IO Unit := do
+  payloadChecks
   canonicalTextChecks
   rulingChecks
   let [root] := args | throw (IO.userError "expected repository root")
@@ -345,7 +370,7 @@ def main (args : List String) : IO Unit := do
     let j ← parsed text
     ensure (!j.inRange) s!"layer0 admits unsafe magnitude {text}"
     ensure (writeProblem env salt j == some "number-out-of-range") s!"writer admits unsafe magnitude {text}"
-    ensure (!(refused (Read.valOf "payload" j))) s!"payload decoder refuses {text}"
+    ensure (!(refused (Read.validateField "payload" j))) s!"payload decoder refuses {text}"
     ensure (refused ((parseBound .payload "bound" j).mapError (·.code))) s!"bound admits {text}"
     ensure (refused ((parseArg .payload "arg" j).mapError (·.code))) s!"argument admits {text}"
   for text in ["9007199254740991", "-9007199254740991", "9007199254740991.1",
@@ -363,13 +388,13 @@ def main (args : List String) : IO Unit := do
     let j ← parsed text
     ensure (!j.inRange) s!"layer0 admits overflow {text}"
     ensure (writeProblem env salt j == some "number-out-of-range") s!"writer admits overflow {text}"
-    ensure (refused (Read.valOf "payload" j)) s!"payload decoder admits {text}"
+    ensure (refused (Read.validateField "payload" j)) s!"payload decoder admits {text}"
     ensure (refused ((parseBound .payload "bound" j).mapError (·.code))) s!"bound admits {text}"
     ensure (refused ((parseArg .payload "arg" j).mapError (·.code))) s!"argument admits {text}"
   for bits in [0x7ff0000000000000, 0xfff0000000000000, 0x7ff8000000000000] do
     let j := Json.number ⟨bits⟩
     ensure (writeProblem env salt j == some "number-out-of-range") "writer admits nonfinite bits"
-    ensure (refused (Read.valOf "payload" j)) "payload decoder admits nonfinite bits"
+    ensure (refused (Read.validateField "payload" j)) "payload decoder admits nonfinite bits"
   ensure (firstRefusal ["number-out-of-range", "kind-empty"] == some "kind-empty")
     "global write priority changes"
   for (text, bits, expected) in [
@@ -386,7 +411,7 @@ def main (args : List String) : IO Unit := do
   let fraction ← parsed "1.5"
   ensure (fraction.inRange && writeProblem env salt fraction == none) "layer0 refuses finite fraction"
   ensure (refused ((parseArg .payload "arg" fraction).mapError (·.code))) "test accepts nonwhole argument"
-  let base : Record := { id := fixtureId 1, kind := "note", observer := "o:test", about := ["t:one"], prev := [], emitted := stampAt 0, fields := [("n", .int 1)] }
+  let base : Record := { id := fixtureId 1, kind := "note", observer := "o:test", about := ["t:one"], prev := [], emitted := stampAt 0, fields := [("n", .one (.int 1))] }
   let .obj kvs ← parsed (J.render 0 (jRecord base)) | throw (IO.userError "record is not an object")
   let changed (k : String) (v : Json) := Json.obj (kvs.map fun (name, old) => (name, if name == k then v else old))
   for (key, val) in [("value", Json.str ""), ("n", Json.int 0)] do
@@ -394,12 +419,12 @@ def main (args : List String) : IO Unit := do
   let empty := { base with fields := [] }
   let .ok control := Read.record "record" (changed "fields" (.obj [("value", .str ""), ("n", .int 0)]))
     | throw (IO.userError "decoder refuses written empty text or zero")
-  ensure (control.get "value" == some (.str "") && control.num "n" == some 0) "written empty text or zero lost"
+  ensure (control.get "value" == some (.one (.str "")) && control.num "n" == some 0) "written empty text or zero lost"
   ensure (empty.get "value" == none && empty.num "n" == none) "missing field reads as a default"
   let .ok fractional := Read.record "record" (changed "fields" (.obj [("n", fraction)]))
     | throw (IO.userError "decoder refuses nonwhole n")
   ensure (fractional.num "n" == none) "numeric slot reads a fraction"
-  let unsafeInt := { base with fields := [("est", .int 9007199254740992)] }
+  let unsafeInt := { base with fields := [("est", .one (.int 9007199254740992))] }
   ensure (unsafeInt.num "est" == none) "numeric field reads unsafe integer"
   let unsafeValue ← parsed "9007199254740992"
   let .ok unsafeRecord := Read.record "record" (changed "fields" (.obj [("est", unsafeValue)]))

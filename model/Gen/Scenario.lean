@@ -25,7 +25,7 @@ def a (xs : List Json) : Json := .arr xs
 /-- A decision of `decision:auth`, at `t` seconds into 2026-10-01. -/
 def decision (id : RecordId) (observer : String) (t : Nat) (value : String) (prev : List RecordId := [])
     (erases : List RecordId := []) (fields : List (String × Val) := []) (ok : Reads t := by decide) : Record :=
-  { id, kind := "decision", observer, of := some "decision:auth", fields := ("value", .str value) :: fields, prev, erases,
+  { id, kind := "decision", observer, of := some "decision:auth", fields := ("value", .one (.str value)) :: fields.map fun (k, v) => (k, .one v), prev, erases,
     emitted := stampAt t ok }
 
 -- Ada writes a decision, then revises it; Bo, holding only the first, revises

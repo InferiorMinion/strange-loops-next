@@ -30,6 +30,14 @@ inductive Val where
   | bool (b : Bool)
   deriving Repr, DecidableEq, Inhabited
 
+/-- A written field: one scalar, the immediate readable members of a list,
+or an object or null. An empty list is still written. -/
+inductive HeldField where
+  | one (v : Val)
+  | many (members : List Val)
+  | other
+  deriving Repr, DecidableEq, Inhabited
+
 structure Record where
   id       : RecordId
   kind     : String
@@ -52,7 +60,7 @@ structure Record where
   sets every key; `some []` for a pure join, which sets none. -/
   sets     : Option (List String) := none
   /-- Payload fields in lookup order. -/
-  fields   : List (String × Val) := []
+  fields   : List (String × HeldField) := []
   /-- Whether the payload (`fields`) is here for this reader. -/
   shown    : Shown := .here
   deriving Repr, DecidableEq, Inhabited
@@ -108,14 +116,14 @@ def Record.erase (r : Record) : Record :=
   { r with fields := [], shown := .erased }
 
 /-- A payload field by name, if it was written. -/
-def Record.get (r : Record) (name : String) : Option Val :=
+def Record.get (r : Record) (name : String) : Option HeldField :=
   r.fields.lookup name
 
 /-- A payload field as an exact number, if the reader holds it and it is one. -/
 def Record.num (r : Record) (name : String) : Option Int :=
   if r.shown = .here then
     match r.get name with
-    | some (.int i) => if -(2^53 - 1) ≤ i ∧ i ≤ 2^53 - 1 then some i else none
+    | some (.one (.int i)) => if -(2^53 - 1) ≤ i ∧ i ≤ 2^53 - 1 then some i else none
     | _ => none
   else none
 

@@ -1,0 +1,32 @@
+{
+  "vector": "12-list-members",
+  "layer": "payload",
+  "laws": ["payload.read"],
+  "source": "model",
+  "input": {
+    "payload": {"mixed":["",false,80.0,true,-1,1.5,null,["nested"],{"x":1}]}
+  },
+  "expect": {
+    "fields": {
+      "mixed": {
+        "many": [
+          {
+            "text": ""
+          },
+          {
+            "bool": false
+          },
+          {
+            "whole": "80"
+          },
+          {
+            "bool": true
+          },
+          {
+            "whole": "-1"
+          }
+        ]
+      }
+    }
+  }
+}

@@ -52,7 +52,7 @@ private def scenario (name thing : String) (spj : Json) (pool : List Record)
 private def countSpec : Json := Gen.SpecVectors.fromOf (.obj [("store", .str ".")])
 private def r (id : RecordId) (thing : String) (t : Nat) (value : String) (prev : List RecordId := [])
     (ok : Reads t := by decide) : Record :=
-  { Gen.RealmVectors.r id "note" (some thing) t prev (ok := ok) with fields := [("value", .str value)] }
+  { Gen.RealmVectors.r id "note" (some thing) t prev (ok := ok) with fields := [("value", .one (.str value))] }
 
 private def admissionCase : Except String J := do
   let a := r (fixtureId 52) "thing:A" 100 "base"
@@ -76,9 +76,9 @@ private def linesCase : Except String J := do
 -- where its eraser is not.
 private def byErasureCase : Except String J := do
   let x : Record := { Gen.RealmVectors.r (fixtureId 0x3a) "task" (some "task:1") 100 (about := ["project:x"]) with
-    fields := [("value", .str "five"), ("n", .int 5)] }
+    fields := [("value", .one (.str "five")), ("n", .one (.int 5))] }
   let y : Record := { Gen.RealmVectors.r (fixtureId 0x3b) "task" (some "task:2") 200 (about := ["project:y"]) with
-    fields := [("value", .str "one"), ("n", .int 1)], erases := [fixtureId 0x3a] }
+    fields := [("value", .one (.str "one")), ("n", .one (.int 1))], erases := [fixtureId 0x3a] }
   let spj : Json := .obj [("vertex", .str "per-project"), ("from", .arr [.obj [("store", .str ".")]]),
     ("fold", .obj [
       ("sum", .obj [("sum", .str "n"), ("by", .str "env.about:project")]),
@@ -97,9 +97,9 @@ private def byErasureCase : Except String J := do
 -- `title` is still read from W.
 private def keyedSettleCase : Except String J := do
   let w : Record := { Gen.RealmVectors.r (fixtureId 0x1a1) "task" (some "task:1") 100 with
-    fields := [("value", .str "write the note"), ("status", .str "open"), ("title", .str "note")] }
+    fields := [("value", .one (.str "write the note")), ("status", .one (.str "open")), ("title", .one (.str "note"))] }
   let b : Record := { Gen.RealmVectors.r (fixtureId 0x1a2) "task" (some "task:1") 200 [fixtureId 0x1a1] with
-    sets := some ["status"], fields := [("status", .str "closed"), ("value", .str "")] }
+    sets := some ["status"], fields := [("status", .one (.str "closed")), ("value", .one (.str ""))] }
   let e : Record := { Gen.RealmVectors.r (fixtureId 0x1a3) "erasure" none 300 with erases := [fixtureId 0x1a2] }
   let spj : Json := .obj [("vertex", .str "tasks"), ("from", .arr [.obj [("store", .str "."), ("kind", .arr [.str "task"])]]),
     ("fold", .obj [

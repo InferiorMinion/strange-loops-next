@@ -1,3 +1,4 @@
+import { payloadAnswer } from "../js/payload.mjs";
 // Adapters ask the public JS APIs the same questions as Gen.Run.
 import { jsonSourceAt } from '../json-source.mjs';
 import { equal } from '../answers.mjs';
@@ -71,6 +72,10 @@ export function evaluateJS(vector, rawText) {
   const { layer, input } = vector;
   if (folds[layer]) return input.orders.map(rs => folds[layer](rs, input));
   switch (layer) {
+    case 'payload': {
+      const text = rawText === undefined ? inputText(input.payload) : jsonSourceAt(rawText, ['input', 'payload']);
+      return [payloadAnswer(L.parse(text))];
+    }
     case 'byte-text': return [{ accepted: input.texts.map(text => {
       try { L.fixedBytes(text, input.prefix, input.bytes); return true; }
       catch { return false; }
@@ -103,7 +108,8 @@ export function evaluateJS(vector, rawText) {
       if (!parsed.parsed) return [parsed];
       // Both spec readers admit their input. Settlement belongs to realm/scenario.
       // The orders are read as their file writes them, number spellings included.
-      return JSON.parse(inputText(input.orders)).map(rs => S.runSpec(parsed.parsed, rs));
+      const orders = rawText === undefined ? JSON.parse(inputText(input.orders)) : input.orders;
+      return orders.map(rs => S.runSpec(parsed.parsed, rs));
     }
     case 'batch': {
       // JSON.parse keeps only the last repeated env; shape checks need every

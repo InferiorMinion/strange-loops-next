@@ -8,7 +8,24 @@ const model = dirname(fileURLToPath(import.meta.url));
 const root = dirname(model);
 // Both runners use the same replacement sites. This runner builds only runtime checks.
 const catalogue = JSON.parse(readFileSync(join(model, "mutate/mutants.json"), "utf8"));
-const guardMutants = ["step1-base32-reencode","step1-fraction-final-zero","step1-seconds-bound","step1-zone-only-z","step1-envelope-keys-remove","step1-envelope-keys-after-value","step1-draft-keys-after-values","step1-record-keys-after-values","d1-base-problem-remove","d1-read-text-first","d2-lone-low-accepted","d2-lone-high-accepted","d2-low-surrogate-range","d2-high-surrogate-range","wide-families-013","wide-spec-064","extra-families-max-acc","extra-families-min-acc"].map(id => {
+const guardMutants = ["step1-base32-reencode","step1-fraction-final-zero","step1-seconds-bound","step1-zone-only-z","step1-envelope-keys-remove","step1-envelope-keys-after-value","step1-draft-keys-after-values","step1-record-keys-after-values","d1-base-problem-remove","d1-read-text-first","d2-lone-low-accepted","d2-lone-high-accepted","d2-low-surrogate-range","d2-high-surrogate-range","wide-families-013","wide-spec-064","extra-families-max-acc","extra-families-min-acc",
+  "record-num-drop-int",
+  "wide-record-049",
+  "by-unreadable-ungrouped",
+  "payload-nonobject-field",
+  "payload-drop-other-field",
+  "payload-whole-as-number",
+  "payload-fraction-member",
+  "payload-flatten-nested",
+  "payload-list-first-match",
+  "payload-empty-absent",
+  "payload-other-absent",
+  "payload-list-atleast-any",
+  "payload-list-below-any",
+  "payload-list-first-key",
+  "payload-list-repeat-key",
+  "payload-list-first-number",
+  "payload-keys-union-is"].map(id => {
   const m = catalogue.find(m => m.id === id);
   if (!m) throw new Error(`missing guard mutant: ${id}`);
   return [m.id, m.file.includes("/") ? m.file : `Loops/${m.file}`, m.before, m.after];
@@ -18,7 +35,7 @@ const mutants = [
   ["typed of", "Gen/Read.lean", 'if typedRef s then pure s else bad (dot path "of") "expected a typed reference"', 'pure s'],
   ["lens validity", "Loops/Lens.lean", 'if Valid d then some d else none', 'some d'],
   ["integer bound", "Loops/Record.lean", 'if -(2^53 - 1) ≤ i ∧ i ≤ 2^53 - 1 then some i else none', 'some i'],
-  ["fraction as zero", "Loops/Record.lean", '    | _ => none\n  else none\n\n/-- Withhold', '    | some (.number _) => some 0\n    | _ => none\n  else none\n\n/-- Withhold'],
+  ["fraction as zero", "Loops/Record.lean", '    | _ => none\n  else none\n\n/-- Withhold', '    | some (.one (.number _)) => some 0\n    | _ => none\n  else none\n\n/-- Withhold'],
   ["global heads", "Loops/Fold.lean", 'orderHeads ((perThing xs).flatMap fun ts => ts.2.heads)', '(LatestBy.fold .empty xs).heads'],
   // D2, D4 and D5 at the record adapter gen and run share.
   ["text refusal before values", "Gen/Records.lean", 'if let some why := payloadTextRefusal kvs then', 'if let some why := (none : Option String) then'],

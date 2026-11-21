@@ -1,0 +1,12 @@
+{
+  "vector": "05-top-whole",
+  "layer": "payload",
+  "laws": ["payload.read"],
+  "source": "model",
+  "input": {
+    "payload": 80
+  },
+  "expect": {
+    "fields": {}
+  }
+}

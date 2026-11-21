@@ -291,7 +291,7 @@ def parseVector (name : String) (j : Json) : Except String J := do
 def task (id : RecordId) (thing : String) (occurred : Nat) (fields : List (String × Val))
     (prev : List RecordId := []) (ok : Reads occurred := by decide) : Record :=
   { id, kind := "task", observer := "sl:kyle", of := some thing, prev, occurred := some (claimAt occurred ok),
-    emitted := stampAt occurred ok, fields }
+    emitted := stampAt occurred ok, fields := fields.map fun (k, v) => (k, .one v) }
 
 -- task:1 opens, then closes; task:2 is open; task:3 is open but its payload is withheld
 def t1 := task (fixtureId 0x41) "task:1" 100 [("status", .str "open"), ("est", .int 3)]
@@ -348,8 +348,8 @@ def said (id : RecordId) (observer : String) (about : List String) (t : Nat)
     (ok : Reads t := by decide) : Record :=
   { id, kind := "task", observer, about, of := about.head?, prev := [], emitted := stampAt t ok }
 
-def a1 : Record := { said (fixtureId 0x61) "sl:alice" ["task:1"] 100 with fields := [("kind", .str "chore")] }
-def a2 : Record := { said (fixtureId 0x62) "sl:bob" ["task:1"] 200 with prev := [fixtureId 0x61], fields := [("kind", .str "bug")] }
+def a1 : Record := { said (fixtureId 0x61) "sl:alice" ["task:1"] 100 with fields := [("kind", .one (.str "chore"))] }
+def a2 : Record := { said (fixtureId 0x62) "sl:bob" ["task:1"] 200 with prev := [fixtureId 0x61], fields := [("kind", .one (.str "bug"))] }
 def a3 : Record := (said (fixtureId 0x63) "sl:alice" ["task:2", "proj:loops"] 300).erase
 def a4 : Record := { said (fixtureId 0x64) "sl:carol" ["task:3"] 400 with under := some (fixtureId 0x99), erases := [fixtureId 0x63] }
 def a5 : Record := { said (fixtureId 0x65) "sl:alice" [] 500 with occurred := some (claim "2026-09") }.withhold

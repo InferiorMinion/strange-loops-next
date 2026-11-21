@@ -4,6 +4,7 @@
 // spec.md says what parses); records are in the vectors' JSON form. No
 // dependencies.
 
+import { readHeld } from "./payload.mjs";
 import { occurredSpan, momentBefore } from "./loops.mjs";
 
 export const YES = "yes", NO = "no", UNKNOWN = "unknown";
@@ -49,14 +50,14 @@ function reading(field, r) {
 
 export const payloadReading = (field, r) => {
   const p = payloadOf(r);
-  return p === null ? { type: "value", held: false } : { type: "value", held: true, v: Object.hasOwn(p, field) ? p[field] : undefined };
+  return p === null ? { type: "value", held: false } : { type: "value", held: true, v: Object.hasOwn(p, field) ? readHeld(p[field]) : undefined };
 };
 
 const isTest = (arg, f) =>
   f.type === "text" ? f.v === arg
   : f.type === "set" ? f.members.includes(arg)
   : f.type === "time" ? f.span !== null && sameSpan(f.span, argSpan(arg))
-  : f.v !== undefined && f.v === arg;
+  : f.v?.many ? f.v.many.includes(arg) : f.v?.one === arg;
 
 const presentTest = (f) =>
   f.type === "text" ? true
@@ -71,7 +72,7 @@ function bound(op, arg, f) {
     const before = momentBefore(f.span.start, argSpan(arg).start);
     return op === "at-least" ? !before : before;
   }
-  if (f.type === "value" && isWhole(f.v) && isWhole(arg)) return op === "at-least" ? f.v >= arg : f.v < arg;
+  if (f.type === "value" && isWhole(f.v?.one) && isWhole(arg)) return op === "at-least" ? f.v.one >= arg : f.v.one < arg;
   return false;
 }
 
