@@ -1152,7 +1152,7 @@ html:not(.js) .unpremise,html:not(.js) .poke{display:none}
       </li>
       <li class="q-law" id="law-result-no-commit" data-shape="exactness">
         <p class="q-s">A result hash's preimage is never a 16-byte salt followed by the canonical bytes of a JSON value, which is what a record's commitment hashes. So no record commits to a result hash's preimage, whatever its salt and payload.</p>
-        <p class="law-scope">The label <code>loops/result-hash/v1:</code> is 21 bytes, so the preimage's 17th byte is <code>h</code>, and no canonical JSON text starts with <code>h</code>. Both hashes are written <code>h:</code>; they are kept apart by their preimages, not by their spelling. A 16-byte label would not keep them apart.</p>
+        <p class="law-scope">The label <code>loops/result-hash/v1:</code> is 21 bytes, so the preimage's 17th byte is <code>h</code>, and no canonical JSON text starts with <code>h</code>. The text prefixes also differ (<code>res:</code> for results, <code>h:</code> for commitments), and the label keeps the preimages apart. A 16-byte label would not keep them apart.</p>
         <p class="q-f"><span class="q-shape"><span class="mk" aria-hidden="true">⇔</span>Exactness</span><code>result.no-commit</code><span class="q-go"><a href="../evidence/#law-result-no-commit">Evidence</a></span></p>
       </li>
       <li class="q-law" id="law-lens-escaping" data-shape="round-trip">

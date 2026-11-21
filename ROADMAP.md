@@ -18,14 +18,13 @@ The evidence and its counts are kept where they are made: [the law index](design
 
 ## Now
 
-Kyle ruled the payload values and the result hash's prefix on 2026-11-21, so both are being built.
+Kyle ruled the payload values on 2026-11-21, so they are being built. The result hash's prefix, ruled the same day, is built.
 
 | Order | Work | State | Waits on |
 | --- | --- | --- | --- |
-| 1 | **The result hash's prefix:** `res:` in place of `h:`. | Ruled 2026-11-21. Being built. | Nothing |
-| 2 | **Payload values.** `value` and `n` become ordinary fields; a list reads as a set; the reading from a stored payload is stated in the model, with vectors. Each changes what some spec answers, so it comes before any tick pins a result hash. | Ruled 2026-11-21 ([the note](notes/2026-11-21-payload-values.md), with the examples the build must match). Being built. | Nothing |
-| 3 | **The tick record:** what a tick holds, how `covers` is stated and checked, and the input key. | The coordinator is writing the proposal. | The proposal, then Kyle ([preview](DECISIONS.md#being-prepared)); [W3, W4 and W5](DECISIONS.md#at-a-glance) before it is built |
-| 4 | **Step 4's ruled pieces** (list below). | Ruled 2026-11-20. Not built. | Some wait on the tick record |
+| 1 | **Payload values.** `value` and `n` become ordinary fields; a list reads as a set; the reading from a stored payload is stated in the model, with vectors. Each changes what some spec answers, so it comes before any tick pins a result hash. | Ruled 2026-11-21 ([the note](notes/2026-11-21-payload-values.md), with the examples the build must match). Being built. | Nothing |
+| 2 | **The tick record:** what a tick holds, how `covers` is stated and checked, and the input key. | The coordinator is writing the proposal. | The proposal, then Kyle ([preview](DECISIONS.md#being-prepared)); [W3, W4 and W5](DECISIONS.md#at-a-glance) before it is built |
+| 3 | **Step 4's ruled pieces** (list below). | Ruled 2026-11-20. Not built. | Some wait on the tick record |
 
 ### Step 4: ruled and not built
 

@@ -84,6 +84,6 @@
   },
   "expect": {
     "canonical": "{\"count\":{\"unread\":\"0\",\"value\":\"2\"},\"max\":{\"unread\":\"0\",\"value\":\"5\"},\"min\":{\"unread\":\"0\",\"value\":\"-5\"},\"sum\":{\"unread\":\"0\",\"value\":\"0\"}}",
-    "hash": "h:n56ibcdd60e52k0cm100cgkei73ql13q7v859d21jnq80r357dgg"
+    "hash": "res:n56ibcdd60e52k0cm100cgkei73ql13q7v859d21jnq80r357dgg"
   }
 }

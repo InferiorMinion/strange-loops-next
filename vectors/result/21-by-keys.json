@@ -647,6 +647,6 @@
   },
   "expect": {
     "canonical": "{\"est-per-observer\":{\"groups\":{\"sl:alice\":{\"unread\":\"1\",\"value\":\"7\"},\"sl:bob\":{\"unread\":\"0\",\"value\":\"7\"},\"sl:carol\":{\"unread\":\"1\",\"value\":\"0\"}},\"ungrouped\":\"0\",\"unread\":\"0\"},\"open\":{\"unread\":\"1\",\"value\":\"3\"},\"open-per-observer\":{\"groups\":{\"sl:alice\":{\"unread\":\"0\",\"value\":\"2\"},\"sl:carol\":{\"unread\":\"0\",\"value\":\"1\"}},\"ungrouped\":\"0\",\"unread\":\"1\"},\"open-per-status\":{\"groups\":{\"open\":{\"unread\":\"0\",\"value\":\"3\"}},\"ungrouped\":\"0\",\"unread\":\"1\"},\"per-kind\":{\"groups\":{\"note\":{\"unread\":\"0\",\"value\":\"1\"},\"task\":{\"unread\":\"0\",\"value\":\"5\"}},\"ungrouped\":\"0\",\"unread\":\"0\"},\"per-observer\":{\"groups\":{\"sl:alice\":{\"unread\":\"0\",\"value\":\"3\"},\"sl:bob\":{\"unread\":\"0\",\"value\":\"2\"},\"sl:carol\":{\"unread\":\"0\",\"value\":\"1\"}},\"ungrouped\":\"0\",\"unread\":\"0\"},\"per-prio\":{\"groups\":{\"-2\":{\"unread\":\"0\",\"value\":\"1\"},\"1\":{\"unread\":\"0\",\"value\":\"2\"},\"true\":{\"unread\":\"0\",\"value\":\"1\"}},\"ungrouped\":\"1\",\"unread\":\"1\"},\"per-status\":{\"groups\":{\"closed\":{\"unread\":\"0\",\"value\":\"1\"},\"open\":{\"unread\":\"0\",\"value\":\"3\"}},\"ungrouped\":\"1\",\"unread\":\"1\"}}",
-    "hash": "h:vpmhhmpc91l003roqkkbdf972heerga1sum9aa8f9hcv4j3fsnhg"
+    "hash": "res:vpmhhmpc91l003roqkkbdf972heerga1sum9aa8f9hcv4j3fsnhg"
   }
 }

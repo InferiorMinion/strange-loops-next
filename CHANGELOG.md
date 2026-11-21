@@ -14,6 +14,7 @@ In brief:
 - The Rust core reads through indexes: a keyed collect over 9,000 records went from 19.8 s to 0.63 s, and no answer changed (!58).
 - margins-claude wrote the payload values note (!59). Its seven choices are open.
 - The roadmap was split into `ROADMAP.md`, `DECISIONS.md`, this file and `notes/`.
+- A result hash is spelled `res:`.
 - Kyle ruled the seven payload values choices, the result hash's prefix, which choices come to him, and the three classes of edge; he confirmed the keyed-fold and codec choices; issue #10 is closed.
 
 ### Ruled by Kyle, 2026-11-21
@@ -31,13 +32,22 @@ Each was an entry in `DECISIONS.md`, with an example. Kyle ruled for the recomme
 
   Kyle's note on a slot that follows `keys`: when two writers set a list field from one base (`routes: ["svc:a"]` and `routes: ["svc:b"]`), a `where` on the field leaves the thing unread and `loops of` shows both setters, while `by` on the field puts the thing in both groups. That is how `by` already reads a scalar field with two live setters ([spec](protocol/spec.md), "A slot with `by` that follows `keys`").
   margins-claude's precision, which follows from the note with no new rule: each `where` test is asked of every live setter, and an answer they share stands. With those two setters, `routes` is `"svc:a"` is unknown (one yes, one no) and the thing is unread; `routes` is `"svc:c"` is no; `routes` present is yes. With `["svc:a", "svc:b"]` and `["svc:a"]`, `is "svc:a"` is yes and `is "svc:b"` is unknown. The payload vectors carry the mixed cases, since a port that unions the lists before testing gets only those wrong.
-- **The result codec, RC1.** A result hash has its own prefix, `res:`, not `h:`. Not built. The other choices are confirmed: a listed record is its id alone; the bytes hold the slots only; slots are in JCS order; no fold type is written; the label is `loops/result-hash/v1:`. Kyle's note: the hash covers the slots without the spec, so it means something only beside its spec inside a tick; a person citing a result cites the tick's `r:` id.
+- **The result codec, RC1.** A result hash has its own prefix, `res:`, not `h:`. Built the same day, below. The other choices are confirmed: a listed record is its id alone; the bytes hold the slots only; slots are in JCS order; no fold type is written; the label is `loops/result-hash/v1:`. Kyle's note: the hash covers the slots without the spec, so it means something only beside its spec inside a tick; a person citing a result cites the tick's `r:` id.
 - **Which choices come to Kyle, W7.** A choice comes to him when it changes a record's bytes or id, a result's bytes or hash, a refusal code, or what a spec answers. Every other implementer choice is written in this file and stands unless he objects. The 25 CLI and tooling choices that were waiting stand under this ruling.
 - **The keyed-fold choices.** Kyle confirmed the 20 built choices of 2026-11-14 and 2026-11-15: `sets` in the envelope, latest-by following `keys`, the other slots following `keys`, and a keyed collect's `limit`. Among them: `unread` counts things; a test that answers no outranks one that answers unknown; a field no record of the thing sets is absent.
 - **Edges, E1.** Three classes, and no change to the envelope. One target under a role is a text field. A set that one observer states whole is a list, read as a set. A relation that several writers add to, or one with facts of its own, is one thing per edge: `of: edge:<rel>:<src>:<dst>`, with `about` naming both ends. Kyle's addition: the edge's payload holds `rel`, `from`, `to` and `state` (`active` or `removed`), so that a fold reads direction and removal from fields and never from the text of `of`. The documents and the import follow this. Nothing is built. An example: `loops emit edge --of edge:routes-to:caddy:grafana --about svc:caddy --about svc:grafana rel=routes-to from=svc:caddy to=svc:grafana state=active port:=3000`.
 - **Issue #10 is closed, I10,** with no strict "after" operator. An inbox keeps its own list of the ids it has seen; a reader's tick is for boundaries worth citing.
 
 Still open in `DECISIONS.md`: W1 to W6.
+
+### A result hash is spelled `res:`
+
+**Built, 2026-11-21,** on Kyle's ruling of that day. The hash of a canonical result is `"res:"` and then the base32hex text it had before; a record's commitment is still `h:`.
+The label, the preimage and the canonical bytes did not change, so each of the 23 result vectors changed in its `expect.hash` alone, from `h:` to `res:` with the same digits. No other vector changed, and no record's bytes or id.
+The model (`Loops.resultHash`), JavaScript and the Rust core write it; [`protocol/result.md`](protocol/result.md) says that the two hashes now differ in their prefix as well as in what they hash. The law `result.no-commit` is as it was: its statement is about the hashed bytes.
+The horizons page's example of a result hash reads `res:7a…`.
+No mutation catalogue entry needed to change: the nineteen entries on `Result.lean` still find their lines.
+**Implementer choices; they stand under Kyle's ruling of 2026-11-21 (W7):** the tests that a result hash is no commitment now compare the digits after the prefix, since the prefixes alone would make any two differ; a Codex worker (gpt-6.2-astra) wrote the change from a brief, and this session reviewed it and ran the gate.
 
 ### `--values` gives the envelope
 
@@ -193,7 +203,7 @@ The laws:
   It is not true of two arbitrary results: no fold tag is written, so a count and a sum that hold the same number write the same JSON, and an empty latest-by reads as an empty keyed one. The bytes name a result only together with its spec.
 - `result.no-commit`: no result's hashed bytes are a 16-byte salt and then a canonical payload, so a result hash is never a record's commitment. The label is 21 bytes for that reason. A first draft used a 16-byte label, and a record with that salt and the result as its payload had the result's hash.
 
-**Implementer choices, confirmed by Kyle 2026-11-21, all but the first.** He ruled that day that a result hash has its own prefix, `res:`; until that is built the code writes `h:`.
+**Implementer choices, confirmed by Kyle 2026-11-21, all but the first.** He ruled that day that a result hash has its own prefix, `res:`, and it was built that day.
 - A result hash is spelled `h:`, as a commitment is. Only their hashed bytes keep them apart. It could have a typed prefix of its own.
 - The label `loops/result-hash/v1:`. A later version's label must not be 16 bytes, and must leave no JSON value after its first 16 bytes.
 - A listed record is its id text alone, not `{"id": …}`.

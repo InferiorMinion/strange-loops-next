@@ -202,6 +202,6 @@
   },
   "expect": {
     "canonical": "{\"current\":{\"unread\":\"0\",\"value\":\"2\"},\"est\":{\"unread\":\"0\",\"value\":\"7\"},\"est-every\":{\"unread\":\"0\",\"value\":\"11\"},\"heads\":{\"things\":{\"task:5\":[\"r:0000000000000000000000000000000000000000000000000250\",\"r:000000000000000000000000000000000000000000000000024g\"]},\"unread\":\"0\"},\"hi\":{\"unread\":\"0\",\"value\":\"6\"},\"lo\":{\"unread\":\"0\",\"value\":\"1\"},\"open\":{\"unread\":\"0\",\"value\":\"1\"}}",
-    "hash": "h:dl66guseisda3qdecidh8nbvbq0rii617l85j8e4atrt0h01f1i0"
+    "hash": "res:dl66guseisda3qdecidh8nbvbq0rii617l85j8e4atrt0h01f1i0"
   }
 }

@@ -762,12 +762,12 @@ sessions store (everything, yours)         practice store (shared)
   </table></div>
   <figure>
     <div class="fig">
-      <svg class="dg" viewBox="0 0 400 322" role="img" aria-label="A late record r58 about ADR-12 arrives. The decisions vertex refolds because its inputs changed, but its result h:7a is unchanged. Keyed by inputs, the status vertex refolds, the docs render rebuilds and the site re-uploads, producing the same bytes. Keyed by results, status, render and site are all cache hits, so work stops after one vertex.">
+      <svg class="dg" viewBox="0 0 400 322" role="img" aria-label="A late record r58 about ADR-12 arrives. The decisions vertex refolds because its inputs changed, but its result res:7a is unchanged. Keyed by inputs, the status vertex refolds, the docs render rebuilds and the site re-uploads, producing the same bytes. Keyed by results, status, render and site are all cache hits, so work stops after one vertex.">
         <rect class="box-amb" x="100" y="6" width="200" height="30" rx="8"/><text x="200" y="25" text-anchor="middle" class="xs mono">r58 · a late note on ADR-12</text>
         <line class="ln" x1="200" y1="37" x2="200" y2="49" marker-end="url(#ah)"/>
         <rect class="box" x="100" y="52" width="200" height="40" rx="8"/><text x="200" y="69" text-anchor="middle" class="s b">decisions · Latest per ADR</text><text x="200" y="84" text-anchor="middle" class="xs m">refolds: its input key changed</text>
         <line class="ln" x1="200" y1="93" x2="200" y2="105" marker-end="url(#ah)"/>
-        <rect class="box-acc" x="100" y="108" width="200" height="30" rx="8"/><text x="200" y="127" text-anchor="middle" class="s">result h:7a… · unchanged</text>
+        <rect class="box-acc" x="100" y="108" width="200" height="30" rx="8"/><text x="200" y="127" text-anchor="middle" class="s">result res:7a… · unchanged</text>
         <line class="ln-amb" x1="150" y1="139" x2="104" y2="160" marker-end="url(#ah-amb)"/>
         <line class="ln-acc" x1="250" y1="139" x2="296" y2="160" marker-end="url(#ah-acc)"/>
         <rect class="panel" x="2" y="164" width="192" height="130" rx="10"/><text x="14" y="183" class="s b tb">keyed by inputs</text>
@@ -788,16 +788,16 @@ sessions store (everything, yours)         practice store (shared)
   <details class="unfold"><summary>1 · CI computes and publishes</summary><div class="body">
     <p>CI folds the ADR store and renders the docs lens. It writes both to a static place next to the store. Everything is hash-named and cached indefinitely.</p>
     <pre style="margin:0;font-family:var(--mono);font-size:13px;background:var(--sunk);padding:12px;border-radius:8px;overflow-x:auto">cache/
-  keys/&lt;input key&gt;            → h:7a…     // what was asked → what came out
-  results/h:7a….json          // the folded state, canonical encoding
-  renders/h:d4…/h:7a….html    // lens hash / result hash
-witness observer="ci" vertex="decisions" key=… result="h:7a…" sig=…</pre>
+  keys/&lt;input key&gt;            → res:7a…     // what was asked → what came out
+  results/res:7a….json          // the folded state, canonical encoding
+  renders/h:d4…/res:7a….html    // lens hash / result hash
+witness observer="ci" vertex="decisions" key=… result="res:7a…" sig=…</pre>
     <p>The witness tick is CI's claim: "folding these ids with this spec gave this result." It's an ordinary record and syncs like one.</p>
   </div></details>
   <details class="unfold"><summary>2 · A laptop fetches instead of folding</summary><div class="body">
     <ul>
       <li><b>It computes the input key from what it holds:</b> the spec hash, the covered ids, the result hashes of the vertices it reads. Hashing is cheap; folding is what's skipped.</li>
-      <li><b>Lookup:</b> <code>keys/</code> gives <code>h:7a…</code>; <code>renders/</code> gives the page. Nothing was folded.</li>
+      <li><b>Lookup:</b> <code>keys/</code> gives <code>res:7a…</code>; <code>renders/</code> gives the page. Nothing was folded.</li>
       <li><b>Trust or check:</b> trust CI's key, or refold and compare. A mismatch means nondeterminism or tampering, and either is worth knowing: it becomes a <code>dispute</code> about the witness tick.</li>
     </ul>
   </div></details>
@@ -810,7 +810,7 @@ witness observer="ci" vertex="decisions" key=… result="h:7a…" sig=…</pre>
         <tr><td><b>Result hash</b></td><td>the folded state itself</td><td>"what came out?"</td><td>naming it; downstream keys</td></tr>
       </tbody>
     </table></div>
-    <p><code>r58</code> is an older note on ADR-12 that loses to the current decision. <code>decisions</code> must refold, since its input key changed, and that's unavoidable and cheap. It produces <code>h:7a…</code> again. <code>status</code> and the docs render are keyed by <code>h:7a…</code>, not by <code>decisions</code>' inputs, so they're hits.</p>
+    <p><code>r58</code> is an older note on ADR-12 that loses to the current decision. <code>decisions</code> must refold, since its input key changed, and that's unavoidable and cheap. It produces <code>res:7a…</code> again. <code>status</code> and the docs render are keyed by <code>res:7a…</code>, not by <code>decisions</code>' inputs, so they're hits.</p>
     <p>Most edits to a knowledge store are like this: a comment, a weaker observation, a duplicate, a record outside what a lens shows. Without early cutoff, each one rebuilds everything downstream. Nix learned this late, which is why it added content-addressed derivations; Build Systems à la Carte names the property.</p>
     <ul>
       <li><b>The tick id still changes:</b> it names the covered ids. The new tick says "these records, this result"; downstream reuses the work, not the record.</li>

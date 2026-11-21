@@ -1176,8 +1176,8 @@ theorem utf8_length_16 : (utf8 "loops/result-has").length = 16 := by rw [utf8_eq
 
 /-- **A result hash's preimage is no commitment's**: for no 16-byte salt and no
 JSON value is it the salt followed by the value's canonical bytes. So no
-record commits to the preimage of a result hash, whatever its salt and payload,
-and the two hashes, both written `h:`, are never one digest by construction. -/
+record commits to the preimage of a result hash, whatever its salt and payload.
+The result hash and commitment also have distinct text prefixes, `res:` and `h:`. -/
 theorem resultPreimage_ne_commit (r : List (String × SlotValue)) {salt : List UInt8} (hs : salt.length = 16)
     (payload : Json) : resultPreimage r ≠ salt ++ utf8 payload.canon := by
   intro h
