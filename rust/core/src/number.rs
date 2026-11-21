@@ -201,7 +201,7 @@ impl fmt::Display for Number {
 /// Counts, unread totals, and limits have no size bound.
 #[derive(Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Nat(pub(crate) BigUint);
-/// Lean: `Int` in `Loops.Json.int` and `Loops.Record.n`, model/Loops/{Json,Record}.lean.
+/// Lean: `Int` in `Loops.Json.int` and `Loops.Val.int`, model/Loops/{Json,Record}.lean.
 /// Payload integers and numeric fold state have no size bound.
 #[derive(Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Int(pub(crate) BigInt);

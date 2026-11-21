@@ -49,11 +49,9 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "task:a",
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:05:00Z",
           "occurred": "2026-10-01T00:05:00Z",
-          "n": 0,
           "fields": {
             "status": "open"
           }
@@ -110,11 +108,9 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "task:a",
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:05:00Z",
           "occurred": "2026-10-01T00:05:00Z",
-          "n": 0,
           "fields": {
             "status": "open"
           }
@@ -138,11 +134,9 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "task:a",
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:05:00Z",
           "occurred": "2026-10-01T00:05:00Z",
-          "n": 0,
           "fields": {
             "status": "open"
           }

@@ -312,7 +312,13 @@ mod tests {
         assert!(parse_input("batch", r#"{"held":[],"drafts":[{"payload":-1e999}]}"#).is_ok());
         assert!(parse_input("spec/parse", r#"{"spec":{"fold":1e999}}"#).is_ok());
         assert!(parse_input("spec/run", r#"{"spec":1e999,"orders":[]}"#).is_ok());
-        assert!(parse_input("spec/run", r#"{"spec":{},"orders":[[{"n":1e999}]]}"#).is_err());
+        assert!(
+            parse_input(
+                "spec/run",
+                r#"{"spec":{},"orders":[[{"fields":{"n":1e999}}]]}"#
+            )
+            .is_err()
+        );
         assert!(parse_input("spec/run", r#"{"spec":{},"spec":{},"orders":[]}"#).is_err());
         assert!(parse_input("spec/parse", "[]").is_err());
         for layer in [

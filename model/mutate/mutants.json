@@ -298,25 +298,25 @@
   },
   {
     "id": "wide-families-013",
-    "file": "Families.lean",
-    "before": "(r.num field).getD 0",
-    "after": "(r.num field).getD 1",
+    "file": "Fold.lean",
+    "before": "(p r).getD 0",
+    "after": "(p r).getD 1",
     "reason": "Change this selection or check.",
-    "definition": "Loops.Sum.on"
+    "definition": "Loops.Sum.step"
   },
   {
     "id": "wide-families-014",
     "file": "Families.lean",
-    "before": "| some v, some m => some (max m v)",
-    "after": "| some v, some m => some (min m v)",
+    "before": "def Max.on (field : String) : Acc (Option Int) :=\n  ⟨none, Max.step (·.num field), fun s a b => by\n    cases ha : a.num field <;> cases hb : b.num field",
+    "after": "def Max.on (field : String) : Acc (Option Int) :=\n  ⟨none, Max.step (·.num \"n\"), fun s a b => by\n    cases ha : a.num \"n\" <;> cases hb : b.num \"n\"",
     "reason": "Change this selection or check.",
     "definition": "Loops.Max.on"
   },
   {
     "id": "wide-families-015",
     "file": "Families.lean",
-    "before": "| some v, some m => some (min m v)",
-    "after": "| some v, some m => some (max m v)",
+    "before": "def Min.on (field : String) : Acc (Option Int) :=\n  ⟨none, Min.step (·.num field), fun s a b => by\n    cases ha : a.num field <;> cases hb : b.num field",
+    "after": "def Min.on (field : String) : Acc (Option Int) :=\n  ⟨none, Min.step (·.num \"n\"), fun s a b => by\n    cases ha : a.num \"n\" <;> cases hb : b.num \"n\"",
     "reason": "Change this selection or check.",
     "definition": "Loops.Min.on"
   },
@@ -332,23 +332,23 @@
     "id": "wide-families-017",
     "file": "Families.lean",
     "before": "(s.heads.filterMap (·.num \"n\")).max?",
-    "after": "((s.heads.filter (·.shown != .here)).map (·.n)).max?",
+    "after": "((s.heads.filter (·.shown != .here)).map (fun _ => (0 : Int))).max?",
     "reason": "Change this selection or check.",
     "definition": "Loops.LatestBy.maxHeads"
   },
   {
     "id": "wide-fold-019",
     "file": "Fold.lean",
-    "before": "some (max m r.n)",
-    "after": "some (min m r.n)",
+    "before": "some (max m v)",
+    "after": "some (min m v)",
     "reason": "Change this selection or check.",
     "definition": "Loops.Max.step"
   },
   {
     "id": "wide-fold-020",
     "file": "Fold.lean",
-    "before": "some (min m r.n)",
-    "after": "some (max m r.n)",
+    "before": "some (min m v)",
+    "after": "some (max m v)",
     "reason": "Change this selection or check.",
     "definition": "Loops.Min.step"
   },
@@ -523,8 +523,8 @@
   {
     "id": "wide-record-049",
     "file": "Record.lean",
-    "before": "if name = \"value\"",
-    "after": "if name != \"value\"",
+    "before": "r.fields.lookup name",
+    "after": "(r.fields.lookup name).orElse fun _ => if name == \"value\" then some (.str \"\") else none",
     "reason": "Change this selection or check.",
     "definition": "Loops.Record.get"
   },
@@ -1011,24 +1011,24 @@
   {
     "id": "finish-fold-sum-fold",
     "file": "Fold.lean",
-    "before": "xs.foldl Sum.step s",
-    "after": "(xs.drop 1).foldl Sum.step s",
+    "before": "xs.foldl (Sum.step p) s",
+    "after": "(xs.drop 1).foldl (Sum.step p) s",
     "reason": "Skip the first record.",
     "definition": "Loops.Sum.fold"
   },
   {
     "id": "finish-fold-max-fold",
     "file": "Fold.lean",
-    "before": "xs.foldl Max.step s",
-    "after": "(xs.drop 1).foldl Max.step s",
+    "before": "xs.foldl (Max.step p) s",
+    "after": "(xs.drop 1).foldl (Max.step p) s",
     "reason": "Skip the first record.",
     "definition": "Loops.Max.fold"
   },
   {
     "id": "finish-fold-min-fold",
     "file": "Fold.lean",
-    "before": "xs.foldl Min.step s",
-    "after": "(xs.drop 1).foldl Min.step s",
+    "before": "xs.foldl (Min.step p) s",
+    "after": "(xs.drop 1).foldl (Min.step p) s",
     "reason": "Skip the first record.",
     "definition": "Loops.Min.fold"
   },
@@ -1387,24 +1387,24 @@
   {
     "id": "extra-families-sum-acc",
     "file": "Families.lean",
-    "before": "fun s a b => by simp only [Sum.step]; omega, (·.num \"n\" |>.isSome)",
-    "after": "fun s a b => by simp only [Sum.step]; omega, (·.shown != .here)",
+    "before": "Sum.on \"n\"",
+    "after": "{ Sum.on \"n\" with readable := (·.shown != .here) }",
     "reason": "Read hidden records.",
     "definition": "Loops.Sum.acc"
   },
   {
     "id": "extra-families-max-acc",
     "file": "Families.lean",
-    "before": "simp only [Max.step, Option.some.injEq] <;> omega, (·.num \"n\" |>.isSome)",
-    "after": "simp only [Max.step, Option.some.injEq] <;> omega, (·.shown != .here)",
+    "before": "Max.on \"n\"",
+    "after": "{ Max.on \"n\" with readable := (·.shown != .here) }",
     "reason": "Read hidden records.",
     "definition": "Loops.Max.acc"
   },
   {
     "id": "extra-families-min-acc",
     "file": "Families.lean",
-    "before": "simp only [Min.step, Option.some.injEq] <;> omega, (·.num \"n\" |>.isSome)",
-    "after": "simp only [Min.step, Option.some.injEq] <;> omega, (·.shown != .here)",
+    "before": "Min.on \"n\"",
+    "after": "{ Min.on \"n\" with readable := (·.shown != .here) }",
     "reason": "Read hidden records.",
     "definition": "Loops.Min.acc"
   },

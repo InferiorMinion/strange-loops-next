@@ -1,0 +1,199 @@
+{
+  "vector": "pv2-settings",
+  "layer": "spec/run",
+  "laws": ["where.complements", "by.accounting"],
+  "source": "model",
+  "input": {
+    "spec": {
+      "vertex": "settings",
+      "from": [
+        {
+          "store": "."
+        }
+      ],
+      "fold": {
+        "present": {
+          "count": true,
+          "where": {
+            "value": {
+              "present": true
+            }
+          }
+        },
+        "absent": {
+          "count": true,
+          "where": {
+            "value": {
+              "absent": true
+            }
+          }
+        },
+        "empty": {
+          "count": true,
+          "where": {
+            "value": {
+              "is": ""
+            }
+          }
+        },
+        "by-value": {
+          "count": true,
+          "by": "value"
+        }
+      }
+    },
+    "orders": [
+      [
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000c2g",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "setting:dns",
+          "prev": [],
+          "emitted": "2026-10-01T00:01:40Z",
+          "occurred": "2026-10-01T00:01:40Z",
+          "fields": {
+            "value": "1.1.1.1"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000c30",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "setting:ntp",
+          "prev": [],
+          "emitted": "2026-10-01T00:01:41Z",
+          "occurred": "2026-10-01T00:01:41Z",
+          "fields": {
+            "value": "pool.ntp.org"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000c3g",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "setting:proxy",
+          "prev": [],
+          "emitted": "2026-10-01T00:01:42Z",
+          "occurred": "2026-10-01T00:01:42Z",
+          "fields": {
+            "enabled": false
+          }
+        }
+      ],
+      [
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000c30",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "setting:ntp",
+          "prev": [],
+          "emitted": "2026-10-01T00:01:41Z",
+          "occurred": "2026-10-01T00:01:41Z",
+          "fields": {
+            "value": "pool.ntp.org"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000c3g",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "setting:proxy",
+          "prev": [],
+          "emitted": "2026-10-01T00:01:42Z",
+          "occurred": "2026-10-01T00:01:42Z",
+          "fields": {
+            "enabled": false
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000c2g",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "setting:dns",
+          "prev": [],
+          "emitted": "2026-10-01T00:01:40Z",
+          "occurred": "2026-10-01T00:01:40Z",
+          "fields": {
+            "value": "1.1.1.1"
+          }
+        }
+      ],
+      [
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000c3g",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "setting:proxy",
+          "prev": [],
+          "emitted": "2026-10-01T00:01:42Z",
+          "occurred": "2026-10-01T00:01:42Z",
+          "fields": {
+            "enabled": false
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000c2g",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "setting:dns",
+          "prev": [],
+          "emitted": "2026-10-01T00:01:40Z",
+          "occurred": "2026-10-01T00:01:40Z",
+          "fields": {
+            "value": "1.1.1.1"
+          }
+        },
+        {
+          "id": "r:0000000000000000000000000000000000000000000000000c30",
+          "kind": "task",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "setting:ntp",
+          "prev": [],
+          "emitted": "2026-10-01T00:01:41Z",
+          "occurred": "2026-10-01T00:01:41Z",
+          "fields": {
+            "value": "pool.ntp.org"
+          }
+        }
+      ]
+    ]
+  },
+  "expect": {
+    "present": {
+      "value": 2,
+      "unread": 0
+    },
+    "absent": {
+      "value": 1,
+      "unread": 0
+    },
+    "empty": {
+      "value": 0,
+      "unread": 0
+    },
+    "by-value": {
+      "groups": {
+        "1.1.1.1": {
+          "value": 1,
+          "unread": 0
+        },
+        "pool.ntp.org": {
+          "value": 1,
+          "unread": 0
+        }
+      },
+      "unread": 0,
+      "ungrouped": 1
+    }
+  }
+}

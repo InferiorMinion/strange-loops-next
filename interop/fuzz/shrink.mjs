@@ -80,7 +80,7 @@ function coherent(vector) {
   }
   const forms = vector.layer === 'realm' ? input?.forms : input?.records;
   if (Array.isArray(forms)) {
-    const envelope = r => Object.fromEntries(Object.entries(r).filter(([k]) => !['value', 'n', 'fields', 'shown'].includes(k)));
+    const envelope = r => Object.fromEntries(Object.entries(r).filter(([k]) => !['fields', 'shown'].includes(k)));
     for (let i = 0; i < forms.length; i++) for (const other of forms.slice(i + 1)) {
       const r = forms[i];
       if (!r || !other || r.id !== other.id) continue;

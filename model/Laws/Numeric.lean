@@ -39,53 +39,58 @@ theorem Record.num_number {r : Record} {field : String} {n : Number}
 
 /-! ## Sum -/
 
-theorem Sum.batch (s : Int) (xs ys : List Record) :
-    Sum.fold (Sum.fold s xs) ys = Sum.fold s (xs ++ ys) := by
+theorem Sum.batch (p : Record → Option Int) (s : Int) (xs ys : List Record) :
+    Sum.fold p (Sum.fold p s xs) ys = Sum.fold p s (xs ++ ys) := by
   simp [Sum.fold, List.foldl_append]
 
-theorem Sum.perm {xs ys : List Record} (h : xs ~ ys) (s : Int) : Sum.fold s xs = Sum.fold s ys :=
+theorem Sum.perm (p : Record → Option Int) {xs ys : List Record} (h : xs ~ ys) (s : Int) : Sum.fold p s xs = Sum.fold p s ys :=
   h.foldl_eq' (fun x _ y _ z => by simp only [Sum.step]; omega) s
 
-theorem Sum.fold_eq (s : Int) (xs : List Record) : Sum.fold s xs = s + Sum.fold 0 xs := by
+theorem Sum.fold_eq (p : Record → Option Int) (s : Int) (xs : List Record) : Sum.fold p s xs = s + Sum.fold p 0 xs := by
   induction xs generalizing s with
   | nil => simp [Sum.fold]
   | cons x xs ih =>
     simp only [Sum.fold, foldl_cons, Sum.step] at *
-    rw [ih, ih (0 + x.n)]; omega
+    rw [ih, ih (0 + (p x).getD 0)]; omega
 
 /-- A repeated delivery is added again: the store must deduplicate by id. -/
-theorem Sum.repeats (xs : List Record) : Sum.fold 0 (xs ++ xs) = 2 * Sum.fold 0 xs := by
+theorem Sum.repeats (p : Record → Option Int) (xs : List Record) : Sum.fold p 0 (xs ++ xs) = 2 * Sum.fold p 0 xs := by
   rw [← Sum.batch, Sum.fold_eq]; omega
 
 /-! ## Max -/
 
-theorem Max.batch (s : Option Int) (xs ys : List Record) :
-    Max.fold (Max.fold s xs) ys = Max.fold s (xs ++ ys) := by
+theorem Max.batch (p : Record → Option Int) (s : Option Int) (xs ys : List Record) :
+    Max.fold p (Max.fold p s xs) ys = Max.fold p s (xs ++ ys) := by
   simp [Max.fold, List.foldl_append]
 
-theorem Max.fold_some (a : Int) (xs : List Record) :
-    Max.fold (some a) xs = some ((xs.map (·.n)).foldl max a) := by
+theorem Max.fold_some (p : Record → Option Int) (a : Int) (xs : List Record) :
+    Max.fold p (some a) xs = some ((xs.filterMap p).foldl max a) := by
   induction xs generalizing a with
   | nil => rfl
-  | cons x xs ih => exact ih (max a x.n)
+  | cons x xs ih =>
+    cases hx : p x <;> simp [Max.fold, Max.step, hx] at * <;> apply ih
 
-/-- Max is the largest value seen, or nothing before the first record. -/
-theorem Max.fold_eq (xs : List Record) : Max.fold none xs = (xs.map (·.n)).max? := by
-  cases xs with
+/-- Max is the largest value seen, or nothing until the first readable record. -/
+theorem Max.fold_eq (p : Record → Option Int) (xs : List Record) : Max.fold p none xs = (xs.filterMap p).max? := by
+  induction xs with
   | nil => rfl
-  | cons x xs => rw [map_cons, max?_cons']; exact Max.fold_some x.n xs
+  | cons x xs ih =>
+    change Max.fold p (Max.step p none x) xs = _
+    cases hx : p x with
+    | none => simpa [Max.step, hx] using ih
+    | some v => simpa only [Max.step, hx, List.filterMap_cons_some (f := p) hx, Option.elim, List.max?_cons'] using Max.fold_some p v xs
 
 /-- The set decides: the same records, in any order, with any repeats, give the same Max. -/
-theorem Max.set_decides {xs ys : List Record} (h : ∀ r, r ∈ xs ↔ r ∈ ys) :
-    Max.fold none xs = Max.fold none ys := by
-  have hv : ∀ v, v ∈ xs.map (·.n) ↔ v ∈ ys.map (·.n) := by
-    intro v; simp only [mem_map]
+theorem Max.set_decides (p : Record → Option Int) {xs ys : List Record} (h : ∀ r, r ∈ xs ↔ r ∈ ys) :
+    Max.fold p none xs = Max.fold p none ys := by
+  have hv : ∀ v, v ∈ xs.filterMap p ↔ v ∈ ys.filterMap p := by
+    intro v; simp only [mem_filterMap]
     exact ⟨fun ⟨r, hr, e⟩ => ⟨r, (h r).1 hr, e⟩, fun ⟨r, hr, e⟩ => ⟨r, (h r).2 hr, e⟩⟩
   rw [Max.fold_eq, Max.fold_eq]
-  cases hx : (xs.map (·.n)).max? with
+  cases hx : (xs.filterMap p).max? with
   | none =>
     rw [max?_eq_none_iff] at hx
-    have : ys.map (·.n) = [] := eq_nil_iff_forall_not_mem.2 fun v hv' => by
+    have : ys.filterMap p = [] := eq_nil_iff_forall_not_mem.2 fun v hv' => by
       have := (hv v).2 hv'; rw [hx] at this; simp at this
     rw [this]; rfl
   | some a =>
@@ -95,34 +100,26 @@ theorem Max.set_decides {xs ys : List Record} (h : ∀ r, r ∈ xs ↔ r ∈ ys)
 
 /-! ## Min, by symmetry -/
 
-theorem Min.batch (s : Option Int) (xs ys : List Record) :
-    Min.fold (Min.fold s xs) ys = Min.fold s (xs ++ ys) := by
+theorem Min.batch (p : Record → Option Int) (s : Option Int) (xs ys : List Record) :
+    Min.fold p (Min.fold p s xs) ys = Min.fold p s (xs ++ ys) := by
   simp [Min.fold, List.foldl_append]
 
 /-- Min is Max on negated values. -/
-theorem Min.neg_max (s : Option Int) (xs : List Record) :
-    Min.fold s xs = (Max.fold (s.map (- ·)) (xs.map fun r => { r with n := -r.n })).map (- ·) := by
+theorem Min.neg_max (p : Record → Option Int) (s : Option Int) (xs : List Record) :
+    Min.fold p s xs = (Max.fold (fun r => (p r).map (- ·)) (s.map (- ·)) xs).map (- ·) := by
   induction xs generalizing s with
   | nil => cases s <;> simp [Min.fold, Max.fold]
   | cons x xs ih =>
-    have e : Min.fold s (x :: xs) = Min.fold (Min.step s x) xs := rfl
-    have e' : ∀ t, Max.fold t ((x :: xs).map fun r => { r with n := -r.n }) =
-        Max.fold (Max.step t { x with n := -x.n }) (xs.map fun r => { r with n := -r.n }) := fun _ => rfl
-    rw [e, e', ih]
-    congr 2
-    cases s with
-    | none => simp [Min.step, Max.step]
-    | some a => simp [Min.step, Max.step]
+    let q := fun r => (p r).map (- ·)
+    change Min.fold p (Min.step p s x) xs = (Max.fold q (Max.step q (s.map (- ·)) x) xs).map (- ·)
+    rw [ih]
+    have h : (Min.step p s x).map (- ·) = Max.step q (s.map (- ·)) x := by
+      cases hx : p x <;> cases s <;> simp [Min.step, Max.step, q, hx]
+    rw [h]
 
-theorem Min.set_decides {xs ys : List Record} (h : ∀ r, r ∈ xs ↔ r ∈ ys) :
-    Min.fold none xs = Min.fold none ys := by
+theorem Min.set_decides (p : Record → Option Int) {xs ys : List Record} (h : ∀ r, r ∈ xs ↔ r ∈ ys) :
+    Min.fold p none xs = Min.fold p none ys := by
   rw [Min.neg_max, Min.neg_max]
-  congr 1
-  apply Max.set_decides
-  intro r
-  simp only [mem_map]
-  constructor
-  · rintro ⟨q, hq, rfl⟩; exact ⟨q, (h q).1 hq, rfl⟩
-  · rintro ⟨q, hq, rfl⟩; exact ⟨q, (h q).2 hq, rfl⟩
+  exact congrArg (Option.map (- ·)) (Max.set_decides _ h)
 
 end Loops

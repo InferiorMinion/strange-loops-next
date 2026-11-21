@@ -38,11 +38,9 @@
           "observer": "sl:kyle",
           "about": ["proj:x", "proj:x", "project:y", "proj:z"],
           "of": "task:p",
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:01:40Z",
           "occurred": "2026-10-01T00:01:40Z",
-          "n": 0,
           "fields": {
             "about:x": "payload"
           }
@@ -53,11 +51,9 @@
           "observer": "sl:kyle",
           "about": ["x:mention"],
           "of": "task:q",
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:01:50Z",
           "occurred": "2026-10-01T00:01:50Z",
-          "n": 0,
           "fields": {
             "about:x": "payload"
           }
@@ -70,11 +66,9 @@
           "observer": "sl:kyle",
           "about": ["x:mention"],
           "of": "task:q",
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:01:50Z",
           "occurred": "2026-10-01T00:01:50Z",
-          "n": 0,
           "fields": {
             "about:x": "payload"
           }
@@ -85,11 +79,9 @@
           "observer": "sl:kyle",
           "about": ["proj:x", "proj:x", "project:y", "proj:z"],
           "of": "task:p",
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:01:40Z",
           "occurred": "2026-10-01T00:01:40Z",
-          "n": 0,
           "fields": {
             "about:x": "payload"
           }

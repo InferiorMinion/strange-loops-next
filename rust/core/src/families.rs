@@ -150,29 +150,29 @@ pub fn count_acc() -> PrimitiveAcc<Nat> {
     }
 }
 /// Lean: `Loops.Sum.acc`, model/Loops/Families.lean.
-/// Creates a raw `n` sum whose selection requires a readable safe-whole `n`.
+/// Creates a named `n` sum whose selection requires a readable safe-whole `n`.
 pub fn sum_acc() -> PrimitiveAcc<Int> {
     Acc {
         init: Int::default(),
-        step: fold::sum_step,
+        step: |s, r| fold::sum_step(|r| r.num("n"), s, r),
         readable: |r| r.num("n").is_some(),
     }
 }
 /// Lean: `Loops.Min.acc`, model/Loops/Families.lean.
-/// Creates a raw `n` minimum whose selection requires a readable safe-whole `n`.
+/// Creates a named `n` minimum whose selection requires a readable safe-whole `n`.
 pub fn min_acc() -> PrimitiveAcc<Option<Int>> {
     Acc {
         init: None,
-        step: fold::min_step,
+        step: |s, r| fold::min_step(|r| r.num("n"), s, r),
         readable: |r| r.num("n").is_some(),
     }
 }
 /// Lean: `Loops.Max.acc`, model/Loops/Families.lean.
-/// Creates a raw `n` maximum whose selection requires a readable safe-whole `n`.
+/// Creates a named `n` maximum whose selection requires a readable safe-whole `n`.
 pub fn max_acc() -> PrimitiveAcc<Option<Int>> {
     Acc {
         init: None,
-        step: fold::max_step,
+        step: |s, r| fold::max_step(|r| r.num("n"), s, r),
         readable: |r| r.num("n").is_some(),
     }
 }
@@ -185,7 +185,7 @@ pub fn sum_on(
 ) -> Acc<Int, impl Fn(Int, &Record) -> Int + '_, impl Fn(&Record) -> bool + '_> {
     Acc {
         init: Int::default(),
-        step: move |s: Int, r: &Record| Int(s.0 + r.num(field).unwrap_or_default().0),
+        step: move |s, r: &Record| fold::sum_step(|r| r.num(field), s, r),
         readable: move |r: &Record| r.num(field).is_some(),
     }
 }
@@ -206,11 +206,7 @@ pub fn min_on(
 > {
     Acc {
         init: None,
-        step: move |s: Option<Int>, r: &Record| match (r.num(field), s) {
-            (Some(v), Some(m)) => Some(m.min(v)),
-            (Some(v), None) => Some(v),
-            (None, s) => s,
-        },
+        step: move |s, r: &Record| fold::min_step(|r| r.num(field), s, r),
         readable: move |r: &Record| r.num(field).is_some(),
     }
 }
@@ -231,11 +227,7 @@ pub fn max_on(
 > {
     Acc {
         init: None,
-        step: move |s: Option<Int>, r: &Record| match (r.num(field), s) {
-            (Some(v), Some(m)) => Some(m.max(v)),
-            (Some(v), None) => Some(v),
-            (None, s) => s,
-        },
+        step: move |s, r: &Record| fold::max_step(|r| r.num(field), s, r),
         readable: move |r: &Record| r.num(field).is_some(),
     }
 }

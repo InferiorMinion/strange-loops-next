@@ -17,7 +17,7 @@ import { step } from "./scenario.mjs";
 
 const id = (n) => `r:${base32(Uint8Array.from({ length: 32 }, () => n))}`;
 const record = (n, of, prev = []) => ({
-  id: id(n), kind: "note", ...(of !== undefined && { of }), prev, emitted: `2020-01-01T00:00:0${n}Z`, n,
+  id: id(n), kind: "note", ...(of !== undefined && { of }), prev, emitted: `2020-01-01T00:00:0${n}Z`, fields: { n },
 });
 const spec = { from: [{ store: "." }], fold: { count: { count: true } } };
 
@@ -313,7 +313,7 @@ test("native canonicalization still handles all 4000 standards independently of 
 });
 
 test("numeric folds read safe whole values only", () => {
-  const records = [1.0, 1.5, 2 ** 53, "2", true].map((n, i) => ({ ...record(i + 1, "task:a"), n }));
+  const records = [1.0, 1.5, 2 ** 53, "2", true].map((n, i) => ({ ...record(i + 1, "task:a"), fields: { n } }));
   for (const fold of [sum, min, max]) assert.deepEqual(fold(records), { value: 1, unread: 4 });
 });
 

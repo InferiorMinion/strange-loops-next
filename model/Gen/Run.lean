@@ -77,8 +77,8 @@ def foldAnswer : String → Option (List Record → J)
         | some r => .str (idText r.id)
         | none => .null),
       ("others", .arr ((Latest.others s).map (.str ∘ idText ∘ (·.id))))]
-  | "fold/sum" => some fun o => .int (Sum.fold 0 o)
-  | "fold/extrema" => some fun o => .obj [("min", jOptInt (Min.fold none o)), ("max", jOptInt (Max.fold none o))]
+  | "fold/sum" => some fun o => .int (Sum.fold (·.num "n") 0 o)
+  | "fold/extrema" => some fun o => .obj [("min", jOptInt (Min.fold (·.num "n") none o)), ("max", jOptInt (Max.fold (·.num "n") none o))]
   | "fold/latest-by" => some fun o => jPerThing (perThing o)
   | "fold/heads" => some fun o => jHeads (Latest.fold o)
   | "fold/view" => some fun o => jViewState (Latest.fold o)

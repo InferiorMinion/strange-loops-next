@@ -179,8 +179,8 @@ test('input-only dispatch writes one chunk for both public CLIs and shares the p
 
 test('shrinking keeps acceptance, disagreeing implementations, all order groups, and coherent inputs', async () => {
   const source = { layer: 'fold/count', input: { orders: [
-    [{ id: 'a', value: 'long' }, { id: 'b', value: 'other' }],
-    [{ id: 'b', value: 'other' }, { id: 'a', value: 'long' }],
+    [{ id: 'a', fields: { value: 'long' } }, { id: 'b', fields: { value: 'other' } }],
+    [{ id: 'b', fields: { value: 'other' } }, { id: 'a', fields: { value: 'long' } }],
   ] } };
   const original = assess(source, response(2, 3), { js: () => [2, 2] });
   assert.ok(sameDisagreement(original, check(4, 9, [4, 4])));

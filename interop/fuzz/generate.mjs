@@ -148,15 +148,21 @@ function records(rng) {
     const record = {
       id, kind: rng.pick(['note', 'vote', 'erase']), observer: `o:${rng.int(3)}`,
       about, ...(of !== undefined && { of }), prev, emitted: rng.pick(INSTANTS),
-      value: rng.pick(['yes', 'no', '', 'α\nline', `value-${rng.int(10000)}`]), n: rng.int(31) - 15,
-      fields: { flag: !!rng.int(2), score: rng.int(9), tag: `tag-${rng.int(4)}` },
+      fields: {
+        value: rng.pick(['yes', 'no', '', 'α\nline', `value-${rng.int(10000)}`]), n: rng.int(31) - 15,
+        flag: !!rng.int(2), score: rng.int(9), tag: `tag-${rng.int(4)}` },
     };
+    // Independent ID digits vary field presence and type without coupling the envelope generator to them.
+    if ('01234567'.includes(id[6])) delete record.fields.value;
+    else if ('89'.includes(id[6])) record.fields.value = 7;
+    if ('01234567'.includes(id[7])) delete record.fields.n;
+    else if ('89'.includes(id[7])) record.fields.n = '5';
     if (rng.int(2)) record.occurred = rng.pick([...OCCURRED, '2024-02', '2024?']);
     if (i && rng.int(4) === 0) record.under = ids[rng.int(i)];
     if (i && rng.int(4) === 0) record.erases = [ids[rng.int(i)]];
     if (rng.int(5) === 0) {
       record.shown = rng.pick(['withheld', 'erased']);
-      delete record.value; delete record.n; delete record.fields;
+      delete record.fields;
     }
     out.push(record);
   }
@@ -205,7 +211,7 @@ function numericRecords() {
   return [Number.MAX_SAFE_INTEGER, 2, -Number.MAX_SAFE_INTEGER].map((n, i) => ({
     id: `r:${base32(Array(32).fill(i + 1))}`, kind: 'note', observer: 'o:0',
     about: ['t:numeric'], of: 't:numeric', prev: [], emitted: '2024-02-29T00:00:00Z',
-    shown: 'here', value: 'numeric', n,
+    shown: 'here', fields: { n },
   }));
 }
 
@@ -221,9 +227,9 @@ export function generate(seed, index, family) {
   switch (family) {
     case 'fold':
       layer = `fold/${FOLD_LAYERS[index % FOLD_LAYERS.length]}`;
-      // Gen.Run uses raw numeric primitives here. Views belong to spec slots.
+      // Compare raw numeric answers on held records with readable n.
       if (['fold/sum', 'fold/extrema'].includes(layer)) rs = rs.map(r =>
-        (r.shown ?? 'here') === 'here' ? r : { ...r, shown: 'here', n: 0, value: '' });
+        Number.isSafeInteger(r.fields?.n) ? r : { ...r, shown: 'here', fields: { ...r.fields, n: rng.int(31) - 15 } });
       input = { orders: orders() };
       if (layer === 'fold/select') input.where = rng.pick([
         { n: { 'at-least': rng.int(7) - 3 } }, { 'env.kind': { is: 'note' } },
@@ -239,7 +245,7 @@ export function generate(seed, index, family) {
         const erased = new Set(rs.flatMap(r => r.erases ?? []));
         rs = rs.map(r => {
           if (!erased.has(r.id) && r.shown !== 'erased') return r;
-          const { value: _value, n: _n, fields: _fields, ...envelope } = r;
+          const { fields: _fields, ...envelope } = r;
           return { ...envelope, shown: erased.has(r.id) ? 'erased' : 'withheld' };
         });
         input.orders = orders();
@@ -249,7 +255,7 @@ export function generate(seed, index, family) {
       input = { forms: clone(rs) };
       // Different places hold forms of the same logical record.
       if (rng.int(2)) {
-        const r = clone(rs[0]); delete r.value; delete r.n; delete r.fields;
+        const r = clone(rs[0]); delete r.fields;
         r.shown = 'withheld'; input.forms.push(r);
       }
       break;

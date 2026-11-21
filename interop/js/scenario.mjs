@@ -9,7 +9,7 @@ import * as Lens from "./lens.mjs";
 import { realm, settle } from "./realm.mjs";
 import { runSpec } from "./spec.mjs";
 
-const PAYLOAD = ["value", "n", "fields"];
+const PAYLOAD = ["fields"];
 
 // A form of a record: the record in full when held, else its envelope and
 // what the place has instead (`withheld` or `erased`).
@@ -44,4 +44,8 @@ export function lensEdit({ base, text }) {
 }
 
 // A thing's head as a keyed section: its id, and the head's value as lines.
-export const sectionOf = (thing, head) => ({ id: thing, body: String(head.value).split("\n") });
+export function sectionOf(thing, head) {
+  const text = head?.fields?.value;
+  if (typeof text !== "string") throw new Error("scenario head needs a text field named value");
+  return { id: thing, body: text.split("\n") };
+}

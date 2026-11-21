@@ -187,14 +187,14 @@ of `k1` reads `x` as here and admits `s`. A reader holding everything reads
 `x` as erased and refuses `s`. -/
 
 def sl.x : Record :=
-  { id := 1, kind := "task", observer := "sl:x", of := some "k1", value := "v", prev := [], emitted := default }
+  { id := 1, kind := "task", observer := "sl:x", of := some "k1", fields := [("value", .str "v")], prev := [], emitted := default }
 def sl.e : Record :=
-  { id := 2, kind := "note", observer := "sl:x", of := some "k2", value := "", prev := [], emitted := default,
+  { id := 2, kind := "note", observer := "sl:x", of := some "k2", prev := [], emitted := default,
     erases := [1] }
 def sl.s : Record :=
-  { id := 4, kind := "task", observer := "sl:x", of := some "k1", value := "", prev := [3], emitted := default }
+  { id := 4, kind := "task", observer := "sl:x", of := some "k1", prev := [3], emitted := default }
 def sl.p : Record :=
-  { id := 3, kind := "task", observer := "sl:x", of := some "k2", value := "", prev := [], emitted := default }
+  { id := 3, kind := "task", observer := "sl:x", of := some "k2", prev := [], emitted := default }
 
 /-- Without the eraser, the part reads a payload the whole has erased. -/
 theorem slice_needs_erasers :

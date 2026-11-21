@@ -30,10 +30,11 @@
         "observer": "sl:ada",
         "about": [],
         "of": "decision:auth",
-        "value": "Device flow. Client secret: 9f3c…",
         "prev": [],
         "emitted": "2026-10-01T09:00:00Z",
-        "n": 0
+        "fields": {
+          "value": "Device flow. Client secret: 9f3c…"
+        }
       },
       {
         "id": "r:00000000000000000000000000000000000000000000000002p0",
@@ -41,10 +42,11 @@
         "observer": "sl:ada",
         "about": [],
         "of": "decision:auth",
-        "value": "Device flow; revisit in Q3.",
         "prev": ["r:00000000000000000000000000000000000000000000000002gg"],
         "emitted": "2026-10-01T09:10:00Z",
-        "n": 0
+        "fields": {
+          "value": "Device flow; revisit in Q3."
+        }
       },
       {
         "id": "r:000000000000000000000000000000000000000000000000031g",
@@ -52,10 +54,11 @@
         "observer": "sl:bo",
         "about": [],
         "of": "decision:auth",
-        "value": "Use passkeys.",
         "prev": ["r:00000000000000000000000000000000000000000000000002gg"],
         "emitted": "2026-10-01T09:12:00Z",
-        "n": 0
+        "fields": {
+          "value": "Use passkeys."
+        }
       },
       {
         "id": "r:00000000000000000000000000000000000000000000000003a0",
@@ -63,10 +66,11 @@
         "observer": "sl:ada",
         "about": [],
         "of": "decision:auth",
-        "value": "Passkeys; device flow on TVs.",
         "prev": ["r:00000000000000000000000000000000000000000000000002p0", "r:000000000000000000000000000000000000000000000000031g"],
         "emitted": "2026-10-01T09:30:00Z",
-        "n": 0
+        "fields": {
+          "value": "Passkeys; device flow on TVs."
+        }
       },
       {
         "id": "r:00000000000000000000000000000000000000000000000003ig",
@@ -74,11 +78,12 @@
         "observer": "sl:ada",
         "about": [],
         "of": "decision:auth",
-        "value": "Passkeys; device flow on TVs.",
         "prev": ["r:00000000000000000000000000000000000000000000000003a0"],
         "emitted": "2026-10-01T09:40:00Z",
         "erases": ["r:00000000000000000000000000000000000000000000000002gg"],
-        "n": 0
+        "fields": {
+          "value": "Passkeys; device flow on TVs."
+        }
       },
       {
         "id": "r:00000000000000000000000000000000000000000000000003r0",
@@ -86,10 +91,11 @@
         "observer": "sl:bo",
         "about": [],
         "of": "decision:auth",
-        "value": "Passkeys everywhere.",
         "prev": ["r:00000000000000000000000000000000000000000000000003ig"],
         "emitted": "2026-10-01T10:05:00Z",
-        "n": 0
+        "fields": {
+          "value": "Passkeys everywhere."
+        }
       }
     ],
     "steps": [

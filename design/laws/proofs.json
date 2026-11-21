@@ -3560,12 +3560,12 @@
   "Loops.Sum.repeats":
   {"uses": ["Loops.Sum.batch", "Loops.Sum.fold_eq"],
    "states":
-   "∀ (xs : List Loops.Record), Loops.Sum.fold 0 (xs ++ xs) = 2 * Loops.Sum.fold 0 xs",
+   "∀ (p : Loops.Record → Option Int) (xs : List Loops.Record), Loops.Sum.fold p 0 (xs ++ xs) = 2 * Loops.Sum.fold p 0 xs",
    "module": "Laws.Numeric"},
   "Loops.Sum.perm":
   {"uses": [],
    "states":
-   "∀ {xs ys : List Loops.Record}, xs.Perm ys → ∀ (s : Int), Loops.Sum.fold s xs = Loops.Sum.fold s ys",
+   "∀ (p : Loops.Record → Option Int) {xs ys : List Loops.Record}, xs.Perm ys → ∀ (s : Int), Loops.Sum.fold p s xs = Loops.Sum.fold p s ys",
    "module": "Laws.Numeric"},
   "Loops.Sum.on_step_missing":
   {"uses": [],
@@ -3575,17 +3575,17 @@
   "Loops.Sum.fold_eq":
   {"uses": [],
    "states":
-   "∀ (s : Int) (xs : List Loops.Record), Loops.Sum.fold s xs = s + Loops.Sum.fold 0 xs",
+   "∀ (p : Loops.Record → Option Int) (s : Int) (xs : List Loops.Record), Loops.Sum.fold p s xs = s + Loops.Sum.fold p 0 xs",
    "module": "Laws.Numeric"},
   "Loops.Sum.batch":
   {"uses": [],
    "states":
-   "∀ (s : Int) (xs ys : List Loops.Record), Loops.Sum.fold (Loops.Sum.fold s xs) ys = Loops.Sum.fold s (xs ++ ys)",
+   "∀ (p : Loops.Record → Option Int) (s : Int) (xs ys : List Loops.Record), Loops.Sum.fold p (Loops.Sum.fold p s xs) ys = Loops.Sum.fold p s (xs ++ ys)",
    "module": "Laws.Numeric"},
   "Loops.Sum.acc_fold":
   {"uses": [],
    "states":
-   "∀ (xs : List Loops.Record), Loops.Sum.acc.fold xs = Loops.Sum.fold 0 xs",
+   "∀ (xs : List Loops.Record), Loops.Sum.acc.fold xs = Loops.Sum.fold (fun x => x.num \"n\") 0 xs",
    "module": "Laws.Families"},
   "Loops.Stored.mk.sizeOf_spec":
   {"uses": [],
@@ -4430,17 +4430,17 @@
   "Loops.Record.mk.sizeOf_spec":
   {"uses": [],
    "states":
-   "∀ (id : Loops.RecordId) (kind observer : String) (about : List String) (of : Option String) (value : String) (prev : List Loops.RecordId) (under : Option Loops.RecordId) (occurred : Option Loops.Claim) (emitted : Loops.Stamp) (erases : List Loops.RecordId) (sets : Option (List String)) (n : Int) (nNumber : Option Loops.Number) (fields : List (String × Loops.Val)) (shown : Loops.Shown), sizeOf { id := id, kind := kind, observer := observer, about := about, of := of, value := value, prev := prev, under := under, occurred := occurred, emitted := emitted, erases := erases, sets := sets, n := n, nNumber := nNumber, fields := fields, shown := shown } = 1 + sizeOf id + sizeOf kind + sizeOf observer + sizeOf about + sizeOf of + sizeOf value + sizeOf prev + sizeOf under + sizeOf occurred + sizeOf emitted + sizeOf erases + sizeOf sets + sizeOf n + sizeOf nNumber + sizeOf fields + sizeOf shown",
+   "∀ (id : Loops.RecordId) (kind observer : String) (about : List String) (of : Option String) (prev : List Loops.RecordId) (under : Option Loops.RecordId) (occurred : Option Loops.Claim) (emitted : Loops.Stamp) (erases : List Loops.RecordId) (sets : Option (List String)) (fields : List (String × Loops.Val)) (shown : Loops.Shown), sizeOf { id := id, kind := kind, observer := observer, about := about, of := of, prev := prev, under := under, occurred := occurred, emitted := emitted, erases := erases, sets := sets, fields := fields, shown := shown } = 1 + sizeOf id + sizeOf kind + sizeOf observer + sizeOf about + sizeOf of + sizeOf prev + sizeOf under + sizeOf occurred + sizeOf emitted + sizeOf erases + sizeOf sets + sizeOf fields + sizeOf shown",
    "module": "Loops.Record"},
   "Loops.Record.mk.injEq":
   {"uses": ["Loops.Record.mk.inj"],
    "states":
-   "∀ (id : Loops.RecordId) (kind observer : String) (about : List String) (of : Option String) (value : String) (prev : List Loops.RecordId) (under : Option Loops.RecordId) (occurred : Option Loops.Claim) (emitted : Loops.Stamp) (erases : List Loops.RecordId) (sets : Option (List String)) (n : Int) (nNumber : Option Loops.Number) (fields : List (String × Loops.Val)) (shown : Loops.Shown) (id_1 : Loops.RecordId) (kind_1 observer_1 : String) (about_1 : List String) (of_1 : Option String) (value_1 : String) (prev_1 : List Loops.RecordId) (under_1 : Option Loops.RecordId) (occurred_1 : Option Loops.Claim) (emitted_1 : Loops.Stamp) (erases_1 : List Loops.RecordId) (sets_1 : Option (List String)) (n_1 : Int) (nNumber_1 : Option Loops.Number) (fields_1 : List (String × Loops.Val)) (shown_1 : Loops.Shown), ({ id := id, kind := kind, observer := observer, about := about, of := of, value := value, prev := prev, under := under, occurred := occurred, emitted := emitted, erases := erases, sets := sets, n := n, nNumber := nNumber, fields := fields, shown := shown } = { id := id_1, kind := kind_1, observer := observer_1, about := about_1, of := of_1, value := value_1, prev := prev_1, under := under_1, occurred := occurred_1, emitted := emitted_1, erases := erases_1, sets := sets_1, n := n_1, nNumber := nNumber_1, fields := fields_1, shown := shown_1 }) = (id = id_1 ∧ kind = kind_1 ∧ observer = observer_1 ∧ about = about_1 ∧ of = of_1 ∧ value = value_1 ∧ prev = prev_1 ∧ under = under_1 ∧ occurred = occurred_1 ∧ emitted = emitted_1 ∧ erases = erases_1 ∧ sets = sets_1 ∧ n = n_1 ∧ nNumber = nNumber_1 ∧ fields = fields_1 ∧ shown = shown_1)",
+   "∀ (id : Loops.RecordId) (kind observer : String) (about : List String) (of : Option String) (prev : List Loops.RecordId) (under : Option Loops.RecordId) (occurred : Option Loops.Claim) (emitted : Loops.Stamp) (erases : List Loops.RecordId) (sets : Option (List String)) (fields : List (String × Loops.Val)) (shown : Loops.Shown) (id_1 : Loops.RecordId) (kind_1 observer_1 : String) (about_1 : List String) (of_1 : Option String) (prev_1 : List Loops.RecordId) (under_1 : Option Loops.RecordId) (occurred_1 : Option Loops.Claim) (emitted_1 : Loops.Stamp) (erases_1 : List Loops.RecordId) (sets_1 : Option (List String)) (fields_1 : List (String × Loops.Val)) (shown_1 : Loops.Shown), ({ id := id, kind := kind, observer := observer, about := about, of := of, prev := prev, under := under, occurred := occurred, emitted := emitted, erases := erases, sets := sets, fields := fields, shown := shown } = { id := id_1, kind := kind_1, observer := observer_1, about := about_1, of := of_1, prev := prev_1, under := under_1, occurred := occurred_1, emitted := emitted_1, erases := erases_1, sets := sets_1, fields := fields_1, shown := shown_1 }) = (id = id_1 ∧ kind = kind_1 ∧ observer = observer_1 ∧ about = about_1 ∧ of = of_1 ∧ prev = prev_1 ∧ under = under_1 ∧ occurred = occurred_1 ∧ emitted = emitted_1 ∧ erases = erases_1 ∧ sets = sets_1 ∧ fields = fields_1 ∧ shown = shown_1)",
    "module": "Loops.Record"},
   "Loops.Record.mk.inj":
   {"uses": [],
    "states":
-   "∀ {id : Loops.RecordId} {kind observer : String} {about : List String} {of : Option String} {value : String} {prev : List Loops.RecordId} {under : Option Loops.RecordId} {occurred : Option Loops.Claim} {emitted : Loops.Stamp} {erases : List Loops.RecordId} {sets : Option (List String)} {n : Int} {nNumber : Option Loops.Number} {fields : List (String × Loops.Val)} {shown : Loops.Shown} {id_1 : Loops.RecordId} {kind_1 observer_1 : String} {about_1 : List String} {of_1 : Option String} {value_1 : String} {prev_1 : List Loops.RecordId} {under_1 : Option Loops.RecordId} {occurred_1 : Option Loops.Claim} {emitted_1 : Loops.Stamp} {erases_1 : List Loops.RecordId} {sets_1 : Option (List String)} {n_1 : Int} {nNumber_1 : Option Loops.Number} {fields_1 : List (String × Loops.Val)} {shown_1 : Loops.Shown}, { id := id, kind := kind, observer := observer, about := about, of := of, value := value, prev := prev, under := under, occurred := occurred, emitted := emitted, erases := erases, sets := sets, n := n, nNumber := nNumber, fields := fields, shown := shown } = { id := id_1, kind := kind_1, observer := observer_1, about := about_1, of := of_1, value := value_1, prev := prev_1, under := under_1, occurred := occurred_1, emitted := emitted_1, erases := erases_1, sets := sets_1, n := n_1, nNumber := nNumber_1, fields := fields_1, shown := shown_1 } → id = id_1 ∧ kind = kind_1 ∧ observer = observer_1 ∧ about = about_1 ∧ of = of_1 ∧ value = value_1 ∧ prev = prev_1 ∧ under = under_1 ∧ occurred = occurred_1 ∧ emitted = emitted_1 ∧ erases = erases_1 ∧ sets = sets_1 ∧ n = n_1 ∧ nNumber = nNumber_1 ∧ fields = fields_1 ∧ shown = shown_1",
+   "∀ {id : Loops.RecordId} {kind observer : String} {about : List String} {of : Option String} {prev : List Loops.RecordId} {under : Option Loops.RecordId} {occurred : Option Loops.Claim} {emitted : Loops.Stamp} {erases : List Loops.RecordId} {sets : Option (List String)} {fields : List (String × Loops.Val)} {shown : Loops.Shown} {id_1 : Loops.RecordId} {kind_1 observer_1 : String} {about_1 : List String} {of_1 : Option String} {prev_1 : List Loops.RecordId} {under_1 : Option Loops.RecordId} {occurred_1 : Option Loops.Claim} {emitted_1 : Loops.Stamp} {erases_1 : List Loops.RecordId} {sets_1 : Option (List String)} {fields_1 : List (String × Loops.Val)} {shown_1 : Loops.Shown}, { id := id, kind := kind, observer := observer, about := about, of := of, prev := prev, under := under, occurred := occurred, emitted := emitted, erases := erases, sets := sets, fields := fields, shown := shown } = { id := id_1, kind := kind_1, observer := observer_1, about := about_1, of := of_1, prev := prev_1, under := under_1, occurred := occurred_1, emitted := emitted_1, erases := erases_1, sets := sets_1, fields := fields_1, shown := shown_1 } → id = id_1 ∧ kind = kind_1 ∧ observer = observer_1 ∧ about = about_1 ∧ of = of_1 ∧ prev = prev_1 ∧ under = under_1 ∧ occurred = occurred_1 ∧ emitted = emitted_1 ∧ erases = erases_1 ∧ sets = sets_1 ∧ fields = fields_1 ∧ shown = shown_1",
    "module": "Loops.Record"},
   "Loops.Read.textOr_unreadable":
   {"uses": ["Loops.Json.str.injEq"],
@@ -4678,17 +4678,17 @@
   "Loops.Min.set_decides":
   {"uses": ["Loops.Max.set_decides", "Loops.Min.neg_max"],
    "states":
-   "∀ {xs ys : List Loops.Record}, (∀ (r : Loops.Record), r ∈ xs ↔ r ∈ ys) → Loops.Min.fold none xs = Loops.Min.fold none ys",
+   "∀ (p : Loops.Record → Option Int) {xs ys : List Loops.Record}, (∀ (r : Loops.Record), r ∈ xs ↔ r ∈ ys) → Loops.Min.fold p none xs = Loops.Min.fold p none ys",
    "module": "Laws.Numeric"},
   "Loops.Min.neg_max":
   {"uses": [],
    "states":
-   "∀ (s : Option Int) (xs : List Loops.Record), Loops.Min.fold s xs = Option.map (fun x => -x) (Loops.Max.fold (Option.map (fun x => -x) s) (List.map (fun r => { id := r.id, kind := r.kind, observer := r.observer, about := r.about, of := r.of, value := r.value, prev := r.prev, under := r.under, occurred := r.occurred, emitted := r.emitted, erases := r.erases, sets := r.sets, n := -r.n, nNumber := r.nNumber, fields := r.fields, shown := r.shown }) xs))",
+   "∀ (p : Loops.Record → Option Int) (s : Option Int) (xs : List Loops.Record), Loops.Min.fold p s xs = Option.map (fun x => -x) (Loops.Max.fold (fun r => Option.map (fun x => -x) (p r)) (Option.map (fun x => -x) s) xs)",
    "module": "Laws.Numeric"},
   "Loops.Min.batch":
   {"uses": [],
    "states":
-   "∀ (s : Option Int) (xs ys : List Loops.Record), Loops.Min.fold (Loops.Min.fold s xs) ys = Loops.Min.fold s (xs ++ ys)",
+   "∀ (p : Loops.Record → Option Int) (s : Option Int) (xs ys : List Loops.Record), Loops.Min.fold p (Loops.Min.fold p s xs) ys = Loops.Min.fold p s (xs ++ ys)",
    "module": "Laws.Numeric"},
   "Loops.Min.acc_readable":
   {"uses": [],
@@ -4698,7 +4698,7 @@
   "Loops.Min.acc_fold":
   {"uses": [],
    "states":
-   "∀ (xs : List Loops.Record), Loops.Min.acc.fold xs = Loops.Min.fold none xs",
+   "∀ (xs : List Loops.Record), Loops.Min.acc.fold xs = Loops.Min.fold (fun x => x.num \"n\") none xs",
    "module": "Laws.Families"},
   "Loops.Meaning.unique":
   {"uses":
@@ -4719,27 +4719,27 @@
   "Loops.Max.set_decides":
   {"uses": ["Loops.Max.fold_eq"],
    "states":
-   "∀ {xs ys : List Loops.Record}, (∀ (r : Loops.Record), r ∈ xs ↔ r ∈ ys) → Loops.Max.fold none xs = Loops.Max.fold none ys",
+   "∀ (p : Loops.Record → Option Int) {xs ys : List Loops.Record}, (∀ (r : Loops.Record), r ∈ xs ↔ r ∈ ys) → Loops.Max.fold p none xs = Loops.Max.fold p none ys",
    "module": "Laws.Numeric"},
   "Loops.Max.fold_some":
   {"uses": [],
    "states":
-   "∀ (a : Int) (xs : List Loops.Record), Loops.Max.fold (some a) xs = some (List.foldl max a (List.map (fun x => x.n) xs))",
+   "∀ (p : Loops.Record → Option Int) (a : Int) (xs : List Loops.Record), Loops.Max.fold p (some a) xs = some (List.foldl max a (List.filterMap p xs))",
    "module": "Laws.Numeric"},
   "Loops.Max.fold_eq":
   {"uses": ["Loops.Max.fold_some"],
    "states":
-   "∀ (xs : List Loops.Record), Loops.Max.fold none xs = (List.map (fun x => x.n) xs).max?",
+   "∀ (p : Loops.Record → Option Int) (xs : List Loops.Record), Loops.Max.fold p none xs = (List.filterMap p xs).max?",
    "module": "Laws.Numeric"},
   "Loops.Max.cannot_follow_prev":
   {"uses": [],
    "states":
-   "¬∃ g, ∀ (xs : List Loops.Record) (r : Loops.Record), Loops.Distinct (xs ++ [r]) → g (Loops.Max.fold none xs) r = (Loops.OverHeads.fold Loops.LatestBy.maxHeads (xs ++ [r])).value",
+   "¬∃ g, ∀ (xs : List Loops.Record) (r : Loops.Record), Loops.Distinct (xs ++ [r]) → g (Loops.Max.fold (fun x => x.num \"n\") none xs) r = (Loops.OverHeads.fold Loops.LatestBy.maxHeads (xs ++ [r])).value",
    "module": "Laws.Families"},
   "Loops.Max.batch":
   {"uses": [],
    "states":
-   "∀ (s : Option Int) (xs ys : List Loops.Record), Loops.Max.fold (Loops.Max.fold s xs) ys = Loops.Max.fold s (xs ++ ys)",
+   "∀ (p : Loops.Record → Option Int) (s : Option Int) (xs ys : List Loops.Record), Loops.Max.fold p (Loops.Max.fold p s xs) ys = Loops.Max.fold p s (xs ++ ys)",
    "module": "Laws.Numeric"},
   "Loops.Max.acc_readable":
   {"uses": [],
@@ -4749,7 +4749,7 @@
   "Loops.Max.acc_fold":
   {"uses": [],
    "states":
-   "∀ (xs : List Loops.Record), Loops.Max.acc.fold xs = Loops.Max.fold none xs",
+   "∀ (xs : List Loops.Record), Loops.Max.acc.fold xs = Loops.Max.fold (fun x => x.num \"n\") none xs",
    "module": "Laws.Families"},
   "Loops.Lens.unescape_keeps":
   {"uses": [],

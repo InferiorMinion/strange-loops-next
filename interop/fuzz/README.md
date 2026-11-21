@@ -121,7 +121,7 @@ Other named cases exercise wrong types, bad IDs, integer bounds, EDTF, repeated 
 A deliberate self-label cycle also carries a near-miss label.
 Most generated cases pass the model's input decoder.
 
-Most reader numeric fields stay small.
+Most reader numeric fields stay small. Held records can omit either `fields.n` or `fields.value`, and either can hold a different scalar type.
 Scheduled cases combine safe integer limits with cancellation to test exact sums.
 The record boundary cases also test the writer's number limit.
 Lens cases include escaped fences, empty IDs, repeated edited IDs, and duplicate base IDs.
@@ -139,9 +139,8 @@ The following boundaries prevent comparisons between different questions:
 
 - `fold/heads` and `fold/view` combine per-thing heads.
   The adapter uses JS `heads`, which orders the heads and keeps each ID once.
-- Raw `fold/sum` and `fold/extrema` use only readable generated records.
-  Numeric spec slots cover unread payloads.
-  Lean's raw extrema include unread placeholders; JS numeric readers skip them.
+- Raw `fold/sum` and `fold/extrema` compare held inputs with readable safe-whole `fields.n`.
+  Numeric spec slots also exercise absent, mistyped and hidden fields and count them as unread.
 - `spec/run` receives settled generated forms and compares JS `runSpec` with Lean `Spec.run`.
   Each operation admits its input.
   Realm and scenario tests cover settlement itself.

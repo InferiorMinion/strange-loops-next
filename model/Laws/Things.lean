@@ -548,11 +548,11 @@ admission exists to stop. A caching reader keeps the records a revision with
 an unheld `prev` target supersedes. -/
 
 def ca.x : Record :=
-  { id := 1, kind := "task", observer := "sl:x", of := some "k1", value := "", prev := [], emitted := default }
+  { id := 1, kind := "task", observer := "sl:x", of := some "k1", prev := [], emitted := default }
 def ca.s : Record :=
-  { id := 2, kind := "task", observer := "sl:x", of := some "k1", value := "", prev := [1, 3], emitted := default }
+  { id := 2, kind := "task", observer := "sl:x", of := some "k1", prev := [1, 3], emitted := default }
 def ca.p : Record :=
-  { id := 3, kind := "task", observer := "sl:x", of := some "k2", value := "", prev := [], emitted := default }
+  { id := 3, kind := "task", observer := "sl:x", of := some "k2", prev := [], emitted := default }
 
 /-- No step from the per-thing state of the admitted records follows a late
 arrival, even under the rule that allows everything. -/

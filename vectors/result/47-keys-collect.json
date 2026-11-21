@@ -65,11 +65,9 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "task:1",
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:01:40Z",
           "occurred": "2026-10-01T00:01:40Z",
-          "n": 0,
           "fields": {
             "status": "open",
             "title": "a",
@@ -82,12 +80,10 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "task:1",
-          "value": "",
           "prev": ["r:000000000000000000000000000000000000000000000000098g"],
           "emitted": "2026-10-01T00:03:20Z",
           "occurred": "2026-10-01T00:03:20Z",
           "sets": ["status"],
-          "n": 0,
           "fields": {
             "status": "closed"
           }
@@ -98,12 +94,10 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "task:1",
-          "value": "",
           "prev": ["r:0000000000000000000000000000000000000000000000000990"],
           "emitted": "2026-10-01T00:05:00Z",
           "occurred": "2026-10-01T00:05:00Z",
           "sets": ["title"],
-          "n": 0,
           "fields": {
             "title": "b"
           }
@@ -114,11 +108,9 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "task:2",
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:01:50Z",
           "occurred": "2026-10-01T00:01:50Z",
-          "n": 0,
           "fields": {
             "status": "open",
             "title": "c"
@@ -130,12 +122,10 @@
           "observer": "sl:alice",
           "about": [],
           "of": "task:2",
-          "value": "",
           "prev": ["r:00000000000000000000000000000000000000000000000009a0"],
           "emitted": "2026-10-01T00:03:30Z",
           "occurred": "2026-10-01T00:03:30Z",
           "sets": ["status"],
-          "n": 0,
           "fields": {
             "status": "closed"
           }
@@ -146,12 +136,10 @@
           "observer": "sl:bob",
           "about": [],
           "of": "task:2",
-          "value": "",
           "prev": ["r:00000000000000000000000000000000000000000000000009a0"],
           "emitted": "2026-10-01T00:03:40Z",
           "occurred": "2026-10-01T00:03:40Z",
           "sets": ["status"],
-          "n": 0,
           "fields": {
             "status": "done"
           }
@@ -162,12 +150,10 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "task:2",
-          "value": "",
           "prev": ["r:00000000000000000000000000000000000000000000000009ag", "r:00000000000000000000000000000000000000000000000009b0"],
           "emitted": "2026-10-01T00:05:20Z",
           "occurred": "2026-10-01T00:05:20Z",
-          "sets": [],
-          "n": 0
+          "sets": []
         },
         {
           "id": "r:00000000000000000000000000000000000000000000000009c0",
@@ -175,11 +161,9 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "task:3",
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:02:00Z",
           "occurred": "2026-10-01T00:02:00Z",
-          "n": 0,
           "fields": {
             "status": "open",
             "title": "e"
@@ -203,12 +187,10 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "task:3",
-          "value": "",
           "prev": ["r:00000000000000000000000000000000000000000000000009cg"],
           "emitted": "2026-10-01T00:05:30Z",
           "occurred": "2026-10-01T00:05:30Z",
           "sets": ["title"],
-          "n": 0,
           "fields": {
             "title": "f"
           }
@@ -218,11 +200,9 @@
           "kind": "erasure",
           "observer": "sl:kyle",
           "about": [],
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:06:40Z",
-          "erases": ["r:00000000000000000000000000000000000000000000000009cg"],
-          "n": 0
+          "erases": ["r:00000000000000000000000000000000000000000000000009cg"]
         }
       ],
       [
@@ -232,12 +212,10 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "task:1",
-          "value": "",
           "prev": ["r:000000000000000000000000000000000000000000000000098g"],
           "emitted": "2026-10-01T00:03:20Z",
           "occurred": "2026-10-01T00:03:20Z",
           "sets": ["status"],
-          "n": 0,
           "fields": {
             "status": "closed"
           }
@@ -248,12 +226,10 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "task:1",
-          "value": "",
           "prev": ["r:0000000000000000000000000000000000000000000000000990"],
           "emitted": "2026-10-01T00:05:00Z",
           "occurred": "2026-10-01T00:05:00Z",
           "sets": ["title"],
-          "n": 0,
           "fields": {
             "title": "b"
           }
@@ -264,11 +240,9 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "task:2",
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:01:50Z",
           "occurred": "2026-10-01T00:01:50Z",
-          "n": 0,
           "fields": {
             "status": "open",
             "title": "c"
@@ -280,12 +254,10 @@
           "observer": "sl:alice",
           "about": [],
           "of": "task:2",
-          "value": "",
           "prev": ["r:00000000000000000000000000000000000000000000000009a0"],
           "emitted": "2026-10-01T00:03:30Z",
           "occurred": "2026-10-01T00:03:30Z",
           "sets": ["status"],
-          "n": 0,
           "fields": {
             "status": "closed"
           }
@@ -296,12 +268,10 @@
           "observer": "sl:bob",
           "about": [],
           "of": "task:2",
-          "value": "",
           "prev": ["r:00000000000000000000000000000000000000000000000009a0"],
           "emitted": "2026-10-01T00:03:40Z",
           "occurred": "2026-10-01T00:03:40Z",
           "sets": ["status"],
-          "n": 0,
           "fields": {
             "status": "done"
           }
@@ -312,12 +282,10 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "task:2",
-          "value": "",
           "prev": ["r:00000000000000000000000000000000000000000000000009ag", "r:00000000000000000000000000000000000000000000000009b0"],
           "emitted": "2026-10-01T00:05:20Z",
           "occurred": "2026-10-01T00:05:20Z",
-          "sets": [],
-          "n": 0
+          "sets": []
         },
         {
           "id": "r:00000000000000000000000000000000000000000000000009c0",
@@ -325,11 +293,9 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "task:3",
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:02:00Z",
           "occurred": "2026-10-01T00:02:00Z",
-          "n": 0,
           "fields": {
             "status": "open",
             "title": "e"
@@ -353,12 +319,10 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "task:3",
-          "value": "",
           "prev": ["r:00000000000000000000000000000000000000000000000009cg"],
           "emitted": "2026-10-01T00:05:30Z",
           "occurred": "2026-10-01T00:05:30Z",
           "sets": ["title"],
-          "n": 0,
           "fields": {
             "title": "f"
           }
@@ -368,11 +332,9 @@
           "kind": "erasure",
           "observer": "sl:kyle",
           "about": [],
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:06:40Z",
-          "erases": ["r:00000000000000000000000000000000000000000000000009cg"],
-          "n": 0
+          "erases": ["r:00000000000000000000000000000000000000000000000009cg"]
         },
         {
           "id": "r:000000000000000000000000000000000000000000000000098g",
@@ -380,11 +342,9 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "task:1",
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:01:40Z",
           "occurred": "2026-10-01T00:01:40Z",
-          "n": 0,
           "fields": {
             "status": "open",
             "title": "a",
@@ -399,12 +359,10 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "task:1",
-          "value": "",
           "prev": ["r:0000000000000000000000000000000000000000000000000990"],
           "emitted": "2026-10-01T00:05:00Z",
           "occurred": "2026-10-01T00:05:00Z",
           "sets": ["title"],
-          "n": 0,
           "fields": {
             "title": "b"
           }
@@ -415,11 +373,9 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "task:2",
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:01:50Z",
           "occurred": "2026-10-01T00:01:50Z",
-          "n": 0,
           "fields": {
             "status": "open",
             "title": "c"
@@ -431,12 +387,10 @@
           "observer": "sl:alice",
           "about": [],
           "of": "task:2",
-          "value": "",
           "prev": ["r:00000000000000000000000000000000000000000000000009a0"],
           "emitted": "2026-10-01T00:03:30Z",
           "occurred": "2026-10-01T00:03:30Z",
           "sets": ["status"],
-          "n": 0,
           "fields": {
             "status": "closed"
           }
@@ -447,12 +401,10 @@
           "observer": "sl:bob",
           "about": [],
           "of": "task:2",
-          "value": "",
           "prev": ["r:00000000000000000000000000000000000000000000000009a0"],
           "emitted": "2026-10-01T00:03:40Z",
           "occurred": "2026-10-01T00:03:40Z",
           "sets": ["status"],
-          "n": 0,
           "fields": {
             "status": "done"
           }
@@ -463,12 +415,10 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "task:2",
-          "value": "",
           "prev": ["r:00000000000000000000000000000000000000000000000009ag", "r:00000000000000000000000000000000000000000000000009b0"],
           "emitted": "2026-10-01T00:05:20Z",
           "occurred": "2026-10-01T00:05:20Z",
-          "sets": [],
-          "n": 0
+          "sets": []
         },
         {
           "id": "r:00000000000000000000000000000000000000000000000009c0",
@@ -476,11 +426,9 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "task:3",
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:02:00Z",
           "occurred": "2026-10-01T00:02:00Z",
-          "n": 0,
           "fields": {
             "status": "open",
             "title": "e"
@@ -504,12 +452,10 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "task:3",
-          "value": "",
           "prev": ["r:00000000000000000000000000000000000000000000000009cg"],
           "emitted": "2026-10-01T00:05:30Z",
           "occurred": "2026-10-01T00:05:30Z",
           "sets": ["title"],
-          "n": 0,
           "fields": {
             "title": "f"
           }
@@ -519,11 +465,9 @@
           "kind": "erasure",
           "observer": "sl:kyle",
           "about": [],
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:06:40Z",
-          "erases": ["r:00000000000000000000000000000000000000000000000009cg"],
-          "n": 0
+          "erases": ["r:00000000000000000000000000000000000000000000000009cg"]
         },
         {
           "id": "r:000000000000000000000000000000000000000000000000098g",
@@ -531,11 +475,9 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "task:1",
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:01:40Z",
           "occurred": "2026-10-01T00:01:40Z",
-          "n": 0,
           "fields": {
             "status": "open",
             "title": "a",
@@ -548,12 +490,10 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "task:1",
-          "value": "",
           "prev": ["r:000000000000000000000000000000000000000000000000098g"],
           "emitted": "2026-10-01T00:03:20Z",
           "occurred": "2026-10-01T00:03:20Z",
           "sets": ["status"],
-          "n": 0,
           "fields": {
             "status": "closed"
           }
@@ -566,11 +506,9 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "task:2",
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:01:50Z",
           "occurred": "2026-10-01T00:01:50Z",
-          "n": 0,
           "fields": {
             "status": "open",
             "title": "c"
@@ -582,12 +520,10 @@
           "observer": "sl:alice",
           "about": [],
           "of": "task:2",
-          "value": "",
           "prev": ["r:00000000000000000000000000000000000000000000000009a0"],
           "emitted": "2026-10-01T00:03:30Z",
           "occurred": "2026-10-01T00:03:30Z",
           "sets": ["status"],
-          "n": 0,
           "fields": {
             "status": "closed"
           }
@@ -598,12 +534,10 @@
           "observer": "sl:bob",
           "about": [],
           "of": "task:2",
-          "value": "",
           "prev": ["r:00000000000000000000000000000000000000000000000009a0"],
           "emitted": "2026-10-01T00:03:40Z",
           "occurred": "2026-10-01T00:03:40Z",
           "sets": ["status"],
-          "n": 0,
           "fields": {
             "status": "done"
           }
@@ -614,12 +548,10 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "task:2",
-          "value": "",
           "prev": ["r:00000000000000000000000000000000000000000000000009ag", "r:00000000000000000000000000000000000000000000000009b0"],
           "emitted": "2026-10-01T00:05:20Z",
           "occurred": "2026-10-01T00:05:20Z",
-          "sets": [],
-          "n": 0
+          "sets": []
         },
         {
           "id": "r:00000000000000000000000000000000000000000000000009c0",
@@ -627,11 +559,9 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "task:3",
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:02:00Z",
           "occurred": "2026-10-01T00:02:00Z",
-          "n": 0,
           "fields": {
             "status": "open",
             "title": "e"
@@ -655,12 +585,10 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "task:3",
-          "value": "",
           "prev": ["r:00000000000000000000000000000000000000000000000009cg"],
           "emitted": "2026-10-01T00:05:30Z",
           "occurred": "2026-10-01T00:05:30Z",
           "sets": ["title"],
-          "n": 0,
           "fields": {
             "title": "f"
           }
@@ -670,11 +598,9 @@
           "kind": "erasure",
           "observer": "sl:kyle",
           "about": [],
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:06:40Z",
-          "erases": ["r:00000000000000000000000000000000000000000000000009cg"],
-          "n": 0
+          "erases": ["r:00000000000000000000000000000000000000000000000009cg"]
         },
         {
           "id": "r:000000000000000000000000000000000000000000000000098g",
@@ -682,11 +608,9 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "task:1",
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:01:40Z",
           "occurred": "2026-10-01T00:01:40Z",
-          "n": 0,
           "fields": {
             "status": "open",
             "title": "a",
@@ -699,12 +623,10 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "task:1",
-          "value": "",
           "prev": ["r:000000000000000000000000000000000000000000000000098g"],
           "emitted": "2026-10-01T00:03:20Z",
           "occurred": "2026-10-01T00:03:20Z",
           "sets": ["status"],
-          "n": 0,
           "fields": {
             "status": "closed"
           }
@@ -715,12 +637,10 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "task:1",
-          "value": "",
           "prev": ["r:0000000000000000000000000000000000000000000000000990"],
           "emitted": "2026-10-01T00:05:00Z",
           "occurred": "2026-10-01T00:05:00Z",
           "sets": ["title"],
-          "n": 0,
           "fields": {
             "title": "b"
           }
@@ -733,12 +653,10 @@
           "observer": "sl:alice",
           "about": [],
           "of": "task:2",
-          "value": "",
           "prev": ["r:00000000000000000000000000000000000000000000000009a0"],
           "emitted": "2026-10-01T00:03:30Z",
           "occurred": "2026-10-01T00:03:30Z",
           "sets": ["status"],
-          "n": 0,
           "fields": {
             "status": "closed"
           }
@@ -749,12 +667,10 @@
           "observer": "sl:bob",
           "about": [],
           "of": "task:2",
-          "value": "",
           "prev": ["r:00000000000000000000000000000000000000000000000009a0"],
           "emitted": "2026-10-01T00:03:40Z",
           "occurred": "2026-10-01T00:03:40Z",
           "sets": ["status"],
-          "n": 0,
           "fields": {
             "status": "done"
           }
@@ -765,12 +681,10 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "task:2",
-          "value": "",
           "prev": ["r:00000000000000000000000000000000000000000000000009ag", "r:00000000000000000000000000000000000000000000000009b0"],
           "emitted": "2026-10-01T00:05:20Z",
           "occurred": "2026-10-01T00:05:20Z",
-          "sets": [],
-          "n": 0
+          "sets": []
         },
         {
           "id": "r:00000000000000000000000000000000000000000000000009c0",
@@ -778,11 +692,9 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "task:3",
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:02:00Z",
           "occurred": "2026-10-01T00:02:00Z",
-          "n": 0,
           "fields": {
             "status": "open",
             "title": "e"
@@ -806,12 +718,10 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "task:3",
-          "value": "",
           "prev": ["r:00000000000000000000000000000000000000000000000009cg"],
           "emitted": "2026-10-01T00:05:30Z",
           "occurred": "2026-10-01T00:05:30Z",
           "sets": ["title"],
-          "n": 0,
           "fields": {
             "title": "f"
           }
@@ -821,11 +731,9 @@
           "kind": "erasure",
           "observer": "sl:kyle",
           "about": [],
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:06:40Z",
-          "erases": ["r:00000000000000000000000000000000000000000000000009cg"],
-          "n": 0
+          "erases": ["r:00000000000000000000000000000000000000000000000009cg"]
         },
         {
           "id": "r:000000000000000000000000000000000000000000000000098g",
@@ -833,11 +741,9 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "task:1",
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:01:40Z",
           "occurred": "2026-10-01T00:01:40Z",
-          "n": 0,
           "fields": {
             "status": "open",
             "title": "a",
@@ -850,12 +756,10 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "task:1",
-          "value": "",
           "prev": ["r:000000000000000000000000000000000000000000000000098g"],
           "emitted": "2026-10-01T00:03:20Z",
           "occurred": "2026-10-01T00:03:20Z",
           "sets": ["status"],
-          "n": 0,
           "fields": {
             "status": "closed"
           }
@@ -866,12 +770,10 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "task:1",
-          "value": "",
           "prev": ["r:0000000000000000000000000000000000000000000000000990"],
           "emitted": "2026-10-01T00:05:00Z",
           "occurred": "2026-10-01T00:05:00Z",
           "sets": ["title"],
-          "n": 0,
           "fields": {
             "title": "b"
           }
@@ -882,11 +784,9 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "task:2",
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:01:50Z",
           "occurred": "2026-10-01T00:01:50Z",
-          "n": 0,
           "fields": {
             "status": "open",
             "title": "c"
@@ -900,12 +800,10 @@
           "observer": "sl:bob",
           "about": [],
           "of": "task:2",
-          "value": "",
           "prev": ["r:00000000000000000000000000000000000000000000000009a0"],
           "emitted": "2026-10-01T00:03:40Z",
           "occurred": "2026-10-01T00:03:40Z",
           "sets": ["status"],
-          "n": 0,
           "fields": {
             "status": "done"
           }
@@ -916,12 +814,10 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "task:2",
-          "value": "",
           "prev": ["r:00000000000000000000000000000000000000000000000009ag", "r:00000000000000000000000000000000000000000000000009b0"],
           "emitted": "2026-10-01T00:05:20Z",
           "occurred": "2026-10-01T00:05:20Z",
-          "sets": [],
-          "n": 0
+          "sets": []
         },
         {
           "id": "r:00000000000000000000000000000000000000000000000009c0",
@@ -929,11 +825,9 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "task:3",
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:02:00Z",
           "occurred": "2026-10-01T00:02:00Z",
-          "n": 0,
           "fields": {
             "status": "open",
             "title": "e"
@@ -957,12 +851,10 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "task:3",
-          "value": "",
           "prev": ["r:00000000000000000000000000000000000000000000000009cg"],
           "emitted": "2026-10-01T00:05:30Z",
           "occurred": "2026-10-01T00:05:30Z",
           "sets": ["title"],
-          "n": 0,
           "fields": {
             "title": "f"
           }
@@ -972,11 +864,9 @@
           "kind": "erasure",
           "observer": "sl:kyle",
           "about": [],
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:06:40Z",
-          "erases": ["r:00000000000000000000000000000000000000000000000009cg"],
-          "n": 0
+          "erases": ["r:00000000000000000000000000000000000000000000000009cg"]
         },
         {
           "id": "r:000000000000000000000000000000000000000000000000098g",
@@ -984,11 +874,9 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "task:1",
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:01:40Z",
           "occurred": "2026-10-01T00:01:40Z",
-          "n": 0,
           "fields": {
             "status": "open",
             "title": "a",
@@ -1001,12 +889,10 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "task:1",
-          "value": "",
           "prev": ["r:000000000000000000000000000000000000000000000000098g"],
           "emitted": "2026-10-01T00:03:20Z",
           "occurred": "2026-10-01T00:03:20Z",
           "sets": ["status"],
-          "n": 0,
           "fields": {
             "status": "closed"
           }
@@ -1017,12 +903,10 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "task:1",
-          "value": "",
           "prev": ["r:0000000000000000000000000000000000000000000000000990"],
           "emitted": "2026-10-01T00:05:00Z",
           "occurred": "2026-10-01T00:05:00Z",
           "sets": ["title"],
-          "n": 0,
           "fields": {
             "title": "b"
           }
@@ -1033,11 +917,9 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "task:2",
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:01:50Z",
           "occurred": "2026-10-01T00:01:50Z",
-          "n": 0,
           "fields": {
             "status": "open",
             "title": "c"
@@ -1049,12 +931,10 @@
           "observer": "sl:alice",
           "about": [],
           "of": "task:2",
-          "value": "",
           "prev": ["r:00000000000000000000000000000000000000000000000009a0"],
           "emitted": "2026-10-01T00:03:30Z",
           "occurred": "2026-10-01T00:03:30Z",
           "sets": ["status"],
-          "n": 0,
           "fields": {
             "status": "closed"
           }
@@ -1067,12 +947,10 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "task:2",
-          "value": "",
           "prev": ["r:00000000000000000000000000000000000000000000000009ag", "r:00000000000000000000000000000000000000000000000009b0"],
           "emitted": "2026-10-01T00:05:20Z",
           "occurred": "2026-10-01T00:05:20Z",
-          "sets": [],
-          "n": 0
+          "sets": []
         },
         {
           "id": "r:00000000000000000000000000000000000000000000000009c0",
@@ -1080,11 +958,9 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "task:3",
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:02:00Z",
           "occurred": "2026-10-01T00:02:00Z",
-          "n": 0,
           "fields": {
             "status": "open",
             "title": "e"
@@ -1108,12 +984,10 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "task:3",
-          "value": "",
           "prev": ["r:00000000000000000000000000000000000000000000000009cg"],
           "emitted": "2026-10-01T00:05:30Z",
           "occurred": "2026-10-01T00:05:30Z",
           "sets": ["title"],
-          "n": 0,
           "fields": {
             "title": "f"
           }
@@ -1123,11 +997,9 @@
           "kind": "erasure",
           "observer": "sl:kyle",
           "about": [],
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:06:40Z",
-          "erases": ["r:00000000000000000000000000000000000000000000000009cg"],
-          "n": 0
+          "erases": ["r:00000000000000000000000000000000000000000000000009cg"]
         },
         {
           "id": "r:000000000000000000000000000000000000000000000000098g",
@@ -1135,11 +1007,9 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "task:1",
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:01:40Z",
           "occurred": "2026-10-01T00:01:40Z",
-          "n": 0,
           "fields": {
             "status": "open",
             "title": "a",
@@ -1152,12 +1022,10 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "task:1",
-          "value": "",
           "prev": ["r:000000000000000000000000000000000000000000000000098g"],
           "emitted": "2026-10-01T00:03:20Z",
           "occurred": "2026-10-01T00:03:20Z",
           "sets": ["status"],
-          "n": 0,
           "fields": {
             "status": "closed"
           }
@@ -1168,12 +1036,10 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "task:1",
-          "value": "",
           "prev": ["r:0000000000000000000000000000000000000000000000000990"],
           "emitted": "2026-10-01T00:05:00Z",
           "occurred": "2026-10-01T00:05:00Z",
           "sets": ["title"],
-          "n": 0,
           "fields": {
             "title": "b"
           }
@@ -1184,11 +1050,9 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "task:2",
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:01:50Z",
           "occurred": "2026-10-01T00:01:50Z",
-          "n": 0,
           "fields": {
             "status": "open",
             "title": "c"
@@ -1200,12 +1064,10 @@
           "observer": "sl:alice",
           "about": [],
           "of": "task:2",
-          "value": "",
           "prev": ["r:00000000000000000000000000000000000000000000000009a0"],
           "emitted": "2026-10-01T00:03:30Z",
           "occurred": "2026-10-01T00:03:30Z",
           "sets": ["status"],
-          "n": 0,
           "fields": {
             "status": "closed"
           }
@@ -1216,12 +1078,10 @@
           "observer": "sl:bob",
           "about": [],
           "of": "task:2",
-          "value": "",
           "prev": ["r:00000000000000000000000000000000000000000000000009a0"],
           "emitted": "2026-10-01T00:03:40Z",
           "occurred": "2026-10-01T00:03:40Z",
           "sets": ["status"],
-          "n": 0,
           "fields": {
             "status": "done"
           }
@@ -1234,11 +1094,9 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "task:3",
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:02:00Z",
           "occurred": "2026-10-01T00:02:00Z",
-          "n": 0,
           "fields": {
             "status": "open",
             "title": "e"
@@ -1262,12 +1120,10 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "task:3",
-          "value": "",
           "prev": ["r:00000000000000000000000000000000000000000000000009cg"],
           "emitted": "2026-10-01T00:05:30Z",
           "occurred": "2026-10-01T00:05:30Z",
           "sets": ["title"],
-          "n": 0,
           "fields": {
             "title": "f"
           }
@@ -1277,11 +1133,9 @@
           "kind": "erasure",
           "observer": "sl:kyle",
           "about": [],
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:06:40Z",
-          "erases": ["r:00000000000000000000000000000000000000000000000009cg"],
-          "n": 0
+          "erases": ["r:00000000000000000000000000000000000000000000000009cg"]
         },
         {
           "id": "r:000000000000000000000000000000000000000000000000098g",
@@ -1289,11 +1143,9 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "task:1",
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:01:40Z",
           "occurred": "2026-10-01T00:01:40Z",
-          "n": 0,
           "fields": {
             "status": "open",
             "title": "a",
@@ -1306,12 +1158,10 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "task:1",
-          "value": "",
           "prev": ["r:000000000000000000000000000000000000000000000000098g"],
           "emitted": "2026-10-01T00:03:20Z",
           "occurred": "2026-10-01T00:03:20Z",
           "sets": ["status"],
-          "n": 0,
           "fields": {
             "status": "closed"
           }
@@ -1322,12 +1172,10 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "task:1",
-          "value": "",
           "prev": ["r:0000000000000000000000000000000000000000000000000990"],
           "emitted": "2026-10-01T00:05:00Z",
           "occurred": "2026-10-01T00:05:00Z",
           "sets": ["title"],
-          "n": 0,
           "fields": {
             "title": "b"
           }
@@ -1338,11 +1186,9 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "task:2",
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:01:50Z",
           "occurred": "2026-10-01T00:01:50Z",
-          "n": 0,
           "fields": {
             "status": "open",
             "title": "c"
@@ -1354,12 +1200,10 @@
           "observer": "sl:alice",
           "about": [],
           "of": "task:2",
-          "value": "",
           "prev": ["r:00000000000000000000000000000000000000000000000009a0"],
           "emitted": "2026-10-01T00:03:30Z",
           "occurred": "2026-10-01T00:03:30Z",
           "sets": ["status"],
-          "n": 0,
           "fields": {
             "status": "closed"
           }
@@ -1370,12 +1214,10 @@
           "observer": "sl:bob",
           "about": [],
           "of": "task:2",
-          "value": "",
           "prev": ["r:00000000000000000000000000000000000000000000000009a0"],
           "emitted": "2026-10-01T00:03:40Z",
           "occurred": "2026-10-01T00:03:40Z",
           "sets": ["status"],
-          "n": 0,
           "fields": {
             "status": "done"
           }
@@ -1386,12 +1228,10 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "task:2",
-          "value": "",
           "prev": ["r:00000000000000000000000000000000000000000000000009ag", "r:00000000000000000000000000000000000000000000000009b0"],
           "emitted": "2026-10-01T00:05:20Z",
           "occurred": "2026-10-01T00:05:20Z",
-          "sets": [],
-          "n": 0
+          "sets": []
         }
       ],
       [
@@ -1413,12 +1253,10 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "task:3",
-          "value": "",
           "prev": ["r:00000000000000000000000000000000000000000000000009cg"],
           "emitted": "2026-10-01T00:05:30Z",
           "occurred": "2026-10-01T00:05:30Z",
           "sets": ["title"],
-          "n": 0,
           "fields": {
             "title": "f"
           }
@@ -1428,11 +1266,9 @@
           "kind": "erasure",
           "observer": "sl:kyle",
           "about": [],
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:06:40Z",
-          "erases": ["r:00000000000000000000000000000000000000000000000009cg"],
-          "n": 0
+          "erases": ["r:00000000000000000000000000000000000000000000000009cg"]
         },
         {
           "id": "r:000000000000000000000000000000000000000000000000098g",
@@ -1440,11 +1276,9 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "task:1",
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:01:40Z",
           "occurred": "2026-10-01T00:01:40Z",
-          "n": 0,
           "fields": {
             "status": "open",
             "title": "a",
@@ -1457,12 +1291,10 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "task:1",
-          "value": "",
           "prev": ["r:000000000000000000000000000000000000000000000000098g"],
           "emitted": "2026-10-01T00:03:20Z",
           "occurred": "2026-10-01T00:03:20Z",
           "sets": ["status"],
-          "n": 0,
           "fields": {
             "status": "closed"
           }
@@ -1473,12 +1305,10 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "task:1",
-          "value": "",
           "prev": ["r:0000000000000000000000000000000000000000000000000990"],
           "emitted": "2026-10-01T00:05:00Z",
           "occurred": "2026-10-01T00:05:00Z",
           "sets": ["title"],
-          "n": 0,
           "fields": {
             "title": "b"
           }
@@ -1489,11 +1319,9 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "task:2",
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:01:50Z",
           "occurred": "2026-10-01T00:01:50Z",
-          "n": 0,
           "fields": {
             "status": "open",
             "title": "c"
@@ -1505,12 +1333,10 @@
           "observer": "sl:alice",
           "about": [],
           "of": "task:2",
-          "value": "",
           "prev": ["r:00000000000000000000000000000000000000000000000009a0"],
           "emitted": "2026-10-01T00:03:30Z",
           "occurred": "2026-10-01T00:03:30Z",
           "sets": ["status"],
-          "n": 0,
           "fields": {
             "status": "closed"
           }
@@ -1521,12 +1347,10 @@
           "observer": "sl:bob",
           "about": [],
           "of": "task:2",
-          "value": "",
           "prev": ["r:00000000000000000000000000000000000000000000000009a0"],
           "emitted": "2026-10-01T00:03:40Z",
           "occurred": "2026-10-01T00:03:40Z",
           "sets": ["status"],
-          "n": 0,
           "fields": {
             "status": "done"
           }
@@ -1537,12 +1361,10 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "task:2",
-          "value": "",
           "prev": ["r:00000000000000000000000000000000000000000000000009ag", "r:00000000000000000000000000000000000000000000000009b0"],
           "emitted": "2026-10-01T00:05:20Z",
           "occurred": "2026-10-01T00:05:20Z",
-          "sets": [],
-          "n": 0
+          "sets": []
         },
         {
           "id": "r:00000000000000000000000000000000000000000000000009c0",
@@ -1550,11 +1372,9 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "task:3",
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:02:00Z",
           "occurred": "2026-10-01T00:02:00Z",
-          "n": 0,
           "fields": {
             "status": "open",
             "title": "e"
@@ -1568,12 +1388,10 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "task:3",
-          "value": "",
           "prev": ["r:00000000000000000000000000000000000000000000000009cg"],
           "emitted": "2026-10-01T00:05:30Z",
           "occurred": "2026-10-01T00:05:30Z",
           "sets": ["title"],
-          "n": 0,
           "fields": {
             "title": "f"
           }
@@ -1583,11 +1401,9 @@
           "kind": "erasure",
           "observer": "sl:kyle",
           "about": [],
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:06:40Z",
-          "erases": ["r:00000000000000000000000000000000000000000000000009cg"],
-          "n": 0
+          "erases": ["r:00000000000000000000000000000000000000000000000009cg"]
         },
         {
           "id": "r:000000000000000000000000000000000000000000000000098g",
@@ -1595,11 +1411,9 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "task:1",
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:01:40Z",
           "occurred": "2026-10-01T00:01:40Z",
-          "n": 0,
           "fields": {
             "status": "open",
             "title": "a",
@@ -1612,12 +1426,10 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "task:1",
-          "value": "",
           "prev": ["r:000000000000000000000000000000000000000000000000098g"],
           "emitted": "2026-10-01T00:03:20Z",
           "occurred": "2026-10-01T00:03:20Z",
           "sets": ["status"],
-          "n": 0,
           "fields": {
             "status": "closed"
           }
@@ -1628,12 +1440,10 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "task:1",
-          "value": "",
           "prev": ["r:0000000000000000000000000000000000000000000000000990"],
           "emitted": "2026-10-01T00:05:00Z",
           "occurred": "2026-10-01T00:05:00Z",
           "sets": ["title"],
-          "n": 0,
           "fields": {
             "title": "b"
           }
@@ -1644,11 +1454,9 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "task:2",
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:01:50Z",
           "occurred": "2026-10-01T00:01:50Z",
-          "n": 0,
           "fields": {
             "status": "open",
             "title": "c"
@@ -1660,12 +1468,10 @@
           "observer": "sl:alice",
           "about": [],
           "of": "task:2",
-          "value": "",
           "prev": ["r:00000000000000000000000000000000000000000000000009a0"],
           "emitted": "2026-10-01T00:03:30Z",
           "occurred": "2026-10-01T00:03:30Z",
           "sets": ["status"],
-          "n": 0,
           "fields": {
             "status": "closed"
           }
@@ -1676,12 +1482,10 @@
           "observer": "sl:bob",
           "about": [],
           "of": "task:2",
-          "value": "",
           "prev": ["r:00000000000000000000000000000000000000000000000009a0"],
           "emitted": "2026-10-01T00:03:40Z",
           "occurred": "2026-10-01T00:03:40Z",
           "sets": ["status"],
-          "n": 0,
           "fields": {
             "status": "done"
           }
@@ -1692,12 +1496,10 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "task:2",
-          "value": "",
           "prev": ["r:00000000000000000000000000000000000000000000000009ag", "r:00000000000000000000000000000000000000000000000009b0"],
           "emitted": "2026-10-01T00:05:20Z",
           "occurred": "2026-10-01T00:05:20Z",
-          "sets": [],
-          "n": 0
+          "sets": []
         },
         {
           "id": "r:00000000000000000000000000000000000000000000000009c0",
@@ -1705,11 +1507,9 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "task:3",
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:02:00Z",
           "occurred": "2026-10-01T00:02:00Z",
-          "n": 0,
           "fields": {
             "status": "open",
             "title": "e"
@@ -1734,11 +1534,9 @@
           "kind": "erasure",
           "observer": "sl:kyle",
           "about": [],
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:06:40Z",
-          "erases": ["r:00000000000000000000000000000000000000000000000009cg"],
-          "n": 0
+          "erases": ["r:00000000000000000000000000000000000000000000000009cg"]
         },
         {
           "id": "r:000000000000000000000000000000000000000000000000098g",
@@ -1746,11 +1544,9 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "task:1",
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:01:40Z",
           "occurred": "2026-10-01T00:01:40Z",
-          "n": 0,
           "fields": {
             "status": "open",
             "title": "a",
@@ -1763,12 +1559,10 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "task:1",
-          "value": "",
           "prev": ["r:000000000000000000000000000000000000000000000000098g"],
           "emitted": "2026-10-01T00:03:20Z",
           "occurred": "2026-10-01T00:03:20Z",
           "sets": ["status"],
-          "n": 0,
           "fields": {
             "status": "closed"
           }
@@ -1779,12 +1573,10 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "task:1",
-          "value": "",
           "prev": ["r:0000000000000000000000000000000000000000000000000990"],
           "emitted": "2026-10-01T00:05:00Z",
           "occurred": "2026-10-01T00:05:00Z",
           "sets": ["title"],
-          "n": 0,
           "fields": {
             "title": "b"
           }
@@ -1795,11 +1587,9 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "task:2",
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:01:50Z",
           "occurred": "2026-10-01T00:01:50Z",
-          "n": 0,
           "fields": {
             "status": "open",
             "title": "c"
@@ -1811,12 +1601,10 @@
           "observer": "sl:alice",
           "about": [],
           "of": "task:2",
-          "value": "",
           "prev": ["r:00000000000000000000000000000000000000000000000009a0"],
           "emitted": "2026-10-01T00:03:30Z",
           "occurred": "2026-10-01T00:03:30Z",
           "sets": ["status"],
-          "n": 0,
           "fields": {
             "status": "closed"
           }
@@ -1827,12 +1615,10 @@
           "observer": "sl:bob",
           "about": [],
           "of": "task:2",
-          "value": "",
           "prev": ["r:00000000000000000000000000000000000000000000000009a0"],
           "emitted": "2026-10-01T00:03:40Z",
           "occurred": "2026-10-01T00:03:40Z",
           "sets": ["status"],
-          "n": 0,
           "fields": {
             "status": "done"
           }
@@ -1843,12 +1629,10 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "task:2",
-          "value": "",
           "prev": ["r:00000000000000000000000000000000000000000000000009ag", "r:00000000000000000000000000000000000000000000000009b0"],
           "emitted": "2026-10-01T00:05:20Z",
           "occurred": "2026-10-01T00:05:20Z",
-          "sets": [],
-          "n": 0
+          "sets": []
         },
         {
           "id": "r:00000000000000000000000000000000000000000000000009c0",
@@ -1856,11 +1640,9 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "task:3",
-          "value": "",
           "prev": [],
           "emitted": "2026-10-01T00:02:00Z",
           "occurred": "2026-10-01T00:02:00Z",
-          "n": 0,
           "fields": {
             "status": "open",
             "title": "e"
@@ -1884,12 +1666,10 @@
           "observer": "sl:kyle",
           "about": [],
           "of": "task:3",
-          "value": "",
           "prev": ["r:00000000000000000000000000000000000000000000000009cg"],
           "emitted": "2026-10-01T00:05:30Z",
           "occurred": "2026-10-01T00:05:30Z",
           "sets": ["title"],
-          "n": 0,
           "fields": {
             "title": "f"
           }

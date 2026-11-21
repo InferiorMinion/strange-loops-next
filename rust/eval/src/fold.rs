@@ -57,10 +57,16 @@ fn over_whole_heads<T>(f: impl FnOnce(&LatestBy) -> T, xs: &[Record]) -> T {
 fn one(layer: &str, xs: &[Record], cs: &[Cond]) -> Result<Json, String> {
     Ok(match layer {
         "fold/count" => integer(fold::count_fold(0_u64.into(), xs)),
-        "fold/sum" => Json::Int(fold::sum_fold(0_i64.into(), xs)),
+        "fold/sum" => Json::Int(fold::sum_fold(|r| r.num("n"), 0_i64.into(), xs)),
         "fold/extrema" => object(vec![
-            ("min", optional_int(fold::min_fold(None, xs))),
-            ("max", optional_int(fold::max_fold(None, xs))),
+            (
+                "min",
+                optional_int(fold::min_fold(|r| r.num("n"), None, xs)),
+            ),
+            (
+                "max",
+                optional_int(fold::max_fold(|r| r.num("n"), None, xs)),
+            ),
         ]),
         "fold/latest" => latest(&fold::latest_fold(xs)),
         "fold/latest-by" => thing_states(xs),
@@ -175,15 +181,13 @@ mod tests {
 
     #[test]
     fn decoder_has_no_hidden_defaults_or_payloads() {
-        let valid = r#"{"id":"r:0000000000000000000000000000000000000000000000000000","kind":"","observer":"","about":[],"prev":[],"emitted":"2026-01-01T00:00:00Z","value":"","n":0}"#;
+        let valid = r#"{"id":"r:0000000000000000000000000000000000000000000000000000","kind":"","observer":"","about":[],"prev":[],"emitted":"2026-01-01T00:00:00Z","fields":{"value":"","n":0}}"#;
         let raw = parse(valid);
         assert!(
             record("r", &raw).is_ok(),
             "reader does not enforce writer kind/ref rules"
         );
-        for key in [
-            "id", "kind", "observer", "about", "prev", "emitted", "value", "n",
-        ] {
+        for key in ["id", "kind", "observer", "about", "prev", "emitted"] {
             let mut missing = raw.clone();
             let loops::json::Json::Obj(kvs) = &mut missing else {
                 unreachable!()
@@ -195,7 +199,7 @@ mod tests {
             r#","shown":"hidden""#,
             r#","shown":"withheld""#,
             r#","under":null"#,
-            r#","fields":{"n":1}"#,
+            r#","value":"""#,
             r#","fields":{"x":1,"x":2}"#,
             r#","unknown":1"#,
             r#","n":1"#,
@@ -207,11 +211,11 @@ mod tests {
         let loops::json::Json::Obj(kvs) = &mut hidden else {
             unreachable!()
         };
-        kvs.retain(|(k, _)| k != "value" && k != "n");
+        kvs.retain(|(k, _)| k != "fields");
         kvs.push(("shown".into(), loops::json::Json::Str("erased".into())));
         let r = record("r", &hidden).expect("valid erased form");
-        assert_eq!(r.n, loops::number::Int::default());
-        assert_eq!(r.value, "");
+        assert_eq!(r.get("n"), None);
+        assert_eq!(r.get("value"), None);
         let bad_id = valid.replace(
             "0000000000000000000000000000000000000000000000000000",
             "0000000000000000000000000000000000000000000000000001",
@@ -226,7 +230,7 @@ mod tests {
     fn fixture_numbers_round_to_binary64_before_whole_readability() {
         let n = "170141183460469231731687303715884105728000";
         let input = format!(
-            r#"{{"orders":[[{{"id":"r:0000000000000000000000000000000000000000000000000000","kind":"","observer":"","about":[],"prev":[],"emitted":"2026-01-01T00:00:00Z","value":"","n":{n}}}]]}}"#
+            r#"{{"orders":[[{{"id":"r:0000000000000000000000000000000000000000000000000000","kind":"","observer":"","about":[],"prev":[],"emitted":"2026-01-01T00:00:00Z","fields":{{"n":{n}}}}}]]}}"#
         );
         let raw = parse(&input);
         let loops::json::Json::Obj(root) = &raw else {
@@ -239,14 +243,17 @@ mod tests {
             unreachable!()
         };
         let record = record("r", &xs[0]).expect("big fixture");
-        assert!(record.n_number.is_some());
+        assert!(matches!(
+            record.get("n"),
+            Some(loops::record::Val::Number(_))
+        ));
         assert_eq!(
             answers("fold/sum", &raw).expect("big answer"),
             vec![parse("0")]
         );
         assert_eq!(
             answers("fold/extrema", &raw).expect("big extrema"),
-            vec![parse(r#"{"min":0,"max":0}"#)]
+            vec![parse(r#"{"min":null,"max":null}"#)]
         );
         // A genuine member with serde_json's number sentinel spelling stays an object.
         let sentinel = parse(r#"{"$serde_json::private::Number":"12"}"#);

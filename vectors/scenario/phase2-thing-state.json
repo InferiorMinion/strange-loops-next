@@ -30,10 +30,11 @@
         "observer": "sl:ada",
         "about": ["decision:auth", "decision:other"],
         "of": "decision:auth",
-        "value": "Other thing mentioned.",
         "prev": [],
         "emitted": "2026-10-01T00:03:20Z",
-        "n": 0
+        "fields": {
+          "value": "Other thing mentioned."
+        }
       },
       {
         "id": "r:00000000000000000000000000000000000000000000000003q0",
@@ -41,10 +42,11 @@
         "observer": "sl:bo",
         "about": [],
         "of": "decision:auth",
-        "value": "Auth revised.",
         "prev": ["r:00000000000000000000000000000000000000000000000003pg"],
         "emitted": "2026-10-01T00:01:40Z",
-        "n": 0
+        "fields": {
+          "value": "Auth revised."
+        }
       }
     ],
     "steps": [

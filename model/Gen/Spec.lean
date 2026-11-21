@@ -290,7 +290,7 @@ def parseVector (name : String) (j : Json) : Except String J := do
 
 def task (id : RecordId) (thing : String) (occurred : Nat) (fields : List (String × Val))
     (prev : List RecordId := []) (ok : Reads occurred := by decide) : Record :=
-  { id, kind := "task", observer := "sl:kyle", of := some thing, value := "", prev, occurred := some (claimAt occurred ok),
+  { id, kind := "task", observer := "sl:kyle", of := some thing, prev, occurred := some (claimAt occurred ok),
     emitted := stampAt occurred ok, fields }
 
 -- task:1 opens, then closes; task:2 is open; task:3 is open but its payload is withheld
@@ -304,7 +304,7 @@ def n1 : Record := { task (fixtureId 0x45) "task:2" 170 [] with kind := "note" }
 -- as days, a day that starts with them, an instant, an open span, one in
 -- September, one without, and one withheld, whose envelope tests still answer
 def ev (id : RecordId) (occurred : Option Claim) (emitted : Nat) (ok : Reads emitted := by decide) : Record :=
-  { id, kind := "event", observer := "sl:kyle", about := [s!"event:{id}"], value := "", prev := [], occurred,
+  { id, kind := "event", observer := "sl:kyle", about := [s!"event:{id}"], prev := [], occurred,
     emitted := stampAt emitted ok }
 
 def e1 := ev (fixtureId 0x51) (some (claim "2026-10")) 100
@@ -346,7 +346,7 @@ def boundSpec : Json := o [("vertex", s "estimates"),
 -- record is of the first thing it mentions; the root, of its own id.
 def said (id : RecordId) (observer : String) (about : List String) (t : Nat)
     (ok : Reads t := by decide) : Record :=
-  { id, kind := "task", observer, about, of := about.head?, value := "", prev := [], emitted := stampAt t ok }
+  { id, kind := "task", observer, about, of := about.head?, prev := [], emitted := stampAt t ok }
 
 def a1 : Record := { said (fixtureId 0x61) "sl:alice" ["task:1"] 100 with fields := [("kind", .str "chore")] }
 def a2 : Record := { said (fixtureId 0x62) "sl:bob" ["task:1"] 200 with prev := [fixtureId 0x61], fields := [("kind", .str "bug")] }
@@ -397,7 +397,7 @@ def taskSpec : Json := o [("vertex", s "tasks"),
     ("open-now", o [("count", .bool true), ("follow", s "prev"), ("where", o [("status", o [("is", s "open")])])]),
     ("est-now", o [("sum", s "est"), ("follow", s "prev")])])]
 
--- Hidden payloads must not supply numbers, even though their placeholder is zero.
+-- Hidden payloads contribute one unread record to each numeric slot.
 -- The erased task's eraser is no task, so `from` does not take it.
 def hiddenNumbersSpec : Json := o [("vertex", s "hidden-numbers"),
   ("from", a [o [("store", s "."), ("kind", a [s "task"])]]),
@@ -560,8 +560,8 @@ def byAboutSpec : Json := o [("vertex", s "per-project"),
 -- A revision whose `prev` names a record of another thing is refused, by
 -- admission over everything held. Grouped by project, the refused record would
 -- be alone in its group, where nothing refuses it.
-def y1 : Record := { tb (fixtureId 0x31) "task:1" 100 "sl:kyle" ["project:x"] [] with n := 5 }
-def y2 : Record := { tb (fixtureId 0x32) "task:2" 200 "sl:kyle" ["project:y"] [] [fixtureId 0x31] with n := 1 }
+def y1 : Record := tb (fixtureId 0x31) "task:1" 100 "sl:kyle" ["project:x"] [("n", .int 5)]
+def y2 : Record := tb (fixtureId 0x32) "task:2" 200 "sl:kyle" ["project:y"] [("n", .int 1)] [fixtureId 0x31]
 
 def byAdmitSpec : Json := o [("vertex", s "admitted"),
   ("from", a [o [("store", s ".")]]),
@@ -1120,12 +1120,38 @@ structure RunCase where
   spec : Json
   records : List Record
 
+def backupCase : RunCase :=
+  ⟨"pv2-backups", ["numeric.safe-whole", "result.unread", "by.accounting"],
+    o [("vertex", s "backups"), ("from", a [o [("store", s ".")]]), ("fold", o [
+      ("min", o [("min", s "n")]), ("sum", o [("sum", s "n")]), ("max", o [("max", s "n")]),
+      ("snapshots", o [("min", s "snapshots")]),
+      ("by-n", o [("count", .bool true), ("by", s "n")])])],
+    [task (fixtureId 0x301) "backup:nuc1" 100 [("host", .str "nuc1"), ("n", .int 14)],
+     task (fixtureId 0x302) "backup:nuc2" 101 [("host", .str "nuc2"), ("n", .int 9)],
+     task (fixtureId 0x303) "backup:nas" 102 [("host", .str "nas"), ("status", .str "failed")],
+     task (fixtureId 0x304) "backup:pi" 103 [("host", .str "pi"), ("snapshots", .int 3)]]⟩
+
+def settingsCase : RunCase :=
+  let countWhere (op : String) (arg : Json) := o [("count", .bool true), ("where", o [("value", o [(op, arg)])])]
+  ⟨"pv2-settings", ["where.complements", "by.accounting"],
+    o [("vertex", s "settings"), ("from", a [o [("store", s ".")]]), ("fold", o [
+      ("present", countWhere "present" (.bool true)), ("absent", countWhere "absent" (.bool true)),
+      ("empty", countWhere "is" (s "")), ("by-value", o [("count", .bool true), ("by", s "value")])])],
+    [task (fixtureId 0x305) "setting:dns" 100 [("value", .str "1.1.1.1")],
+     task (fixtureId 0x306) "setting:ntp" 101 [("value", .str "pool.ntp.org")],
+     task (fixtureId 0x307) "setting:proxy" 102 [("enabled", .bool false)]]⟩
+
 def runCases : List RunCase := [
+  backupCase, settingsCase,
+  { backupCase with name := "pv2-written-zero", records := backupCase.records ++
+      [task (fixtureId 0x308) "backup:empty" 104 [("n", .int 0)]] },
+  { settingsCase with name := "pv2-written-empty", records := settingsCase.records ++
+      [task (fixtureId 0x309) "setting:empty" 103 [("value", .str "")]] },
   ⟨"phase2-exact-output", ["spec.set", "sum.perm", "numeric.safe-whole"],
     o [("vertex", s "exact-output"), ("from", a [o [("store", s ".")]]),
       ("fold", o [("n", o [("sum", s "n")]), ("field", o [("sum", s "est")])])],
-    [{ task (fixtureId 0xf1) "task:1" 100 [("est", .int 9007199254740991)] with n := 9007199254740991 },
-      { task (fixtureId 0xf2) "task:2" 110 [("est", .int 2)] with n := 2 }]⟩,
+    [task (fixtureId 0xf1) "task:1" 100 [("est", .int 9007199254740991), ("n", .int 9007199254740991)],
+      task (fixtureId 0xf2) "task:2" 110 [("est", .int 2), ("n", .int 2)]]⟩,
   ⟨"01-tasks", ["spec.set", "spec.select"], taskSpec, [t1, t2, t3, n1]⟩,
   ⟨"02-withheld-payload", ["spec.set", "view.refines", "result.unread"], taskSpec, [t1, t2, t3, t4, n1]⟩,
   ⟨"03-withheld-successor", ["spec.set", "view.no-resurrection", "result.unread"], taskSpec,

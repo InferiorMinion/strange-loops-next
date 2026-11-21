@@ -2,7 +2,6 @@
 use loops::{
     base32, envelope,
     json::Json,
-    number::Int,
     occurred::{Claim, Stamp},
     record::{Digest, Record, Shown, Val, id_text},
 };
@@ -104,9 +103,6 @@ fn fields(path: &str, j: &Json) -> Result<Vec<(String, Val)>, String> {
     members(path, &allowed, j)?;
     kvs.iter()
         .map(|(k, v)| {
-            if k == "value" || k == "n" {
-                return Err(format!("{path}: builtin field {k}"));
-            }
             let val = match v {
                 Json::Str(s) => Val::Str(s.clone()),
                 Json::Int(i) => Val::Int(i.clone()),
@@ -124,8 +120,8 @@ pub(super) fn record(path: &str, j: &Json) -> Result<Record, String> {
     let kvs = members(
         path,
         &[
-            "id", "kind", "observer", "about", "of", "value", "prev", "under", "emitted",
-            "occurred", "erases", "sets", "n", "fields", "shown",
+            "id", "kind", "observer", "about", "of", "prev", "under", "emitted", "occurred",
+            "erases", "sets", "fields", "shown",
         ],
         j,
     )?;
@@ -179,7 +175,12 @@ pub(super) fn record(path: &str, j: &Json) -> Result<Record, String> {
         .map(|j| shown(&p("shown"), j))
         .transpose()?
         .unwrap_or_default();
-    let base = Record {
+    let fields = match optional(kvs, "fields") {
+        None => Vec::new(),
+        Some(j) if shown == Shown::Here => fields(&p("fields"), j)?,
+        Some(_) => return Err(format!("{path}: hidden payload carries fields")),
+    };
+    Ok(Record {
         id,
         kind,
         observer,
@@ -192,34 +193,8 @@ pub(super) fn record(path: &str, j: &Json) -> Result<Record, String> {
         erases,
         sets,
         shown,
-        ..Record::default()
-    };
-    if shown == Shown::Here {
-        let value = text(&p("value"), req("value")?)?.into();
-        let (n, n_number) = match req("n")? {
-            Json::Int(i) => (i.clone(), None),
-            Json::Number(x) => (Int::default(), Some(*x)),
-            _ => return Err(format!("{}: expected a number", p("n"))),
-        };
-        let fields = optional(kvs, "fields")
-            .map(|j| fields(&p("fields"), j))
-            .transpose()?
-            .unwrap_or_default();
-        Ok(Record {
-            value,
-            n,
-            n_number,
-            fields,
-            ..base
-        })
-    } else {
-        for k in ["value", "n", "fields"] {
-            if optional(kvs, k).is_some() {
-                return Err(format!("{path}: hidden payload carries {k}"));
-            }
-        }
-        Ok(base)
-    }
+        fields,
+    })
 }
 
 #[cfg(test)]
@@ -253,8 +228,6 @@ mod tests {
                 ("under".into(), text.clone()),
                 ("erases".into(), Json::Arr(vec![text])),
                 ("emitted".into(), Json::Str("1970-01-01T00:00:00Z".into())),
-                ("value".into(), Json::Str(String::new())),
-                ("n".into(), Json::Int(0_i64.into())),
             ]);
             let r = record("record", &raw).expect("reader form");
             assert_eq!(r.id, digest);
@@ -266,7 +239,7 @@ mod tests {
 
     #[test]
     fn typed_about_and_numeric_fields_keep_reader_boundaries() {
-        let raw = r#"{"id":"r:0000000000000000000000000000000000000000000000000000","kind":"note","observer":"sl:a","about":["thing:a"],"prev":[],"emitted":"2026-01-01T00:00:00Z","value":"","n":1.0,"fields":{"whole":2e0,"fraction":1.5,"unsafe":9007199254740992}}"#;
+        let raw = r#"{"id":"r:0000000000000000000000000000000000000000000000000000","kind":"note","observer":"sl:a","about":["thing:a"],"prev":[],"emitted":"2026-01-01T00:00:00Z","fields":{"n":1.0,"whole":2e0,"fraction":1.5,"unsafe":9007199254740992}}"#;
         let input = crate::parse(raw);
         let r = record("record", &input).expect("reader shape");
         assert_eq!(r.num("n"), Some(1_i64.into()));
@@ -278,7 +251,10 @@ mod tests {
             &crate::parse(&raw.replace("\"n\":1.0", "\"n\":1.5")),
         )
         .expect("fractional payload");
-        assert!(fractional.n_number.is_some());
+        assert!(matches!(
+            fractional.get("n"),
+            Some(loops::record::Val::Number(_))
+        ));
         assert_eq!(fractional.num("n"), None);
         let bad = crate::parse(&raw.replace("thing:a", "not typed"));
         assert!(record("record", &bad).is_err());

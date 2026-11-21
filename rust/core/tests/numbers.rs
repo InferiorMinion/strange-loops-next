@@ -216,9 +216,8 @@ fn writer_checks_rounded_magnitude_not_whole_number_readability() {
 #[test]
 fn numeric_reads_require_visible_normalized_safe_whole_integers() {
     let record = Record {
-        n: Int::from(99_i64),
-        n_number: Some(number("2.0")),
         fields: vec![
+            ("n".into(), Val::Number(number("2.0"))),
             ("whole".into(), Val::Int(Int::from(-3_i64))),
             ("raw-whole".into(), Val::Number(number("2"))),
             ("fraction".into(), Val::Number(number("1.5"))),
@@ -234,11 +233,8 @@ fn numeric_reads_require_visible_normalized_safe_whole_integers() {
     for name in ["n", "raw-whole", "fraction", "large", "missing", "value"] {
         assert_eq!(record.num(name), None, "{name}");
     }
-    let normalized = Record {
-        n: Int::from(2_i64),
-        n_number: None,
-        ..record.clone()
-    };
+    let mut normalized = record.clone();
+    normalized.fields[0].1 = Val::Int(Int::from(2_i64));
     assert_eq!(normalized.num("n"), Some(Int::from(2_i64)));
     assert_eq!(normalized.num("whole"), Some(Int::from(-3_i64)));
     for hidden in [
@@ -247,32 +243,30 @@ fn numeric_reads_require_visible_normalized_safe_whole_integers() {
         normalized.withhold(),
         normalized.erase(),
     ] {
-        assert_eq!(hidden.n_number, None);
         assert_eq!(hidden.num("n"), None);
-        assert_eq!(hidden.n, Int::default());
+        assert_eq!(hidden.get("n"), None);
         assert_eq!(hidden.fields, Vec::<(String, Val)>::new());
     }
 }
 
 #[test]
-fn selected_arithmetic_counts_unread_but_raw_arithmetic_keeps_raw_n() {
+fn selection_counts_the_values_skipped_by_numeric_steps() {
     let records = vec![
         Record {
-            n: Int::from(4_i64),
+            fields: vec![("n".into(), Val::Int(Int::from(4_i64)))],
             ..Record::default()
         },
         Record {
-            n: Int::from(9_i64),
-            n_number: Some(number("1.5")),
+            fields: vec![("n".into(), Val::Number(number("1.5")))],
             ..Record::default()
         },
         Record {
-            n: Int::from(7_i64),
+            fields: vec![("n".into(), Val::Int(Int::from(7_i64)))],
             shown: Shown::Withheld,
             ..Record::default()
         },
         Record {
-            n: Int::from(9_007_199_254_740_992_i64),
+            fields: vec![("n".into(), Val::Int(Int::from(9_007_199_254_740_992_i64)))],
             ..Record::default()
         },
     ];
@@ -286,25 +280,18 @@ fn selected_arithmetic_counts_unread_but_raw_arithmetic_keeps_raw_n() {
         assert_eq!(result.value, Some(Int::from(4_i64)));
         assert_eq!(result.unread, Nat::from(3_u64));
     }
+    assert_eq!(families::sum_acc().fold(&records), Int::from(4_i64));
     assert_eq!(
-        families::sum_acc().fold(&records),
-        Int::from(9_007_199_254_741_012_i64)
-    );
-    assert_eq!(
-        fold::sum_fold(Int::default(), &records),
-        Int::from(9_007_199_254_741_012_i64)
+        fold::sum_fold(|r| r.num("n"), Int::default(), &records),
+        Int::from(4_i64)
     );
     assert_eq!(families::min_acc().fold(&records), Some(Int::from(4_i64)));
-    assert_eq!(
-        families::max_acc().fold(&records),
-        Some(Int::from(9_007_199_254_740_992_i64))
-    );
-    let override_record = Record {
-        n: Int::from(99_i64),
-        n_number: Some(number("2")),
+    assert_eq!(families::max_acc().fold(&records), Some(Int::from(4_i64)));
+    let unnormalized = Record {
+        fields: vec![("n".into(), Val::Number(number("2")))],
         ..Record::default()
     };
-    let records = [override_record];
+    let records = [unnormalized];
     let sum = families::sum_acc().select(|_| Tri::Yes, &records);
     assert_eq!(sum.value, Int::default());
     assert_eq!(sum.unread, Nat::from(1_u64));
@@ -315,12 +302,12 @@ fn selected_arithmetic_counts_unread_but_raw_arithmetic_keeps_raw_n() {
         assert_eq!(result.value, None);
         assert_eq!(result.unread, Nat::from(1_u64));
     }
-    assert_eq!(families::sum_acc().fold(&records), Int::from(99_i64));
-    assert_eq!(families::min_acc().fold(&records), Some(Int::from(99_i64)));
-    assert_eq!(families::max_acc().fold(&records), Some(Int::from(99_i64)));
+    assert_eq!(families::sum_acc().fold(&records), Int::default());
+    assert_eq!(families::min_acc().fold(&records), None);
+    assert_eq!(families::max_acc().fold(&records), None);
     assert_eq!(families::sum_on("n").fold(&records), Int::default());
     let normalized = [Record {
-        n: Int::from(2_i64),
+        fields: vec![("n".into(), Val::Int(Int::from(2_i64)))],
         ..Record::default()
     }];
     let sum = families::sum_acc().select(|_| Tri::Yes, &normalized);
@@ -334,19 +321,19 @@ fn max_heads_uses_readable_values_not_placeholder_zero() {
     let state = LatestBy {
         heads: vec![
             Record {
-                n: Int::from(-4_i64),
+                fields: vec![("n".into(), Val::Int(Int::from(-4_i64)))],
                 ..Record::default()
             },
             Record {
-                n_number: Some(number("1.5")),
+                fields: vec![("n".into(), Val::Number(number("1.5")))],
                 ..Record::default()
             },
             Record {
-                n_number: Some(number("2")),
+                fields: vec![("n".into(), Val::Number(number("2")))],
                 ..Record::default()
             },
             Record {
-                n: Int::from(-2_i64),
+                fields: vec![("n".into(), Val::Int(Int::from(-2_i64)))],
                 ..Record::default()
             },
             Record {

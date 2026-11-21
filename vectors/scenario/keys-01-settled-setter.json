@@ -45,12 +45,11 @@
         "observer": "sl:kyle",
         "about": [],
         "of": "task:1",
-        "value": "write the note",
         "prev": [],
         "emitted": "2026-10-01T00:01:40Z",
         "occurred": "2026-10-01T00:01:40Z",
-        "n": 0,
         "fields": {
+          "value": "write the note",
           "status": "open",
           "title": "note"
         }
@@ -61,14 +60,13 @@
         "observer": "sl:kyle",
         "about": [],
         "of": "task:1",
-        "value": "",
         "prev": ["r:00000000000000000000000000000000000000000000000006gg"],
         "emitted": "2026-10-01T00:03:20Z",
         "occurred": "2026-10-01T00:03:20Z",
         "sets": ["status"],
-        "n": 0,
         "fields": {
-          "status": "closed"
+          "status": "closed",
+          "value": ""
         }
       },
       {
@@ -76,12 +74,10 @@
         "kind": "erasure",
         "observer": "sl:kyle",
         "about": [],
-        "value": "",
         "prev": [],
         "emitted": "2026-10-01T00:05:00Z",
         "occurred": "2026-10-01T00:05:00Z",
-        "erases": ["r:00000000000000000000000000000000000000000000000006h0"],
-        "n": 0
+        "erases": ["r:00000000000000000000000000000000000000000000000006h0"]
       }
     ],
     "steps": [

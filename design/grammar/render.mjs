@@ -140,7 +140,8 @@ function walkOf(root, walk) {
   if (JSON.stringify(names) !== JSON.stringify(walk.steps.map((s) => s.name))) fail(`steps ${walk.steps.map((s) => s.name)} aren't the vector's ${names}`);
   const records = Object.fromEntries(recs.map((r, i) => [L(r.id), {
     who: r.observer.replace(/^sl:/, ""), at: r.emitted.slice(11, 16), col: walk.records[i].col, row: walk.records[i].row,
-    body: r.value, prev: r.prev.map(L), erases: (r.erases ?? []).map(L),
+    body: typeof r.fields?.value === "string" ? r.fields.value : fail(`record ${L(r.id)} needs a text value`),
+    prev: r.prev.map(L), erases: (r.erases ?? []).map(L),
   }]));
   const thing = v.input.thing;
   const lens = v.expect.lens;
@@ -158,7 +159,7 @@ function walkOf(root, walk) {
     if (w.tick) st.tick = { covers: st.shown };
     if (w.lens) {
       const [acc] = lens.outcomes;
-      const back = recs.find((r) => r.value === acc.body.join("\n")) ?? fail("no record carries the accepted edit");
+      const back = recs.find((r) => r.fields?.value === acc.body.join("\n")) ?? fail("no record carries the accepted edit");
       st.lens = { before: lens.rendered, after: v.input.lens.text,
         outcome: `accepted <code>${acc.accepted}</code> → emit ${L(back.id)}, <code>prev: [${back.prev.map(L).join(", ")}]</code>` };
     }

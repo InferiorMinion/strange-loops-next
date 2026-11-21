@@ -148,6 +148,50 @@ fn tally(slots: &Json, slot: &str) -> (Json, Json) {
 }
 
 #[test]
+fn payload_field_examples_match_the_model_through_emit_and_fold() {
+    // The CLI signs and stores each payload. Fixture ids and arrival order
+    // are irrelevant to these slots, which read only the written fields.
+    for (name, raw) in [
+        (
+            "backups",
+            include_str!("../../../vectors/spec/run/pv2-backups.json"),
+        ),
+        (
+            "settings",
+            include_str!("../../../vectors/spec/run/pv2-settings.json"),
+        ),
+        (
+            "zero",
+            include_str!("../../../vectors/spec/run/pv2-written-zero.json"),
+        ),
+        (
+            "empty",
+            include_str!("../../../vectors/spec/run/pv2-written-empty.json"),
+        ),
+    ] {
+        let store = Store::new(name);
+        let vector = parse_json(raw).expect("PV2 vector");
+        let Json::Arr(orders) = at(&vector, &["input", "orders"]) else {
+            panic!("orders")
+        };
+        let Json::Arr(records) = &orders[0] else {
+            panic!("records")
+        };
+        for record in records {
+            let draft = Json::Obj(vec![
+                ("kind".into(), at(record, &["kind"]).clone()),
+                ("of".into(), at(record, &["of"]).clone()),
+                ("payload".into(), at(record, &["fields"]).clone()),
+            ]);
+            store.changeset(&draft.canon());
+        }
+        let spec = at(&vector, &["input", "spec"]).canon();
+        let slots = parse_json(&store.ok_with(&["fold", "-"], &spec)).expect("slots");
+        assert_eq!(slots.canon(), at(&vector, &["expect"]).canon(), "{name}");
+    }
+}
+
+#[test]
 fn count_and_sum_follow_the_heads() {
     let s = Store::new("now");
     let n = |v: i64, u: i64| (Json::Int(v.into()), Json::Int(u.into()));

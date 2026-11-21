@@ -65,14 +65,17 @@ fn unchecked_integers_remain_unbounded() {
     let n: Int = "-9999999999999999999999999999999999999999999"
         .parse()
         .expect("unbounded Int");
-    r.n = n.clone();
+    r.fields.push(("n".into(), Val::Int(n.clone())));
     assert_eq!(r.get("n"), Some(Val::Int(n.clone())));
     assert_eq!(
         r.num("n"),
         None,
         "raw storage does not imply safe-whole readability"
     );
-    assert_eq!(loops::fold::sum_fold(Int::default(), &[r]), n);
+    assert_eq!(
+        loops::fold::sum_fold(|r| r.num("n"), Int::default(), &[r]),
+        Int::default()
+    );
     assert_eq!(Json::Int(n.clone()).canon(), n.to_string());
     assert!(!Json::Int(n).in_range());
 }
@@ -99,9 +102,9 @@ fn within_range_fractional_payloads_do_not_require_integer_readability() {
 fn reader_lists_lookup_and_views_keep_lean_behavior() {
     let mut r = record();
     r.prev = vec![id(4), id(4)];
-    r.value = "payload".into();
-    r.n = 42_i64.into();
     r.fields = vec![
+        ("value".into(), Val::Str("payload".into())),
+        ("n".into(), Val::Int(42_i64.into())),
         ("x".into(), Val::Int(7_i64.into())),
         ("x".into(), Val::Int(8_i64.into())),
         ("n".into(), Val::Int(9_i64.into())),
@@ -116,8 +119,8 @@ fn reader_lists_lookup_and_views_keep_lean_behavior() {
         assert_eq!(view.prev, r.prev);
         assert_eq!(view.id, r.id);
         assert_eq!(view.fields, Vec::new());
-        assert_eq!(view.value, "");
-        assert_eq!(view.n, Int::default());
+        assert_eq!(view.get("value"), None);
+        assert_eq!(view.get("n"), None);
         assert_eq!(view.num("n"), None);
     }
 }
@@ -188,7 +191,10 @@ fn newer_is_span_then_emitted_then_digest_not_record_equality() {
     newer.id = id(2);
     assert!(newer.newer(&older), "id breaks emitted ties");
     older = newer.clone();
-    newer.value = "different payload, same ordering keys".into();
+    newer.fields.push((
+        "value".into(),
+        Val::Str("different payload, same ordering keys".into()),
+    ));
     assert_ne!(newer, older);
     assert!(!newer.newer(&older));
     assert!(!older.newer(&newer));

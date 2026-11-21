@@ -43,9 +43,9 @@ With the model's SHA-256, an id written from bytes equals the id written from th
 | `heads.whole-view` | `mem_wholeHeads`, `wholeHeads_sorted`, `wholeHeads_distinct` | every head belongs to some thing; heads occur once per id in content order | `fold/heads/gap15-partial-and-anchor`, `fold/view/gap15-partial-and-anchor`, `fold/latest/gap16-newest-union-head` |
 | `latest.newest` | `Latest.winner_newest`, `Latest.others_ordered` | Latest chooses the newest whole-reader head; its other heads stay in content order | `fold/latest/01-chain`, `fold/latest/gap16-newest-union-head` |
 | `latest.one-thing` | `Latest.oneThing` | Latest equals global LatestBy when every record is of the same thing | `fold/latest/01-chain` |
-| `numeric.safe-whole` | `Record.num_safe`, `Record.num_number`, `Sum.on_step_missing`, `Max.acc_readable`, `Min.acc_readable` | numeric slots read only safe-whole values; nonwhole values count as unread. An unreadable field leaves `Sum.on`'s sum as it was. `Max.acc` and `Min.acc` read a record exactly when its `n` is a held safe whole number. | `spec/run/gap14-field-types` |
+| `numeric.safe-whole` | `Record.num_safe`, `Record.num_number`, `Sum.on_step_missing`, `Max.acc_readable`, `Min.acc_readable` | numeric slots read written safe-whole values. Missing and nonwhole values count as unread. An unreadable field leaves `Sum.on`'s sum as it was. `Max.acc` and `Min.acc` read a record exactly when its `n` is a held safe whole number. | `spec/run/gap14-field-types` |
 | `sum.perm` | `Sum.perm` | arrival order doesn't change a sum | `fold/sum/01`, `02` |
-| `sum.repeats` | `Sum.repeats` | a repeated delivery is added again, which is why the read path hands each id over once | `fold/sum/03` |
+| `sum.repeats` | `Sum.repeats` | for every numeric projection, delivering the list twice doubles the sum of the readable values, which is why the read path hands each id over once | `fold/sum/03` |
 | `extrema.set` | `Max.set_decides`, `Min.set_decides` | Min and Max depend only on the set of records | `fold/extrema/*` |
 
 Incremental = batch holds for every step fold by construction. The law with
@@ -335,7 +335,7 @@ records. None says the set is complete, current, trusted or well dated:
   The keyed slice laws that need `prev` to have no cycle state it as a premise (`NoCycle`); a real id gives it, since it is a hash of an envelope that holds its `prev`.
   The model does not derive fold records from stored records.
   No theorem connects a fold record's times to the checks on a stored record's envelope.
-* The payload is `value`, `n` and named `fields`.
+* A reader payload contains the written primitive fields. Every name, including `value` and `n`, is looked up in the same list.
 * Fold records carry time text and its parsed values (`Stamp`, `Claim`).
   Their other envelope fields are direct inputs, not fields parsed from an envelope.
 * Text is a list of lines; splitting a file into lines is outside the model.

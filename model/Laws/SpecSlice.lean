@@ -626,14 +626,14 @@ def ss.spec : Spec :=
     slots := [{ name := "current", type := .latestBy .prev }] }
 
 def ss.a : Record :=
-  { id := 1, kind := "task", observer := "sl:x", of := some "k1", value := "", prev := [], emitted := default }
+  { id := 1, kind := "task", observer := "sl:x", of := some "k1", prev := [], emitted := default }
 def ss.b : Record :=
-  { id := 2, kind := "note", observer := "sl:x", of := some "k2", value := "", prev := [], emitted := default }
+  { id := 2, kind := "note", observer := "sl:x", of := some "k2", prev := [], emitted := default }
 def ss.c : Record :=
-  { id := 3, kind := "note", observer := "sl:x", of := some "k1", value := "", prev := [1, 2],
+  { id := 3, kind := "note", observer := "sl:x", of := some "k1", prev := [1, 2],
     emitted := default }
 def ss.d : Record :=
-  { id := 4, kind := "note", observer := "sl:x", of := some "k1", value := "", prev := [1],
+  { id := 4, kind := "note", observer := "sl:x", of := some "k1", prev := [1],
     emitted := default }
 
 /-- Without the successor, the part shows a record the whole has replaced. -/

@@ -540,11 +540,16 @@ fn records(mut seed: u32) -> Vec<Record> {
                 1 => crate::occurred::Claim::of("2026-01-01/2026-01-02"),
                 _ => None,
             },
-            n: i64::from(next(10)).into(),
-            fields: vec![(
-                "status".into(),
-                crate::record::Val::Str(format!("s{}", next(3))),
-            )],
+            fields: vec![
+                (
+                    "n".into(),
+                    crate::record::Val::Int(i64::from(next(10)).into()),
+                ),
+                (
+                    "status".into(),
+                    crate::record::Val::Str(format!("s{}", next(3))),
+                ),
+            ],
             kind: format!("k{}", next(2)),
             about: vec![format!("g:{}", next(4)), format!("g:{}", next(4))],
             erases: if next(4) == 0 {

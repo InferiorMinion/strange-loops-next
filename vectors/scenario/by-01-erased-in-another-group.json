@@ -38,11 +38,13 @@
         "observer": "sl:kyle",
         "about": ["project:x"],
         "of": "task:1",
-        "value": "five",
         "prev": [],
         "emitted": "2026-10-01T00:01:40Z",
         "occurred": "2026-10-01T00:01:40Z",
-        "n": 5
+        "fields": {
+          "value": "five",
+          "n": 5
+        }
       },
       {
         "id": "r:00000000000000000000000000000000000000000000000000tg",
@@ -50,12 +52,14 @@
         "observer": "sl:kyle",
         "about": ["project:y"],
         "of": "task:2",
-        "value": "one",
         "prev": [],
         "emitted": "2026-10-01T00:03:20Z",
         "occurred": "2026-10-01T00:03:20Z",
         "erases": ["r:00000000000000000000000000000000000000000000000000t0"],
-        "n": 1
+        "fields": {
+          "value": "one",
+          "n": 1
+        }
       }
     ],
     "steps": [

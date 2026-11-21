@@ -1722,13 +1722,13 @@ mod tests {
         // thing with two heads, and two live setters of `n` that hold the same
         // number.
         let root = Record {
-            n: Int::from(3_i64),
+            fields: vec![("n".into(), Val::Int(Int::from(3_i64)))],
             ..record(1, "thing:a", 1)
         };
         let set = |id, hour| Record {
             prev: vec![root.id],
             sets: Some(vec!["n".into()]),
-            n: Int::from(5_i64),
+            fields: vec![("n".into(), Val::Int(Int::from(5_i64)))],
             ..record(id, "thing:a", hour)
         };
         let xs = [root.clone(), set(2, 2), set(3, 3)];

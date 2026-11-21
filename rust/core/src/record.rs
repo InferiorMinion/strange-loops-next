@@ -45,8 +45,6 @@ pub struct Record {
     pub about: Vec<String>,
     /// The reference for the one thing this record is an emit of, if it says.
     pub of: Option<String>,
-    /// The text payload field.
-    pub value: String,
     /// The digests of the records this record supersedes.
     pub prev: Vec<Digest>,
     /// The digest of the grant this record uses, if any.
@@ -60,11 +58,7 @@ pub struct Record {
     /// The payload keys this record sets: `None` when it is read whole, which
     /// sets every key; an empty list for a pure join, which sets none.
     pub sets: Option<Vec<String>>,
-    /// The exact integer payload field for numeric folds.
-    pub n: Int,
-    /// A binary64 payload that overrides `n` in lookup and remains unread by numeric folds.
-    pub n_number: Option<Number>,
-    /// The other named payload fields, in lookup order.
+    /// The named payload fields, in lookup order.
     pub fields: Vec<(String, Val)>,
     /// The payload availability for this reader.
     pub shown: Shown,
@@ -139,9 +133,6 @@ impl Record {
     #[must_use]
     pub fn withhold(&self) -> Self {
         Self {
-            value: String::new(),
-            n: Int::default(),
-            n_number: None,
             fields: Vec::new(),
             shown: Shown::Withheld,
             ..self.clone()
@@ -152,30 +143,19 @@ impl Record {
     #[must_use]
     pub fn erase(&self) -> Self {
         Self {
-            value: String::new(),
-            n: Int::default(),
-            n_number: None,
             fields: Vec::new(),
             shown: Shown::Erased,
             ..self.clone()
         }
     }
     /// Lean: `Loops.Record.get`, model/Loops/Record.lean.
-    /// Reads built-in `value` and `n` before the first matching named field.
+    /// Returns the first matching named field.
     /// This lookup does not inspect payload visibility.
     pub fn get(&self, name: &str) -> Option<Val> {
-        match name {
-            "value" => Some(Val::Str(self.value.clone())),
-            "n" => Some(
-                self.n_number
-                    .map_or_else(|| Val::Int(self.n.clone()), Val::Number),
-            ),
-            _ => self
-                .fields
-                .iter()
-                .find(|(k, _)| k == name)
-                .map(|(_, v)| v.clone()),
-        }
+        self.fields
+            .iter()
+            .find(|(k, _)| k == name)
+            .map(|(_, v)| v.clone())
     }
     /// Lean: `Loops.Record.num`, model/Loops/Record.lean.
     /// Returns a named normalized safe-whole integer only when the payload is `Here`.

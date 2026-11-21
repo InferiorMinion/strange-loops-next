@@ -8,7 +8,7 @@ import * as F from "./fold.mjs";
 import { held } from "./where.mjs";
 
 // The payload's part of a fold record; the rest is the envelope.
-const PAYLOAD = ["value", "n", "fields", "shown"];
+const PAYLOAD = ["fields", "shown"];
 const envelopeOf = (form) => Object.fromEntries(Object.entries(form).filter(([k]) => !PAYLOAD.includes(k)));
 
 const byId = (a, b) => F.idOrder(a.id, b.id);

@@ -1,5 +1,12 @@
 //! Stored lines against the model's record vectors, and what a reader refuses.
-use loops::{envelope, json::Json, record::Shown, stored};
+use loops::{
+    envelope,
+    families::Tri,
+    json::Json,
+    record::{Shown, Val},
+    stored,
+    where_::{Cond, Field, Op},
+};
 use loops_eval::parse_json;
 use loops_place::{
     key::Key,
@@ -213,22 +220,34 @@ fn only_a_payload_objects_top_level_primitives_are_read() {
         Line::sign(&written, &key).record()
     };
     let r = record(
-        r#"{"value":"v","n":3,"status":"open","done":false,"size":1.5,"deep":{"a":1},"none":null}"#,
+        r#"{"value":"v","n":3,"status":"open","done":false,"size":1.5,"deep":{"a":1},"list":[1],"none":null}"#,
     );
-    assert_eq!(r.value, "v");
+    assert_eq!(r.get("value"), Some(Val::Str("v".into())));
     assert_eq!(r.num("n"), Some(3_i64.into()));
     let names: Vec<_> = r.fields.iter().map(|(k, _)| k.as_str()).collect();
-    assert_eq!(names, ["status", "done", "size"]);
+    assert_eq!(names, ["value", "n", "status", "done", "size"]);
     assert_eq!(r.num("size"), None);
-    // A fractional n is held and stays unread; a non-text value and a non-object payload give nothing.
-    assert_eq!(record(r#"{"n":1.5}"#).num("n"), None);
-    assert!(record(r#"{"n":1.5}"#).n_number.is_some());
-    for payload in [r#"{"value":7,"n":"x"}"#, r#""text""#, "[1,2]", "null"] {
+    let fraction = record(r#"{"n":1.5}"#);
+    assert!(matches!(fraction.get("n"), Some(Val::Number(_))));
+    assert_eq!(fraction.num("n"), None);
+    let mixed = record(r#"{"value":7,"n":"5"}"#);
+    let present = Cond {
+        field: Field::Payload("n".into()),
+        op: Op::Present,
+    };
+    assert_eq!(present.eval(&mixed), Tri::Yes);
+    assert_eq!(mixed.get("n"), Some(Val::Str("5".into())));
+    assert_eq!(mixed.num("n"), None);
+    assert_eq!(
+        loops::spec::By::Payload("n".into()).keys(&mixed),
+        Some(vec!["5".into()])
+    );
+    assert_eq!(mixed.num("value"), Some(7_i64.into()));
+    for payload in [r#""text""#, "[1,2]", "null"] {
         let r = record(payload);
-        assert_eq!(
-            (r.value.as_str(), r.num("n"), r.fields.len()),
-            ("", Some(0_i64.into()), 0)
-        );
+        assert_eq!(r.fields, Vec::new());
+        assert_eq!(present.eval(&r), Tri::No);
+        assert_eq!(r.num("n"), None);
     }
     // The envelope a reader gets is the canonical one.
     assert!(r.about.is_empty() && r.of.is_none() && r.prev.is_empty() && r.erases.is_empty());

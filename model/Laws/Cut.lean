@@ -118,13 +118,13 @@ reads `a` as live for `status`: the path from `c` down to `a` goes through `b`.
 Down at that time is all three, and reads as the whole does. -/
 
 def sk.a : Record :=
-  { id := 1, kind := "task", observer := "sl:x", of := some "k1", value := "", prev := [],
+  { id := 1, kind := "task", observer := "sl:x", of := some "k1", prev := [],
     emitted := ⟨"1970-01-01T00:00:00Z", [0], by decide⟩, sets := some ["status"] }
 def sk.b : Record :=
-  { id := 2, kind := "task", observer := "sl:x", of := some "k1", value := "", prev := [1],
+  { id := 2, kind := "task", observer := "sl:x", of := some "k1", prev := [1],
     emitted := ⟨"1970-01-01T00:00:05Z", [5], by decide⟩, sets := some ["title"] }
 def sk.c : Record :=
-  { id := 3, kind := "task", observer := "sl:x", of := some "k1", value := "", prev := [2],
+  { id := 3, kind := "task", observer := "sl:x", of := some "k1", prev := [2],
     emitted := ⟨"1970-01-01T00:00:01Z", [1], by decide⟩, sets := some ["status"] }
 def sk.all : List Record := [sk.a, sk.b, sk.c]
 
