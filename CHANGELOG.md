@@ -18,6 +18,26 @@ In brief:
 - The model states how a stored payload is read, and a list reads as a set: `present` means written, `is` and `by` read a list's members, and a list is never a number.
 - `value` and `n` are ordinary payload fields: a record that does not hold one is unread, absent and ungrouped for it, as for any other name.
 - Kyle ruled the seven payload values choices, the result hash's prefix, which choices come to him, and the three classes of edge; he confirmed the keyed-fold and codec choices; issue #10 is closed.
+- The tick record is proposed as TK1 to TK9 in `DECISIONS.md`, with [a note](notes/2026-11-21-tick-record.md) (!65). Not ruled.
+- `loops emit` copies `occurred` from the heads when they agree; `--no-occurred` states none.
+
+### `loops emit` copies `occurred`
+
+Ruled on 2026-11-20 ([the cut note](notes/2026-11-15-the-cut.md), section 5) and built on 2026-11-21. Rust only: the filler in `rust/place/src/fill.rs` and the CLI. No protocol rule changed.
+
+- An emit of a thing the store holds, with no `--occurred`, carries the `occurred` of the thing's heads when every head states one and all state the same text.
+- `--occurred <when>` states a new occurrence, as before. `--no-occurred` states that the record has none. The two together are a usage error.
+- A root and the first record of a thing copy nothing. `emit -` fills nothing in, as before.
+- The case the ruling was made on, run with both binaries: an ADR emitted with `--occurred 2009-04`, then `status=accepted` with no flag. Before, the update moved the thing out of a window on 2009. Now it stays in it.
+
+Implementer choices; they stand under Kyle's ruling of 2026-11-21 (W7):
+- The heads agree when their `occurred` is the same text. `2009` and `2009?` cover one span and do not agree.
+- Where the heads do not agree, or one states none, the emit states none.
+- Only the heads are read. A live record under them that states another `occurred` plays no part.
+- An erased or withheld head supplies its `occurred`, since the envelope is held.
+- The usage error reads `--no-occurred takes no --occurred beside it`.
+
+Checked: the Rust gate (202 tests), with walks for the copy, the two flags, their conflict, a fork whose heads disagree, a first record, an erased and a withheld head, and a changeset. A Codex worker wrote it; the coordinator reviewed it and ran the gate and the ADR case.
 
 ### Ruled by Kyle, 2026-11-21
 
