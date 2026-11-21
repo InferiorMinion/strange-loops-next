@@ -583,6 +583,6 @@
   },
   "expect": {
     "canonical": "{\"est-per-status\":{\"groups\":{\"closed\":{\"unread\":\"0\",\"value\":\"9\"},\"open\":{\"unread\":\"0\",\"value\":\"5\"}},\"ungrouped\":\"2\",\"unread\":\"1\"},\"per-status\":{\"groups\":{\"closed\":{\"unread\":\"0\",\"value\":\"1\"},\"open\":{\"unread\":\"0\",\"value\":\"2\"}},\"ungrouped\":\"2\",\"unread\":\"1\"},\"small-per-status\":{\"groups\":{\"open\":{\"heads\":[\"r:000000000000000000000000000000000000000000000000074g\",\"r:000000000000000000000000000000000000000000000000073g\"],\"unread\":\"0\"}},\"ungrouped\":\"1\",\"unread\":\"1\"}}",
-    "hash": "h:kq4habija5qrdbs7dtscmcfillne1nojd0j4sjghnvsg533v8t90"
+    "hash": "res:kq4habija5qrdbs7dtscmcfillne1nojd0j4sjghnvsg533v8t90"
   }
 }

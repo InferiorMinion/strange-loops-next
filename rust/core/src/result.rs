@@ -149,10 +149,10 @@ pub fn result_preimage(r: &[(String, SlotValue)]) -> Vec<u8> {
     bytes
 }
 
-/// Lean: `Loops.resultHash`. `h:` and base32hex of `h` over the preimage.
+/// Lean: `Loops.resultHash`. `res:` and base32hex of `h` over the preimage.
 /// The model does not require SHA-256 here; the vectors use it.
 pub fn result_hash(h: &impl Fn(&[u8]) -> Vec<u8>, r: &[(String, SlotValue)]) -> String {
-    format!("h:{}", base32::base32(&h(&result_preimage(r))))
+    format!("res:{}", base32::base32(&h(&result_preimage(r))))
 }
 
 #[cfg(test)]

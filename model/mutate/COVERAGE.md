@@ -360,7 +360,7 @@ The catalogue includes existing entries without definition metadata.
 - `Loops.resultBytes`: excluded: It applies `utf8`. No direct eligible operation.
 - `Loops.resultLabel`: covered by `result-label-version`, `result-label-16-bytes`
 - `Loops.resultPreimage`: covered by `result-hash-unframed`
-- `Loops.resultHash`: excluded: It composes the hash, base32hex and the `h:` prefix, as `Loops.commitOf` does. No direct eligible operation.
+- `Loops.resultHash`: excluded: It composes the hash, base32hex and the `res:` prefix. No direct eligible operation.
 - `Loops.unshownIds`: covered by `result-unshown-keeps-shown`
 - `Loops.GroupValue.unshown`, `Loops.KeyedView.unshown`, `Loops.unshownResult`: excluded: Each applies `unshownIds` or `SlotValue.unshown` by shape, which those entries mutate.
 - `Loops.SlotValue.unshown`: covered by `result-unshown-groups-kept`

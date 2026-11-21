@@ -146,6 +146,6 @@
   },
   "expect": {
     "canonical": "{\"count\":{\"unread\":\"0\",\"value\":\"3\"},\"max\":{\"unread\":\"0\",\"value\":\"-2\"},\"min\":{\"unread\":\"0\",\"value\":\"-9007199254740991\"},\"sum\":{\"unread\":\"0\",\"value\":\"-18014398509481984\"}}",
-    "hash": "h:4uqnkr6crqtcngqq5p0p3le58cmkt0b69i8q3it1qh6634qgtf90"
+    "hash": "res:4uqnkr6crqtcngqq5p0p3le58cmkt0b69i8q3it1qh6634qgtf90"
   }
 }

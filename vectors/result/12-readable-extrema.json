@@ -90,6 +90,6 @@
   },
   "expect": {
     "canonical": "{\"hi\":{\"unread\":\"0\",\"value\":\"5\"},\"lo\":{\"unread\":\"0\",\"value\":\"3\"}}",
-    "hash": "h:g1skid86lq1tp5nual23llbkp6otc96hl8hk44hlfke63shgdhr0"
+    "hash": "res:g1skid86lq1tp5nual23llbkp6otc96hl8hk44hlfke63shgdhr0"
   }
 }

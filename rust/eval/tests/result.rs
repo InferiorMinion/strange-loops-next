@@ -106,7 +106,12 @@ fn a_result_hash_is_no_record_commitment() {
     assert!(loops_eval::parse_json(past16).is_err());
     let payload = loops_eval::parse_json(&result_text(&r)).expect("canonical text is JSON");
     let commit = loops::stored::commit_of(&sha256, &preimage[..16], &payload);
-    assert_ne!(commit, result_hash(&sha256, &r));
+    assert_ne!(
+        commit.strip_prefix("h:").expect("commitment prefix"),
+        result_hash(&sha256, &r)
+            .strip_prefix("res:")
+            .expect("result hash prefix")
+    );
     // With the 16-byte label of the first draft, the two were one digest.
     let old = "loops/result/v1:";
     assert_eq!(old.len(), 16);

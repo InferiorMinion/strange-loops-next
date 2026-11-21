@@ -73,8 +73,8 @@ test("a result hash is no record commitment", () => {
   const text = resultText(out);
   const preimage = Buffer.from(RESULT_LABEL + text, "utf8");
   assert.throws(() => JSON.parse(preimage.subarray(16).toString("utf8")));
-  const salt = preimage.subarray(0, 16), commitOfValue = (bytes) => "h:" + base32(createHash("sha256").update(bytes).digest());
-  assert.notEqual(resultHash(out), commitOfValue(Buffer.concat([salt, Buffer.from(text, "utf8")])));
+  const salt = preimage.subarray(0, 16), commitDigest = (bytes) => base32(createHash("sha256").update(bytes).digest());
+  assert.notEqual(resultHash(out).slice("res:".length), commitDigest(Buffer.concat([salt, Buffer.from(text, "utf8")])));
   // The 16-byte label of the first draft: past it, the preimage was the result's JCS,
   // so a record with that label as salt and the result as payload had its digest.
   const old = Buffer.from("loops/result/v1:", "utf8");
@@ -87,8 +87,8 @@ test("the hash frames the canonical bytes with the codec's version", () => {
   const text = '{"n":{"unread":"0","value":"3"}}';
   assert.equal(resultText(out), text);
   assert.equal(RESULT_LABEL, "loops/result-hash/v1:");
-  const want = "h:" + base32(createHash("sha256").update(Buffer.from(RESULT_LABEL + text, "utf8")).digest());
+  const want = "res:" + base32(createHash("sha256").update(Buffer.from(RESULT_LABEL + text, "utf8")).digest());
   assert.equal(resultHash(out), want);
   // Unframed bytes are another hash.
-  assert.notEqual(resultHash(out), "h:" + base32(createHash("sha256").update(Buffer.from(text, "utf8")).digest()));
+  assert.notEqual(resultHash(out), "res:" + base32(createHash("sha256").update(Buffer.from(text, "utf8")).digest()));
 });

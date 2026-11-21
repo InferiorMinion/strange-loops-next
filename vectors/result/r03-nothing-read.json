@@ -64,6 +64,6 @@
   },
   "expect": {
     "canonical": "{\"count\":{\"unread\":\"0\",\"value\":\"0\"},\"current\":{\"things\":{},\"unread\":\"0\"},\"every\":{\"heads\":[],\"unread\":\"0\"},\"max\":{\"unread\":\"0\",\"value\":null},\"min\":{\"unread\":\"0\",\"value\":null},\"per-status\":{\"groups\":{},\"ungrouped\":\"0\",\"unread\":\"0\"},\"state\":{\"things\":{},\"unread\":\"0\"},\"sum\":{\"unread\":\"0\",\"value\":\"0\"}}",
-    "hash": "h:omkdaek7pfhnk3g265l7b6df95hb5fpus9h6si6iolm543ldoio0"
+    "hash": "res:omkdaek7pfhnk3g265l7b6df95hb5fpus9h6si6iolm543ldoio0"
   }
 }

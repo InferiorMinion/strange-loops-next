@@ -78,7 +78,7 @@ A spec names each slot once, so no member name repeats.
 
 ```
 preimage = "loops/result-hash/v1:" ‖ bytes        (the label in UTF-8)
-hash     = "h:" + base32hex(SHA-256(preimage))
+hash     = "res:" + base32hex(SHA-256(preimage))
 ```
 
 The label names the codec and its version, as `loops/record/v1:` frames the id a signature covers.
@@ -86,7 +86,8 @@ A codec that writes other bytes for some result takes another label.
 The hash covers the whole result, every slot; there is no hash for one slot.
 
 The label is 21 bytes, and it must not be 16.
-A record's commitment is SHA-256 of a 16-byte salt and then its payload's JCS bytes ([`record.md`](record.md)), and it is written `h:` too.
+A record's commitment is SHA-256 of a 16-byte salt and then its payload's JCS bytes ([`record.md`](record.md)).
+The two also differ in their prefix. A result hash starts with `res:` and a commitment starts with `h:`.
 With a 16-byte label, a record whose salt is the label and whose payload is the canonical result would commit to the result's own preimage, and the two would be one digest.
 With this label, the preimage's 17th byte is `h`, and no JCS text starts with `h`: it starts with `n`, `t`, `f`, `"`, `[`, `{`, `-` or a digit.
 So no split of the preimage after 16 bytes leaves a JSON value, and no commitment has a result hash's preimage (`resultPreimage_ne_commit`).

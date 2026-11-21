@@ -408,6 +408,6 @@
   },
   "expect": {
     "canonical": "{\"per-k\":{\"groups\":{\"\":{\"unread\":\"0\",\"value\":\"1\"},\"10\":{\"unread\":\"0\",\"value\":\"1\"},\"2\":{\"unread\":\"0\",\"value\":\"1\"},\"𐀀\":{\"unread\":\"0\",\"value\":\"1\"},\"\":{\"unread\":\"0\",\"value\":\"1\"}},\"ungrouped\":\"0\",\"unread\":\"0\"}}",
-    "hash": "h:m11ovkbkh174sitlcmttdidrjd4qo49gbp0hdp97128dt0o5472g"
+    "hash": "res:m11ovkbkh174sitlcmttdidrjd4qo49gbp0hdp97128dt0o5472g"
   }
 }

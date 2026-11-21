@@ -1198,6 +1198,6 @@
   },
   "expect": {
     "canonical": "{\"max\":{\"unread\":\"6\",\"value\":\"2\"},\"min\":{\"unread\":\"6\",\"value\":\"-3\"},\"sum\":{\"unread\":\"6\",\"value\":\"1\"}}",
-    "hash": "h:otifa2mmlerhvakk1egpeme6dq01dikdkbshep5bfbkc1eu9q18g"
+    "hash": "res:otifa2mmlerhvakk1egpeme6dq01dikdkbshep5bfbkc1eu9q18g"
   }
 }

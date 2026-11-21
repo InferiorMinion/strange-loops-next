@@ -8,7 +8,7 @@
 // sits only at `value`, `unread` and `ungrouped`; `value` is null for a min or
 // max that read nothing. Listed records are their ids alone, without `shown`.
 // The bytes are JCS (RFC 8785) of that JSON, in UTF-8; the hash is SHA-256 of
-// the label `loops/result-hash/v1:` and the bytes, written `h:` and base32hex.
+// the label `loops/result-hash/v1:` and the bytes, written `res:` and base32hex.
 
 import { createHash } from "node:crypto";
 import { base32, canonical } from "./loops.mjs";
@@ -79,4 +79,4 @@ export const resultBytes = (out) => new TextEncoder().encode(resultText(out));
 // What the hash covers: the label, then the canonical bytes.
 export const resultPreimage = (out) => Buffer.concat([Buffer.from(RESULT_LABEL, "utf8"), resultBytes(out)]);
 
-export const resultHash = (out) => "h:" + base32(createHash("sha256").update(resultPreimage(out)).digest());
+export const resultHash = (out) => "res:" + base32(createHash("sha256").update(resultPreimage(out)).digest());
