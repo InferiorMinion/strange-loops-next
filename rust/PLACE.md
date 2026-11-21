@@ -167,8 +167,8 @@ Every verb that reads the store says when either happened (choice 18).
     `emit -` takes `sets` as a line's envelope field, as written; a key that
     starts with `@` is a key, not a label.
 
-11. **`emit` fills in the anchor.** The anchor rule of D8c (`ROADMAP.md`,
-    the design note's section 5): every emit sets the envelope, so an emit of
+11. **`emit` fills in the anchor.** The anchor rule of D8c
+    (`notes/2026-11-11-declared-keys.md`, section 5): every emit sets the envelope, so an emit of
     a thing names in `prev` every record of that thing the store holds that
     is live for some key, the envelope among them, and so every head. The
     thing is `--of`, or what `--prev` replaces (choice 9); an emit with

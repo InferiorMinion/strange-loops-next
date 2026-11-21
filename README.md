@@ -8,7 +8,8 @@ Readers cover folds, specs, realms, lenses and batches.
 JS and Rust check protocol fixtures and external standards.
 The theorem files prove the listed model laws; fixture checks do not prove implementation equivalence.
 
-[ROADMAP.md](ROADMAP.md) gives the current state, human decisions, and next work.
+[ROADMAP.md](ROADMAP.md) gives what is next, [DECISIONS.md](DECISIONS.md) what waits on the human, and [CHANGELOG.md](CHANGELOG.md) what was built and ruled.
+The long design notes are in [notes/](notes/).
 
 ## Layout
 
