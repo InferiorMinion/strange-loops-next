@@ -11,6 +11,15 @@ Everything that waits on Kyle, in one place. Each entry has the question, an exa
 
 | Id | Question | Recommended | What waits on it |
 | --- | --- | --- | --- |
+| [TK1](#tk1-a-tick-is-an-ordinary-record) | Is a tick an ordinary record of kind `tick`? | Yes; its payload is the whole tick, and it has no id but its record id | The tick record |
+| [TK2](#tk2-a-tick-carries-its-result) | Does a tick carry its result, or only the result's hash? | Both | The tick record |
+| [TK3](#tk3-how-a-tick-names-its-spec) | How a tick names its spec | By a hash of the spec as parsed, and it carries the spec too | The tick record |
+| [TK4](#tk4-covers-lists-every-record-that-was-folded) | What `covers` lists | Every record that was folded, each id once; a tick among them is one record | The tick record |
+| [TK5](#tk5-which-covered-records-were-read-without-a-payload) | How a tick says which covered records it read without a payload | A list, `withheld`, left out when empty | The tick record |
+| [TK6](#tk6-what-a-spec-reads-of-a-tick) | What a later spec reads of a tick | Nothing new: the payload rules of 2026-11-21. A total across ticks is not in step 4 | The tick record |
+| [TK7](#tk7-checking-a-tick) | How a tick is checked | A verb with three answers; a store admits a tick without checking it | The first tick, and step 4's exit |
+| [TK8](#tk8-the-name-of-the-window-field) | The name of the window field | `env.when` | The window field |
+| [TK9](#tk9-which-rules-a-tick-was-folded-under) | How a tick says which rules it was folded under | The label inside the spec's hash is the version of the rules; it goes to `v2` when what a spec answers changes | The tick record |
 | [W1](#w1-an-adoption-step-before-standing-and-sharing) | An adoption step before standing and sharing | Yes, after ticks, with its CLI pieces built beside the tick work | The order of work |
 | [W2](#w2-remember-which-segments-were-checked) | Remember which segments were checked | Yes, in the adoption step | Read speed on big stores |
 | [W3](#w3-stop-extending-the-javascript-implementation) | Stop extending the JavaScript implementation | Yes, as a trial for step 4 | How step 4 is built |
@@ -18,10 +27,307 @@ Everything that waits on Kyle, in one place. Each entry has the question, an exa
 | [W5](#w5-the-mutant-check-on-every-merge-request) | The mutant check on every merge request, and new mutants for step 4 | Keep (measured: under five minutes on the largest model change); add step 4's mutants after its exit | Nothing |
 | [W6](#w6-generated-pages-in-the-repository) | Generated pages in the repository | Keep | Nothing |
 
-Nothing is being built that these block: the payload values and the result hash's prefix are done. W3, W4 and W5 are wanted before the tick record is built.
-Each entry now ends with Neon's comments on it (2026-11-21) and what the coordinator makes of them.
+The tick record is the next thing to build, and TK1 to TK9 are its proposal (2026-11-21). margins-claude reviewed it; its four additions are in the entries, and TK9 is one of them. W3, W4 and W5 are wanted with them, before it is built.
+Each W entry ends with Neon's comments on it (2026-11-21) and what the coordinator makes of them.
 
-After these: [what is being prepared](#being-prepared), [what you deferred](#deferred-by-you) and [what is ruled](#ruled). Nothing waits to be confirmed: under your ruling of 2026-11-21 an implementer choice comes here only when it changes bytes or answers.
+After the tick record and the W entries: [what is being prepared](#being-prepared), [what you deferred](#deferred-by-you) and [what is ruled](#ruled). Nothing waits to be confirmed: under your ruling of 2026-11-21 an implementer choice comes here only when it changes bytes or answers.
+
+## The tick record
+
+A tick says: "folding exactly these records with this spec gives this result."
+The cut note is ruled and the result codec is built. What the record itself holds is not designed, and these nine entries propose it.
+The technical form (the hash rule, the canonical forms, the laws to state) is in [the tick record note](notes/2026-11-21-tick-record.md).
+
+**The example every entry uses.** Your laptop's store holds six backup records: three services, the nights of 16 and 17 November.
+
+| Record | Service | Night | `mb` |
+| --- | --- | --- | ---: |
+| `r:kvvv…` | jellyfin | 16 | 412 |
+| `r:ftlf…` | pihole | 16 | 3 |
+| `r:6p8c…` | gitea | 16 | 88 |
+| `r:fqqv…` | jellyfin | 17 | 419 |
+| `r:vm0f…` | pihole | 17 | 10 |
+| `r:53eo…` | gitea | 17 | 95 |
+
+The spec `backups` counts them, adds up `mb` and lists them:
+
+```
+{"vertex": "backups", "from": [{"store": "lab", "kind": ["backup"]}],
+ "fold": {"runs": {"count": true}, "mb": {"sum": "mb"}, "list": {"collect": true}}}
+```
+
+Today `loops fold backups.json` on the laptop answers `runs` 6, `mb` 1027, and the six ids.
+The canonical result of that answer hashes to `res:d8eu…`. The CLI has no verb for the hash yet, so I computed it by the codec's rule; the same rule gives the hash of all 23 result vectors.
+
+**The tick this proposal would write for it** (ids shortened):
+
+```
+env      kind "tick", observer k:5eis… (you), emitted 2026-11-21T19:40:00Z, signed
+payload  {
+  "spec":        {"vertex": "backups", "from": [...], "fold": {...}},
+  "spec-hash":   "spec:gs9s…",
+  "covers":      ["r:53eo…", "r:6p8c…", "r:fqqv…", "r:ftlf…", "r:kvvv…", "r:vm0f…"],
+  "result":      {"list": {"heads": [six ids], "unread": "0"},
+                  "mb":   {"unread": "0", "value": "1027"},
+                  "runs": {"unread": "0", "value": "6"}},
+  "result-hash": "res:d8eu…"
+}
+```
+
+It is 1,097 bytes. Each entry below is about one part of it.
+
+### TK1: a tick is an ordinary record
+
+**Question.** Is a tick a record like any other, of kind `tick`, with the tick as its payload? Or is it a new sort of stored thing?
+
+**Example.** With the tick above in the store:
+- `loops get r:…` shows it. `export`, `import`, `erase` and a sync treat it as they treat any record.
+- You cite it by its record id, as you said on 2026-11-21.
+- The NAS computes the same tick from the same six records. It writes its own record: another observer, another time, another id. The two payloads are the same bytes.
+
+**What "ordinary" means, exactly.**
+- A store takes a tick as it takes any record. Nothing checks the payload when it is written or imported. Checking is a verb ([TK7](#tk7-checking-a-tick)).
+- A tick has no id but its record id. Two ticks say the same thing when their payloads are the same bytes.
+- A content tick and a witness tick are the same record. In step 4 nothing in it says how its records were chosen. It claims only what it computed.
+- Any record of kind `tick` whose payload has this shape is a tick. One whose payload does not is "not a tick" to the check, and still a record.
+
+**Options.**
+- **A (recommended).** An ordinary record. The payload is the whole tick.
+- **B.** As A, and the payload also holds a hash of the tick itself. The design page says a content tick's id is "the hash of vertex, covers and result". It would let a spec group equal ticks by one text field. Nothing needs it yet, and any reader can compute it from the other fields, so it can be added later without touching a tick already written.
+- **C.** A stored value that is not a record: no observer, no signature. Then citing, sending, syncing and erasing a tick each need new rules.
+
+### TK2: a tick carries its result
+
+**Question.** Does the tick hold the result, or only the result's hash?
+
+**Example.** The NAS was sent the tick for the night of the 16th and never got the three backup records under it.
+- **With the result:** `loops get` on the NAS shows `mb` 503 and the three ids. A weekly tick over the nightly ticks can be read there.
+- **With the hash only:** the NAS sees `res:5itq…` and can read nothing. Only a holder of the three records learns what the tick said.
+
+**The cost is size.** The example tick is 1,097 bytes with its result and 643 without. A result that lists ids is as long as its list.
+
+**Options.**
+- **A (recommended).** The result, and its hash beside it. The hash is what two machines compare, and a spec can test or group by it. A tick whose hash is not the hash of its result is not a tick.
+- **B.** The hash only.
+- **C.** The result only. The hash can be computed, but then no text field names the result.
+
+**What A costs beyond size: a tick outlives an erasure.** A result holds more than ids. A slot with `by` on a payload field writes that field's values as its group names. You ruled on 2026-11-10 that erasure is the emergency stop, so that the content travels no further. Erasing a backup record does not reach a tick that covered it: a `by svc` result in that tick still says `jellyfin`, on every machine the tick was sent to.
+- The rule of conduct: when you erase a record, erase the ticks that cover it too. They are records, so `loops erase` works on them.
+- Finding them is one test: `where covers is <id>` ([TK6](#tk6-what-a-spec-reads-of-a-tick)). `loops erase` can list them when it runs.
+- Option B does not avoid this. A hash of a small result can be guessed, and a tick with only a hash is of no use to a reader without the records.
+
+Neon raised carrying the result; margins-claude and I agree with A. margins-claude raised the erasure point.
+
+### TK3: how a tick names its spec
+
+**Question.** How does a tick say which spec it folded, and does it carry that spec?
+
+**Example.** In January you add a slot, `largest`, to `backups.json`. In February someone checks November's tick.
+- **With only a hash:** the file on disk now hashes to something else. The spec that made the tick is gone unless someone digs it out of git. The tick cannot be checked.
+- **With the spec in the tick:** the check needs the tick and the six records, and nothing else.
+
+**The hash.** `spec-hash` is a hash of the spec in its parsed form, the form the `spec/parse` vectors already pin. So:
+- Changing a `note` keeps the hash. Notes are not in the parsed form.
+- Renaming the vertex, renaming the store in `from`, or reordering the list of kinds gives another hash.
+- The hash names the spec as it is written down. Two specs that mean the same and are written differently have two hashes.
+
+**Options.**
+- **A (recommended).** The hash, and the spec itself. The spec here is 136 bytes. A tick whose hash is not the hash of its spec is not a tick.
+- **B.** The hash only, as the design page has it. A tick can be checked only while someone keeps its spec.
+- **C.** A spec becomes a record in the store, and a tick cites that record's id. That belongs with standing ("a store carries its vertices"). A does not block it.
+
+**The store name selects nothing in a tick.** `covers` already says which records were folded. A check runs the spec's `kind`, `about` and `of` tests and its slots over those records, and never asks which store. The name stays in the hashed text, so two machines write one tick only when they hold the same spec text.
+
+**A second choice inside this one.** Should the hash leave out the vertex's name and the store names, so that it names only what the fold does? I recommend no: one written form, already pinned, is simpler than a second form made for hashing.
+
+### TK4: `covers` lists every record that was folded
+
+**Question.** What does `covers` hold?
+
+**Proposal.** The ids of every record the fold was given, each once, sorted. The result is what the spec gives when run over exactly those records and no others.
+`loops tick` gives the fold what the store holds, or a cut of it: all of it, and not only the records the spec takes. In the example the two are the same six, because the store holds nothing else. The second example below shows why they can differ.
+
+**Example: a late record.** The NAS holds the six records and a seventh, a pihole backup that reached only the NAS.
+- `loops fold backups.json` on the NAS today: `runs` 7, `mb` 1031, hash `res:pm7t…`. That is the NAS's present, not the tick.
+- Folding only the six that the tick covers, on the NAS: `runs` 6, `mb` 1027, hash `res:d8eu…`. The same hash as the laptop's. I ran this today by folding a store that holds only the six.
+
+So the list is what makes the tick mean the same on both machines.
+
+**Example: a record the spec does not take.** jellyfin's disk is replaced and you write a record of another kind over its first backup: `loops emit retired "this backup is void" --prev r:kvvv…`. A second spec, `current`, counts the backups that nothing has replaced. Run today:
+
+| Folded | `current` | `mb` |
+| --- | --- | --- |
+| The store: the six backups and the `retired` record | 5 | 615 |
+| Only the six records the spec takes | 6 | 1027 |
+
+The spec takes backups only, and its answer still depends on the `retired` record. A tick whose `covers` held only the six would be a true statement about those six, and it would not be what `loops fold` shows you. So `covers` holds the `retired` record too.
+
+**Example: a tick over ticks.** You make a tick for each night, T16 and T17, and a weekly tick over them and one note.
+- The weekly tick's `covers` holds three ids: T16, T17 and the note. It does not hold the six backup records.
+- T16 and T17 are folded as records. The weekly fold reads what a spec can read of a tick ([TK6](#tk6-what-a-spec-reads-of-a-tick)) and never opens them up.
+- Checking the weekly tick needs those three records, not the six.
+- The weekly tick is therefore not a tick over the six. It is another fold, with another result.
+
+This is Neon's subagent example: an orchestrator's tick covers two subagent ticks and its own three records, five ids and not 98.
+
+**What `covers` never holds.** "Everything tick X covers, and these too." It is shorter, but a check must then walk back through X, and what X names, to the start. All three agents reject it.
+
+**How the set is chosen in step 4.** `loops tick` would take one of: every record the store holds; the records as of a time (by the ruled rule, section 2 of the cut note); or the ids you name, with what they build on. Whichever it is, the tick lists the ids outright. An empty list is allowed: "the monitor saw nothing all night" is a tick.
+
+**The cost is size.** An id in the list is 57 bytes. Any tick made in homelab-audit lists all 9,053 ids, 516 KB, also for a spec that takes ten records. Two ways make ticks small, and neither changes the record:
+- Name the records: a tick for each night over that night's records, and a weekly tick over the nightly ticks, as above.
+- Cover only what the spec's answer depends on. The law that says which records those are is on main (`spec.slice`), and margins-claude's Python computes the set. The Rust does not yet. I would build it straight after step 4's exit, not in it.
+
+**Options.**
+- **A (recommended).** Every id, outright.
+- **B.** Ids, and "what tick X covers": rejected above.
+- **C.** A hash of the set and no ids. Tiny. Then no one can say which records were folded, a late record cannot be seen, and an emit cannot use the tick as its base.
+
+### TK5: which covered records were read without a payload
+
+**Question.** A covered record may be held without its payload: erased, or never sent. How does the tick say which were read that way?
+
+**Example.** On a copy that holds the six records, I erased jellyfin's first backup (`r:kvvv…`) and folded the same six:
+
+| | `runs` | `mb` | `list` | Hash |
+| --- | --- | --- | --- | --- |
+| Payload held | 6 | 1027, 0 unread | the six ids | `res:d8eu…` |
+| Payload erased | 6 | 615, 1 unread | the same six ids | `res:jv9h…` |
+
+Same spec, same six ids, two results. You ruled on 2026-11-20 that the tick must say which covered records were read open, so that one set of inputs never names two results.
+
+**Proposal.** A list, `withheld`: the covered ids that were folded without a payload, sorted. It is left out when it is empty, so most ticks have no such member. The second holder's tick holds `"withheld": ["r:kvvv…"]`.
+- The spec's hash, `covers` and `withheld` together are the tick's inputs. Equal inputs give equal results; the fold laws already say so.
+- Erased and never sent are one state here, as you ruled on 2026-11-10.
+- The list has one right content: exactly the covered records that were folded without a payload. When `covers` holds a record and the record that erases it, the erased one is in `withheld`. A tick that leaves it out says the same thing in other bytes, so it is not a tick, and the check says so.
+
+**What a checker with other holdings does.**
+- The tick says `r:kvvv…` was withheld, and the checker holds its payload: the checker leaves that payload unread and checks.
+- The tick read all six open, and the checker lacks one payload: the answer is "cannot check" ([TK7](#tk7-checking-a-tick)). The checker can write its own tick, with `withheld` stated. That is another tick, because its inputs differ.
+
+**Options.**
+- **A (recommended).** `withheld`, left out when empty.
+- **B.** A list of the records read open. It doubles nearly every tick.
+- **C.** Each entry of `covers` is an object, `{"id", "open"}`. Then `covers` no longer reads as a set of ids to a spec ([TK6](#tk6-what-a-spec-reads-of-a-tick)).
+- **D.** Nothing is stated. That is against the ruling.
+
+The name is yours to change. `withheld` is the word a reading already prints.
+
+### TK6: what a spec reads of a tick
+
+**Question.** When a tick is itself folded (a weekly tick over nightly ticks, an orchestrator over subagents), what can the spec read of it?
+
+**Proposal.** Nothing new. A tick is a record, and its payload is read by the rules you set on 2026-11-21:
+- `spec-hash` and `result-hash` are text: `is`, `not` and `by` work on them.
+- `covers` and `withheld` are lists, so they read as sets: `is` asks "does it cover this record", and `by` groups a tick under each record it covers.
+- `spec` and `result` are objects: present, with no value a test or a sum can read.
+
+**Example, run today.** I wrote three ticks by hand into the laptop's store: T16 (the three records of the 16th), T17 (the three of the 17th) and TJ (jellyfin's two). Then I folded a spec over the ticks:
+
+| Slot | Asks | Answer today |
+| --- | --- | --- |
+| `count` | How many ticks | 3 |
+| `count` where `covers` is `r:kvvv…` | Which cover jellyfin's first backup | 2 (T16 and TJ) |
+| `count` by `covers` | How often each record is covered | jellyfin's two records: 2 each; the other four: 1 each |
+| `count` by `spec-hash` | Ticks of each spec | 3 under `spec:gs9s…` |
+| `sum` of `result` | A total across the ticks | 0, with 3 unread |
+
+**What this gives.** A weekly tick can count and list the nightly ticks, find the ticks that cover a record, and find records covered twice.
+
+**What it does not give.** It cannot add up `mb` across the nightly ticks. The number 503 sits inside `result`, and the rules read no member inside an object. It is also written as the text `"503"`, and a sum does not read text.
+The weekly total today is a tick over the six records themselves: 1027.
+
+**Options.**
+- **A (recommended).** Nothing new in step 4.
+- **B.** Two additions: a field name that reaches inside an object (`result.mb.value`), and a sum that reads a number written as text. Each changes what every spec answers, not only for ticks. Numbers as text is already coming with the import. I would take B up when a real spec needs a total across ticks.
+- **C.** The tick repeats some numbers at its top level as JSON numbers. A sum past 2^53 does not fit in one, and someone must choose which numbers.
+
+**A caution for B, whenever it comes.** TJ overlaps T16 and T17. A total across the three would add jellyfin's backups twice: 503 + 524 + 831 = 1858, against 1027. The `by covers` slot above is how a spec sees that overlap.
+
+### TK7: checking a tick
+
+**Question.** How is a tick checked, and does a store refuse a tick that fails?
+
+**Proposal.** A verb, `loops tick --check <id>`, with three answers:
+
+| Answer | When |
+| --- | --- |
+| `same` | The store holds every covered record, with a payload for each one the tick read open. The fold gives the tick's result, byte for byte. |
+| `differs` | The same, and the fold gives another result. Both hashes are shown. |
+| `cannot check` | Covered records are not held, or payloads the tick read open are not held. It says how many of each. |
+
+A record that is not a tick is refused with a reason: for example its `result-hash` is not the hash of its `result`. The refusal codes are chosen when it is built, under [W4](#w4-the-refusal-for-input-that-is-wrong-twice).
+
+**Example** (the verb is not built; this is what it would answer). The laptop writes the tick over the six records and the NAS has synced.
+- `loops tick --check` on the NAS: `same`.
+- On a machine that holds four of the six: `cannot check: 2 covered records are not held`.
+- On the copy where `r:kvvv…` is erased: `cannot check: 1 payload the tick read is not held`.
+
+**Step 4 is done when** the first of those answers `same` on a second machine. Put the other way: the NAS makes its own tick over the same six, and its payload is the laptop's, byte for byte.
+
+**What the check does not do.**
+- It does not refuse a tick at the door. `import` and a sync take a tick that would answer `differs`. A store that lacks the covered records cannot check, so a rule at the door would depend on what had arrived first, and two copies of one store could then differ. Whose ticks to believe is a question for standing (step 3).
+- It checks one level. For the weekly tick it folds T16, T17 and the note. It does not check T16 itself.
+- It does not say that the covered records were all there was. It reports two things beside its answer:
+  - Whether `covers` holds everything its own records build on. That is read from the covered records alone, so it is the same on every machine. A tick for which it is "no" is still a tick; it is a statement about a set that no one need ever have held.
+  - How many more records the spec would take from this store now: "1 record the spec takes is not covered". That is the late record of [TK4](#tk4-covers-lists-every-record-that-was-folded). It counts only records the spec takes. It misses a late `retired` record, which the spec does not take; seeing those needs the function TK4 leaves for after the exit.
+
+**Options.**
+- **A (recommended).** The verb, three answers, and no rule at the door.
+- **B.** A store refuses a tick whose result it can recompute and finds different. Rejected above: the answer would depend on the order of arrival.
+- **C.** No verb. To check a tick you make your own and compare.
+
+### TK8: the name of the window field
+
+**Question.** You ruled on 2026-11-20 that a window is a `where` test on the time that content order already uses: a record's `occurred` when it states one, and its `emitted` when it does not. The field's name was left open.
+
+**Example, run today.** The NAS holds eight backup records. Seven state `occurred` (the 16th or the 17th). Tonight's states none. All eight were written today. "The backups of the 21st":
+
+| Test on | Bounds 21 Nov to 22 Nov | Why |
+| --- | --- | --- |
+| `env.occurred` | 0 | Tonight's record states no `occurred`, so it passes neither bound |
+| `env.emitted` | 8 | Every record was written today, the backfilled ones too |
+| the window field | 1 | `occurred` where stated, otherwise `emitted` |
+
+Only the third is the answer you meant.
+
+**Options.** `env.when` (recommended), `env.at`, `env.time`, `env.span`.
+The field takes the tests that `env.occurred` takes, and compares the start of the span as it does. Only the name is asked here.
+
+### TK9: which rules a tick was folded under
+
+**Question.** A spec's text can stay the same while its answer changes, because the rules changed. How does a tick say which rules it was folded under?
+
+**Example.** This happened today. "The smallest number of snapshots any host has", a `min` of `n` over four backups:
+
+| Binary | Answer |
+| --- | --- |
+| This morning's | 0, with 0 unread |
+| Now, after your ruling PV2 | 9, with 2 unread |
+
+The spec did not change by one byte. Had a tick been written this morning, a check tonight would answer `differs`, and its writer was honest.
+
+**Proposal.** The spec's hash is made with a label, `loops/spec-hash/v1:`. That label is the version of the rules too. When a change alters what any spec answers, the label becomes `v2`, and every spec's hash changes with it.
+- A check that meets a tick made under `v1` answers "cannot check: made under older rules". It does not answer `differs`.
+- A change of that sort is one that comes to you under your ruling of 2026-11-21 (W7), so each new version is ruled, never slipped in.
+- The design page already says this: "the spec hash pins the fold-vocabulary version".
+- Nothing is at `v1` yet. `v1` will mean the rules as they stand when the first tick is built.
+
+**Options.**
+- **A (recommended).** The label in the spec's hash is the version. No new member.
+- **B.** A member of its own, `"rules": "1"`. It can be read without trying each label. It is one more member to keep true.
+- **C.** Nothing. A tick made before a change of rules reads as a false tick after it.
+
+margins-claude raised this.
+
+### What follows from these, with no ruling asked
+
+- **A reader's tick and a writer's base are one record used two ways.** You ruled that an emit may state a base (the cut note, section 8). `loops emit task --of task:42 status=done --base <tick>` reads the tick's `covers` and names the records of `task:42` in it that were live there. The tick needs no extra member for this.
+- **An inbox's read marker is a private local file, not a tick.** All three agents agree. A tick is for a boundary worth citing: a handoff, a sign-off, a subagent's finished task.
+- **A base that covers nothing of the thing.** If the tick you name as a base is a tick over ticks, it holds no record of `task:42`. The emit then names nothing, and stands beside whatever the store holds of the thing as a second head. That is honest: the base knew nothing of the thing. `loops emit` says "the base covers no record of task:42". margins-claude has the law for this ready: it holds for any set, closed or not.
+- **Ticking again.** When a late record arrives, a new tick names the old one in `prev`, as any revision does. A record with `prev` states what it is of, so the two ticks are records of one thing: the first tick's id, or a name such as `tick:backups:2026-11-16`. No new rule.
+
+**Not in this proposal:** boundaries and markers, the runner, where a tick lands (`into`), a record on the tick of how its set was chosen (the window's span, "by reference"), smaller `covers` by the slice laws, parameters, and pins.
 
 ## Order of work, and how we work
 
@@ -173,20 +479,9 @@ The other half of Neon's point, counts kept by hand in the roadmap, is done: the
 
 Nothing here needs you yet. It is listed so that you know what is coming.
 
-**The tick record.** The cut note is ruled; what a tick record holds is not designed. The coordinator is writing the proposal, with an example for each choice. A preview of its first question, using Neon's example:
+**The tick record** is no longer here: it is proposed above as [TK1 to TK9](#the-tick-record).
 
-- Subagent 1 emits 40 records and closes with a tick, T1, that covers them. Subagent 2 emits 55 and closes with T2. The orchestrator writes 3 records of its own and closes with T3.
-- **Agreed among the three agents:** T3's `covers` lists five ids: T1, T2 and its own three records. It does not list 98 records. T1 and T2 are folded as records, each with its own result, and never opened up. Checking T3 needs T1 and T2, not the 95 records under them.
-- **What follows from that, and will be yours to rule:**
-  - T3 is then not the same as a tick over all 98 records. It is a different fold with a different hash.
-  - A count in T3 counts what T3 covers: five records, two of them ticks. It never reaches the 95. A total across the children exists only when T3 adds up a number that T1 and T2 each carry in their results. If T1 and T2 both covered one record, that record is in both numbers, and the total has it twice. (Neon asked for this to be said exactly; the first wording blurred counting ticks with adding up their results.)
-  - A tick record carries its result, not only the result's hash. Then someone who holds T1 and not the 40 records under it can still read T1 and fold it into T3. (Neon's second point; it will be a stated choice in the proposal.)
-  - A reader's tick ("this is what I had read when I decided") and a writer's base (the cut note, section 8) are one kind of record used two ways.
-  - An inbox's read marker is a private local file, not a tick.
-
-Also coming with it: the name of the window field, how `covers` is written, and the input key that says which covered records were read open.
-
-**Numbers stored as text**, with the import ([W1](#w1-an-adoption-step-before-standing-and-sharing)).
+**Numbers stored as text**, with the import ([W1](#w1-an-adoption-step-before-standing-and-sharing)). [TK6](#tk6-what-a-spec-reads-of-a-tick) shows one use for it.
 
 ## Deferred by you
 
