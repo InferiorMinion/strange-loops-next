@@ -111,15 +111,28 @@ impl Record {
             |c| c.span().clone(),
         )
     }
-    /// Lean: `Loops.Newer`, model/Loops/Record.lean.
+    /// Gives what Lean `Loops.Newer` gives. Compares borrowed span endpoints, emission time and digest.
     /// Compares the span, emitted moment, and digest, in that order.
     /// Equal order keys do not imply equal records, so this relation does not implement `Ord`.
     pub fn newer(&self, other: &Self) -> bool {
-        self.span()
-            .cmp(&other.span())
+        self.content_cmp(other).is_gt()
+    }
+    pub(crate) fn content_cmp(&self, other: &Self) -> std::cmp::Ordering {
+        fn endpoints(r: &Record) -> (&crate::time::Moment, Option<&crate::time::Moment>) {
+            r.occurred.as_ref().map_or_else(
+                || (r.emitted.moment(), Some(r.emitted.moment())),
+                |c| (c.span().start(), c.span().stop()),
+            )
+        }
+        let (a, stop_a) = endpoints(self);
+        let (b, stop_b) = endpoints(other);
+        a.cmp(b)
+            .then_with(|| match (stop_a, stop_b) {
+                (Some(a), Some(b)) => a.cmp(b),
+                _ => stop_a.is_none().cmp(&stop_b.is_none()),
+            })
             .then_with(|| self.emitted.moment().cmp(other.emitted.moment()))
             .then_with(|| self.id.cmp(&other.id))
-            .is_gt()
     }
     /// Lean: `Loops.Record.withhold`, model/Loops/Record.lean.
     /// Removes the payload and marks it withheld without changing the envelope.

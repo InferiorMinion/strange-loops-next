@@ -102,14 +102,13 @@ pub fn anchor(realm: &[Record], mut draft: Draft, about: About) -> Draft {
     let Some(thing) = draft.env.of.clone().filter(|t| !batch::is_label(t)) else {
         return draft;
     };
-    let records = live::records_of(&thing, realm);
-    let live: Vec<&Record> = records.iter().filter(|r| live::live(&records, r)).collect();
-    draft.env.prev.extend(live.iter().map(|r| id_text(&r.id)));
+    let state = live::LiveState::new(realm.iter().filter(|r| r.is_of(&thing)).collect());
+    draft.env.prev.extend(state.live().map(|r| id_text(&r.id)));
     draft.env.prev = canon_set(&draft.env.prev);
     if about == About::Copied {
-        let mentions: Vec<String> = live
+        let mentions: Vec<String> = state
+            .heads()
             .iter()
-            .filter(|r| live::live_env(&records, r))
             .flat_map(|r| r.about.iter().cloned())
             .collect();
         draft.env.about = canon_set(&mentions);

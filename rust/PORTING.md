@@ -99,6 +99,17 @@ Byte text uses lowercase base32hex without padding. The decoder checks the
 encoded image and decoded byte count. Instants use UTC `Z`, seconds 00–59,
 and optional fractions of one to nine digits without a trailing zero.
 
+## Indexed reads
+
+The core gives the Lean list definitions’ answers using indexes on the read path.
+Settlement indexes every original form and erasure target. Admission looks up
+all forms of each predecessor. Per-thing folds partition once in UTF-16 name
+order and sort heads by content order. Keyed slots share a per-thing successor
+index. It propagates whole-read and declared-key coverage from successors to
+predecessors, collapsing cycles before propagation. Raw ordering retains distinct
+forms with equal order keys, while id-deduplicating operations keep the last form.
+The list scans in the core's tests serve as independent reference implementations.
+
 ## Composition rulings
 
 A record is of exactly one thing (D8): its `of` as written, or its own id

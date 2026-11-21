@@ -1,11 +1,8 @@
 //! Live setters, a thing read by its keys, from model/Loops/Live.lean.
-use crate::{
-    fold::order_heads,
-    json::canon_set,
-    record::{Digest, Record},
-    things::state_in,
-};
-use std::collections::HashSet;
+use crate::record::{Digest, Record};
+mod index;
+pub use index::LiveState;
+use std::collections::{HashMap, HashSet};
 
 impl Record {
     /// Lean: `Loops.Record.whole`, model/Loops/Live.lean.
@@ -27,19 +24,21 @@ impl Record {
     }
 }
 
-/// Lean: `Loops.upward`, model/Loops/Live.lean.
+/// Gives what Lean `Loops.upward` gives. Traverses successor edges from the seed ids.
 /// `ids`, with the id of every record of `rs` that names an id it holds added
 /// until no record of `rs` names one it lacks.
 pub fn upward(rs: &[Record], ids: &[Digest]) -> HashSet<Digest> {
-    let mut reached: HashSet<Digest> = ids.iter().copied().collect();
-    let mut grew = true;
-    while grew {
-        grew = false;
-        for q in rs {
-            if !reached.contains(&q.id) && q.prev.iter().any(|p| reached.contains(p)) {
-                reached.insert(q.id);
-                grew = true;
-            }
+    let mut children = HashMap::<Digest, Vec<Digest>>::new();
+    for r in rs {
+        for &p in &r.prev {
+            children.entry(p).or_default().push(r.id);
+        }
+    }
+    let mut reached: HashSet<_> = ids.iter().copied().collect();
+    let mut todo = ids.to_vec();
+    while let Some(p) = todo.pop() {
+        if let Some(qs) = children.remove(&p) {
+            todo.extend(qs.into_iter().filter(|q| reached.insert(*q)));
         }
     }
     reached
@@ -60,23 +59,22 @@ pub fn live_for(rs: &[Record], k: &str, r: &Record) -> bool {
     r.sets_key(k) && !above(rs, r).iter().any(|q| q.sets_key(k))
 }
 
-/// Lean: `Loops.liveEnv`, model/Loops/Live.lean.
+/// Gives what Lean `Loops.liveEnv` gives. Tests whether any immediate successor exists.
 /// Live for the envelope, which every record sets: nothing is above it.
 pub fn live_env(rs: &[Record], r: &Record) -> bool {
-    above(rs, r).is_empty()
+    !rs.iter().any(|q| q.prev.contains(&r.id))
 }
 
-/// Lean: `Loops.live`, model/Loops/Live.lean.
+/// Gives what Lean `Loops.live` gives. Checks declared keys against a single successor traversal.
 /// Live for some key, the envelope among them.
 pub fn live(rs: &[Record], r: &Record) -> bool {
     let up = above(rs, r);
-    if up.is_empty() {
-        return true;
-    }
-    match &r.sets {
-        None => !up.iter().any(|q| q.whole()),
-        Some(ks) => ks.iter().any(|k| live_for(rs, k, r)),
-    }
+    up.is_empty()
+        || (!up.iter().any(|q| q.whole())
+            && (r.whole()
+                || r.declares()
+                    .iter()
+                    .any(|k| !up.iter().any(|q| q.sets_key(k)))))
 }
 
 /// Lean: `Loops.Keyed`, model/Loops/Live.lean.
@@ -92,35 +90,16 @@ pub struct Keyed {
     pub heads: Vec<Record>,
 }
 
-/// Lean: `Loops.liveKeys`, model/Loops/Live.lean.
+/// Gives what Lean `Loops.liveKeys` gives. Collects declarations from indexed live records.
 /// The keys some live record of `rs` declares, in canonical order.
 pub fn live_keys(rs: &[Record]) -> Vec<String> {
-    canon_set(
-        &rs.iter()
-            .filter(|r| live(rs, r))
-            .flat_map(|r| r.declares().iter().cloned())
-            .collect::<Vec<_>>(),
-    )
+    LiveState::new(rs.iter().collect()).keys()
 }
 
-/// Lean: `Loops.keyedIn`, model/Loops/Live.lean.
+/// Gives what Lean `Loops.keyedIn` gives. Partitions out the thing and indexes its successor graph.
 /// Thing `t`'s keyed state over the records a reader holds.
 pub fn keyed_in(t: &str, xs: &[Record]) -> Keyed {
-    let rs: Vec<Record> = xs.iter().filter(|r| r.is_of(t)).cloned().collect();
-    let pick = |p: &dyn Fn(&Record) -> bool| {
-        order_heads(&rs.iter().filter(|r| p(r)).cloned().collect::<Vec<_>>())
-    };
-    Keyed {
-        keys: live_keys(&rs)
-            .into_iter()
-            .map(|k| {
-                let ss = pick(&|r| live_for(&rs, &k, r));
-                (k, ss)
-            })
-            .collect(),
-        whole: pick(&|r| r.whole() && live(&rs, r)),
-        heads: state_in(t, xs).heads,
-    }
+    LiveState::new(xs.iter().filter(|r| r.is_of(t)).collect()).keyed()
 }
 
 /// Lean: `Loops.recordsOf`, model/Loops/Live.lean.
@@ -129,22 +108,23 @@ pub fn records_of(t: &str, xs: &[Record]) -> Vec<Record> {
     xs.iter().filter(|r| r.is_of(t)).cloned().collect()
 }
 
-/// Lean: `Loops.setters`, model/Loops/Live.lean.
+/// Gives what Lean `Loops.setters` gives. Queries setters in the successor index.
 /// The live setters of key `k` among a thing's records `rs`, newest first, each once.
 pub fn setters(rs: &[Record], k: &str) -> Vec<Record> {
-    order_heads(
-        &rs.iter()
-            .filter(|r| live_for(rs, k, r))
-            .cloned()
-            .collect::<Vec<_>>(),
-    )
+    LiveState::new(rs.iter().collect())
+        .setters(k)
+        .into_iter()
+        .cloned()
+        .collect()
 }
 
-/// Lean: `Loops.liveIn`, model/Loops/Live.lean.
+/// Gives what Lean `Loops.liveIn` gives. Filters the thing once and indexes its live records.
 /// Thing `t`'s live records, its heads among them.
 pub fn live_in(xs: &[Record], t: &str) -> Vec<Record> {
-    let rs = records_of(t, xs);
-    rs.iter().filter(|r| live(&rs, r)).cloned().collect()
+    LiveState::new(xs.iter().filter(|r| r.is_of(t)).collect())
+        .live()
+        .cloned()
+        .collect()
 }
 
 #[cfg(test)]

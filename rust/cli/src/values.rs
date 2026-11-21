@@ -12,6 +12,7 @@ use loops::{
     spec::{FoldType, Follow, Slot, Spec},
 };
 use loops_place::dir::Held;
+use std::collections::HashMap;
 
 /// Whether a fold's answer has the values joined in.
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -62,7 +63,7 @@ fn setter(held: &Held, record: &Record, key: &str) -> Json {
     Json::Obj(members)
 }
 
-/// Thing `thing`'s about and values over `realm`, the records held as a reader sees
+/// A thing's about and values over the records held as a reader sees
 /// them (settled, then admitted), as members to write beside its keyed state.
 ///
 /// The about is the union of the mentions on its heads.
@@ -78,11 +79,10 @@ fn setter(held: &Held, record: &Record, key: &str) -> Json {
 ///   whatever keys they set beside those written here are unknown.
 ///
 /// `setters` and `unheld` are written only when they hold something.
-pub(crate) fn thing(held: &Held, realm: &[Record], thing: &str) -> Vec<(&'static str, Json)> {
-    let records = live::records_of(thing, realm);
-    let keyed = live::keyed_in(thing, realm);
-    let mut names: Vec<String> = keyed.keys.iter().map(|(k, _)| k.clone()).collect();
-    for record in &keyed.whole {
+pub(crate) fn thing(held: &Held, state: &live::LiveState<'_>) -> Vec<(&'static str, Json)> {
+    let whole = state.whole();
+    let mut names = state.keys();
+    for record in &whole {
         if let Some(Json::Obj(members)) = payload(held, record) {
             names.extend(members.iter().map(|(k, _)| k.clone()));
         }
@@ -90,7 +90,7 @@ pub(crate) fn thing(held: &Held, realm: &[Record], thing: &str) -> Vec<(&'static
     let mut values = Vec::new();
     let mut several = Vec::new();
     for key in canon_set(&names) {
-        let live = live::setters(&records, &key);
+        let live = state.setters(&key);
         match live.as_slice() {
             [] => {}
             [one] if one.shown == Shown::Here => {
@@ -104,8 +104,7 @@ pub(crate) fn thing(held: &Held, realm: &[Record], thing: &str) -> Vec<(&'static
             }
         }
     }
-    let unheld: Vec<Json> = keyed
-        .whole
+    let unheld: Vec<Json> = whole
         .iter()
         .filter(|r| r.shown != Shown::Here)
         .map(|r| {
@@ -115,8 +114,8 @@ pub(crate) fn thing(held: &Held, realm: &[Record], thing: &str) -> Vec<(&'static
             ])
         })
         .collect();
-    let mentions: Vec<_> = keyed
-        .heads
+    let mentions: Vec<_> = state
+        .heads()
         .iter()
         .flat_map(|r| r.about.iter().cloned())
         .collect();
@@ -193,7 +192,7 @@ fn entries(held: &Held, list: Json, view: EntryView) -> Json {
 
 /// Add each thing's about and values, and the envelopes of its heads.
 /// A collect or latest-by following `prev` also shows held payloads.
-fn slot(held: &Held, realm: &[Record], slot: &Slot, value: Json) -> Json {
+fn slot(held: &Held, by_thing: &HashMap<String, Vec<&Record>>, slot: &Slot, value: Json) -> Json {
     let records = |list| entries(held, list, EntryView::EnvelopeAndPayload);
     if slot.group.is_some() {
         return at_member(value, "groups", |groups| {
@@ -209,8 +208,10 @@ fn slot(held: &Held, realm: &[Record], slot: &Slot, value: Json) -> Json {
                     entries(held, list, EntryView::Envelope)
                 }) {
                     Json::Obj(mut members) => {
+                        let state =
+                            live::LiveState::new(by_thing.get(name).cloned().unwrap_or_default());
                         members.extend(
-                            thing(held, realm, name)
+                            thing(held, &state)
                                 .into_iter()
                                 .map(|(k, v)| (k.to_owned(), v)),
                         );
@@ -235,9 +236,13 @@ fn slot(held: &Held, realm: &[Record], slot: &Slot, value: Json) -> Json {
 
 /// A fold's answer, `slots`, with the values joined in, slot by slot.
 pub(crate) fn fold(held: &Held, realm: &[Record], spec: &Spec, slots: Json) -> Json {
+    let mut things = HashMap::<String, Vec<&Record>>::new();
+    for r in realm {
+        things.entry(r.thing()).or_default().push(r);
+    }
     each_member(slots, |name, value| {
         match spec.slots.iter().find(|s| s.name == name) {
-            Some(s) => slot(held, realm, s, value),
+            Some(s) => slot(held, &things, s, value),
             None => value,
         }
     })

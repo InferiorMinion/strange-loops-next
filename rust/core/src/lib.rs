@@ -19,3 +19,6 @@ pub mod stored;
 pub mod things;
 pub mod time;
 pub mod where_;
+
+#[cfg(test)]
+mod scan_tests;
