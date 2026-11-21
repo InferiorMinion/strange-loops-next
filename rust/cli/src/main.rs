@@ -37,13 +37,16 @@ usage: loops [-C <dir>] <verb> ...
   init                          make .loops/ here
   emit <kind> [field=text | field:=json]... [\"message\"]
        [--of <thing>] [--about <thing>]... [--no-about] [--prev <id>]...
-       [--erases <id>]... [--occurred <when>] [--under <id>]
+       [--erases <id>]... [--occurred <when> | --no-occurred] [--under <id>]
        [--sets <key>]... [--sets-nothing] [--whole]
                                 a revision without --of is of what it replaces;
                                 an emit names every live record of its thing
                                 held here, and copies its heads' about unless
-                                --about or --no-about states it; an emit of a
-                                thing held here sets the fields it names unless
+                                --about or --no-about states it; it copies
+                                occurred when every head states the same text
+                                unless --occurred states another or
+                                --no-occurred states none; an emit of a thing
+                                held here sets the fields it names unless
                                 --sets, --sets-nothing or --whole states it
   emit -                        drafts as JSONL on stdin: one changeset
   get <id>                      one record
@@ -336,7 +339,7 @@ fn emit(start: &Path, args: &[String]) -> Result<(), Fail> {
             .collect();
         return say(&object(vec![("records", Json::Arr(records))]).canon());
     }
-    let (draft, about, sets) = draft::from_args(
+    let (draft, about, occurred, sets) = draft::from_args(
         args,
         &now,
         &key.public(),
@@ -346,11 +349,12 @@ fn emit(start: &Path, args: &[String]) -> Result<(), Fail> {
     // A revision without `--of` is of what it replaces; then an emit of a
     // thing held here sets the keys it names unless it states its `sets`; it
     // names every live record of its thing held here, and copies the heads'
-    // `about` unless it states its own. A refusal here precedes the writer's others.
+    // `about` and agreed `occurred` unless it states its own. A refusal here
+    // precedes the writer's others.
     let draft = fill::of(&|id: &str| held.writer_view(id), draft).map_err(|e| refused(e.code()))?;
     let admitted = realm(&held);
     let draft = fill::sets(&admitted, draft, sets);
-    let draft = fill::anchor(&admitted, draft, about);
+    let draft = fill::anchor(&admitted, draft, about, occurred);
     let lines = write_changeset(&place, &held, &key, &[draft])?;
     say(lines.first().map_or("", Line::id))
 }

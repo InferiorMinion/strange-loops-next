@@ -8,7 +8,7 @@ use loops::{
     json::Json,
 };
 use loops_place::{
-    fill::{About, Sets},
+    fill::{About, Occurred, Sets},
     key,
 };
 
@@ -24,13 +24,14 @@ fn new_salt() -> Result<Vec<u8>, Fail> {
 /// with whether it states its `sets`: with `--sets`, once or more,
 /// `--sets-nothing` for none, or `--whole` for a whole-read emit; without
 /// any of them it sets the keys it names, when its thing is held.
+/// `--occurred` and `--no-occurred` each state what goes into the envelope.
 pub(crate) fn from_args(
     args: &[String],
     now: &str,
     observer: &str,
     link: impl Fn(&str) -> Result<String, Fail>,
     thing: impl Fn(&str) -> Result<String, Fail>,
-) -> Result<(Draft, About, Sets), Fail> {
+) -> Result<(Draft, About, Occurred, Sets), Fail> {
     let mut env = Env {
         emitted: now.to_owned(),
         observer: observer.to_owned(),
@@ -43,6 +44,7 @@ pub(crate) fn from_args(
     let mut nothing = false;
     let mut whole = false;
     let mut no_about = false;
+    let mut no_occurred = false;
     let mut rest = args.iter();
     while let Some(arg) = rest.next() {
         let mut value = || {
@@ -68,6 +70,7 @@ pub(crate) fn from_args(
             }
             "--whole" => whole = true,
             "--occurred" => env.occurred = Some(value()?),
+            "--no-occurred" => no_occurred = true,
             "--observer" => env.observer = value()?,
             "--emitted" => env.emitted = value()?,
             "--salt" => {
@@ -102,6 +105,11 @@ pub(crate) fn from_args(
     if no_about && !env.about.is_empty() {
         return Err(usage("--no-about takes no --about beside it"));
     }
+    let occurred = match (no_occurred, env.occurred.is_some()) {
+        (true, true) => return Err(usage("--no-occurred takes no --occurred beside it")),
+        (false, false) => Occurred::Copied,
+        _ => Occurred::Stated,
+    };
     let about = if no_about || !env.about.is_empty() {
         About::Stated
     } else {
@@ -125,7 +133,7 @@ pub(crate) fn from_args(
         },
         payload: Json::Obj(fields),
     };
-    Ok((draft, about, sets))
+    Ok((draft, about, occurred, sets))
 }
 
 fn shape(line: usize, what: &str) -> Fail {

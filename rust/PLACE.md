@@ -16,7 +16,7 @@ written down here so they can be changed on purpose.
 loops init                          make .loops/ here
 loops emit <kind> [field=text | field:=json]... ["message"]
       [--of <thing>] [--about <thing>]... [--no-about] [--prev <id>]...
-      [--erases <id>]... [--occurred <when>] [--under <id>]
+      [--erases <id>]... [--occurred <when> | --no-occurred] [--under <id>]
       [--sets <key>]... [--sets-nothing] [--whole]
 loops emit -                        drafts as JSONL on stdin: one changeset
 loops get <id>                      one record
@@ -58,7 +58,10 @@ loops whoami
   store holds, beside any `--prev`; see choice 11.
 * An emit of a thing carries the thing's whole `about`, copied from its heads
   unless `--about` or `--no-about` states it; see choices 12 and 13.
-* `emit -` fills nothing in: a changeset states its own `of`, `sets`, `prev` and `about`.
+* An emit copies `occurred` when every head states the same text, unless
+  `--occurred` or `--no-occurred` states it. See choice 19.
+* `emit -` fills nothing in: a changeset states its own `of`, `sets`, `prev`,
+  `about` and `occurred`.
 * `loops of` shows a thing's values, each key's from its live setters, beside
   its `about` and its heads; `read` and `fold` write the values beside the
   ids with `--values`. The values view is the CLI's, not the protocol's: a
@@ -284,6 +287,15 @@ Every verb that reads the store says when either happened (choice 18).
     exit code are unchanged. `import` does not read the store and says
     nothing.
 
+19. **`emit` copies `occurred` when the heads agree.** An emit of a held
+    thing carries the written `occurred` text when every head states it.
+    If any head lacks it or the texts differ, the emit states no `occurred`.
+    An erased or withheld head supplies its envelope like any other. A root
+    and a first record copy nothing. `--occurred <when>` states a new
+    occurrence and `--no-occurred` clears it. The two together are a usage
+    error. This builds the ruling of 2026-11-20 in
+    `notes/2026-11-15-the-cut.md`, section 5.
+
 ## Checked by
 
 `rust/place/tests/lines.rs` signs every accepted record vector and requires
@@ -305,7 +317,12 @@ through the note's history, a whole-read emit above keyed ones, a fork merged
 by export and import, an erased and a withheld live record, a root and a first
 record; `about` copied, replaced by `--about` and emptied by `--no-about`, and
 a moved task changing group; and a changeset that fills nothing in.
-It also replays a session: tasks and a decision with names, statuses and
+The filler test `occurred_requires_the_same_text_on_every_head` checks agreement.
+The walks `occurred_is_copied_replaced_and_cleared`,
+`disagreeing_heads_supply_no_occurred` and `an_erased_or_withheld_head_supplies_occurred`
+check the stored envelopes and flag conflict.
+
+The walk also replays a session: tasks and a decision with names, statuses and
 messages, an update by `status=done` alone that keeps the name and message,
 `sets` inferred and an emit naming no field written as a pure join, and one
 `read --values` that shows each open item's name and status, equal without
