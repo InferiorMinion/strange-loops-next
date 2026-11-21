@@ -1,0 +1,24 @@
+.reader{max-width:80ch;padding-bottom:5rem;overflow-wrap:anywhere}
+.top-row .mark,.documents{flex-wrap:wrap}
+.documents{display:flex;gap:.4rem 1rem;padding-block:1rem;border-bottom:1px solid var(--hair-2);font-size:.9rem;color:var(--muted)}
+.documents [aria-current="page"]{font-weight:600;color:var(--ink);text-decoration-thickness:2px}
+.source,.contents{font-size:.9rem;color:var(--muted);margin-block:1rem}
+.contents summary{cursor:pointer;width:fit-content}
+.contents ul{margin-block:.5rem;padding-left:1.4rem}
+.reader article{line-height:1.65}
+.reader article>*{margin-block:1rem}
+.reader article h1{margin-block:1.5rem}
+.reader article :is(h2,h3,h4){margin-block:2.2rem .7rem}
+.reader article h2{padding-top:1rem;border-top:1px solid var(--hair-2)}
+.reader article h3{font-size:1.1rem}
+.reader article :is(ol,ul){padding-left:1.6rem}
+.reader li>p{margin-block:.35rem}
+.reader pre,.table-scroll{max-width:100%;overflow-x:auto;background:var(--sheet);border:1px solid var(--hair-2);border-radius:8px}
+.reader pre{padding:1rem;line-height:1.45}
+.reader pre code{font-size:inherit;overflow-wrap:normal}
+.table-scroll table{width:100%;border-collapse:collapse;font-size:.92rem;line-height:1.45;overflow-wrap:normal}
+.table-scroll :is(th,td){padding:.5rem .75rem;border-bottom:1px solid var(--hair);text-align:left;vertical-align:top;min-width:9ch}
+.table-scroll th{background:var(--sunk)}
+.table-scroll .align-right{text-align:right}
+.table-scroll .align-center{text-align:center}
+.reader article :is(h1,h2,h3,h4){scroll-margin-top:5.5rem}

@@ -1,0 +1,34 @@
+import { statSync } from "node:fs";
+import { dirname, join, posix } from "node:path";
+import { REPO } from "../laws/join.mjs";
+
+export function rewriteLink(root, documents, source, line, href) {
+  const fail = (why) => { throw new Error(`${source}:${line}: link ${href}: ${why}`); };
+  if (/^https?:\/\//i.test(href)) {
+    if (!URL.canParse(href)) fail("invalid URL");
+    return href;
+  }
+  if (href.startsWith("#")) return href;
+  if (!href || /^(?:[a-z][a-z0-9+.-]*:|\/)/i.test(href)) fail("expected a relative repository path");
+
+  const [, raw, fragment] = href.match(/^([^#]*)(#.*)?$/);
+  let path;
+  try { path = posix.join(dirname(source), decodeURIComponent(raw)); }
+  catch { fail("invalid path encoding"); }
+  if (path === ".." || path.startsWith("../") || path.startsWith("/") || path.includes("\\")) fail("outside the repository");
+  const target = statSync(join(root, path), { throwIfNoEntry: false });
+  if (!target) fail("repository path does not exist");
+
+  path = path.replace(/\/$/, "");
+  const suffix = fragment ?? "";
+  const doc = documents.get(path);
+  if (doc) return encodeURIComponent(doc) + suffix;
+  const section = path.match(/^design\/rethink\/sections\/\d\d-([\w-]+)\.html$/);
+  if (section) {
+    const tab = section[1];
+    const sub = fragment?.slice(1);
+    return `../rethink/#${tab}` + (sub && sub !== tab ? "/" + sub : "");
+  }
+  const base = target.isDirectory() ? REPO.replace("/blob/", "/tree/") : REPO;
+  return base + "/" + path.split("/").map(encodeURIComponent).join("/") + suffix;
+}

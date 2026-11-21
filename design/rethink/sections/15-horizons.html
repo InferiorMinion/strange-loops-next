@@ -44,7 +44,7 @@
 
   <h3>The rest</h3>
   <details class="unfold"><summary>Time: bitemporal by construction</summary><div class="body"><ul>
-    <li>"What did we believe in 2019 about what happened in 2009?" is a fold with two cut-offs.</li>
+    <li>"What did we believe in 2019 about what happened in 2009?" is one cut and one window: the records as of 2019 with what they build on, then a <code>where</code> on 2009.</li>
     <li>Two ticks diffed give a changelog of understanding.</li>
     <li>Fuzzy dates suit history: genealogy, a platform's early years, a house.</li>
     <li><code>emitted</code> answers "what did I believe at T"; witness ticks answer "what did this store hold at T".</li>
@@ -76,11 +76,11 @@
     <thead><tr><th>Commitment</th><th>Unlocks</th><th>Cost if added later</th></tr></thead>
     <tbody>
       <tr><td><b>Place layout fetchable by plain HTTP GET</b>: closed segments named by hash, one mutable <code>segments.json</code></td><td>static hosting, file sync, public stores</td><td>changes the on-disk format</td></tr>
-      <tr><td><b>Folds take "as of" for both times</b></td><td>bitemporal questions, diffs</td><td>touches every fold</td></tr>
-      <tr><td><b>Folds define an absent opening:</b> envelope folds count it, payload folds skip it</td><td>disclosure, erasure</td><td>non-deterministic ticks</td></tr>
+      <tr><td><b>Folds take "as of" for both times</b></td><td>bitemporal questions, diffs</td><td>ruled on 2026-11-20: no fold changes. The cut is one function on the held set, before settling, and the window is a <code>where</code></td></tr>
+      <tr><td><b>Folds define an absent opening:</b> envelope folds count it, payload folds skip it. Built.</td><td>disclosure, erasure</td><td>non-deterministic ticks</td></tr>
       <tr><td><b>One local API</b> under the CLI, <code>serve</code>, MCP and LSP</td><td>every surface</td><td>surfaces that drift apart</td></tr>
       <tr><td><b>Lens contract:</b> render for an audience; parse to a structured view. The core diffs by ids and applies one transaction. Front matter names the base: tick, lens hash and audience.</td><td>docs, CSV, <code>store.json</code> as one pattern</td><td><code>store.json</code> stays special</td></tr>
-      <tr><td><b>Two names per result</b> behind a pluggable cache. The input key includes the lens and fold vocabulary. The result hash covers a canonical encoding.</td><td>early cutoff, shared caches, renders on static places, context by hash</td><td>every cache key changes; until then, stale renders under the right name</td></tr>
+      <tr><td><b>Two names per result</b> behind a pluggable cache. The input key includes the lens and fold vocabulary. The result hash covers a canonical encoding; it is built, spelled <code>res:</code>. The input key is not built.</td><td>early cutoff, shared caches, renders on static places, context by hash</td><td>every cache key changes; until then, stale renders under the right name</td></tr>
       <tr><td><b>Collectors as external processes</b>, split by disclosure; <code>promote</code> carries envelope-only records</td><td>any language, team sharing</td><td>a plugin system nobody wants</td></tr>
     </tbody>
   </table></div>
@@ -110,7 +110,7 @@
         <line class="ln" x1="340" y1="68" x2="340" y2="127" marker-end="url(#ah)"/><text x="348" y="102" class="xs m">edit</text>
         <rect class="box-amb" x="288" y="130" width="104" height="38" rx="8"/><text x="340" y="154" text-anchor="middle" class="s">edited file</text>
         <rect class="box" x="148" y="130" width="104" height="38" rx="8"/><text x="200" y="148" text-anchor="middle" class="s">parse, diff</text><text x="200" y="161" text-anchor="middle" class="xs m">vs render(T:4c)</text>
-        <rect class="box" x="8" y="130" width="104" height="38" rx="8"/><text x="60" y="148" text-anchor="middle" class="s">facet records</text><text x="60" y="161" text-anchor="middle" class="xs m">prev = heads</text>
+        <rect class="box" x="8" y="130" width="104" height="38" rx="8"/><text x="60" y="148" text-anchor="middle" class="s">facet records</text><text x="60" y="161" text-anchor="middle" class="xs m">prev = live records</text>
         <line class="ln-amb" x1="286" y1="149" x2="255" y2="149" marker-end="url(#ah-amb)"/>
         <line class="ln" x1="146" y1="149" x2="115" y2="149" marker-end="url(#ah)"/>
         <line class="ln" x1="60" y1="128" x2="60" y2="61" marker-end="url(#ah)"/><text x="68" y="102" class="xs m">apply</text>
@@ -148,7 +148,7 @@
         <rect class="box" x="100" y="178" width="200" height="40" rx="8"/><text x="200" y="195" text-anchor="middle" class="s b">parse · diff by ids</text><text x="200" y="210" text-anchor="middle" class="xs m">against render(base)</text>
         <line class="ln-acc" x1="160" y1="219" x2="112" y2="243" marker-end="url(#ah-acc)"/>
         <line class="ln-amb" x1="240" y1="219" x2="288" y2="243" marker-end="url(#ah-amb)"/>
-        <rect class="box-acc" x="14" y="246" width="180" height="44" rx="8"/><text x="104" y="264" text-anchor="middle" class="s">facets · prev = heads</text><text x="104" y="280" text-anchor="middle" class="xs m">your notes, citing theirs</text>
+        <rect class="box-acc" x="14" y="246" width="180" height="44" rx="8"/><text x="104" y="264" text-anchor="middle" class="s">facets · prev = live records</text><text x="104" y="280" text-anchor="middle" class="xs m">your notes, citing theirs</text>
         <rect class="box-amb" x="206" y="246" width="180" height="58" rx="8"/><text x="296" y="263" text-anchor="middle" class="s b">refused, never dropped</text><text x="296" y="279" text-anchor="middle" class="xs">absence · inside a quote</text><text x="296" y="294" text-anchor="middle" class="xs">same facet twice · copied id</text>
         <path class="ln-acc" d="M14,268 H6 V21 H117" marker-end="url(#ah-acc)"/>
         <line class="ln dash" x1="104" y1="291" x2="140" y2="319"/>
@@ -178,7 +178,7 @@
     <p><b>Committed renders are copies, so each kind declares where its text may render.</b> Preferred design: facets (the thing's own state) render into committed files. Testimony renders there <b>by reference</b>: author, date and link. Only local renders and the sidebar show its full text. Erasing a facet's text means a steward rewrites that file's history too, visibly.</p>
   </div></details>
   <details class="unfold"><summary>5 · Two PRs touch different facets</summary><div class="body">
-    <p>You edit Decision; dev2 sets <code>status</code> to deprecated; both from <code>T:4c</code>. The store has no fork: a three-way merge per facet, done by the data. Git has a spurious conflict, because both PRs re-rendered the file.</p>
+    <p>You edit Decision; dev2 sets <code>status</code> to deprecated; both from <code>T:4c</code>. No key is in conflict: a three-way merge per facet, done by the data. The thing has two heads until an emit names both. Git has a spurious conflict, because both PRs re-rendered the file.</p>
     <ul>
       <li><b>Committed lens files are always pure renders.</b> A pre-commit hook runs apply and re-renders; CI rejects a file that doesn't match its render ("un-applied edit").</li>
       <li><b>So conflicts on them resolve like lockfiles:</b> union the segments and re-render, never by hand. A merge driver does it.</li>
@@ -751,7 +751,7 @@ sessions store (everything, yours)         practice store (shared)
   <div class="tbl"><table>
     <thead><tr><th>Nix / Bazel</th><th>Loops</th></tr></thead>
     <tbody>
-      <tr><td>derivation: the recipe, inputs pinned</td><td>input key: spec, fold vocabulary, covered ids, results read</td></tr>
+      <tr><td>derivation: the recipe, inputs pinned</td><td>input key: spec, fold vocabulary, covered ids and which were read open, results read</td></tr>
       <tr><td>content-addressed output</td><td>result hash: the folded state, canonically encoded</td></tr>
       <tr><td>build output</td><td>a render, keyed by (lens hash, result hash)</td></tr>
       <tr><td>binary cache</td><td>a static place holding results and renders</td></tr>
@@ -796,7 +796,7 @@ witness observer="ci" vertex="decisions" key=… result="res:7a…" sig=…</pre
   </div></details>
   <details class="unfold"><summary>2 · A laptop fetches instead of folding</summary><div class="body">
     <ul>
-      <li><b>It computes the input key from what it holds:</b> the spec hash, the covered ids, the result hashes of the vertices it reads. Hashing is cheap; folding is what's skipped.</li>
+      <li><b>It computes the input key from what it holds:</b> the spec hash, the covered ids and which of them it reads open, the result hashes of the vertices it reads. Hashing is cheap; folding is what's skipped.</li>
       <li><b>Lookup:</b> <code>keys/</code> gives <code>res:7a…</code>; <code>renders/</code> gives the page. Nothing was folded.</li>
       <li><b>Trust or check:</b> trust CI's key, or refold and compare. A mismatch means nondeterminism or tampering, and either is worth knowing: it becomes a <code>dispute</code> about the witness tick.</li>
     </ul>
@@ -814,7 +814,7 @@ witness observer="ci" vertex="decisions" key=… result="res:7a…" sig=…</pre
     <p>Most edits to a knowledge store are like this: a comment, a weaker observation, a duplicate, a record outside what a lens shows. Without early cutoff, each one rebuilds everything downstream. Nix learned this late, which is why it added content-addressed derivations; Build Systems à la Carte names the property.</p>
     <ul>
       <li><b>The tick id still changes:</b> it names the covered ids. The new tick says "these records, this result"; downstream reuses the work, not the record.</li>
-      <li><b>Results need a canonical encoding,</b> or the same state hashes two ways: sorted keys and fixed number forms, as in RFC 8785.</li>
+      <li><b>Results need a canonical encoding,</b> or the same state hashes two ways: sorted keys and fixed number forms, as in RFC 8785. Built: JCS, with integers as decimal text and the hash spelled <code>res:</code>.</li>
       <li><b>A render shows only what's in the result.</b> Anything it prints, such as an "as of" date, has to come from the state, or two equal results would render differently.</li>
     </ul>
   </div></details>
@@ -824,7 +824,7 @@ witness observer="ci" vertex="decisions" key=… result="res:7a…" sig=…</pre
       <thead><tr><th>In the key</th><th>Not in the key</th></tr></thead>
       <tbody>
         <tr><td>spec hash and fold-vocabulary version</td><td>key rules like <code>canonical-link</code>: applied when writing</td></tr>
-        <tr><td>covered ids, and "as of" cut-offs for both times</td><td>the clock: folds never read "now"</td></tr>
+        <tr><td>covered ids, and which of them were read open</td><td>the clock: folds never read "now"</td></tr>
         <tr><td>result hashes of every vertex read, authority and <code>resolve-by</code> included</td><td>which place held the records</td></tr>
         <tr><td>for a render: the lens hash, templates included</td><td>who asked</td></tr>
       </tbody>

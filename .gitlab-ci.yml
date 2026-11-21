@@ -330,12 +330,13 @@ design:
     - *not-merged
     - when: on_success
   script:
-    # The design pages are a pure render of design/, protocol/ and vectors/
+    # The design pages are a pure render of their repository sources
     - node design/build.mjs
     - git diff --exit-code -- out
     - test -z "$(git status --porcelain -- out)"
     # The design build refuses every mutant it should
     - node design/mutants.mjs
+    - node --test design/decisions/*.test.mjs
 
 # A tested merge's pipeline on main: check the claim, then only keep main's
 # image and caches current. These jobs are not interruptible, so a quick second

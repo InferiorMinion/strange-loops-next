@@ -157,9 +157,9 @@
       <li><b>Git-storable but not git-only.</b> The backend contract shrinks to put, get and list on immutable blobs, compared with Arrival's atomic compare-and-append.</li>
       <li><b>Replication is a union of segments.</b> Writers never touch each other's segments.</li>
       <li><b>Composition is the same union, at read time.</b> "Combining stores is an ordinary local operation" becomes literally true: compose and merge are one operation at different scopes.</li>
-      <li><b>Witness order survives without an authority.</b> Each writer's segment chain is that observer's receipt order, hash-linked.</li>
+      <li><b>Witness order survives without an authority.</b> Each writer's segment chain is that observer's receipt order, hash-linked. As built, a place keeps its segments as a set, each named by its own hash, and records no order; only a witness tick says what was held when.</li>
     </ul>
-    <p>For the team case in git: segments per writer and device, <code>.loops/segments/&lt;lineage&gt;/&lt;device&gt;/</code>, each file closed once committed. <b>Corrected:</b> an earlier version suggested <code>merge=union</code> in <code>.gitattributes</code> as a safety net. With one writer per file an honest pull never conflicts on a segment, so a conflict is an alarm; see <a href="#sharing" data-tab="sharing">Sharing</a>. Decision records get reviewed in the same PR as the code they explain.</p>
+    <p>For the team case in git: segments per writer and device, <code>.loops/segments/&lt;lineage&gt;/&lt;device&gt;/</code>, each file closed once committed. As built it is <code>.loops/segments/&lt;key&gt;/</code>, one directory for each signing key. <b>Corrected:</b> an earlier version suggested <code>merge=union</code> in <code>.gitattributes</code> as a safety net. With one writer per file an honest pull never conflicts on a segment, so a conflict is an alarm; see <a href="#sharing" data-tab="sharing">Sharing</a>. Decision records get reviewed in the same PR as the code they explain.</p>
   </div></details>
 
   <details class="unfold"><summary>What survives from Arrival</summary><div class="body">
@@ -184,7 +184,7 @@
   <details class="unfold"><summary>The hard parts that remain</summary><div class="body">
     <ol>
       <li><b>Resolving a reference across stores.</b> A small locator registry (store name to path or URL); ticks may carry hints. Bundles cover the cross-machine case.</li>
-      <li><b>Erasure.</b> A writer can compact its own segments. Record hashes don't change, and ticks that covered an erased record keep their root while that record becomes unresolvable. Design this early.</li>
+      <li><b>Erasure.</b> A writer can compact its own segments. Record hashes don't change, and ticks that covered an erased record keep their root while that record becomes unresolvable. Erasure is built: a record erases through <code>erases</code>, and <code>loops erase</code> drops the openings a place holds.</li>
       <li><b>Declarations in multi-writer stores.</b> Settled per store by convention, not by protocol.</li>
       <li><b>Clock skew.</b> For human-scale stores, emitted plus id tie-breaks is probably enough. A hybrid logical clock is available if not.</li>
     </ol>

@@ -1,0 +1,937 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Changelog · Strange Loops</title>
+<style>
+/* The register: a warm grey table, white sheets resting on it, height shown by shadow and
+   hairline. One colour only, for what is erased or in conflict. */
+:root{
+  --ground:#EBEAE6; --sunk:#E3E2DD; --sheet:#FFFFFF; --ink:#1D1D1B; --muted:#5A5954; --faint:#63625C;
+  --hair:rgba(29,29,27,.09); --hair-2:rgba(29,29,27,.16);
+  --alert:#B23A16; --alert-soft:rgba(178,58,22,.10);
+  --lift-1:0 1px 2px rgba(40,38,30,.06);
+  --lift-2:0 1px 2px rgba(40,38,30,.06),0 4px 12px rgba(40,38,30,.06);
+  --lift-3:0 2px 4px rgba(40,38,30,.06),0 12px 28px rgba(40,38,30,.09);
+  --lift-4:0 4px 8px rgba(40,38,30,.07),0 22px 48px rgba(40,38,30,.13);
+  --sans:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --ground:#171716; --sunk:#121211; --sheet:#22221F; --ink:#ECEBE7; --muted:#A09E98; --faint:#8E8C86;
+  --hair:rgba(236,235,231,.08); --hair-2:rgba(236,235,231,.16);
+  --alert:#F0784F; --alert-soft:rgba(240,120,79,.14);
+  --lift-1:0 1px 2px rgba(0,0,0,.4);
+  --lift-2:0 1px 2px rgba(0,0,0,.4),0 4px 12px rgba(0,0,0,.3);
+  --lift-3:0 2px 4px rgba(0,0,0,.4),0 12px 28px rgba(0,0,0,.4);
+  --lift-4:0 4px 8px rgba(0,0,0,.45),0 22px 48px rgba(0,0,0,.5);
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --ground:#171716; --sunk:#121211; --sheet:#22221F; --ink:#ECEBE7; --muted:#A09E98; --faint:#8E8C86;
+  --hair:rgba(236,235,231,.08); --hair-2:rgba(236,235,231,.16);
+  --alert:#F0784F; --alert-soft:rgba(240,120,79,.14);
+  --lift-1:0 1px 2px rgba(0,0,0,.4);
+  --lift-2:0 1px 2px rgba(0,0,0,.4),0 4px 12px rgba(0,0,0,.3);
+  --lift-3:0 2px 4px rgba(0,0,0,.4),0 12px 28px rgba(0,0,0,.4);
+  --lift-4:0 4px 8px rgba(0,0,0,.45),0 22px 48px rgba(0,0,0,.5);
+  color-scheme:dark}
+
+*{box-sizing:border-box}
+[hidden]{display:none !important}
+html{scroll-behavior:smooth;scroll-padding-top:72px}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--sans);font-size:15.5px;line-height:1.55;-webkit-text-size-adjust:100%;font-feature-settings:"cv11","ss01"}
+a{color:inherit;text-decoration-color:var(--hair-2);text-underline-offset:3px}
+a:hover{text-decoration-color:currentColor}
+:focus-visible{outline:2px solid var(--ink);outline-offset:2px;border-radius:6px}
+code,.mono,pre{font-family:var(--mono);font-size:.86em}
+code{overflow-wrap:anywhere}
+p{margin:0}
+h1,h2,h3{margin:0;font-weight:600;letter-spacing:-.015em;text-wrap:balance}
+h1{font-size:clamp(30px,5vw,40px);line-height:1.1}
+h2{font-size:21px;line-height:1.25}
+h3{font-size:15.5px}
+.wrap{max-width:1080px;margin:0 auto;padding-inline:max(16px,env(safe-area-inset-left,0px))}
+
+/* top */
+header.top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--ground) 86%,transparent);backdrop-filter:saturate(1.2) blur(10px);-webkit-backdrop-filter:saturate(1.2) blur(10px)}
+.top-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding-block:12px}
+.mark{font-weight:600;font-size:14px;white-space:nowrap;display:flex;gap:10px;align-items:baseline}
+.mark a{text-decoration:none}
+.mark .page{font-weight:500;color:var(--muted)}
+.mark .page[aria-current="page"]{color:var(--ink)}
+.mark .page:hover{color:var(--ink)}
+.seg{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;margin-right:-6px}
+.seg::-webkit-scrollbar{display:none}
+.seg a{flex:0 0 auto;text-decoration:none;color:var(--muted);font-size:14px;font-weight:500;padding:5px 10px;border-radius:8px;transition:background .2s,color .2s}
+.seg a:hover{color:var(--ink)}
+.seg a[aria-current="true"]{background:var(--sunk);color:var(--ink);box-shadow:inset 0 0 0 1px var(--hair)}
+
+.intro{padding-block:44px 8px;display:grid;gap:14px}
+.lede{font-size:17px;line-height:1.55;color:var(--muted);max-width:68ch}
+.lede::first-line{color:var(--ink)}
+.legend{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;font-size:13px;color:var(--muted)}
+.legend .chip{margin-left:8px}
+.legend .chip:first-child{margin-left:0}
+
+.chip{display:inline-block;font-size:11px;font-weight:500;line-height:1;padding:4px 7px 4px;border-radius:99px;letter-spacing:.01em;vertical-align:2px;white-space:nowrap}
+.chip.proved{color:var(--muted);box-shadow:inset 0 0 0 1px var(--hair-2)}
+.chip.settled{color:var(--muted);box-shadow:inset 0 0 0 1px var(--hair-2);background:transparent;border:1px dashed var(--hair-2);padding:3px 6px}
+
+/* blocks: prose on the left, the thing itself on the right */
+.block{display:grid;gap:22px;padding-block:56px 8px}
+@media (min-width:900px){.block{grid-template-columns:260px minmax(0,1fr);gap:48px}.side{position:sticky;top:76px;align-self:start}}
+.side{display:grid;gap:10px;align-content:start;color:var(--muted);font-size:14.5px}
+.side h2{color:var(--ink);margin-bottom:2px}
+.side b{color:var(--ink);font-weight:600}
+.hint{font-size:13px;color:var(--faint)}
+.note{font-size:13.5px;color:var(--muted);margin-top:-6px}
+
+.sheet{background:var(--sheet);border-radius:14px;box-shadow:var(--lift-3),0 0 0 1px var(--hair);padding:22px}
+
+/* a column of things under small headings */
+.stack{display:grid;gap:12px;align-content:start;min-width:0}
+.stack h3{margin-top:14px;font-size:12px;font-weight:500;letter-spacing:.05em;text-transform:uppercase;color:var(--faint)}
+.stack h3:first-child{margin-top:0}
+
+/* cards: one concept each */
+.cards{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(250px,1fr))}
+.card{background:var(--sheet);border-radius:12px;box-shadow:var(--lift-2),0 0 0 1px var(--hair);padding:16px 16px 14px;display:grid;gap:10px;align-content:start;transition:box-shadow .25s,transform .25s}
+.card:hover{box-shadow:var(--lift-3),0 0 0 1px var(--hair)}
+.card.is-settled{background:transparent;box-shadow:none;border:1px dashed var(--hair-2)}
+.card-h{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.card h3{font-family:var(--mono);font-weight:500;font-size:15px;letter-spacing:0}
+.card dl{margin:0;display:grid;gap:8px}
+.card dt{font-size:11px;font-weight:500;letter-spacing:.04em;text-transform:uppercase;color:var(--faint)}
+.card dd{margin:0;font-size:14px;line-height:1.5}
+.card dd+dt{margin-top:2px}
+.pending{font-size:12.5px;color:var(--muted);border-left:2px solid var(--hair-2);padding-left:8px}
+.laws{display:flex;flex-wrap:wrap;gap:4px}
+.laws a{text-decoration:none}
+.laws code{font-size:11px;color:var(--muted);background:var(--ground);padding:2px 6px;border-radius:5px;transition:color .15s}
+.laws a:hover code{color:var(--ink)}
+
+.rows{background:var(--sheet);border-radius:12px;box-shadow:var(--lift-2),0 0 0 1px var(--hair)}
+.row{display:grid;grid-template-columns:130px minmax(0,1fr);gap:4px 16px;padding:12px 16px;border-top:1px solid var(--hair)}
+.row:first-child{border-top:0}
+.row-k{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px}
+.row-k b{font-family:var(--mono);font-weight:500;font-size:14px}
+.row-k.wide{font-size:14px}
+.row-v{display:grid;gap:6px;font-size:14px}
+/* a row with no label: its words take the label's column too */
+.row.is-full .row-v{grid-column:1/-1}
+.row.is-settled .row-k b{color:var(--muted)}
+.made{font-family:var(--mono);font-size:12.5px;color:var(--muted)}
+@media (max-width:560px){.row{grid-template-columns:1fr}}
+/* a sideways scroller wider than the screen: its right edge fades to say there is more, until
+   it is scrolled to the end. Without scripts the fade shows wherever a pan is narrow enough to
+   need it; register.js shows it exactly while there is more. */
+.pan{position:relative;min-width:0}
+.pan::after{content:"";position:absolute;top:1px;right:1px;bottom:1px;width:36px;border-radius:0 var(--pan-r,12px) var(--pan-r,12px) 0;background:linear-gradient(to right,color-mix(in srgb,var(--sheet) 0%,transparent),var(--sheet) 85%);pointer-events:none;opacity:0;transition:opacity .2s}
+@media (max-width:560px){:root:not(.js) .pan::after{opacity:1}}
+.pan.is-more::after{opacity:1}
+.foot{padding-block:64px 48px;font-size:12.5px;color:var(--faint)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+@media (max-width:560px){.top-row{flex-wrap:wrap;row-gap:4px;padding-block:10px 8px}.seg{width:100%;margin-right:0;margin-left:-10px}}
+
+/* a record, as the grammar page's walk and the laws page's cards both draw it: a sheet with its
+   letter, when it was written, its value and what it says of itself */
+.rec{background:var(--sheet);border-radius:10px;box-shadow:var(--lift-2),0 0 0 1px var(--hair);padding:8px 9px;display:grid;gap:3px;font-size:12px;min-width:0;transition:box-shadow .3s,background .3s,opacity .3s}
+.rec .rid{display:flex;justify-content:space-between;gap:4px;font-family:var(--mono);font-size:11.5px;font-weight:500}
+.rec .rid span{color:var(--faint);font-weight:400}
+.rec .who{color:var(--muted);font-size:11px}
+.rec .val{font-size:12px;line-height:1.35;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.rec .tag{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:10px;font-weight:500;letter-spacing:.03em;text-transform:uppercase;color:var(--faint)}
+.rec.super{box-shadow:var(--lift-1),0 0 0 1px var(--hair);opacity:.72}
+.rec.head{box-shadow:var(--lift-3),0 0 0 1.5px var(--ink)}
+.rec.fork{box-shadow:var(--lift-3),0 0 0 1.5px var(--alert)}
+.rec.fork .tag{color:var(--alert)}
+.rec .val.erased,.rec .val.withheld{font-family:var(--mono);font-size:11px;color:var(--faint);font-style:normal}
+.rec .val.erased{color:var(--alert)}
+
+.reader{max-width:80ch;padding-bottom:5rem;overflow-wrap:anywhere}
+.top-row .mark,.documents{flex-wrap:wrap}
+.documents{display:flex;gap:.4rem 1rem;padding-block:1rem;border-bottom:1px solid var(--hair-2);font-size:.9rem;color:var(--muted)}
+.documents [aria-current="page"]{font-weight:600;color:var(--ink);text-decoration-thickness:2px}
+.source,.contents{font-size:.9rem;color:var(--muted);margin-block:1rem}
+.contents summary{cursor:pointer;width:fit-content}
+.contents ul{margin-block:.5rem;padding-left:1.4rem}
+.reader article{line-height:1.65}
+.reader article>*{margin-block:1rem}
+.reader article h1{margin-block:1.5rem}
+.reader article :is(h2,h3,h4){margin-block:2.2rem .7rem}
+.reader article h2{padding-top:1rem;border-top:1px solid var(--hair-2)}
+.reader article h3{font-size:1.1rem}
+.reader article :is(ol,ul){padding-left:1.6rem}
+.reader li>p{margin-block:.35rem}
+.reader pre,.table-scroll{max-width:100%;overflow-x:auto;background:var(--sheet);border:1px solid var(--hair-2);border-radius:8px}
+.reader pre{padding:1rem;line-height:1.45}
+.reader pre code{font-size:inherit;overflow-wrap:normal}
+.table-scroll table{width:100%;border-collapse:collapse;font-size:.92rem;line-height:1.45;overflow-wrap:normal}
+.table-scroll :is(th,td){padding:.5rem .75rem;border-bottom:1px solid var(--hair);text-align:left;vertical-align:top;min-width:9ch}
+.table-scroll th{background:var(--sunk)}
+.table-scroll .align-right{text-align:right}
+.table-scroll .align-center{text-align:center}
+.reader article :is(h1,h2,h3,h4){scroll-margin-top:5.5rem}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap top-row">
+    <p class="mark"><a href="../rethink/">Strange Loops</a><a class="page" href="../grammar/">Grammar</a><a class="page" href="../laws/">Laws</a><a class="page" href="../evidence/">Evidence</a><a class="page" href="../decisions/" aria-current="page">Decisions</a></p>
+  </div>
+</header>
+
+<main class="wrap reader">
+<nav class="documents" aria-label="Documents"><a href="index.html">Decisions</a>
+<a href="roadmap.html">Roadmap</a>
+<a href="changelog.html" aria-current="page">Changelog</a>
+<a href="note-2026-11-11-declared-keys.html">D8c: declared keys, design note</a>
+<a href="note-2026-11-15-the-cut.html">Step 4: the cut, design note</a>
+<a href="note-2026-11-21-payload-values.html">Payload values, design note</a>
+<a href="note-2026-11-21-tick-record.html">Step 4: the tick record, design note</a>
+<a href="note-retained-boundaries.html">Retained boundaries</a></nav>
+<p class="source">Rendered from <code>CHANGELOG.md</code> in the repository.</p>
+<details class="contents"><summary>On this page</summary>
+<ul><li><a href="#2026-11-21">2026-11-21</a></li>
+<li><a href="#2026-11-20">2026-11-20</a></li>
+<li><a href="#2026-11-15">2026-11-15</a></li>
+<li><a href="#2026-11-14">2026-11-14</a></li>
+<li><a href="#2026-11-13">2026-11-13</a></li>
+<li><a href="#2026-11-11">2026-11-11</a></li>
+<li><a href="#2026-11-10">2026-11-10</a></li>
+<li><a href="#step-1-and-before">Step 1 and before</a></li></ul></details>
+<article>
+<h1 id="changelog">Changelog</h1>
+<p>What was built and what Kyle ruled, newest first, by date.
+What is next is in <a href="roadmap.html">ROADMAP.md</a>. What waits on Kyle is in <a href="index.html">DECISIONS.md</a>. The long design notes are in <a href="https://github.com/kgruel/strange-loops-next/tree/main/notes">notes/</a>.</p>
+<p>Each date starts with a short list. Under it is the record as it was written at the time, moved here from <code>ROADMAP.md</code> on 2026-11-21 and changed only where a sentence pointed at a place in that file.
+Since Kyle's ruling of 2026-11-21 (W7), only a choice that changes a record's bytes or id, a result's bytes or hash, a refusal code, or what a spec answers comes to him, through <a href="index.html">DECISIONS.md</a>. Every other implementer choice is written here and stands unless he objects.
+The record starts where the old roadmap's did. For anything earlier, and for every merge, see <code>git log</code>.</p>
+<h2 id="2026-11-21">2026-11-21</h2>
+<p>In brief:</p>
+<ul>
+<li><p><code>loops read --values</code> and <code>fold --values</code> give each listed record's envelope (issue 9, !57).</p></li>
+<li><p>The Rust core reads through indexes: a keyed collect over 9,000 records went from 19.8 s to 0.63 s, and no answer changed (!58).</p></li>
+<li><p>margins-claude wrote the payload values note (!59). Its seven choices are open.</p></li>
+<li><p>The roadmap was split into <code>ROADMAP.md</code>, <code>DECISIONS.md</code>, this file and <code>notes/</code>.</p></li>
+<li><p>A result hash is spelled <code>res:</code>.</p></li>
+<li><p>The model states how a stored payload is read, and a list reads as a set: <code>present</code> means written, <code>is</code> and <code>by</code> read a list's members, and a list is never a number.</p></li>
+<li><p><code>value</code> and <code>n</code> are ordinary payload fields: a record that does not hold one is unread, absent and ungrouped for it, as for any other name.</p></li>
+<li><p>Kyle ruled the seven payload values choices, the result hash's prefix, which choices come to him, and the three classes of edge; he confirmed the keyed-fold and codec choices; issue #10 is closed.</p></li>
+<li><p>The tick record is proposed as TK1 to TK9 in <code>DECISIONS.md</code>, with <a href="note-2026-11-21-tick-record.html">a note</a> (!65). Not ruled.</p></li>
+<li><p><code>loops emit</code> copies <code>occurred</code> from the heads when they agree; <code>--no-occurred</code> states none.</p></li>
+<li><p>The roadmap, the decisions, the changelog and the notes are published as a fifth design page, and the rethink and grammar pages are brought up to the rulings since 2026-11-13.</p></li>
+</ul>
+<h3 id="the-decisions-page-and-the-rethink-and-grammar-pages-brought-up-to-date">The decisions page, and the rethink and grammar pages brought up to date</h3>
+<p>Kyle asked for both on 2026-11-21, for a colleague who reads the site and not the repository.</p>
+<ul>
+<li><p><strong>A fifth page, <code>out/decisions/</code>.</strong> <code>DECISIONS.md</code> is its landing page; <code>ROADMAP.md</code>, <code>CHANGELOG.md</code> and each file in <code>notes/</code> are pages beside it. <code>node design/build.mjs</code> renders them with a Markdown renderer of its own, with no dependencies. A new note needs no code change.</p></li>
+<li><p><strong>The build checks what it renders.</strong> It refuses a block it does not support, a link to a heading no page has, and a link to a repository path that does not exist; three new entries in <code>design/mutants.mjs</code> hold it to that. The link check now covers every link of every page, the rethink page's included. A link to a file that is not a page goes to the repository on GitHub.</p></li>
+<li><p><strong>So a change to any of these documents changes <code>out/</code>.</strong> CI fails when the committed pages differ from a rebuild: run <code>node design/build.mjs</code> with every edit to the roadmap, the decisions, the changelog or a note.</p></li>
+<li><p><strong>The rethink page.</strong> Twelve ledger entries for the rulings of 2026-11-13 to 2026-11-21 (declared keys, the anchor, edges, the payload reading, the result codec, the cut, a tick's inputs, the window, an emit against a base, step 2 closed, which choices come to Kyle), with the tick record entered as proposed. About forty passages that called something unbuilt or open are corrected, and the Resolution tab opens with what is ruled since its text was written. Passages that only TK1 to TK9 would change are left until he rules.</p></li>
+<li><p><strong>The grammar page.</strong> The record's entry states the payload reading; <code>emit</code>, <code>test</code> and <code>group</code> are current; the tick's entry says its record is proposed.</p></li>
+</ul>
+<p>A Codex worker wrote the fifth page and the coordinator reviewed it; the coordinator wrote the rethink and grammar changes, from a list of stale passages that a search agent drew up and that was checked passage by passage.</p>
+<h3 id="loops-emit-copies-occurred"><code>loops emit</code> copies <code>occurred</code></h3>
+<p>Ruled on 2026-11-20 (<a href="note-2026-11-15-the-cut.html">the cut note</a>, section 5) and built on 2026-11-21. Rust only: the filler in <code>rust/place/src/fill.rs</code> and the CLI. No protocol rule changed.</p>
+<ul>
+<li><p>An emit of a thing the store holds, with no <code>--occurred</code>, carries the <code>occurred</code> of the thing's heads when every head states one and all state the same text.</p></li>
+<li><p><code>--occurred &lt;when&gt;</code> states a new occurrence, as before. <code>--no-occurred</code> states that the record has none. The two together are a usage error.</p></li>
+<li><p>A root and the first record of a thing copy nothing. <code>emit -</code> fills nothing in, as before.</p></li>
+<li><p>The case the ruling was made on, run with both binaries: an ADR emitted with <code>--occurred 2009-04</code>, then <code>status=accepted</code> with no flag. Before, the update moved the thing out of a window on 2009. Now it stays in it.</p></li>
+</ul>
+<p>Implementer choices; they stand under Kyle's ruling of 2026-11-21 (W7):</p>
+<ul>
+<li><p>The heads agree when their <code>occurred</code> is the same text. <code>2009</code> and <code>2009?</code> cover one span and do not agree.</p></li>
+<li><p>Where the heads do not agree, or one states none, the emit states none.</p></li>
+<li><p>Only the heads are read. A live record under them that states another <code>occurred</code> plays no part.</p></li>
+<li><p>An erased or withheld head supplies its <code>occurred</code>, since the envelope is held.</p></li>
+<li><p>The usage error reads <code>--no-occurred takes no --occurred beside it</code>.</p></li>
+</ul>
+<p>Checked: the Rust gate (202 tests), with walks for the copy, the two flags, their conflict, a fork whose heads disagree, a first record, an erased and a withheld head, and a changeset. A Codex worker wrote it; the coordinator reviewed it and ran the gate and the ADR case.</p>
+<h3 id="ruled-by-kyle-2026-11-21">Ruled by Kyle, 2026-11-21</h3>
+<p>Each was an entry in <code>DECISIONS.md</code>, with an example. Kyle ruled for the recommendation every time.</p>
+<ul>
+<li><p><strong>Payload values, PV1 to PV7</strong> (<a href="note-2026-11-21-payload-values.html">the note</a>). All seven were built the same day, in two pieces, below.</p>
+<ol>
+<li><p>The reading from a stored payload to the fields a fold reads is stated in the model, with vectors. Built the same day, below, with 3 to 7.</p></li>
+<li><p><code>value</code> and <code>n</code> become ordinary fields (option a). Built the same day, below.</p></li>
+<li><p><code>present</code> means the member was written, for <code>null</code>, <code>{}</code>, <code>[]</code> and <code>&quot;&quot;</code> alike.</p></li>
+<li><p>Under <code>is</code> and <code>not</code>, a list reads as a set of its members.</p></li>
+<li><p><code>at-least</code> and <code>below</code> on a list: neither holds. A list is never a number.</p></li>
+<li><p>A list gives one group per member under <code>by</code>. This amends the ruling of 2026-11-11 that an array is ungrouped.</p></li>
+<li><p>A list is unread to <code>sum</code>, <code>min</code> and <code>max</code>.</p></li>
+</ol>
+<p>Kyle's note on a slot that follows <code>keys</code>: when two writers set a list field from one base (<code>routes: [&quot;svc:a&quot;]</code> and <code>routes: [&quot;svc:b&quot;]</code>), a <code>where</code> on the field leaves the thing unread and <code>loops of</code> shows both setters, while <code>by</code> on the field puts the thing in both groups. That is how <code>by</code> already reads a scalar field with two live setters (<a href="https://github.com/kgruel/strange-loops-next/blob/main/protocol/spec.md">spec</a>, &quot;A slot with <code>by</code> that follows <code>keys</code>&quot;).
+margins-claude's precision, which follows from the note with no new rule: each <code>where</code> test is asked of every live setter, and an answer they share stands. With those two setters, <code>routes</code> is <code>&quot;svc:a&quot;</code> is unknown (one yes, one no) and the thing is unread; <code>routes</code> is <code>&quot;svc:c&quot;</code> is no; <code>routes</code> present is yes. With <code>[&quot;svc:a&quot;, &quot;svc:b&quot;]</code> and <code>[&quot;svc:a&quot;]</code>, <code>is &quot;svc:a&quot;</code> is yes and <code>is &quot;svc:b&quot;</code> is unknown. The payload vectors carry the mixed cases, since a port that unions the lists before testing gets only those wrong.</p></li>
+<li><p><strong>The result codec, RC1.</strong> A result hash has its own prefix, <code>res:</code>, not <code>h:</code>. Built the same day, below. The other choices are confirmed: a listed record is its id alone; the bytes hold the slots only; slots are in JCS order; no fold type is written; the label is <code>loops/result-hash/v1:</code>. Kyle's note: the hash covers the slots without the spec, so it means something only beside its spec inside a tick; a person citing a result cites the tick's <code>r:</code> id.</p></li>
+<li><p><strong>Which choices come to Kyle, W7.</strong> A choice comes to him when it changes a record's bytes or id, a result's bytes or hash, a refusal code, or what a spec answers. Every other implementer choice is written in this file and stands unless he objects. The 25 CLI and tooling choices that were waiting stand under this ruling.</p></li>
+<li><p><strong>The keyed-fold choices.</strong> Kyle confirmed the 20 built choices of 2026-11-14 and 2026-11-15: <code>sets</code> in the envelope, latest-by following <code>keys</code>, the other slots following <code>keys</code>, and a keyed collect's <code>limit</code>. Among them: <code>unread</code> counts things; a test that answers no outranks one that answers unknown; a field no record of the thing sets is absent.</p></li>
+<li><p><strong>Edges, E1.</strong> Three classes, and no change to the envelope. One target under a role is a text field. A set that one observer states whole is a list, read as a set. A relation that several writers add to, or one with facts of its own, is one thing per edge: <code>of: edge:&lt;rel&gt;:&lt;src&gt;:&lt;dst&gt;</code>, with <code>about</code> naming both ends. Kyle's addition: the edge's payload holds <code>rel</code>, <code>from</code>, <code>to</code> and <code>state</code> (<code>active</code> or <code>removed</code>), so that a fold reads direction and removal from fields and never from the text of <code>of</code>. The documents and the import follow this. Nothing is built. An example: <code>loops emit edge --of edge:routes-to:caddy:grafana --about svc:caddy --about svc:grafana rel=routes-to from=svc:caddy to=svc:grafana state=active port:=3000</code>.</p></li>
+<li><p><strong>Issue #10 is closed, I10,</strong> with no strict &quot;after&quot; operator. An inbox keeps its own list of the ids it has seen; a reader's tick is for boundaries worth citing.</p></li>
+</ul>
+<p>Still open in <code>DECISIONS.md</code>: W1 to W6.</p>
+<h3 id="the-payload-reading-and-lists">The payload reading, and lists</h3>
+<p><strong>Built, 2026-11-21,</strong> on Kyle's rulings of that day (payload values, choices 1 and 3 to 7).
+Until now only the Rust store decided how a stored payload became the fields a fold reads, and it skipped a member that held a list, an object or <code>null</code>. The model now states the reading, a vector family pins it, and all three implementations and the store run the same function.</p>
+<p>What a fold reads:</p>
+<ul>
+<li><p><strong>The reading.</strong> A held payload that is an object gives one field for each top-level member. Any other held payload gives none, so every field is absent. A number is read as binary64 and then as a whole number when it is one within ±(2^53 − 1). Nothing nested is read.</p></li>
+<li><p><strong><code>present</code> means written.</strong> A member that holds <code>null</code>, <code>{}</code>, <code>[]</code> or <code>&quot;&quot;</code> is present. An object, <code>null</code>, and a list with no member an argument can name match no <code>is</code>, satisfy every <code>not</code>, have no group key and are unread to the numeric folds.</p></li>
+<li><p><strong>A list reads as the set of its members</strong> under <code>is</code> and <code>not</code>: text, safe whole numbers and booleans. Order and repeats change nothing. A fraction, <code>null</code>, an object or a nested list inside it is not a member.</p></li>
+<li><p><strong>A list is never a number.</strong> <code>at-least</code> and <code>below</code> do not hold on one, and it is unread to <code>sum</code>, <code>min</code> and <code>max</code>, a list of one number included.</p></li>
+<li><p><strong>Under <code>by</code></strong> a record joins the group of each member's key, each once, after members are turned into keys: <code>[80, &quot;80&quot;]</code> gives the group <code>80</code> once. This is the amendment to the ruling of 2026-11-11.</p></li>
+<li><p><strong>A slot that follows <code>keys</code></strong> gets no new rule. Each test is asked of each live setter's own list, and an answer they share stands; the keys of all live setters are collected, each once.</p></li>
+</ul>
+<p>Over Kyle's example store the CLI answers as he ruled: only caddy has no <code>watches</code> recorded (it was all four services); one service watches loki (it was none); neither port bound holds for caddy's <code>[80, 443, 8080]</code>; a count by <code>watches</code> gives three groups of one with two ungrouped (it was four ungrouped); a <code>sum</code> of <code>ports</code> reads nothing.</p>
+<p>What changed:</p>
+<ul>
+<li><p><strong>The model.</strong> A field holds a <code>HeldField</code>: one scalar, the readable members of a list, or &quot;written, and nothing can name it&quot;. <code>payloadFields</code> is the reading and <code>Stored.readInto</code> applies it. <code>Item</code> gains a case for a list's members and one for a written value nothing can name; <code>Arg.matches</code> asks whether a list contains the argument; <code>HeldField.keys</code> gives a list's keys.</p></li>
+<li><p><strong>The laws.</strong> A new entry, <code>payload.read</code>: the fields depend on the payload alone, not on the envelope, the salt or <code>sets</code>; a non-object gives none; looking a name up after the reading is reading the member of that name; every list member kept is one an argument can name. <code>Cond.payload_present</code> says <code>present</code> on a held payload is exactly &quot;the name is written&quot;. Further theorems say <code>is</code> on a list is membership, both bounds are false on a list, a list gives no number, and what a list's keys are. Thirteen new theorems in all. The index has 112 entries and 1,220 theorems.</p></li>
+<li><p><strong>One law is narrower, as the ruling requires.</strong> &quot;Each record has at most one key&quot; held for a payload field by its form; a list can give several, so <code>By.Single</code> now holds for <code>env.kind</code> and <code>env.observer</code> only, and with it <code>By.keys_single</code>, <code>By.OneKey.of_single</code>, <code>By.accounting_single_form</code> and <code>By.count_partition_form</code>. <code>By.keys_single_nonlist</code> keeps the guarantee for every field that holds no list, and the general accounting and partition laws stand as they were. <code>Record.num_number</code> is restated over the new field type.</p></li>
+<li><p><strong>The vectors.</strong> A new family, <code>vectors/payload/</code>, 18 files: a payload in, the fields out. Ten new <code>spec/run</code> files pin Kyle's examples, the two-writer list cases and the mixed cases. No file that existed changed by a byte but <code>vectors/README.md</code>, so every changed answer is in a new file and all 23 result texts and hashes stand. There are now 649 generated vectors and 661 JSON fixtures.</p></li>
+<li><p><strong>JavaScript, Rust and the store.</strong> Each has the reading as one function and runs <code>vectors/payload</code> through it directly; <code>Line::record</code> in the store calls the Rust one. The Rust core's public <code>Record.fields</code> holds <code>record::Held</code> (<code>One</code>, <code>Many</code>, <code>Other</code>). <code>loops of</code> and <code>--values</code> show the stored JSON as before.</p></li>
+<li><p><strong>The protocol text.</strong> <a href="https://github.com/kgruel/strange-loops-next/blob/main/protocol/spec.md"><code>protocol/spec.md</code></a> has a section &quot;Reading a payload&quot; and the new rules under <code>where</code>, <code>by</code> and the numeric folds, with the sentence that an envelope's empty set is absent while a payload's empty list is present.</p></li>
+<li><p><strong>The mutation catalogue</strong> has 328 entries: 14 new, each caught by a runtime check, and 3 re-pointed.</p></li>
+</ul>
+<p>How it was checked: the four CI gates locally (Rust 198 tests, JavaScript 7,363 vector checks); every tracked file under <code>vectors/</code> compared with main; the three-way fuzz with no mismatch, 3,000 cases on seed <code>payload-reading-1</code> and 4,000 on <code>coordinator-reading-1</code>; Kyle's example store folded by the built CLI; margins-claude's Python implementation, with a reading written without sight of the other two, passes every family (8,483 checks, and 43 of 43 on the payload family) and agrees with the branch's Rust on 148,011 fuzz checks.</p>
+<p><strong>Implementer choices; they stand under Kyle's ruling of 2026-11-21 (W7):</strong></p>
+<ul>
+<li><p>A scalar reads as it did, whether or not an argument can name it. &quot;Written, and nothing can name it&quot; is for an object, <code>null</code>, and a list with no readable member. The first plan read an unnameable scalar that way too; margins-claude and this session changed it, so that every existing scalar answer is kept by construction.</p></li>
+<li><p>An empty list and a list of only unreadable members read alike. The stored JSON still tells them apart.</p></li>
+<li><p>The reading keeps a list's members in the order written, repeats included; the set rule is applied where a test or a grouping reads them.</p></li>
+<li><p>The payload family's answers carry tags (<code>one</code>, <code>many</code>, <code>other</code>; <code>text</code>, <code>whole</code>, <code>number</code>, <code>bool</code>), with numbers as text. A reader record's <code>&quot;fields&quot;</code> in the other families is ordinary JSON.</p></li>
+<li><p>The Lean type is named <code>HeldField</code>, since <code>Held</code> is the batch's type.</p></li>
+<li><p>A Codex worker (gpt-6.2-astra) wrote a plan, which margins-claude and this session reviewed, and then the change; this session ran the checks above.</p></li>
+</ul>
+<p><strong>Found on the way, not changed here:</strong> the fuzz generator puts lists, objects and <code>null</code> in the <code>spec/run</code> and <code>result</code> families only; the <code>fold</code>, <code>realm</code> and <code>scenario</code> families never hold one.</p>
+<h3 id="value-and-n-are-ordinary-fields"><code>value</code> and <code>n</code> are ordinary fields</h3>
+<p><strong>Built, 2026-11-21,</strong> on Kyle's ruling of that day (payload values, choice 2).
+Every record used to have a <code>value</code>, empty text when not written, and an <code>n</code>, 0 when not written. The model's <code>Record</code> now holds <code>fields</code> and nothing else of the payload; <code>Record.get</code> is a lookup. A record without <code>n</code> is unread to a <code>sum</code>, <code>min</code> or <code>max</code> of <code>n</code>, absent to <code>where</code>, and ungrouped under <code>by</code>.
+Over Kyle's example store the CLI now answers as he ruled: the smallest <code>n</code> of four backups is 9 with 2 unread (it was 0 with none); 2 of three settings have a <code>value</code> (it was 3); a count of backups by <code>n</code> leaves two ungrouped (they were in a group <code>&quot;0&quot;</code>).</p>
+<p>What changed:</p>
+<ul>
+<li><p><strong>The model.</strong> <code>value</code>, <code>n</code> and <code>nNumber</code> left <code>Record</code>; <code>withhold</code> and <code>erase</code> clear <code>fields</code>. <code>Sum.step</code>, <code>Max.step</code> and <code>Min.step</code>, which read <code>r.n</code>, now take a read function <code>p : Record → Option Int</code>; <code>Sum.on f</code>, <code>Max.on f</code> and <code>Min.on f</code> are those steps at <code>(·.num f)</code>, and <code>Sum.acc</code>, <code>Max.acc</code> and <code>Min.acc</code> are the same folds at the field <code>n</code>. <code>Record.num</code> is the only function that reads a number from a record.</p></li>
+<li><p><strong>The laws.</strong> Fifteen statements changed, each by holding for every read function <code>p</code>: <code>Sum.batch</code>, <code>Sum.perm</code>, <code>Sum.fold_eq</code>, <code>Sum.repeats</code>, <code>Max.batch</code>, <code>Max.fold_some</code>, <code>Max.fold_eq</code>, <code>Max.set_decides</code>, <code>Min.batch</code>, <code>Min.neg_max</code>, <code>Min.set_decides</code>, the three <code>acc_fold</code> bridges and <code>Max.cannot_follow_prev</code>. None gained a premise. <code>Max.fold_eq</code> now says a record the function cannot read is skipped: <code>Max.fold p none xs = (xs.filterMap p).max?</code>. The laws used to be about a fold no spec runs; they now cover the fold a spec runs. The four helper lemmas pinned under D6 stand under their names. The law index has 111 entries and 1196 theorems, as before; two entries were reworded (<code>numeric.safe-whole</code>, <code>sum.repeats</code>).</p></li>
+<li><p><strong>The vectors.</strong> A record's <code>value</code> and <code>n</code> are written inside <code>&quot;fields&quot;</code>, and only when the case states them. Of 617 generated vectors, 137 changed in the shape of their input records alone and 12 changed an expected answer: a max over heads that never supplied <code>n</code> went from 0 with 0 unread to <code>null</code> with every head unread (<code>fold/heads/03</code>, <code>fold/view/03</code>), and ten <code>realm</code> sums count such records as unread. The nine <code>fold/sum</code> and <code>fold/extrema</code> answers and all 23 result texts and hashes are byte for byte as they were. Four new <code>spec/run</code> vectors pin Kyle's examples and a written <code>0</code> and a written <code>&quot;&quot;</code> beside them: <code>pv2-backups</code>, <code>pv2-settings</code>, <code>pv2-written-zero</code>, <code>pv2-written-empty</code>. There are now 621 generated vectors and 633 JSON fixtures.</p></li>
+<li><p><strong>JavaScript, Rust and the fuzz.</strong> Each dropped its two special cases. The Rust core's public <code>Record</code> lost <code>value</code>, <code>n</code> and <code>n_number</code>. <code>Line::record</code> in the store reads every top-level text, number and boolean under its own name; a list, an object or <code>null</code> is still skipped (the next piece). The fixture readers in Lean and Rust refuse a flat <code>value</code> or <code>n</code> as an unknown member. The fuzz generator varies whether each of the two names is present and of what type.</p></li>
+</ul>
+<p>How it was checked: the four CI gates locally (Rust 195 tests, JavaScript 7,205 vector checks); every changed vector compared with its old form record by record (4,094 records: each differs only by <code>value</code> and <code>n</code> leaving or moving into <code>fields</code>, and no stated value was dropped); the three-way fuzz with no mismatch, 3,000 cases on seed <code>payload-fields-1</code> and 4,000 on <code>coordinator-payload-1</code>; margins-claude's Python implementation, moved to the new reading, passes every family (8,167 checks) and agrees with the branch's Rust on 129,015 fuzz checks.</p>
+<p><strong>Implementer choices; they stand under Kyle's ruling of 2026-11-21 (W7):</strong></p>
+<ul>
+<li><p>The low-level folds take a read function and are kept, where the first plan was to delete them. margins-claude and this session agreed it: the laws are at least as strong, and no function reads a record's number but <code>Record.num</code>.</p></li>
+<li><p>The fixture field of the <code>fold/sum</code> and <code>fold/extrema</code> families keeps the name <code>n</code>. It is now only a name.</p></li>
+<li><p>Which records state a <code>value</code> or an <code>n</code> was decided from the Lean fixture source: an explicit <code>0</code> or <code>&quot;&quot;</code> was kept (one scenario body, two group-key fixtures, the new controls), and a default that a constructor had filled in was dropped.</p></li>
+<li><p>The max in <code>fold/heads/03</code> and <code>fold/view/03</code> was incidental to what each vector shows, so their records were left without <code>n</code>.</p></li>
+<li><p>A scenario that renders a head reads the text field <code>value</code>; a missing one is reported, never read as empty.</p></li>
+<li><p>The mutation catalogue keeps 314 entries: 13 were re-pointed or rewritten and none retired. That took under five minutes, four of them the cheap runner (the measure asked for under W5).</p></li>
+<li><p>A Codex worker (gpt-6.2-astra) wrote a plan, which margins-claude and this session reviewed, and then the change; this session ran the checks above.</p></li>
+</ul>
+<p><strong>Found on the way, not changed here:</strong> the JavaScript sum is exact only to a signed 128-bit limit, while the law index calls it unbounded. No vector reaches the limit.</p>
+<p><strong>Corrected:</strong> three rows of the table in the payload values note, section 1, which had dropped a written scalar of the other type.</p>
+<h3 id="a-result-hash-is-spelled-res">A result hash is spelled <code>res:</code></h3>
+<p><strong>Built, 2026-11-21,</strong> on Kyle's ruling of that day. The hash of a canonical result is <code>&quot;res:&quot;</code> and then the base32hex text it had before; a record's commitment is still <code>h:</code>.
+The label, the preimage and the canonical bytes did not change, so each of the 23 result vectors changed in its <code>expect.hash</code> alone, from <code>h:</code> to <code>res:</code> with the same digits. No other vector changed, and no record's bytes or id.
+The model (<code>Loops.resultHash</code>), JavaScript and the Rust core write it; <a href="https://github.com/kgruel/strange-loops-next/blob/main/protocol/result.md"><code>protocol/result.md</code></a> says that the two hashes now differ in their prefix as well as in what they hash. The law <code>result.no-commit</code> is as it was: its statement is about the hashed bytes.
+The horizons page's example of a result hash reads <code>res:7a…</code>.
+No mutation catalogue entry needed to change: the nineteen entries on <code>Result.lean</code> still find their lines.
+<strong>Implementer choices; they stand under Kyle's ruling of 2026-11-21 (W7):</strong> the tests that a result hash is no commitment now compare the digits after the prefix, since the prefixes alone would make any two differ; a Codex worker (gpt-6.2-astra) wrote the change from a brief, and this session reviewed it and ran the gate.</p>
+<h3 id="--values-gives-the-envelope"><code>--values</code> gives the envelope</h3>
+<p><strong>Built, 2026-11-21: <code>--values</code> gives the envelope</strong> (<a href="https://git.gruel.network/kaygee/strange-loops-next/-/issues/9">issue 9</a>).
+The issue came from rex-tools, a chat room over the <code>loops</code> CLI and its first outside user: a timeline needs each record's <code>emitted</code>, <code>observer</code> and <code>about</code>, and got them from a second <code>loops export</code> joined by id.
+Under <code>--values</code>, each <code>{&quot;id&quot;, &quot;shown&quot;}</code> entry that a collect or a latest-by following <code>prev</code> lists gains <code>env</code>, the envelope as stored, whatever its <code>shown</code>; each thing of a latest-by that follows <code>keys</code> gains <code>about</code> as <code>loops of</code> writes it, and each of its heads gains <code>env</code> (<a href="https://github.com/kgruel/strange-loops-next/blob/main/rust/PLACE.md">place</a>, choice 17).
+Without the option nothing changes, and taking the added members out still gives the protocol's answer byte for byte. Only <code>rust/cli</code> changed.
+<strong>Implementer choices; they stand under Kyle's ruling of 2026-11-21 (W7):</strong> no new flag, the envelope comes with <code>--values</code>; the member is <code>env</code>, the whole stored envelope, not three picked fields; an erased or withheld record's entry has <code>env</code> and no <code>payload</code>; a keyed thing's <code>about</code> is always written, empty when no head mentions anything, as in <code>loops of</code>; entries under a keyed thing's <code>keys</code> and <code>whole</code> gain nothing.</p>
+<h3 id="the-rust-read-path">The Rust read path</h3>
+<p><code>rust/core</code> was a function-by-function mirror of the model's list scans, and its reads grew with the square of the records held. rex-tools, the first outside user of the CLI, met it within a few hundred records.
+The core now settles, admits, orders heads and finds live setters through indexes: by id, by thing, and over the <code>prev</code> graph, where each strongly connected part is summarised once and the keys set above it are passed down to what it names (<code>rust/core/src/live/index.rs</code>). The model, the vectors, the protocol and JavaScript did not change, and no answer changed.</p>
+<div class="table-scroll" tabindex="0"><table><thead><tr><th scope="col">Read, release build</th><th scope="col">Before</th><th scope="col">After</th></tr></thead>
+<tbody>
+<tr><td>A keyed collect over 9,000 records</td><td>19.8 s</td><td>0.63 s</td></tr>
+<tr><td>The same over 3,000 and 1,000 records</td><td>2.2 s, 0.31 s</td><td>0.20 s, 0.07 s</td></tr>
+<tr><td><code>loops check</code> over 9,000 records</td><td>0.96 s</td><td>0.53 s</td></tr>
+<tr><td>rex-tools' <code>state</code> vertex, 508 records in 508 segments</td><td>1.59 s</td><td>0.04 s</td></tr>
+</tbody></table></div>
+<p>What holds it to the model:</p>
+<ul>
+<li><p>The 629 vectors, as before.</p></li>
+<li><p>The list scans it replaced are kept as test-only code (<code>rust/core/src/scan_tests.rs</code>), and generated records are run through both: forks, cycles, unheld <code>prev</code> targets, repeated and conflicting forms of one id, erased and withheld payloads, and <code>sets</code> absent, empty, repeated and of several keys.</p></li>
+<li><p>The three-way fuzz against Lean and JavaScript: 3,000 cases on seed <code>fast-fold-1</code> and 4,000 on <code>coordinator-fold-1</code>, no mismatch.</p></li>
+<li><p>The old and new binaries write the same bytes for 38 reads over seven stores, <code>--values</code> and <code>loops of</code> among them.</p></li>
+</ul>
+<p>A function that still mirrors its Lean definition says <code>Lean:</code> in its comment; one that computes the same value another way says &quot;Gives what Lean <code>x</code> gives&quot; and how (<a href="https://github.com/kgruel/strange-loops-next/blob/main/rust/PORTING.md">porting</a>).</p>
+<p><strong>What is still linear and paid on every run:</strong> each verb reads the whole store and checks every line's signature, about 60 microseconds a record. At 9,000 records that is the half second every read now costs, and a store built by 2,000 single emits still takes 145 s, since each emit checks all that came before. Segments are immutable and named by their hash, so a place can remember which segments it has checked. That is the next cost to remove, when it hurts; it needs no change to a record.</p>
+<p><strong>Implementer choices; they stand under Kyle's ruling of 2026-11-21 (W7):</strong></p>
+<ul>
+<li><p>The core's public surface gains <code>live::LiveState</code> (one thing's records, indexed) and <code>Spec::run_admitted</code> (run over records already admitted, so the CLI admits once). Every name that was public still is and gives the same value.</p></li>
+<li><p>The reference for the fast path is test-only Rust kept beside it, not a second crate.</p></li>
+<li><p>A Codex worker (gpt-6.2-astra) wrote the change from a brief; this session reviewed it and ran the checks above.</p></li>
+</ul>
+<h3 id="the-payload-values-note">The payload values note</h3>
+<p>Drafted by margins-claude for Kyle's rulings before any tick is built: <a href="note-2026-11-21-payload-values.html">notes/2026-11-21-payload-values.md</a>. Nothing in it is built. Its choices are PV1 to PV7 in <a href="index.html">DECISIONS.md</a>.</p>
+<h3 id="the-roadmap-was-split">The roadmap was split</h3>
+<p>Kyle asked for it on 2026-11-21: the roadmap had grown to 130 KB and he could not scan it for where the work stood.
+<code>ROADMAP.md</code> now holds only what is next. <code>DECISIONS.md</code> holds what waits on Kyle, each with an example. This file holds what was built and ruled. The three long design notes and the retained boundaries moved to <code>notes/</code>.
+No sentence of the record was dropped. The state of the evidence on that day follows, as the old roadmap's &quot;State&quot; section gave it; from here on, the counts a change moves are written in that change's entry, and the current counts are in the reports this section links to.</p>
+<h3 id="state-of-the-evidence-at-the-split">State of the evidence at the split</h3>
+<p>The tree has three implementations: Lean, JavaScript, and Rust.
+Step 1 applies the six settled rulings before records exist.
+All three implement the settled decisions D1–D6, and D8a and D8b.
+All three carry D8c's <code>sets</code> in the envelope and refuse one that is not a set of key names (<code>sets-not-keys</code>).
+All three read a thing by its live setters in every slot that follows <code>keys</code>: latest-by, and count, sum, min, max and collect, with <code>by</code> or without.
+In all three a collect that follows <code>keys</code> counts things in its <code>limit</code>, each listed whole (Kyle, 2026-11-15).
+All three refuse every envelope shape by name (issue #1) and let a label stand in <code>under</code>.
+All three writers refuse an <code>under</code> target they do not hold (<code>under-unknown</code>).
+<code>loops emit</code> follows D8c's anchor rule: an emit of a thing names in <code>prev</code> every live record of it the store holds, and carries the thing's whole <code>about</code>.
+An emit of a thing the store holds sets the fields it names, and <code>loops of</code>, <code>read --values</code> and <code>fold --values</code> show each key's value from its live setters.
+A CLI verb that answers from a store with a line or a segment that does not check writes its answer and is then refused <code>store-not-clean</code> (Kyle, 2026-11-20).
+The Rust core reads through indexes and gives the answers of the model's list definitions (2026-11-21, <a href="#the-rust-read-path">the Rust read path</a>).
+All three write a vertex's canonical result and its hash (D7): integers as decimal text, ids without <code>shown</code>. No CLI verb shows it yet.
+All three let count, sum, min and max follow <code>prev</code> (issue #3), and group count, sum, min, max and collect with <code>by</code> (issue #2).
+The law index has 111 entries, 1196 theorems, and 6 boundary witnesses.
+See <a href="https://github.com/kgruel/strange-loops-next/blob/main/design/laws/laws.json">the law index</a> and <a href="https://github.com/kgruel/strange-loops-next/tree/main/design/laws">proof and boundary data</a>.
+These proofs apply only under their stated premises.</p>
+<p>The tree has 629 JSON fixtures: 617 generated fixtures and 12 standard fixtures.
+Lean replays 608 generated fixtures; 9 occurred fixtures use separate checks.
+Rust checks every fixture, six JCS byte pairs, 4,000 binary64 cases, and 128 SUPERCOP signing cases with ed25519-dalek.
+Rust passes 194 tests; JavaScript passes 7,173 vector checks and 49 regression and law tests.
+Both also check that <code>spec/run</code> answers write their members, group, thing and key names included, in the model's order; JavaScript checks <code>fold/latest-by</code> answers' thing keys too.
+JavaScript refuses a held record's invalid <code>emitted</code> or <code>occurred</code> before it answers, as the Lean and Rust readers do.
+The fuzz suite passes 60 tests.
+See <a href="https://github.com/kgruel/strange-loops-next/blob/main/vectors/README.md">vectors</a>, <a href="https://github.com/kgruel/strange-loops-next/blob/main/rust/GAPS.md">Rust boundaries</a>, and <a href="https://github.com/kgruel/strange-loops-next/blob/main/model/mutate/REPORT.md">the mutation report</a>.
+These checks provide bounded evidence, not complete JCS or cryptographic correctness.
+They do not certify browser accessibility, external links, or official ASD dictionary compliance.</p>
+<p>Input numbers round once to binary64.
+A number past binary64's range is refused at the writer's number check.
+The writer accepts values with magnitude at most 2^53 − 1, including fractions.
+Numeric folds read safe whole values only.
+Raw constructors and theorem premises retain separate domains.</p>
+<p>The gates pass locally on Node 25.9, and CI runs every gate on Node 22.
+The <code>collect-limit-1</code> campaign, over the generator after a keyed collect's <code>limit</code> came to count things, each listed whole, with two more keyed collects whose limit of one or two, plain or per observer, falls inside a thing, checks 5,600 cases, 800 per family, in 288.71 seconds.
+It reports 3,638 matches, 1,579 protocol refusals, 383 shared decoder refusals, and no mismatch.
+Four wrong ports of the limit in the JavaScript witness each give mismatches on the same seed, over its 800 spec and 800 scenario cases: the limit over records, as first built, 191 and 223; things taken and their records then cut at the limit, the same 191 and 223, since that is the limit over records; the things with the oldest live records taken, 85 and 88; and the limit applied before grouping, 90 and 79. The table is in <a href="https://github.com/kgruel/strange-loops-next/blob/main/interop/fuzz/REPORT.md">the campaign report</a>.
+The <code>keyed-slots-2</code> campaign, over the generator before the limit counted things, found no mismatch either, nor did the <code>keyed-slots-1</code>, <code>keyed-1</code>, <code>sets-1</code>, <code>under-1</code>, <code>issue-7-1</code>, <code>by-collect-1</code>, <code>by-shape-1</code>, <code>by-1</code>, <code>shape-follow-1</code>, <code>shape-under-2</code> and <code>follow-2</code> campaigns, each over an earlier generator; <code>keyed-slots-2</code>'s eighteen wrong ports are in the report.
+Decoder refusals are not agreement; for record and batch inputs JavaScript must also report them as malformed.
+The generator carries issue #1's shapes and labels in <code>under</code>, followed count, sum, min and max slots, grouped slots, keys written as number text (issue #7), an unknown key beside an envelope that is not an object, <code>under</code> targets held or not, <code>sets</code> in record and changeset envelopes, latest-by following <code>keys</code>, count, sum, min, max and collect following <code>keys</code> with <code>by</code>, <code>where</code> and <code>limit</code>, keyed slots with two and three payload tests, keyed collects whose limit falls inside a thing, and <code>sets</code> and joins on the records a reader holds, so the same seeds now generate different inputs; earlier campaigns' counts are historical.
+The <code>d8ab-1</code> and <code>d1-d6-1</code> campaigns found no mismatch.
+The 42 duplicate-base lens mismatches of the <code>step1-3</code> campaign are the class D1 settles.
+<code>interop/fuzz/summarize.py</code> derives these counts from tracked summaries.
+See <a href="https://github.com/kgruel/strange-loops-next/blob/main/interop/fuzz/REPORT.md">the campaign report</a> for the scripts and current and historical results.
+The CI seed <code>ci-1</code> checks 28 three-way cases without mismatches.</p>
+<p>The mutation catalogue has 314 entries, including nineteen for the result codec, six for the D1 and D2 definitions, nine for D8's <code>of</code>, nine for <code>follow</code> on count, sum, min and max, ten for issue #1's shapes and labels in <code>under</code>, seven for <code>by</code>, four for <code>under-unknown</code>, ten for <code>sets</code>, twenty for latest-by following <code>keys</code>, twenty-one for count, sum, min, max and collect following <code>keys</code>, and four for a keyed collect's limit counting things.
+Ten earlier entries are retargeted at <code>of</code> and the one thing it names, three at the <code>follow</code> grammar, four at the shape stage and labels in <code>under</code>, eleven at the <code>follow</code> type on count, sum, min, max and collect, and two at a keyed collect's new site.
+It retires the redundant positive-offset guard under R4 and the entry for the deleted <code>stripZeros</code> family.
+The last full run, in CI on 2026-11-15, covers the 291 entries before a keyed collect's limit counted things: 243 build rejections, 24 vector differences, 22 generator assertion exceptions, and 2 survivors.
+It ran at <code>132ecb2</code> in four shards. 23 entries timed out at the runner's default of 180 seconds a command, 22 of them in the one shard on a slower CI runner; run again at <code>122fd7e</code> with 600 seconds they give 17 build rejections, two vector differences and four generator assertions, and the counts above hold them so.
+The four entries for a keyed collect's limit, the two retargeted at the collect's new site and the other entry on <code>keyedValue</code>, run alone, give seven build rejections and no survivor.
+The runner exits 1 for assertion exceptions; after the second run no timeout or infrastructure failure is left.
+Of the nine D8 entries, seven fail the build and two change batch vectors.
+The run before it, over the 210 entries before issue #1 and <code>follow</code>, reported 165 build rejections, 28 vector differences, 15 generator assertion exceptions, and the same 2 survivors.
+The four D6 helper survivors fail the build at their lemmas; the two scoped-equivalence survivors remain.
+All-envelope shape checks now belong to each library.
+Six deliberate per-envelope faults failed the respective vector layers in Step 1; that probe is not repeated here.
+The cheap runner kills 33 of 33 mutants: each compiles and then fails runtime checks.
+Build rejections are not semantic proof kills.
+Survival does not prove equivalence.
+See <a href="https://github.com/kgruel/strange-loops-next/blob/main/model/mutate/REPORT.md">the mutation report</a> for outcomes, restoration checks, and limits.</p>
+<h2 id="2026-11-20">2026-11-20</h2>
+<p>In brief:</p>
+<ul>
+<li><p>Kyle closed step 2: it does the old CLI's workable job, signed.</p></li>
+<li><p>A verb that answers from a store that does not check writes its answer and is then refused <code>store-not-clean</code>.</p></li>
+<li><p>Kyle ruled every section of the cut note, each for the recommendation: <a href="note-2026-11-15-the-cut.html">notes/2026-11-15-the-cut.md</a>.</p></li>
+<li><p>margins-claude brought the cut laws into the model (<code>keyed.cut</code>, <code>cut.prefix</code>); they are described in sections 1 and 2 of that note.</p></li>
+<li><p>The result codec (D7), version 1, is built in all three implementations. Its implementer choices are not confirmed.</p></li>
+</ul>
+<h3 id="step-2-closed">Step 2 closed</h3>
+<p>What step 2 is:</p>
+<p><code>loops-place</code> and the <code>loops</code> CLI emit, read and fold for one person, signed, over <code>.loops/</code>.
+Stored lines match the model's record vectors byte for byte; 34 tests drive the place and the binary.
+The layout, the CLI and their refusal codes are a working proposal, not protocol.
+<a href="https://github.com/kgruel/strange-loops-next/blob/main/rust/PLACE.md"><code>rust/PLACE.md</code></a> lists what is implemented and the seventeen choices made on the way.
+Two of them need the model: what a place is has no law, and a payload reaches a fold only as <code>value</code>, <code>n</code> and top-level fields.</p>
+<p><strong>Closed, 2026-11-20.</strong> Kyle ruled that step 2 meets its exit criterion, &quot;It does the old CLI's workable job, signed&quot;.
+The replay of the exit check's session passes on <code>main</code>: an update that names one field keeps the others, <code>read --values</code> shows the content, a keyed collect's <code>limit</code> lists the newest thing whole, and <code>check</code> finds nothing.
+Of what the exit check left, none blocks:</p>
+<ul>
+<li><p><code>read</code> left out a stored line that fails its check, said nothing and exited 0; only <code>check</code> reported it. Kyle: a small fix, to warn and exit non-zero. <strong>Built, 2026-11-20:</strong> <code>read</code>, <code>fold</code>, <code>of</code>, <code>get</code> and <code>export</code> write their answer from the lines that check and are then refused <code>store-not-clean</code>, exit 1, when a line was refused or a segment is altered, as <code>check</code> is; <code>emit</code> and <code>erase</code> warn on stderr and go on (<a href="https://github.com/kgruel/strange-loops-next/blob/main/rust/PLACE.md">place</a>, choice 18).
+<strong>Implementer choices, confirmed by Kyle 2026-11-20:</strong> the rule covers every verb that answers from the store, not <code>read</code> alone, so <code>get</code> of a record that checks is refused too when another line does not; the answer is still written before the refusal; a verb's own refusal, such as <code>id-unknown</code> for the id of a refused line, is said instead; <code>check</code>'s stderr line now carries the two counts; <code>emit</code> and <code>erase</code> warn and keep their exit code; <code>import</code> does not read the store and says nothing.</p></li>
+<li><p>A hand-written JSON spec for each question, no scan by name prefix, no <code>ls</code> and no relative times: <a href="roadmap.html">the roadmap</a>.</p></li>
+<li><p>An import of the old tool's stores, and what its <code>combine</code> and <code>discover</code> vertices did, wait until they are wanted.</p></li>
+<li><p>The old Python <code>loops</code> is first on <code>PATH</code> on Kyle's machine. That is not the repository's to settle.</p></li>
+</ul>
+<h3 id="d7-the-result-codec-version-1">D7: the result codec, version 1</h3>
+<p><strong>Built, 2026-11-20: the codec, version 1.</strong> <a href="https://github.com/kgruel/strange-loops-next/blob/main/protocol/result.md"><code>protocol/result.md</code></a> defines it; the model is <code>model/Loops/Result.lean</code>, with a JavaScript witness (<code>interop/js/result.mjs</code>) and the Rust core (<code>rust/core/src/result.rs</code>).
+The canonical result is one JSON object of the spec's slots, every one. An integer is a string of its decimal digits, at <code>value</code>, <code>unread</code> and <code>ungrouped</code> and nowhere else; a listed record is its id text; the bytes are JCS in UTF-8.
+The hash is <code>&quot;h:&quot;</code> and the base32hex of SHA-256 over the label <code>loops/result-hash/v1:</code> and then the bytes.
+The 23 vectors in <code>vectors/result/</code> give the canonical text and the hash for 16 <code>spec/run</code> inputs and 7 new ones: a sum of −2^54, a sum of zero, slots that read nothing, a grouped slot with <code>ungrouped</code> and <code>unread</code>, and one holding held, withheld and erased, whose bytes are equal.
+No CLI verb shows a result hash; the tick work decides that.
+The laws:</p>
+<ul>
+<li><p><code>result.exact</code>: an integer of any size has one text, and the reader accepts no other.</p></li>
+<li><p><code>result.shown</code>: two results that differ only in <code>shown</code> have the same text, bytes and hash.</p></li>
+<li><p><code>result.canonical</code>: for two runs of one spec, the bytes are equal exactly when the results are equal with <code>shown</code> set aside. The premise is that the spec names each slot once, which every parsed spec does.
+It is not true of two arbitrary results: no fold tag is written, so a count and a sum that hold the same number write the same JSON, and an empty latest-by reads as an empty keyed one. The bytes name a result only together with its spec.</p></li>
+<li><p><code>result.no-commit</code>: no result's hashed bytes are a 16-byte salt and then a canonical payload, so a result hash is never a record's commitment. The label is 21 bytes for that reason. A first draft used a 16-byte label, and a record with that salt and the result as its payload had the result's hash.</p></li>
+</ul>
+<p><strong>Implementer choices, confirmed by Kyle 2026-11-21, all but the first.</strong> He ruled that day that a result hash has its own prefix, <code>res:</code>, and it was built that day.</p>
+<ul>
+<li><p>A result hash is spelled <code>h:</code>, as a commitment is. Only their hashed bytes keep them apart. It could have a typed prefix of its own.</p></li>
+<li><p>The label <code>loops/result-hash/v1:</code>. A later version's label must not be 16 bytes, and must leave no JSON value after its first 16 bytes.</p></li>
+<li><p>A listed record is its id text alone, not <code>{&quot;id&quot;: …}</code>.</p></li>
+<li><p>The bytes hold the slots only: no vertex name and no version member. The version is in the label.</p></li>
+<li><p>Slots are in JCS order, not the order the spec writes them.</p></li>
+<li><p>No fold tag is written.</p></li>
+<li><p>The vector family is a new <code>vectors/result/</code> over a subset of the <code>spec/run</code> inputs.</p></li>
+<li><p>The law names, beside the existing <code>result.unread</code> and <code>result.full</code>.</p></li>
+<li><p>The full mutation catalogue has not run over the nineteen new entries; two of them (<code>result-unshown-keeps-shown</code>, <code>result-unshown-groups-kept</code>) are expected to be refused by the build alone.</p></li>
+</ul>
+<h2 id="2026-11-15">2026-11-15</h2>
+<p>In brief:</p>
+<ul>
+<li><p><code>loops of</code> shows a thing's values, <code>--values</code> writes them beside ids, and an emit of a held thing sets only the fields it names.</p></li>
+<li><p>Kyle ruled that a keyed collect's <code>limit</code> counts things, each listed whole; built the same day.</p></li>
+<li><p>margins-claude drafted the cut note (ruled 2026-11-20).</p></li>
+<li><p>The last full mutation run, in CI (see the state of the evidence under 2026-11-21).</p></li>
+</ul>
+<h3 id="values-beside-ids-and-an-emit-that-sets-the-fields-it-names">Values beside ids, and an emit that sets the fields it names</h3>
+<p><strong>Built, 2026-11-15: values beside ids, and an emit that sets the fields it names.</strong>
+The step-2 exit check, against the old CLI's day-to-day jobs, found two gaps in &quot;the old CLI's workable job&quot;.
+A fold answers <code>{&quot;id&quot;, &quot;shown&quot;}</code> lists, so a session that used to start with <code>sl read project</code> and see each item's name, status and message needed one <code>loops get</code> per setter.
+And re-emitting <code>name=x status=done</code>, the old tool's way to update, was read whole, so it silently dropped every field it did not restate.
+Kyle ruled on 2026-11-15: <code>loops of &lt;thing&gt;</code> shows the keyed state with each key's value from its live setters, and <code>read</code> and <code>fold</code> take an option that writes those values beside the ids; and on the single-record path an emit of an existing thing sets the fields it names, with a flag for a whole-read emit, while <code>emit -</code> fills nothing in.
+Both are built in <code>rust/cli</code> and <code>loops_place::fill</code> (<code>rust/PLACE.md</code>, choices 15–17). Nothing in the model, the vectors, JavaScript, the core or <code>loops-eval</code> changed.
+<code>loops of</code> answers the thing's <code>about</code>, its heads newest first, its record count and its <code>values</code>, read through the core's <code>live</code>: a key with one held live setter shows its value; a key with two or more shows each setter's id and value under <code>setters</code>, none picked and none merged; a live setter whose payload is erased or withheld shows its <code>shown</code> and no value; an erased or withheld live record read whole is listed as <code>unheld</code>; a record with <code>sets</code> gives only the keys it declares.
+<code>read --values</code> and <code>fold --values</code> add the same members to each thing of a latest-by that follows <code>keys</code>, and a <code>payload</code> to each held record a latest-by that follows <code>prev</code> or a collect lists, inside each group too; without the option the answer is the protocol's, byte for byte.
+An emit of a thing the store holds a record of, stating neither <code>--sets</code> nor <code>--sets-nothing</code>, is given the top-level keys it names as <code>sets</code>; <code>--whole</code> states a whole-read emit and is a usage error beside either.
+The CLI walk replays the exit check's session with the new defaults: an update by <code>status=done</code> alone keeps the name and message, and one <code>read --values</code> shows each open item's name and status. It also covers a fork merged from two stores shown with both values, an erased and a withheld live setter, an undeclared key, <code>--whole</code>, the usage errors and grouped slots. The exit check's other findings (specs written by hand, prefix scans, <code>ls</code>, relative times) are not ruled and not built.
+<strong>Implementer choices; they stand under Kyle's ruling of 2026-11-21 (W7):</strong></p>
+<ul>
+<li><p>The flags are <code>--values</code> and <code>--whole</code>.</p></li>
+<li><p>The first record of a thing, and a root, stay whole-read: they set every key they name. <code>--whole</code> there changes nothing.</p></li>
+<li><p>An emit of a held thing that names no field is given <code>&quot;sets&quot;: []</code>, a pure join, as <code>--sets-nothing</code> gives: <code>loops emit task --of task:1 --about project:y</code> moves the task and sets nothing. A whole-read emit of nothing takes <code>--whole</code>. <code>--erases</code> and <code>--under</code> change nothing about the inference.</p></li>
+<li><p>Held means a record of the thing is in the store as a fold reads it, settled and admitted, an erased or withheld one included.</p></li>
+<li><p><code>loops of</code> answers <code>{&quot;thing&quot;, &quot;about&quot;, &quot;heads&quot;, &quot;records&quot;, &quot;values&quot;, &quot;setters&quot;?, &quot;unheld&quot;?}</code>: <code>heads</code> are shown lines newest first and replace <code>winner</code> and <code>others</code>, the first head being the winner; <code>setters</code> and <code>unheld</code> are written only when they hold something. <code>about</code> is the union of the heads' mentions.</p></li>
+<li><p>A key whose one held live setter lacks it is unset and not written; a key with several setters is written under <code>setters</code> even when none of them holds it.</p></li>
+<li><p>The keys shown are those some live record declares and the top-level keys of each held live record read whole. What an <code>unheld</code> record read whole sets is unknown and not guessed.</p></li>
+<li><p><code>--values</code> adds members, never changes one: <code>values</code>, <code>setters</code> and <code>unheld</code> beside a keyed thing's <code>keys</code>, <code>whole</code> and <code>heads</code>, and <code>payload</code> on an <code>{&quot;id&quot;, &quot;shown&quot;}</code> entry whose <code>shown</code> is <code>here</code>, the payload as stored, declared keys or not. Counts, sums, minima and maxima gain nothing.</p></li>
+<li><p>Existing walk tests that meant a whole-read emit of an existing thing now say <code>--whole</code>: the two-store walk's revisions and note, the whole-read emit above keyed ones, and the emit in the <code>sets</code> walk that states no <code>sets</code>. Walk tests that read <code>winner</code> and <code>others</code> from <code>loops of</code> read <code>heads</code>.</p></li>
+</ul>
+<h3 id="a-keyed-collects-limit-counts-things">A keyed collect's <code>limit</code> counts things</h3>
+<p><strong>Built, 2026-11-15: a keyed collect's <code>limit</code> counts things</strong>, on Kyle's ruling of that day on margins-claude's point (section 3 of <a href="note-2026-11-11-declared-keys.html">the declared-keys note</a>).
+A collect that follows <code>keys</code> with <code>limit</code> lists every live record of the first <code>limit</code> selected things and no record of the rest; under <code>by</code>, of the first <code>limit</code> things in each group. A collect without <code>follow</code>, or following <code>prev</code>, still counts records.
+The things are taken in the order of each one's newest live record, the content order the list itself is in (<code>thingsInOrder</code>, <code>wholeThings</code>), and their records keep their places in the one newest-first list. <code>unread</code> is counted before the limit, as before, and a limit of 0 is still refused (<code>spec/parse/113</code>). The result's shape does not change.
+The law is in <code>keyed.slots</code>: with a limit of <code>k</code> the list holds exactly the live records of at most <code>k</code> selected things, every live record of each, and leaves out a selected thing with a live record only when it lists <code>k</code> things (<code>keyedValue_collect_limit</code>, <code>wholeThings_whole</code>); the things listed are the newest, each with a live record newer than every live record left out (<code>keyedValue_collect_newest</code>, <code>wholeThings_newest</code>); over records of distinct things, as when every thing has one live record, it is the limit over records (<code>wholeThings_distinct</code>), so <code>keyed.whole-read</code> holds as it did.
+<code>spec/run/47</code>'s two limited slots now list whole things, and <code>spec/run/51</code> pins the rest: a limit inside a thing's live records, two things whose records interleave in time, limits of 1 to 4 and one beyond the number of things, a pure-join head and an erased live setter in a listed thing, unread things beside a limit of 1, and under <code>by</code> a forked thing in two observer groups, a thing in two payload groups, and a group whose first thing is not the first overall.
+<strong>Implementer choices, confirmed by Kyle 2026-11-21:</strong></p>
+<ul>
+<li><p>Which things: the first <code>limit</code> of the selected things ordered by each one's newest live record, newest first in content order. Content order ends in the record id and a record is of one thing, so no two things tie.</p></li>
+<li><p>The records of the things taken stay in one newest-first list across them, as before, not grouped thing by thing: the shape and the order are the ones the slot had, and only which records it holds changed.</p></li>
+<li><p>Under <code>by</code>, each group orders its own things by their newest live records; a thing in two groups is listed whole in each, and takes a place under the limit in each.</p></li>
+</ul>
+<h2 id="2026-11-14">2026-11-14</h2>
+<p>In brief:</p>
+<ul>
+<li><p>All of D8c was built: <code>sets</code> in the envelope, latest-by following <code>keys</code>, count, sum, min, max and collect following <code>keys</code>, the slice laws for one keyed thing and for a spec, and the writer's anchor rule in <code>loops emit</code>.</p></li>
+<li><p>Kyle ruled that a slot following <code>keys</code> reads a thing's envelope from its heads (&quot;Rule B&quot;); the ruling is in section 3 of <a href="note-2026-11-11-declared-keys.html">the declared-keys note</a>.</p></li>
+<li><p>The implementer choices of these five pieces are not confirmed.</p></li>
+</ul>
+<h3 id="d8cs-sets-in-the-envelope">D8c's <code>sets</code> in the envelope</h3>
+<p><strong>Built, 2026-11-14: D8c's <code>sets</code> in the envelope</strong>, section 1 of <a href="note-2026-11-11-declared-keys.html">the declared-keys note</a>. Kyle ruled its shape on 2026-11-13.
+<code>sets</code> is an optional envelope field: a set of top-level payload key names, canonical as <code>about</code> is.
+Absent and empty differ. Absent is read whole; empty sets nothing, a pure join. The canonical envelope writes <code>&quot;sets&quot;: []</code>, the one set left in when empty, so the two are different records with different ids (<code>record/16</code>, <code>17</code>).
+One refusal, <code>sets-not-keys</code>: a value that is not an array, a member that is not text, or an empty name. It follows <code>erases-not-record-id</code> and precedes <code>of-missing</code>, in one envelope and across a batch.
+Nothing compares <code>sets</code> with the payload or with another record's: a declared key the payload lacks, a non-object payload beside a non-empty <code>sets</code>, and a root with <code>sets</code> are written.
+No fold, spec or lens reads it yet; it is carried, hashed into the id, stored, read back and shown, and an erased or withheld record keeps it with its envelope.
+The law is <code>record.keys</code>; <code>record.sets</code> now covers <code>sets</code> too.
+<code>record/15</code>–<code>19</code>, <code>45</code>–<code>47</code> and <code>shape-sets-*</code>, and <code>batch/76</code>–<code>82</code>, pin it.
+The keyed fold, liveness per key and their laws are built in the next paragraph, the other slots that follow <code>keys</code> in the one after it, the slice laws for one thing and for a spec in the two after that, and the anchor rule in <code>loops emit</code> in the last.
+<strong>Implementer choices, confirmed by Kyle 2026-11-21</strong> (the flags in the third stand under W7):</p>
+<ul>
+<li><p><code>sets</code> holds keys, not labels: in a changeset a key that starts with <code>@</code> is written as given, neither replaced nor looked up (<code>batch/76</code>).</p></li>
+<li><p>A held record's <code>sets</code> is checked as its other fields are: a stored line whose <code>sets</code> is not keys is refused with the writer's code, and one in another order is not canonical. The reader's record in fold, realm, scenario and spec vectors carries <code>sets</code> since the keyed fold below.</p></li>
+<li><p><code>loops emit</code> takes <code>--sets &lt;key&gt;</code>, once per key, and <code>--sets-nothing</code> for an empty set; the two together are a usage error, and <code>--sets &quot;&quot;</code> is the writer's <code>sets-not-keys</code>. <code>emit -</code> takes <code>sets</code> as a line's envelope field. Nothing is filled in over either flag; an emit with neither is given the keys it names when its thing is held (Step 2, built 2026-11-15).</p></li>
+<li><p>A <code>where</code> test cannot name <code>env.sets</code>: no test reads it.</p></li>
+</ul>
+<h3 id="latest-by-following-keys">Latest-by following <code>keys</code></h3>
+<p><strong>Built, 2026-11-14: latest-by following <code>keys</code></strong>, section 2 of <a href="note-2026-11-11-declared-keys.html">the declared-keys note</a> and the part of section 3 a latest-by slot needs to select.
+<code>{&quot;latest-by&quot;: &quot;of&quot;, &quot;follow&quot;: &quot;keys&quot;}</code> reads each thing by its live setters; <code>&quot;prev&quot;</code> keeps its meaning and its result.
+<code>&quot;follow&quot;: &quot;keys&quot;</code> on count, sum, min, max and collect was refused with <code>follow-invalid</code> until the next paragraph's slice built them.
+The reader's record carries <code>sets</code>, and settling, withholding and erasure keep it with the envelope.
+Liveness is worked out where heads are: after settling and admission, per thing, over the admitted records of it (<code>Loops/Live.lean</code>).
+A record is above another when its <code>prev</code> names it or a record above it, through those records; a setter of a key is live for it when nothing above it sets the key; live for the envelope is a head; live is live for some key, the envelope among them.
+The result per thing is <code>{&quot;keys&quot;, &quot;whole&quot;, &quot;heads&quot;}</code>, as in the note's example, beside <code>unread</code>: <code>spec/run/31</code> is that example.
+<code>from</code> and the envelope tests choose heads, each alone, and one chosen head selects the thing; each payload test is asked of every live setter of its field, and one answer from all of them is the answer, differing or unheld answers unknown.
+<code>thingTest</code> (<code>Cond.onThing</code> per test) takes a thing's records and is what the next slice's count, sum, min, max, collect and <code>by</code> can ask.
+The laws are <code>keyed.live</code>, <code>keyed.fold</code> and <code>keyed.select</code>; <code>spec.set</code> covers the keyed slot. <code>spec.slice</code> does not: <code>Spec.run_slice</code> takes a spec with no keyed slot, since a keyed slot reads live setters the spec does not take, and the spec-slice sweep finds slices that answer it differently.
+<code>spec/parse/97</code>–<code>110</code>, <code>spec/run/31</code>–<code>41</code> and <code>scenario/keys-01-settled-setter</code> pin it; the CLI walk reads a keyed thing through <code>loops fold</code>.
+The slice laws, and the anchor rule and copied <code>about</code> in <code>loops emit</code>, are built in later paragraphs.
+<strong>Implementer choices, confirmed by Kyle 2026-11-21:</strong></p>
+<ul>
+<li><p>A field no record of the thing sets is absent, as a missing field in a held payload is: <code>is</code>, <code>present</code>, <code>at-least</code> and <code>below</code> answer no, <code>not</code> and <code>absent</code> answer yes (<code>spec/run/40</code>, <code>task:13</code>). A live setter that declares a field its payload lacks reads it as absent too.</p></li>
+<li><p>A chosen thing whose payload tests answer unknown counts once in <code>unread</code>; <code>unread</code> counts things, not records.</p></li>
+<li><p>Payload tests combine as a <code>where</code> map does: a test answering no outranks one answering unknown, so a thing with one disagreeing field and one failing field is not unread.</p></li>
+<li><p><code>keys</code> is written in UTF-16 order of its key names, and each list newest first in content order, as heads are.</p></li>
+<li><p>Above reaches only through admitted records the reader holds: a <code>prev</code> naming a record not held, or a refused record, makes nothing above (<code>spec/run/41</code>).</p></li>
+<li><p><code>value</code> and <code>n</code>, which the reader's record always holds, are payload keys like the others: a record with <code>sets</code> sets them only when it declares them, and a field no record sets is absent even when it is <code>value</code>.</p></li>
+<li><p><code>Spec.run_slice</code> and <code>Slot.run_slice</code> take a premise that no slot is a latest-by following <code>keys</code>, rather than a slice law for it.</p></li>
+<li><p>The law names <code>keyed.live</code>, <code>keyed.fold</code> and <code>keyed.select</code>, and <code>follow</code> as a value of a new type <code>Follow</code> on latest-by in the model, while the accumulating folds keep a flag.</p></li>
+</ul>
+<h3 id="count-sum-min-max-and-collect-following-keys">Count, sum, min, max and collect following <code>keys</code></h3>
+<p><strong>Built, 2026-11-14: count, sum, min, max and collect following <code>keys</code></strong>, section 3 of <a href="note-2026-11-11-declared-keys.html">the declared-keys note</a>.
+<code>&quot;follow&quot;: &quot;keys&quot;</code> is accepted on every fold type; <code>follow-invalid</code> refuses any value but <code>&quot;prev&quot;</code> and <code>&quot;keys&quot;</code>, at the same check. <code>spec/parse/98</code>–<code>102</code> are now accepted forms, <code>106</code> and <code>107</code> pin the argument and <code>limit</code> checked after <code>&quot;keys&quot;</code>, and <code>111</code>–<code>115</code> pin the forms with <code>by</code>, <code>where</code> and <code>limit</code> and the refusals left.
+Such a slot reads things, selected as latest-by following <code>keys</code> selects them (<code>thingEv</code>): <code>from</code> and the envelope tests choose heads, each alone, and the payload tests are asked of the thing over each field's live setters.
+Count counts the selected things; sum, min and max read the field from its one live setter (<code>soleSetter</code>); collect lists the selected things' live records (<code>liveIn</code>), and its <code>limit</code> counts things (2026-11-15). The results keep the shapes of the same slots without <code>follow</code>; nothing forced a change.
+With <code>by</code>, a payload key is read from each live setter of the field and an envelope key from each chosen head (<code>By.thingKeys</code>), and each group is the slot without <code>by</code> over its things (<code>Slot.keyedGrouped</code>).
+The laws are <code>keyed.slots</code>, <code>keyed.by</code> and <code>keyed.whole-read</code>: when every record is read whole and every thing has one head, each such slot, grouped or not, gives what the same slot following <code>prev</code> gives (<code>Slot.keys_as_prev</code>). <code>spec.set</code> covers them; <code>spec.slice</code> does not, and its premise now leaves out every slot that follows <code>keys</code>, as the spec-slice sweep does.
+<code>spec/run/42</code>–<code>50</code> pin it, <code>42</code> being the note's count of open tasks beside the same count following <code>prev</code>; the CLI walk counts, sums and collects through <code>loops fold</code>.
+The slice laws are in the two paragraphs after these choices, and the anchor rule and copied <code>about</code> in <code>loops emit</code> (section 5) in the one after them.
+<strong>Implementer choices, confirmed by Kyle 2026-11-21:</strong></p>
+<ul>
+<li><p>A field with no live setter is unread to sum, min and max, as a record without the field is; so is one whose live setter holds no safe whole number there. A record with <code>sets</code> that does not declare the field is no setter of it, so a field its payload holds but does not declare is unread too (<code>spec/run/44</code>, <code>task:5</code>).</p></li>
+<li><p><code>unread</code> counts things, each at most once in a slot: a thing whose tests are unknown, or a selected thing whose field or key cannot be read. Within a group, a thing whose field cannot be read adds to that group's <code>unread</code>, as a record does.</p></li>
+<li><p><strong>Ruled by Kyle, 2026-11-15, on margins-claude's point:</strong> collect's <code>limit</code> counts things, each listed whole; under <code>by</code>, the things in each group. As first built it cut the one newest-first list of the selected things' live records, as it cuts matching records without <code>follow</code>, so a limit could list some of a thing's live records and not others, and a reader of the result read a key as unset whose setter fell past the limit. Built on 2026-11-15.</p></li>
+<li><p>Collect writes one list across things in content order, the shape it has without <code>follow</code>; it does not group the records by thing.</p></li>
+<li><p>A group's own <code>unread</code> counts only things whose field cannot be read there; a thing whose tests are unknown is unread at the top, as an unknown record is.</p></li>
+<li><p><code>follow</code> on count, sum, min, max and collect is an <code>Option Follow</code> in the model, replacing the flag; <code>FoldType.follow</code> reads it. <code>By.count_partition</code> and its neighbours take a premise that the count does not follow <code>keys</code>; over things the partition is <code>By.keyedAccounting</code>.</p></li>
+<li><p>The law names <code>keyed.slots</code>, <code>keyed.by</code> and <code>keyed.whole-read</code>, and the renamed vectors <code>spec/parse/106-argument-after-follow-keys-on-sum</code> and <code>107-limit-after-follow-keys-on-count</code>.</p></li>
+</ul>
+<h3 id="the-slice-laws-for-one-keyed-thing">The slice laws for one keyed thing</h3>
+<p><strong>Built, 2026-11-14: the slice laws for one keyed thing</strong>, section 4 of <a href="note-2026-11-11-declared-keys.html">the declared-keys note</a>, in <code>model/Laws/LiveSlice.lean</code> (margins-claude).
+They are laws only: no definition a reader runs changes, and no vector.
+They are stated over <code>Loops/Live.lean</code> as it stands (<code>above</code>, <code>liveFor</code>, <code>liveEnv</code>, <code>live</code>, <code>keyedIn</code>), with the envelope as one more key a record sets, and then behind settling and admission, over <code>realm</code>.
+<em>Witnessed</em> is exact and has no premise (<code>witnessed_iff</code>): a part reads its records as the whole does, for a key, exactly when every held setter the whole reads as dead has a setter of the key above it through held records; a part that is witnessed for every key and holds the live records gives the thing's keyed state (<code>keyedIn_part</code>).
+Convex is one way to be witnessed and not the least (<code>witnessed_of_convex</code>, <code>convex_not_needed</code>).
+With anchored names, every record naming every live record under it, the live records alone give the keyed state, heads included, and every live record is a head or named by one (<code>anchored_slice</code>, <code>keyedIn_live</code>, <code>heads_slice</code>, <code>live_named_by_head</code>); over payload keys alone the heads are not given (<code>heads_need_env</code>).
+The writer's rule leaves anchored names only in a holding that is closed, one that holds what the writers of its records held (<code>anchored_of_written</code>); a holder missing a record reads wrongly from its own live records (<code>closed_needed</code>).
+Behind settling and admission (<code>keyedIn_slice</code>, <code>keyedIn_live_slice</code>), a part owes each record of the thing it holds every form of it, what erases it, and that it refuses it when the whole does; with anchored names the forms of the live records and what erases them are the slice.
+It owes nothing for the <code>prev</code> targets of a record the whole admits: any part admits it (<code>entitled_fewer</code>).
+The laws are <code>keyed.witnessed</code>, <code>keyed.convex</code>, <code>keyed.anchored</code>, <code>keyed.heads</code> and <code>keyed.slice</code>.
+Two things the port found:</p>
+<ul>
+<li><p><strong>No cycle over <code>prev</code> is a premise</strong> (<code>NoCycle</code>) of every law but <em>witnessed</em>: a dead setter has a live setter above it only when going up ends. Real ids give that, since an id is a hash of an envelope that holds its <code>prev</code>. The model's ids are numbers, and a fold vector has a record that names itself, so the laws state it.</p></li>
+<li><p><strong><code>thing.slice</code>'s <code>prev</code> targets do not carry over.</strong> Under <code>&quot;follow&quot;: &quot;prev&quot;</code> a target's envelope is harmless: the record that names it is above it. Under <code>keys</code> an envelope still sets its keys, so a target held without its witness reads as a live setter (<code>target_needs_witness</code>). A whole <code>thing.slice</code>, which holds every record of the thing, gives the keyed state too (<code>keyedIn_thing_slice</code>).
+The slice law for a spec with a keyed slot is in the next paragraph.</p></li>
+</ul>
+<h3 id="the-slice-for-a-spec-with-a-keyed-slot">The slice for a spec with a keyed slot</h3>
+<p><strong>Built, 2026-11-14: the slice for a spec with a keyed slot</strong>, in <code>model/Laws/KeyedSpecSlice.lean</code> (margins-claude). Laws only, and the JavaScript spec-slice sweep now checks it.
+A slot that follows <code>keys</code> reads each thing it selects by its live setters, records the spec need not take, so a spec slice is not enough for it (<code>keyed_slot_needs_live</code>).
+A part <em>covers</em> a thing when its folded records of the thing are the whole's, hold the thing's live records and are witnessed for every key (<code>Covers</code>); it then reads everything a keyed slot asks of the thing as the whole does: its heads, its payload tests, each field's one setter, its live records and its group keys.
+A part answers every slot that follows <code>keys</code>, of any fold type, grouped or not, when it covers each thing, or neither reader can select the thing: the part folds no record of it the spec takes, and the whole has no head of it the spec takes (<code>KeyedCover</code>, <code>Slot.keyed_cover</code>).
+With a spec slice beside the cover, every slot of any spec is answered (<code>Spec.run_slice_keyed</code>); a spec whose slots all follow <code>keys</code> needs the cover alone (<code>Spec.run_keyed</code>). <code>Spec.run_slice</code> and <code>Slot.run_slice</code> keep their premise: they are the case with no keyed slot, where no cover is needed.
+A part of the forms covers a thing as <code>keyed.slice</code> says (<code>covers_of_keyedPart</code>), and with anchored names by the forms of its live records and what erases them (<code>covers_of_live</code>).
+The law is <code>keyed.spec-slice</code>.</p>
+<ul>
+<li><p><strong>A refused record of a covered thing is owed its <code>prev</code> targets</strong> (2026-11-15). <code>KeyedPart</code> had asked that the whole admit every record of the thing the part holds, and a spec slice can break that by itself: it brings, as a target, a record of a covered thing that the whole refuses (<code>prev-unrelated</code>), and it brings the targets only of the records the spec takes. Without the target the part admits the record and reads the keys it sets (<code>refused_needs_targets</code>). <code>KeyedPart</code> now asks only that the part refuse what the whole refuses, and a part that holds what such a record names in <code>prev</code> does (<code>KeyedPart.of_targets</code>, by <code>entitled_part</code>). What it then holds of a covered thing is held like the rest: witnessed, with its erasers. The collect-limit sweep met the case first.</p></li>
+<li><p><strong>It is proved, and it asks a little more than the experiment needed.</strong> The experiment (margins <code>sl-py/keyspecslice.py</code>, 16,000 spec and store pairs, every keyed slot type) was answered by the spec slice with the live records of the things it touches, the members between two sent members, and the erasers of the live records; the spec slice alone answered wrongly in 5,119 and 4,840 of 8,000. The law asks for what erases any record the part holds of a covered thing, since it holds the part's records of the thing to be the whole's records, shown state and all, where a keyed slot reads the shown state of the live ones only.</p></li>
+<li><p><strong>The sweep</strong> (<code>interop/js/spec-slice.test.mjs</code>) builds that part for each of 3,912 generated specs and stores and finds every slot, keyed ones among them, answered as the whole answers; it is a proper part in 507, and leaving out the live records changes an answer in 50 and the erasers in 1. The spec slice alone still differs on a keyed slot in 53. Since the generator learned the collects of 2026-11-15 it meets a record of a covered thing that the whole refuses, its <code>prev</code> naming a record of another thing, and that the spec slice brings as a target; the part then holds what that record names in <code>prev</code> too, so that it refuses it as the whole does, as <code>Covers</code> asks: the part's folded records of the thing are the whole's. What the part holds for such a record is held like any record of its thing, with what lies between and what erases it (the helper runs its steps until nothing is added). The generator does not reach a store where that closing matters; margins' experiment does (<code>sl-py/keyspecslice.py</code>, mode <code>refused</code>, 8,000 spec and store pairs in which a later record of the thing names a refused one): the part without the refused record's targets answers wrongly in 832, with the targets added once in 12, and closed in none.</p></li>
+</ul>
+<h3 id="the-writer">The writer</h3>
+<p><strong>Built, 2026-11-14: the writer</strong>, section 5 of <a href="note-2026-11-11-declared-keys.html">the declared-keys note</a>, in <code>loops emit</code>.
+An emit of a thing names in <code>prev</code>, beside any <code>--prev</code>, every record of that thing the store holds that is live for some key, the envelope among them, and so every head (<code>rust/PLACE.md</code>, choice 11).
+The thing is <code>--of</code>, or what <code>--prev</code> replaces; liveness is the core's <code>live</code>, over the store settled and admitted as <code>loops fold</code> reads it, so an erased or withheld record is named by its envelope.
+With no <code>--about</code>, the emit copies <code>about</code> from the thing's heads, every mention when there are several; <code>--about</code> states the whole <code>about</code>, and <code>--no-about</code> an empty one.
+A root, an erasure and the first record of a thing name nothing and copy nothing. <code>emit -</code> fills nothing in, and nothing refuses an unanchored record.
+Nothing in the model, the vectors, JavaScript or the core changed: <code>loops_place::fill</code> holds the rule, over the core's <code>live</code>, and <code>loops emit</code> calls it before the batch check.
+The CLI walk writes the note's history (a task created whole, then <code>--sets status</code>, then <code>--sets title</code>) with <code>loops emit</code> alone and checks each <code>prev</code> against the live records a collect that follows <code>keys</code> lists; it covers a whole-read emit above keyed ones, a fork merged by export and import and joined by one emit, an erased and a withheld live record, <code>--about</code>, <code>--no-about</code> and a moved task, and a changeset that fills nothing in.
+<code>rust/place/tests/anchor.rs</code> writes 300 seeded random emits through the same filler, over six things and four keys, with whole-read emits, pure joins, moves, explicit <code>prev</code>s and erasures: one writer, and two replicas that merge both ways now and then.
+Every 25 emits it requires the history to be anchored (every record above a live record names it) and each thing's live records, with the records that erase them, to answer fifteen slots that follow <code>keys</code> as the whole holding does: latest-by, count, sum, min, max and collect, with <code>where</code>, <code>limit</code> and <code>by</code>. At 300 emits the slice holds 41 of 300 records for one writer and 44 of 300 merged; no answer differed. Written without the anchor, each emit naming one live record of its thing, the slices answer differently at many checkpoints: in one run, 10 of the 12 for one writer and 10 of the 24 for the two replicas. The counts vary from run to run, since the test's keys and salts are fresh each run; the property has teeth.
+Existing walk tests that made a fork with a second <code>--prev</code> to one record now write the fork as a changeset that states its own <code>prev</code>, since <code>loops emit</code> would name the first revision in the second; in the two-store walk, b's note now replaces b's revision, so the merged thing has two heads, not three.
+<strong>Implementer choices; they stand under Kyle's ruling of 2026-11-21 (W7):</strong></p>
+<ul>
+<li><p>With no <code>--about</code>, an emit of a thing copies the union of its heads' mentions, in canonical order; <code>--about</code>, once or more, replaces the copy; <code>--no-about</code> states an empty <code>about</code>; <code>--no-about</code> with <code>--about</code> is a usage error.</p></li>
+<li><p>An emit builds on every head of its thing and every other live record held, whether or not <code>--prev</code> names them; an explicit <code>--prev</code> is kept beside them, live or not. The heads it builds on, for <code>about</code>, are the thing's heads, not an explicit <code>--prev</code> that is not one.</p></li>
+<li><p>Liveness is read over the admitted records: a held record admission refuses is not named.</p></li>
+<li><p><code>loops erase</code> writes a root with <code>erases</code> and no <code>of</code>, so it names nothing; <code>--erases</code> and <code>--under</code> on an emit change nothing about the anchor; a thing named by a root's id is that root's thing, and the root is named while it is live.</p></li>
+<li><p>What was filled in is not printed: <code>emit</code> answers the id, and <code>loops get</code> shows the <code>prev</code> and <code>about</code> written.</p></li>
+<li><p>No flag turns the anchor off; <code>emit -</code> is the path that fills nothing in.</p></li>
+<li><p>The filler, of <code>of</code> as well as of the anchor and <code>about</code>, moved from the CLI into <code>loops-place</code> (<code>loops_place::fill</code>), so a test can drive the writer's rule over hundreds of emits without starting the binary for each; the CLI still decides when it runs.</p></li>
+</ul>
+<h2 id="2026-11-13">2026-11-13</h2>
+<p>In brief:</p>
+<ul>
+<li><p>Kyle took <code>under</code> targets: a writer refuses an <code>under</code> target it does not hold (<code>under-unknown</code>). Built the same day.</p></li>
+<li><p>Kyle ruled the declared-keys note, sections 1 to 5: <a href="note-2026-11-11-declared-keys.html">notes/2026-11-11-declared-keys.md</a>.</p></li>
+</ul>
+<h3 id="under-targets"><code>under</code> targets</h3>
+<p><strong>Kyle, 2026-11-13:</strong> &quot;Let's take under targets now.&quot;
+This replaces the choice deferred on 2026-11-11, that a writer checks no <code>under</code> target beyond its shape.
+Kyle took margins-claude's view: a writer refuses an <code>under</code> target it does not hold, beside <code>prev-unknown</code>.
+<strong>Built, 2026-11-13.</strong> A new writer refusal, <code>under-unknown</code>: a record's <code>under</code> must name a record the writer holds, in the batch or in the store.
+It runs across the whole batch, after <code>prev-unknown</code> and before <code>of-not-root</code> and <code>prev-unrelated</code>, so no draft order changes the refusal.
+A batch member counts, named by its label or by its id.
+A stored record counts whatever its shown state: the writer holds an erased or withheld record's envelope.
+Nothing else about the target is checked. Whether it is a grant, of what kind and by whom, is still standing's question (step 3).
+Readers do not refuse on it, as they do not for <code>prev-unknown</code>.
+The batch writer and the CLI's single-record path check it against the same store lookup; there the CLI's own <code>prev-unknown</code> still comes first.
+<code>batch/67</code>–<code>75</code> pin it: an unheld target refused, a held root and a held revision accepted, a batch member's raw id and an erased target accepted, and the order beside <code>prev-unknown</code>, <code>of-not-root</code>, <code>prev-unrelated</code> and a writer refusal.
+No existing vector changed meaning: every earlier batch vector's <code>under</code> names a batch member by label.
+The CLI walk pins an erased and a withheld stored target.</p>
+<h2 id="2026-11-11">2026-11-11</h2>
+<p>In brief:</p>
+<ul>
+<li><p><code>&quot;follow&quot;: &quot;prev&quot;</code> on count, sum, min and max (issue #3).</p></li>
+<li><p><code>by</code> on count, sum, min, max and collect (issue #2).</p></li>
+<li><p>Every envelope shape has a named refusal, and a label may stand in <code>under</code> (issue #1).</p></li>
+<li><p>Kyle chose the recommendation for D7, the canonical result encoding (built 2026-11-20).</p></li>
+<li><p>Kyle agreed that the model states the slice law as <em>witnessed</em> (issue #5), and that D8c starts with a design note, which margins-claude drafted that day.</p></li>
+</ul>
+<h3 id="follow-prev-on-count-sum-min-and-max"><code>&quot;follow&quot;: &quot;prev&quot;</code> on count, sum, min and max</h3>
+<p><strong>Built, 2026-11-11: <code>&quot;follow&quot;: &quot;prev&quot;</code> on count, sum, min and max (issue #3).</strong>
+Such a slot folds the whole-reader heads, each thing's heads with each id once, which are the heads latest-by and a followed collect read.
+It selects as latest-by does, and its result keeps the shape of the same slot without <code>follow</code>.
+Every head of a forked thing counts; count counts an erased or withheld head by its envelope, and sum, min and max count it unread.
+Any other <code>follow</code> value is refused with <code>follow-invalid</code>, at the check that already refused it on collect; that check now accepts <code>&quot;prev&quot;</code> on every fold type.
+The law is <code>spec.follow</code>: the answer depends only on the set, through each thing's heads (<code>heads.set</code>), not <code>acc.set</code>. <code>heads.why</code> still holds.
+A caching reader for these slots is not built. A record with an unknown <code>prev</code> can supersede a head and later be refused when its target arrives, so a reader that caches must keep what such a record supersedes. Holding such records back instead would refuse the slices the anchor rule allows, whose live setters travel without their ancestors. Kyle, 2026-11-11: this is step 4's first law.
+<strong>Implementer choices, confirmed by Kyle 2026-11-11:</strong></p>
+<ul>
+<li><p>The law's name, <code>spec.follow</code>, and its place in the spec table.</p></li>
+<li><p><code>follow</code> is a flag on each accumulating fold type, as on collect, not a slot-level field.</p></li>
+<li><p><code>&quot;follow&quot;: &quot;prev&quot;</code> with <code>limit</code> on count is refused with <code>limit-invalid</code>, as before: <code>limit</code> stays collect's.</p></li>
+</ul>
+<h3 id="by-on-count-sum-min-max-and-collect"><code>by</code> on count, sum, min, max and collect</h3>
+<p><strong>Built, 2026-11-11: <code>by</code> on count, sum, min, max and collect (issue #2).</strong>
+<code>by</code> groups a slot by <code>env.kind</code>, <code>env.observer</code>, the members of <code>about</code> under a typed-reference prefix (<code>env.about:&lt;prefix&gt;</code>), or a payload field.
+It is allowed on count, sum, min, max and collect, following <code>prev</code> or not; on latest-by, or naming nothing to group by, it is <code>by-invalid</code> at <code>fold.&lt;name&gt;.by</code>, checked after <code>limit</code> and before the fold's argument.
+The result is <code>{&quot;groups&quot;: {&lt;key&gt;: &lt;result&gt;}, &quot;unread&quot;: n, &quot;ungrouped&quot;: m}</code>, each <code>&lt;result&gt;</code> the slot's own shape.
+Settling, admission and the whole-reader heads come first, once, over everything held; each group is then the slot without <code>by</code> or <code>where</code> over the records selected into it.
+The laws are <code>by.set</code>, <code>by.after-admission</code>, <code>by.accounting</code> and <code>by.partition</code>; <code>spec.slice</code> covers grouped slots without a new premise.
+Ordering or top-N across groups, buckets and windows, and <code>by</code> on latest-by are not built.
+<strong>Kyle's choices, confirmed 2026-11-11:</strong></p>
+<ul>
+<li><p>The spelling <code>env.about:&lt;prefix&gt;</code>: it reuses <code>where</code>'s existing rule that <code>env.</code> names the envelope, so a bare name such as <code>about:project</code> is a payload field, and no second name is reserved.</p></li>
+<li><p>Keys are text, so a text value and a number or boolean value that render alike share a group: the text <code>&quot;1&quot;</code> and the number 1, the text <code>&quot;true&quot;</code> and <code>true</code>.</p></li>
+<li><p>A selected record with no key is counted in <code>ungrouped</code>: a missing field, no mention under the prefix, or a value that cannot be a key (a fraction, null, an array or an object). <em>Amended by Kyle on 2026-11-21: a list gives one group for each of its members; see that date.</em> It is never dropped and never a refusal; only a payload the reader does not hold makes a key unread.</p></li>
+<li><p>A record mentioning several things under the prefix counts in each.</p></li>
+<li><p><code>limit</code> applies per group; a top-N across groups is a later discussion (the earlier strange-loops had one, in a weather vertex example).</p></li>
+<li><p><code>by</code> is allowed on collect that follows <code>prev</code>, and refused only on latest-by.
+<strong>Implementer choices, confirmed by Kyle 2026-11-11:</strong></p></li>
+<li><p>Groups are written in UTF-16 order of their keys, the order canonical JSON and <code>thingsOf</code> use.</p></li>
+<li><p>The four law names, and <code>by</code> checked before the fold's argument as the issue proposed.</p></li>
+</ul>
+<h3 id="issue-1-envelope-shape-refusals-and-a-label-in-under">Issue #1: envelope shape refusals, and a label in <code>under</code></h3>
+<p><strong>Built, 2026-11-11.</strong> Every envelope shape has a named refusal, as <code>protocol/spec.md</code> has for specs.
+An envelope that is not an object is refused with a new code, <code>envelope-not-object</code>.
+A required field left out, or any field of the wrong JSON type, is refused with that field's existing code, in that field's place.
+The model reads such a field as empty text, which every field's own check refuses (<code>unreadable_refused</code>).
+The same change brings the batch up to the settled ledger entry &quot;A label may stand in <code>under</code>&quot;: a draft may name another by label in <code>about</code>, <code>of</code>, <code>prev</code> or <code>under</code>, never in <code>erases</code>, and labels in <code>under</code> take part in cycles.
+<strong>Kyle's choice, confirmed 2026-11-11:</strong> <code>loops emit -</code> reads a changeset line's envelope fields through the core's reader, as <code>Read.envOf</code> does.
+A field left out or of the wrong JSON type gets the field's own code, in the writer's order across the whole changeset, so another line's label refusal outranks it.
+<code>draft-shape</code> stays for a line's own shape only: a line that is not a JSON object, or a label that is not text; an unknown member stays <code>draft-field-unknown</code> and a repeated one <code>member-duplicate</code>.
+The CLI fills in <code>observer</code> and <code>emitted</code> only when a line leaves them out; one given mistyped gets its code, and <code>observer-unbound</code> now judges only a typed observer.
+A line's salt is read as the core reads one, so one that is not base32hex text is <code>salt-not-16-bytes</code> in its place.
+<strong>The reviewer's direction, confirmed by Kyle 2026-11-11 when approving !21:</strong></p>
+<ul>
+<li><p>One new code, <code>envelope-not-object</code>; every other shape fault folds into an existing code, extending &quot;A malformed value uses the field's existing refusal code&quot;.
+<strong>Implementer choices, confirmed by Kyle 2026-11-11 when approving !21</strong> (an untyped CLI observer is <code>observer-not-typed</code>, as above):</p></li>
+<li><p><code>envelope-not-object</code> is a shape check across every envelope: after <code>envelope-field-unknown</code>, before <code>string-not-unicode</code> and every value.
+So a later record variant that is not an object refuses the input, as an unknown key does, though the first envelope decides value refusals (D5).</p></li>
+<li><p>A batch draft object without <code>env</code> has an envelope that is not an object.</p></li>
+<li><p><code>null</code> is a value of the wrong type, not a field left out: <code>&quot;occurred&quot;: null</code> is <code>occurred-not-span</code>.</p></li>
+<li><p>A set that is not an array is refused with its code; so is a set with a member that is not text, and a label beside such a member is still a label, so labels are checked first.</p></li>
+<li><p>A salt left out, not text, or not canonical base32hex is <code>salt-not-16-bytes</code>, in that check's place.</p></li>
+<li><p>A batch draft that is not an object, an unknown draft member, a label that is not text, a draft without a payload, and a repeated envelope member name stay malformed input, with no code.</p></li>
+</ul>
+<p><strong>Implementer choice, confirmed by Kyle 2026-11-11.</strong></p>
+<ul>
+<li><p>In JavaScript, a repeated envelope or draft member is seen only from raw text, in the fuzz adapter; the value APIs (<code>resolveBatch</code>, <code>writeRecord</code>, <code>seal</code>, <code>writeText</code>) cannot see one (<code>interop/js/README.md</code>).</p></li>
+</ul>
+<h3 id="d7-canonical-result-encoding-the-choice">D7: canonical result encoding, the choice</h3>
+<p>Kyle chose the recommendation below on 2026-11-11, and on 2026-11-20 ruled that no integer carries a tag and that <code>shown</code> is not in the bytes (the cut note, sections 4 and 6). It is built (2026-11-20), and changes no reading; step 4's ticks need it.
+The <a href="../rethink/#open">open design</a> prefers JCS for results.
+Exact, unbounded <code>Sum</code> outputs include <code>9007199254740993</code> in <code>phase2-exact-output</code>.
+Neither current tests nor the model define a canonical result hash codec.
+<strong>Readings:</strong> Define a separate exact-integer canonical JSON extension, or use typed decimal integer strings inside JCS.
+Raw JCS numeric rounding cannot preserve every <code>Int</code>.
+<strong>Effects:</strong> These choices produce different bytes, hashes, and schemas.
+<strong>Recommendation:</strong> Define a separate versioned result codec using typed decimal integer strings under JCS.
+Never round or cap current model outputs.</p>
+<h2 id="2026-11-10">2026-11-10</h2>
+<p>In brief:</p>
+<ul>
+<li><p>Kyle ruled D8: <code>of</code> names a record's one thing, <code>about</code> only mentions, and <code>sets</code> declares the keys an emit sets.</p></li>
+<li><p>D8a and D8b were built across the model, the vectors, JavaScript and Rust.</p></li>
+<li><p>Kyle confirmed the landed choices of D1 to D6.</p></li>
+<li><p>Kyle set the order of the steps: finish step 2 with D8, then step 4 (ticks), then step 3 (standing) together with step 5 (sharing).</p></li>
+</ul>
+<h3 id="d8-items-mentions-and-declared-keys">D8: items, mentions and declared keys</h3>
+<p>Kyle ruled this on 2026-11-10.
+D8a and D8b are built across the model, vectors, JavaScript and Rust, and all of D8c is built: <code>sets</code> in the envelope, liveness per key, latest-by following <code>keys</code>, count, sum, min, max, collect and <code>by</code> following <code>keys</code>, the slice laws for one keyed thing and for a spec with a keyed slot, and the anchor rule and copied <code>about</code> in <code>loops emit</code>.
+It changes the settled envelope, so it lands as R1–R6 and D1–D6 did: model, vectors, JavaScript, Rust, then protocol and pages.
+<strong>Finding:</strong> Two apps built on the product slice hit one wall on 2026-11-10.
+The orchestration dry run is in <a href="../rethink/#scenarios">Scenarios</a>, step 8; margins-claude's <code>work</code> app is described in its notes on merge request !12.
+<code>about</code> does two jobs: &quot;this record is an emit of this thing&quot; and &quot;this record mentions that thing&quot;.
+A task about its plan became a rival head of the plan.
+A record about something else was not a thing under its own id.
+A closing record about the 23 ids it covered became the winner of each.
+Restating a whole payload on every change left a writer no basis to merge a fork field by field; the fork showed as two heads, and one writer's merge dropped a change.
+The earlier systems (<code>tasked</code>, <code>ticked</code>) keyed a fold by a field and re-emitted only the changed key.</p>
+<p>The choice has three parts. D8a and D8b go together; D8c can follow.</p>
+<ul>
+<li><p><strong>D8a, an item field.</strong> One single-valued envelope field, <code>of</code>, says which thing a record is an emit of.
+Only a root, a record with no <code>of</code> and no <code>prev</code>, leaves it out; it is an emit of the thing its own id names.
+Every record with <code>prev</code> states <code>of</code>. A tool may fill it in; the protocol never infers it.
+<code>of</code> is read literally: a reader never resolves it through another record, so a record's thing is a fact of its own envelope.
+An id in <code>of</code> names a root; a writer holding a record that is not a root refuses to name it.
+<code>latest-by</code> runs over this field; a thing's heads are records of it.
+Every <code>prev</code> target must be an emit of the same thing, so <code>prev</code> never crosses things.
+One thing replacing another is a new thing that mentions the old one, plus an emit on the old one that closes it: two records, not atomic.</p></li>
+<li><p><strong>D8b, <code>about</code> is mention only.</strong> <code>about</code> never makes a head.
+<code>where</code> and <code>collect</code> still read it, so &quot;everything said about X&quot; stays a fold.
+A link needs no new primitive: it is a thing whose <code>about</code> names both ends.</p></li>
+<li><p><strong>D8c, declared keys.</strong> An envelope field, <code>sets</code>, lists the payload keys an emit sets.
+A keyed fold holds, for each key, the setters no descendant setter of that key replaces, over <code>prev</code>.
+Different keys from one head merge; one key set twice from one head leaves two live setters, and the fold reports both.
+A key is unknown exactly when a live setter's payload is not held, as <code>where</code> answers.
+Withheld and erased are one state to the fold: an envelope without its payload.
+They differ only in what comes next, which the arrival laws carry: a withheld payload may arrive, an erased one must be dropped.
+Either way a later emit that sets the key makes it known again.
+A declared key absent from the payload is unset, and a payload key that is not declared is not read.
+An absent declaration and an empty one differ: absent means the record is read whole, as today; empty means it sets nothing, which is a pure join of two heads.
+A whole-read emit sets every key, named or not, and stays needed until a later whole-read emit replaces it.</p></li>
+</ul>
+<p><strong>Readings:</strong> Put identity and keys in the envelope, or in the payload.
+In the payload, an erased or withheld emit can be placed only by <code>prev</code>, and a slice or a sync cannot be computed from envelopes.
+For declared keys, margins-claude's experiment (<code>sl-py/keyfold.py</code>) found no wrong answer in 240,000 key answers, and none in 320,000 more with whole-read emits mixed into the chains.
+Within one thing, its envelopes plus its live setters' payloads sufficed, and none could be dropped.
+The experiment takes the item as given, one thing at a time, with no erasing records and no admission.
+That identity belongs in the envelope (D8a) is argued, not measured, and the composition with <code>thing.slice</code> is untested.
+Without declared keys, a reader needs every payload in the chain, or answers wrongly when an unheld emit is taken to set nothing.
+<strong>Effects:</strong> Two new envelope fields enter the id; a record without them keeps its bytes and id.
+Records already about a thing stop making heads of it, so the <code>latest-by</code> vectors and the heads and slice laws are restated.
+<code>prev-unrelated</code> is restated over the item field.
+A record is an emit of one thing only; today one record can head several.
+An erased emit still shows which keys it changed, though not to what.
+Kyle accepted this on 2026-11-10: erasure is the emergency stop for something that should not have been emitted, and its job is that the content travels no further.
+<code>kind</code>, <code>about</code> and the times already survive erasure; secrets do not go in envelopes, key names included.
+The core starts to read a payload's top-level keys by name.
+<code>thing.slice</code> as proved covers whole-record folds only; the keyed fold needs its own slice law, argued and not yet stated in Lean.
+<strong>Order:</strong> Take D8a and D8b now, in the envelope, before any store is kept.
+Take D8c as a second fold family beside whole-record <code>latest-by</code>, once D8a's shape is settled and its slice law is stated.
+Kyle, 2026-11-11: D8c starts with a design note, before any code. Once an emit can set only some keys, a thing's current state is the merge of its live setters, not one head's payload, and <code>where</code>, <code>follow</code> and <code>by</code> read a head's payload today. The note says how they read a keyed thing, the spec grammar and result of the keyed fold, the writer's anchor rule and the witnessed slice law. margins-claude drafts it.
+<strong>Amended by Kyle, 2026-11-10,</strong> on margins-claude's finding in issue #4 (<code>sl-py/keyslice.py</code>): D8a first let a record with <code>prev</code> leave <code>of</code> out and take its thing from what it replaces.
+That made a record's thing depend on another record being held, and a partial copy then answered wrongly: 10,276 of 33,634 cases under one slice rule and 412 under the other, against none in 35,200 with <code>of</code> stated.
+The CLI's &quot;a revision without <code>--about</code> is about what it replaces&quot; stays as a writer's convenience only.
+The same experiment found that a replaced member sent without the path to what replaced it reads as live, and proposed that what is sent of a thing be convex over <code>prev</code>.
+Issue #5 corrects the proposal: convexity is sufficient but not exact, and on a steady history the convex part is nearly the whole history.
+The exact law is <em>witnessed</em>: every held setter of a key that is dead for that key has a setter of that key above it through held records (<code>witnessed_iff</code>, in margins-claude's <code>lean/Convex.lean</code>).
+Either law is about a slice read alone; a slice merged into an older holding is step 5's question.
+margins-claude will state the law over the model once D8a is modelled.
+Kyle agreed on 2026-11-11 (issue #5): the model states <em>witnessed</em>, with convex as a corollary, and a writer's tool fills in the anchor, as it fills in <code>of</code>: an emit that sets a key names in <code>prev</code> every record its writer holds that sets that key and is still a live setter of some key. Then the live setters alone are a slice. A slice law is about a slice read alone; merging slices is step 5's question.
+<strong>Kyle's choices, 2026-11-10,</strong> following margins-claude's reasoning on merge request !13:</p>
+<ul>
+<li><p><strong>Names:</strong> the item field is <code>of</code> and the declaration is <code>sets</code>. A record <em>of</em> the task, against a record <em>about</em> it; <code>sets</code>, like <code>erases</code>, is a verb for what the record does.</p></li>
+<li><p><strong>Natural keys:</strong> <code>of</code> takes a record id or a natural key, as <code>about</code> does.
+A writer can name a thing before holding any record of it, and two writers who start the same named thing join.
+An unnamed thing is rooted at its first record, and a second branch without <code>prev</code> joins it by that id.
+In an open store anyone can emit of a name and become a head; that is left to standing, where grants per thing belong.</p></li>
+<li><p><strong>Same value from two setters:</strong> the core declares no conflict.
+The keyed fold reports each key's live setters, newest first, as whole-record <code>latest-by</code> gives a winner and the others.
+Whether two of them conflict is a reading made above the core, so the core never defines equality on payload values.
+A reading should not treat agreement as a conflict.
+<strong>Kyle, 2026-11-10, on undeclared payload keys:</strong> refusal is progressive.
+A writer refuses a payload key it did not declare only in a store declared strict.
+Elsewhere the key is written, the keyed fold does not read it, and a whole-record fold, a <code>where</code> test or a lens still can.
+Making it count takes a new emit that declares it, since the declaration is in the id.</p></li>
+</ul>
+<p><strong>Built, 2026-11-10: D8a and D8b.</strong>
+The model gives each record one thing, <code>of</code> or its own id, and makes <code>about</code> a mention only.
+Its laws are restated over the thing, and <code>thing.one</code>, <code>thing.mentions</code> and <code>record.of</code> join the index.
+The vectors are regenerated; JavaScript and Rust agree on every one, and the <code>d8ab-1</code> campaign finds no mismatch.
+D8c, declared keys, is built in the entries of 2026-11-14, all but its slice laws.
+<strong>Kyle's choices, confirmed 2026-11-10:</strong></p>
+<ul>
+<li><p><strong>Spec:</strong> the spec says <code>&quot;latest-by&quot;: &quot;of&quot;</code>. <code>from.of</code> selects a thing's records; <code>from.about</code> is a mention test.</p></li>
+<li><p><strong>Filling in <code>of</code>:</strong> only the single-record <code>emit --prev</code> path fills <code>of</code> in, from the record it replaces.
+<code>emit -</code> fills nothing in: a changeset states <code>of</code> itself.</p></li>
+<li><p><strong>Unheld target:</strong> the CLI refuses <code>prev-unknown</code> itself when a revision's target is not held, since it has nothing to fill <code>of</code> in from.
+On that path only, this precedes the writer's other checks.</p></li>
+<li><p><strong>Export:</strong> <code>export --about</code> is a mention filter and <code>export --of</code> filters by thing.</p></li>
+<li><p><strong>Verb:</strong> the verb that shows a thing is <code>loops of &lt;thing&gt;</code>, renamed from <code>loops about &lt;thing&gt;</code>.
+<strong>Implementer choices, confirmed by Kyle 2026-11-11</strong> (there are no stores yet beyond iteration tests, so the missing compatibility path costs nothing):</p></li>
+<li><p>The codes <code>of-not-typed</code>, <code>of-missing</code> and <code>of-not-root</code>, and their places: <code>of-not-typed</code> right after <code>about-not-typed</code>, <code>of-missing</code> last of the envelope checks, and <code>of-not-root</code> between <code>prev-unknown</code> and <code>prev-unrelated</code>, all three across the whole batch.</p></li>
+<li><p><code>&quot;latest-by&quot;: &quot;about&quot;</code> is refused with <code>fold-argument</code>; there is no compatibility path.</p></li>
+<li><p>A reader polices neither <code>of-missing</code> nor roots. A held record with <code>prev</code> and no <code>of</code> is of its own id, so its <code>prev</code> crosses things and admission refuses it.</p></li>
+<li><p><code>from.about</code> and <code>from.of</code> in one source mean both.</p></li>
+<li><p>A held entry in a batch vector is <code>{&quot;id&quot;, &quot;of&quot;?, &quot;prev&quot;}</code>.</p></li>
+</ul>
+<h3 id="settled-d1d6">Settled: D1–D6</h3>
+<p>The human settles each decision as its written recommendation.</p>
+<ul>
+<li><p><strong>D1:</strong> A public lens reader refuses a base that repeats a section id, with <code>base-id-duplicate</code>.
+It checks the base before the text, so this refusal precedes every text refusal.
+The raw core keeps first-lookup behavior.</p></li>
+<li><p><strong>D2:</strong> Text is Unicode scalar values.
+A lone surrogate is refused with <code>string-not-unicode</code> before hashing, and nothing is substituted.
+The rule covers values, member names, envelopes, and batches.
+The refusal follows <code>envelope-field-unknown</code> and precedes <code>kind-empty</code>.
+A payload text receives it only when the text is JSON by syntax.
+A fixture that holds a lone surrogate anywhere else, ignored metadata included, is malformed input in all three.</p></li>
+<li><p><strong>D3:</strong> A number past binary64's range is refused by the writer's number check, with <code>number-out-of-range</code>.
+That check stays last in the writer's order.
+The Rust core stays finite; its input adapter carries the overflow to that check and to the spec parser.
+Reader records still require finite numbers.</p></li>
+<li><p><strong>D4:</strong> Signing fixtures require a canonical seed of exactly 32 bytes, read only after the record is written.
+No adapter pads or truncates. This is a fixture rule, not a record rule.</p></li>
+<li><p><strong>D5:</strong> A record input's first envelope and first payload decide its refusal, as in Lean.
+Once they are written, a later variant that names another record is malformed input.
+So is a later payload variant that is refused.</p></li>
+<li><p><strong>D6:</strong> Four helper lemmas are proved and pinned.
+They are <code>Sum.on_step_missing</code>, <code>Max.acc_readable</code>, <code>Min.acc_readable</code>, and <code>Spec.mem_select</code>.</p></li>
+</ul>
+<p>D2 and D3 left the code name, stage, and precedence to the human.
+Kyle confirmed the landed choices on 2026-11-10:
+the name <code>string-not-unicode</code> and its stage after raw shape, the reuse of <code>number-out-of-range</code>, the same overflow handling for spec arguments, and D1 refusing duplicates only.
+D1's name <code>base-id-duplicate</code>, D5's refused-payload fault, and the Rust stand-in are implementer choices.
+See <a href="https://github.com/kgruel/strange-loops-next/blob/main/protocol/record.md">record rules</a>, <a href="https://github.com/kgruel/strange-loops-next/blob/main/protocol/lens.md">the lens contract</a>, and <a href="https://github.com/kgruel/strange-loops-next/blob/main/rust/GAPS.md">Rust boundaries</a>.
+D7 is built since 2026-11-20.</p>
+<h2 id="step-1-and-before">Step 1 and before</h2>
+<p>In brief:</p>
+<ul>
+<li><p>The six step-1 rulings, R1 to R6, were applied before any record existed.</p></li>
+<li><p>The binary64 standards choice was closed with Option A.</p></li>
+</ul>
+<h3 id="settled-step-1-rulings-r1r6">Settled: step-1 rulings R1–R6</h3>
+<ul>
+<li><p><strong>R1:</strong> Every byte string uses lowercase, unpadded base32hex.
+Readers require canonical lengths and zero pad bits.
+Proved id text order equals digest order.</p></li>
+<li><p><strong>R2:</strong> The id preimage remains the JCS object containing <code>commit</code> and <code>env</code>.</p></li>
+<li><p><strong>R3:</strong> Signed bytes remain <code>loops/record/v1:</code> followed by the id text, encoded as UTF-8.</p></li>
+<li><p><strong>R4:</strong> Instants use UTC <code>Z</code>, seconds 00 through 59, and optional fractions of one through nine digits.
+A fraction ends in a nonzero digit.
+The actual parser has proved spelling uniqueness and parse-render recovery.</p></li>
+<li><p><strong>R5:</strong> Typed references retain lowercase prefixes; sets retain UTF-16 code-unit sorting.</p></li>
+<li><p><strong>R6:</strong> Raw envelope readers return <code>envelope-field-unknown</code> before checking values, including <code>kind-empty</code>.
+The payload remains the extension point.</p></li>
+</ul>
+<p>See <a href="https://github.com/kgruel/strange-loops-next/blob/main/protocol/record.md">record rules</a> and <a href="https://github.com/kgruel/strange-loops-next/blob/main/design/rethink/ledger.json">the settled ledger</a>.</p>
+<h3 id="settled-binary64-standards-and-writer-range">Settled: binary64 standards and writer range</h3>
+<p>The human closes the standards choice with Option A.
+Rust uses native shortest binary64 digits, ECMAScript notation, and exact midpoint tie correction.
+The writer refuses every magnitude above 2^53 − 1, including fractional values.
+Canonical formatting covers finite binary64 independently of writer acceptance.
+A Lean roundtrip proof and a shortest proof do not yet exist; neither blocks this choice.
+See <a href="https://github.com/kgruel/strange-loops-next/blob/main/rust/GAPS.md">Rust numeric boundaries</a> and <a href="https://github.com/kgruel/strange-loops-next/blob/main/protocol/record.md">record rules</a>.</p>
+</article>
+</main>
+<script>
+// What every page built on design/page.mjs does: a .pan says whether there is more of it to
+// the right, so its fade shows exactly while there is (design/register.css).
+(() => {
+  for (const pan of document.querySelectorAll(".pan")) {
+    const s = pan.firstElementChild;
+    const more = () => pan.classList.toggle("is-more", s.scrollLeft + s.clientWidth < s.scrollWidth - 1);
+    s.addEventListener("scroll", more, { passive: true });
+    addEventListener("resize", more);
+    more();
+  }
+})();
+</script>
+</body>
+</html>

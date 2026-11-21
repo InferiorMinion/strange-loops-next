@@ -20,6 +20,19 @@ In brief:
 - Kyle ruled the seven payload values choices, the result hash's prefix, which choices come to him, and the three classes of edge; he confirmed the keyed-fold and codec choices; issue #10 is closed.
 - The tick record is proposed as TK1 to TK9 in `DECISIONS.md`, with [a note](notes/2026-11-21-tick-record.md) (!65). Not ruled.
 - `loops emit` copies `occurred` from the heads when they agree; `--no-occurred` states none.
+- The roadmap, the decisions, the changelog and the notes are published as a fifth design page, and the rethink and grammar pages are brought up to the rulings since 2026-11-13.
+
+### The decisions page, and the rethink and grammar pages brought up to date
+
+Kyle asked for both on 2026-11-21, for a colleague who reads the site and not the repository.
+
+- **A fifth page, `out/decisions/`.** `DECISIONS.md` is its landing page; `ROADMAP.md`, `CHANGELOG.md` and each file in `notes/` are pages beside it. `node design/build.mjs` renders them with a Markdown renderer of its own, with no dependencies. A new note needs no code change.
+- **The build checks what it renders.** It refuses a block it does not support, a link to a heading no page has, and a link to a repository path that does not exist; three new entries in `design/mutants.mjs` hold it to that. The link check now covers every link of every page, the rethink page's included. A link to a file that is not a page goes to the repository on GitHub.
+- **So a change to any of these documents changes `out/`.** CI fails when the committed pages differ from a rebuild: run `node design/build.mjs` with every edit to the roadmap, the decisions, the changelog or a note.
+- **The rethink page.** Twelve ledger entries for the rulings of 2026-11-13 to 2026-11-21 (declared keys, the anchor, edges, the payload reading, the result codec, the cut, a tick's inputs, the window, an emit against a base, step 2 closed, which choices come to Kyle), with the tick record entered as proposed. About forty passages that called something unbuilt or open are corrected, and the Resolution tab opens with what is ruled since its text was written. Passages that only TK1 to TK9 would change are left until he rules.
+- **The grammar page.** The record's entry states the payload reading; `emit`, `test` and `group` are current; the tick's entry says its record is proposed.
+
+A Codex worker wrote the fifth page and the coordinator reviewed it; the coordinator wrote the rethink and grammar changes, from a list of stale passages that a search agent drew up and that was checked passage by passage.
 
 ### `loops emit` copies `occurred`
 

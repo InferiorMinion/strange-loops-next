@@ -108,7 +108,7 @@
     <tbody>
       <tr><td><b>Hash the payload separately, salted, per payload</b></td><td>Ids, ticks and what they cover survive erasure. A secret salt makes offline guesses harder while the opening remains withheld.</td></tr>
       <tr><td><b>One envelope field, <code>erases</code></b>, on a record signed by a steward, per store</td><td>a visible gap, not a broken reference</td></tr>
-      <tr><td><b>Tick results reference, don't copy</b></td><td>nothing inside ticks needs chasing</td></tr>
+      <tr><td><b>Tick results reference, don't copy</b></td><td>a listed id needs no chasing. Group names and sums are read from payloads, so erasing a record means erasing the ticks that cover it</td></tr>
       <tr><td><b>The envelope is permanent</b></td><td>personal identifiers go behind opaque anchors, never natural keys in <code>about</code></td></tr>
     </tbody>
   </table></div>

@@ -8,7 +8,7 @@
       <tbody>
         <tr><td><b>record</b></td><td>The unit of everything: an envelope, a payload and a signature, named by a content hash. An observation, never a statement of truth.</td></tr>
         <tr><td><b>emit</b></td><td>To write a record. One of the two write verbs; the other is <i>tick</i>.</td></tr>
-        <tr><td><b>envelope</b></td><td>The fields the core reads: <code>kind</code>, <code>observer</code>, <code>emitted</code>, <code>occurred</code>, <code>about</code>, <code>of</code>, <code>prev</code>, <code>under</code>, <code>erases</code>. A field belongs here only if the core reads it.</td></tr>
+        <tr><td><b>envelope</b></td><td>The fields the core reads: <code>kind</code>, <code>observer</code>, <code>emitted</code>, <code>occurred</code>, <code>about</code>, <code>of</code>, <code>prev</code>, <code>under</code>, <code>erases</code>, <code>sets</code>. A field belongs here only if the core reads it.</td></tr>
         <tr><td><b>payload</b></td><td>Everything else. The core never interprets it; folds read typed fields from it.</td></tr>
         <tr><td><b>kind</b></td><td>A record's label. It stays a label, not a type; declarations describe it.</td></tr>
         <tr><td><b>observer</b></td><td>Whoever says "I saw": a lineage id on every record. A collector is an observer reporting hearsay.</td></tr>
@@ -35,7 +35,7 @@
         <tr><td><b>name · name table · <code>@home</code></b></td><td>Names resolve at read through name tables and never take part in matching. <code>@home</code> is the table your realm starts from.</td></tr>
         <tr><td><b>same-as · dispute</b></td><td>The two identity kinds: these are one thing, or they are not.</td></tr>
         <tr><td><b>resolve-by</b></td><td>How a vertex joins identities: it folds same-as and dispute records into classes.</td></tr>
-        <tr><td><b>facet</b></td><td>One kind about one thing, emitted whole; the current state is the latest per kind.</td></tr>
+        <tr><td><b>facet</b></td><td>One kind of one thing, emitted whole; the current state is the latest per kind. Proposed. As built, a thing's fields are read by the keys its records declare in <code>sets</code>.</td></tr>
       </tbody>
     </table></div>
 
@@ -46,7 +46,7 @@
         <tr><td><b>store</b></td><td>A set of records with its own anchor and declarations. It holds records; it owns no meaning.</td></tr>
         <tr><td><b>declaration · maturity</b></td><td>Records in a store describing its kinds, writers and policy. A store matures from open to declared to strict.</td></tr>
         <tr><td><b>vertex</b></td><td>A standing question over stores: it selects, folds and ticks, and its ticks feed higher vertices. Where loops meet, which nothing else names, so it keeps its word from the original vocabulary.</td></tr>
-        <tr><td><b>spec</b></td><td>A vertex's definition: inputs, folds, a boundary. One spec can be instantiated as several vertices, each named by the hash of the spec and its parameters. Written as JSON, stored as a record of kind <code>vertex</code>; its <code>note</code> explains it and stays out of the input key.</td></tr>
+        <tr><td><b>spec</b></td><td>A vertex's definition: inputs, folds, a boundary. One spec can be instantiated as several vertices, each named by the hash of the spec and its parameters. Written as JSON: today a file in <code>.loops/vertices/</code>, by the plan a record of kind <code>vertex</code>; its <code>note</code> explains it and stays out of the input key.</td></tr>
         <tr><td><b>fold</b></td><td>Turning a set of records into state, with one of six: Count, Sum, Min, Max, LatestBy, Collect. Accumulating folds are commutative; folds over heads follow <code>prev</code>. LatestBy always does, and Count, Sum, Min, Max and Collect do when the slot says <code>"follow": "prev"</code>. With <code>"follow": "keys"</code> a slot reads each thing by its live setters, the records nothing above replaces for a key: LatestBy gives each thing's keyed state, and Count, Sum, Min, Max and Collect read things. Latest, TopN and Window are proposed modifiers; Avg is left to the lens.</td></tr>
         <tr><td><b>head</b></td><td>A record no record of the same thing names in <code>prev</code>: a thing's current record. A thing with several heads is forked, shown as a conflict. Heads are worked out from envelopes alone, over everything the reader holds.</td></tr>
         <tr><td><b>content order</b></td><td>How a fold decides which record wins: taken from what records carry, never from arrival. No fold needs records read in this order.</td></tr>
@@ -54,7 +54,7 @@
         <tr><td><b>boundary · marker</b></td><td>When a vertex ticks. A marker is a record whose arrival is that moment.</td></tr>
         <tr><td><b>tick</b></td><td>A vertex's result at a moment, covering exactly the records it folded. Also the verb: a vertex ticks at each boundary. A <b>content tick</b> is a value a holder of its inputs can recompute. Its id covers its vertex, covers and result. When cited or sent, its writer stores and signs a record of kind <code>tick</code>. A <b>witness tick</b> is such a record saying what the runner had.</td></tr>
         <tr><td><b>covers</b></td><td>The records a tick folded, listed exactly; also its field, <code>covers=(…)</code>.</td></tr>
-        <tr><td><b>as of</b></td><td>The cut a fold is taken at, for either time. Always an input, never the clock.</td></tr>
+        <tr><td><b>as of</b></td><td>The cut a tick's records are chosen at. As of T by <code>emitted</code> is the records emitted by T and everything they build on. The <code>occurred</code> side is a window, a <code>where</code> applied after the heads. Always an input, never the clock.</td></tr>
       </tbody>
     </table></div>
 
@@ -108,10 +108,10 @@
         <tr><td><b>Realm</b></td><td>Package <code>loops</code>'s handle on the stores you can read. Reads span all of them; writes name one store. <code>Narrow</code> restricts it to a grant.</td></tr>
         <tr><td><b>Draft</b></td><td>A record before it is signed.</td></tr>
         <tr><td><b>State</b></td><td>What a fold returns.</td></tr>
-        <tr><td><b>AsOf</b></td><td>The cut, for both times.</td></tr>
+        <tr><td><b>AsOf</b></td><td>The cut a set is chosen at. No fold takes it as a parameter.</td></tr>
         <tr><td><b>Checkpoint</b></td><td>A place's segment list as last seen. What's new since it is how watching works. Not "cursor": the editor already owns that word.</td></tr>
         <tr><td><b>Signer</b></td><td>The trait for anything that signs: a key in a file, the keychain, a hardware key.</td></tr>
-        <tr><td><b>Place</b></td><td>The trait for storage: list, get by id, what's new since a checkpoint, a blob by hash. <code>loops-dir</code> is the one built in.</td></tr>
+        <tr><td><b>Place</b></td><td>The trait for storage: list, get by id, what's new since a checkpoint, a blob by hash. <code>loops-place</code>, a directory of JSONL segments, is the one built.</td></tr>
         <tr><td><b>Lens</b></td><td>The trait for render and parse; the core does the diff.</td></tr>
         <tr><td><b>Refusal</b></td><td>An error with a code from a closed set, and the field it concerns.</td></tr>
       </tbody>

@@ -19,8 +19,8 @@ The long design notes are in [notes/](notes/).
 | `vectors/` | Model-written protocol fixtures and independent standards data. Every implementation checks all families. |
 | `protocol/` | the normative prose; [`protocol/record.md`](protocol/record.md) is layer 0, [`protocol/spec.md`](protocol/spec.md) the spec's grammar, [`protocol/lens.md`](protocol/lens.md) the lens contract, [`protocol/laws.md`](protocol/laws.md) indexes each law, its theorem and its vectors |
 | `interop/js/` | Independent JS writer (`loops.mjs`) and readers. Reader modules: `fold`, `where`, `spec`, `realm`, `scenario`, `lens`, `batch`. |
-| `design/` | Page sources. `rethink/` holds the design and ledger. `grammar/` holds words and the walk. `laws/` holds law metadata. `evidence/` shows evidence. `build.mjs` renders all four. |
-| `out/rethink/`, `out/grammar/`, `out/laws/`, `out/evidence/` | the pages, written by `node design/build.mjs`, never by hand |
+| `design/` | Page sources. `rethink/` holds the design and ledger. `grammar/` holds words and the walk. `laws/` holds law metadata. `evidence/` shows evidence. `decisions/` renders the working documents. `build.mjs` renders all five. |
+| `out/rethink/`, `out/grammar/`, `out/laws/`, `out/evidence/`, `out/decisions/` | the pages, written by `node design/build.mjs`, never by hand |
 
 `rust/` contains the implemented pure core and fixture evaluator; see [`rust/PORTING.md`](rust/PORTING.md).
 It also holds the first product slice: a directory place and the `loops` CLI, for one person; see [`rust/PLACE.md`](rust/PLACE.md).
@@ -60,8 +60,8 @@ Shared files are `styles.css`, `app.js`, `head.html` and `top.html`. Edit those,
 node design/build.mjs       # writes out/rethink/index.html; commit it with the source
 ```
 
-Three more pages share a shell (`design/page.mjs`, `design/register.css`) and
-read the protocol through `design/protocol.mjs`:
+Four more pages share a shell (`design/page.mjs`, `design/register.css`).
+Grammar, laws and evidence read the protocol through `design/protocol.mjs`.
 
 * `design/grammar/`: the protocol's nouns, verbs and layers. `words.json` holds its words.
   The build refuses unknown law names and refusal codes that differ from vector metadata. Its walk is `vectors/scenario/01-decision`, which the model
@@ -90,6 +90,8 @@ read the protocol through `design/protocol.mjs`:
   The page also shows a coverage table and proof map, laid out by `design/evidence/layout.mjs`.
   Law cards share anchors (`#law-<name>`) across pages.
   The build rejects links between these pages without matching anchors.
+* `design/decisions/` renders the decisions, roadmap, changelog and every Markdown file in `notes/`.
+  The build checks repository paths and links to headings in the generated pages.
 
 `node design/mutants.mjs` applies plausible wrong edits to source copies.
 It requires build refusal except for an explicit, shrink-only survivor list with reasons. CI runs
@@ -97,7 +99,7 @@ it.
 
 The grammar and laws pages load Motion, a pinned CDN library.
 They publish only at `/strange-loops/grammar/` and `/strange-loops/laws/`, without artifact mirrors.
-The evidence page publishes at `/strange-loops/evidence/` when the site sync carries it.
+The site sync publishes evidence at `/strange-loops/evidence/` and the working documents at `/strange-loops/decisions/`.
 
 CI rebuilds every page and fails if `out/` differs, as with the vectors. To publish:
 

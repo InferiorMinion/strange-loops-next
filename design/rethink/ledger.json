@@ -11,7 +11,7 @@
     "group": "Foundations",
     "status": "settled",
     "claim": "Rust, in a new <code>strange-loops</code> repo.",
-    "why": "Historical plan: a core crate, a CLI crate, and adjacent Lean model, vectors and scenarios enforce budgets. Version 31 chose Rust for phones and browser extensions. Version 35 removed the Go core (PR 6) while model boundaries were reviewed. Rust is now implemented in <code>rust/</code>, with a pure core and a fixture evaluator. JS and Rust check all protocol fixture families and external standards. Product CLI, storage and budget tooling remain planned. The proposed <code>.loops/</code> migration remains a collector in the old repo."
+    "why": "Historical plan: a core crate, a CLI crate, and adjacent Lean model, vectors and scenarios enforce budgets. Version 31 chose Rust for phones and browser extensions. Version 35 removed the Go core (PR 6) while model boundaries were reviewed. Rust is now implemented in <code>rust/</code>, with a pure core and a fixture evaluator. JS and Rust check all protocol fixture families and external standards. The <code>loops</code> CLI and its storage over <code>.loops/</code> are built (step 2, closed on 2026-11-20); budget tooling remains planned. The proposed <code>.loops/</code> migration remains a collector in the old repo."
   },
   {
     "kind": "decision",
@@ -123,7 +123,7 @@
     "group": "Layer 0 · the record",
     "status": "settled",
     "claim": "A field belongs on the envelope only if the core reads it.",
-    "why": "The envelope holds <code>kind</code>, <code>observer</code>, <code>emitted</code>, optional <code>occurred</code>, <code>about</code>, <code>of</code>, <code>prev</code>, <code>under</code> and <code>erases</code>. <code>derived-from</code>, <code>seen</code> and <code>refs</code> belong in payloads. Readers refuse unknown envelope fields."
+    "why": "The envelope holds <code>kind</code>, <code>observer</code>, <code>emitted</code>, optional <code>occurred</code>, <code>about</code>, <code>of</code>, <code>prev</code>, <code>under</code>, <code>erases</code> and <code>sets</code>. <code>derived-from</code>, <code>seen</code> and <code>refs</code> belong in payloads. Readers refuse unknown envelope fields."
   },
   {
     "kind": "decision",
@@ -152,6 +152,13 @@
     "status": "settled",
     "claim": "One checked write path, and what it returns carries the proof.",
     "why": "<code>write</code> checks the envelope, salt length, repeated members at any depth, then nonfinite numbers or any number outside ±(2<sup>53</sup>−1), whole or not. Within-range fractions pass. A batch uses the same path, with refusal priority independent of draft order and <code>prev</code> order. It returns a <code>Written</code> record carrying the proof, including distinct member names. Version 35 (PR 7), with the final 13:25 writer-range ruling."
+  },
+  {
+    "kind": "decision",
+    "group": "Layer 0 · the record",
+    "status": "settled",
+    "claim": "A fold reads a payload by one stated rule, and no field name is special.",
+    "why": "A held payload that is an object supplies its top-level members as fields; any other value supplies none. <code>present</code> means the member was written, also when it holds <code>null</code>, <code>{}</code>, <code>[]</code> or <code>\"\"</code>. A list reads as a set of its members under <code>is</code>, <code>not</code> and <code>by</code>, and is never a number. Nothing reads inside a nested object. <code>value</code> and <code>n</code> were once on every record, as empty text and 0; they are now fields like any other, so a record without <code>n</code> is unread to a sum of <code>n</code>. Ruled on 2026-11-21 (payload values, seven choices) and stated in the model as <code>payload.read</code>. Version 36."
   },
   {
     "kind": "decision",
@@ -193,7 +200,7 @@
     "group": "Things",
     "status": "settled",
     "claim": "D8b: <code>about</code> only mentions; it never makes a head.",
-    "why": "<code>where</code> and <code>collect</code> still read it, so everything said about a thing stays a fold. <code>from.about</code> is a mention test and <code>from.of</code> takes a thing's records. A link is a thing whose <code>about</code> names both ends. Kyle, 2026-11-10; built with D8a. D8c, keys a record declares it sets, is ruled; its envelope field <code>sets</code> is built, and so are latest-by, count, sum, min, max and collect following <code>keys</code>; the keyed slice laws are not."
+    "why": "<code>where</code> and <code>collect</code> still read it, so everything said about a thing stays a fold. <code>from.about</code> is a mention test and <code>from.of</code> takes a thing's records. A link that many writers add to and remove is a thing of its own whose <code>about</code> names both ends (the edges ruling below). Kyle, 2026-11-10; built with D8a. D8c, keys a record declares it sets, is ruled and built: its envelope field <code>sets</code>, every fold type following <code>keys</code>, and the keyed slice laws."
   },
   {
     "kind": "decision",
@@ -207,7 +214,7 @@
     "group": "Things",
     "status": "settled",
     "claim": "A facet is one kind of one thing, emitted whole.",
-    "why": "Current state is LatestBy per thing; <code>from</code> then chooses kinds. <code>prev</code> is a set, so forks retain several heads. Links are new records, never edits to <code>about</code>. A record is of exactly one thing: the one <code>of</code> names, or without <code>of</code> its own id. A root, with no <code>of</code> and no <code>prev</code>, starts a thing named by its id; its revision states that id in <code>of</code>, so unrelated roots never fork each other. Version 35; restated by D8a."
+    "why": "Current state is LatestBy per thing; <code>from</code> then chooses kinds. Since D8c (below) a thing's fields are read key by key from the keys each record declares, so an update no longer has to restate the whole; a facet read by kind remains a proposal. <code>prev</code> is a set, so forks retain several heads. Links are new records, never edits to <code>about</code>. A record is of exactly one thing: the one <code>of</code> names, or without <code>of</code> its own id. A root, with no <code>of</code> and no <code>prev</code>, starts a thing named by its id; its revision states that id in <code>of</code>, so unrelated roots never fork each other. Version 35; restated by D8a."
   },
   {
     "kind": "decision",
@@ -215,6 +222,27 @@
     "status": "settled",
     "claim": "<code>prev</code> is succession within a thing.",
     "why": "Within a fixed admitted set, succession affects only its own thing. Writers refuse unheld <code>prev</code> targets outside the batch (<code>prev-unknown</code>), an <code>of</code> naming a held record that is not a root (<code>of-not-root</code>), and targets of another thing (<code>prev-unrelated</code>). Readers reject held targets of another thing, but admit unknown targets because they cannot judge them. Planned moving or narrowing uses explicit <code>retire</code> records. Replacement rules read only envelopes; future standing supplies authority. Version 34; restated by D8a."
+  },
+  {
+    "kind": "decision",
+    "group": "Things",
+    "status": "settled",
+    "claim": "D8c: a record declares the keys it sets, and a keyed thing is read key by key.",
+    "why": "The envelope field <code>sets</code> names the top-level payload keys a record sets; without it the record is read whole. A slot that follows <code>keys</code> reads each key from its live setters: the records that set it and that no later setter of it replaced. So an emit of <code>status</code> alone no longer drops <code>title</code>. Two live setters that disagree show as a conflict, and the core picks no winner. The envelope of a keyed thing is read from its heads. Ruled on 2026-11-13 and 2026-11-14, and built in the model and both implementations. Version 36."
+  },
+  {
+    "kind": "decision",
+    "group": "Things",
+    "status": "settled",
+    "claim": "A writer's tool names every live record of the thing it writes.",
+    "why": "When every emit names every live record under it, the live records of a thing, read alone, give its whole keyed state (<code>keyed.anchored</code>), so a reader can hold a slice and not the history. <code>loops emit</code> fills this in. It also copies the heads' <code>about</code> and, since 2026-11-21, their <code>occurred</code> when they agree: an update to a thing that occurred in 2009 stays in 2009 unless its writer states a new occurrence. The protocol infers none of it: each is written into the envelope at write time, and a changeset (<code>emit -</code>) states its own. Version 36."
+  },
+  {
+    "kind": "decision",
+    "group": "Things",
+    "status": "settled",
+    "claim": "Edges need no change to the envelope.",
+    "why": "Three classes. A reference with one value is a scalar payload field, and two writers who disagree on it are a real conflict. A set that one observer asserts whole is a payload list, read as a set. An open edge that many writers add to and remove from is one thing per edge: a record of its own whose payload holds <code>rel</code>, <code>from</code>, <code>to</code> and <code>state</code>, and whose <code>about</code> mentions both ends. Labelled <code>about</code> was rejected: it would fork on two concurrent adds and still could not hold an edge's attributes. Ruled on 2026-11-21. Version 36."
   },
   {
     "kind": "decision",
@@ -228,14 +256,14 @@
     "group": "Meaning · vertices and stores",
     "status": "settled",
     "claim": "Specs are JSON, stored as records.",
-    "why": "<code>protocol/spec.md</code> is normative; <code>protocol/schema.md</code> and JSON Schema files do not exist. The storage plan uses <code>vertex</code> records and <code>note</code> comments. Parameterized templates remain proposed. The core accepts supported specs as data. Every accepted spec has at least one source; absent or empty <code>from</code> fails with <code>from-missing</code>."
+    "why": "<code>protocol/spec.md</code> is normative; <code>protocol/schema.md</code> and JSON Schema files do not exist. Today a spec is a file, <code>.loops/vertices/&lt;name&gt;.json</code>. The storage plan uses <code>vertex</code> records and <code>note</code> comments. Parameterized templates remain proposed. The core accepts supported specs as data. Every accepted spec has at least one source; absent or empty <code>from</code> fails with <code>from-missing</code>."
   },
   {
     "kind": "decision",
     "group": "Meaning · vertices and stores",
     "status": "settled",
     "claim": "Six folds in two families, plus modifiers.",
-    "why": "Count, Sum, Min, Max, LatestBy and Collect form the supported fold vocabulary. Supported modifiers follow <code>protocol/spec.md</code>. <code>by</code> groups count, sum, min, max and collect by an envelope field, a typed-reference prefix of <code>about</code> (<code>env.about:&lt;prefix&gt;</code>) or a payload field. Historical proposals include <code>order</code>, set mode, windows and ranking-only <code>weight-by</code>; they are not implemented grammar. The proposed Avg lens divides Sum by Count. With each input id supplied once, commuting accumulators and over-head folds obey their set laws. Incremental over-head evaluation needs cached LatestBy state, not merely a cached answer. Max's scalar state cannot track changing heads; this proves no impossibility for all bounded-state algorithms. JS and Rust sums use unbounded integers. Future bounded ports must refuse overflow. Version 32."
+    "why": "Count, Sum, Min, Max, LatestBy and Collect form the supported fold vocabulary. Supported modifiers follow <code>protocol/spec.md</code>. <code>by</code> groups count, sum, min, max and collect by an envelope field, a typed-reference prefix of <code>about</code> (<code>env.about:&lt;prefix&gt;</code>) or a payload field. Historical proposals include <code>order</code>, set mode, windows and ranking-only <code>weight-by</code>; they are not implemented grammar. The proposed Avg lens divides Sum by Count. With each input id supplied once, commuting accumulators and over-head folds obey their set laws. Incremental over-head evaluation needs cached LatestBy state, not merely a cached answer. Max's scalar state cannot track changing heads; this proves no impossibility for all bounded-state algorithms. The Rust sum is unbounded. The JavaScript sum is exact to a signed 128-bit total; that limit was found on 2026-11-21 and is on the roadmap to remove or state. Future bounded ports must refuse overflow. Version 32."
   },
   {
     "kind": "decision",
@@ -249,21 +277,21 @@
     "group": "Meaning · vertices and stores",
     "status": "settled",
     "claim": "<code>where</code> can test any envelope field, named explicitly.",
-    "why": "Envelope tests use <code>env.kind</code>, <code>env.observer</code>, <code>env.emitted</code>, <code>env.occurred</code>, <code>env.about</code>, <code>env.of</code>, <code>env.prev</code>, <code>env.under</code> and <code>env.erases</code>. Bare names identify payload fields. Unknown <code>env.</code> names are refused. Arguments must fit their fields: typed references, record ids, times, or supported payload scalars. Numeric tests require safe whole values after binary64 ingestion. Numeric complement laws additionally require a numeric bound. Missing and nonwhole values need not pass either bound. Time equality compares spans, not spelling; time bounds compare starts. Envelope tests select after supersession. A record without <code>occurred</code> passes neither time bound. The future window plan instead uses its <code>emitted</code>. Windows include starts at their lower bound and exclude starts at their upper bound. The supersession policy within windows remains open. Filtering before supersession could revive replaced records. Whole-span bounds were rejected: January ends before its year despite their equal starts. Observer tests use lineage ids until name tables arrive. Specs refuse repeated keys and empty <code>where</code> maps. Latest-by explicitly requires <code>\"follow\": \"prev\"</code>. Version 35."
+    "why": "Envelope tests use <code>env.kind</code>, <code>env.observer</code>, <code>env.emitted</code>, <code>env.occurred</code>, <code>env.about</code>, <code>env.of</code>, <code>env.prev</code>, <code>env.under</code> and <code>env.erases</code>. Bare names identify payload fields. Unknown <code>env.</code> names are refused. Arguments must fit their fields: typed references, record ids, times, or supported payload scalars. Numeric tests require safe whole values after binary64 ingestion. Numeric complement laws additionally require a numeric bound. Missing and nonwhole values need not pass either bound. Time equality compares spans, not spelling; time bounds compare starts. Envelope tests select after supersession. A record without <code>occurred</code> passes neither time bound. A window instead uses its <code>emitted</code>. Windows include starts at their lower bound and exclude starts at their upper bound. Ruled on 2026-11-20: a window is a <code>where</code> on that time, applied after the heads (under Resolution, below); it is not built. Filtering before supersession could revive replaced records. Whole-span bounds were rejected: January ends before its year despite their equal starts. Observer tests use lineage ids until name tables arrive. Specs refuse repeated keys and empty <code>where</code> maps. Latest-by always writes <code>follow</code>: <code>\"prev\"</code> or <code>\"keys\"</code>. Version 35."
   },
   {
     "kind": "decision",
     "group": "Meaning · vertices and stores",
     "status": "settled",
     "claim": "<code>unread</code> counts what couldn't be read.",
-    "why": "A covered record is unread when its payload test is unknown or its selected numeric fold cannot read a safe whole field. Count each id once per slot. Collect counts unknown candidates before its limit. Full-result equality needs answering tests and fold-readable covered records. Historical version 35 counted only uncertainty affecting the limit and overclaimed <code>unread: 0</code>. PR 13 removed those claims. A stronger limit-sensitive guarantee remains future work, not a current theorem."
+    "why": "A covered record is unread when its payload test is unknown or its selected numeric fold cannot read a safe whole field. Count each id once per slot, or each unread thing once for a slot that follows <code>keys</code>. Collect counts unknown candidates before its limit. Full-result equality needs answering tests and fold-readable covered records. Historical version 35 counted only uncertainty affecting the limit and overclaimed <code>unread: 0</code>. PR 13 removed those claims. A stronger limit-sensitive guarantee remains future work, not a current theorem."
   },
   {
     "kind": "decision",
     "group": "Meaning · vertices and stores",
     "status": "settled",
     "claim": "Supersession runs over everything held; selection comes after.",
-    "why": "Each thing's state uses its records from the fixed admitted set, before vertex selection. <code>from</code>, envelope tests and payload tests then choose among heads. Selecting first could revive a record superseded by another kind, an excluded source, a failed filter or a withheld successor. Count and sum include selected history, even when superseded. Found while modelling the spec (versions 33 and 34)."
+    "why": "Each thing's state uses its records from the fixed admitted set, before vertex selection. <code>from</code>, envelope tests and payload tests then choose among heads. Selecting first could revive a record superseded by another kind, an excluded source, a failed filter or a withheld successor. Without <code>follow</code>, count and sum include selected history, even when superseded; following <code>prev</code> they read the heads, and following <code>keys</code> the things. Found while modelling the spec (versions 33 and 34)."
   },
   {
     "kind": "decision",
@@ -277,7 +305,7 @@
     "group": "Resolution · ticks",
     "status": "settled",
     "claim": "Every result has two names.",
-    "why": "Future build design: results have an input key and result hash. Downstream keys use result hashes, so unchanged results stop work. Incremental commuting folds need accumulator state; over-head folds need LatestBy state. Cached result values alone are insufficient."
+    "why": "Results have an input key and a result hash. The result hash is built (<code>res:</code>, below). The input key is ruled in part, in that it names which covered records were read open, and is not built. Downstream keys use result hashes, so unchanged results stop work. Incremental commuting folds need accumulator state; over-head folds need LatestBy state. Cached result values alone are insufficient."
   },
   {
     "kind": "decision",
@@ -285,6 +313,41 @@
     "status": "leaning",
     "claim": "State references form a DAG; ticks may loop.",
     "why": "Future state references form an acyclic dependency graph. Tick feedback crosses explicit recorded steps. Hygiene vertices would expose drift and self-reinforcing salience. Reference, boundary and tick transitions still need models and proofs."
+  },
+  {
+    "kind": "decision",
+    "group": "Resolution · ticks",
+    "status": "settled",
+    "claim": "A result has canonical bytes, and a hash of its own spelled <code>res:</code>.",
+    "why": "The codec writes every slot of a vertex's result as one JCS object. An integer is decimal text, so a sum past 2<sup>53</sup> keeps every digit. A listed record is its id alone, without what the reader holds of it, so a reader who holds a payload and one who had it erased write the same bytes wherever they list the same ids. No tag is needed: position alone tells an integer from text. The hash is <code>res:</code> and base32hex of SHA-256 over a versioned label and those bytes; it cannot be a record's commitment, which is <code>h:</code>. Ruled on 2026-11-11, 2026-11-20 and 2026-11-21; built, with vectors. Version 36."
+  },
+  {
+    "kind": "decision",
+    "group": "Resolution · ticks",
+    "status": "settled",
+    "claim": "A cut is a part closed downward, and \"as of T\" is everything the records emitted by T build on.",
+    "why": "<code>emitted</code> is the writer's claim, so a record can build on one with a later <code>emitted</code>. The records emitted by T can then hold a record without what it was written on, and read a state no holder could have read: 96 of 3,504 cuts did, with clocks an hour apart. A part closed downward over <code>prev</code> is a state the store could have been in. \"As of T\" takes the records emitted by T and everything they reach through <code>prev</code>. It changes no record, no writer and no refusal. Ruled on 2026-11-20; the laws are <code>keyed.cut</code> and <code>cut.prefix</code>. Version 36."
+  },
+  {
+    "kind": "decision",
+    "group": "Resolution · ticks",
+    "status": "settled",
+    "claim": "A content tick folds a set named outright, and says which covered records it read open.",
+    "why": "<code>covers</code> lists ids. <code>emitted</code> is one way to choose them and never a parameter of a fold, so no fold changed. What a store held at a time is not a fold's parameter either: nothing in a record says when it arrived, so only a witness tick taken then can answer. A holder before an erasure and one after it compute different results for the same ids wherever a value reads a payload, so a tick's inputs name which covered records were read open, and one set of inputs never names two results. Ruled on 2026-11-20. Version 36."
+  },
+  {
+    "kind": "decision",
+    "group": "Resolution · ticks",
+    "status": "settled",
+    "claim": "A window is a <code>where</code>, applied after the heads.",
+    "why": "A window tests the time content order already uses: a record's <code>occurred</code> when it states one, its <code>emitted</code> when it does not. Taking the window first, then folding, showed as current a record that a revision had moved out of the window in 428 of 660 trials. So a window is not a second mechanism beside <code>where</code>. Ruled on 2026-11-20; the field's name is not chosen (<code>env.when</code> is proposed), and it is not built. Version 36."
+  },
+  {
+    "kind": "decision",
+    "group": "Resolution · ticks",
+    "status": "leaning",
+    "claim": "The tick record is an ordinary record whose payload is the whole tick.",
+    "why": "Proposed on 2026-11-21 and not ruled (<a href=\"../decisions/#the-tick-record\">TK1 to TK9</a>). The payload holds the spec and its hash, <code>covers</code>, the covered records read without a payload, and the result with its hash. A tick among the covered records is one record, never opened up. A store admits a tick without checking it; a verb checks, and answers same, differs or cannot check. This would replace \"a content tick hashes its vertex, covered ids and result\" above: a tick would have no id but its record id. Version 36."
   },
   {
     "kind": "decision",
@@ -337,6 +400,13 @@
   },
   {
     "kind": "decision",
+    "group": "Lenses and context",
+    "status": "settled",
+    "claim": "An emit may state a base, and then it names what was live in that base.",
+    "why": "<code>loops emit</code> names every live record the store holds now. A writer who read earlier, a lens applying an edit or an agent acting on a context it was given, then replaces a setter it never read, and nothing shows it: 2,975 of 10,127 keys in the experiment. Against a stated base, a tick or ids, the same emit leaves a visible conflict instead. With no base an emit claims its writer read everything the store holds. Ruled on 2026-11-20; not built. Whether a strict store warns or fails on such an emit is left for standing. Version 36."
+  },
+  {
+    "kind": "decision",
     "group": "The local API and its surfaces",
     "status": "settled",
     "claim": "One API under every surface.",
@@ -354,7 +424,7 @@
     "group": "The local API and its surfaces",
     "status": "settled",
     "claim": "The CLI is verb first, with the API's verbs.",
-    "why": "Proposed CLI: HTTPie-style payload syntax and JSON shared with serve. It has no zoom flags. Core batches already check labels; product atomic storage remains planned."
+    "why": "The <code>loops</code> CLI is built for one person (step 2): HTTPie-style payload syntax, JSON answers, no zoom flags. A changeset is written whole or not at all. <code>serve</code> and the API beside it remain proposed."
   },
   {
     "kind": "decision",
@@ -396,6 +466,20 @@
     "group": "Building",
     "status": "settled",
     "claim": "The design page is built from the repo.",
-    "why": "Its sections are HTML and its ledger is these records, in <code>design/rethink/</code>. <code>node design/build.mjs</code> renders the page, CI checks the render, projects.gruel.world serves it unlisted, and the claude.ai artifact is a mirror. Once <code>.loops/</code> exists, the ledger is read from it. Version 35."
+    "why": "Its sections are HTML and its ledger is these records, in <code>design/rethink/</code>. <code>node design/build.mjs</code> renders the page, CI checks the render, projects.gruel.world serves it unlisted, and the claude.ai artifact is a mirror. <code>.loops/</code> exists since step 2; the ledger still builds from <code>ledger.json</code>, and <code>ledger-drafts.mjs</code> turns it into drafts for <code>loops emit -</code>. Version 35."
+  },
+  {
+    "kind": "decision",
+    "group": "Building",
+    "status": "settled",
+    "claim": "Step 2 is closed: <code>loops</code> emits, reads and folds for one person.",
+    "why": "Signed records over <code>.loops/</code>, one key, one store. A verb that answers from a store that does not check still answers, and is then refused <code>store-not-clean</code>. Kyle closed the step on 2026-11-20. Ticks are step 4 and come next; standing and sharing follow. Version 36."
+  },
+  {
+    "kind": "decision",
+    "group": "Building",
+    "status": "settled",
+    "claim": "Only a choice that changes bytes or answers comes to Kyle.",
+    "why": "A choice that changes a record's bytes or id, a result's bytes or hash, a refusal code, or what a spec answers is his, and is asked with a worked example. Every other implementer choice is written in the changelog and stands unless he objects. What is next, what waits on him and what was built are three documents, <code>ROADMAP.md</code>, <code>DECISIONS.md</code> and <code>CHANGELOG.md</code>, and <a href=\"../decisions/\">the Decisions page</a> renders them. Ruled on 2026-11-21. Version 36."
   }
 ]

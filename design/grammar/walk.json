@@ -56,7 +56,7 @@
     {
       "name": "tick",
       "title": "Tick",
-      "text": "At a boundary the vertex ticks: its result, covering exactly the five records it folded. Anyone holding them works out the same tick, so it can be cited. Ticks are settled, not built yet: the state shown is the model's, the tick around it is not.",
+      "text": "At a boundary the vertex ticks: its result, covering exactly the five records it folded. Anyone holding them works out the same tick, so it can be cited. The result and its hash are built; the tick record around them is proposed and not built: the state shown is the model's, the tick around it is not.",
       "laws": [],
       "settled": true,
       "tick": true

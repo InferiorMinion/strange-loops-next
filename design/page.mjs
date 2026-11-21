@@ -17,6 +17,7 @@ export const PAGES = [
   { id: "grammar", name: "Grammar" },
   { id: "laws", name: "Laws" },
   { id: "evidence", name: "Evidence" },
+  { id: "decisions", name: "Decisions" },
 ];
 
 export function header(current, sections) {
@@ -25,10 +26,10 @@ export function header(current, sections) {
   const seg = sections.map(([id, name]) => `<a href="#${id}">${name}</a>`).join("");
   return `<header class="top">
   <div class="wrap top-row">
-    <p class="mark"><a href="../rethink/">Strange Loops</a>${pages}</p>
+    <p class="mark"><a href="../rethink/">Strange Loops</a>${pages}</p>${seg ? `
     <nav class="seg" aria-label="Sections">
       ${seg}
-    </nav>
+    </nav>` : ""}
   </div>
 </header>
 `;
