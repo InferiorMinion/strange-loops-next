@@ -18,7 +18,7 @@ Everything that waits on Kyle, in one place. Each entry has the question, an exa
 | [W5](#w5-the-mutant-check-on-every-merge-request) | The mutant check on every merge request, and new mutants for step 4 | Keep (measured: under five minutes on the largest model change); add step 4's mutants after its exit | Nothing |
 | [W6](#w6-generated-pages-in-the-repository) | Generated pages in the repository | Keep | Nothing |
 
-None of these blocks the build that is under way (payload values, and the result hash's prefix). W3, W4 and W5 are wanted before the tick record is built.
+Nothing is being built that these block: the payload values and the result hash's prefix are done. W3, W4 and W5 are wanted before the tick record is built.
 Each entry now ends with Neon's comments on it (2026-11-21) and what the coordinator makes of them.
 
 After these: [what is being prepared](#being-prepared), [what you deferred](#deferred-by-you) and [what is ruled](#ruled). Nothing waits to be confirmed: under your ruling of 2026-11-21 an implementer choice comes here only when it changes bytes or answers.
