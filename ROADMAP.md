@@ -18,13 +18,13 @@ The evidence and its counts are kept where they are made: [the law index](design
 
 ## Now
 
-Nothing is being built today. The next build waits on rulings.
+Kyle ruled the payload values and the result hash's prefix on 2026-11-21, so both are being built.
 
 | Order | Work | State | Waits on |
 | --- | --- | --- | --- |
-| 1 | **Payload values.** `value` and `n` become ordinary fields; a list reads as a set; the reading from a stored payload is stated in the model. Each changes what some spec answers, so it comes before any tick pins a result hash. | Note written ([payload values](notes/2026-11-21-payload-values.md)). Nothing built. | Kyle: [PV1 to PV7](DECISIONS.md#payload-values) |
-| 2 | **The result codec's open choices,** before a tick pins its bytes. | Codec built. Choices unconfirmed. | Kyle: [RC1](DECISIONS.md#rc1-the-result-codecs-choices) |
-| 3 | **The tick record:** what a tick holds, how `covers` is stated and checked, and the input key. | The coordinator is writing the proposal. | The proposal, then Kyle ([preview](DECISIONS.md#being-prepared)) |
+| 1 | **The result hash's prefix:** `res:` in place of `h:`. | Ruled 2026-11-21. Being built. | Nothing |
+| 2 | **Payload values.** `value` and `n` become ordinary fields; a list reads as a set; the reading from a stored payload is stated in the model, with vectors. Each changes what some spec answers, so it comes before any tick pins a result hash. | Ruled 2026-11-21 ([the note](notes/2026-11-21-payload-values.md), with the examples the build must match). Being built. | Nothing |
+| 3 | **The tick record:** what a tick holds, how `covers` is stated and checked, and the input key. | The coordinator is writing the proposal. | The proposal, then Kyle ([preview](DECISIONS.md#being-prepared)); [W3, W4 and W5](DECISIONS.md#at-a-glance) before it is built |
 | 4 | **Step 4's ruled pieces** (list below). | Ruled 2026-11-20. Not built. | Some wait on the tick record |
 
 ### Step 4: ruled and not built
@@ -36,7 +36,7 @@ Each is ruled in [the cut note](notes/2026-11-15-the-cut.md); the section is in 
 - The changeset path (`emit -`) gets an option that asks for the filler (7).
 - The filler takes a base, a tick or ids, and names that base's live records (8). margins-claude holds its base lemma until this piece is briefed.
 - A CLI verb that shows a result hash.
-- The caching reader's law: a reader that caches must keep what a record with an unknown `prev` supersedes (issue #8; Kyle, 2026-11-11: step 4's first law).
+- The caching reader's law: a reader that caches must keep what a record with an unknown `prev` supersedes (issue #8; Kyle, 2026-11-11: step 4's first law). Whether it stays in step 4 is part of [W1](DECISIONS.md#w1-an-adoption-step-before-standing-and-sharing).
 
 **Step 4 is done when** a content tick recomputes to the same hash on two machines.
 Not in step 4 yet: boundaries and markers, the runner, and what verifying a deep tick tree costs.
@@ -64,7 +64,6 @@ None needs a ruling. Each is built when it is the cheapest useful thing to do.
 
 - `loops emit` takes `--` to end its options, and a verb makes a signing key without emitting (issue #11).
 - The full mutation catalogue runs over the result codec's nineteen entries.
-- Issue #10 (a strict "after" on `emitted`) is closed with no new operator, if Kyle agrees: [I10](DECISIONS.md#i10-close-issue-10).
 
 ## All steps
 

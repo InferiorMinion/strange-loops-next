@@ -1,6 +1,6 @@
 # Payload values, design note
 
-Moved here from `ROADMAP.md` on 2026-11-21, unchanged but for links. Its seven choices are open: they are in [DECISIONS.md](../DECISIONS.md) as PV1 to PV7, each with an example.
+Moved here from `ROADMAP.md` on 2026-11-21, unchanged but for links. **Ruled by Kyle on 2026-11-21: every one of the seven choices, each for the recommendation.** The rulings and his note on a list with two live setters are in [the changelog](../CHANGELOG.md) under that date. Nothing is built yet.
 
 **Draft by margins-claude, 2026-11-21, for Kyle's rulings before any tick is built.** Nothing here is built.
 Every choice that is Kyle's is marked **Open**, with a recommendation and the alternatives.
@@ -58,7 +58,7 @@ Whatever is ruled below, I recommend the step from a stored payload to a record'
 
 Under the split in use, the coordinator generates the `payload` vectors, and I look over the Lean definition of the reading, since it is the one definition all four implementations are held to.
 
-**Open choice 1.** State the reading in the model, with vectors. *Recommended: yes.*
+**Choice 1, ruled 2026-11-21 for the recommendation.** State the reading in the model, with vectors. *Recommended: yes.*
 
 ## 3. `value` and `n`
 
@@ -72,7 +72,7 @@ In Kyle's old stores no fact has a key named `value` or `n` (0 of 11,037 facts i
 
 Cost of (a), by counting and not by trying it: about 70 places in `model/` name `r.n`, `r.value` or `nNumber`; the fixture folds (`Sum.step` and its kin read `r.n` directly) become the field-reading folds that already exist beside them; every vector that holds a record is regenerated (about 150 of 633 files hold `"value"` or `"n"` members); JS, Rust and sl-py drop two special cases each. No law's statement should change, since the laws speak of `Record.num`, not of `n`. The answers that change are exactly the rows of the table above.
 
-**Open choice 2.** *Recommended: (a).* It is the larger of the two changes in this note and it is mechanical; it is cheapest now, before ticks pin result hashes over real stores.
+**Choice 2, ruled 2026-11-21 for the recommendation.** *Recommended: (a).* It is the larger of the two changes in this note and it is mechanical; it is cheapest now, before ticks pin result hashes over real stores.
 
 ## 4. A member is present when it is written
 
@@ -82,7 +82,7 @@ I recommend one rule for every kind of value: **`present` asks whether the held 
 
 The alternative is that `null` and an empty list read as absent, on the grounds that a writer means "nothing here". the envelope already took the other side for the envelope ("`null` is a value of the wrong type, not a field left out"), and under the keyed fold `loops of` shows `gone: null` as the key's value. A reader who wants "no value" can test `is` against what it wants.
 
-**Open choice 3.** `present` means written, for `null`, `{}`, `[]` and `""` alike. *Recommended: yes.*
+**Choice 3, ruled 2026-11-21 for the recommendation.** `present` means written, for `null`, `{}`, `[]` and `""` alike. *Recommended: yes.*
 
 ## 5. Lists
 
@@ -129,13 +129,13 @@ The split is Neon's (its take of 2026-11-21, section 2), and the counts from hom
 
 Most reference values are bare names with the role in the key, so bringing the old data over means choosing a kind prefix for each role. That is the import's question.
 
-**Open choice 4.** Under `is` and `not`, a list reads as a set of its members. *Recommended: yes.*
+**Choice 4, ruled 2026-11-21 for the recommendation.** Under `is` and `not`, a list reads as a set of its members. *Recommended: yes.*
 
-**Open choice 5.** `at-least` and `below` on a list: some member, or neither holds. *Recommended: neither holds.* "A list is never a number" is one rule for the comparisons and the numeric folds alike (the coordinator's point, and I agree).
+**Choice 5, ruled 2026-11-21 for the recommendation.** `at-least` and `below` on a list: some member, or neither holds. *Recommended: neither holds.* "A list is never a number" is one rule for the comparisons and the numeric folds alike (the coordinator's point, and I agree).
 
-**Open choice 6.** A list gives one group per member under `by`, amending the ruling on `by` of 2026-11-11. *Recommended: yes.* Without it the `watches` case needs `about` with the role as the prefix, which is a workaround of the kind the numbered keys were.
+**Choice 6, ruled 2026-11-21 for the recommendation.** A list gives one group per member under `by`, amending the ruling on `by` of 2026-11-11. *Recommended: yes.* Without it the `watches` case needs `about` with the role as the prefix, which is a workaround of the kind the numbered keys were.
 
-**Open choice 7.** A list is unread to the numeric folds. *Recommended: yes.*
+**Choice 7, ruled 2026-11-21 for the recommendation.** A list is unread to the numeric folds. *Recommended: yes.*
 
 ## 6. In the model
 
@@ -173,3 +173,158 @@ What moves:
 - The runs in section 1: a scratch store and `loops` built from `15c9422`, in my worktree.
 - The counts in sections 3, 5 and 7: the six SQLite stores under `~/code/gruel.network/.loops/data`, opened read-only. Only counts and key names were taken.
 - Not done: the change itself in Lean, so every cost in sections 3 and 6 is an estimate from reading and counting.
+
+## The examples the rulings were made on
+
+By the coordinator, 2026-11-21. These were the entries PV1 to PV7 in `DECISIONS.md`; Kyle ruled each for the recommendation.
+Every "today" answer was run against `loops` built from main `9460a15`. Each "with the change" answer is what the build must give, so these are its first acceptance cases.
+
+All seven use one small homelab store. Each row is one emit:
+
+| Thing | Fields |
+| --- | --- |
+| `svc:grafana` | `runs_on: "host:nuc1"`, `watches: ["svc:prometheus", "svc:loki"]` |
+| `svc:prometheus` | `runs_on: "host:nuc1"`, `watches: ["svc:node-exporter"]` |
+| `svc:loki` | `runs_on: "host:nuc2"`, `watches: []`, `notes: null`, `labels: {"tier": "infra"}` |
+| `svc:caddy` | `runs_on: "host:nuc2"`, `ports: [80, 443, 8080]`, and no `watches` |
+| `backup:nuc1` | `host: "nuc1"`, `n: 14` |
+| `backup:nuc2` | `host: "nuc2"`, `n: 9` |
+| `backup:nas` | `host: "nas"`, `status: "failed"` |
+| `backup:pi` | `host: "pi"`, `snapshots: 3` |
+| `setting:dns` | `value: "1.1.1.1"` |
+| `setting:ntp` | `value: "pool.ntp.org"` |
+| `setting:proxy` | `enabled: false` |
+
+`loops of svc:loki` shows every one of loki's fields, so the store keeps them all. The questions are about what a fold reads.
+
+### PV1: state the reading in the model
+
+**Question.** Should the model say how a stored payload becomes the fields a fold reads, with vectors that every implementation must match?
+
+**Example.** `svc:loki` holds `notes: null`. Ask "does loki have notes?" and today the answer is no.
+The rule that gave that answer, "a `null` reads as if the field were not there", is written in one Rust function (`Line::record` in `rust/place/src/line.rs`).
+The model does not state it. No vector tests it. The JavaScript implementation and margins-claude's Python one never see a stored payload.
+If rex-tools' Python, or a browser reader, read the payload its own way and answered yes, no check would notice.
+Every other step between a stored line and an answer is pinned by vectors.
+
+**Options.**
+- **Yes (recommended).** A definition in Lean and a `vectors/payload/` family: a payload in, the fields out.
+- **No.** It stays the Rust store's own choice, as [`rust/PLACE.md`](../rust/PLACE.md) choice 6 lists it today.
+
+**If yes.** A small piece on its own. PV2 to PV7 decide what the definition says.
+
+### PV2: `value` and `n` become ordinary fields
+
+**Question.** Today every record has a `value` and an `n` whether or not anyone wrote them: `value` is empty text and `n` is 0. Should they be fields like any other?
+
+**Example.** "What is the smallest number of snapshots any host has?" over the four backups, as a `min` of `n`:
+
+| | Answer | Reads as |
+| --- | --- | --- |
+| Today | 0, with 0 unread | "Some host has no snapshots, and I read every record." |
+| With the change | 9, with 2 unread | "The smallest I could read is 9. Two records had no `n`." |
+
+`backup:nas` and `backup:pi` have no `n`. Today the fold makes up a 0 for each and says nothing.
+Ask the same of a field with any other name and the fold is honest today: a `min` of `snapshots` answers 3 with 3 unread.
+
+The same happens with `value`. "How many settings have a value?" answers 3 today. `setting:proxy` has none; with the change the answer is 2.
+A count of backups by `n` puts nas and pi in a group named `"0"` today. With the change they are ungrouped.
+
+**Options.**
+- **(a) Ordinary fields (recommended).** The two names lose their meaning in the model. A record without `n` is unread to a `min` of `n`.
+- **(b) Keep the two names in the model and make them optional.** The same answers as (a). Fewer vector files change, and the model still names two fields that no protocol text gives a meaning.
+- **(c) Leave it and document it.** Anyone who uses the name `n` or `value` for something of their own gets a wrong number with no sign of it.
+
+**If (a).** The largest piece here: about 70 places in the model and about 150 of the 629 vector files. It is mechanical.
+None of your old stores uses either name as a key (0 of 11,037 facts), so nothing real depends on today's reading.
+
+### PV3: `present` means written
+
+**Question.** Today a field that holds a list, an object or `null` reads as absent. Should `present` mean "the payload has this field", whatever it holds?
+
+**Example.** "Which services have nothing recorded about what they watch?", asked as `watches` absent:
+
+| | Answer |
+| --- | --- |
+| Today | All four, grafana included, which watches two services |
+| With the change | `svc:caddy` only |
+| The alternative: `null` and `[]` read as absent | `svc:caddy` and `svc:loki` |
+
+Loki's `watches` is `[]`: someone looked and recorded that loki watches nothing. Caddy has no `watches` field: nobody recorded anything.
+The recommendation keeps those two apart. The alternative makes them one answer.
+The same goes for `notes: null` on loki: with the change, `notes` is present.
+
+**What the recommendation costs.** "Which services watch nothing?" then has no single test. Caddy answers to `watches` absent; loki's empty list is present and matches no `is`. A writer who wants that question simple leaves the field out.
+
+**Options.**
+- **Yes (recommended):** present means written, for `null`, `{}`, `[]` and `""` alike. A fraction already works this way today.
+- **No:** `null` and an empty list read as absent, on the grounds that the writer meant "nothing here".
+
+### PV4: a list reads as a set under `is` and `not`
+
+**Question.** Should `is` hold when some member of a list equals the argument?
+
+**Example.** "Which services watch loki?", asked as `watches` is `"svc:loki"`:
+
+| | `is "svc:loki"` | `not "svc:loki"` |
+| --- | --- | --- |
+| Today | 0 services | 4 services |
+| With the change | 1 (`svc:grafana`) | 3 |
+
+Today a list can be stored and shown and no fold can ask about it. That is why the old stores have numbered keys, `watches_1_ref` to `watches_N_ref`: 594 such groups in homelab-audit.
+
+**Options.**
+- **Yes (recommended).** Order and repeats in the list change nothing. No new operator.
+- **No.** A list matches nothing, and several values under one name stay numbered keys.
+
+### PV5: `at-least` and `below` on a list
+
+**Question.** What do the two number tests answer for a list of numbers?
+
+**Example.** Caddy has `ports: [80, 443, 8080]`. Ask "which services have a port below 1024?" and "which services have a port at 1024 or above?"
+
+| Reading | below 1024 | at-least 1024 |
+| --- | --- | --- |
+| Some member passes | caddy: yes | caddy: yes |
+| A list is never a number (recommended) | caddy: no | caddy: no |
+| Today | no | no |
+
+Under "some member passes" caddy answers yes to both. The two tests stop being opposites, so a reader who counts one and subtracts from the total gets the wrong number.
+Under the recommendation, "does anything listen on a low port?" cannot be asked of a list. It needs one record per port, or a field such as `lowest_port`.
+
+**Options.** Some member, or neither holds. **Recommended: neither holds.** It is the same rule as PV7: a list is never a number.
+
+### PV6: a list gives one group per member under `by`
+
+**Question.** Should a count by a list field put the record in one group for each member?
+
+**Example.** "Count the services by what they watch":
+
+| | Answer |
+| --- | --- |
+| Today | Ungrouped: 4. No groups. |
+| With the change | `svc:loki`: 1, `svc:node-exporter`: 1, `svc:prometheus`: 1. Ungrouped: 2 (loki's empty list, and caddy). |
+
+Grafana is counted in two groups, so the groups can add up to more than the records. That already happens with `by` on `env.about:<prefix>`, where a record that mentions two projects counts in each (your ruling of 2026-11-11).
+
+**This amends a ruling of yours.** On 2026-11-11 you ruled that a value that cannot be a key, "a fraction, null, an array or an object", is ungrouped. An array would leave that list.
+
+**Options.**
+- **Yes (recommended).**
+- **No.** The ruling stands. Grouping by several targets then needs `about` with the role as its prefix, or numbered keys.
+
+### PV7: a list is unread to `sum`, `min` and `max`
+
+**Question.** What does a numeric fold read from a list of numbers?
+
+**Example.** A `sum` of `ports` over the four services:
+
+| Reading | Answer |
+| --- | --- |
+| Unread (recommended), and today | 0, with 4 unread |
+| Sum the members | 8,603, with 3 unread |
+
+For ports the sum means nothing. For something like `disk_gb: [500, 500, 2000]` the sum of members, 3,000, is what a person would want; under the recommendation the writer states `disk_total_gb`, or writes one record per disk.
+A numeric fold reads one number from each record. Summing members would count one record several times.
+
+**Options.** Unread, or read the members. **Recommended: unread.**
