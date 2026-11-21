@@ -9,6 +9,8 @@ mod byte_text;
 mod fold;
 mod json;
 mod lens;
+mod payload;
+pub use payload::fixture_fields;
 mod reader;
 mod realm;
 mod record;
@@ -65,6 +67,7 @@ pub fn slots_json(values: Vec<(String, loops::spec::SlotValue)>) -> Json {
 /// one answer when orders differ; use [`evaluate`] for checked agreement.
 pub fn answers(layer: &str, input: &Json) -> Result<Vec<Json>, Error> {
     let run = match layer.split('/').next() {
+        Some("payload") => payload::answers,
         Some("record") => record::answers,
         Some("fold") => fold::answers,
         Some("spec") => spec::answers,

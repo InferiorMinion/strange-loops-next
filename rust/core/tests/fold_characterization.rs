@@ -27,7 +27,7 @@ fn insertion_preserves_unchecked_tail() {
 fn equal_order_keys_do_not_deduplicate_distinct_records() {
     let a = Record::default();
     let b = Record {
-        fields: vec![("value".into(), Val::Str("other".into()))],
+        fields: vec![("value".into(), Val::Str("other".into()).into())],
         ..a.clone()
     };
     assert_eq!(
@@ -53,7 +53,7 @@ fn sum_is_unbounded() {
 fn rec(number: u64, n: i64) -> Record {
     Record {
         id: id(number),
-        fields: vec![("n".into(), Val::Int(Int::from(n)))],
+        fields: vec![("n".into(), Val::Int(Int::from(n)).into())],
         ..Record::default()
     }
 }
@@ -125,14 +125,14 @@ fn selection_counts_unknown_or_unreadable_once_and_excluded_never() {
 fn numeric_on_uses_first_written_field_for_every_name() {
     let mut a = rec(1, 5);
     a.fields = vec![
-        ("score".into(), Val::Int(Int::from(-7_i64))),
-        ("score".into(), Val::Int(Int::from(90_i64))),
-        ("n".into(), Val::Int(Int::from(100_i64))),
+        ("score".into(), Val::Int(Int::from(-7_i64)).into()),
+        ("score".into(), Val::Int(Int::from(90_i64)).into()),
+        ("n".into(), Val::Int(Int::from(100_i64)).into()),
     ];
     let mut b = rec(2, 8);
-    b.fields = vec![("score".into(), Val::Int(Int::from(12_i64)))];
+    b.fields = vec![("score".into(), Val::Int(Int::from(12_i64)).into())];
     let mut wrong = rec(3, 11);
-    wrong.fields = vec![("score".into(), Val::Bool(true))];
+    wrong.fields = vec![("score".into(), Val::Bool(true).into())];
     let hidden = a.withhold();
     let xs = [a, b, wrong, hidden, rec(4, 13)];
     let sum = families::sum_on("score");
@@ -263,7 +263,7 @@ fn record_equality_includes_spelling_and_unchecked_state_stays_unchecked() {
         ..rec(1, 5)
     };
     let b = Record {
-        fields: vec![("value".into(), Val::Str("different payload".into()))],
+        fields: vec![("value".into(), Val::Str("different payload".into()).into())],
         ..a.clone()
     };
     assert!(!a.newer(&b) && !b.newer(&a));

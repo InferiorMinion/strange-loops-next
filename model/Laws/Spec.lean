@@ -70,7 +70,7 @@ theorem Op.ordered_like_only (a : Arg) {xs : List Item} (h : ∀ x ∈ xs, Item.
     (Op.atLeast a).test xs = false ∧ (Op.below a).test xs = false := by
   simp only [Op.test, any_eq_false]
   constructor <;> intro x hx <;> have := h x hx <;>
-    rcases a with (_ | _ | _) | _ <;> rcases x with (_ | _ | _) | _ <;>
+    rcases a with (_ | _ | _) | _ <;> rcases x with (_ | _ | _) | _ | _ | _ <;>
     simp_all [Item.like, Item.atLeast, Item.below]
 
 /-! ## What each field reads -/

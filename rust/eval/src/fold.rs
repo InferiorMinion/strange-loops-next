@@ -245,7 +245,7 @@ mod tests {
         let record = record("r", &xs[0]).expect("big fixture");
         assert!(matches!(
             record.get("n"),
-            Some(loops::record::Val::Number(_))
+            Some(loops::record::Held::One(loops::record::Val::Number(_)))
         ));
         assert_eq!(
             answers("fold/sum", &raw).expect("big answer"),

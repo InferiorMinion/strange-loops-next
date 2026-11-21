@@ -65,8 +65,8 @@ fn unchecked_integers_remain_unbounded() {
     let n: Int = "-9999999999999999999999999999999999999999999"
         .parse()
         .expect("unbounded Int");
-    r.fields.push(("n".into(), Val::Int(n.clone())));
-    assert_eq!(r.get("n"), Some(Val::Int(n.clone())));
+    r.fields.push(("n".into(), Val::Int(n.clone()).into()));
+    assert_eq!(r.get("n"), Some(Val::Int(n.clone()).into()));
     assert_eq!(
         r.num("n"),
         None,
@@ -103,17 +103,17 @@ fn reader_lists_lookup_and_views_keep_lean_behavior() {
     let mut r = record();
     r.prev = vec![id(4), id(4)];
     r.fields = vec![
-        ("value".into(), Val::Str("payload".into())),
-        ("n".into(), Val::Int(42_i64.into())),
-        ("x".into(), Val::Int(7_i64.into())),
-        ("x".into(), Val::Int(8_i64.into())),
-        ("n".into(), Val::Int(9_i64.into())),
+        ("value".into(), Val::Str("payload".into()).into()),
+        ("n".into(), Val::Int(42_i64.into()).into()),
+        ("x".into(), Val::Int(7_i64.into()).into()),
+        ("x".into(), Val::Int(8_i64.into()).into()),
+        ("n".into(), Val::Int(9_i64.into()).into()),
     ];
-    assert_eq!(r.get("x"), Some(Val::Int(7_i64.into())));
-    assert_eq!(r.get("n"), Some(Val::Int(42_i64.into())));
-    assert_eq!(r.get("value"), Some(Val::Str("payload".into())));
+    assert_eq!(r.get("x"), Some(Val::Int(7_i64.into()).into()));
+    assert_eq!(r.get("n"), Some(Val::Int(42_i64.into()).into()));
+    assert_eq!(r.get("value"), Some(Val::Str("payload".into()).into()));
     r.shown = Shown::Withheld;
-    assert_eq!(r.get("x"), Some(Val::Int(7_i64.into())));
+    assert_eq!(r.get("x"), Some(Val::Int(7_i64.into()).into()));
     assert_eq!(r.num("x"), None);
     for view in [r.withhold(), r.erase()] {
         assert_eq!(view.prev, r.prev);
@@ -193,7 +193,7 @@ fn newer_is_span_then_emitted_then_digest_not_record_equality() {
     older = newer.clone();
     newer.fields.push((
         "value".into(),
-        Val::Str("different payload, same ordering keys".into()),
+        Val::Str("different payload, same ordering keys".into()).into(),
     ));
     assert_ne!(newer, older);
     assert!(!newer.newer(&older));

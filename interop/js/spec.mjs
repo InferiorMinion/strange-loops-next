@@ -4,7 +4,7 @@
 // Written from protocol/ and vectors/README.md. No dependencies.
 
 import { occurredSpan, problem, wellFormed, NOT_UNICODE } from "./loops.mjs";
-import { answer, held, payloadOf, payloadReading, testAnswer, YES, NO, UNKNOWN } from "./where.mjs";
+import { answer, held, payloadReading, testAnswer, YES, NO, UNKNOWN } from "./where.mjs";
 import * as F from "./fold.mjs";
 import { admit } from "./realm.mjs";
 
@@ -170,10 +170,11 @@ export function keysOf(by, r) {
     const head = `${b.about}:`;
     return [...new Set((r.about ?? []).filter((a) => a.startsWith(head)).map((a) => a.slice(head.length)))].sort();
   }
-  const p = payloadOf(r);
-  if (p === null) return null;
-  const k = Object.hasOwn(p, b.field) ? keyOf(p[b.field]) : undefined;
-  return k === undefined ? [] : [k];
+  const field = payloadReading(b.field, r);
+  if (!field.held) return null;
+  if (field.v?.many) return [...new Set(field.v.many.map(keyOf))].sort();
+  const key = keyOf(field.v?.one);
+  return key === undefined ? [] : [key];
 }
 
 function whereOf(n, at) {

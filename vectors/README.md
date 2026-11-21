@@ -1,7 +1,7 @@
 # Vectors
 
 `model/` writes the protocol fixture families:
-`fold/`, `lens/`, `record/`, `byte-text/`, `spec/`, `batch/`, `realm/`, `occurred/`, `scenario/` and `result/`.
+`fold/`, `lens/`, `record/`, `payload/`, `byte-text/`, `spec/`, `batch/`, `realm/`, `occurred/`, `scenario/` and `result/`.
 Run `lake exe gen ../vectors` from `model/`; never edit these fixtures by hand.
 CI regenerates them and fails on any difference.
 `standard/` holds external standards data; see its README.
@@ -19,6 +19,14 @@ Every file has the same envelope:
   "expect": { }
 }
 ```
+
+## `payload`
+
+The 18 files project a stored opening directly. `input.payload` is the original JSON value.
+`expect.fields` is an object keyed by written field name. A scalar is `{"one": <scalar>}`, a list is `{"many": [<scalar>, ...]}`, and an object or null is `{"other": true}`.
+The scalar tags are `text` (string), `bool` (boolean), `whole` (decimal string) and `number` (canonical binary64 string).
+The projection preserves the order and repeats of nameable list members. Filtering and grouping use their membership. Empty and entirely unnameable lists both give `{"many":[]}`.
+A non-object opening gives `{"fields":{}}`. Cases 09–10 keep raw decimal and exponent spellings. Duplicate names are refused before storage (see `record/`).
 
 ## `fold/count`, `fold/latest-by`, `fold/latest`, `fold/sum`, `fold/extrema`
 
@@ -42,8 +50,8 @@ Content order compares span start, span end, `emitted`, then id digest bytes.
 A record without `occurred` has an instant span at its `emitted`.
 Newest first reverses this whole order.
 Ids use layer 0's encoding, but these fixture digests are made up.
-The optional `fields` object holds the written primitive payload fields, including
-`value` and `n`. Omitting the object gives a held record with no fields.
+The optional `fields` object holds every written payload field as ordinary JSON, including `value` and `n`.
+For example, `"fields":{"routes":["a","b"],"labels":{},"note":null}` has three present fields. Omitting `fields` gives a held record with no fields.
 A top-level `value` or `n` on a reader record is an unknown member.
 The raw sum and extrema fixtures read `fields.n` through the safe-whole reader.
 An omitted or unreadable field contributes no value. The accumulated integer is exact.
@@ -117,7 +125,7 @@ Settling, admission and heads come first, over every record; each group is the s
 A `where` that answers unknown, or a payload key on a payload not held, adds to the top-level `unread`; a key readably absent adds to `ungrouped`; a record with two keys is in two groups.
 A whole number key is written in decimal and a boolean as `true` or `false`, so text `"1"` and the number 1 share group `1`.
 `scenario/by-01-erased-in-another-group` settles forms: an eraser in another group still erases.
-Collect counts unread candidates before applying its limit.
+Collect counts unread candidates before applying its limit. The ten `pv*` runs cover written membership, lists in numeric and grouped slots, typed and colliding keys, and separate answers from disjoint and overlapping live setters. The service examples restrict `from.kind` to `svc`.
 
 ## `result`
 

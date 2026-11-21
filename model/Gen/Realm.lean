@@ -22,7 +22,7 @@ def r (id : RecordId) (kind : String) (of : Option String) (t : Nat) (prev : Lis
     emitted := stampAt t ok }
 
 -- one record, held in full in one place and erased in another
-def full : Record := { r (fixtureId 0x51) "load" (some "host:a") 100 with fields := [("n", .int 40)] }
+def full : Record := { r (fixtureId 0x51) "load" (some "host:a") 100 with fields := [("n", .one (.int 40))] }
 def eraseRec : Record := { r (fixtureId 0x52) "erase" none 110 with erases := [fixtureId 0x51] }
 
 -- a record of thing B naming one of thing A in `prev`
@@ -43,7 +43,7 @@ def m3 := r (fixtureId 0x83) "config" none 3
 def m4 := r (fixtureId 0x84) "note" none 4 [fixtureId 0x81]
 
 -- a revision that erases what it replaces: any kind may erase
-def x1 := { r (fixtureId 0xa1) "note" (some "person:alice") 1 with fields := [("n", .int 7)] }
+def x1 := { r (fixtureId 0xa1) "note" (some "person:alice") 1 with fields := [("n", .one (.int 7))] }
 def x2 := { r (fixtureId 0xa2) "note" (some "person:alice") 2 [fixtureId 0xa1] with erases := [fixtureId 0xa1] }
 
 -- a task finished by a record of another kind
@@ -61,8 +61,8 @@ structure Case where
 
 def cases : List Case := [
   ⟨"phase2-exact-output", ["settle.set", "sum.perm", "numeric.safe-whole"],
-    [{ r (fixtureId 0xf1) "load" (some "host:a") 100 with fields := [("n", .int 9007199254740991)] },
-      { r (fixtureId 0xf2) "load" (some "host:b") 110 with fields := [("n", .int 2)] }]⟩,
+    [{ r (fixtureId 0xf1) "load" (some "host:a") 100 with fields := [("n", .one (.int 9007199254740991))] },
+      { r (fixtureId 0xf2) "load" (some "host:b") 110 with fields := [("n", .one (.int 2))] }]⟩,
   ⟨"01-erased-without-record-is-withheld", ["settle.set", "settle.keeps"], [full, full.erase]⟩,
   ⟨"02-here-beats-withheld", ["settle.set", "settle.keeps"], [full.withhold, full, full.withhold]⟩,
   ⟨"03-erase-record-sticks", ["settle.set", "settle.erased"], [full, full.erase, eraseRec, full]⟩,

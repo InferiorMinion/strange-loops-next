@@ -18,6 +18,7 @@ Count, sum, min, max and collect following `keys` add twenty-one: 291 entries to
 A keyed collect's `limit` counting things adds four, over `Loops.keyedValue`, `Loops.wholeThings` and `Loops.thingsInOrder`: 295 entries total. `keys-slots-collect-heads` and `keys-slots-collect-no-limit` are retargeted at the collect's new site.
 The canonical result (D7) adds nineteen, over `model/Loops/Result.lean`: 314 entries total. Seventeen change what the codec writes or reads; two, `result-unshown-keeps-shown` and `result-unshown-groups-kept`, change only what the laws compare, since nothing that runs sets `shown` aside.
 Ordinary payload fields retarget thirteen entries at lookup, the shared numeric steps and folds, their named accumulators, and the maximum over heads. The catalogue retains 314 entries.
+Payload reading adds fourteen entries (328 total) and retargets `record-num-drop-int`, `wide-record-049` and `by-unreadable-ungrouped`. The cheap runner exercises all seventeen changes against the runtime checks.
 The raw-reader ordering mutations target library definitions under `Loops`.
 The cheap runner uses those fourteen replacements and the four former D6 survivors.
 It requires runtime failures after successful builds.

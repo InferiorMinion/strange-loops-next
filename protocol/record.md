@@ -257,7 +257,7 @@ sig    = { "key": "k:" + base32hex(public key), "ed25519": base32hex(Ed25519(sig
   A malformed value uses the field's existing refusal code, as does a field left out or of the wrong JSON type.
 * The **salt** is 16 random bytes; it stops anyone confirming a guess about a
   payload from its commitment.
-* The **payload** is any JSON value.
+* The **payload** is any JSON value. A held object supplies its top-level members to folds. Every other held value supplies zero fields. This projection is independent of the envelope, including `sets`. Field values, list membership and the difference between absent and unavailable are defined in [the spec](spec.md#reading-a-payload).
 * The id covers the commitment, not the payload, so **erasing** the opening
   never changes the id. The signature covers the id, so it survives erasure
   too.

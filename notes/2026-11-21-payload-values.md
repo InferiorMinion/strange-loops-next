@@ -1,6 +1,6 @@
 # Payload values, design note
 
-Moved here from `ROADMAP.md` on 2026-11-21, unchanged but for links. **Ruled by Kyle on 2026-11-21: every one of the seven choices, each for the recommendation.** The rulings and his note on a list with two live setters are in [the changelog](../CHANGELOG.md) under that date. Choice 2 (`value` and `n`) is built; the others are not yet.
+Moved here from `ROADMAP.md` on 2026-11-21, unchanged but for links. **Ruled by Kyle on 2026-11-21: every one of the seven choices, each for the recommendation.** The rulings and his note on a list with two live setters are in [the changelog](../CHANGELOG.md) under that date. All seven are built (2026-11-21).
 
 **Draft by margins-claude, 2026-11-21, for Kyle's rulings before any tick is built.** Nothing here is built.
 Every choice that is Kyle's is marked **Open**, with a recommendation and the alternatives.

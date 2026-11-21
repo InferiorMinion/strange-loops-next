@@ -112,7 +112,7 @@ inductive FieldType where
   | ids
   /-- Times: `emitted`, `occurred`. -/
   | time
-  /-- A payload field: text, a number or a boolean. -/
+  /-- A payload field accepts text, safe whole and boolean equality arguments. -/
   | payload
   deriving Repr, DecidableEq
 
@@ -153,7 +153,15 @@ def Field.type : Field → FieldType
 inductive Item where
   | val (v : Val)
   | time (s : Span)
+  | members (vs : List Val)
+  | other
   deriving Repr, DecidableEq
+
+def HeldField.item : HeldField → Item
+  | .one v => .val v
+  | .many [] => .other
+  | .many vs => .members vs
+  | .other => .other
 
 /-- What a test compares against: a value, or a time as written with the span it reads as. -/
 inductive Arg where
@@ -189,11 +197,12 @@ def Field.read : Field → Record → Option (List Item)
   | .env .erases, r => some (r.erases.map (.val ∘ .str ∘ idText))
   | .env .emitted, r => some [.time (Span.point r.emitted.moment)]
   | .env .occurred, r => some (r.occurred.toList.map (.time ∘ (·.span)))
-  | .payload f, r => if r.shown = .here then some ((r.get f).toList.map .val) else none
+  | .payload f, r => if r.shown = .here then some ((r.get f).toList.map HeldField.item) else none
 
 /-- Whether an item is what the argument names: the same value, or the same span. -/
 def Arg.matches : Arg → Item → Bool
   | .val v, .val w => v == w
+  | .val v, .members vs => vs.contains v
   | .time c, .time s => c.span == s
   | _, _ => false
 
@@ -334,6 +343,11 @@ def Val.key : Val → Option String
   | .bool b => some (if b then "true" else "false")
   | .number _ => none
 
+def HeldField.keys : HeldField → List String
+  | .one v => v.key.toList
+  | .many vs => canonSet (vs.filterMap Val.key)
+  | .other => []
+
 /-- A member of `about` under a typed-reference prefix: the reference without
 its prefix (`project:loops` under `project` is `loops`). -/
 def refUnder (pfx : String) (a : String) : Option String :=
@@ -348,7 +362,7 @@ def By.keys : By → Record → Option (List String)
   | .kind, r => some [r.kind]
   | .observer, r => some [r.observer]
   | .about p, r => some (canonSet (r.about.filterMap (refUnder p)))
-  | .payload name, r => if r.shown = .here then some ((r.get name).bind Val.key).toList else none
+  | .payload name, r => if r.shown = .here then some (((r.get name).map HeldField.keys).getD []) else none
 
 structure Slot where
   name : String

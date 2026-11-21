@@ -1,0 +1,28 @@
+{
+  "vector": "18-envelope-names",
+  "layer": "payload",
+  "laws": ["payload.read"],
+  "source": "model",
+  "input": {
+    "payload": {"about":["svc:a"],"of":null,"sets":"ordinary"}
+  },
+  "expect": {
+    "fields": {
+      "about": {
+        "many": [
+          {
+            "text": "svc:a"
+          }
+        ]
+      },
+      "of": {
+        "other": true
+      },
+      "sets": {
+        "one": {
+          "text": "ordinary"
+        }
+      }
+    }
+  }
+}

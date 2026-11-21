@@ -1,0 +1,30 @@
+{
+  "vector": "11-written-other",
+  "layer": "payload",
+  "laws": ["payload.read"],
+  "source": "model",
+  "input": {
+    "payload": {"null":null,"object":{},"labels":{"tier":"infra"},"list":[],"empty":""}
+  },
+  "expect": {
+    "fields": {
+      "empty": {
+        "one": {
+          "text": ""
+        }
+      },
+      "labels": {
+        "other": true
+      },
+      "list": {
+        "many": []
+      },
+      "null": {
+        "other": true
+      },
+      "object": {
+        "other": true
+      }
+    }
+  }
+}

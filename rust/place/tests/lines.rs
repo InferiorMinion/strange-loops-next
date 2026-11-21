@@ -206,7 +206,7 @@ fn a_mistyped_envelope_field_in_a_line_gets_the_writers_code() {
 }
 
 #[test]
-fn only_a_payload_objects_top_level_primitives_are_read() {
+fn each_top_level_member_of_a_payload_object_is_read() {
     let env = envelope::read(
         "env",
         &parse_json(r#"{"kind":"note","observer":"sl:a","emitted":"2026-01-01T00:00:00Z"}"#)
@@ -222,13 +222,21 @@ fn only_a_payload_objects_top_level_primitives_are_read() {
     let r = record(
         r#"{"value":"v","n":3,"status":"open","done":false,"size":1.5,"deep":{"a":1},"list":[1],"none":null}"#,
     );
-    assert_eq!(r.get("value"), Some(Val::Str("v".into())));
+    assert_eq!(r.get("value"), Some(Val::Str("v".into()).into()));
     assert_eq!(r.num("n"), Some(3_i64.into()));
     let names: Vec<_> = r.fields.iter().map(|(k, _)| k.as_str()).collect();
-    assert_eq!(names, ["value", "n", "status", "done", "size"]);
+    assert_eq!(
+        names,
+        [
+            "value", "n", "status", "done", "size", "deep", "list", "none"
+        ]
+    );
     assert_eq!(r.num("size"), None);
     let fraction = record(r#"{"n":1.5}"#);
-    assert!(matches!(fraction.get("n"), Some(Val::Number(_))));
+    assert!(matches!(
+        fraction.get("n"),
+        Some(loops::record::Held::One(Val::Number(_)))
+    ));
     assert_eq!(fraction.num("n"), None);
     let mixed = record(r#"{"value":7,"n":"5"}"#);
     let present = Cond {
@@ -236,7 +244,7 @@ fn only_a_payload_objects_top_level_primitives_are_read() {
         op: Op::Present,
     };
     assert_eq!(present.eval(&mixed), Tri::Yes);
-    assert_eq!(mixed.get("n"), Some(Val::Str("5".into())));
+    assert_eq!(mixed.get("n"), Some(Val::Str("5".into()).into()));
     assert_eq!(mixed.num("n"), None);
     assert_eq!(
         loops::spec::By::Payload("n".into()).keys(&mixed),
@@ -297,4 +305,50 @@ fn a_held_line_keeps_sets_as_written_canonically_and_refuses_one_that_is_not_key
         )),
         Err(Refusal::NotCanonical)
     );
+}
+
+#[test]
+fn every_payload_vector_reads_through_a_signed_line() {
+    let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../vectors/payload");
+    let env = envelope::read("env", &parse_json(
+        r#"{"kind":"note","observer":"sl:a","emitted":"2026-01-01T00:00:00Z","sets":["probe"]}"#
+    ).expect("valid envelope JSON")).expect("envelope");
+    let key = Key::from_text(&"0".repeat(52)).expect("seed");
+    let mut count = 0;
+    for entry in fs::read_dir(dir).expect("payload vectors") {
+        let path = entry.expect("entry").path();
+        let vector = parse_json(&fs::read_to_string(&path).expect("fixture")).expect("JSON");
+        let p = member(member(&vector, "input").unwrap(), "payload").unwrap();
+        let fields = member(member(&vector, "expect").unwrap(), "fields").unwrap();
+        let line = Line::sign(
+            &stored::write(env.clone(), vec![0; 16], p.clone()).expect("written"),
+            &key,
+        );
+        let r = line.record();
+        assert_eq!(r.shown, Shown::Here);
+        if !matches!(p, Json::Obj(_)) {
+            let absent = Cond {
+                field: Field::Payload("probe".into()),
+                op: Op::Absent,
+            };
+            assert_eq!(absent.eval(&r), Tri::Yes);
+            assert_eq!(
+                loops::spec::By::Payload("probe".into()).keys(&r),
+                Some(vec![])
+            );
+            let counted =
+                loops::families::count_acc().select(|_| Tri::Yes, std::slice::from_ref(&r));
+            assert_eq!(counted.value.to_string(), "1");
+            assert_eq!(counted.unread.to_string(), "0");
+        }
+        assert_eq!(
+            loops_eval::fixture_fields(r.fields).canon(),
+            fields.canon(),
+            "{}",
+            path.display()
+        );
+        assert_eq!(line.erased().record().shown, Shown::Erased);
+        count += 1;
+    }
+    assert_eq!(count, 18);
 }

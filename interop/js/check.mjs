@@ -9,6 +9,7 @@
 
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
+import { payloadAnswer } from "./payload.mjs";
 import { readVector } from "../answers.mjs";
 import { jsonSourceAt } from "../json-source.mjs";
 import { gunzipSync } from "node:zlib";
@@ -151,9 +152,20 @@ function checkByteText(dir) {
   return t;
 }
 
+function checkPayload(dir) {
+  const t = tally();
+  for (const file of jsonFiles(join(dir, "payload"))) {
+    const raw = readFileSync(file, "utf8");
+    const v = readVector(raw);
+    t.files++;
+    t.expect(v.vector, payloadAnswer(L.parse(jsonSourceAt(raw, ["input", "payload"]))), v.expect);
+  }
+  return t;
+}
+
 // Each family: the vectors/ directory it reads, and its checker.
 const FAMILIES = [
-  ["record", checkRecord], ["occurred", checkOccurred], ["byte-text", checkByteText],
+  ["payload", checkPayload], ["record", checkRecord], ["occurred", checkOccurred], ["byte-text", checkByteText],
   ["fold", fold.check], ["lens", lens.check], ["batch", batch.check],
   ["spec", spec.check], ["realm", realm.check], ["scenario", scenario.check], ["result", result.check],
 ];

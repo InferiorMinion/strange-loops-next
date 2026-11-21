@@ -30,8 +30,8 @@ Earlier campaigns' counts are historical: the generator changed, so the same see
 It marks earlier campaign results as historical, including the 42 duplicate-base lens mismatches D1 settles.
 
 `--n` is the total case count, not a count per family.
-Without `--family`, cases cycle through record, fold, spec, realm, scenario, batch, and lens.
-Each family gets either floor(N/7) or ceil(N/7) cases.
+Without `--family`, cases cycle through record, fold, spec, realm, scenario, batch, lens, and payload.
+Each family gets either floor(N/8) or ceil(N/8) cases.
 A case uses its seed, family, and family-local index for its own PRNG stream.
 Family selection and chunk size do not change that case.
 The generator uses FNV-1a seed mixing and xorshift32, not `Math.random`.
@@ -40,7 +40,7 @@ The generator uses FNV-1a seed mixing and xorshift32, not `Math.random`.
 |---|---|---|
 | `--seed S` | `1` | Seed text |
 | `--n N` | `70` | Total cases |
-| `--family F` | all seven | One family |
+| `--family F` | all eight | One family |
 | `--out DIR` | new temporary directory | Run artifacts |
 | `--replay FILE` | none | One input vector or mismatch artifact |
 | `--rust` | off | Add Rust; require reduction for generated disagreements |
@@ -86,7 +86,8 @@ Campaign tests inject `batch`, `buildLean`, `buildRust`, and `js`; they start no
 
 `generate(seed, index, family)` returns `{layer, input, fuzz}`.
 The `fuzz` member gives the seed, family, local index, and named near-miss boundary.
-`FAMILIES` lists the seven families.
+`FAMILIES` lists the eight families. The payload adapter accepts a stored JSON value and returns its tagged fields directly in all three implementations.
+Spec runs generate written empty lists, repeats, mixed types, nested and unnameable members, objects and null. Plain, head and keyed slots ask membership, bounds, grouping and numeric questions about the generated field. Two live setters supply overlapping or disjoint lists under the same key.
 Fold indices cycle through all eight supported sublayers.
 Spec indices alternate between parse and run.
 

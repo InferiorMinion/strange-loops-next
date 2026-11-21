@@ -1,0 +1,297 @@
+{
+  "vector": "pv-keys-overlap",
+  "layer": "spec/run",
+  "laws": ["keyed.select", "keyed.by"],
+  "source": "model",
+  "input": {
+    "spec": {
+      "vertex": "pv-keys-overlap",
+      "from": [
+        {
+          "store": ".",
+          "kind": ["svc"]
+        }
+      ],
+      "fold": {
+        "a": {
+          "count": true,
+          "where": {
+            "routes": {
+              "is": "svc:a"
+            }
+          },
+          "follow": "keys"
+        },
+        "b": {
+          "count": true,
+          "where": {
+            "routes": {
+              "is": "svc:b"
+            }
+          },
+          "follow": "keys"
+        },
+        "c": {
+          "count": true,
+          "where": {
+            "routes": {
+              "is": "svc:c"
+            }
+          },
+          "follow": "keys"
+        },
+        "present": {
+          "count": true,
+          "where": {
+            "routes": {
+              "present": true
+            }
+          },
+          "follow": "keys"
+        },
+        "not-c": {
+          "count": true,
+          "where": {
+            "routes": {
+              "not": "svc:c"
+            }
+          },
+          "follow": "keys"
+        },
+        "routes": {
+          "count": true,
+          "by": "routes",
+          "follow": "keys"
+        },
+        "null": {
+          "count": true,
+          "where": {
+            "notes": {
+              "present": true
+            }
+          },
+          "follow": "keys"
+        },
+        "omitted": {
+          "count": true,
+          "where": {
+            "missing": {
+              "absent": true
+            }
+          },
+          "follow": "keys"
+        },
+        "undeclared": {
+          "count": true,
+          "where": {
+            "extra": {
+              "absent": true
+            }
+          },
+          "follow": "keys"
+        },
+        "state": {
+          "latest-by": "of",
+          "follow": "keys"
+        }
+      }
+    },
+    "orders": [
+      [
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000a0",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:fork",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "sets": [],
+          "fields": {}
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000ag",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:fork",
+          "prev": ["r:00000000000000000000000000000000000000000000000000a0"],
+          "emitted": "2026-10-01T00:00:00Z",
+          "sets": ["routes", "notes", "missing"],
+          "fields": {"routes":["svc:a","svc:b"],"notes":null,"extra":true}
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000b0",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:fork",
+          "prev": ["r:00000000000000000000000000000000000000000000000000a0"],
+          "emitted": "2026-10-01T00:00:00Z",
+          "sets": ["routes"],
+          "fields": {"routes":["svc:a"]}
+        }
+      ],
+      [
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000ag",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:fork",
+          "prev": ["r:00000000000000000000000000000000000000000000000000a0"],
+          "emitted": "2026-10-01T00:00:00Z",
+          "sets": ["routes", "notes", "missing"],
+          "fields": {"routes":["svc:a","svc:b"],"notes":null,"extra":true}
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000b0",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:fork",
+          "prev": ["r:00000000000000000000000000000000000000000000000000a0"],
+          "emitted": "2026-10-01T00:00:00Z",
+          "sets": ["routes"],
+          "fields": {"routes":["svc:a"]}
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000a0",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:fork",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "sets": [],
+          "fields": {}
+        }
+      ],
+      [
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000b0",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:fork",
+          "prev": ["r:00000000000000000000000000000000000000000000000000a0"],
+          "emitted": "2026-10-01T00:00:00Z",
+          "sets": ["routes"],
+          "fields": {"routes":["svc:a"]}
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000a0",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:fork",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "sets": [],
+          "fields": {}
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000ag",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:fork",
+          "prev": ["r:00000000000000000000000000000000000000000000000000a0"],
+          "emitted": "2026-10-01T00:00:00Z",
+          "sets": ["routes", "notes", "missing"],
+          "fields": {"routes":["svc:a","svc:b"],"notes":null,"extra":true}
+        }
+      ]
+    ]
+  },
+  "expect": {
+    "a": {
+      "value": 1,
+      "unread": 0
+    },
+    "b": {
+      "value": 0,
+      "unread": 1
+    },
+    "c": {
+      "value": 0,
+      "unread": 0
+    },
+    "present": {
+      "value": 1,
+      "unread": 0
+    },
+    "not-c": {
+      "value": 1,
+      "unread": 0
+    },
+    "routes": {
+      "groups": {
+        "svc:a": {
+          "value": 1,
+          "unread": 0
+        },
+        "svc:b": {
+          "value": 1,
+          "unread": 0
+        }
+      },
+      "unread": 0,
+      "ungrouped": 0
+    },
+    "null": {
+      "value": 1,
+      "unread": 0
+    },
+    "omitted": {
+      "value": 1,
+      "unread": 0
+    },
+    "undeclared": {
+      "value": 1,
+      "unread": 0
+    },
+    "state": {
+      "things": {
+        "svc:fork": {
+          "keys": {
+            "missing": [
+              {
+                "id": "r:00000000000000000000000000000000000000000000000000ag",
+                "shown": "here"
+              }
+            ],
+            "notes": [
+              {
+                "id": "r:00000000000000000000000000000000000000000000000000ag",
+                "shown": "here"
+              }
+            ],
+            "routes": [
+              {
+                "id": "r:00000000000000000000000000000000000000000000000000b0",
+                "shown": "here"
+              },
+              {
+                "id": "r:00000000000000000000000000000000000000000000000000ag",
+                "shown": "here"
+              }
+            ]
+          },
+          "whole": [],
+          "heads": [
+            {
+              "id": "r:00000000000000000000000000000000000000000000000000b0",
+              "shown": "here"
+            },
+            {
+              "id": "r:00000000000000000000000000000000000000000000000000ag",
+              "shown": "here"
+            }
+          ]
+        }
+      },
+      "unread": 0
+    }
+  }
+}

@@ -11,7 +11,7 @@ use loops::{
     envelope::{self, Env},
     json::Json,
     occurred::{Claim, Stamp},
-    record::{Digest, Record, Val},
+    record::{Digest, Record, payload_fields},
     stored::{self, Body, Stored, Written},
 };
 use sha2::{Digest as _, Sha256};
@@ -243,11 +243,8 @@ impl Line {
 
     /// The record the core's readers take.
     ///
-    /// Each top-level text, numeric or boolean member of a payload object
-    /// becomes a named field with its written value. Nested values, nulls,
-    /// and payloads that are not objects stay in the line, unread by `where`
-    /// tests and folds. A line without its opening reads as erased, which
-    /// settling shows as withheld unless a held record erases it.
+    /// A held opening supplies its top-level fields through the protocol reading.
+    /// A line without its opening reads as erased.
     ///
     /// # Panics
     /// Never for a line made by [`Line::sign`] or [`Line::parse`]: both check
@@ -280,19 +277,9 @@ impl Line {
         let Some(payload) = self.payload() else {
             return envelope.erase();
         };
-        let mut record = envelope;
-        if let Json::Obj(members) = payload {
-            for (name, value) in members {
-                let field = match value {
-                    Json::Str(s) => Val::Str(s.clone()),
-                    Json::Int(i) => Val::Int(i.clone()),
-                    Json::Number(x) => Val::Number(*x),
-                    Json::Bool(b) => Val::Bool(*b),
-                    _ => continue,
-                };
-                record.fields.push((name.clone(), field));
-            }
+        Record {
+            fields: payload_fields(payload),
+            ..envelope
         }
-        record
     }
 }

@@ -4,7 +4,7 @@ use crate::{
     families::Tri,
     json::Json,
     occurred::{Claim, Span},
-    record::{Digest, Record, Shown, Val, id_text},
+    record::{Digest, Held, Record, Shown, Val, id_text},
 };
 use std::fmt;
 
@@ -160,7 +160,14 @@ impl Field {
                 if r.shown != Shown::Here {
                     return None;
                 }
-                r.get(f).into_iter().map(Item::Val).collect()
+                r.get(f)
+                    .into_iter()
+                    .map(|v| match v {
+                        Held::One(v) => Item::Val(v),
+                        Held::Many(vs) if !vs.is_empty() => Item::Members(vs),
+                        Held::Many(_) | Held::Other => Item::Other,
+                    })
+                    .collect()
             }
         })
     }
@@ -170,6 +177,10 @@ impl Field {
 /// A field read yields a payload value or a time span without its text spelling.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Item {
+    /// One list as an equality-test subject.
+    Members(Vec<Val>),
+    /// Written without a nameable value.
+    Other,
     /// A text, integer, or Boolean value that the field holds.
     Val(Val),
     /// A parsed time span without its written claim.
@@ -211,6 +222,7 @@ impl Arg {
     pub fn matches(&self, item: &Item) -> bool {
         match (self, item) {
             (Self::Val(v), Item::Val(w)) => v == w,
+            (Self::Val(v), Item::Members(vs)) => vs.contains(v),
             (Self::Time(c), Item::Time(s)) => c.span() == s,
             _ => false,
         }

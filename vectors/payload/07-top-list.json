@@ -1,0 +1,12 @@
+{
+  "vector": "07-top-list",
+  "layer": "payload",
+  "laws": ["payload.read"],
+  "source": "model",
+  "input": {
+    "payload": [1,{"k":"inside"}]
+  },
+  "expect": {
+    "fields": {}
+  }
+}

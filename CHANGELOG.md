@@ -15,6 +15,7 @@ In brief:
 - margins-claude wrote the payload values note (!59). Its seven choices are open.
 - The roadmap was split into `ROADMAP.md`, `DECISIONS.md`, this file and `notes/`.
 - A result hash is spelled `res:`.
+- The model states how a stored payload is read, and a list reads as a set: `present` means written, `is` and `by` read a list's members, and a list is never a number.
 - `value` and `n` are ordinary payload fields: a record that does not hold one is unread, absent and ungrouped for it, as for any other name.
 - Kyle ruled the seven payload values choices, the result hash's prefix, which choices come to him, and the three classes of edge; he confirmed the keyed-fold and codec choices; issue #10 is closed.
 
@@ -22,8 +23,8 @@ In brief:
 
 Each was an entry in `DECISIONS.md`, with an example. Kyle ruled for the recommendation every time.
 
-- **Payload values, PV1 to PV7** ([the note](notes/2026-11-21-payload-values.md)). Not built.
-  1. The reading from a stored payload to the fields a fold reads is stated in the model, with vectors.
+- **Payload values, PV1 to PV7** ([the note](notes/2026-11-21-payload-values.md)). All seven were built the same day, in two pieces, below.
+  1. The reading from a stored payload to the fields a fold reads is stated in the model, with vectors. Built the same day, below, with 3 to 7.
   2. `value` and `n` become ordinary fields (option a). Built the same day, below.
   3. `present` means the member was written, for `null`, `{}`, `[]` and `""` alike.
   4. Under `is` and `not`, a list reads as a set of its members.
@@ -40,6 +41,42 @@ Each was an entry in `DECISIONS.md`, with an example. Kyle ruled for the recomme
 - **Issue #10 is closed, I10,** with no strict "after" operator. An inbox keeps its own list of the ids it has seen; a reader's tick is for boundaries worth citing.
 
 Still open in `DECISIONS.md`: W1 to W6.
+
+### The payload reading, and lists
+
+**Built, 2026-11-21,** on Kyle's rulings of that day (payload values, choices 1 and 3 to 7).
+Until now only the Rust store decided how a stored payload became the fields a fold reads, and it skipped a member that held a list, an object or `null`. The model now states the reading, a vector family pins it, and all three implementations and the store run the same function.
+
+What a fold reads:
+- **The reading.** A held payload that is an object gives one field for each top-level member. Any other held payload gives none, so every field is absent. A number is read as binary64 and then as a whole number when it is one within ±(2^53 − 1). Nothing nested is read.
+- **`present` means written.** A member that holds `null`, `{}`, `[]` or `""` is present. An object, `null`, and a list with no member an argument can name match no `is`, satisfy every `not`, have no group key and are unread to the numeric folds.
+- **A list reads as the set of its members** under `is` and `not`: text, safe whole numbers and booleans. Order and repeats change nothing. A fraction, `null`, an object or a nested list inside it is not a member.
+- **A list is never a number.** `at-least` and `below` do not hold on one, and it is unread to `sum`, `min` and `max`, a list of one number included.
+- **Under `by`** a record joins the group of each member's key, each once, after members are turned into keys: `[80, "80"]` gives the group `80` once. This is the amendment to the ruling of 2026-11-11.
+- **A slot that follows `keys`** gets no new rule. Each test is asked of each live setter's own list, and an answer they share stands; the keys of all live setters are collected, each once.
+
+Over Kyle's example store the CLI answers as he ruled: only caddy has no `watches` recorded (it was all four services); one service watches loki (it was none); neither port bound holds for caddy's `[80, 443, 8080]`; a count by `watches` gives three groups of one with two ungrouped (it was four ungrouped); a `sum` of `ports` reads nothing.
+
+What changed:
+- **The model.** A field holds a `HeldField`: one scalar, the readable members of a list, or "written, and nothing can name it". `payloadFields` is the reading and `Stored.readInto` applies it. `Item` gains a case for a list's members and one for a written value nothing can name; `Arg.matches` asks whether a list contains the argument; `HeldField.keys` gives a list's keys.
+- **The laws.** A new entry, `payload.read`: the fields depend on the payload alone, not on the envelope, the salt or `sets`; a non-object gives none; looking a name up after the reading is reading the member of that name; every list member kept is one an argument can name. `Cond.payload_present` says `present` on a held payload is exactly "the name is written". Further theorems say `is` on a list is membership, both bounds are false on a list, a list gives no number, and what a list's keys are. Thirteen new theorems in all. The index has 112 entries and 1,220 theorems.
+- **One law is narrower, as the ruling requires.** "Each record has at most one key" held for a payload field by its form; a list can give several, so `By.Single` now holds for `env.kind` and `env.observer` only, and with it `By.keys_single`, `By.OneKey.of_single`, `By.accounting_single_form` and `By.count_partition_form`. `By.keys_single_nonlist` keeps the guarantee for every field that holds no list, and the general accounting and partition laws stand as they were. `Record.num_number` is restated over the new field type.
+- **The vectors.** A new family, `vectors/payload/`, 18 files: a payload in, the fields out. Ten new `spec/run` files pin Kyle's examples, the two-writer list cases and the mixed cases. No file that existed changed by a byte but `vectors/README.md`, so every changed answer is in a new file and all 23 result texts and hashes stand. There are now 649 generated vectors and 661 JSON fixtures.
+- **JavaScript, Rust and the store.** Each has the reading as one function and runs `vectors/payload` through it directly; `Line::record` in the store calls the Rust one. The Rust core's public `Record.fields` holds `record::Held` (`One`, `Many`, `Other`). `loops of` and `--values` show the stored JSON as before.
+- **The protocol text.** [`protocol/spec.md`](protocol/spec.md) has a section "Reading a payload" and the new rules under `where`, `by` and the numeric folds, with the sentence that an envelope's empty set is absent while a payload's empty list is present.
+- **The mutation catalogue** has 328 entries: 14 new, each caught by a runtime check, and 3 re-pointed.
+
+How it was checked: the four CI gates locally (Rust 198 tests, JavaScript 7,363 vector checks); every tracked file under `vectors/` compared with main; the three-way fuzz with no mismatch, 3,000 cases on seed `payload-reading-1` and 4,000 on `coordinator-reading-1`; Kyle's example store folded by the built CLI; margins-claude's Python implementation, with a reading written without sight of the other two, passes every family (8,483 checks, and 43 of 43 on the payload family) and agrees with the branch's Rust on 148,011 fuzz checks.
+
+**Implementer choices; they stand under Kyle's ruling of 2026-11-21 (W7):**
+- A scalar reads as it did, whether or not an argument can name it. "Written, and nothing can name it" is for an object, `null`, and a list with no readable member. The first plan read an unnameable scalar that way too; margins-claude and this session changed it, so that every existing scalar answer is kept by construction.
+- An empty list and a list of only unreadable members read alike. The stored JSON still tells them apart.
+- The reading keeps a list's members in the order written, repeats included; the set rule is applied where a test or a grouping reads them.
+- The payload family's answers carry tags (`one`, `many`, `other`; `text`, `whole`, `number`, `bool`), with numbers as text. A reader record's `"fields"` in the other families is ordinary JSON.
+- The Lean type is named `HeldField`, since `Held` is the batch's type.
+- A Codex worker (gpt-6.2-astra) wrote a plan, which margins-claude and this session reviewed, and then the change; this session ran the checks above.
+
+**Found on the way, not changed here:** the fuzz generator puts lists, objects and `null` in the `spec/run` and `result` families only; the `fold`, `realm` and `scenario` families never hold one.
 
 ### `value` and `n` are ordinary fields
 
@@ -460,7 +497,7 @@ Ordering or top-N across groups, buckets and windows, and `by` on latest-by are 
 **Kyle's choices, confirmed 2026-11-11:**
 - The spelling `env.about:<prefix>`: it reuses `where`'s existing rule that `env.` names the envelope, so a bare name such as `about:project` is a payload field, and no second name is reserved.
 - Keys are text, so a text value and a number or boolean value that render alike share a group: the text `"1"` and the number 1, the text `"true"` and `true`.
-- A selected record with no key is counted in `ungrouped`: a missing field, no mention under the prefix, or a value that cannot be a key (a fraction, null, an array or an object). It is never dropped and never a refusal; only a payload the reader does not hold makes a key unread.
+- A selected record with no key is counted in `ungrouped`: a missing field, no mention under the prefix, or a value that cannot be a key (a fraction, null, an array or an object). *Amended by Kyle on 2026-11-21: a list gives one group for each of its members; see that date.* It is never dropped and never a refusal; only a payload the reader does not hold makes a key unread.
 - A record mentioning several things under the prefix counts in each.
 - `limit` applies per group; a top-N across groups is a later discussion (the earlier strange-loops had one, in a weather vertex example).
 - `by` is allowed on collect that follows `prev`, and refused only on latest-by.

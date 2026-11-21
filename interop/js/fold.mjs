@@ -6,7 +6,7 @@
 // No dependencies.
 
 import { base32Decode, occurredSpan, spanBefore, momentBefore, validEmitted } from "./loops.mjs";
-import { answer, held, payloadOf, YES, UNKNOWN } from "./where.mjs";
+import { answer, held, payloadReading, YES, UNKNOWN } from "./where.mjs";
 
 // Times on the way in, as the Lean and Rust readers decode a held record
 // (`Gen.Read.record`, model/Gen/Read.lean): `emitted` is text that is a
@@ -92,7 +92,7 @@ export function count(records, { where } = {}) {
 }
 
 const wholeAt = (r, field) => {
-  const v = (payloadOf(r) ?? {})[field];
+  const v = payloadReading(field, r).v?.one;
   return typeof v === "number" && Number.isSafeInteger(v) ? v : undefined;
 };
 

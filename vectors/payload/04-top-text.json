@@ -1,0 +1,12 @@
+{
+  "vector": "04-top-text",
+  "layer": "payload",
+  "laws": ["payload.read"],
+  "source": "model",
+  "input": {
+    "payload": "held"
+  },
+  "expect": {
+    "fields": {}
+  }
+}

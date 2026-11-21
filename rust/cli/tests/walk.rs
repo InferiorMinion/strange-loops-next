@@ -1941,3 +1941,171 @@ fn a_collect_keeps_the_envelope_when_the_payload_is_erased_or_withheld() {
     other.ok_with(&["import"], &s.ok(&["export", "--kind", "note"]));
     check(&other, "withheld");
 }
+
+#[test]
+fn service_lists_are_read_by_folds_and_shown_in_full() {
+    let store = Store::new("payload-services");
+    let grafana = store.ok(&[
+        "emit",
+        "svc",
+        "--of",
+        "svc:grafana",
+        r#"watches:=["svc:prometheus","svc:loki"]"#,
+    ]);
+    let prometheus = store.ok(&[
+        "emit",
+        "svc",
+        "--of",
+        "svc:prometheus",
+        r#"watches:=["svc:node-exporter"]"#,
+    ]);
+    let loki = store.ok(&[
+        "emit",
+        "svc",
+        "--of",
+        "svc:loki",
+        "watches:=[]",
+        "notes:=null",
+        r#"labels:={"tier":"infra"}"#,
+    ]);
+    let caddy = store.ok(&["emit", "svc", "--of", "svc:caddy", "ports:=[80,443,8080]"]);
+    store.ok(&["emit", "backup", "--of", "backup:nas", "status=failed"]);
+    let shown = store.json(&["of", "svc:loki"]);
+    assert_eq!(at(&shown, &["values", "notes"]), &Json::Null);
+    assert_eq!(
+        strings(&shown, &["values", "watches"]),
+        Vec::<String>::new()
+    );
+    assert_eq!(text(&shown, &["values", "labels", "tier"]), "infra");
+
+    for (i, raw) in [
+        include_str!("../../../vectors/spec/run/pv3-written.json"),
+        include_str!("../../../vectors/spec/run/pv4-members.json"),
+        include_str!("../../../vectors/spec/run/pv5-list-bounds.json"),
+        include_str!("../../../vectors/spec/run/pv6-list-groups.json"),
+        include_str!("../../../vectors/spec/run/pv7-list-numeric.json"),
+    ]
+    .iter()
+    .enumerate()
+    {
+        let vector = parse_json(raw).expect("service vector");
+        let spec = at(&vector, &["input", "spec"]).canon();
+        let slots = parse_json(&store.ok_with(&["fold", "-"], &spec)).expect("fold");
+        let Json::Obj(expected) = at(&vector, &["expect"]) else {
+            panic!("slots")
+        };
+        for (k, v) in expected {
+            if ["missing", "who", "others", "records"].contains(&k.as_str()) {
+                continue;
+            }
+            assert_eq!(at(&slots, &[k]).canon(), v.canon(), "{k}");
+        }
+        if i == 0 {
+            assert_eq!(
+                ids(&slots, &["missing", "heads"]),
+                std::slice::from_ref(&caddy)
+            );
+        }
+        if i == 1 {
+            let mut others = ids(&slots, &["others", "heads"]);
+            others.sort();
+            let mut expected = [prometheus.clone(), loki.clone(), caddy.clone()];
+            expected.sort();
+            assert_eq!(others, expected);
+            assert_eq!(
+                ids(&slots, &["who", "heads"]),
+                std::slice::from_ref(&grafana)
+            );
+        }
+        if i == 3 {
+            assert_eq!(
+                ids(&slots, &["records", "groups", "svc:loki", "heads"]),
+                std::slice::from_ref(&grafana)
+            );
+        }
+    }
+}
+
+#[test]
+fn concurrent_route_lists_are_tested_per_setter_and_displayed_whole() {
+    for (label, left, raw) in [
+        (
+            "apart",
+            r#"["svc:a"]"#,
+            include_str!("../../../vectors/spec/run/pv-keys-disjoint.json"),
+        ),
+        (
+            "overlap",
+            r#"["svc:a","svc:b"]"#,
+            include_str!("../../../vectors/spec/run/pv-keys-overlap.json"),
+        ),
+    ] {
+        let (a, b) = (
+            Store::new(&format!("routes-a-{label}")),
+            Store::new(&format!("routes-b-{label}")),
+        );
+        a.ok(&["emit", "svc", "--of", "svc:fork", "base=x"]);
+        b.ok_with(&["import"], &a.ok(&["export"]));
+        let right = if label == "apart" {
+            r#"["svc:b"]"#
+        } else {
+            r#"["svc:a"]"#
+        };
+        let x = a.ok(&[
+            "emit",
+            "svc",
+            "--of",
+            "svc:fork",
+            "--sets",
+            "routes",
+            "--sets",
+            "notes",
+            "--sets",
+            "missing",
+            &format!("routes:={left}"),
+            "notes:=null",
+            "extra:=true",
+        ]);
+        let y = b.ok(&[
+            "emit",
+            "svc",
+            "--of",
+            "svc:fork",
+            &format!("routes:={right}"),
+        ]);
+        a.ok_with(&["import"], &b.ok(&["export"]));
+        let vector = parse_json(raw).expect("keyed vector");
+        let spec = at(&vector, &["input", "spec"]).canon();
+        let slots = parse_json(&a.ok_with(&["fold", "-"], &spec)).expect("slots");
+        for k in [
+            "a",
+            "b",
+            "c",
+            "present",
+            "not-c",
+            "routes",
+            "null",
+            "omitted",
+            "undeclared",
+        ] {
+            assert_eq!(
+                at(&slots, &[k]).canon(),
+                at(&vector, &["expect", k]).canon(),
+                "{label} {k}"
+            );
+        }
+        let values = parse_json(&a.ok_with(&["fold", "-", "--values"], &spec)).expect("decorated");
+        let state = a.json(&["of", "svc:fork"]);
+        let mut expected = vec![
+            (x, Some(parse_json(left).unwrap())),
+            (y, Some(parse_json(right).unwrap())),
+        ];
+        expected.sort_by(|a, b| a.0.cmp(&b.0));
+        for thing in [&state, at(&values, &["state", "things", "svc:fork"])] {
+            let mut observed = setter_values(thing, &["setters", "routes"]);
+            observed.sort_by(|a, b| a.0.cmp(&b.0));
+            assert_eq!(observed, expected);
+        }
+        assert_eq!(without_values(&values).canon(), slots.canon());
+    }
+}

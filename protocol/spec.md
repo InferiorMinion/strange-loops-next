@@ -45,6 +45,17 @@ Thus `"of": "r:X"` takes the root X and every record of X.
 (`env.of` in `where` reads the field as written, which is absent on X.)
 `"about": "r:X"` takes the records that mention X, and not X itself unless it mentions itself.
 
+## Reading a payload
+
+A held payload object supplies one field per top-level member under its written name.
+A held string, number, boolean, list or `null` has no fields. Every payload field is then known absent.
+Withholding or erasure makes the payload unavailable and its fields unknown to tests.
+The reading uses only the payload. Envelope members and `sets` do not supply or remove fields.
+Repeated member names anywhere in a payload are refused when writing the record.
+
+A scalar retains its type. Read a number as binary64 first, then as a whole number if integral and within ±(2^53 − 1).
+A list supplies its immediate text, safe whole and boolean members. Fractions, unsafe numbers, objects, nested lists and `null` inside it supply no member that a test can name. There is no nested lookup.
+
 ## Slots
 
 A slot's name is text that isn't empty. A slot is an object with exactly one
@@ -123,6 +134,7 @@ For a thing whose records are all read whole, `keys` is empty and `whole` and `h
 A thing is selected when one of its heads is chosen.
 The payload tests are then asked of the thing: each test on a payload field is asked of every live setter of that field, whether or not `from` takes it.
 A record with `sets` is asked only about the keys it declares; a payload key it does not declare is not read.
+A setter that declares a key its held payload lacks answers absent for that key. A declared key written as `null` answers present.
 When every live setter gives the same answer, that is the test's answer.
 When they give different answers, or one of them is erased or withheld, the test answers unknown.
 When no record of the thing sets the field, it is absent, as a missing field in a held payload is: `is`, `present`, `at-least` and `below` answer no, and `not` and `absent` answer yes.
@@ -151,13 +163,13 @@ It is text, spelled as `where` spells fields: `env.` names the envelope, and any
 | `env.kind` | its kind |
 | `env.observer` | its observer, the whole typed reference |
 | `env.about:<prefix>` | each member of `about` that starts `<prefix>:`, without it (`project:loops` gives `loops`) |
-| a payload field | the field's value, when it is text, a whole number or a boolean |
+| a payload field | one key for a text, whole number or boolean, or each distinct key supplied by a list member |
 
 The prefix follows the typed-reference grammar: a lower-case letter, then lower-case letters, digits and hyphens.
 A payload field's name is one `where` accepts, so the bare name `about:project` is a payload field.
 A key is text. Text stays as written, a whole number is written in decimal (`-3`, `100`), and a boolean is `true` or `false`.
 So the text `"1"` and the number 1 share the group `1`.
-Any other value, such as `1.5`, has no key.
+Empty text gives the empty key. A list such as `[80,"80",80]` gives the key `80` once. An object, `null`, a fraction or a list with no key leaves the record ungrouped.
 
 A slot with `by` holds `{"groups": {<key>: <result>}, "unread": n, "ungrouped": m}`.
 Each `<result>` is what the slot holds without `by`, with its own `unread` (for example a `sum` over an unreadable value).
@@ -181,7 +193,7 @@ Every selected record (every record whose `where` answers yes or unknown) is gro
 The groups hold each grouped record once per key, so the group sizes add up to memberships, not records.
 A collect's `limit` then shortens each group's `heads`, so its lists can hold fewer than the memberships.
 When every selected record has at most one key, the counts of a grouped `count`, its `ungrouped` and its `unread` add up to the `value` and `unread` of the same count without `by`.
-Every `by` but `env.about:<prefix>` gives at most one key; `env.about:<prefix>` does too over records that each mention one thing under the prefix.
+Grouping by kind or observer always gives one key. A scalar payload field and a missing field each give at most one. A list or a prefixed `about` can give several keys, each once.
 
 A slot with `by` that follows `keys` groups the things it selects, and its result has the same shape.
 Settling, admission, the heads and liveness come first, over everything held.
@@ -189,6 +201,13 @@ Settling, admission, the heads and liveness come first, over everything held.
 - **A payload field:** the thing's keys are the keys of the field's live setters, each once. A live setter that is erased or withheld makes the key unread, and the thing adds one to `unread`. With no live setter, or none whose value has a key, the thing is ungrouped.
 - **`env.kind`, `env.observer` or `env.about:<prefix>`:** the thing's keys are the keys of each head `from` and the envelope tests chose, each once. The envelope is read from the heads, so a later head moves a thing from one group to another, and a pure-join head settles two heads that mention different things. Such a key is never unread; with no key the thing is ungrouped.
 - Each group is the slot without `by` over the things in it, so a forked thing is in each of its groups once, and a collect's `limit` counts the things in each group, each listed whole in each group it is in.
+
+For two live setters of `routes`, the following answers are for one thing. Each list is tested in its own setter.
+
+| Live lists | is svc:a | is svc:b | is svc:c | present | not svc:c | groups |
+|---|---|---|---|---|---|---|
+| `["svc:a"]`, `["svc:b"]` | unknown | unknown | no | yes | yes | svc:a, svc:b |
+| `["svc:a","svc:b"]`, `["svc:a"]` | yes | unknown | no | yes | yes | svc:a, svc:b |
 
 Every selected thing (every thing whose tests answer yes or unknown) is grouped, ungrouped or unread, exactly one of these.
 
@@ -198,7 +217,7 @@ payload an omitted field is absent to `where`, ungrouped under `by`, and unread
 by a numeric slot. Written empty text and written zero are both present.
 Read each number using the layer 0 binary64 rule first.
 For each selected record, count an unavailable payload, missing field, or other value as unread.
-Do not convert text or booleans to numbers.
+A list, even one containing a single number, is unread to each numeric fold. Do not convert text or booleans to numbers.
 The safe input range does not limit the sum accumulator.
 
 ## `where`
@@ -230,6 +249,14 @@ A map holds when every test holds.
 A set field holds a value when a member equals that value.
 `env.of` and `env.under` hold at most one value; on a root, `env.of` holds none.
 Time tests read spans, not spellings.
+
+On a held payload, `present` means the object has the named member and `absent` means it lacks it. A member holding `null`, `{}`, `[]` or `""` is present.
+An envelope with `about: []` is the same record as one omitting `about` and tests absent, while a written empty payload list tests present.
+A bound on an envelope set field is refused at parse, while a bound on a payload field parses and neither bound holds when that field contains a list.
+
+For a list, `is` holds when any readable member equals the argument in both type and value. Order and repeats do not affect the answer.
+`not` is its complement. In particular `["80"]` matches the text `"80"` alone, and `[80.0]` matches the whole number 80.
+An object, `null`, a fractional number, an empty list or a list containing only unnameable members satisfies every `not` and no `is`.
 
 For payload tests, read JSON numbers using the layer 0 binary64 rule.
 A whole value has no fractional part and lies within ±(2^53 − 1), inclusive.

@@ -9,7 +9,7 @@ What is next, in order. This file holds no history and no open questions.
 ## Where we are
 
 - **Steps 0, 1 and 2 are done.** Kyle closed step 2 on 2026-11-20: `loops` emits, reads and folds for one person, signed, over `.loops/`.
-- **Step 4 (ticks) has started.** The cut laws are in the model and the result codec is built. The tick record is not designed yet.
+- **Step 4 (ticks) has started.** The cut laws are in the model and the result codec is built. What a fold reads from a payload is settled and stated in the model (2026-11-21), so a tick can pin a result hash. The tick record is not designed yet.
 - **Three implementations agree on every vector:** Lean (the model), JavaScript and Rust.
 - **One outside user:** rex-tools, a chat room over the `loops` CLI. It found a slow read path (fixed 2026-11-21) and a gap in `--values` (fixed the same day).
 - **The old Python `loops` is still first on `PATH`** on Kyle's machine, and his day-to-day stores are still the old ones.
@@ -18,13 +18,12 @@ The evidence and its counts are kept where they are made: [the law index](design
 
 ## Now
 
-Kyle ruled the payload values on 2026-11-21, so they are being built, in two pieces. The result hash's prefix, ruled the same day, is built.
+The payload values and the result hash's prefix, ruled by Kyle on 2026-11-21, are built. Nothing is being built today: the tick record needs its proposal first.
 
 | Order | Work | State | Waits on |
 | --- | --- | --- | --- |
-| 1 | **Payload values, the second piece.** The reading from a stored payload is stated in the model, with vectors; `present` means written; a list reads as a set under `is`, `not` and `by`, and is never a number. Each changes what some spec answers, so it comes before any tick pins a result hash. | Ruled 2026-11-21 ([the note](notes/2026-11-21-payload-values.md), with the examples the build must match). The first piece, `value` and `n` as ordinary fields, is built. This one is next. | Nothing |
-| 2 | **The tick record:** what a tick holds, how `covers` is stated and checked, and the input key. | The coordinator is writing the proposal. | The proposal, then Kyle ([preview](DECISIONS.md#being-prepared)); [W3, W4 and W5](DECISIONS.md#at-a-glance) before it is built |
-| 3 | **Step 4's ruled pieces** (list below). | Ruled 2026-11-20. Not built. | Some wait on the tick record |
+| 1 | **The tick record:** what a tick holds, how `covers` is stated and checked, and the input key. | The coordinator is writing the proposal. | The proposal, then Kyle ([preview](DECISIONS.md#being-prepared)); [W3, W4 and W5](DECISIONS.md#at-a-glance) before it is built |
+| 2 | **Step 4's ruled pieces** (list below). | Ruled 2026-11-20. Not built. | Some wait on the tick record |
 
 ### Step 4: ruled and not built
 
@@ -64,6 +63,7 @@ None needs a ruling. Each is built when it is the cheapest useful thing to do.
 - `loops emit` takes `--` to end its options, and a verb makes a signing key without emitting (issue #11).
 - The full mutation catalogue runs over the result codec's nineteen entries.
 - The JavaScript sum is exact only to a signed 128-bit limit, and the law index calls it unbounded: make one of them true.
+- The fuzz generator puts lists, objects and `null` in the `spec/run` and `result` families only: give them to the `fold`, `realm` and `scenario` families too.
 
 ## All steps
 
@@ -89,7 +89,7 @@ Costs are S, M, or L for relative effort, not schedules. None of these is schedu
 | Turn horizons into Lean scenario vectors | Tests concrete compositions and exposes missing premises | L: model and scenario work | Start with minimal compositions of existing core; mark new boundary, tick, and service premises unimplemented before proof claims |
 | Prove binary64 roundtrip, then shortest | Strengthens assurance beyond sampled standard cases | L: formal number reasoning | Existing canonical formatter; neither proof blocks the settled standard choice |
 | Bridge source and fold records to hashes | Connects text, record bytes, IDs, and fold outputs | L: byte-level model and evidence | Defined source and writer boundaries; do not assume SHA correctness from bounded IDs |
-| Model the place | Gives the product slice laws: segments as a set | M: model and vectors | The choices in `rust/PLACE.md`; a second reader of the layout. The payload half of this row is now "Payload values", above |
+| Model the place | Gives the product slice laws: segments as a set | M: model and vectors | The choices in `rust/PLACE.md`; a second reader of the layout. The payload half of this row is built (2026-11-21) |
 | Build standing, routing, key management, and sync | Supports more than one writer | L: architecture and security work | Step 3; explicit service contracts and key decisions; safe-wrapper versus raw access choice |
 | Expand malformed-input fuzz and standards coverage | Finds more boundary and adapter differences | M: generators, triage, and regression pins | The settled D1–D5 boundaries; explicit contract before broadening raw extrema |
 | Complete browser, accessibility, and link validation | Checks the reader experience and published references | M: browser and accessibility checks | Workbench and generated pages; validate anchors and external links separately |

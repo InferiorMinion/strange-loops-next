@@ -1,0 +1,157 @@
+{
+  "vector": "pv4-text-80",
+  "layer": "spec/run",
+  "laws": ["where.fields"],
+  "source": "model",
+  "input": {
+    "spec": {
+      "vertex": "pv4-text-80",
+      "from": [
+        {
+          "store": ".",
+          "kind": ["svc"]
+        }
+      ],
+      "fold": {
+        "number": {
+          "collect": true,
+          "where": {
+            "p": {
+              "is": 80
+            }
+          }
+        },
+        "text": {
+          "collect": true,
+          "where": {
+            "p": {
+              "is": "80"
+            }
+          }
+        }
+      }
+    },
+    "orders": [
+      [
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000k0",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:scalar",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"p":"80"}
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000kg",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:text",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"p":["80"]}
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000l0",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:numeric",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"p":[80.0]}
+        }
+      ],
+      [
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000kg",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:text",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"p":["80"]}
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000l0",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:numeric",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"p":[80.0]}
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000k0",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:scalar",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"p":"80"}
+        }
+      ],
+      [
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000l0",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:numeric",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"p":[80.0]}
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000k0",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:scalar",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"p":"80"}
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000kg",
+          "kind": "svc",
+          "observer": "sl:kyle",
+          "about": [],
+          "of": "svc:text",
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z",
+          "fields": {"p":["80"]}
+        }
+      ]
+    ]
+  },
+  "expect": {
+    "number": {
+      "heads": [
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000l0",
+          "shown": "here"
+        }
+      ],
+      "unread": 0
+    },
+    "text": {
+      "heads": [
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000kg",
+          "shown": "here"
+        },
+        {
+          "id": "r:00000000000000000000000000000000000000000000000000k0",
+          "shown": "here"
+        }
+      ],
+      "unread": 0
+    }
+  }
+}

@@ -543,11 +543,11 @@ fn records(mut seed: u32) -> Vec<Record> {
             fields: vec![
                 (
                     "n".into(),
-                    crate::record::Val::Int(i64::from(next(10)).into()),
+                    crate::record::Val::Int(i64::from(next(10)).into()).into(),
                 ),
                 (
                     "status".into(),
-                    crate::record::Val::Str(format!("s{}", next(3))),
+                    crate::record::Val::Str(format!("s{}", next(3))).into(),
                 ),
             ],
             kind: format!("k{}", next(2)),

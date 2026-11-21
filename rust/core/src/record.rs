@@ -1,6 +1,7 @@
 //! Reader records, visibility and order from model/Loops/Record.lean.
 use crate::{
     base32,
+    json::Json,
     number::{Int, MAX_EXACT, Number},
     occurred::{Claim, Span, Stamp},
 };
@@ -18,7 +19,7 @@ pub enum Shown {
     Erased,
 }
 /// Lean: `Loops.Val`, model/Loops/Record.lean.
-/// A payload field holds text, a number, or a Boolean value.
+/// A scalar payload value is text, a number, or a boolean.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Val {
     /// A text value.
@@ -30,6 +31,61 @@ pub enum Val {
     /// A true or false value.
     Bool(bool),
 }
+/// One written payload field (Lean `HeldField`).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Held {
+    /// A scalar, including a nonwhole number.
+    One(Val),
+    /// The immediate nameable members in written order.
+    Many(Vec<Val>),
+    /// An object or null.
+    Other,
+}
+
+impl From<Val> for Held {
+    fn from(value: Val) -> Self {
+        Self::One(value)
+    }
+}
+
+fn scalar(value: &Json) -> Option<Val> {
+    Some(match value {
+        Json::Str(s) => Val::Str(s.clone()),
+        Json::Int(i) => Val::Int(i.clone()),
+        Json::Bool(b) => Val::Bool(*b),
+        Json::Number(n) => n.whole().map_or(Val::Number(*n), Val::Int),
+        _ => return None,
+    })
+}
+
+/// Project a stored opening to the fields a fold reads.
+pub fn payload_fields(payload: &Json) -> Vec<(String, Held)> {
+    let Json::Obj(fields) = payload else {
+        return Vec::new();
+    };
+    fields
+        .iter()
+        .map(|(name, value)| {
+            let held = match value {
+                Json::Arr(xs) => Held::Many(
+                    xs.iter()
+                        .filter_map(scalar)
+                        .filter(|v| match v {
+                            Val::Int(i) => {
+                                *i >= Int::from(-MAX_EXACT) && *i <= Int::from(MAX_EXACT)
+                            }
+                            Val::Str(_) | Val::Bool(_) => true,
+                            Val::Number(_) => false,
+                        })
+                        .collect(),
+                ),
+                v => scalar(v).map_or(Held::Other, Held::One),
+            };
+            (name.clone(), held)
+        })
+        .collect()
+}
+
 /// Lean: `Loops.Record`, model/Loops/Record.lean.
 /// A reader record holds an envelope and a payload view.
 /// Lists keep their order and repeats.
@@ -59,7 +115,7 @@ pub struct Record {
     /// sets every key; an empty list for a pure join, which sets none.
     pub sets: Option<Vec<String>>,
     /// The named payload fields, in lookup order.
-    pub fields: Vec<(String, Val)>,
+    pub fields: Vec<(String, Held)>,
     /// The payload availability for this reader.
     pub shown: Shown,
 }
@@ -151,7 +207,7 @@ impl Record {
     /// Lean: `Loops.Record.get`, model/Loops/Record.lean.
     /// Returns the first matching named field.
     /// This lookup does not inspect payload visibility.
-    pub fn get(&self, name: &str) -> Option<Val> {
+    pub fn get(&self, name: &str) -> Option<Held> {
         self.fields
             .iter()
             .find(|(k, _)| k == name)
@@ -166,7 +222,11 @@ impl Record {
             return None;
         }
         match self.get(name) {
-            Some(Val::Int(n)) if n >= Int::from(-MAX_EXACT) && n <= Int::from(MAX_EXACT) => Some(n),
+            Some(Held::One(Val::Int(n)))
+                if n >= Int::from(-MAX_EXACT) && n <= Int::from(MAX_EXACT) =>
+            {
+                Some(n)
+            }
             _ => None,
         }
     }

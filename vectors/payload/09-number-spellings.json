@@ -1,0 +1,45 @@
+{
+  "vector": "09-number-spellings",
+  "layer": "payload",
+  "laws": ["payload.read"],
+  "source": "model",
+  "input": {
+    "payload": {"one":1.0,"hundred":1e2,"neg":-2E0,"zero":-0,"tiny":5e-324,"ports":[80.0]}
+  },
+  "expect": {
+    "fields": {
+      "hundred": {
+        "one": {
+          "whole": "100"
+        }
+      },
+      "neg": {
+        "one": {
+          "whole": "-2"
+        }
+      },
+      "one": {
+        "one": {
+          "whole": "1"
+        }
+      },
+      "ports": {
+        "many": [
+          {
+            "whole": "80"
+          }
+        ]
+      },
+      "tiny": {
+        "one": {
+          "number": "5e-324"
+        }
+      },
+      "zero": {
+        "one": {
+          "whole": "0"
+        }
+      }
+    }
+  }
+}

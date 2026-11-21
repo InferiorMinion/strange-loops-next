@@ -217,24 +217,24 @@ fn writer_checks_rounded_magnitude_not_whole_number_readability() {
 fn numeric_reads_require_visible_normalized_safe_whole_integers() {
     let record = Record {
         fields: vec![
-            ("n".into(), Val::Number(number("2.0"))),
-            ("whole".into(), Val::Int(Int::from(-3_i64))),
-            ("raw-whole".into(), Val::Number(number("2"))),
-            ("fraction".into(), Val::Number(number("1.5"))),
+            ("n".into(), Val::Number(number("2.0")).into()),
+            ("whole".into(), Val::Int(Int::from(-3_i64)).into()),
+            ("raw-whole".into(), Val::Number(number("2")).into()),
+            ("fraction".into(), Val::Number(number("1.5")).into()),
             (
                 "large".into(),
-                Val::Int(Int::from(9_007_199_254_740_992_i64)),
+                Val::Int(Int::from(9_007_199_254_740_992_i64)).into(),
             ),
         ],
         ..Record::default()
     };
-    assert_eq!(record.get("n"), Some(Val::Number(number("2"))));
+    assert_eq!(record.get("n"), Some(Val::Number(number("2")).into()));
     assert_eq!(record.num("whole"), Some(Int::from(-3_i64)));
     for name in ["n", "raw-whole", "fraction", "large", "missing", "value"] {
         assert_eq!(record.num(name), None, "{name}");
     }
     let mut normalized = record.clone();
-    normalized.fields[0].1 = Val::Int(Int::from(2_i64));
+    normalized.fields[0].1 = Val::Int(Int::from(2_i64)).into();
     assert_eq!(normalized.num("n"), Some(Int::from(2_i64)));
     assert_eq!(normalized.num("whole"), Some(Int::from(-3_i64)));
     for hidden in [
@@ -245,7 +245,7 @@ fn numeric_reads_require_visible_normalized_safe_whole_integers() {
     ] {
         assert_eq!(hidden.num("n"), None);
         assert_eq!(hidden.get("n"), None);
-        assert_eq!(hidden.fields, Vec::<(String, Val)>::new());
+        assert_eq!(hidden.fields, Vec::new());
     }
 }
 
@@ -253,20 +253,23 @@ fn numeric_reads_require_visible_normalized_safe_whole_integers() {
 fn selection_counts_the_values_skipped_by_numeric_steps() {
     let records = vec![
         Record {
-            fields: vec![("n".into(), Val::Int(Int::from(4_i64)))],
+            fields: vec![("n".into(), Val::Int(Int::from(4_i64)).into())],
             ..Record::default()
         },
         Record {
-            fields: vec![("n".into(), Val::Number(number("1.5")))],
+            fields: vec![("n".into(), Val::Number(number("1.5")).into())],
             ..Record::default()
         },
         Record {
-            fields: vec![("n".into(), Val::Int(Int::from(7_i64)))],
+            fields: vec![("n".into(), Val::Int(Int::from(7_i64)).into())],
             shown: Shown::Withheld,
             ..Record::default()
         },
         Record {
-            fields: vec![("n".into(), Val::Int(Int::from(9_007_199_254_740_992_i64)))],
+            fields: vec![(
+                "n".into(),
+                Val::Int(Int::from(9_007_199_254_740_992_i64)).into(),
+            )],
             ..Record::default()
         },
     ];
@@ -288,7 +291,7 @@ fn selection_counts_the_values_skipped_by_numeric_steps() {
     assert_eq!(families::min_acc().fold(&records), Some(Int::from(4_i64)));
     assert_eq!(families::max_acc().fold(&records), Some(Int::from(4_i64)));
     let unnormalized = Record {
-        fields: vec![("n".into(), Val::Number(number("2")))],
+        fields: vec![("n".into(), Val::Number(number("2")).into())],
         ..Record::default()
     };
     let records = [unnormalized];
@@ -307,7 +310,7 @@ fn selection_counts_the_values_skipped_by_numeric_steps() {
     assert_eq!(families::max_acc().fold(&records), None);
     assert_eq!(families::sum_on("n").fold(&records), Int::default());
     let normalized = [Record {
-        fields: vec![("n".into(), Val::Int(Int::from(2_i64)))],
+        fields: vec![("n".into(), Val::Int(Int::from(2_i64)).into())],
         ..Record::default()
     }];
     let sum = families::sum_acc().select(|_| Tri::Yes, &normalized);
@@ -321,19 +324,19 @@ fn max_heads_uses_readable_values_not_placeholder_zero() {
     let state = LatestBy {
         heads: vec![
             Record {
-                fields: vec![("n".into(), Val::Int(Int::from(-4_i64)))],
+                fields: vec![("n".into(), Val::Int(Int::from(-4_i64)).into())],
                 ..Record::default()
             },
             Record {
-                fields: vec![("n".into(), Val::Number(number("1.5")))],
+                fields: vec![("n".into(), Val::Number(number("1.5")).into())],
                 ..Record::default()
             },
             Record {
-                fields: vec![("n".into(), Val::Number(number("2")))],
+                fields: vec![("n".into(), Val::Number(number("2")).into())],
                 ..Record::default()
             },
             Record {
-                fields: vec![("n".into(), Val::Int(Int::from(-2_i64)))],
+                fields: vec![("n".into(), Val::Int(Int::from(-2_i64)).into())],
                 ..Record::default()
             },
             Record {

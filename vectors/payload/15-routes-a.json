@@ -1,0 +1,20 @@
+{
+  "vector": "15-routes-a",
+  "layer": "payload",
+  "laws": ["payload.read"],
+  "source": "model",
+  "input": {
+    "payload": {"routes":["svc:a"]}
+  },
+  "expect": {
+    "fields": {
+      "routes": {
+        "many": [
+          {
+            "text": "svc:a"
+          }
+        ]
+      }
+    }
+  }
+}

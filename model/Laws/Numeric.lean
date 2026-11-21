@@ -23,18 +23,21 @@ theorem Record.num_safe {r : Record} {field : String} {i : Int}
   · cases hg : r.get field <;> simp only [hg] at h
     · cases h
     · rename_i v
-      cases v <;> simp only at h
-      all_goals try { cases h }
-      split at h
-      · rename_i hs
-        cases h
-        exact hs
-      · cases h
+      cases v with
+      | many | other => contradiction
+      | one v =>
+        cases v <;> simp only at h
+        all_goals try { cases h }
+        split at h
+        · rename_i hs
+          cases h
+          exact hs
+        · cases h
   · cases h
 
 /-- A nonwhole numeric payload is unread by a numeric slot. -/
 theorem Record.num_number {r : Record} {field : String} {n : Number}
-    (h : r.get field = some (.number n)) : r.num field = none := by
+    (h : r.get field = some (.one (.number n))) : r.num field = none := by
   simp [Record.num, h]
 
 /-! ## Sum -/

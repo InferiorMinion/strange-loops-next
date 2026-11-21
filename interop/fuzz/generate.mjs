@@ -1,6 +1,6 @@
 // Each case has its own PRNG stream. Family scheduling does not change a case.
 import { commitOf, idOf, readEnv, readSalt } from '../js/loops.mjs';
-export const FAMILIES = Object.freeze(['record', 'fold', 'spec', 'realm', 'scenario', 'batch', 'lens']);
+export const FAMILIES = Object.freeze(['record', 'fold', 'spec', 'realm', 'scenario', 'batch', 'lens', 'payload']);
 export const FOLD_LAYERS = Object.freeze(['count', 'sum', 'extrema', 'latest', 'latest-by', 'heads', 'view', 'select']);
 const B32 = '0123456789abcdefghijklmnopqrstuv';
 export function base32(bytes) {
@@ -215,6 +215,52 @@ function numericRecords() {
   }));
 }
 
+// An observation may be written with no member that a spec argument names.
+function observation(rng) {
+  const key = `svc:${rng.int(10)}`;
+  return rng.pick([[], [null, {}, [key], 1.5], [key, key, true, "true", 1, "1", ""],
+    [{ $number: "80.0" }], { nested: key }, null, [key], [false, "false"], key, 3]);
+}
+
+function listSlots(input, rng, index) {
+  // Append the same fields to each form of an id in every order.
+  const values = new Map(input.orders[0].filter(r => r.fields).map(r => [r.id, observation(rng)]));
+  for (const order of input.orders) for (const r of order) {
+    if (r.fields) r.fields.sample = clone(values.get(r.id));
+  }
+  const slots = input.spec.fold;
+  for (const follow of [undefined, "prev", "keys"]) {
+    const mode = follow ?? "all", opts = follow ? { follow } : {};
+    for (const [op,arg] of [["is",true],["not",""],["at-least",3],["below",3],["present",true]]) {
+      slots[`sample-${mode}-${op}`] = { count: true, ...opts, where: { sample: { [op]: arg } } };
+    }
+    slots[`sample-${mode}-groups`] = { count: true, ...opts, by: "sample" };
+    for (const fold of ["sum","min","max"]) slots[`sample-${mode}-${fold}`] = { [fold]: "sample", ...opts };
+  }
+
+  // The two siblings share their base. Decide their list membership separately.
+  const thing = "svc:list-fork";
+  const emit = (sets, fields, prev = []) => ({
+    id: `r:${base32(rng.bytes(32))}`, kind: "service", of: thing, observer: "o:writer",
+    about: [], prev, emitted: "2025-01-01T00:00:00Z", sets, fields,
+  });
+  const base = emit([], {});
+  const overlap = (index & 2) === 0;
+  const left = emit(["routes", "sample", "missing"], {
+    routes: overlap ? ["svc:a","svc:b"] : ["svc:a"], sample: null, undeclared: true,
+  }, [base.id]);
+  const right = emit(["routes"], { routes: overlap ? ["svc:a"] : ["svc:b"] }, [base.id]);
+  if (index % 16 === 7) { right.shown = "withheld"; delete right.fields; }
+  input.spec.from.push({ store: "s:local", of: thing });
+  for (const k of ["a", "b", "c"]) slots[`routes-${k}`] = {
+    count: true, follow: "keys", where: { routes: { is: `svc:${k}` } },
+  };
+  slots["routes-groups"] = { count: true, follow: "keys", by: "routes" };
+  slots["routes-omissions"] = { count: true, follow: "keys",
+    where: { missing: { absent: true }, undeclared: { absent: true }, sample: { present: true } } };
+  for (const order of input.orders) order.push(...shuffled(clone([base,left,right]), rng));
+}
+
 export function generate(seed, index, family) {
   if (!FAMILIES.includes(family)) throw new Error(`unknown family: ${family}`);
   if (!Number.isSafeInteger(index) || index < 0) throw new Error('index must be a nonnegative safe integer');
@@ -303,6 +349,15 @@ export function generate(seed, index, family) {
       variant.about = variant.about.toReversed().concat(variant.about[0]);
       input = { envs: [env, variant], payloads: [p, reorder(p, rng)],
         salt: base32(rng.bytes(16)), seed: base32(rng.bytes(32)) };
+      break;
+    }
+    case 'payload': {
+      const values = [null, true, `text-${rng.int(1000)}`, rng.int(100), 1.5, [observation(rng)]];
+      input = { payload: index % 8 === 0 ? rng.pick(values) : {
+        sample: observation(rng), n: rng.pick([0, "", null, [1,2]]), value: observation(rng),
+        bound: rng.pick([{ $number: "9007199254740991.1" }, -Number.MAX_SAFE_INTEGER, 1.5]),
+        stamp: rng.int(1000000),
+      } };
       break;
     }
     case 'lens': layer = 'lens/section'; input = lens(rng); break;
@@ -727,5 +782,6 @@ export function generate(seed, index, family) {
       if (sets !== undefined) d.env.sets = sets;
     }
   }
+  if (layer === "spec/run" && !nearMiss && !numeric) listSlots(input, rng, index);
   return { layer, input, fuzz: { seed: String(seed), index, family, nearMiss } };
 }

@@ -7,10 +7,11 @@ use std::fs;
 
 const FAMILIES: &[(&str, usize)] = &[
     ("record", 197),
+    ("payload", 18),
     ("occurred", 9),
     ("byte-text", 5),
     ("fold", 50),
-    ("spec", 210),
+    ("spec", 220),
     ("realm", 16),
     ("scenario", 7),
     ("lens", 21),
@@ -242,7 +243,7 @@ fn every_registered_json_and_every_arrival_order() {
     for (family, _) in FAMILIES {
         assert!(seen.iter().any(|s| s == family), "missing {family}");
     }
-    assert_eq!(checked, 633);
+    assert_eq!(checked, 661);
     overflowing.sort();
     assert_eq!(
         overflowing, OVERFLOWING,

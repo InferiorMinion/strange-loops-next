@@ -1,0 +1,12 @@
+{
+  "vector": "06-top-fraction",
+  "layer": "payload",
+  "laws": ["payload.read"],
+  "source": "model",
+  "input": {
+    "payload": -1.5
+  },
+  "expect": {
+    "fields": {}
+  }
+}

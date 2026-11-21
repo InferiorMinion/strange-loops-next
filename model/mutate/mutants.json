@@ -212,8 +212,8 @@
   {
     "id": "record-num-drop-int",
     "file": "Record.lean",
-    "before": "| some (.int i) => if -(2^53 - 1) ≤ i ∧ i ≤ 2^53 - 1 then some i else none",
-    "after": "| some (.int _) => none",
+    "before": "| some (.one (.int i)) => if -(2^53 - 1) ≤ i ∧ i ≤ 2^53 - 1 then some i else none",
+    "after": "| some (.one (.int _)) => none",
     "reason": "Use the default result for the integer match arm."
   },
   {
@@ -524,7 +524,7 @@
     "id": "wide-record-049",
     "file": "Record.lean",
     "before": "r.fields.lookup name",
-    "after": "(r.fields.lookup name).orElse fun _ => if name == \"value\" then some (.str \"\") else none",
+    "after": "(r.fields.lookup name).orElse fun _ => if name == \"value\" then some (.one (.str \"\")) else none",
     "reason": "Change this selection or check.",
     "definition": "Loops.Record.get"
   },
@@ -1843,8 +1843,8 @@
   {
     "id": "by-unreadable-ungrouped",
     "file": "Spec.lean",
-    "before": "| .payload name, r => if r.shown = .here then some ((r.get name).bind Val.key).toList else none",
-    "after": "| .payload name, r => if r.shown = .here then some ((r.get name).bind Val.key).toList else some []",
+    "before": "| .payload name, r => if r.shown = .here then some (((r.get name).map HeldField.keys).getD []) else none",
+    "after": "| .payload name, r => if r.shown = .here then some (((r.get name).map HeldField.keys).getD []) else some []",
     "reason": "Count a payload key the reader cannot read as ungrouped instead of unread.",
     "definition": "Loops.By.keys"
   },
@@ -2479,5 +2479,117 @@
     "after": "| .groups gs u m => .groups gs u m",
     "reason": "Keep what is shown in a grouped slot's lists.",
     "definition": "Loops.SlotValue.unshown"
+  },
+  {
+    "id": "payload-nonobject-field",
+    "file": "Stored.lean",
+    "definition": "Loops.payloadFields",
+    "before": "| .obj kvs => kvs.map fun (k, v) => (k, readHeld v)\n  | _ => []",
+    "after": "| .obj kvs => kvs.map fun (k, v) => (k, readHeld v)\n  | _ => [(\"value\", .other)]",
+    "reason": "Invent a field on a non-object opening."
+  },
+  {
+    "id": "payload-drop-other-field",
+    "file": "Stored.lean",
+    "definition": "Loops.payloadFields",
+    "before": "| .obj kvs => kvs.map fun (k, v) => (k, readHeld v)",
+    "after": "| .obj kvs => kvs.filterMap fun (k, v) => if readHeld v == .other then none else some (k, readHeld v)",
+    "reason": "Drop a written object or null."
+  },
+  {
+    "id": "payload-whole-as-number",
+    "file": "Stored.lean",
+    "definition": "Loops.payloadScalar?",
+    "before": "some ((n.whole?.map Val.int).getD (.number n))",
+    "after": "some (.number n)",
+    "reason": "Retain a safe whole binary64 value as an unread number."
+  },
+  {
+    "id": "payload-fraction-member",
+    "file": "Stored.lean",
+    "definition": "Loops.payloadMember?",
+    "before": "(payloadScalar? j).filter Val.nameable",
+    "after": "match payloadScalar? j with\n  | some (.number _) => some (.int 0)\n  | v => v.filter Val.nameable",
+    "reason": "Read a fractional list member as zero."
+  },
+  {
+    "id": "payload-flatten-nested",
+    "file": "Stored.lean",
+    "definition": "Loops.readHeld",
+    "before": ".many (xs.filterMap payloadMember?)",
+    "after": ".many (xs.flatMap fun j => match j with | .arr ys => ys.filterMap payloadMember? | x => (payloadMember? x).toList)",
+    "reason": "Read members one list deeper."
+  },
+  {
+    "id": "payload-list-first-match",
+    "file": "Spec.lean",
+    "definition": "Loops.Arg.matches",
+    "before": "| .val v, .members vs => vs.contains v",
+    "after": "| .val v, .members vs => vs.head? == some v",
+    "reason": "Only match the first readable member."
+  },
+  {
+    "id": "payload-empty-absent",
+    "file": "Spec.lean",
+    "definition": "Loops.Field.read",
+    "before": "((r.get f).toList.map HeldField.item)",
+    "after": "(((r.get f).filter (· != .many [])).toList.map HeldField.item)",
+    "reason": "Count a written empty list as absent."
+  },
+  {
+    "id": "payload-other-absent",
+    "file": "Spec.lean",
+    "definition": "Loops.Field.read",
+    "before": "((r.get f).toList.map HeldField.item)",
+    "after": "(((r.get f).filter (· != .other)).toList.map HeldField.item)",
+    "reason": "Count an object or null as absent."
+  },
+  {
+    "id": "payload-list-atleast-any",
+    "file": "Spec.lean",
+    "definition": "Loops.Item.atLeast",
+    "before": "| .val (.int i), .val (.int j) => decide (i ≤ j)",
+    "after": "| .val (.int i), .val (.int j) => decide (i ≤ j)\n  | .val (.int i), .members vs => vs.any fun | .int j => decide (i ≤ j) | _ => false",
+    "reason": "Compare individual numeric members to the lower bound."
+  },
+  {
+    "id": "payload-list-below-any",
+    "file": "Spec.lean",
+    "definition": "Loops.Item.below",
+    "before": "| .val (.int i), .val (.int j) => decide (j < i)",
+    "after": "| .val (.int i), .val (.int j) => decide (j < i)\n  | .val (.int i), .members vs => vs.any fun | .int j => decide (j < i) | _ => false",
+    "reason": "Compare individual numeric members to the upper bound."
+  },
+  {
+    "id": "payload-list-first-key",
+    "file": "Spec.lean",
+    "definition": "Loops.HeldField.keys",
+    "before": "| .many vs => canonSet (vs.filterMap Val.key)",
+    "after": "| .many vs => (canonSet (vs.filterMap Val.key)).take 1",
+    "reason": "Keep at most one list group."
+  },
+  {
+    "id": "payload-list-repeat-key",
+    "file": "Spec.lean",
+    "definition": "Loops.HeldField.keys",
+    "before": "| .many vs => canonSet (vs.filterMap Val.key)",
+    "after": "| .many vs => vs.filterMap Val.key",
+    "reason": "Keep repeated keys and typed collisions."
+  },
+  {
+    "id": "payload-list-first-number",
+    "file": "Record.lean",
+    "definition": "Loops.Record.num",
+    "before": "| some (.one (.int i)) => if -(2^53 - 1) ≤ i ∧ i ≤ 2^53 - 1 then some i else none",
+    "after": "| some (.one (.int i)) => if -(2^53 - 1) ≤ i ∧ i ≤ 2^53 - 1 then some i else none\n    | some (.many (.int i :: _)) => some i",
+    "reason": "Read a list beginning with a number as a numeric field."
+  },
+  {
+    "id": "payload-keys-union-is",
+    "file": "Spec.lean",
+    "definition": "Loops.Cond.onThing",
+    "before": "| .payload f => Tri.agree ((rs.filter (liveFor rs f)).map c.eval) (.ofBool (c.op.test []))",
+    "after": "| .payload f =>\n    let ss := rs.filter (liveFor rs f)\n    if (match c.op with | .is _ => true | _ => false) &&\n        ss.all (fun r => match r.get f with | some (.many _) => r.shown == .here | _ => false) &&\n        ss.any (fun r => c.eval r == .yes) then .yes\n    else Tri.agree (ss.map c.eval) (.ofBool (c.op.test []))",
+    "reason": "Accept an equality test on live lists when any setter answers yes."
   }
 ]

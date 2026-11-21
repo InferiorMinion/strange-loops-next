@@ -281,17 +281,20 @@ def shownOf (path : String) (j : Json) : Dec Shown := do
   | "erased" => pure .erased
   | s => bad path s!"\"{s}\" is not here, withheld or erased"
 
-def valOf (path : String) : Json → Dec Val
-  | .str s => pure (.str s)
-  | .int i => pure (.int i)
-  | .number n => if n.finite then pure (.number n) else bad path "number-out-of-range"
-  | .bool b => pure (.bool b)
-  | _ => bad path "a payload field is text, a number or a boolean"
+/-- Reader fixtures allow finite numbers outside the writer's safe range.
+Check the entire supplied JSON before discarding unreadable nested members. -/
+partial def validateField (path : String) : Json → Dec Unit
+  | .number n => unless n.finite do bad path "number-out-of-range"
+  | .arr xs => do
+    for (x, i) in xs.zipIdx do validateField (idx path i) x
+  | j@(.obj _) => do
+    for (k, v) in ← object path j do validateField (dot path k) v
+  | _ => pure ()
 
-def fieldsOf (path : String) (j : Json) : Dec (List (String × Val)) := do
+def fieldsOf (path : String) (j : Json) : Dec (List (String × HeldField)) := do
   let kvs ← object path j
-  kvs.mapM fun (k, v) => do
-    pure (k, ← valOf (dot path k) v)
+  for (k, v) in kvs do validateField (dot path k) v
+  pure (payloadFields j)
 
 def recordKeys : List String :=
   ["id", "kind", "observer", "about", "of", "prev", "under", "emitted", "occurred", "erases", "sets",

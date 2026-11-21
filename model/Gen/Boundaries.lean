@@ -29,7 +29,7 @@ structure Case where
 
 def r (id : RecordId) (value : String) (fields : List (String × Val) := []) : Record :=
   { id, kind := "task", observer := "sl:ada", about := ["task:1"], prev := [],
-    emitted := stampAt 100, fields := ("value", .str value) :: fields }
+    emitted := stampAt 100, fields := ("value", .one (.str value)) :: fields.map fun (k, v) => (k, .one v) }
 
 def tri : Tri → String
   | .yes => "yes"
@@ -99,7 +99,16 @@ def cases : Except String (List Case) := do
   let c (ps : List (String × Json)) := s!"{(Json.obj ps).canon} and {(Json.obj ps.reverse).canon}"
   unless (Json.obj distinctPairs).canon == (Json.obj distinctPairs.reverse).canon do throw "record.member-order: held side differs"
   if (Json.obj dupPairs).canon == (Json.obj dupPairs.reverse).canon then throw "record.member-order: duplicates agree anyway"
+  let memberships (h : HeldField) :=
+    (((By.payload "routes").keys { here with fields := [("routes", h)] }).getD []).length
+  let single := memberships (.one (.str "a"))
+  let multiple := memberships (.many [.str "a", .str "b"])
+  unless single == 1 && multiple == 2 do throw "by.partition: wrong membership count"
   return [
+    { law := "by.partition", premise := "each selected record has at most one key",
+      input := "one selected record in a count by routes",
+      holds := ("routes is the text a", s!"{single} grouped membership"),
+      removed := ("routes holds the list [a, b]", s!"{multiple} grouped memberships") },
     { law := "result.full", premise := "every record is readable to the fold",
       input := "a valid input: a payload can lack a field",
       holds := ("sum of est over a record holding est = 3", sel full),
