@@ -134,6 +134,12 @@ Of what the exit check left, none blocks:
 - An import of the old tool's stores, and what its `combine` and `discover` vertices did, wait until they are wanted.
 - The old Python `loops` is first on `PATH` on Kyle's machine. That is not the repository's to settle.
 
+**Built, 2026-11-21: `--values` gives the envelope** ([issue 9](https://git.gruel.network/kaygee/strange-loops-next/-/issues/9)).
+The issue came from rex-tools, a chat room over the `loops` CLI and its first outside user: a timeline needs each record's `emitted`, `observer` and `about`, and got them from a second `loops export` joined by id.
+Under `--values`, each `{"id", "shown"}` entry that a collect or a latest-by following `prev` lists gains `env`, the envelope as stored, whatever its `shown`; each thing of a latest-by that follows `keys` gains `about` as `loops of` writes it, and each of its heads gains `env` ([place](rust/PLACE.md), choice 17).
+Without the option nothing changes, and taking the added members out still gives the protocol's answer byte for byte. Only `rust/cli` changed.
+**Implementer choices, for Kyle to confirm:** no new flag, the envelope comes with `--values`; the member is `env`, the whole stored envelope, not three picked fields; an erased or withheld record's entry has `env` and no `payload`; a keyed thing's `about` is always written, empty when no head mentions anything, as in `loops of`; entries under a keyed thing's `keys` and `whole` gain nothing.
+
 ## Decisions for the human
 
 ### Settled: Step-1 rulings R1–R6
