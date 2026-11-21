@@ -222,7 +222,37 @@ The record starts where the old roadmap's did. For anything earlier, and for eve
 <li><p>The model states how a stored payload is read, and a list reads as a set: <code>present</code> means written, <code>is</code> and <code>by</code> read a list's members, and a list is never a number.</p></li>
 <li><p><code>value</code> and <code>n</code> are ordinary payload fields: a record that does not hold one is unread, absent and ungrouped for it, as for any other name.</p></li>
 <li><p>Kyle ruled the seven payload values choices, the result hash's prefix, which choices come to him, and the three classes of edge; he confirmed the keyed-fold and codec choices; issue #10 is closed.</p></li>
+<li><p>The tick record is proposed as TK1 to TK9 in <code>DECISIONS.md</code>, with <a href="note-2026-11-21-tick-record.html">a note</a> (!65). Not ruled.</p></li>
+<li><p><code>loops emit</code> copies <code>occurred</code> from the heads when they agree; <code>--no-occurred</code> states none.</p></li>
+<li><p>The roadmap, the decisions, the changelog and the notes are published as a fifth design page, and the rethink and grammar pages are brought up to the rulings since 2026-11-13.</p></li>
 </ul>
+<h3 id="the-decisions-page-and-the-rethink-and-grammar-pages-brought-up-to-date">The decisions page, and the rethink and grammar pages brought up to date</h3>
+<p>Kyle asked for both on 2026-11-21, for a colleague who reads the site and not the repository.</p>
+<ul>
+<li><p><strong>A fifth page, <code>out/decisions/</code>.</strong> <code>DECISIONS.md</code> is its landing page; <code>ROADMAP.md</code>, <code>CHANGELOG.md</code> and each file in <code>notes/</code> are pages beside it. <code>node design/build.mjs</code> renders them with a Markdown renderer of its own, with no dependencies. A new note needs no code change.</p></li>
+<li><p><strong>The build checks what it renders.</strong> It refuses a block it does not support, a link to a heading no page has, and a link to a repository path that does not exist; three new entries in <code>design/mutants.mjs</code> hold it to that. The link check now covers every link of every page, the rethink page's included. A link to a file that is not a page goes to the repository on GitHub.</p></li>
+<li><p><strong>So a change to any of these documents changes <code>out/</code>.</strong> CI fails when the committed pages differ from a rebuild: run <code>node design/build.mjs</code> with every edit to the roadmap, the decisions, the changelog or a note.</p></li>
+<li><p><strong>The rethink page.</strong> Twelve ledger entries for the rulings of 2026-11-13 to 2026-11-21 (declared keys, the anchor, edges, the payload reading, the result codec, the cut, a tick's inputs, the window, an emit against a base, step 2 closed, which choices come to Kyle), with the tick record entered as proposed. About forty passages that called something unbuilt or open are corrected, and the Resolution tab opens with what is ruled since its text was written. Passages that only TK1 to TK9 would change are left until he rules.</p></li>
+<li><p><strong>The grammar page.</strong> The record's entry states the payload reading; <code>emit</code>, <code>test</code> and <code>group</code> are current; the tick's entry says its record is proposed.</p></li>
+</ul>
+<p>A Codex worker wrote the fifth page and the coordinator reviewed it; the coordinator wrote the rethink and grammar changes, from a list of stale passages that a search agent drew up and that was checked passage by passage.</p>
+<h3 id="loops-emit-copies-occurred"><code>loops emit</code> copies <code>occurred</code></h3>
+<p>Ruled on 2026-11-20 (<a href="note-2026-11-15-the-cut.html">the cut note</a>, section 5) and built on 2026-11-21. Rust only: the filler in <code>rust/place/src/fill.rs</code> and the CLI. No protocol rule changed.</p>
+<ul>
+<li><p>An emit of a thing the store holds, with no <code>--occurred</code>, carries the <code>occurred</code> of the thing's heads when every head states one and all state the same text.</p></li>
+<li><p><code>--occurred &lt;when&gt;</code> states a new occurrence, as before. <code>--no-occurred</code> states that the record has none. The two together are a usage error.</p></li>
+<li><p>A root and the first record of a thing copy nothing. <code>emit -</code> fills nothing in, as before.</p></li>
+<li><p>The case the ruling was made on, run with both binaries: an ADR emitted with <code>--occurred 2009-04</code>, then <code>status=accepted</code> with no flag. Before, the update moved the thing out of a window on 2009. Now it stays in it.</p></li>
+</ul>
+<p>Implementer choices; they stand under Kyle's ruling of 2026-11-21 (W7):</p>
+<ul>
+<li><p>The heads agree when their <code>occurred</code> is the same text. <code>2009</code> and <code>2009?</code> cover one span and do not agree.</p></li>
+<li><p>Where the heads do not agree, or one states none, the emit states none.</p></li>
+<li><p>Only the heads are read. A live record under them that states another <code>occurred</code> plays no part.</p></li>
+<li><p>An erased or withheld head supplies its <code>occurred</code>, since the envelope is held.</p></li>
+<li><p>The usage error reads <code>--no-occurred takes no --occurred beside it</code>.</p></li>
+</ul>
+<p>Checked: the Rust gate (202 tests), with walks for the copy, the two flags, their conflict, a fork whose heads disagree, a first record, an erased and a withheld head, and a changeset. A Codex worker wrote it; the coordinator reviewed it and ran the gate and the ADR case.</p>
 <h3 id="ruled-by-kyle-2026-11-21">Ruled by Kyle, 2026-11-21</h3>
 <p>Each was an entry in <code>DECISIONS.md</code>, with an example. Kyle ruled for the recommendation every time.</p>
 <ul>
