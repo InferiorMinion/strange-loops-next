@@ -292,11 +292,11 @@ A shell prompt or a chat hook that reads on every prompt pays that every time. W
 
 Under B the JavaScript stays for everything it has today (records, folds, specs, the result codec) and is kept passing its vectors, the payload values change included. It does not grow ticks, standing or sync.
 
-**Views.** Neon proposes B. margins-claude is against retiring it (C): JavaScript is what the in-repo fuzz compares, and its own Python lives in another repository and is not in CI. I recommend B for step 4 only, looked at again when ticks are done.
+**Views.** Neon proposes B. margins-claude is against retiring it (C): JavaScript is what the in-repo fuzz compares, and its own Python lives in another repository and is not in CI. It has no objection to B as a trial for step 4, with the risk below. I recommend B for step 4 only, looked at again when ticks are done.
 
 **What B risks.** When Lean and Rust disagree, no third implementation says which is wrong; the model wins by definition. A misreading shared by the Lean side and the Rust port goes unseen, and the same sessions write both.
 
-**What I do not have.** A count of faults that only the JavaScript side caught. If you want it before ruling, I can go through the fuzz reports for it.
+**What I do not have.** A count of faults that only the JavaScript side caught; margins-claude has none either. If you want it before ruling, I can go through the fuzz reports for it.
 
 ### W4: the refusal for input that is wrong twice
 
@@ -396,7 +396,7 @@ It would not fix this: a message stamped 9:04 that reaches the store at 9:10, th
 rex-tools has since moved to a local list of the ids it has seen, which has neither problem. The session that filed the issue wrote that it is fine to close.
 
 **Options.**
-- **Close it, with no new operator (recommended).** The tick record proposal carries the use: unread is what a spec takes that the reader's last tick does not cover.
+- **Close it, with no new operator (recommended).** An inbox keeps its own list of what it has seen, as rex-tools now does. A reader's tick is kept for boundaries worth citing, such as a handoff; it is not an inbox's read marker.
 - Add a strict operator.
 
 ## To confirm

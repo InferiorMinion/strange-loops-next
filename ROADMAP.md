@@ -64,7 +64,7 @@ None needs a ruling. Each is built when it is the cheapest useful thing to do.
 
 - `loops emit` takes `--` to end its options, and a verb makes a signing key without emitting (issue #11).
 - The full mutation catalogue runs over the result codec's nineteen entries.
-- Issue #10 (a strict "after" on `emitted`) is closed with a note for the tick record, if Kyle agrees: [I10](DECISIONS.md#i10-close-issue-10).
+- Issue #10 (a strict "after" on `emitted`) is closed with no new operator, if Kyle agrees: [I10](DECISIONS.md#i10-close-issue-10).
 
 ## All steps
 
