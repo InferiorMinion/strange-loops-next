@@ -51,7 +51,7 @@
   <p><b>Delivery isn't trust.</b> Anyone can hand you records. The id proves the content is intact, the signature proves who wrote it, and admission decides whether it counts.</p>
   <div class="cards">
     <div class="card acc"><h5>What gets signed</h5><p>The record's <b>id</b>, prefixed <code>loops/record/v1:</code>. The signature sits beside the record, outside the id: <code>sig { key, ed25519 }</code>. It survives erasure (the id covers the payload's commitment), and a stripped copy is the same record with less proof.</p></div>
-    <div class="card"><h5>When it's checked</h5><p>Once per record per machine, when it enters the index, which caches the verdict. Ed25519 takes tens of microseconds: a million records is well under a minute, once.</p></div>
+    <div class="card"><h5>When it's checked</h5><p>The plan: once per record per machine, when it enters the index, which caches the verdict. Ed25519 takes tens of microseconds: a million records is well under a minute, once. As built, every <code>loops</code> verb checks every line on every run, about half a second for 9,000 records; remembering which segments were checked is an open decision.</p></div>
     <div class="card"><h5>Signing by default</h5><p>The CLI makes keys silently on first run and signs every emit; store policy decides what's checked. Unsigned records only come from importers and outside tools, and the hygiene vertex counts them.</p></div>
     <div class="card"><h5>Stores verify themselves</h5><p>On your first write into a store, your anchor and current key bindings are copied in verbatim. Every signature in a store can be checked from that store, by any replica, offline.</p></div>
   </div>

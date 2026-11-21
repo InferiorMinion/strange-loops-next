@@ -8,9 +8,9 @@
       "word": "record",
       "status": "proved",
       "purpose": "Say one thing an observer saw, so anyone can check it and nobody can change it.",
-      "state": "An envelope, payload and signature. The record layer treats payload content as opaque; folds read supported fields. Its id hashes envelope and payload commitment.",
+      "state": "An envelope, payload and signature. A fold reads the top-level members of a held payload object as fields: a list reads as a set, no field name is special, and nothing reads inside a nested object. Its id hashes envelope and payload commitment.",
       "principle": "Its id hashes what it says, written canonically: spell a set another way and the id doesn't move. Erase its payload and the id, the signature and every record citing it still hold.",
-      "laws": ["record.erasure", "record.sets", "write.checked"]
+      "laws": ["record.erasure", "record.sets", "write.checked", "payload.read"]
     },
     {
       "word": "observer",
@@ -18,7 +18,7 @@
       "purpose": "Say who saw it.",
       "state": "A typed reference on every record, usually a lineage id <code>sl:…</code>.",
       "principle": "Nothing a record says is true; it is said, by its observer. Two observers disagreeing is two records, both kept.",
-      "pending": "Keys checked at read, and standing, arrive in step 3.",
+      "pending": "Today the observer is the signing key, <code>k:…</code>, and every signature is checked at read. Lineages, key bindings and standing arrive in step 3.",
       "laws": ["record.refuse"]
     },
     {
@@ -92,7 +92,8 @@
       "purpose": "Fix a vertex's result at a moment, so others can cite it.",
       "state": "The vertex, the records it covers, listed exactly, and the result; an id over all three.",
       "principle": "Anyone holding the covered records recomputes the same tick.",
-      "laws": []
+      "pending": "Ruled: a tick folds a set named outright, a part closed downward over <code>prev</code> or a slice of one, and its result lists ids without what the reader holds of them. The record's form is proposed and not ruled (TK1 to TK9 on the Decisions page); under it a tick has no id but its record's.",
+      "laws": ["keyed.cut", "cut.prefix", "result.canonical"]
     },
     {
       "word": "lens",
@@ -113,16 +114,16 @@
     }
   ],
   "verbs": [
-    { "word": "emit", "family": "write", "status": "proved", "says": "Check and sign a record. Appending it to a product store remains planned.", "laws": ["write.checked"] },
+    { "word": "emit", "family": "write", "status": "proved", "says": "Check and sign a record, and append it to a store. <code>loops emit</code> also fills in what a writer's tool may: the thing, the keys set, every live record of the thing, and the heads' <code>about</code> and <code>occurred</code>.", "laws": ["write.checked"] },
     { "word": "tick", "family": "write", "status": "settled", "says": "Fix a vertex's result at a boundary, as a value anyone can recompute.", "laws": [] },
     { "word": "refuse", "family": "any", "status": "proved", "says": "Say no, with a code from a closed set and the path of what broke the rule. Never guess.", "laws": ["record.refuse", "batch.refuse-order"] },
     { "word": "settle", "family": "read", "status": "proved", "says": "Settle consistent forms to one record per id. Keep a held payload unless a held eraser names its id.", "laws": ["settle.keeps", "settle.erased"] },
     { "word": "admit", "family": "read", "status": "proved", "says": "Refuse records not entitled to their <code>prev</code>. Standing joins it in step 3.", "laws": ["admit.set"] },
     { "word": "take", "family": "read", "status": "proved", "says": "A source takes the records its store, kinds, mention and thing choose.", "laws": ["spec.select"] },
-    { "word": "test", "family": "read", "status": "proved", "says": "A <code>where</code> test answers yes, no, or, on a payload the reader lacks, unknown.", "laws": ["where.total", "view.refines"] },
+    { "word": "test", "family": "read", "status": "proved", "says": "A <code>where</code> test answers yes, no, or, on a payload the reader lacks, unknown. <code>present</code> means the member was written. On a list, <code>is</code> asks whether a member equals the value, and no bound holds.", "laws": ["where.total", "view.refines", "where.fields"] },
     { "word": "fold", "family": "read", "status": "proved", "says": "Turn what was taken into a slot's value.", "laws": ["acc.set", "heads.set"] },
     { "word": "follow", "family": "read", "status": "proved", "says": "Walk <code>prev</code> within a thing to its heads: what nothing of it replaces. Following <code>keys</code>, a slot reads a thing by its live setters: for each key, the setters nothing above them replaces for that key.", "laws": ["latest-by.order", "thing.local", "keyed.live", "keyed.slots"] },
-    { "word": "group", "family": "read", "status": "proved", "says": "Split what a slot selects by a key read from each record: its kind, its observer, what it mentions under a prefix, or a payload field. After settling, admission and the heads, never before.", "laws": ["by.after-admission", "by.accounting", "by.partition", "keyed.by"] },
+    { "word": "group", "family": "read", "status": "proved", "says": "Split what a slot selects by a key read from each record: its kind, its observer, what it mentions under a prefix, or a payload field. A payload list puts the record in one group for each member. After settling, admission and the heads, never before.", "laws": ["by.after-admission", "by.accounting", "by.partition", "keyed.by"] },
     { "word": "render", "family": "text", "status": "proved", "says": "Render keyed sections with nonempty, distinct ids. Audience-aware views remain planned.", "laws": ["lens.escaping"] },
     { "word": "parse", "family": "text", "status": "proved", "says": "Read edited text back, refusing what it can't read.", "laws": ["lens.round-trip", "lens.refuse"] },
     { "word": "apply", "family": "text", "status": "settled", "says": "Turn the edits a parse found into records, emitted together.", "laws": ["lens.put-get"] }

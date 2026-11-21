@@ -2,7 +2,7 @@
   <div class="panel-head"><h2>Trust: who counts, walked</h2><button class="toggle-all" type="button">Unfold all</button></div>
   <p class="gist">A line proves which <b>key</b> signed it. Trust is everything between that and "this record counts". Walked end to end, it comes apart into <b>five strata</b>, each reading only the ones below. Two tiers of key are enough. And <b>retire through</b> turns out to need a tick, so standing splits in two around step 4.</p>
   <p><span class="pill p-lean">proposal</span> Two tiers of key is settled; the rest is not, and none of it is built. The first product slice writes only as its signing key, and one model exists for stratum 1. No anchor that anyone means to keep should be made until this walk is closed.</p>
-  <p><span class="pill p-next">order</span> Kyle, 2026-11-10: standing comes after ticks, and arrives with sharing, when records first cross between people. Until then everything runs on one machine under one trust root. Before either comes the item and mention split, decision D8 in the roadmap. Its first two parts, D8a and D8b, are built; D8c is not.</p>
+  <p><span class="pill p-next">order</span> Kyle, 2026-11-10: standing comes after ticks, and arrives with sharing, when records first cross between people. Until then everything runs on one machine under one trust root. Before either comes the item and mention split, decision D8, in the changelog from 2026-11-10 to 2026-11-15. Its three parts, D8a, D8b and D8c, are built.</p>
 
   <h3>The strata</h3>
   <figure>
@@ -31,7 +31,7 @@
       <tr><td><b>1 · speakers</b></td><td>Does this key speak for this observer?</td><td>anchors, key bindings</td><td>modelled with two tiers; retiring a key is not</td></tr>
       <tr><td><b>2 · stewards</b></td><td>Who may change this store's standing?</td><td>the store's anchor, stratum 1</td><td>design only</td></tr>
       <tr><td><b>3 · grants and policy</b></td><td>Who may write what here?</td><td>grants and policy records, strata 1 and 2</td><td>design only</td></tr>
-      <tr><td><b>4 · admission</b></td><td>Does this record count?</td><td>the record, strata 1 to 3</td><td>today's admission reads only <code>prev</code></td></tr>
+      <tr><td><b>4 · admission</b></td><td>Does this record count?</td><td>the record, strata 1 to 3</td><td>today's admission reads only <code>prev</code> and <code>of</code></td></tr>
     </tbody>
   </table></div>
   <div class="callout stack">
@@ -74,7 +74,7 @@
       <p>What every replica can agree on is a set of ids. A retirement has to <b>cover</b> the records it lets stand, and "a signed record that covers a set of ids" is a witness tick. The Sharing tab already said so: "a witness tick in miniature".</p>
     </div></li>
     <li><div class="stack">
-      <p><b>So retiring waits for ticks.</b> It needs the tick's way of covering a set compactly, and the result encoding that question D7 leaves open.</p>
+      <p><b>So retiring waits for ticks.</b> It needs the tick's way of covering a set compactly, and the result encoding, D7, which is built since 2026-11-20.</p>
       <p><b>This settles the order</b> the review argued about. Standing is not one step. The growing half (anchors, bindings, stewards, grants, admission) can come now. Ticks come next. Retiring comes after, as a tick with a stance.</p>
     </div></li>
     <li><div class="stack">
@@ -176,7 +176,7 @@
     <details class="unfold"><summary>Split standing around ticks?</summary>
       <div class="body">
         <p>3a (anchors, bindings, stewards, grants, admission), then ticks, then 3b (retiring). Until 3b exists, a lost key or a departed writer can only be handled by starting a new lineage or a new store, which is honest for a solo store and not for a team.</p>
-        <p><span class="pill p-lean">leaning</span> Yes. It also means D7, the result encoding, gates retiring as well as ticks.</p>
+        <p><span class="pill p-lean">leaning</span> Yes. D7, the result encoding, gated retiring as well as ticks. It is built; both now wait on the tick record, proposed on 2026-11-21.</p>
         <p><span class="pill p-next">walked</span> Kyle leans yes too. The walk is above, under "A lost key, before retiring exists": the split holds for a solo store, with one interim rule for teams.</p>
       </div>
     </details>

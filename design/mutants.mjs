@@ -41,7 +41,7 @@ const MUTANTS = [
   ["a malformed vector name", "protocol/laws.md", swap("`fold/count/01`", "`fold/count/01-empy`")],
   ["a missing named vector", "protocol/laws.md", swap("`spec/run/gap14-field-types`", "`spec/run/gap14-missing`")],
   ["a stale notTheorems entry", "protocol/laws.md", swap("`writeProblem_none`, `Written`", "`writeProblem_none`")],
-  ["a law name no vector or page may use", "design/grammar/words.json", swap('"laws": ["record.erasure", "record.sets", "write.checked"]', '"laws": ["record.erasure", "no.such"]')],
+  ["a law name no vector or page may use", "design/grammar/words.json", swap('"laws": ["record.erasure", "record.sets", "write.checked", "payload.read"]', '"laws": ["record.erasure", "no.such"]')],
   ["a refusal code the page lost", "design/grammar/words.json", swap('"kind-empty", ', "")],
   ["a matrix verb that isn't a verb", "design/grammar/words.json", swap('"verbs": ["emit", "refuse",', '"verbs": ["emit", "dance",')],
   ["a walk step claiming its own heads", "design/grammar/walk.json", json((d) => { d.steps[2].heads = ["A"]; })],

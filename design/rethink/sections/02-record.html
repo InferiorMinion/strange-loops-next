@@ -9,13 +9,14 @@
         <dt>id</dt><dd>content hash of canonical bytes</dd>
         <dt>observer</dt><dd>who saw it (a lineage id)</dd>
         <dt>kind</dt><dd>a label, not a type</dd>
-        <dt>emitted</dt><dd>stamped instant, never set by hand</dd>
+        <dt>emitted</dt><dd>the writer's now, as the writer states it</dd>
         <dt>occurred?</dt><dd>claimed span; can be coarse</dd>
         <dt>about?</dt><dd>the things it mentions: a set</dd>
         <dt>of?</dt><dd>the one thing it is an emit of; a root leaves it out</dd>
         <dt>prev?</dt><dd>the records this one replaces: a set, usually one</dd>
         <dt>under?</dt><dd>the grant it acts on</dd>
         <dt>erases?</dt><dd>record ids whose payloads it erases</dd>
+        <dt>sets?</dt><dd>the payload keys this record sets; without it the record is read whole</dd>
         <dt>payload</dt><dd>anything, including references</dd>
         <dt>sig?</dt><dd>signature over the id, kept beside the record (outside the id); see <a href="#sharing" data-tab="sharing">Sharing</a></dd>
       </dl>
@@ -51,6 +52,7 @@
       <tr><td><code>prev?</code></td><td>Latest and LatestBy follow chains to their heads instead of trusting clocks; a set, so one record can merge a fork</td><td><span class="pill p-lean">keep</span></td></tr>
       <tr><td><code>under?</code></td><td>admission (the grant check)</td><td><span class="pill p-ok">keep</span></td></tr>
       <tr><td><code>erases?</code></td><td>settling payload forms</td><td><span class="pill p-ok">keep</span></td></tr>
+      <tr><td><code>sets?</code></td><td>a slot that follows <code>keys</code>: which records set each key</td><td><span class="pill p-ok">keep</span></td></tr>
       <tr><td><code>covers</code> (tick payload)</td><td>proposed verification</td><td><span class="pill p-next">payload</span></td></tr>
       <tr><td><code>as</code></td><td>nothing: names are never matched</td><td><span class="pill p-sk">drops</span></td></tr>
       <tr><td><code>derived-from</code></td><td>nothing: only hygiene vertices</td><td><span class="pill p-sk">payload</span></td></tr>

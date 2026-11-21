@@ -65,11 +65,11 @@
     <div class="tbl"><table>
       <thead><tr><th>Accumulating</th><th>Over heads</th></tr></thead>
       <tbody>
-        <tr><td>Count, Sum, Min, Max, and Collect without <code>follow</code></td><td>LatestBy, and any fold with <code>"follow": "prev"</code></td></tr>
+        <tr><td>Count, Sum, Min, Max, and Collect without <code>follow</code></td><td>LatestBy, and any fold with <code>"follow": "prev"</code>; with <code>"follow": "keys"</code>, over each thing's live setters</td></tr>
         <tr><td>Compact state; the step is commutative</td><td>The state retains per-thing heads and referenced ids. The answer comes from that state.</td></tr>
       </tbody>
     </table></div>
-    <p>Both families have set-invariance laws under their stated premises. Accumulating folds consume each id once. LatestBy retains heads and all referenced ids, not just the current answer. Its cached state accepts late records. Heads apply per thing, and a record is of exactly one thing; it remains if its thing retains it. Modifiers shape the final answer. Content order chooses among heads, not arrival order.</p>
+    <p>Both families have set-invariance laws under their stated premises. Accumulating folds consume each id once. LatestBy retains heads and all referenced ids, not just the current answer. A reader that caches this state must keep what a record with an unknown <code>prev</code> supersedes; no caching reader is built. Heads apply per thing, and a record is of exactly one thing; it remains if its thing retains it. Modifiers shape the final answer. Content order chooses among heads, not arrival order.</p>
   </div></details>
   <details class="unfold"><summary>Boundaries: content vs operational</summary><div class="body">
     <p>In the earlier prototype, a boundary fired "when a record of kind X <i>arrives</i>": receipt order in disguise.</p>

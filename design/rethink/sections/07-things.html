@@ -23,7 +23,7 @@
   <h3>Where identity lives</h3>
   <figure>
     <div class="fig">
-      <svg class="dg" viewBox="0 0 400 256" role="img" aria-label="The historical vertex grouped decision and thread payloads by topic=auth. The new design anchors r:x1 with a component-start record. Each observation states about r:x1. Grouping arbitrary payload fields remains proposed.">
+      <svg class="dg" viewBox="0 0 400 256" role="img" aria-label="The historical vertex grouped decision and thread payloads by topic=auth. The new design anchors r:x1 with a component-start record. Each observation states about r:x1. A slot can group by a payload field with by; keying LatestBy on one remains proposed.">
         <text x="88" y="18" text-anchor="middle" class="b">earlier prototype</text>
         <text x="298" y="18" text-anchor="middle" class="b">now</text>
         <line class="faint" x1="193" y1="8" x2="193" y2="248"/>
@@ -45,7 +45,7 @@
         <text x="298" y="242" text-anchor="middle" class="xs ta">the link is in the record</text>
       </svg>
     </div>
-    <figcaption>In the earlier prototype, a vertex picked a payload field (<code>Upsert key="topic"</code>). Two facts were related only because their strings happened to match. Now the emitter states the thing. Payload-field grouping remains proposed grammar, not implemented LatestBy behavior.</figcaption>
+    <figcaption>In the earlier prototype, a vertex picked a payload field (<code>Upsert key="topic"</code>). Two facts were related only because their strings happened to match. Now the emitter states the thing. A slot can now group by a payload field with <code>by</code>; keying LatestBy on one remains proposed.</figcaption>
   </figure>
   <p><code>of</code> is the emitter's <b>claim</b> ("this is an emit of r:x1"). A fold key is the vertex's <b>question</b> ("group these by host"). Both stay. <code>of</code> carries one typed reference and <code>about</code> a set of them. The design uses anchoring record ids, natural keys and named system objects. A vertex reference names its spec hash.</p>
 
@@ -215,7 +215,7 @@ strict    refused: no thing called "auth service"; did you mean auth-svc (r:x1)?
     <li><b>Keys converge on their own.</b> Two agents who write <code>topic:auth-service</code> meet without coordinating. Anchors never collide, so minting on every miss makes duplicates: three anchors for one service in the team case above.</li>
     <li><b>Minting becomes deliberate</b> when a thing must survive a rename or be told apart from a namesake. It comes with a <code>same-as</code> from the key to the new anchor, and every early record joins the anchor's class through <code>resolve-by</code>. No migration.</li>
     <li><b>The start record carries the first name,</b> as an anchor carries a self-name; no separate name record.</li>
-    <li><b>Only the envelope joins.</b> <code>of</code> names the thing and <code>about</code> what is mentioned. Payload-topic grouping is proposed. A later record can link evidence to a thing through <code>about</code> and a payload reference. <code>resolve-by</code> never reads payloads.</li>
+    <li><b>Only the envelope joins.</b> <code>of</code> names the thing and <code>about</code> what is mentioned. A slot can group by a payload field with <code>by</code>, and a payload list puts a record in one group for each member. A later record can link evidence to a thing through <code>about</code> and a payload reference. <code>resolve-by</code> never reads payloads.</li>
   </ul>
 
   <details class="unfold"><summary>Matching: one equality relation is enough</summary><div class="body">
@@ -226,7 +226,7 @@ strict    refused: no thing called "auth service"; did you mean auth-svc (r:x1)?
       <tbody>
         <tr><td>Same thing, two anchors</td><td><code>same-as</code>; <code>dispute</code> breaks it</td><td>the identity vertex, through <code>resolve-by</code></td></tr>
         <tr><td>Two things in one observation</td><td>a record about both (<code>about</code> is a set), or a payload reference</td><td>every view of either thing; backlinks</td></tr>
-        <tr><td>A typed relationship, once it matters</td><td>a declared kind with named references: <code>kind "fronts" { ref "proxy" "service" }</code></td><td>lenses, the LSP</td></tr>
+        <tr><td>A typed relationship, once it matters</td><td>a declared kind with named references: <code>kind "fronts" { ref "proxy" "service" }</code>. Until then, by the edges ruling of 2026-11-21: a scalar field, a payload list, or one thing per edge</td><td>lenses, the LSP</td></tr>
         <tr><td>One thing split from another</td><td>the new anchors' start records refer to the original (<code>split-from</code>, a payload convention)</td><td>lenses follow it for ancestry</td></tr>
       </tbody>
     </table></div>
