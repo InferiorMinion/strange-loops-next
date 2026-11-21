@@ -347,7 +347,7 @@
     "group": "Resolution · ticks",
     "status": "leaning",
     "claim": "The tick record is an ordinary record whose payload is the whole tick.",
-    "why": "Proposed on 2026-11-21 and not ruled (TK1 to TK9 on the Decisions page). The payload holds the spec and its hash, <code>covers</code>, the covered records read without a payload, and the result with its hash. A tick among the covered records is one record, never opened up. A store admits a tick without checking it; a verb checks, and answers same, differs or cannot check. This would replace \"a content tick hashes its vertex, covered ids and result\" above: a tick would have no id but its record id. Version 36."
+    "why": "Proposed on 2026-11-21 and not ruled (<a href=\"../decisions/#the-tick-record\">TK1 to TK9</a>). The payload holds the spec and its hash, <code>covers</code>, the covered records read without a payload, and the result with its hash. A tick among the covered records is one record, never opened up. A store admits a tick without checking it; a verb checks, and answers same, differs or cannot check. This would replace \"a content tick hashes its vertex, covered ids and result\" above: a tick would have no id but its record id. Version 36."
   },
   {
     "kind": "decision",
@@ -480,6 +480,6 @@
     "group": "Building",
     "status": "settled",
     "claim": "Only a choice that changes bytes or answers comes to Kyle.",
-    "why": "A choice that changes a record's bytes or id, a result's bytes or hash, a refusal code, or what a spec answers is his, and is asked with a worked example. Every other implementer choice is written in the changelog and stands unless he objects. What is next, what waits on him and what was built are three documents, <code>ROADMAP.md</code>, <code>DECISIONS.md</code> and <code>CHANGELOG.md</code>, and the Decisions page renders them. Ruled on 2026-11-21. Version 36."
+    "why": "A choice that changes a record's bytes or id, a result's bytes or hash, a refusal code, or what a spec answers is his, and is asked with a worked example. Every other implementer choice is written in the changelog and stands unless he objects. What is next, what waits on him and what was built are three documents, <code>ROADMAP.md</code>, <code>DECISIONS.md</code> and <code>CHANGELOG.md</code>, and <a href=\"../decisions/\">the Decisions page</a> renders them. Ruled on 2026-11-21. Version 36."
   }
 ]

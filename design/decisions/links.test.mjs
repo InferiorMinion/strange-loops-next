@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { cpSync, mkdtempSync, readdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 import { rewriteLink } from "./links.mjs";
@@ -32,10 +32,14 @@ test("a new note gets its own page, navigation and checked fragments, and disapp
   // The build locates the repository from its module path. Copy design/ so
   // it writes inside the fixture, and share the read-only protocol inputs.
   cpSync(join(root, "design"), join(work, "design"), { recursive: true });
-  for (const dir of ["vectors", "interop", "protocol"]) symlinkSync(join(root, dir), join(work, dir));
-  for (const file of ["DECISIONS", "ROADMAP", "CHANGELOG"]) writeFileSync(join(work, file + ".md"), "# " + file + "\n");
+  // The other pages link to headings of the real documents, and the documents link to
+  // files across the repository, so the fixture holds the real ones beside the new note.
+  for (const name of readdirSync(root)) {
+    if (name === "design" || name === "out" || name === "notes" || name.startsWith(".")) continue;
+    symlinkSync(join(root, name), join(work, name));
+  }
+  cpSync(join(root, "notes"), join(work, "notes"), { recursive: true });
   const note = join(work, "notes/A note.md");
-  mkdirSync(dirname(note));
   const build = () => spawnSync(process.execPath, [join(work, "design/build.mjs")], { encoding: "utf8" });
   writeFileSync(note, "# New note\n## Here\n[Here](#here)");
   let result = build();
