@@ -30,7 +30,6 @@ The payload values and the result hash's prefix, ruled by Kyle on 2026-11-21, ar
 Each is ruled in [the cut note](notes/2026-11-15-the-cut.md); the section is in brackets.
 
 - A window is a `where` on the span that content order already uses, under its own field name. The name is not chosen (5).
-- `loops emit` copies `occurred` from the heads when they agree, with a flag to state another or none (5).
 - The changeset path (`emit -`) gets an option that asks for the filler (7).
 - The filler takes a base, a tick or ids, and names that base's live records (8). margins-claude holds its base lemma until this piece is briefed.
 - A CLI verb that shows a result hash.
