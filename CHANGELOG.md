@@ -15,6 +15,7 @@ In brief:
 - margins-claude wrote the payload values note (!59). Its seven choices are open.
 - The roadmap was split into `ROADMAP.md`, `DECISIONS.md`, this file and `notes/`.
 - A result hash is spelled `res:`.
+- `value` and `n` are ordinary payload fields: a record that does not hold one is unread, absent and ungrouped for it, as for any other name.
 - Kyle ruled the seven payload values choices, the result hash's prefix, which choices come to him, and the three classes of edge; he confirmed the keyed-fold and codec choices; issue #10 is closed.
 
 ### Ruled by Kyle, 2026-11-21
@@ -23,7 +24,7 @@ Each was an entry in `DECISIONS.md`, with an example. Kyle ruled for the recomme
 
 - **Payload values, PV1 to PV7** ([the note](notes/2026-11-21-payload-values.md)). Not built.
   1. The reading from a stored payload to the fields a fold reads is stated in the model, with vectors.
-  2. `value` and `n` become ordinary fields (option a).
+  2. `value` and `n` become ordinary fields (option a). Built the same day, below.
   3. `present` means the member was written, for `null`, `{}`, `[]` and `""` alike.
   4. Under `is` and `not`, a list reads as a set of its members.
   5. `at-least` and `below` on a list: neither holds. A list is never a number.
@@ -39,6 +40,33 @@ Each was an entry in `DECISIONS.md`, with an example. Kyle ruled for the recomme
 - **Issue #10 is closed, I10,** with no strict "after" operator. An inbox keeps its own list of the ids it has seen; a reader's tick is for boundaries worth citing.
 
 Still open in `DECISIONS.md`: W1 to W6.
+
+### `value` and `n` are ordinary fields
+
+**Built, 2026-11-21,** on Kyle's ruling of that day (payload values, choice 2).
+Every record used to have a `value`, empty text when not written, and an `n`, 0 when not written. The model's `Record` now holds `fields` and nothing else of the payload; `Record.get` is a lookup. A record without `n` is unread to a `sum`, `min` or `max` of `n`, absent to `where`, and ungrouped under `by`.
+Over Kyle's example store the CLI now answers as he ruled: the smallest `n` of four backups is 9 with 2 unread (it was 0 with none); 2 of three settings have a `value` (it was 3); a count of backups by `n` leaves two ungrouped (they were in a group `"0"`).
+
+What changed:
+- **The model.** `value`, `n` and `nNumber` left `Record`; `withhold` and `erase` clear `fields`. `Sum.step`, `Max.step` and `Min.step`, which read `r.n`, now take a read function `p : Record → Option Int`; `Sum.on f`, `Max.on f` and `Min.on f` are those steps at `(·.num f)`, and `Sum.acc`, `Max.acc` and `Min.acc` are the same folds at the field `n`. `Record.num` is the only function that reads a number from a record.
+- **The laws.** Fifteen statements changed, each by holding for every read function `p`: `Sum.batch`, `Sum.perm`, `Sum.fold_eq`, `Sum.repeats`, `Max.batch`, `Max.fold_some`, `Max.fold_eq`, `Max.set_decides`, `Min.batch`, `Min.neg_max`, `Min.set_decides`, the three `acc_fold` bridges and `Max.cannot_follow_prev`. None gained a premise. `Max.fold_eq` now says a record the function cannot read is skipped: `Max.fold p none xs = (xs.filterMap p).max?`. The laws used to be about a fold no spec runs; they now cover the fold a spec runs. The four helper lemmas pinned under D6 stand under their names. The law index has 111 entries and 1196 theorems, as before; two entries were reworded (`numeric.safe-whole`, `sum.repeats`).
+- **The vectors.** A record's `value` and `n` are written inside `"fields"`, and only when the case states them. Of 617 generated vectors, 137 changed in the shape of their input records alone and 12 changed an expected answer: a max over heads that never supplied `n` went from 0 with 0 unread to `null` with every head unread (`fold/heads/03`, `fold/view/03`), and ten `realm` sums count such records as unread. The nine `fold/sum` and `fold/extrema` answers and all 23 result texts and hashes are byte for byte as they were. Four new `spec/run` vectors pin Kyle's examples and a written `0` and a written `""` beside them: `pv2-backups`, `pv2-settings`, `pv2-written-zero`, `pv2-written-empty`. There are now 621 generated vectors and 633 JSON fixtures.
+- **JavaScript, Rust and the fuzz.** Each dropped its two special cases. The Rust core's public `Record` lost `value`, `n` and `n_number`. `Line::record` in the store reads every top-level text, number and boolean under its own name; a list, an object or `null` is still skipped (the next piece). The fixture readers in Lean and Rust refuse a flat `value` or `n` as an unknown member. The fuzz generator varies whether each of the two names is present and of what type.
+
+How it was checked: the four CI gates locally (Rust 195 tests, JavaScript 7,205 vector checks); every changed vector compared with its old form record by record (4,094 records: each differs only by `value` and `n` leaving or moving into `fields`, and no stated value was dropped); the three-way fuzz with no mismatch, 3,000 cases on seed `payload-fields-1` and 4,000 on `coordinator-payload-1`; margins-claude's Python implementation, moved to the new reading, passes every family (8,167 checks) and agrees with the branch's Rust on 129,015 fuzz checks.
+
+**Implementer choices; they stand under Kyle's ruling of 2026-11-21 (W7):**
+- The low-level folds take a read function and are kept, where the first plan was to delete them. margins-claude and this session agreed it: the laws are at least as strong, and no function reads a record's number but `Record.num`.
+- The fixture field of the `fold/sum` and `fold/extrema` families keeps the name `n`. It is now only a name.
+- Which records state a `value` or an `n` was decided from the Lean fixture source: an explicit `0` or `""` was kept (one scenario body, two group-key fixtures, the new controls), and a default that a constructor had filled in was dropped.
+- The max in `fold/heads/03` and `fold/view/03` was incidental to what each vector shows, so their records were left without `n`.
+- A scenario that renders a head reads the text field `value`; a missing one is reported, never read as empty.
+- The mutation catalogue keeps 314 entries: 13 were re-pointed or rewritten and none retired. That took under five minutes, four of them the cheap runner (the measure asked for under W5).
+- A Codex worker (gpt-6.2-astra) wrote a plan, which margins-claude and this session reviewed, and then the change; this session ran the checks above.
+
+**Found on the way, not changed here:** the JavaScript sum is exact only to a signed 128-bit limit, while the law index calls it unbounded. No vector reaches the limit.
+
+**Corrected:** three rows of the table in the payload values note, section 1, which had dropped a written scalar of the other type.
 
 ### A result hash is spelled `res:`
 

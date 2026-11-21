@@ -104,8 +104,8 @@ def Latest.others (s : LatestBy) : List Record := s.heads.drop 1
 
 /-! ## Sum, Min, Max
 
-Over an exact numeric field. Sum counts repeats, like Count; Min and Max
-don't.
+Over the exact number a read function gives for each record; a record it
+cannot read is skipped. Sum counts repeats, like Count; Min and Max don't.
 -/
 
 def Sum.step (p : Record → Option Int) (s : Int) (r : Record) : Int :=

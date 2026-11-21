@@ -15,7 +15,7 @@ Everything that waits on Kyle, in one place. Each entry has the question, an exa
 | [W2](#w2-remember-which-segments-were-checked) | Remember which segments were checked | Yes, in the adoption step | Read speed on big stores |
 | [W3](#w3-stop-extending-the-javascript-implementation) | Stop extending the JavaScript implementation | Yes, as a trial for step 4 | How step 4 is built |
 | [W4](#w4-the-refusal-for-input-that-is-wrong-twice) | The refusal for input that is wrong twice | One answer in the repository; the protocol text pins single faults only | How step 4 is built |
-| [W5](#w5-the-mutant-check-on-every-merge-request) | The mutant check on every merge request, and new mutants for step 4 | Keep and measure; add step 4's mutants after its exit | Nothing |
+| [W5](#w5-the-mutant-check-on-every-merge-request) | The mutant check on every merge request, and new mutants for step 4 | Keep (measured: under five minutes on the largest model change); add step 4's mutants after its exit | Nothing |
 | [W6](#w6-generated-pages-in-the-repository) | Generated pages in the repository | Keep | Nothing |
 
 None of these blocks the build that is under way (payload values, and the result hash's prefix). W3, W4 and W5 are wanted before the tick record is built.
@@ -150,7 +150,9 @@ The cost: two readers written from the prose may name different codes for an inp
 - **With the check (today):** the same merge request must re-point them, or the pipeline is red.
 - **Without it (Neon):** the merge request is smaller. The next full run reports those faults as not applying, and someone re-points them in a batch, later, away from the change that moved them.
 
-**Options.** Keep it, or move it to the full run. **Recommended: keep it through the payload values build and measure.** I will report what the re-pointing cost in that merge request. If it is more than a small part of the work, the check moves. My confidence here is low either way.
+**Options.** Keep it, or move it to the full run. **Recommended: keep it.**
+
+**Measured, 2026-11-21.** The `value` and `n` change was the test: it touched 218 files and the model's record itself. 13 of the 314 faults needed work (8 re-pointed, 5 rewritten, none retired), and it took under five minutes, four of them the runner. So the check cost almost nothing on the largest model change so far, and it caught the 13 in the merge request that moved them. I no longer have low confidence: keep it.
 
 **Neon's comment, and what I make of it.** Neon agrees, and adds: write no new mutants for step 4 until ticks have survived real use. So far every piece has added its mutants in the same merge request (nineteen for the result codec). I agree in part: while the tick record's shape is still moving, mutants tied to its lines would be re-pointed again and again. I would add step 4's mutants once its exit is met, a content tick recomputed to the same hash on two machines, and not wait longer than that. **Say whether step 4's mutants wait for its exit.**
 
