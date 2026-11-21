@@ -4,7 +4,7 @@ What was built and what Kyle ruled, newest first, by date.
 What is next is in [ROADMAP.md](ROADMAP.md). What waits on Kyle is in [DECISIONS.md](DECISIONS.md). The long design notes are in [notes/](notes/).
 
 Each date starts with a short list. Under it is the record as it was written at the time, moved here from `ROADMAP.md` on 2026-11-21 and changed only where a sentence pointed at a place in that file.
-A line "Implementer choices, for Kyle to confirm" marks choices that are still unconfirmed; [DECISIONS.md](DECISIONS.md) lists them all in one place.
+Since Kyle's ruling of 2026-11-21 (W7), only a choice that changes a record's bytes or id, a result's bytes or hash, a refusal code, or what a spec answers comes to him, through [DECISIONS.md](DECISIONS.md). Every other implementer choice is written here and stands unless he objects.
 The record starts where the old roadmap's did. For anything earlier, and for every merge, see `git log`.
 
 ## 2026-11-21
@@ -14,6 +14,30 @@ In brief:
 - The Rust core reads through indexes: a keyed collect over 9,000 records went from 19.8 s to 0.63 s, and no answer changed (!58).
 - margins-claude wrote the payload values note (!59). Its seven choices are open.
 - The roadmap was split into `ROADMAP.md`, `DECISIONS.md`, this file and `notes/`.
+- Kyle ruled the seven payload values choices, the result hash's prefix, which choices come to him, and the three classes of edge; he confirmed the keyed-fold and codec choices; issue #10 is closed.
+
+### Ruled by Kyle, 2026-11-21
+
+Each was an entry in `DECISIONS.md`, with an example. Kyle ruled for the recommendation every time.
+
+- **Payload values, PV1 to PV7** ([the note](notes/2026-11-21-payload-values.md)). Not built.
+  1. The reading from a stored payload to the fields a fold reads is stated in the model, with vectors.
+  2. `value` and `n` become ordinary fields (option a).
+  3. `present` means the member was written, for `null`, `{}`, `[]` and `""` alike.
+  4. Under `is` and `not`, a list reads as a set of its members.
+  5. `at-least` and `below` on a list: neither holds. A list is never a number.
+  6. A list gives one group per member under `by`. This amends the ruling of 2026-11-11 that an array is ungrouped.
+  7. A list is unread to `sum`, `min` and `max`.
+
+  Kyle's note on a slot that follows `keys`: when two writers set a list field from one base (`routes: ["svc:a"]` and `routes: ["svc:b"]`), a `where` on the field leaves the thing unread and `loops of` shows both setters, while `by` on the field puts the thing in both groups. That is how `by` already reads a scalar field with two live setters ([spec](protocol/spec.md), "A slot with `by` that follows `keys`").
+  margins-claude's precision, which follows from the note with no new rule: each `where` test is asked of every live setter, and an answer they share stands. With those two setters, `routes` is `"svc:a"` is unknown (one yes, one no) and the thing is unread; `routes` is `"svc:c"` is no; `routes` present is yes. With `["svc:a", "svc:b"]` and `["svc:a"]`, `is "svc:a"` is yes and `is "svc:b"` is unknown. The payload vectors carry the mixed cases, since a port that unions the lists before testing gets only those wrong.
+- **The result codec, RC1.** A result hash has its own prefix, `res:`, not `h:`. Not built. The other choices are confirmed: a listed record is its id alone; the bytes hold the slots only; slots are in JCS order; no fold type is written; the label is `loops/result-hash/v1:`. Kyle's note: the hash covers the slots without the spec, so it means something only beside its spec inside a tick; a person citing a result cites the tick's `r:` id.
+- **Which choices come to Kyle, W7.** A choice comes to him when it changes a record's bytes or id, a result's bytes or hash, a refusal code, or what a spec answers. Every other implementer choice is written in this file and stands unless he objects. The 25 CLI and tooling choices that were waiting stand under this ruling.
+- **The keyed-fold choices.** Kyle confirmed the 20 built choices of 2026-11-14 and 2026-11-15: `sets` in the envelope, latest-by following `keys`, the other slots following `keys`, and a keyed collect's `limit`. Among them: `unread` counts things; a test that answers no outranks one that answers unknown; a field no record of the thing sets is absent.
+- **Edges, E1.** Three classes, and no change to the envelope. One target under a role is a text field. A set that one observer states whole is a list, read as a set. A relation that several writers add to, or one with facts of its own, is one thing per edge: `of: edge:<rel>:<src>:<dst>`, with `about` naming both ends. Kyle's addition: the edge's payload holds `rel`, `from`, `to` and `state` (`active` or `removed`), so that a fold reads direction and removal from fields and never from the text of `of`. The documents and the import follow this. Nothing is built. An example: `loops emit edge --of edge:routes-to:caddy:grafana --about svc:caddy --about svc:grafana rel=routes-to from=svc:caddy to=svc:grafana state=active port:=3000`.
+- **Issue #10 is closed, I10,** with no strict "after" operator. An inbox keeps its own list of the ids it has seen; a reader's tick is for boundaries worth citing.
+
+Still open in `DECISIONS.md`: W1 to W6.
 
 ### `--values` gives the envelope
 
@@ -21,7 +45,7 @@ In brief:
 The issue came from rex-tools, a chat room over the `loops` CLI and its first outside user: a timeline needs each record's `emitted`, `observer` and `about`, and got them from a second `loops export` joined by id.
 Under `--values`, each `{"id", "shown"}` entry that a collect or a latest-by following `prev` lists gains `env`, the envelope as stored, whatever its `shown`; each thing of a latest-by that follows `keys` gains `about` as `loops of` writes it, and each of its heads gains `env` ([place](rust/PLACE.md), choice 17).
 Without the option nothing changes, and taking the added members out still gives the protocol's answer byte for byte. Only `rust/cli` changed.
-**Implementer choices, for Kyle to confirm:** no new flag, the envelope comes with `--values`; the member is `env`, the whole stored envelope, not three picked fields; an erased or withheld record's entry has `env` and no `payload`; a keyed thing's `about` is always written, empty when no head mentions anything, as in `loops of`; entries under a keyed thing's `keys` and `whole` gain nothing.
+**Implementer choices; they stand under Kyle's ruling of 2026-11-21 (W7):** no new flag, the envelope comes with `--values`; the member is `env`, the whole stored envelope, not three picked fields; an erased or withheld record's entry has `env` and no `payload`; a keyed thing's `about` is always written, empty when no head mentions anything, as in `loops of`; entries under a keyed thing's `keys` and `whole` gain nothing.
 
 ### The Rust read path
 
@@ -45,7 +69,7 @@ A function that still mirrors its Lean definition says `Lean:` in its comment; o
 
 **What is still linear and paid on every run:** each verb reads the whole store and checks every line's signature, about 60 microseconds a record. At 9,000 records that is the half second every read now costs, and a store built by 2,000 single emits still takes 145 s, since each emit checks all that came before. Segments are immutable and named by their hash, so a place can remember which segments it has checked. That is the next cost to remove, when it hurts; it needs no change to a record.
 
-**Implementer choices, for Kyle to confirm:**
+**Implementer choices; they stand under Kyle's ruling of 2026-11-21 (W7):**
 - The core's public surface gains `live::LiveState` (one thing's records, indexed) and `Spec::run_admitted` (run over records already admitted, so the CLI admits once). Every name that was public still is and gives the same value.
 - The reference for the fast path is test-only Rust kept beside it, not a second crate.
 - A Codex worker (gpt-6.2-astra) wrote the change from a brief; this session reviewed it and ran the checks above.
@@ -169,7 +193,7 @@ The laws:
   It is not true of two arbitrary results: no fold tag is written, so a count and a sum that hold the same number write the same JSON, and an empty latest-by reads as an empty keyed one. The bytes name a result only together with its spec.
 - `result.no-commit`: no result's hashed bytes are a 16-byte salt and then a canonical payload, so a result hash is never a record's commitment. The label is 21 bytes for that reason. A first draft used a 16-byte label, and a record with that salt and the result as its payload had the result's hash.
 
-**Implementer choices, for Kyle to confirm:**
+**Implementer choices, confirmed by Kyle 2026-11-21, all but the first.** He ruled that day that a result hash has its own prefix, `res:`; until that is built the code writes `h:`.
 - A result hash is spelled `h:`, as a commitment is. Only their hashed bytes keep them apart. It could have a typed prefix of its own.
 - The label `loops/result-hash/v1:`. A later version's label must not be 16 bytes, and must leave no JSON value after its first 16 bytes.
 - A listed record is its id text alone, not `{"id": …}`.
@@ -200,7 +224,7 @@ Both are built in `rust/cli` and `loops_place::fill` (`rust/PLACE.md`, choices 1
 `read --values` and `fold --values` add the same members to each thing of a latest-by that follows `keys`, and a `payload` to each held record a latest-by that follows `prev` or a collect lists, inside each group too; without the option the answer is the protocol's, byte for byte.
 An emit of a thing the store holds a record of, stating neither `--sets` nor `--sets-nothing`, is given the top-level keys it names as `sets`; `--whole` states a whole-read emit and is a usage error beside either.
 The CLI walk replays the exit check's session with the new defaults: an update by `status=done` alone keeps the name and message, and one `read --values` shows each open item's name and status. It also covers a fork merged from two stores shown with both values, an erased and a withheld live setter, an undeclared key, `--whole`, the usage errors and grouped slots. The exit check's other findings (specs written by hand, prefix scans, `ls`, relative times) are not ruled and not built.
-**Implementer choices, for Kyle to confirm:**
+**Implementer choices; they stand under Kyle's ruling of 2026-11-21 (W7):**
 - The flags are `--values` and `--whole`.
 - The first record of a thing, and a root, stay whole-read: they set every key they name. `--whole` there changes nothing.
 - An emit of a held thing that names no field is given `"sets": []`, a pure join, as `--sets-nothing` gives: `loops emit task --of task:1 --about project:y` moves the task and sets nothing. A whole-read emit of nothing takes `--whole`. `--erases` and `--under` change nothing about the inference.
@@ -218,7 +242,7 @@ A collect that follows `keys` with `limit` lists every live record of the first 
 The things are taken in the order of each one's newest live record, the content order the list itself is in (`thingsInOrder`, `wholeThings`), and their records keep their places in the one newest-first list. `unread` is counted before the limit, as before, and a limit of 0 is still refused (`spec/parse/113`). The result's shape does not change.
 The law is in `keyed.slots`: with a limit of `k` the list holds exactly the live records of at most `k` selected things, every live record of each, and leaves out a selected thing with a live record only when it lists `k` things (`keyedValue_collect_limit`, `wholeThings_whole`); the things listed are the newest, each with a live record newer than every live record left out (`keyedValue_collect_newest`, `wholeThings_newest`); over records of distinct things, as when every thing has one live record, it is the limit over records (`wholeThings_distinct`), so `keyed.whole-read` holds as it did.
 `spec/run/47`'s two limited slots now list whole things, and `spec/run/51` pins the rest: a limit inside a thing's live records, two things whose records interleave in time, limits of 1 to 4 and one beyond the number of things, a pure-join head and an erased live setter in a listed thing, unread things beside a limit of 1, and under `by` a forked thing in two observer groups, a thing in two payload groups, and a group whose first thing is not the first overall.
-**Implementer choices, for Kyle to confirm:**
+**Implementer choices, confirmed by Kyle 2026-11-21:**
 - Which things: the first `limit` of the selected things ordered by each one's newest live record, newest first in content order. Content order ends in the record id and a record is of one thing, so no two things tie.
 - The records of the things taken stay in one newest-first list across them, as before, not grouped thing by thing: the shape and the order are the ones the slot had, and only which records it holds changed.
 - Under `by`, each group orders its own things by their newest live records; a thing in two groups is listed whole in each, and takes a place under the limit in each.
@@ -241,7 +265,7 @@ No fold, spec or lens reads it yet; it is carried, hashed into the id, stored, r
 The law is `record.keys`; `record.sets` now covers `sets` too.
 `record/15`–`19`, `45`–`47` and `shape-sets-*`, and `batch/76`–`82`, pin it.
 The keyed fold, liveness per key and their laws are built in the next paragraph, the other slots that follow `keys` in the one after it, the slice laws for one thing and for a spec in the two after that, and the anchor rule in `loops emit` in the last.
-**Implementer choices, for Kyle to confirm:**
+**Implementer choices, confirmed by Kyle 2026-11-21** (the flags in the third stand under W7):
 - `sets` holds keys, not labels: in a changeset a key that starts with `@` is written as given, neither replaced nor looked up (`batch/76`).
 - A held record's `sets` is checked as its other fields are: a stored line whose `sets` is not keys is refused with the writer's code, and one in another order is not canonical. The reader's record in fold, realm, scenario and spec vectors carries `sets` since the keyed fold below.
 - `loops emit` takes `--sets <key>`, once per key, and `--sets-nothing` for an empty set; the two together are a usage error, and `--sets ""` is the writer's `sets-not-keys`. `emit -` takes `sets` as a line's envelope field. Nothing is filled in over either flag; an emit with neither is given the keys it names when its thing is held (Step 2, built 2026-11-15).
@@ -261,7 +285,7 @@ The result per thing is `{"keys", "whole", "heads"}`, as in the note's example, 
 The laws are `keyed.live`, `keyed.fold` and `keyed.select`; `spec.set` covers the keyed slot. `spec.slice` does not: `Spec.run_slice` takes a spec with no keyed slot, since a keyed slot reads live setters the spec does not take, and the spec-slice sweep finds slices that answer it differently.
 `spec/parse/97`–`110`, `spec/run/31`–`41` and `scenario/keys-01-settled-setter` pin it; the CLI walk reads a keyed thing through `loops fold`.
 The slice laws, and the anchor rule and copied `about` in `loops emit`, are built in later paragraphs.
-**Implementer choices, for Kyle to confirm:**
+**Implementer choices, confirmed by Kyle 2026-11-21:**
 - A field no record of the thing sets is absent, as a missing field in a held payload is: `is`, `present`, `at-least` and `below` answer no, `not` and `absent` answer yes (`spec/run/40`, `task:13`). A live setter that declares a field its payload lacks reads it as absent too.
 - A chosen thing whose payload tests answer unknown counts once in `unread`; `unread` counts things, not records.
 - Payload tests combine as a `where` map does: a test answering no outranks one answering unknown, so a thing with one disagreeing field and one failing field is not unread.
@@ -281,7 +305,7 @@ With `by`, a payload key is read from each live setter of the field and an envel
 The laws are `keyed.slots`, `keyed.by` and `keyed.whole-read`: when every record is read whole and every thing has one head, each such slot, grouped or not, gives what the same slot following `prev` gives (`Slot.keys_as_prev`). `spec.set` covers them; `spec.slice` does not, and its premise now leaves out every slot that follows `keys`, as the spec-slice sweep does.
 `spec/run/42`–`50` pin it, `42` being the note's count of open tasks beside the same count following `prev`; the CLI walk counts, sums and collects through `loops fold`.
 The slice laws are in the two paragraphs after these choices, and the anchor rule and copied `about` in `loops emit` (section 5) in the one after them.
-**Implementer choices, for Kyle to confirm:**
+**Implementer choices, confirmed by Kyle 2026-11-21:**
 - A field with no live setter is unread to sum, min and max, as a record without the field is; so is one whose live setter holds no safe whole number there. A record with `sets` that does not declare the field is no setter of it, so a field its payload holds but does not declare is unread too (`spec/run/44`, `task:5`).
 - `unread` counts things, each at most once in a slot: a thing whose tests are unknown, or a selected thing whose field or key cannot be read. Within a group, a thing whose field cannot be read adds to that group's `unread`, as a record does.
 - **Ruled by Kyle, 2026-11-15, on margins-claude's point:** collect's `limit` counts things, each listed whole; under `by`, the things in each group. As first built it cut the one newest-first list of the selected things' live records, as it cuts matching records without `follow`, so a limit could list some of a thing's live records and not others, and a reader of the result read a key as unset whose setter fell past the limit. Built on 2026-11-15.
@@ -332,7 +356,7 @@ The CLI walk writes the note's history (a task created whole, then `--sets statu
 `rust/place/tests/anchor.rs` writes 300 seeded random emits through the same filler, over six things and four keys, with whole-read emits, pure joins, moves, explicit `prev`s and erasures: one writer, and two replicas that merge both ways now and then.
 Every 25 emits it requires the history to be anchored (every record above a live record names it) and each thing's live records, with the records that erase them, to answer fifteen slots that follow `keys` as the whole holding does: latest-by, count, sum, min, max and collect, with `where`, `limit` and `by`. At 300 emits the slice holds 41 of 300 records for one writer and 44 of 300 merged; no answer differed. Written without the anchor, each emit naming one live record of its thing, the slices answer differently at many checkpoints: in one run, 10 of the 12 for one writer and 10 of the 24 for the two replicas. The counts vary from run to run, since the test's keys and salts are fresh each run; the property has teeth.
 Existing walk tests that made a fork with a second `--prev` to one record now write the fork as a changeset that states its own `prev`, since `loops emit` would name the first revision in the second; in the two-store walk, b's note now replaces b's revision, so the merged thing has two heads, not three.
-**Implementer choices, for Kyle to confirm:**
+**Implementer choices; they stand under Kyle's ruling of 2026-11-21 (W7):**
 - With no `--about`, an emit of a thing copies the union of its heads' mentions, in canonical order; `--about`, once or more, replaces the copy; `--no-about` states an empty `about`; `--no-about` with `--about` is a usage error.
 - An emit builds on every head of its thing and every other live record held, whether or not `--prev` names them; an explicit `--prev` is kept beside them, live or not. The heads it builds on, for `about`, are the thing's heads, not an explicit `--prev` that is not one.
 - Liveness is read over the admitted records: a held record admission refuses is not named.
