@@ -120,10 +120,12 @@ jobs:
         with:
           node-version: 22
       - name: >-
-          The design pages are a pure render of design/, protocol/ and vectors/
+          The design pages are a pure render of their repository sources
         run: |
           node design/build.mjs
           git diff --exit-code -- out
           test -z "$(git status --porcelain -- out)"
       - name: The design build refuses every mutant it should
         run: node design/mutants.mjs
+      - name: Test document rendering and link rewriting
+        run: node --test design/decisions/*.test.mjs

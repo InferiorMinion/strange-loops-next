@@ -1,16 +1,17 @@
-// Build the design pages: design/rethink/, design/grammar/, design/laws/ and design/evidence/.
+// Build the design pages from their sources and the repository's working documents.
 //
-//   node design/build.mjs                    writes out/<page>/index.html for each
+//   node design/build.mjs                    writes the pages under out/
 //   node design/build.mjs --fragment <file>  writes the rethink page as the claude.ai artifact takes it
 //
 // The fragment is what the artifact host wraps in its own document; the full
 // document carries that wrapper's reset (base.css) so the page renders the
-// same on projects.gruel.world. The grammar, laws and evidence pages are built on
+// same on projects.gruel.world. The other pages are built on
 // design/page.mjs and have no artifact mirror. No dependencies.
 
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { basename, dirname, join } from "node:path";
+import { mkdirSync, readdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { renderDecisions } from "./decisions/render.mjs";
 import { renderEvidence } from "./evidence/render.mjs";
 import { renderGrammar } from "./grammar/render.mjs";
 import { fill } from "./page.mjs";
@@ -75,18 +76,38 @@ const outputs = at >= 0
   : [[join(root, "out", "rethink", "index.html"), full],
      [join(root, "out", "grammar", "index.html"), renderGrammar(root)],
      [join(root, "out", "laws", "index.html"), renderLaws(root)],
-     [join(root, "out", "evidence", "index.html"), renderEvidence(root)]];
-// The pages link to places on each other: a law's sentence, its evidence, a demo. Every such
-// link, ../<page>/#<id>, must land on an id that page has. The grammar page also carries law
-// anchors as data for its walk, which links them to the laws page when it runs.
+     [join(root, "out", "evidence", "index.html"), renderEvidence(root)],
+     ...renderDecisions(root)];
+
+// Check the assembled pages before writing any of them. Rethink's own hash
+// routes can select nested tabs. Incoming links still land on real section ids.
 if (at < 0) {
-  const pages = new Map(outputs.map(([file, text]) => [basename(dirname(file)), text]));
-  const ids = new Map([...pages].map(([p, text]) => [p, new Set([...text.matchAll(/\sid="([^"]+)"/g)].map((m) => m[1]))]));
-  for (const [p, text] of pages) {
-    const links = [...text.matchAll(/href="\.\.\/([a-z]+)\/#([a-z0-9-]+)"/g)].map((m) => [m[1], m[2]]);
-    if (p === "grammar") links.push(...[...text.matchAll(/"(law-[a-z0-9-]+)"/g)].map((m) => ["laws", m[1]]));
-    const lost = [...new Set(links.filter(([q, id]) => !ids.get(q)?.has(id)).map(([q, id]) => `../${q}/#${id}`))];
-    if (lost.length) throw new Error(`${p} links to places no page has: ${lost.slice(0, 5).join(", ")}${lost.length > 5 ? `, and ${lost.length - 5} more` : ""}`);
+  const pages = new Map();
+  const rethink = join(root, "out", "rethink", "index.html");
+  for (const [file, text] of outputs) {
+    const markup = text.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, "");
+    const ids = [...markup.matchAll(/<[\w:-]+\b[^<>]*?\sid="([^"]+)"/g)].map((m) => m[1]);
+    if (file === rethink) {
+      for (const [, sub] of markup.matchAll(/class="subpanel" id="([^"]+)"/g)) ids.push(`horizons/${sub}`);
+    }
+    const links = [...markup.matchAll(/<a\b[^<>]*?\shref="([^"]*)"/g)].map((m) => m[1].replaceAll("&quot;", '"').replaceAll("&amp;", "&"));
+    if (file === join(root, "out", "grammar", "index.html"))
+      links.push(...[...text.matchAll(/"(law-[a-z0-9-]+)"/g)].map((m) => `../laws/#${m[1]}`));
+    pages.set(file, { ids: new Set(ids), links: new Set(links) });
+  }
+  for (const [file, , sources] of outputs) {
+    for (const href of pages.get(file).links) {
+      if (/^https?:\/\//i.test(href)) continue;
+      const [, path, fragment] = href.match(/^([^#]*)(?:#(.*))?$/);
+      const origin = sources?.get(href) ?? `${file}: link ${href}`;
+      let dest, id;
+      try {
+        dest = path ? resolve(dirname(file), decodeURIComponent(path), path.endsWith("/") ? "index.html" : "") : file;
+        id = decodeURIComponent(fragment ?? "");
+      } catch { throw new Error(`${origin}: invalid URL encoding in ${href}`); }
+      const target = pages.get(dest);
+      if (!target || (id && !target.ids.has(id))) throw new Error(`${origin}: no target for ${href}`);
+    }
   }
 }
 for (const [file, text] of outputs) {
@@ -94,4 +115,14 @@ for (const [file, text] of outputs) {
   mkdirSync(dirname(file), { recursive: true });
   writeFileSync(file, text);
   console.log(`wrote ${file}`);
+}
+
+// A removed or renamed note must also disappear from the files the site syncs.
+if (at < 0) {
+  const dir = join(root, "out", "decisions");
+  const built = new Set(outputs.map(([file]) => file));
+  for (const name of readdirSync(dir)) {
+    const file = join(dir, name);
+    if (/^note-.*\.html$/.test(name) && !built.has(file)) unlinkSync(file);
+  }
 }

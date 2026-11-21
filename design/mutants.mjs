@@ -8,7 +8,7 @@
 // Edits to generated files (vectors/, design/laws/proofs.json, boundaries.json) aren't mutants here: CI
 // regenerates those from the model and fails on any difference. No dependencies.
 
-import { cpSync, mkdtempSync, readFileSync, rmSync, unlinkSync, writeFileSync } from "node:fs";
+import { cpSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, symlinkSync, unlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { spawnSync } from "node:child_process";
@@ -86,6 +86,9 @@ const MUTANTS = [
   ["a Try card's figure drawn from its law, not its vector", "design/laws/render.mjs", swap("const f = figure(d.key, d.fig);", "const f = figure(d.key);")],
   ["a Try card's figure missing one of the vector's orders", "design/laws/render.mjs", swap("lanes: os.map((o) =>", "lanes: os.slice(1).map((o) =>")],
   ["a link to a law's evidence that lands nowhere", "design/evidence/render.mjs", swap('" id="${anchor(r.key)}" data-shape', '" id="card-${slug(r.key)}" data-shape')],
+  ["a document link to a missing heading", "ROADMAP.md", (s) => s + "\n[Decision](DECISIONS.md#missing-decision-heading)\n"],
+  ["a document link to a missing repository path", "notes/retained-boundaries.md", (s) => s + "\n[Protocol](../protocol/missing-boundary.md)\n"],
+  ["an unsupported document block", "CHANGELOG.md", (s) => s + "\n> A quoted ruling.\n"],
 ];
 
 // What the build can't know, and why.
@@ -96,14 +99,24 @@ const SURVIVORS = {
 
 const work = mkdtempSync(join(tmpdir(), "loops-mutants-"));
 const copy = join(work, "tree");
-for (const d of ["design", "protocol", "vectors", "interop"]) cpSync(join(root, d), join(copy, d), { recursive: true });
 
 const build = () => spawnSync(process.execPath, [join(copy, "design", "build.mjs")], { encoding: "utf8" });
-if (build().status !== 0) throw new Error("the unmutated copy doesn't build");
 
 const bad = [];
 let refused = 0;
 try {
+  // Copy build inputs and output privately. Other repository paths can be link
+  // targets (including large toolchain directories), but are never mutated.
+  mkdirSync(copy);
+  const inputs = new Set(["design", "protocol", "vectors", "interop", "notes", "DECISIONS.md", "ROADMAP.md", "CHANGELOG.md", "out"]);
+  for (const [, file] of MUTANTS) inputs.add(file.split("/")[0]);
+  for (const name of readdirSync(root)) {
+    if (name === ".git" || join(root, name) === work) continue;
+    if (inputs.has(name)) cpSync(join(root, name), join(copy, name), { recursive: true });
+    else symlinkSync(join(root, name), join(copy, name));
+  }
+  const baseline = build();
+  if (baseline.status !== 0) throw new Error(`the unmutated copy doesn't build: ${baseline.stderr}`);
   for (const [name, file, edit] of MUTANTS) {
     const path = join(copy, file);
     const old = readFileSync(path, "utf8");
