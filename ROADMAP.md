@@ -13,6 +13,7 @@ All three writers refuse an `under` target they do not hold (`under-unknown`).
 `loops emit` follows D8c's anchor rule: an emit of a thing names in `prev` every live record of it the store holds, and carries the thing's whole `about`.
 An emit of a thing the store holds sets the fields it names, and `loops of`, `read --values` and `fold --values` show each key's value from its live setters.
 A CLI verb that answers from a store with a line or a segment that does not check writes its answer and is then refused `store-not-clean` (Kyle, 2026-11-20).
+The Rust core reads through indexes and gives the answers of the model's list definitions (2026-11-21, [below](#the-rust-read-path-2026-11-21)).
 All three write a vertex's canonical result and its hash (D7): integers as decimal text, ids without `shown`. No CLI verb shows it yet.
 All three let count, sum, min and max follow `prev` (issue #3), and group count, sum, min, max and collect with `by` (issue #2).
 The law index has 111 entries, 1196 theorems, and 6 boundary witnesses.
@@ -22,7 +23,7 @@ These proofs apply only under their stated premises.
 The tree has 629 JSON fixtures: 617 generated fixtures and 12 standard fixtures.
 Lean replays 608 generated fixtures; 9 occurred fixtures use separate checks.
 Rust checks every fixture, six JCS byte pairs, 4,000 binary64 cases, and 128 SUPERCOP signing cases with ed25519-dalek.
-Rust passes 190 tests; JavaScript passes 7,173 vector checks and 49 regression and law tests.
+Rust passes 194 tests; JavaScript passes 7,173 vector checks and 49 regression and law tests.
 Both also check that `spec/run` answers write their members, group, thing and key names included, in the model's order; JavaScript checks `fold/latest-by` answers' thing keys too.
 JavaScript refuses a held record's invalid `emitted` or `occurred` before it answers, as the Lean and Rust readers do.
 The fuzz suite passes 60 tests.
@@ -795,6 +796,33 @@ Do not implicitly normalize the core.
 Review corrections narrow proof scope and mark examples as prototype or proposed.
 They also correct privacy, index, hash, signature-prefix, and obsolete Rust claims.
 These mechanical corrections do not add protocol choices.
+
+## The Rust read path, 2026-11-21
+
+`rust/core` was a function-by-function mirror of the model's list scans, and its reads grew with the square of the records held. rex-tools, the first outside user of the CLI, met it within a few hundred records.
+The core now settles, admits, orders heads and finds live setters through indexes: by id, by thing, and over the `prev` graph, where each strongly connected part is summarised once and the keys set above it are passed down to what it names (`rust/core/src/live/index.rs`). The model, the vectors, the protocol and JavaScript did not change, and no answer changed.
+
+| Read, release build | Before | After |
+|---|---|---|
+| A keyed collect over 9,000 records | 19.8 s | 0.63 s |
+| The same over 3,000 and 1,000 records | 2.2 s, 0.31 s | 0.20 s, 0.07 s |
+| `loops check` over 9,000 records | 0.96 s | 0.53 s |
+| rex-tools' `state` vertex, 508 records in 508 segments | 1.59 s | 0.04 s |
+
+What holds it to the model:
+- The 629 vectors, as before.
+- The list scans it replaced are kept as test-only code (`rust/core/src/scan_tests.rs`), and generated records are run through both: forks, cycles, unheld `prev` targets, repeated and conflicting forms of one id, erased and withheld payloads, and `sets` absent, empty, repeated and of several keys.
+- The three-way fuzz against Lean and JavaScript: 3,000 cases on seed `fast-fold-1` and 4,000 on `coordinator-fold-1`, no mismatch.
+- The old and new binaries write the same bytes for 38 reads over seven stores, `--values` and `loops of` among them.
+
+A function that still mirrors its Lean definition says `Lean:` in its comment; one that computes the same value another way says "Gives what Lean `x` gives" and how ([porting](rust/PORTING.md)).
+
+**What is still linear and paid on every run:** each verb reads the whole store and checks every line's signature, about 60 microseconds a record. At 9,000 records that is the half second every read now costs, and a store built by 2,000 single emits still takes 145 s, since each emit checks all that came before. Segments are immutable and named by their hash, so a place can remember which segments it has checked. That is the next cost to remove, when it hurts; it needs no change to a record.
+
+**Implementer choices, for Kyle to confirm:**
+- The core's public surface gains `live::LiveState` (one thing's records, indexed) and `Spec::run_admitted` (run over records already admitted, so the CLI admits once). Every name that was public still is and gives the same value.
+- The reference for the fast path is test-only Rust kept beside it, not a second crate.
+- A Codex worker (gpt-6.2-astra) wrote the change from a brief; this session reviewed it and ran the checks above.
 
 ## Build sequence
 
