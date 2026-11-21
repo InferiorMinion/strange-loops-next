@@ -17,9 +17,11 @@
 use crate::line::{Line, Refusal, hash};
 use loops::{base32, batch, record::Record, things};
 use std::{
+    collections::HashMap,
     fs,
     io::{self, Write},
     path::{Path, PathBuf},
+    sync::OnceLock,
 };
 
 /// A directory that holds a store's segments.
@@ -43,6 +45,7 @@ pub struct Refused {
 #[derive(Clone, Debug, Default)]
 pub struct Held {
     lines: Vec<Line>,
+    preferred: OnceLock<HashMap<String, usize>>,
     refused: Vec<Refused>,
     altered: Vec<String>,
     segments: usize,
@@ -262,12 +265,17 @@ impl Held {
     }
     /// The line for an id, with its opening when any segment holds it.
     pub fn line(&self, id: &str) -> Option<&Line> {
-        let mut forms = self.lines.iter().filter(|l| l.id() == id);
-        let first = forms.next()?;
-        if first.payload().is_some() {
-            return Some(first);
-        }
-        Some(forms.find(|l| l.payload().is_some()).unwrap_or(first))
+        let index = self.preferred.get_or_init(|| {
+            let mut by_id = HashMap::new();
+            for (i, line) in self.lines.iter().enumerate() {
+                let selected = by_id.entry(line.id().to_owned()).or_insert(i);
+                if line.payload().is_some() && self.lines[*selected].payload().is_none() {
+                    *selected = i;
+                }
+            }
+            by_id
+        });
+        index.get(id).map(|&i| &self.lines[i])
     }
     /// What a writer reads of a held record, from its stored envelope: its
     /// `of` and its `prev` (Lean `Loops.Held`, model/Loops/Batch.lean). This

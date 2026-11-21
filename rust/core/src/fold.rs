@@ -132,14 +132,35 @@ impl LatestBy {
         &self.heads[..n.min(self.heads.len())]
     }
 }
-/// Lean: `Loops.orderHeads`, model/Loops/Fold.lean.
+// A stable sort preserves insertRec's arrival order within a tie. Equal
+// order keys include the id, but unchecked forms may still differ.
+pub(crate) fn ordered_forms(mut rs: Vec<Record>) -> Vec<Record> {
+    rs.sort_by(|a, b| b.content_cmp(a));
+    let mut out: Vec<Record> = Vec::with_capacity(rs.len());
+    let mut start = 0;
+    for r in rs {
+        if out.last().is_none_or(|prev| prev.id != r.id) {
+            start = out.len();
+        }
+        if !out[start..].contains(&r) {
+            out.push(r);
+        }
+    }
+    out
+}
+
+/// Gives what Lean `Loops.orderHeads` gives. Keeps the last form by id, then sorts by content order.
 /// Keeps the last input form of each id, then orders records newest first.
 /// This does not settle conflicting forms or check admission.
 pub fn order_heads(xs: &[Record]) -> Vec<Record> {
-    xs.iter()
-        .enumerate()
-        .filter(|(i, r)| !xs[i + 1..].iter().any(|later| later.id == r.id))
-        .fold(Vec::new(), |heads, (_, r)| insert_rec(r.clone(), &heads))
+    ordered_ids(xs.iter()).into_iter().cloned().collect()
+}
+
+pub(crate) fn ordered_ids<'a>(rs: impl DoubleEndedIterator<Item = &'a Record>) -> Vec<&'a Record> {
+    let mut seen = std::collections::HashSet::new();
+    let mut kept: Vec<_> = rs.rev().filter(|r| seen.insert(r.id)).collect();
+    kept.sort_unstable_by(|a, b| b.content_cmp(a));
+    kept
 }
 
 /// Lean: `Loops.wholeHeads`, model/Loops/Fold.lean.
@@ -154,17 +175,21 @@ pub fn whole_heads(xs: &[Record]) -> Vec<Record> {
     )
 }
 
-/// Lean: `Loops.Latest.fold`, model/Loops/Fold.lean.
+/// Gives what Lean `Loops.Latest.fold` gives. Sorts the union of per-thing targets and heads.
 /// Combines per-thing named ids and ordered, id-deduplicated current heads.
 /// The combined named ids do not globally suppress these heads.
 pub fn latest_fold(xs: &[Record]) -> LatestBy {
-    let named = per_thing(xs)
-        .into_iter()
-        .flat_map(|(_, state)| state.named)
-        .fold(Vec::new(), |ids, id| insert_id(id, &ids));
+    let mut named = Vec::new();
+    let mut heads = Vec::new();
+    for (_, state) in per_thing(xs) {
+        named.extend(state.named);
+        heads.extend(state.heads);
+    }
+    named.sort_unstable();
+    named.dedup();
     LatestBy {
         named,
-        heads: whole_heads(xs),
+        heads: order_heads(&heads),
     }
 }
 

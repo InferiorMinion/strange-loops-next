@@ -2,13 +2,18 @@
 use crate::{
     envelope::typed_ref,
     families::{self, Result as FoldResult, Tri},
-    fold::{LatestBy, whole_heads},
-    json::{Json, canon_set},
-    live::{Keyed, keyed_in, live_for, live_in, records_of, setters},
+    fold::{ordered_forms, whole_heads},
+    json::{Json, canon_set, str_cmp},
+    live::{Keyed, LiveState},
     number::{Int, MAX_EXACT, Nat},
     record::{Digest, Record, Shown, Val},
-    things::{admit, ids_of, per_thing, state_in, things_of},
+    things::{admit, by_thing, ids_of, per_thing},
     where_::{Cond, EnvField, Field, Refusal, RefusalCode, Tests, parse_where},
+};
+
+use std::{
+    cell::OnceCell,
+    collections::{HashMap, HashSet},
 };
 
 /// Lean: `Loops.Follow`, model/Loops/Spec.lean.
@@ -171,7 +176,7 @@ impl By {
                 .then(|| r.get(f).as_ref().and_then(val_key).into_iter().collect()),
         }
     }
-    /// Lean: `Loops.By.thingKeys`, model/Loops/Spec.lean.
+    /// Gives what Lean `Loops.By.thingKeys` gives. Queries indexed setters or selected heads.
     /// The groups thing `t` joins, each once: a payload field's key read from
     /// each of its live setters, `None` when one of them is not held; an
     /// envelope key read from each head `from` and the envelope tests choose.
@@ -182,19 +187,12 @@ impl By {
         xs: &[Record],
         t: &str,
     ) -> Option<Vec<String>> {
-        let src = match self {
-            Self::Payload(f) => setters(&records_of(t, xs), f),
-            _ => state_in(t, xs)
-                .heads
-                .into_iter()
-                .filter(|h| chosen(&sel, cs, h))
-                .collect(),
-        };
-        let mut keys = Vec::new();
-        for r in &src {
-            keys.extend(self.keys(r)?);
-        }
-        Some(canon_set(&keys))
+        keys_of(
+            self,
+            &LiveState::new(xs.iter().filter(|r| r.is_of(t)).collect()),
+            &sel,
+            cs,
+        )
     }
 }
 
@@ -333,13 +331,11 @@ impl Record {
     }
 }
 
-/// Lean: `Loops.newestFirst`, model/Loops/Spec.lean.
+/// Gives what Lean `Loops.newestFirst` gives. Stably sorts unlinked forms and removes fully equal records within ties.
 /// Clears succession links and orders records by the raw latest-by fold.
 /// Duplicate removal uses full record equality after the links are cleared.
 pub fn newest_first(xs: &[Record]) -> Vec<Record> {
-    let mut state = LatestBy::default();
-    state.fold(&xs.iter().map(Record::unlinked).collect::<Vec<_>>());
-    state.heads
+    ordered_forms(xs.iter().map(Record::unlinked).collect())
 }
 
 /// Lean: `Loops.limitTo`, model/Loops/Spec.lean.
@@ -413,54 +409,31 @@ pub fn agree(ts: &[Tri], none: Tri) -> Tri {
 }
 
 impl Cond {
-    /// Lean: `Loops.Cond.onThing`, model/Loops/Spec.lean.
+    /// Gives what Lean `Loops.Cond.onThing` gives. Queries indexed setters of the tested field.
     /// A payload test asked of a thing's records `rs`: of every live setter of
     /// its field. With no setter the field is absent. An envelope test is not
     /// asked here.
     pub fn on_thing(&self, rs: &[Record]) -> Tri {
-        match &self.field {
-            Field::Env(_) => Tri::Yes,
-            Field::Payload(f) => agree(
-                &rs.iter()
-                    .filter(|r| live_for(rs, f, r))
-                    .map(|r| self.eval(r))
-                    .collect::<Vec<_>>(),
-                Tri::of_bool(self.op.test(&[])),
-            ),
-        }
+        test_setters(self, &LiveState::new(rs.iter().collect()))
     }
 }
 
-/// Lean: `Loops.thingTest`, model/Loops/Spec.lean.
+/// Gives what Lean `Loops.thingTest` gives. Shares the successor index across the tests.
 /// A thing's payload tests: every one holds of the thing.
 pub fn thing_test(cs: &[Cond], rs: &[Record]) -> Tri {
-    cs.iter()
-        .filter(|c| !c.field.on_envelope())
-        .rfold(Tri::Yes, |t, c| c.on_thing(rs).and(t))
+    indexed_test(cs, &LiveState::new(rs.iter().collect()))
 }
 
-/// Lean: `Loops.keyedOf`, model/Loops/Spec.lean.
+/// Gives what Lean `Loops.keyedOf` gives. Indexes the records by thing before evaluating selection and liveness.
 /// Each thing one of whose heads `from` and the envelope tests choose, and
 /// whose payload tests hold of it; a chosen thing that answers unknown is unread once.
 pub fn keyed_of(sel: impl Fn(&Record) -> bool, cs: &[Cond], xs: &[Record]) -> SlotValue {
-    let mut things = Vec::new();
-    let mut unread = 0usize;
-    for t in things_of(xs) {
-        let k = keyed_in(&t, xs);
-        if !k.heads.iter().any(|h| chosen(&sel, cs, h)) {
-            continue;
-        }
-        let rs: Vec<Record> = xs.iter().filter(|r| r.is_of(&t)).cloned().collect();
-        match thing_test(cs, &rs) {
-            Tri::Yes => things.push((t, k.view())),
-            Tri::Unknown => unread += 1,
-            Tri::No => {}
-        }
-    }
-    SlotValue::Keyed {
-        things,
-        unread: Nat(unread.into()),
-    }
+    let ty = FoldType::LatestBy {
+        follow: Follow::Keys,
+    };
+    selected_value(&ty, &index_things(xs), |t| {
+        evaluate_thing(&t.state, &sel, cs)
+    })
 }
 
 /// Lean: `Loops.collectOf`, model/Loops/Spec.lean.
@@ -517,96 +490,268 @@ pub fn acc_pool(follow: Option<Follow>, xs: &[Record]) -> Vec<Record> {
     }
 }
 
-/// Lean: `Loops.thingEv`, model/Loops/Spec.lean.
+/// Gives what Lean `Loops.thingEv` gives. Queries the heads and payload tests of the indexed thing.
 /// Whether a slot that follows `keys` selects thing `t`: no, unless `from`
 /// and the envelope tests choose one of its heads; then its payload tests,
 /// asked of the thing.
 pub fn thing_ev(sel: impl Fn(&Record) -> bool, cs: &[Cond], xs: &[Record], t: &str) -> Tri {
-    if state_in(t, xs).heads.iter().any(|h| chosen(&sel, cs, h)) {
-        thing_test(cs, &records_of(t, xs))
-    } else {
-        Tri::No
-    }
+    evaluate_thing(
+        &LiveState::new(xs.iter().filter(|r| r.is_of(t)).collect()),
+        &sel,
+        cs,
+    )
 }
 
-/// Lean: `Loops.soleSetter`, model/Loops/Spec.lean.
+/// Gives what Lean `Loops.soleSetter` gives. Reads the field from the indexed thing.
 /// The record thing `t`'s field is read from: its one live setter of it.
 /// With none, or two or more, there is none: the core never compares values.
 pub fn sole_setter(xs: &[Record], f: &str, t: &str) -> Option<Record> {
-    let mut ss = setters(&records_of(t, xs), f);
-    if ss.len() == 1 { ss.pop() } else { None }
+    let state = LiveState::new(xs.iter().filter(|r| r.is_of(t)).collect());
+    match state.setters(f).as_slice() {
+        [r] => Some((*r).clone()),
+        _ => None,
+    }
 }
 
-/// Lean: `Loops.thingsInOrder`, model/Loops/Spec.lean.
+/// Gives what Lean `Loops.thingsInOrder` gives. Tracks already visited things in a hash set.
 /// The things of records `rs`, each once, in the order of each one's first record.
 pub fn things_in_order(rs: &[Record]) -> Vec<String> {
-    let mut out: Vec<String> = Vec::new();
-    for r in rs {
-        let t = r.thing();
-        if !out.contains(&t) {
-            out.push(t);
-        }
-    }
-    out
-}
-
-/// Lean: `Loops.wholeThings`, model/Loops/Spec.lean.
-/// A limit over things: of records `rs`, newest first, those of the first
-/// `limit` things, each listed whole, in the order of `rs`.
-pub fn whole_things(limit: Option<&Nat>, rs: Vec<Record>) -> Vec<Record> {
-    if limit.is_none() {
-        return rs;
-    }
-    let ts = things_in_order(&rs);
-    let kept = limit_to(limit, &ts);
-    rs.into_iter()
-        .filter(|r| kept.contains(&r.thing()))
+    let mut seen = HashSet::new();
+    rs.iter()
+        .map(Record::thing)
+        .filter(|t| seen.insert(t.clone()))
         .collect()
 }
 
-/// Lean: `Loops.keyedValue`, model/Loops/Spec.lean.
+/// Gives what Lean `Loops.wholeThings` gives. Tracks the first limited set of things while walking the ordered records.
+/// A limit over things: of records `rs`, newest first, those of the first
+/// `limit` things, each listed whole, in the order of `rs`.
+pub fn whole_things(limit: Option<&Nat>, rs: Vec<Record>) -> Vec<Record> {
+    let Some(limit) = limit else { return rs };
+    let n = usize::try_from(&limit.0).unwrap_or(usize::MAX);
+    let mut kept = HashSet::new();
+    rs.into_iter()
+        .filter(|r| {
+            let t = r.thing();
+            if kept.len() < n {
+                kept.insert(t);
+                true
+            } else {
+                kept.contains(&t)
+            }
+        })
+        .collect()
+}
+
+/// Gives what Lean `Loops.keyedValue` gives. Partitions records by thing and evaluates each selection once.
 /// A slot that follows `keys`, over the things `ev` selects: count counts
 /// them, sum, min and max read each one's field from its one live setter,
 /// collect lists their live records newest first, of at most `limit` things,
 /// those whose newest live records are newest, each listed whole. A thing
 /// `ev` cannot answer for is unread once.
 pub fn keyed_value(ty: &FoldType, xs: &[Record], ev: impl Fn(&str) -> Tri) -> SlotValue {
-    let ts = things_of(xs);
-    let yes: Vec<&String> = ts.iter().filter(|t| ev(t) == Tri::Yes).collect();
-    let unread = Nat(ts.iter().filter(|t| ev(t) == Tri::Unknown).count().into());
+    selected_value(ty, &index_things(xs), |t| ev(&t.name))
+}
+
+struct Thing<'a> {
+    name: String,
+    state: LiveState<'a>,
+}
+
+fn index_things(xs: &[Record]) -> Vec<Thing<'_>> {
+    by_thing(xs)
+        .into_iter()
+        .map(|(name, rs)| Thing {
+            name,
+            state: LiveState::new(rs),
+        })
+        .collect()
+}
+
+fn test_setters(c: &Cond, state: &LiveState<'_>) -> Tri {
+    match &c.field {
+        Field::Env(_) => Tri::Yes,
+        Field::Payload(f) => agree(
+            &state
+                .setting(f)
+                .into_iter()
+                .map(|r| c.eval(r))
+                .collect::<Vec<_>>(),
+            Tri::of_bool(c.op.test(&[])),
+        ),
+    }
+}
+
+fn indexed_test(cs: &[Cond], state: &LiveState<'_>) -> Tri {
+    cs.iter()
+        .rfold(Tri::Yes, |t, c| test_setters(c, state).and(t))
+}
+
+fn evaluate_thing(state: &LiveState<'_>, sel: &impl Fn(&Record) -> bool, cs: &[Cond]) -> Tri {
+    if state.head_records().any(|h| chosen(sel, cs, h)) {
+        indexed_test(cs, state)
+    } else {
+        Tri::No
+    }
+}
+
+fn keys_of(
+    b: &By,
+    state: &LiveState<'_>,
+    sel: &impl Fn(&Record) -> bool,
+    cs: &[Cond],
+) -> Option<Vec<String>> {
+    let mut keys = Vec::new();
+    if let By::Payload(f) = b {
+        for r in state.setters(f) {
+            keys.extend(b.keys(r)?);
+        }
+    } else {
+        for r in state.head_records().filter(|r| chosen(sel, cs, r)) {
+            keys.extend(b.keys(r)?);
+        }
+    }
+    Some(canon_set(&keys))
+}
+
+fn selected_value(
+    ty: &FoldType,
+    things: &[Thing<'_>],
+    ev: impl Fn(&Thing<'_>) -> Tri,
+) -> SlotValue {
+    let mut yes = Vec::new();
+    let mut unread = 0;
+    for t in things {
+        match ev(t) {
+            Tri::Yes => yes.push(t),
+            Tri::Unknown => unread += 1,
+            Tri::No => {}
+        }
+    }
+    value_for(ty, &yes, unread)
+}
+
+fn numeric<T>(
+    acc: &families::Acc<T, impl Fn(T, &Record) -> T, impl Fn(&Record) -> bool>,
+    field: &str,
+    yes: &[&Thing<'_>],
+    mut unread: usize,
+) -> FoldResult<T>
+where
+    T: Clone,
+{
+    let mut value = acc.init.clone();
+    for t in yes {
+        let setters = t.state.setters(field);
+        if let [r] = setters.as_slice() {
+            if (acc.readable)(r) {
+                value = (acc.step)(value, r);
+                continue;
+            }
+        }
+        unread += 1;
+    }
+    FoldResult {
+        value,
+        unread: Nat(unread.into()),
+    }
+}
+
+fn keyed_view(state: &LiveState<'_>) -> KeyedView {
+    let ids = |rs: Vec<&Record>| rs.into_iter().map(|r| (r.id, r.shown)).collect();
+    KeyedView {
+        keys: state
+            .keys()
+            .into_iter()
+            .map(|key| {
+                let setters = ids(state.setters(&key));
+                (key, setters)
+            })
+            .collect(),
+        whole: ids(state.whole()),
+        heads: shown_ids(&state.heads()),
+    }
+}
+
+fn value_for(ty: &FoldType, yes: &[&Thing<'_>], unread: usize) -> SlotValue {
     match ty {
         FoldType::Count { .. } => SlotValue::Nat(FoldResult {
             value: Nat(yes.len().into()),
-            unread,
+            unread: Nat(unread.into()),
         }),
-        FoldType::Sum { field, .. } => SlotValue::Int(families::sum_on(field).over_things(
-            |t| sole_setter(xs, field, t),
-            &ev,
-            &ts,
-        )),
-        FoldType::Min { field, .. } => SlotValue::Opt(families::min_on(field).over_things(
-            |t| sole_setter(xs, field, t),
-            &ev,
-            &ts,
-        )),
-        FoldType::Max { field, .. } => SlotValue::Opt(families::max_on(field).over_things(
-            |t| sole_setter(xs, field, t),
-            &ev,
-            &ts,
-        )),
+        FoldType::Sum { field, .. } => {
+            SlotValue::Int(numeric(&families::sum_on(field), field, yes, unread))
+        }
+        FoldType::Min { field, .. } => {
+            SlotValue::Opt(numeric(&families::min_on(field), field, yes, unread))
+        }
+        FoldType::Max { field, .. } => {
+            SlotValue::Opt(numeric(&families::max_on(field), field, yes, unread))
+        }
         FoldType::LatestBy { .. } => SlotValue::Keyed {
             things: yes
-                .into_iter()
-                .map(|t| (t.clone(), keyed_in(t, xs).view()))
+                .iter()
+                .map(|t| (t.name.clone(), keyed_view(&t.state)))
                 .collect(),
-            unread,
+            unread: Nat(unread.into()),
         },
         FoldType::Collect { limit, .. } => {
-            let live = newest_first(&yes.iter().flat_map(|t| live_in(xs, t)).collect::<Vec<_>>());
+            let rs = ordered_forms(
+                yes.iter()
+                    .flat_map(|t| t.state.live().map(Record::unlinked))
+                    .collect(),
+            );
             SlotValue::Heads {
-                heads: shown_ids(&whole_things(limit.as_ref(), live)),
-                unread,
+                heads: shown_ids(&whole_things(limit.as_ref(), rs)),
+                unread: Nat(unread.into()),
             }
+        }
+    }
+}
+
+struct Groups<T> {
+    buckets: HashMap<String, Vec<T>>,
+    unread: usize,
+    ungrouped: usize,
+}
+
+impl<T: Copy> Groups<T> {
+    fn new() -> Self {
+        Self {
+            buckets: HashMap::new(),
+            unread: 0,
+            ungrouped: 0,
+        }
+    }
+    fn join(&mut self, item: T, ev: Tri, keys: impl FnOnce() -> Option<Vec<String>>) {
+        match ev {
+            Tri::No => {}
+            Tri::Unknown => self.unread += 1,
+            Tri::Yes => match keys() {
+                None => self.unread += 1,
+                Some(ks) if ks.is_empty() => self.ungrouped += 1,
+                Some(ks) => {
+                    for k in ks {
+                        self.buckets.entry(k).or_default().push(item);
+                    }
+                }
+            },
+        }
+    }
+    fn finish(self, mut value: impl FnMut(&str, Vec<T>) -> GroupValue) -> SlotValue {
+        let mut groups: Vec<_> = self
+            .buckets
+            .into_iter()
+            .map(|(k, members)| {
+                let v = value(&k, members);
+                (k, v)
+            })
+            .collect();
+        groups.sort_by(|a, b| str_cmp(&a.0, &b.0));
+        SlotValue::Groups {
+            groups,
+            unread: Nat(self.unread.into()),
+            ungrouped: Nat(self.ungrouped.into()),
         }
     }
 }
@@ -665,97 +810,144 @@ impl Slot {
         }
     }
 
-    /// Lean: `Loops.Slot.grouped`, model/Loops/Spec.lean.
+    /// Gives what Lean `Loops.Slot.grouped` gives. Buckets records after whole-reader head resolution, then folds each bucket.
     /// Settling, admission and the whole-reader heads are already done over
     /// everything held; each group runs the slot without `by` or `where` over
     /// all of it, choosing only its own records.
     pub fn grouped(&self, b: &By, sel: impl Fn(&Record) -> bool, xs: &[Record]) -> SlotValue {
-        let ev = |r: &Record| self.ev(&sel, r);
-        let pool = self.pool(xs);
-        let each = Self {
-            tests: Tests::default(),
-            group: None,
-            ..self.clone()
-        };
-        let groups = group_keys(b, ev, &pool)
-            .into_iter()
-            .map(|g| {
-                let v = each.plain(|r| in_group(b, ev, &g, r), xs).group();
-                (g, v)
-            })
-            .collect();
-        let unread = pool.iter().filter(|r| ev(r) == Tri::Unknown).count()
-            + pool
-                .iter()
-                .filter(|r| ev(r) == Tri::Yes && b.keys(r).is_none())
-                .count();
-        let ungrouped = pool
-            .iter()
-            .filter(|r| ev(r) == Tri::Yes && b.keys(r).is_some_and(|k| k.is_empty()))
-            .count();
-        SlotValue::Groups {
-            groups,
-            unread: Nat(unread.into()),
-            ungrouped: Nat(ungrouped.into()),
+        if self.fold_type.follow() == Some(Follow::Keys) {
+            // Direct callers can request record grouping for a keyed fold.
+            return self.group_records_by_selection(b, sel, xs);
         }
+        let cs = self.tests.conds();
+        let ev = |r: &Record| if sel(r) { Cond::all(&cs, r) } else { Tri::No };
+        let pool = self.pool(xs);
+        let mut groups = Groups::new();
+        for r in &pool {
+            groups.join(r, ev(r), || b.keys(r));
+        }
+        // collectOf(prev) retains conflicting forms of a head, while the
+        // group discovery pool keeps just the last form per id.
+        let mut collect_groups = HashMap::<String, Vec<Record>>::new();
+        if matches!(
+            &self.fold_type,
+            FoldType::Collect {
+                follow: Some(Follow::Prev),
+                ..
+            }
+        ) {
+            for (_, state) in per_thing(xs) {
+                for r in state.heads {
+                    if ev(&r) == Tri::Yes {
+                        for k in b.keys(&r).unwrap_or_default() {
+                            if groups.buckets.contains_key(&k) {
+                                collect_groups.entry(k).or_default().push(r.clone());
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        groups.finish(|k, members| {
+            let rows: Vec<_> = members.into_iter().cloned().collect();
+            match &self.fold_type {
+                FoldType::Count { .. } => GroupValue::Nat(FoldResult {
+                    value: Nat(rows.len().into()),
+                    unread: Nat::default(),
+                }),
+                FoldType::Sum { field, .. } => {
+                    GroupValue::Int(families::sum_on(field).select(|_| Tri::Yes, &rows))
+                }
+                FoldType::Min { field, .. } => {
+                    GroupValue::Opt(families::min_on(field).select(|_| Tri::Yes, &rows))
+                }
+                FoldType::Max { field, .. } => {
+                    GroupValue::Opt(families::max_on(field).select(|_| Tri::Yes, &rows))
+                }
+                FoldType::LatestBy { .. } => GroupValue::Heads {
+                    heads: Vec::new(),
+                    unread: Nat::default(),
+                },
+                FoldType::Collect { limit, follow } => {
+                    let rows = if *follow == Some(Follow::Prev) {
+                        collect_groups.remove(k).unwrap_or_default()
+                    } else {
+                        rows
+                    };
+                    GroupValue::Heads {
+                        heads: shown_ids(limit_to(limit.as_ref(), &newest_first(&rows))),
+                        unread: Nat::default(),
+                    }
+                }
+            }
+        })
     }
 
-    /// Lean: `Loops.Slot.keyedGrouped`, model/Loops/Spec.lean.
+    // A direct call to grouped on a keyed fold discovers group names on
+    // records, but includes a thing only when one of its heads joins.
+    fn group_records_by_selection(
+        &self,
+        b: &By,
+        sel: impl Fn(&Record) -> bool,
+        xs: &[Record],
+    ) -> SlotValue {
+        let cs = self.tests.conds();
+        let ev = |r: &Record| if sel(r) { Cond::all(&cs, r) } else { Tri::No };
+        let mut groups = Groups::new();
+        for r in xs {
+            groups.join((), ev(r), || b.keys(r));
+        }
+        let things = index_things(xs);
+        let mut members = HashMap::<String, Vec<&Thing<'_>>>::new();
+        for t in &things {
+            let keys: HashSet<_> = t
+                .state
+                .head_records()
+                .filter(|r| ev(r) == Tri::Yes)
+                .flat_map(|r| b.keys(r).unwrap_or_default())
+                .collect();
+            for k in keys {
+                members.entry(k).or_default().push(t);
+            }
+        }
+        groups.finish(|k, _| {
+            value_for(
+                &self.fold_type,
+                members.get(k).map_or(&[], Vec::as_slice),
+                0,
+            )
+            .group()
+        })
+    }
+
+    /// Gives what Lean `Loops.Slot.keyedGrouped` gives. Buckets selected things once by their indexed group keys.
     /// A slot with `by` that follows `keys`: each selected thing joins the
     /// group of each of its keys, once in each; each group is the slot without
     /// `by` over its things. Unknown tests and unreadable keys are unread at
     /// the top, once a thing; a thing with no key is ungrouped.
     pub fn keyed_grouped(&self, b: &By, sel: impl Fn(&Record) -> bool, xs: &[Record]) -> SlotValue {
-        let cs = self.tests.conds();
-        let ts = things_of(xs);
-        let evs: Vec<(String, Tri, Option<Vec<String>>)> = ts
-            .into_iter()
-            .map(|t| {
-                let e = thing_ev(&sel, &cs, xs, &t);
-                let k = if e == Tri::Yes {
-                    b.thing_keys(&sel, &cs, xs, &t)
-                } else {
-                    None
-                };
-                (t, e, k)
-            })
-            .collect();
-        let keys = canon_set(
-            &evs.iter()
-                .filter(|(_, e, _)| *e == Tri::Yes)
-                .flat_map(|(_, _, k)| k.clone().unwrap_or_default())
-                .collect::<Vec<_>>(),
-        );
-        let groups = keys
-            .into_iter()
-            .map(|g| {
-                let v = keyed_value(&self.fold_type, xs, |t| {
-                    let joins = evs.iter().any(|(u, e, k)| {
-                        u == t && *e == Tri::Yes && k.as_ref().is_some_and(|k| k.contains(&g))
-                    });
-                    if joins { Tri::Yes } else { Tri::No }
-                })
-                .group();
-                (g, v)
-            })
-            .collect();
-        let unread = evs.iter().filter(|(_, e, _)| *e == Tri::Unknown).count()
-            + evs
-                .iter()
-                .filter(|(_, e, k)| *e == Tri::Yes && k.is_none())
-                .count();
-        let ungrouped = evs
-            .iter()
-            .filter(|(_, e, k)| *e == Tri::Yes && k.as_ref().is_some_and(Vec::is_empty))
-            .count();
-        SlotValue::Groups {
-            groups,
-            unread: Nat(unread.into()),
-            ungrouped: Nat(ungrouped.into()),
-        }
+        self.keyed_groups(b, &sel, &index_things(xs))
     }
 
-    /// Lean: `Loops.Slot.plain`, model/Loops/Spec.lean.
+    fn keyed_groups(&self, b: &By, sel: &impl Fn(&Record) -> bool, ts: &[Thing<'_>]) -> SlotValue {
+        let cs = self.tests.conds();
+        let mut groups = Groups::new();
+        for t in ts {
+            groups.join(t, evaluate_thing(&t.state, sel, &cs), || {
+                keys_of(b, &t.state, sel, &cs)
+            });
+        }
+        groups.finish(|_, members| value_for(&self.fold_type, &members, 0).group())
+    }
+
+    fn keyed_slot(&self, sel: &impl Fn(&Record) -> bool, ts: &[Thing<'_>]) -> SlotValue {
+        if let Some(b) = &self.group {
+            return self.keyed_groups(b, sel, ts);
+        }
+        let cs = self.tests.conds();
+        selected_value(&self.fold_type, ts, |t| evaluate_thing(&t.state, sel, &cs))
+    }
+    /// Gives what Lean `Loops.Slot.plain` gives. Uses the indexed thing pool for keyed folds.
     /// Runs one slot without `by`, admission, settlement, or duplicate-id removal.
     pub fn plain(&self, sel: impl Fn(&Record) -> bool, xs: &[Record]) -> SlotValue {
         let cs = self.tests.conds();
@@ -763,20 +955,29 @@ impl Slot {
         if self.fold_type.follow() == Some(Follow::Keys)
             && !matches!(self.fold_type, FoldType::LatestBy { .. })
         {
-            return keyed_value(&self.fold_type, xs, |t| thing_ev(&sel, &cs, xs, t));
+            return selected_value(&self.fold_type, &index_things(xs), |t| {
+                evaluate_thing(&t.state, &sel, &cs)
+            });
         }
+        let pool = |follow| {
+            if follow == Some(Follow::Prev) {
+                std::borrow::Cow::Owned(whole_heads(xs))
+            } else {
+                std::borrow::Cow::Borrowed(xs)
+            }
+        };
         match &self.fold_type {
             FoldType::Count { follow } => {
-                SlotValue::Nat(families::count_acc().select(ev, &acc_pool(*follow, xs)))
+                SlotValue::Nat(families::count_acc().select(ev, &pool(*follow)))
             }
             FoldType::Sum { field, follow } => {
-                SlotValue::Int(families::sum_on(field).select(ev, &acc_pool(*follow, xs)))
+                SlotValue::Int(families::sum_on(field).select(ev, &pool(*follow)))
             }
             FoldType::Min { field, follow } => {
-                SlotValue::Opt(families::min_on(field).select(ev, &acc_pool(*follow, xs)))
+                SlotValue::Opt(families::min_on(field).select(ev, &pool(*follow)))
             }
             FoldType::Max { field, follow } => {
-                SlotValue::Opt(families::max_on(field).select(ev, &acc_pool(*follow, xs)))
+                SlotValue::Opt(families::max_on(field).select(ev, &pool(*follow)))
             }
             FoldType::LatestBy {
                 follow: Follow::Prev,
@@ -915,10 +1116,23 @@ impl Spec {
         xs: &[Record],
         may: impl Fn(&Record, &Record) -> bool,
     ) -> Vec<(String, SlotValue)> {
-        let ys = admit(xs, may);
+        self.run_admitted(&admit(xs, may))
+    }
+    /// Runs the slots over an already admitted realm, sharing the thing
+    /// index across slots that follow keys.
+    pub fn run_admitted(&self, ys: &[Record]) -> Vec<(String, SlotValue)> {
+        let index = OnceCell::new();
         self.slots
             .iter()
-            .map(|s| (s.name.clone(), s.run(|r| self.takes(r), &ys)))
+            .map(|s| {
+                let sel = |r: &Record| self.takes(r);
+                let v = if s.fold_type.follow() == Some(Follow::Keys) {
+                    s.keyed_slot(&sel, index.get_or_init(|| index_things(ys)))
+                } else {
+                    s.run(sel, ys)
+                };
+                (s.name.clone(), v)
+            })
             .collect()
     }
     /// Lean: `Loops.Spec.ofObject`, model/Loops/Spec.lean.

@@ -432,7 +432,10 @@ fn of(start: &Path, args: &[String]) -> Result<(), Fail> {
     // read from its live setters, and its envelope from its heads, newest
     // first: the first is the winner a latest-by that follows `prev` names.
     let admitted = realm(&held);
-    let heads = things::state_in(&thing, &admitted).heads;
+    let records: Vec<_> = admitted.iter().filter(|r| r.is_of(&thing)).collect();
+    let n = records.len();
+    let state = loops::live::LiveState::new(records);
+    let heads = state.heads();
     let mentions: Vec<String> = heads.iter().flat_map(|r| r.about.clone()).collect();
     let mut members = vec![
         ("thing", text(&thing)),
@@ -444,12 +447,9 @@ fn of(start: &Path, args: &[String]) -> Result<(), Fail> {
             "heads",
             Json::Arr(heads.iter().filter_map(|r| shown_line(&held, r)).collect()),
         ),
-        (
-            "records",
-            count(admitted.iter().filter(|r| r.is_of(&thing)).count()),
-        ),
+        ("records", count(n)),
     ];
-    members.extend(values::thing(&held, &admitted, &thing));
+    members.extend(values::thing(&held, &state));
     answered(&held, say(&object(members).canon()))
 }
 
@@ -466,10 +466,11 @@ fn fold_text(start: &Path, spec: &str, view: View) -> Result<(), Fail> {
     let json = loops_eval::parse_json(spec).map_err(|e| refused(format!("spec-not-json: {e}")))?;
     let spec = Spec::of_json(&json).map_err(|e| refused(format!("{} at {}", e.code(), e.path)))?;
     let held = find_store(start)?.read()?;
-    let slots = loops_eval::slots_json(spec.run(&held.settled()));
+    let admitted = realm(&held);
+    let slots = loops_eval::slots_json(spec.run_admitted(&admitted));
     let answer = match view {
         View::Ids => say(&slots.canon()),
-        View::Values => say(&values::fold(&held, &realm(&held), &spec, slots).canon()),
+        View::Values => say(&values::fold(&held, &admitted, &spec, slots).canon()),
     };
     answered(&held, answer)
 }

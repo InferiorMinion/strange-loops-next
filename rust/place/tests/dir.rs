@@ -243,3 +243,30 @@ fn the_writer_view_of_a_held_record_decides_the_batch_checks_against_the_store()
         [revision.id()]
     );
 }
+
+#[test]
+fn indexed_line_keeps_the_first_preferred_form_in_segment_order() {
+    let key = Key::generate().expect("key");
+    let full = line(&key, "opened", &[]);
+    let bare = line(&key, "unopened", &[]).erased();
+    let forms = [full.erased(), bare.clone(), full.clone(), full, bare];
+    let place = Dir::init(&scratch("indexed-line")).expect("init");
+    place.append(&forms).expect("append");
+    let held = place.read().expect("read");
+    for id in forms.iter().map(Line::id).chain(["absent"]) {
+        let mut matches = held.lines().iter().filter(|line| line.id() == id);
+        let scanned = matches.next().map(|first| {
+            if first.payload().is_some() {
+                first
+            } else {
+                matches
+                    .find(|line| line.payload().is_some())
+                    .unwrap_or(first)
+            }
+        });
+        assert_eq!(
+            held.line(id).map(std::ptr::from_ref),
+            scanned.map(std::ptr::from_ref)
+        );
+    }
+}

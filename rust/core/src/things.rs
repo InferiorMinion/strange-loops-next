@@ -1,10 +1,14 @@
 //! Settlement and admission from model/Loops/Things.lean; per-thing state from model/Loops/Fold.lean.
 use crate::{
-    fold::{LatestBy, insert_id},
-    json::canon_set,
+    fold::{LatestBy, ordered_forms},
+    json::{canon_set, str_cmp},
     record::{Digest, Record, Shown, id_text},
 };
-use std::{error::Error, fmt};
+use std::{
+    collections::{BTreeMap, HashMap, HashSet},
+    error::Error,
+    fmt,
+};
 
 impl Record {
     /// Lean: `Loops.Record.thing`, model/Loops/Fold.lean.
@@ -14,23 +18,37 @@ impl Record {
         self.of.clone().unwrap_or_else(|| id_text(&self.id))
     }
 
-    /// Lean: `Loops.Record.isOf`, model/Loops/Fold.lean.
+    /// Gives what Lean `Loops.Record.isOf` gives. Compares the written reference or streams the root digest digits.
     /// Checks whether the reference names this record's thing.
     pub fn is_of(&self, thing: &str) -> bool {
-        self.thing() == thing
+        self.of.as_ref().map_or_else(
+            || {
+                thing
+                    .strip_prefix("r:")
+                    .is_some_and(|s| crate::base32::matches(&self.id.0, s))
+            },
+            |s| s == thing,
+        )
     }
 }
 
-/// Lean: `Loops.shares`, model/Loops/Fold.lean.
+/// Gives what Lean `Loops.shares` gives. Compares the envelopes directly.
 /// Checks whether two records are of the same thing.
 pub fn shares(a: &Record, b: &Record) -> bool {
-    a.thing() == b.thing()
+    match (&a.of, &b.of) {
+        (Some(t), _) => b.is_of(t),
+        (None, Some(t)) => a.is_of(t),
+        (None, None) => a.id == b.id,
+    }
 }
 
-/// Lean: `Loops.idsOf`, model/Loops/Things.lean.
+/// Gives what Lean `Loops.idsOf` gives. Sorts and deduplicates the digests.
 /// Returns each held digest once in ascending byte order.
 pub fn ids_of(xs: &[Record]) -> Vec<Digest> {
-    xs.iter().fold(Vec::new(), |ids, r| insert_id(r.id, &ids))
+    let mut ids: Vec<_> = xs.iter().map(|r| r.id).collect();
+    ids.sort_unstable();
+    ids.dedup();
+    ids
 }
 
 /// Lean: `Loops.erasedIn`, model/Loops/Things.lean.
@@ -57,12 +75,32 @@ pub fn pick(xs: &[Record], id: &Digest) -> Option<Record> {
     base_form(&forms).map(|r| if erased_in(xs, id) { r.erase() } else { r })
 }
 
-/// Lean: `Loops.settle`, model/Loops/Things.lean.
+/// Gives what Lean `Loops.settle` gives. Indexes the first preferred form and all erasure targets in one pass.
 /// Keeps one form per held id, in ascending digest order.
 /// Order invariance requires `Forms`, as `settle_eq` states in model/Laws/Things.lean.
 /// Conflicting unchecked forms keep their first here form, or their first envelope otherwise.
 pub fn settle(xs: &[Record]) -> Vec<Record> {
-    ids_of(xs).iter().filter_map(|id| pick(xs, id)).collect()
+    let mut forms = BTreeMap::<Digest, &Record>::new();
+    let mut erased = HashSet::new();
+    for r in xs {
+        erased.extend(r.erases.iter().copied());
+        let selected = forms.entry(r.id).or_insert(r);
+        if selected.shown != Shown::Here && r.shown == Shown::Here {
+            *selected = r;
+        }
+    }
+    forms
+        .into_values()
+        .map(|r| {
+            if erased.contains(&r.id) {
+                r.erase()
+            } else if r.shown == Shown::Here {
+                r.clone()
+            } else {
+                r.withhold()
+            }
+        })
+        .collect()
 }
 
 /// Lean: `Loops.entitled`, model/Loops/Things.lean.
@@ -117,12 +155,22 @@ pub fn refusal_of(
     }
 }
 
-/// Lean: `Loops.admit`, model/Loops/Things.lean.
+/// Gives what Lean `Loops.admit` gives. Indexes every original form by id before testing predecessors in input order.
 /// Filters once against the original held records, not against a changing accepted set.
 /// The caller must supply a pure `EnvOnly` rule that depends only on both envelopes.
 pub fn admit(xs: &[Record], may: impl Fn(&Record, &Record) -> bool) -> Vec<Record> {
+    let mut forms = HashMap::<Digest, Vec<&Record>>::new();
+    for r in xs {
+        forms.entry(r.id).or_default().push(r);
+    }
     xs.iter()
-        .filter(|r| entitled(xs, r, &may))
+        .filter(|r| {
+            r.prev.iter().all(|p| {
+                forms
+                    .get(p)
+                    .is_none_or(|qs| qs.iter().all(|q| shares(r, q) && may(r, q)))
+            })
+        })
         .cloned()
         .collect()
 }
@@ -140,27 +188,41 @@ pub fn things_of(xs: &[Record]) -> Vec<String> {
     canon_set(&xs.iter().map(Record::thing).collect::<Vec<_>>())
 }
 
-/// Lean: `Loops.stateIn`, model/Loops/Fold.lean.
+/// Gives what Lean `Loops.stateIn` gives. Collects named ids before sorting the surviving forms.
 /// Folds supersession over the records of one thing, before any payload selection.
 pub fn state_in(thing: &str, xs: &[Record]) -> LatestBy {
-    let mut state = LatestBy::default();
-    state.fold(
-        &xs.iter()
-            .filter(|r| r.is_of(thing))
-            .cloned()
-            .collect::<Vec<_>>(),
-    );
-    state
+    state(&xs.iter().filter(|r| r.is_of(thing)).collect::<Vec<_>>())
 }
 
-/// Lean: `Loops.perThing`, model/Loops/Fold.lean.
+/// Gives what Lean `Loops.perThing` gives. Partitions the records once before computing each state.
 /// Returns each thing with all its current heads.
 pub fn per_thing(xs: &[Record]) -> Vec<(String, LatestBy)> {
-    things_of(xs)
+    by_thing(xs)
         .into_iter()
-        .map(|t| {
-            let state = state_in(&t, xs);
-            (t, state)
-        })
+        .map(|(t, rs)| (t, state(&rs)))
         .collect()
+}
+
+pub(crate) fn by_thing(xs: &[Record]) -> Vec<(String, Vec<&Record>)> {
+    let mut groups = HashMap::<String, Vec<&Record>>::new();
+    for r in xs {
+        groups.entry(r.thing()).or_default().push(r);
+    }
+    let mut groups: Vec<_> = groups.into_iter().collect();
+    groups.sort_by(|a, b| str_cmp(&a.0, &b.0));
+    groups
+}
+
+pub(crate) fn state(rs: &[&Record]) -> LatestBy {
+    let mut named: Vec<_> = rs.iter().flat_map(|r| r.prev.iter().copied()).collect();
+    named.sort_unstable();
+    named.dedup();
+    let heads = ordered_forms(
+        rs.iter()
+            .copied()
+            .filter(|r| named.binary_search(&r.id).is_err())
+            .cloned()
+            .collect(),
+    );
+    LatestBy { named, heads }
 }

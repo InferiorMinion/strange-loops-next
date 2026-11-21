@@ -3,23 +3,33 @@
 /// Encodes bytes with lowercase base32hex and no padding characters.
 /// Adds zero bits on the right for the final group.
 pub fn base32(bytes: &[u8]) -> String {
+    digits(bytes).map(char::from).collect()
+}
+
+pub(crate) fn matches(bytes: &[u8], text: &str) -> bool {
+    text.len() == (bytes.len() * 8).div_ceil(5) && digits(bytes).eq(text.bytes())
+}
+
+fn digits(bytes: &[u8]) -> impl Iterator<Item = u8> + '_ {
     const ALPHABET: &[u8; 32] = b"0123456789abcdefghijklmnopqrstuv";
-    let mut out = String::new();
+    let mut input = bytes.iter();
     let mut acc = 0_u16;
     let mut bits = 0;
-    for byte in bytes {
-        acc = (acc << 8) | u16::from(*byte);
-        bits += 8;
-        while bits >= 5 {
-            bits -= 5;
-            out.push(char::from(ALPHABET[usize::from((acc >> bits) & 31)]));
+    std::iter::from_fn(move || {
+        if bits < 5 {
+            if let Some(&byte) = input.next() {
+                acc = (acc << 8) | u16::from(byte);
+                bits += 8;
+            } else if bits > 0 {
+                acc <<= 5 - bits;
+                bits = 5;
+            } else {
+                return None;
+            }
         }
-        acc &= (1 << bits) - 1;
-    }
-    if bits > 0 {
-        out.push(char::from(ALPHABET[usize::from((acc << (5 - bits)) & 31)]));
-    }
-    out
+        bits -= 5;
+        Some(ALPHABET[usize::from((acc >> bits) & 31)])
+    })
 }
 
 /// Decodes only canonical lowercase base32hex text.
