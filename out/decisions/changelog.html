@@ -248,6 +248,7 @@ The record starts where the old roadmap's did. For anything earlier, and for eve
 <li><p>No warning about a stale base or a conflict: whether a store warns or declines is left for step 3.</p></li>
 </ul>
 <p>Checked by a randomized test: 320 cases, 217 with a base that did not hold what is under it, 67 with the exact shape of TK11's first example, 118 stating a <code>--prev</code> outside the base. In every case the write equals the one a writer holding exactly the effective base would make; the thing reads the same from the store's live records as from the whole store, before and after; and the whole store reads every key as it would after the bare write.</p>
+<p>CI: the fuzz tests' limit in the <code>model</code> job goes from 60 to 300 seconds. The tick fuzz tests added on 2026-11-22 took the run past 60 seconds on a busy runner, and this merge request's first pipeline was cut off there with every test so far passing.</p>
 <p>A Codex worker planned and wrote it; margins-claude checked the plan against the model; the coordinator reviewed it, joined it with main and made the runs above.</p>
 <h3 id="the-adoption-step-its-plan-loops-ls-and-loops---version">The adoption step: its plan, <code>loops ls</code> and <code>loops --version</code></h3>
 <p>Kyle ruled on 2026-11-21 (W1) that the adoption step's CLI pieces are built beside the tick work. Its exit is <code>loops</code> first on <code>PATH</code> for his daily work.</p>

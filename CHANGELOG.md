@@ -48,6 +48,8 @@ That is the ruling's purpose: a write against an older read shows as a conflict.
 
 Checked by a randomized test: 320 cases, 217 with a base that did not hold what is under it, 67 with the exact shape of TK11's first example, 118 stating a `--prev` outside the base. In every case the write equals the one a writer holding exactly the effective base would make; the thing reads the same from the store's live records as from the whole store, before and after; and the whole store reads every key as it would after the bare write.
 
+CI: the fuzz tests' limit in the `model` job goes from 60 to 300 seconds. The tick fuzz tests added on 2026-11-22 took the run past 60 seconds on a busy runner, and this merge request's first pipeline was cut off there with every test so far passing.
+
 A Codex worker planned and wrote it; margins-claude checked the plan against the model; the coordinator reviewed it, joined it with main and made the runs above.
 
 ### The adoption step: its plan, `loops ls` and `loops --version`
