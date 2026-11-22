@@ -30,6 +30,13 @@ replaced can look live. These laws say when a part reads as the whole does.
   closed downward, one that holds every held record its records name, reads
   as a past of the holding, and is closed when the holding is. So the rule
   carries to it.
+* **An emit against a base** (`anchored_emit`, `anchored_emit_down`): a writer
+  that names the live records of a part of the holding, a part that holds what
+  the writers of its records held, leaves the holding anchored. A part closed
+  downward will do, and so will a part of one that holds its live records
+  (`anchored_emit_live`). Another may not (`base_closed_needed`). Naming more
+  of what is already under the emit changes no reading of the whole
+  (`liveK_emit_more`).
 
 Three of these need `prev` to have no cycle among the records held
 (`NoCycle`). An id is a hash of an envelope that holds its `prev`, so real
@@ -474,6 +481,165 @@ theorem anchored_of_down {saw : Record → List Record} {S W : List Record} (ha 
   anchored_of_written (fun a haS b hbS => ha a (h.part a haS) b (h.part b hbS)) (hw.part h.part)
     (closedOver_of_down hW hw hc h)
 
+/-! ## An emit against a base
+
+A writer need not write from everything its store holds. Writing against a
+*base* `B`, a part of the store, it names the records of `B` that are live in
+`B`: the emit a holder of exactly `B` would have written, whatever `B` is.
+
+What `B` must be is a holding: it holds what the writers of its records held.
+Then the store with the emit is still one whose writers followed the rule, so
+its names are anchored and its live records read alone read every key as it
+does. A base closed downward is such a part (`closedOver_of_down`). A base
+that is not can leave a live record under the emit unnamed
+(`base_closed_needed`). A record live in the base and replaced in the store is
+named all the same; the emit then stands beside what replaced it as a second
+head. -/
+
+/-- What each writer held, when `y` was written by a holder of `B`. -/
+def sawWith (saw : Record → List Record) (y : Record) (B : List Record) (r : Record) : List Record :=
+  if r = y then B else saw r
+
+theorem sawWith_ne {saw : Record → List Record} {y r : Record} {B : List Record} (h : r ≠ y) :
+    sawWith saw y B r = saw r := by simp [sawWith, h]
+
+theorem sawWith_self {saw : Record → List Record} {y : Record} {B : List Record} :
+    sawWith saw y B y = B := by simp [sawWith]
+
+/-- **An emit against a base follows the rule.** `B` is a part of a closed
+holding and holds what the writers of its records held; `y` is new, names only
+records of `B`, and names every record of `B` live in `B`. -/
+theorem Anchoring.emit {saw : Record → List Record} {W B : List Record} {y : Record}
+    (hw : Anchoring saw W) (hc : ClosedOver saw W) (hy : y ∉ W) (hB : ∀ x ∈ B, x ∈ W)
+    (hcB : ClosedOver saw B) (hn : ∀ p ∈ y.prev, ∃ x ∈ B, x.id = p)
+    (hr : ∀ x ∈ B, live B x = true → x.id ∈ y.prev) : Anchoring (sawWith saw y B) (y :: W) := by
+  have ne : ∀ {r : Record}, r ∈ W → r ≠ y := fun hr e => hy (e ▸ hr)
+  refine ⟨fun r hr' => ?_, fun r hr' => ?_, fun r hr' => ?_⟩
+  · rcases mem_cons.1 hr' with rfl | hrW
+    · rw [sawWith_self]; exact hn
+    · rw [sawWith_ne (ne hrW)]; exact hw.names r hrW
+  · rcases mem_cons.1 hr' with rfl | hrW
+    · rw [sawWith_self]
+      intro x hx z hz
+      rw [sawWith_ne (ne (hB x hx))] at hz
+      exact hcB x hx z hz
+    · rw [sawWith_ne (ne hrW)]
+      intro x hx z hz
+      rw [sawWith_ne (ne (hc r hrW x hx))] at hz
+      exact hw.trans r hrW x hx z hz
+  · rcases mem_cons.1 hr' with rfl | hrW
+    · rw [sawWith_self]; exact hr
+    · rw [sawWith_ne (ne hrW)]; exact hw.rule r hrW
+
+/-- The holding with the emit is closed. -/
+theorem ClosedOver.emit {saw : Record → List Record} {W B : List Record} {y : Record}
+    (hc : ClosedOver saw W) (hy : y ∉ W) (hB : ∀ x ∈ B, x ∈ W) :
+    ClosedOver (sawWith saw y B) (y :: W) := by
+  intro r hr' x hx
+  rcases mem_cons.1 hr' with rfl | hrW
+  · rw [sawWith_self] at hx; exact mem_cons_of_mem _ (hB x hx)
+  · rw [sawWith_ne (fun (e : r = y) => hy (e ▸ hrW))] at hx; exact mem_cons_of_mem _ (hc r hrW x hx)
+
+/-- **An emit against a base that is a holding keeps the names anchored.** -/
+theorem anchored_emit {saw : Record → List Record} {W B : List Record} {y : Record}
+    (ha : Addressed (y :: W)) (hw : Anchoring saw W) (hc : ClosedOver saw W) (hy : y ∉ W)
+    (hB : ∀ x ∈ B, x ∈ W) (hcB : ClosedOver saw B) (hn : ∀ p ∈ y.prev, ∃ x ∈ B, x.id = p)
+    (hr : ∀ x ∈ B, live B x = true → x.id ∈ y.prev) : Anchored (y :: W) :=
+  anchored_of_written ha (hw.emit hc hy hB hcB hn hr) (hc.emit hy hB)
+
+/-- **An emit against a cut keeps the names anchored.** A base closed downward
+needs nothing more: it holds what the writers of its records held. -/
+theorem anchored_emit_down {saw : Record → List Record} {W B : List Record} {y : Record}
+    (ha : Addressed (y :: W)) (hW : NoCycle W) (hw : Anchoring saw W) (hc : ClosedOver saw W)
+    (hy : y ∉ W) (h : Down B W) (hn : ∀ p ∈ y.prev, ∃ x ∈ B, x.id = p)
+    (hr : ∀ x ∈ B, live B x = true → x.id ∈ y.prev) : Anchored (y :: W) :=
+  anchored_emit ha hw hc hy h.part (closedOver_of_down hW hw hc h) hn hr
+
+/-- **What the base must hold.** A base need not be closed downward itself. It
+is enough that it is a part of a cut `D` and holds every record live in `D`:
+then its live records are among those a holder of `D` would name, and the rest
+it names are records of `D`. A thing's live records at a cut, alone, are such
+a base. -/
+theorem anchored_emit_live {saw : Record → List Record} {W B D : List Record} {y : Record}
+    (ha : Addressed (y :: W)) (hW : NoCycle W) (hw : Anchoring saw W) (hc : ClosedOver saw W)
+    (hy : y ∉ W) (h : Down D W) (hBD : ∀ x ∈ B, x ∈ D) (hl : ∀ x ∈ D, live D x = true → x ∈ B)
+    (hn : ∀ p ∈ y.prev, ∃ x ∈ B, x.id = p) (hr : ∀ x ∈ B, live B x = true → x.id ∈ y.prev) :
+    Anchored (y :: W) :=
+  anchored_emit_down ha hW hw hc hy h
+    (fun p hp => let ⟨x, hx, e⟩ := hn p hp; ⟨x, hBD x hx, e⟩)
+    (fun x hx hlx => hr x (hl x hx hlx) (live_part hBD hlx))
+
+/-! ### Naming more of what is already under the emit
+
+Two emits that differ only in `prev`: the second names what the first names,
+and besides only records already under the first. Then the same records are
+above every record of the holding, so the holding reads every key the same
+with either. Naming the live records of a base's closure, and not of the bare
+base, is this: it adds witnesses for a reader of a part and changes nothing
+for a reader of the whole. -/
+
+/-- A new record: nothing held names it, and it does not name itself. -/
+def Fresh (y : Record) (W : List Record) : Prop := y.id ∉ y.prev ∧ ∀ q ∈ W, y.id ∉ q.prev
+
+/-- A new record carries no path between the records already held. -/
+theorem Fresh.reach {y : Record} {W : List Record} (hf : Fresh y W) {r : Record} {i : RecordId}
+    (h : Reach (y :: W) [r.id] i) : i ≠ y.id → Reach W [r.id] i := by
+  induction h with
+  | base hi => exact fun _ => .base hi
+  | @up q p hq hp _ ih =>
+    intro hne
+    rcases mem_cons.1 hq with rfl | hqW
+    · exact absurd rfl hne
+    · exact .up hqW hp (ih fun e => hf.2 q hqW (e ▸ hp))
+
+/-- What is above a record among the records already held does not change. -/
+theorem Fresh.above_old {y : Record} {W : List Record} (hf : Fresh y W) {r q : Record} (hq : q ∈ W) :
+    q ∈ above (y :: W) r ↔ q ∈ above W r := by
+  constructor
+  · intro h
+    obtain ⟨-, p, hp, hr⟩ := mem_above.1 h
+    exact mem_above.2 ⟨hq, p, hp, hf.reach hr fun e => hf.2 q hq (e ▸ hp)⟩
+  · exact above_sub fun x hx => mem_cons_of_mem _ hx
+
+/-- The new record is above exactly what its names reach. -/
+theorem Fresh.above_new {y : Record} {W : List Record} (hf : Fresh y W) {r : Record} :
+    y ∈ above (y :: W) r ↔ ∃ p ∈ y.prev, Reach W [r.id] p := by
+  constructor
+  · intro h
+    obtain ⟨-, p, hp, hr⟩ := mem_above.1 h
+    exact ⟨p, hp, hf.reach hr fun e => hf.1 (e ▸ hp)⟩
+  · rintro ⟨p, hp, hr⟩
+    exact mem_above.2 ⟨mem_cons_self, p, hp, hr.sub fun x hx => mem_cons_of_mem _ hx⟩
+
+/-- **Naming more of what is under an emit changes no reading of the whole.**
+`y'` names what `y` names and, besides, only records under a name of `y`; the
+two set the same keys. Then every record of the holding is live for a key with
+`y'` exactly when it is with `y`. -/
+theorem liveK_emit_more {W : List Record} {y y' : Record} (hf : Fresh y W) (hf' : Fresh y' W)
+    (hsub : ∀ p ∈ y.prev, p ∈ y'.prev)
+    (hunder : ∀ p' ∈ y'.prev, ∃ p ∈ y.prev, ∃ x : Record, x.id = p' ∧ Reach W [x.id] p)
+    (o : Option String) (hs : setsK o y = setsK o y') {r : Record} :
+    liveK (y :: W) o r = liveK (y' :: W) o r := by
+  have new : (∃ p ∈ y.prev, Reach W [r.id] p) ↔ ∃ p ∈ y'.prev, Reach W [r.id] p := by
+    constructor
+    · rintro ⟨p, hp, hr⟩; exact ⟨p, hsub p hp, hr⟩
+    · rintro ⟨p', hp', hr⟩
+      obtain ⟨p, hp, x, rfl, hx⟩ := hunder p' hp'
+      exact ⟨p, hp, hr.trans hx⟩
+  have key : (above (y :: W) r).any (setsK o) = true ↔ (above (y' :: W) r).any (setsK o) = true := by
+    simp only [any_eq_true]
+    constructor
+    · rintro ⟨q, hq, hsq⟩
+      rcases mem_cons.1 (mem_above.1 hq).1 with rfl | hqW
+      · exact ⟨y', hf'.above_new.2 (new.1 (hf.above_new.1 hq)), hs ▸ hsq⟩
+      · exact ⟨q, (hf'.above_old hqW).2 ((hf.above_old hqW).1 hq), hsq⟩
+    · rintro ⟨q, hq, hsq⟩
+      rcases mem_cons.1 (mem_above.1 hq).1 with rfl | hqW
+      · exact ⟨y, hf.above_new.2 (new.2 (hf'.above_new.1 hq)), hs ▸ hsq⟩
+      · exact ⟨q, (hf.above_old hqW).2 ((hf'.above_old hqW).1 hq), hsq⟩
+  simp only [liveK]
+  rw [Bool.eq_iff_iff.2 key]
+
 /-! ## The boundaries
 
 **Convex is more than is needed.** `a ← b ← c`, all setting one key, and `c`
@@ -550,6 +716,36 @@ theorem closed_needed :
     rw [show [cl.x, cl.y, cl.y2].all (fun y => (cl.saw y).all fun x => [cl.x, cl.y, cl.y2].contains x) = false
       from by decide +kernel] at h
     cases h
+  · decide +kernel
+  · decide +kernel
+
+/-! **A base that is not a holding.** `x` sets `a` and `b`, and `y` sets `a`
+over it. A writer takes `y` alone as its base and writes `w`, setting `a`. It
+names `y`, the one record live in its base. In the store `x` is still live for
+`b` and is under `w`, which does not name it, so the live records read alone
+read `x` as live for `a` too. -/
+
+def bs.w : Record :=
+  { id := 5, kind := "task", observer := "sl:x", of := some "k1", prev := [2], emitted := default,
+    sets := some ["a"] }
+
+theorem base_closed_needed :
+    Anchoring cl.saw [cl.x, cl.y] ∧ ClosedOver cl.saw [cl.x, cl.y] ∧ ¬ClosedOver cl.saw [cl.y] ∧
+      bs.w.prev = (liveOf [cl.y]).map (·.id) ∧ ¬Anchored [bs.w, cl.x, cl.y] ∧
+      liveFor (liveOf [bs.w, cl.x, cl.y]) "a" cl.x = true ∧ liveFor [bs.w, cl.x, cl.y] "a" cl.x = false := by
+  refine ⟨Anchoring.of_checks ?_ ?_ ?_, fun y hy x hx => ?_, fun hc => ?_, ?_, fun h => ?_, ?_, ?_⟩
+  · decide +kernel
+  · decide +kernel
+  · decide +kernel
+  · have h : [cl.x, cl.y].all (fun y => (cl.saw y).all fun x => [cl.x, cl.y].contains x) = true := by
+      decide +kernel
+    simpa using all_eq_true.1 (all_eq_true.1 h y hy) x hx
+  · have h : cl.x ∈ [cl.y] := hc cl.y (by simp) cl.x (by decide +kernel)
+    revert h; decide +kernel
+  · decide +kernel
+  · have h' : cl.x.id ∈ bs.w.prev :=
+      h cl.x (by simp) bs.w (by decide +kernel) (by decide +kernel)
+    revert h'; decide +kernel
   · decide +kernel
   · decide +kernel
 
