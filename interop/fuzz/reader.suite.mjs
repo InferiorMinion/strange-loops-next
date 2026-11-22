@@ -4,7 +4,7 @@ import { mkdtemp, mkdir, readFile, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { ROOT, executeBatch, warmLean } from './transport.mjs';
+import { ROOT, executeBatch } from './transport.mjs';
 
 async function temporary(fn) {
   const dir = await mkdtemp(join(tmpdir(), 'loops-reader-test-'));
@@ -18,7 +18,6 @@ function check(dir) {
 const fixture = () => readFile(join(ROOT, 'vectors/fold/select/phase2-exact-output.json'), 'utf8');
 
 test('real Lean --check compares nested exact output integers, not rounded expectations', { timeout: 120000 }, async () => {
-  warmLean();
   await temporary(async dir => {
     const nested = join(dir, 'fold', 'select', 'nested');
     await mkdir(nested, { recursive: true });

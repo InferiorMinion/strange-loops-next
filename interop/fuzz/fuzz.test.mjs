@@ -1,4 +1,4 @@
-import test from 'node:test';
+import test, { before } from 'node:test';
 import assert from 'node:assert/strict';
 import { inspect } from 'node:util';
 import { readdir, readFile, mkdtemp, mkdir, writeFile, rm } from 'node:fs/promises';
@@ -12,6 +12,13 @@ import { equal, readVector } from '../answers.mjs';
 import { ROOT, batchVectors, executeBatch, parseResponses, warmLean } from './transport.mjs';
 import { candidates, sameDisagreement, shrink } from './shrink.mjs';
 import { campaign, parseArgs, persistMismatch } from './run.mjs';
+
+// Node runs test files in separate processes. Keep all real Lake users in
+// this entry point so the first build finishes before any lake exe run.
+import './json-source.suite.mjs';
+import './reader.suite.mjs';
+import './tick.suite.mjs';
+before(() => warmLean());
 
 async function temporary(fn) {
   const dir = await mkdtemp(join(tmpdir(), 'loops-fuzz-test-'));
@@ -436,7 +443,6 @@ test('transport rejects missing, duplicate, unexpected, and malformed responses'
 });
 
 test('real Lean batch sorts recursive files and continues after decoding errors', { timeout: 120000 }, async () => {
-  warmLean();
   await temporary(async dir => {
     await mkdir(join(dir, 'nested'));
     const a = join(dir, 'a.json'), b = join(dir, 'nested', 'b.json'), c = join(dir, 'z.json');

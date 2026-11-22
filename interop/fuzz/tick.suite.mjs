@@ -7,7 +7,7 @@ import { tmpdir } from 'node:os';
 import { campaign, parseArgs } from './run.mjs';
 import { random } from './generate.mjs';
 import { countedHolding, generateTick } from './tick.mjs';
-import { ROOT, batchVectors, inputText, warmLean, warmRust } from './transport.mjs';
+import { ROOT, batchVectors, inputText, warmRust } from './transport.mjs';
 import { assess } from './evaluate.mjs';
 
 test('tick inputs reproduce independently of other cases and preserve deep repeated names', () => {
@@ -31,7 +31,6 @@ test('unmutated checker claims equal the model writer on their original holdings
   const cases = Array.from({ length: 36 }, (_, i) => countedHolding(random('tick-base', i, 'tick')));
   const inputs = cases.map(({writer, payload}) => ({layer:'tick',
     input:{op:'write-payload', spec:payload.spec, records:writer}}));
-  warmLean();
   const rows = await batchVectors(inputs);
   for (const [i,row] of rows.entries()) assert.deepEqual(row.expect?.payload, cases[i].payload);
 });
@@ -119,7 +118,6 @@ test('each decision site on its own reaches its declared Lean answer', async () 
   const vectors = decisionSites.map((id,i) => orderVector('single-site',i,[id]));
   const baseline = orderVector('single-site',0,['kind']);
   baseline.input.subject.kind = 'tick';
-  warmLean();
   const [control,...rows] = await batchVectors([baseline,...vectors]);
   assert.deepEqual(control.expect, {answer:'same',closure:'yes','taken-not-covered':0});
   for (const [i,row] of rows.entries()) {
@@ -137,7 +135,6 @@ test('both misspellings reach the wire and a third fault can hide their order', 
   assert.equal(p['spec-hash'],'bad');
   assert.equal(p['result-hash'],'bad');
   const triple = orderVector('spelling',13,['kind',...spelling]);
-  warmLean();
   const [both,masked] = await batchVectors([pair,triple]);
   assert.equal(both.expect.path,'spec-hash');
   assert.equal(masked.expect.path,'kind');
@@ -166,7 +163,6 @@ test('the same pair can take different branches under current, older and newer r
   late.id = 'r:' + 'f'.repeat(51) + 'g';
   forms.push(late);
   forms[2].under = late.id;
-  warmLean();
   warmRust();
   const rows = await batchVectors(cases,{rust:true});
   for (const [i,{lean,rust}] of rows.entries()) {
@@ -191,7 +187,6 @@ test('slot errors follow the spec while named entries follow their input order',
   thing.keys = Object.fromEntries(Object.entries(thing.keys).reverse());
   // Reordering object members preserves both hashes.
   const vectors = [slots,keys].map(payload => ({layer:'tick',input:{op:'payload',payload}}));
-  warmLean();
   warmRust();
   const rows = await batchVectors(vectors,{rust:true});
   for (const [i,path] of ['result.a.unread','result.c.things.t:one.keys.n'].entries()) {

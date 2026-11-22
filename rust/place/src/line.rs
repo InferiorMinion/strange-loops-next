@@ -93,6 +93,12 @@ fn digest(id: &str) -> Digest {
     Digest::try_from(bytes.as_slice()).expect("a record id is 32 bytes")
 }
 
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(crate) enum SignatureCheck {
+    Verify,
+    PreviouslyVerified,
+}
+
 impl Line {
     /// Signs a checked record with a key.
     pub fn sign(written: &Written, key: &Key) -> Self {
@@ -113,6 +119,10 @@ impl Line {
     /// Returns the first check that fails: JSON, shape, the writer's checks,
     /// the commitment, the id, the key, the signature, then canonical spelling.
     pub fn parse(line: &str) -> Result<Self, Refusal> {
+        Self::parse_segment(line, SignatureCheck::Verify)
+    }
+
+    pub(crate) fn parse_segment(line: &str, check: SignatureCheck) -> Result<Self, Refusal> {
         let Ok(Json::Obj(members)) = loops_eval::parse_json(line) else {
             return Err(Refusal::NotJson);
         };
@@ -167,9 +177,11 @@ impl Line {
         let bytes: [u8; 64] = base32::decode(signature)
             .and_then(|bytes| bytes.try_into().ok())
             .ok_or(Refusal::SignatureInvalid)?;
-        verifier
-            .verify_strict(&stored::signing_input(id), &Signature::from_bytes(&bytes))
-            .map_err(|_| Refusal::SignatureInvalid)?;
+        if check == SignatureCheck::Verify {
+            verifier
+                .verify_strict(&stored::signing_input(id), &Signature::from_bytes(&bytes))
+                .map_err(|_| Refusal::SignatureInvalid)?;
+        }
         let held = Self {
             id: id.to_owned(),
             stored,
