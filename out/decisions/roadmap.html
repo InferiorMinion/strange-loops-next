@@ -191,6 +191,7 @@ header.top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--g
 <a href="changelog.html">Changelog</a>
 <a href="note-2026-11-11-declared-keys.html">D8c: declared keys, design note</a>
 <a href="note-2026-11-15-the-cut.html">Step 4: the cut, design note</a>
+<a href="note-2026-11-21-order-of-work.html">The order of work, and how we work: W1 to W6</a>
 <a href="note-2026-11-21-payload-values.html">Payload values, design note</a>
 <a href="note-2026-11-21-tick-record.html">Step 4: the tick record, design note</a>
 <a href="note-retained-boundaries.html">Retained boundaries</a></nav>
@@ -214,17 +215,17 @@ header.top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--g
 <h2 id="where-we-are">Where we are</h2>
 <ul>
 <li><p><strong>Steps 0, 1 and 2 are done.</strong> Kyle closed step 2 on 2026-11-20: <code>loops</code> emits, reads and folds for one person, signed, over <code>.loops/</code>.</p></li>
-<li><p><strong>Step 4 (ticks) has started.</strong> The cut laws are in the model and the result codec is built. What a fold reads from a payload is settled and stated in the model (2026-11-21), so a tick can pin a result hash. The tick record is proposed and not ruled (<a href="index.html#the-tick-record">TK1 to TK9</a>).</p></li>
-<li><p><strong>Three implementations agree on every vector:</strong> Lean (the model), JavaScript and Rust.</p></li>
+<li><p><strong>Step 4 (ticks) has started.</strong> The cut laws are in the model and the result codec is built. What a fold reads from a payload is settled and stated in the model (2026-11-21), so a tick can pin a result hash. The tick record is ruled (2026-11-21, <a href="note-2026-11-21-tick-record.html">the note</a>) and is being built.</p></li>
+<li><p><strong>Three implementations agree on every vector:</strong> Lean (the model), JavaScript and Rust. From ticks on, a piece is built in Lean and Rust; the JavaScript is frozen at what it has, as a trial for step 4 (ruled 2026-11-21).</p></li>
 <li><p><strong>One outside user:</strong> rex-tools, a chat room over the <code>loops</code> CLI. It found a slow read path (fixed 2026-11-21) and a gap in <code>--values</code> (fixed the same day).</p></li>
 <li><p><strong>The old Python <code>loops</code> is still first on <code>PATH</code></strong> on Kyle's machine, and his day-to-day stores are still the old ones.</p></li>
 </ul>
 <p>The evidence and its counts are kept where they are made: <a href="https://github.com/kgruel/strange-loops-next/blob/main/design/laws/laws.json">the law index</a>, <a href="https://github.com/kgruel/strange-loops-next/blob/main/vectors/README.md">vectors</a>, <a href="https://github.com/kgruel/strange-loops-next/blob/main/interop/fuzz/REPORT.md">the fuzz report</a>, <a href="https://github.com/kgruel/strange-loops-next/blob/main/model/mutate/REPORT.md">the mutation report</a> and <a href="https://github.com/kgruel/strange-loops-next/blob/main/rust/GAPS.md">Rust boundaries</a>. The changelog entry of 2026-11-21 has them as they stood on that day.</p>
 <h2 id="now">Now</h2>
-<p>The payload values and the result hash's prefix, ruled by Kyle on 2026-11-21, are built. Nothing is being built today: the tick record waits on Kyle's rulings.</p>
+<p>The payload values and the result hash's prefix, ruled by Kyle on 2026-11-21, are built. The tick record, ruled the same day, is being built.</p>
 <div class="table-scroll" tabindex="0"><table><thead><tr><th scope="col">Order</th><th scope="col">Work</th><th scope="col">State</th><th scope="col">Waits on</th></tr></thead>
 <tbody>
-<tr><td>1</td><td><strong>The tick record:</strong> what a tick holds, how <code>covers</code> is stated and checked, and the input key.</td><td>Proposed 2026-11-21 as <a href="index.html#the-tick-record">TK1 to TK9</a>, with <a href="note-2026-11-21-tick-record.html">a note</a>. Not ruled.</td><td>Kyle: TK1 to TK9, and <a href="index.html#at-a-glance">W3, W4 and W5</a> before it is built</td></tr>
+<tr><td>1</td><td><strong>The tick record:</strong> what a tick holds, how <code>covers</code> is stated and checked, and the input key.</td><td>Ruled 2026-11-21 (<a href="note-2026-11-21-tick-record.html">the note</a>). Being built: the model and its vectors first, then Rust.</td><td>Nothing</td></tr>
 <tr><td>2</td><td><strong>Step 4's ruled pieces</strong> (list below).</td><td>Ruled 2026-11-20. Not built.</td><td>Some wait on the tick record</td></tr>
 </tbody></table></div>
 <h3 id="step-4-ruled-and-not-built">Step 4: ruled and not built</h3>
@@ -233,16 +234,16 @@ header.top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--g
 <li><p>A window is a <code>where</code> on the span that content order already uses, under its own field name. The name is not chosen (5).</p></li>
 <li><p>The filler takes a base, a tick or ids, and names that base's live records (8). margins-claude holds its base lemma until this piece is briefed.</p></li>
 <li><p>A CLI verb that shows a result hash.</p></li>
-<li><p>The caching reader's law: a reader that caches must keep what a record with an unknown <code>prev</code> supersedes (issue #8; Kyle, 2026-11-11: step 4's first law). Whether it stays in step 4 is part of <a href="index.html#w1-an-adoption-step-before-standing-and-sharing">W1</a>.</p></li>
 </ul>
 <p><strong>Step 4 is done when</strong> a content tick recomputes to the same hash on two machines.
-Not in step 4 yet: boundaries and markers, the runner, and what verifying a deep tick tree costs.</p>
+Not in step 4 yet: boundaries and markers, the runner, and what verifying a deep tick tree costs.
+Not in step 4 any more: the caching reader's law (issue #8). It is stated when a caching reader is built (ruled 2026-11-21, amending 2026-11-11).</p>
 <h2 id="next">Next</h2>
 <p>The order Kyle set on 2026-11-10 is: step 4 (ticks), then step 3 (standing) together with step 5 (sharing).
-The coordinator, margins-claude and Neon propose one step between ticks and standing. It is not ruled: <a href="index.html#w1-an-adoption-step-before-standing-and-sharing">W1</a>.</p>
+Kyle ruled on 2026-11-21 for one step between ticks and standing, adoption, with its CLI-only pieces built beside the tick work (<a href="note-2026-11-21-order-of-work.html#w1-an-adoption-step-before-standing-and-sharing">W1</a>).</p>
 <div class="table-scroll" tabindex="0"><table><thead><tr><th scope="col">Order</th><th scope="col">Step</th><th scope="col">Builds</th><th scope="col">Done when</th></tr></thead>
 <tbody>
-<tr><td>after ticks, <strong>proposed</strong></td><td>Adoption</td><td>The old stores imported as a shadow; <code>ls</code>, a scan by name prefix, relative times and a plain-text view; reads across several stores; a cache of checked segments</td><td><code>loops</code> is first on <code>PATH</code> for daily work</td></tr>
+<tr><td>after ticks; its CLI pieces beside them</td><td>Adoption</td><td>The old stores imported as a shadow; <code>ls</code>, a scan by name prefix, relative times and a plain-text view; reads across several stores; a cache of checked segments</td><td><code>loops</code> is first on <code>PATH</code> for daily work</td></tr>
 <tr><td>then</td><td>3, standing</td><td>Declarations, admission, stances, grants, presence key, retire through; then name tables and <code>resolve-by</code></td><td>A strict store rejects visibly; a steward's changeset takes effect</td></tr>
 <tr><td>with it</td><td>5, sharing</td><td>The git layout, then segment-list sync</td><td>Two clones converge</td></tr>
 <tr><td>later</td><td>6</td><td>Index and search, SQLite segments, collectors, lenses, <code>serve</code></td><td>Something is slow, or a surface needs it</td></tr>
@@ -274,7 +275,7 @@ Each step extends the model's laws, computes protocol vectors, then implements R
 <p>Costs are S, M, or L for relative effort, not schedules. None of these is scheduled.</p>
 <div class="table-scroll" tabindex="0"><table><thead><tr><th scope="col">Work</th><th scope="col">Value</th><th scope="col">Cost</th><th scope="col">Dependencies and blocking choices</th></tr></thead>
 <tbody>
-<tr><td>Integrate a workbench page</td><td>Readers build scenarios and try vector presets</td><td>M: UI, validation, browser tests</td><td>Use the JS interpreter and scenario-vector presets; version localStorage drafts; never treat them as canonical storage</td></tr>
+<tr><td>Integrate a workbench page</td><td>Readers build scenarios and try vector presets</td><td>M: UI, validation, browser tests</td><td>Use the Rust core compiled for the browser (ruled 2026-11-21) and scenario-vector presets; version localStorage drafts; never treat them as canonical storage</td></tr>
 <tr><td>Turn horizons into Lean scenario vectors</td><td>Tests concrete compositions and exposes missing premises</td><td>L: model and scenario work</td><td>Start with minimal compositions of existing core; mark new boundary, tick, and service premises unimplemented before proof claims</td></tr>
 <tr><td>Prove binary64 roundtrip, then shortest</td><td>Strengthens assurance beyond sampled standard cases</td><td>L: formal number reasoning</td><td>Existing canonical formatter; neither proof blocks the settled standard choice</td></tr>
 <tr><td>Bridge source and fold records to hashes</td><td>Connects text, record bytes, IDs, and fold outputs</td><td>L: byte-level model and evidence</td><td>Defined source and writer boundaries; do not assume SHA correctness from bounded IDs</td></tr>

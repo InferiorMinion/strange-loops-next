@@ -23,6 +23,38 @@ In brief:
 - The roadmap, the decisions, the changelog and the notes are published as a fifth design page, and the rethink and grammar pages are brought up to the rulings since 2026-11-13.
 - The full mutation catalogue ran over all 328 entries: 324 caught, two known survivors, and two new ones that are now caught. The full runner asks what the per-merge check asks.
 - `loops emit - --fill` fills each line of a changeset as a single emit would, so a collector can write anchored records.
+- Kyle ruled the tick record (TK1 to TK9; TK9 as a `rules` member bound into the spec's hash) and the order of work (W1 to W6), each for its recommendation. One new entry, TK10, comes from planning the build.
+
+### Ruled by Kyle, 2026-11-21: the tick record and the order of work
+
+Each was an entry in `DECISIONS.md`, with an example. Kyle ruled for the recommendation every time. The rulings reached the coordinator through Neon, which Kyle told in its own session to send them. Kyle confirmed them in the coordinator's session the same evening, by asking for this record to be merged.
+The entries as they were put are kept in [the tick record note](notes/2026-11-21-tick-record.md#10-the-questions-as-they-were-put) and [the order-of-work note](notes/2026-11-21-order-of-work.md).
+
+**The tick record, TK1 to TK9.** The exact form is in [the note](notes/2026-11-21-tick-record.md), sections 1 to 6. Not built yet.
+1. A tick is an ordinary record of kind `tick`. Its payload is the whole tick, and it has no id but its record id.
+2. It carries its result and the result's hash.
+3. It carries its spec as parsed, and the spec's hash. The store names in `from` select nothing in a tick.
+4. `covers` lists every record that was folded, each id once. A tick among them is one record and is never opened up.
+5. `withheld` lists the covered records read without a payload, and is left out when empty.
+6. A later spec reads a tick by the payload reading and nothing more. A total across ticks is not in step 4.
+7. A verb checks a tick and answers `same`, `differs` or `cannot check`. No store refuses a tick on import or sync.
+8. The window field is `env.when`.
+9. A member `rules` states the version of the rules, and the label of the spec's hash is made from it (option D). With it:
+   - The rules are everything between the covered records and the result's bytes: settling, admission, what a source takes, the tests, the folds and the payload reading.
+   - A new fold type or test does not raise the number. A binary that cannot parse a spec whose hash fits answers "cannot check: this binary cannot read the spec". A fault in one implementation is not a change of rules.
+   - For a tick made under older rules, the check also says what today's rules give, the same result or another.
+
+   Neon's addition for the build: the check verifies `spec-hash` over the spec's JCS text before parsing it; a spec that parses and is not in its parsed form is not a tick.
+
+**The order of work, W1 to W6.**
+- **W1.** An adoption step comes after ticks and before standing. Its pieces that touch only the CLI (`ls`, the prefix scan, the plain view, reads across stores, the shadow import) are built beside the tick work. The caching reader's law (issue #8) leaves step 4 and is stated when a caching reader is built; this amends the ruling of 2026-11-11 that it is step 4's first law. Reads across stores take the union of the named stores first.
+- **W2.** A cache of which segments were checked, in the adoption step.
+- **W3.** The JavaScript is frozen at what it has, as a trial for step 4: ticks are built in Lean and Rust. It keeps passing its vectors. Looked at again when ticks are done. The workbench page will use the Rust core compiled for the browser.
+- **W4.** One refusal for every input, in the order the model checks; the implementer picks the order and notes it here. The protocol text and the vectors of a new step pin one fault each. The orders already pinned for records and specs stay.
+- **W5.** The mutant check on every merge request stays. Step 4's mutants are added after its exit.
+- **W6.** `out/` stays committed.
+
+Open in `DECISIONS.md`: TK10, six details of the check that the plan for the build found.
 
 ### A changeset can ask for the filler: `loops emit - --fill`
 
