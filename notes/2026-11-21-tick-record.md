@@ -2,7 +2,7 @@
 
 **Ruled by Kyle on 2026-11-21: TK1 to TK9, each for its recommendation, and TK9 for option D with its three points.** Proposed by the coordinator the same day. Nothing here is built yet.
 The questions as they were put, each with its example, are in [section 10](#10-the-questions-as-they-were-put). Sections 1 to 6 hold the exact form behind them.
-**Ruled by Kyle on 2026-11-22: TK10, each of its seven rows for the recommendation, and TK11 for option C.** Both came from building the tick record and were built to their recommendations before he ruled; they are in [section 11](#11-two-later-questions-as-they-were-put).
+**Ruled by Kyle on 2026-11-22: TK10, each of its seven rows for the recommendation, and TK11 for option C.** Both came from building the tick record and were built to their recommendations before he ruled; they are in [section 11](#11-the-later-questions-as-they-were-put). TK12, the exit status of the check, was ruled the same day for what was built, and is there too.
 margins-claude reviewed the draft the same day. Its four additions (the rules' version, what `covers` must hold, `withheld` beside a covered eraser, a tick outliving an erasure) are in the text, and its answers are in section 7.
 Neon reviewed TK1 to TK9 the same day. It agrees with eight and moved TK9 to a stated member bound into the hash; its points are in sections 1, 2, 4 and 6, and in section 9.
 It rests on [the cut note](2026-11-15-the-cut.md) (ruled 2026-11-20), [the result codec](../protocol/result.md) and [the payload reading](2026-11-21-payload-values.md) (ruled 2026-11-21).
@@ -455,10 +455,10 @@ The spec did not change by one byte. Had a tick been written this morning, a che
 
 **Not in this proposal:** boundaries and markers, the runner, where a tick lands (`into`), a record on the tick of how its set was chosen (the window's span, "by reference"), smaller `covers` by the slice laws, parameters, and pins.
 
-## 11. Two later questions, as they were put
+## 11. The later questions, as they were put
 
-These are the two entries of `DECISIONS.md` that came from building the tick record, as Kyle read them. He ruled both on 2026-11-22: TK10 for the recommended column in all seven rows, TK11 for option C.
-"Recommended", "nothing here is built" and "not built" in the text are as written then. Both were built to their recommendations before the ruling, so the ruling changed no code: the check is in the changelog under 2026-11-21, and `loops emit --base` under 2026-11-22.
+These are the three entries of `DECISIONS.md` that came from building step 4, as Kyle read them. He ruled all three on 2026-11-22: TK10 for the recommended column in all seven rows, TK11 for option C, TK12 for option A.
+"Recommended", "nothing here is built" and "not built" in the text are as written then. Each was built to its recommendation before the ruling, so the ruling changed no code: the check is in the changelog under 2026-11-21, and `loops emit --base` under 2026-11-22.
 
 ### TK10: seven details of the check
 
@@ -520,3 +520,23 @@ The base is `y` alone. Two things go wrong, and they are different.
 **Why C over A.** A is the only option that stops the second problem. But the second problem is a question you have already set aside for step 3 in another form: what a strict store does with a write whose base is behind what the store holds. "You replaced something you were not shown" belongs with it, and a strict store can refuse both then. Until then C never refuses, never leaves a store that reads wrongly, and tells the writer what it did. margins-claude recommends C as the default too.
 
 **What it costs to change later.** The choice is in the filler and one line of output. No record already written changes.
+
+### TK12: the exit status of the check
+
+**Question.** `loops tick --check <id>` prints its answer on standard output. What is its exit status?
+
+**Example, run on the release binary** (2026-11-21; the stores of the tick record's examples, as built):
+
+| Where the laptop's tick is checked | Answer | Exit, as built |
+| --- | --- | --- |
+| The NAS, after importing the tick | `same` | 0 |
+| A machine holding four of the six backups | `cannot check`: 2 records missing | 1 |
+| A copy where one backup was erased afterwards | `cannot check`: 1 payload missing | 1 |
+| The laptop, on a tick written by hand that claims 1028 | `differs` | 1 |
+
+| | The status | |
+| --- | --- | --- |
+| **A (recommended, built)** | 0 only for `same`. `differs`, `cannot check` and "not a tick" exit 1, with the answer on standard output and nothing on standard error. | `loops tick --check <id> && deploy` is safe. A script that wants to tell `differs` from `cannot check` reads the answer. |
+| B | 0 whenever the check completes, whatever it answers. | The status then says only "the verb ran". A script that forgets to read the answer goes on after `differs`. |
+
+**What it costs to change later.** One line in the CLI and its walk tests. No record or answer changes.

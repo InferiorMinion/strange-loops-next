@@ -215,34 +215,28 @@ header.top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--g
 <h2 id="where-we-are">Where we are</h2>
 <ul>
 <li><p><strong>Steps 0, 1 and 2 are done.</strong> Kyle closed step 2 on 2026-11-20: <code>loops</code> emits, reads and folds for one person, signed, over <code>.loops/</code>.</p></li>
-<li><p><strong>Step 4 (ticks) meets its exit criterion; Kyle has not closed it.</strong> The tick record is built: <code>loops tick &lt;spec&gt;</code> writes a tick and <code>loops tick --check &lt;id&gt;</code> checks one, and a tick written on one machine checks <code>same</code> on a second (2026-11-21). A tick can also cover a cut, by time or by ids (2026-11-22). Not built, and never part of the exit: boundaries, markers and the runner.</p></li>
-<li><p><strong>Three implementations agree on every vector:</strong> Lean (the model), JavaScript and Rust. From ticks on, a piece is built in Lean and Rust; the JavaScript is frozen at what it has, as a trial for step 4 (ruled 2026-11-21).</p></li>
+<li><p><strong>Step 4 (ticks) is done.</strong> Kyle closed it on 2026-11-22: <code>loops tick &lt;spec&gt;</code> writes a tick, <code>loops tick --check &lt;id&gt;</code> checks one, and a tick written on one machine checks <code>same</code> on a second. A tick can cover a cut, by time or by ids, and a write can state a tick as its base. Boundaries, markers and the runner were never part of the step and are not built.</p></li>
+<li><p><strong>Three implementations agree on every vector:</strong> Lean (the model), JavaScript and Rust. From ticks on, a piece is built in Lean and Rust; the JavaScript is frozen at what it has, as a trial for step 4 (ruled 2026-11-21). The ruling said to look at it again when ticks are done, and that is now.</p></li>
 <li><p><strong>One outside user:</strong> rex-tools, a chat room over the <code>loops</code> CLI. It found a slow read path (fixed 2026-11-21) and a gap in <code>--values</code> (fixed the same day).</p></li>
 <li><p><strong>The old Python <code>loops</code> is still first on <code>PATH</code></strong> on Kyle's machine, and his day-to-day stores are still the old ones.</p></li>
 </ul>
 <p>The evidence and its counts are kept where they are made: <a href="https://github.com/kgruel/strange-loops-next/blob/main/design/laws/laws.json">the law index</a>, <a href="https://github.com/kgruel/strange-loops-next/blob/main/vectors/README.md">vectors</a>, <a href="https://github.com/kgruel/strange-loops-next/blob/main/interop/fuzz/REPORT.md">the fuzz report</a>, <a href="https://github.com/kgruel/strange-loops-next/blob/main/model/mutate/REPORT.md">the mutation report</a> and <a href="https://github.com/kgruel/strange-loops-next/blob/main/rust/GAPS.md">Rust boundaries</a>. The changelog entry of 2026-11-21 has them as they stood on that day.</p>
 <h2 id="now">Now</h2>
-<p>The payload values, the result hash's prefix and the tick record, all ruled by Kyle on 2026-11-21, are built. Step 4's exit criterion holds; closing the step is Kyle's to say.</p>
+<p>Adoption is the step in hand. It is done when <code>loops</code> is first on <code>PATH</code> for daily work.</p>
 <div class="table-scroll" tabindex="0"><table><thead><tr><th scope="col">Order</th><th scope="col">Work</th><th scope="col">State</th><th scope="col">Waits on</th></tr></thead>
 <tbody>
-<tr><td>1</td><td><strong>The tick record:</strong> what a tick holds, how <code>covers</code> is stated and checked, and the input key.</td><td>Built (changelog, 2026-11-21 and 2026-11-22): the model with its laws and 131 vectors, <a href="https://github.com/kgruel/strange-loops-next/blob/main/protocol/tick.md"><code>protocol/tick.md</code></a>, Rust, <code>loops tick &lt;spec&gt;</code> and <code>loops tick --check &lt;id&gt;</code>, and a fuzz run that holds Rust to the model's order. Its mutation catalogue has 91 entries, each caught.</td><td>Kyle: closing step 4 (<a href="index.html#s4-closing-step-4">S4</a>)</td></tr>
-<tr><td>2</td><td><strong>Step 4's ruled pieces</strong> (list below).</td><td>Ruled 2026-11-20. Not built.</td><td>Some wait on the tick record</td></tr>
+<tr><td>1</td><td><strong>The CLI's own pieces:</strong> <code>loops ls</code>, a scan by the start of a name, <code>--fields</code>, the plain view with relative times, <code>--version</code>, the cache of checked segments.</td><td>Built (changelog, 2026-11-22).</td><td>Nothing</td></tr>
+<tr><td>2</td><td><strong>Reads across several stores:</strong> a spec's <code>from</code> names stores; the read takes their union first.</td><td>The union is ruled. How a name finds its store is not.</td><td>Kyle: <a href="index.html#ad1-how-a-spec-finds-the-stores-it-names">AD1</a></td></tr>
+<tr><td>3</td><td><strong>The shadow import:</strong> the old stores copied into new ones, read beside the old tool.</td><td>Planned, not built.</td><td>Kyle: <a href="index.html#ad2-how-an-old-store-becomes-records">AD2</a></td></tr>
+<tr><td>4</td><td><strong><code>loops</code> first on <code>PATH</code>.</strong></td><td>After the import is compared with the old tool's reading.</td><td>2 and 3</td></tr>
 </tbody></table></div>
-<h3 id="step-4-ruled-and-not-built">Step 4: ruled and not built</h3>
-<p>Each is ruled in <a href="note-2026-11-15-the-cut.html">the cut note</a>; the section is in brackets.</p>
-<ul>
-<li><p>A CLI verb that shows a result hash.</p></li>
-</ul>
-<p><strong>Step 4 is done when</strong> a content tick recomputes to the same hash on two machines.
-<strong>That holds since 2026-11-21:</strong> a tick written on one machine checks <code>same</code> on a second, in the tree's tests and on real stores (changelog). Closing the step is Kyle's to say.
-Not in step 4 yet: boundaries and markers, the runner, and what verifying a deep tick tree costs.
-Not in step 4 any more: the caching reader's law (issue #8). It is stated when a caching reader is built (ruled 2026-11-21, amending 2026-11-11).</p>
+<p>Nothing that is ruled is unbuilt. Until AD1 or AD2 is ruled, the work to hand is the small pieces below.</p>
 <h2 id="next">Next</h2>
-<p>The order Kyle set on 2026-11-10 is: step 4 (ticks), then step 3 (standing) together with step 5 (sharing).
+<p>The order Kyle set on 2026-11-10 is: step 4 (ticks, done), then step 3 (standing) together with step 5 (sharing).
 Kyle ruled on 2026-11-21 for one step between ticks and standing, adoption, with its CLI-only pieces built beside the tick work (<a href="note-2026-11-21-order-of-work.html#w1-an-adoption-step-before-standing-and-sharing">W1</a>).</p>
 <div class="table-scroll" tabindex="0"><table><thead><tr><th scope="col">Order</th><th scope="col">Step</th><th scope="col">Builds</th><th scope="col">Done when</th></tr></thead>
 <tbody>
-<tr><td>started 2026-11-22; <code>loops ls</code>, <code>--fields</code>, the plain view, <code>--version</code> and the cache of checked segments are built</td><td>Adoption</td><td>The old stores imported as a shadow; <code>ls</code>, a scan by name prefix, relative times and a plain-text view; reads across several stores; a cache of checked segments</td><td><code>loops</code> is first on <code>PATH</code> for daily work</td></tr>
+<tr><td>now</td><td>Adoption</td><td>The old stores imported as a shadow; <code>ls</code>, a scan by name prefix, relative times and a plain-text view; reads across several stores; a cache of checked segments</td><td><code>loops</code> is first on <code>PATH</code> for daily work</td></tr>
 <tr><td>then</td><td>3, standing</td><td>Declarations, admission, stances, grants, presence key, retire through; then name tables and <code>resolve-by</code></td><td>A strict store rejects visibly; a steward's changeset takes effect</td></tr>
 <tr><td>with it</td><td>5, sharing</td><td>The git layout, then segment-list sync</td><td>Two clones converge</td></tr>
 <tr><td>later</td><td>6</td><td>Index and search, SQLite segments, collectors, lenses, <code>serve</code></td><td>Something is slow, or a surface needs it</td></tr>
@@ -250,11 +244,13 @@ Kyle ruled on 2026-11-21 for one step between ticks and standing, adoption, with
 <p>Standing matters once records cross between people: sharing through git repositories across teams, and over HTTP.
 Everything wanted before that runs on one machine under one trust root.
 Retiring still follows ticks, as the Trust walk found.
+Left out of step 4 and wanted by nothing yet: boundaries and markers, the runner, and what verifying a deep tick tree costs.
 Each step extends the model's laws, computes protocol vectors, then implements Rust.</p>
 <h2 id="small-pieces-any-time">Small pieces, any time</h2>
 <p>None needs a ruling. Each is built when it is the cheapest useful thing to do.</p>
 <ul>
-<li><p>None is left (2026-11-22). The last were issue 11, the JavaScript sum, and lists in the other fuzz families.</p></li>
+<li><p>A verb that shows a result's hash without writing a tick. Today the hash is read from a tick, which carries it.</p></li>
+<li><p>Look at the frozen JavaScript again, now that ticks are done (W3): keep it frozen, bring it up to ticks, or retire it. The finding goes to Kyle as an entry.</p></li>
 </ul>
 <h2 id="all-steps">All steps</h2>
 <div class="table-scroll" tabindex="0"><table><thead><tr><th scope="col">Step</th><th scope="col">Builds</th><th scope="col">Done when</th></tr></thead>
@@ -263,7 +259,7 @@ Each step extends the model's laws, computes protocol vectors, then implements R
 <tr><td>1, done</td><td>Protocol and vectors for layer 0: canonical bytes, salt and commitment, id, signature</td><td>The model and the JS writer agree on every vector; Rust checks all fixture families and external standards</td></tr>
 <tr><td>2, done</td><td>Emit, read, fold for one person: JSONL segment, JSON spec, the two fold families, <code>&quot;follow&quot;: &quot;prev&quot;</code>, <code>by</code>, a signing key, signing by default. <code>of</code> names a record's one thing, an id or a natural key; <code>about</code> only mentions. D8a, D8b and D8c are built: <code>sets</code> in the envelope, every slot that follows <code>keys</code>, the slice laws for one keyed thing and for a spec with a keyed slot, and the writer's anchor rule.</td><td>It does the old CLI's workable job, signed</td></tr>
 <tr><td>3</td><td>Standing: declarations, admission, stances, grants, presence key, retire through; then name tables and <code>resolve-by</code></td><td>A strict store rejects visibly; a steward's changeset takes effect</td></tr>
-<tr><td>4, started</td><td>Ticks: content and witness, boundaries, markers</td><td>A content tick recomputes to the same hash on two machines</td></tr>
+<tr><td>4, done</td><td>Ticks: the tick record, its check, a tick over a cut, a write against a base. Boundaries and markers were left out</td><td>A content tick recomputes to the same hash on two machines</td></tr>
 <tr><td>5</td><td>Sharing: the git layout, then segment-list sync</td><td>Two clones converge</td></tr>
 <tr><td>6</td><td>Index and search, SQLite segments, collectors, lenses, <code>serve</code></td><td>Something is slow, or a surface needs it</td></tr>
 </tbody></table></div>

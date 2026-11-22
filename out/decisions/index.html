@@ -198,7 +198,6 @@ header.top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--g
 <p class="source">Rendered from <code>DECISIONS.md</code> in the repository.</p>
 <details class="contents"><summary>On this page</summary>
 <ul><li><a href="#at-a-glance">At a glance</a></li>
-<li><a href="#two-short-questions">Two short questions</a></li>
 <li><a href="#the-adoption-step">The adoption step</a></li>
 <li><a href="#being-prepared">Being prepared</a></li>
 <li><a href="#deferred-by-you">Deferred by you</a></li>
@@ -207,7 +206,7 @@ header.top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--g
 <h1 id="decisions">Decisions</h1>
 <p>Everything that waits on Kyle, in one place. Each entry has the question, an example, the options and a recommendation.</p>
 <ul>
-<li><p>An entry leaves this file when it is ruled. The entries ruled on 2026-11-21 have left it: PV1 to PV7, RC1, W7, E1 and I10, then TK1 to TK9 and W1 to W6. TK10 and TK11 left it on 2026-11-22.</p></li>
+<li><p>An entry leaves this file when it is ruled. The entries ruled on 2026-11-21 have left it: PV1 to PV7, RC1, W7, E1 and I10, then TK1 to TK9 and W1 to W6. TK10 to TK12 and S4 left it on 2026-11-22.</p></li>
 <li><p>The ruling is written in <a href="changelog.html">CHANGELOG.md</a> under its date, and one line is added to <a href="#ruled">Ruled</a> at the end of this file.</p></li>
 <li><p>What is next once these are ruled is in <a href="roadmap.html">ROADMAP.md</a>.</p></li>
 <li><p>&quot;Today&quot; in an example means the <code>loops</code> binary built from main on 2026-11-21. Every &quot;today&quot; answer below was run, not predicted.</p></li>
@@ -215,40 +214,15 @@ header.top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--g
 <h2 id="at-a-glance">At a glance</h2>
 <div class="table-scroll" tabindex="0"><table><thead><tr><th scope="col">Id</th><th scope="col">Question</th><th scope="col">Recommended</th><th scope="col">What waits on it</th></tr></thead>
 <tbody>
-<tr><td><a href="#s4-closing-step-4">S4</a></td><td>Is step 4 (ticks) closed?</td><td>Yes: its exit criterion has held since 2026-11-21</td><td>Nothing is blocked; the roadmap says &quot;started&quot; until you say</td></tr>
-<tr><td><a href="#tk12-the-exit-status-of-the-check">TK12</a></td><td>The exit status of <code>loops tick --check</code></td><td>0 only for <code>same</code>, as built</td><td>Nothing: a script that tests the status</td></tr>
 <tr><td><a href="#ad1-how-a-spec-finds-the-stores-it-names">AD1</a></td><td>How a spec finds the stores it names, and what a missing one answers</td><td>A per-user list of names and directories; a name bound to nothing refuses the whole read</td><td>Reads across several stores (adoption)</td></tr>
 <tr><td><a href="#ad2-how-an-old-store-becomes-records">AD2</a></td><td>How a fact of an old store becomes a record: its thing, its order, its times, who signs, where its origin is kept</td><td>As in its table: a keyed fact is a revision of <code>&lt;kind&gt;:&lt;key&gt;</code>; the old time is <code>occurred</code>; an import key signs</td><td>The shadow import (adoption)</td></tr>
 </tbody></table></div>
-<p>Every earlier entry is ruled: the last were TK10 and TK11, on 2026-11-22. S4 and TK12 are short; AD1 and AD2 block the rest of the adoption step.</p>
+<p>Every earlier entry is ruled: the last were TK10 to TK12 and the closing of step 4, on 2026-11-22. AD1 and AD2 block the rest of the adoption step. Neither is pressing: everything else that is ruled is built.</p>
 <ul>
-<li><p>The tick record, TK1 to TK11: ruled and built. The questions as they were put, with their examples, are in <a href="note-2026-11-21-tick-record.html#10-the-questions-as-they-were-put">the tick record note</a>, sections 10 and 11.</p></li>
+<li><p>The tick record, TK1 to TK12: ruled and built. Step 4 is closed. The questions as they were put, with their examples, are in <a href="note-2026-11-21-tick-record.html#10-the-questions-as-they-were-put">the tick record note</a>, sections 10 and 11.</p></li>
 <li><p>The order of work, W1 to W6: ruled. The entries as put are in <a href="note-2026-11-21-order-of-work.html">the order-of-work note</a>.</p></li>
 </ul>
-<p>TK10 to TK12 came from building step 4. More may follow: any choice that changes a tick's bytes, a refusal code or a check's answer and that the rulings do not settle.</p>
 <p>After this: <a href="#being-prepared">what is being prepared</a>, <a href="#deferred-by-you">what you deferred</a> and <a href="#ruled">what is ruled</a>. Nothing waits to be confirmed: under your ruling of 2026-11-21 an implementer choice comes here only when it changes bytes or answers.</p>
-<h2 id="two-short-questions">Two short questions</h2>
-<h3 id="s4-closing-step-4">S4: closing step 4</h3>
-<p><strong>Question.</strong> Is step 4 (ticks) closed?</p>
-<p><strong>Where it stands.</strong> The step is done when a content tick recomputes to the same hash on two machines. That has held since 2026-11-21, in the tree's tests and on real stores: the laptop's tick over the six backups checks <code>same</code> on the NAS (the run is in the next entry's table). Since then a tick can also cover a cut, by time or by ids, and a write can state a tick as its base.</p>
-<p><strong>What closing does not claim.</strong> Boundaries, markers and the runner are not built and were never in the exit. They stay listed in the roadmap as not in step 4 yet.</p>
-<p><strong>Recommended.</strong> Close it. The roadmap then says &quot;done&quot; for step 4, and adoption is the step in hand.</p>
-<h3 id="tk12-the-exit-status-of-the-check">TK12: the exit status of the check</h3>
-<p><strong>Question.</strong> <code>loops tick --check &lt;id&gt;</code> prints its answer on standard output. What is its exit status?</p>
-<p><strong>Example, run on the release binary</strong> (2026-11-21; the stores of the tick record's examples, as built):</p>
-<div class="table-scroll" tabindex="0"><table><thead><tr><th scope="col">Where the laptop's tick is checked</th><th scope="col">Answer</th><th scope="col">Exit, as built</th></tr></thead>
-<tbody>
-<tr><td>The NAS, after importing the tick</td><td><code>same</code></td><td>0</td></tr>
-<tr><td>A machine holding four of the six backups</td><td><code>cannot check</code>: 2 records missing</td><td>1</td></tr>
-<tr><td>A copy where one backup was erased afterwards</td><td><code>cannot check</code>: 1 payload missing</td><td>1</td></tr>
-<tr><td>The laptop, on a tick written by hand that claims 1028</td><td><code>differs</code></td><td>1</td></tr>
-</tbody></table></div>
-<div class="table-scroll" tabindex="0"><table><thead><tr><th scope="col"></th><th scope="col">The status</th><th scope="col"></th></tr></thead>
-<tbody>
-<tr><td><strong>A (recommended, built)</strong></td><td>0 only for <code>same</code>. <code>differs</code>, <code>cannot check</code> and &quot;not a tick&quot; exit 1, with the answer on standard output and nothing on standard error.</td><td><code>loops tick --check &lt;id&gt; &amp;&amp; deploy</code> is safe. A script that wants to tell <code>differs</code> from <code>cannot check</code> reads the answer.</td></tr>
-<tr><td>B</td><td>0 whenever the check completes, whatever it answers.</td><td>The status then says only &quot;the verb ran&quot;. A script that forgets to read the answer goes on after <code>differs</code>.</td></tr>
-</tbody></table></div>
-<p><strong>What it costs to change later.</strong> One line in the CLI and its walk tests. No record or answer changes.</p>
 <h2 id="the-adoption-step">The adoption step</h2>
 <p>You ruled on 2026-11-21 (W1) that the adoption step's CLI pieces are built beside the tick work. A worker planned them on 2026-11-22. The pieces that are the CLI's alone are being built: <code>loops ls</code>, a scan by the start of a name, a plain-text view with relative times, a <code>--version</code>, and the cache of checked segments (W2). Two pieces need you first. AD1 is one. The other is AD2, the import of your old stores as a shadow.</p>
 <h3 id="ad1-how-a-spec-finds-the-stores-it-names">AD1: how a spec finds the stores it names</h3>
@@ -329,7 +303,9 @@ thread:kiln  thread      2        1      kiln  done    Repair kiln
 <p>One line for each ruling, newest first. The full text is in <a href="changelog.html">CHANGELOG.md</a> under the date, or in the note named.</p>
 <div class="table-scroll" tabindex="0"><table><thead><tr><th scope="col">Date</th><th scope="col">Ruling</th><th scope="col">Where</th></tr></thead>
 <tbody>
-<tr><td>2026-11-22</td><td>TK10, seven details of <code>loops tick --check</code>, each as recommended: an erased payload is not read from old bytes; a covered eraser the tick ignores is not a tick at once; under newer rules the check tests only what no version changes, and a result's hash only for its spelling; a result no fold could give is <code>differs</code>; <code>rules</code> is a positive whole number as text; a spec this binary cannot read is <code>cannot check</code></td><td>Changelog; <a href="note-2026-11-21-tick-record.html#11-two-later-questions-as-they-were-put">the tick record note</a>, section 11</td></tr>
+<tr><td>2026-11-22</td><td>Step 4 (ticks) meets its exit criterion and is closed</td><td>Changelog</td></tr>
+<tr><td>2026-11-22</td><td>TK12: <code>loops tick --check</code> exits 0 only for <code>same</code></td><td>Changelog; the tick record note, section 11</td></tr>
+<tr><td>2026-11-22</td><td>TK10, seven details of <code>loops tick --check</code>, each as recommended: an erased payload is not read from old bytes; a covered eraser the tick ignores is not a tick at once; under newer rules the check tests only what no version changes, and a result's hash only for its spelling; a result no fold could give is <code>differs</code>; <code>rules</code> is a positive whole number as text; a spec this binary cannot read is <code>cannot check</code></td><td>Changelog; <a href="note-2026-11-21-tick-record.html#11-the-later-questions-as-they-were-put">the tick record note</a>, section 11</td></tr>
 <tr><td>2026-11-22</td><td>TK11, option C: a write against a base names the base's live records together with what is under them in the store, and says how many it named that the base did not hold</td><td>Changelog; the tick record note, section 11</td></tr>
 <tr><td>2026-11-21</td><td>The tick record, TK1 to TK9: an ordinary record of kind <code>tick</code>; it carries its result and the result's hash; it carries its spec and the spec's hash; <code>covers</code> lists every record folded; <code>withheld</code> lists those read without a payload; a spec reads a tick by the payload reading; a verb checks and no store refuses a tick; the window field is <code>env.when</code>; a member <code>rules</code> bound into the spec's hash</td><td>Changelog; <a href="note-2026-11-21-tick-record.html">the tick record note</a></td></tr>
 <tr><td>2026-11-21</td><td>The order of work, W1 to W6: an adoption step after ticks, its CLI pieces beside the tick work; a cache of checked segments in that step; the JavaScript frozen as a trial for step 4; one refusal per input inside the repository, single faults in the protocol text; the mutant check stays; <code>out/</code> stays committed</td><td>Changelog; <a href="note-2026-11-21-order-of-work.html">the order-of-work note</a></td></tr>

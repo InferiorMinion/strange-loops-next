@@ -9,8 +9,8 @@ What is next, in order. This file holds no history and no open questions.
 ## Where we are
 
 - **Steps 0, 1 and 2 are done.** Kyle closed step 2 on 2026-11-20: `loops` emits, reads and folds for one person, signed, over `.loops/`.
-- **Step 4 (ticks) meets its exit criterion; Kyle has not closed it.** The tick record is built: `loops tick <spec>` writes a tick and `loops tick --check <id>` checks one, and a tick written on one machine checks `same` on a second (2026-11-21). A tick can also cover a cut, by time or by ids (2026-11-22). Not built, and never part of the exit: boundaries, markers and the runner.
-- **Three implementations agree on every vector:** Lean (the model), JavaScript and Rust. From ticks on, a piece is built in Lean and Rust; the JavaScript is frozen at what it has, as a trial for step 4 (ruled 2026-11-21).
+- **Step 4 (ticks) is done.** Kyle closed it on 2026-11-22: `loops tick <spec>` writes a tick, `loops tick --check <id>` checks one, and a tick written on one machine checks `same` on a second. A tick can cover a cut, by time or by ids, and a write can state a tick as its base. Boundaries, markers and the runner were never part of the step and are not built.
+- **Three implementations agree on every vector:** Lean (the model), JavaScript and Rust. From ticks on, a piece is built in Lean and Rust; the JavaScript is frozen at what it has, as a trial for step 4 (ruled 2026-11-21). The ruling said to look at it again when ticks are done, and that is now.
 - **One outside user:** rex-tools, a chat room over the `loops` CLI. It found a slow read path (fixed 2026-11-21) and a gap in `--values` (fixed the same day).
 - **The old Python `loops` is still first on `PATH`** on Kyle's machine, and his day-to-day stores are still the old ones.
 
@@ -18,32 +18,25 @@ The evidence and its counts are kept where they are made: [the law index](design
 
 ## Now
 
-The payload values, the result hash's prefix and the tick record, all ruled by Kyle on 2026-11-21, are built. Step 4's exit criterion holds; closing the step is Kyle's to say.
+Adoption is the step in hand. It is done when `loops` is first on `PATH` for daily work.
 
 | Order | Work | State | Waits on |
 | --- | --- | --- | --- |
-| 1 | **The tick record:** what a tick holds, how `covers` is stated and checked, and the input key. | Built (changelog, 2026-11-21 and 2026-11-22): the model with its laws and 131 vectors, [`protocol/tick.md`](protocol/tick.md), Rust, `loops tick <spec>` and `loops tick --check <id>`, and a fuzz run that holds Rust to the model's order. Its mutation catalogue has 91 entries, each caught. | Kyle: closing step 4 ([S4](DECISIONS.md#s4-closing-step-4)) |
-| 2 | **Step 4's ruled pieces** (list below). | Ruled 2026-11-20. Not built. | Some wait on the tick record |
+| 1 | **The CLI's own pieces:** `loops ls`, a scan by the start of a name, `--fields`, the plain view with relative times, `--version`, the cache of checked segments. | Built (changelog, 2026-11-22). | Nothing |
+| 2 | **Reads across several stores:** a spec's `from` names stores; the read takes their union first. | The union is ruled. How a name finds its store is not. | Kyle: [AD1](DECISIONS.md#ad1-how-a-spec-finds-the-stores-it-names) |
+| 3 | **The shadow import:** the old stores copied into new ones, read beside the old tool. | Planned, not built. | Kyle: [AD2](DECISIONS.md#ad2-how-an-old-store-becomes-records) |
+| 4 | **`loops` first on `PATH`.** | After the import is compared with the old tool's reading. | 2 and 3 |
 
-### Step 4: ruled and not built
-
-Each is ruled in [the cut note](notes/2026-11-15-the-cut.md); the section is in brackets.
-
-- A CLI verb that shows a result hash.
-
-**Step 4 is done when** a content tick recomputes to the same hash on two machines.
-**That holds since 2026-11-21:** a tick written on one machine checks `same` on a second, in the tree's tests and on real stores (changelog). Closing the step is Kyle's to say.
-Not in step 4 yet: boundaries and markers, the runner, and what verifying a deep tick tree costs.
-Not in step 4 any more: the caching reader's law (issue #8). It is stated when a caching reader is built (ruled 2026-11-21, amending 2026-11-11).
+Nothing that is ruled is unbuilt. Until AD1 or AD2 is ruled, the work to hand is the small pieces below.
 
 ## Next
 
-The order Kyle set on 2026-11-10 is: step 4 (ticks), then step 3 (standing) together with step 5 (sharing).
+The order Kyle set on 2026-11-10 is: step 4 (ticks, done), then step 3 (standing) together with step 5 (sharing).
 Kyle ruled on 2026-11-21 for one step between ticks and standing, adoption, with its CLI-only pieces built beside the tick work ([W1](notes/2026-11-21-order-of-work.md#w1-an-adoption-step-before-standing-and-sharing)).
 
 | Order | Step | Builds | Done when |
 | --- | --- | --- | --- |
-| started 2026-11-22; `loops ls`, `--fields`, the plain view, `--version` and the cache of checked segments are built | Adoption | The old stores imported as a shadow; `ls`, a scan by name prefix, relative times and a plain-text view; reads across several stores; a cache of checked segments | `loops` is first on `PATH` for daily work |
+| now | Adoption | The old stores imported as a shadow; `ls`, a scan by name prefix, relative times and a plain-text view; reads across several stores; a cache of checked segments | `loops` is first on `PATH` for daily work |
 | then | 3, standing | Declarations, admission, stances, grants, presence key, retire through; then name tables and `resolve-by` | A strict store rejects visibly; a steward's changeset takes effect |
 | with it | 5, sharing | The git layout, then segment-list sync | Two clones converge |
 | later | 6 | Index and search, SQLite segments, collectors, lenses, `serve` | Something is slow, or a surface needs it |
@@ -51,13 +44,15 @@ Kyle ruled on 2026-11-21 for one step between ticks and standing, adoption, with
 Standing matters once records cross between people: sharing through git repositories across teams, and over HTTP.
 Everything wanted before that runs on one machine under one trust root.
 Retiring still follows ticks, as the Trust walk found.
+Left out of step 4 and wanted by nothing yet: boundaries and markers, the runner, and what verifying a deep tick tree costs.
 Each step extends the model's laws, computes protocol vectors, then implements Rust.
 
 ## Small pieces, any time
 
 None needs a ruling. Each is built when it is the cheapest useful thing to do.
 
-- None is left (2026-11-22). The last were issue 11, the JavaScript sum, and lists in the other fuzz families.
+- A verb that shows a result's hash without writing a tick. Today the hash is read from a tick, which carries it.
+- Look at the frozen JavaScript again, now that ticks are done (W3): keep it frozen, bring it up to ticks, or retire it. The finding goes to Kyle as an entry.
 
 ## All steps
 
@@ -67,7 +62,7 @@ None needs a ruling. Each is built when it is the cheapest useful thing to do.
 | 1, done | Protocol and vectors for layer 0: canonical bytes, salt and commitment, id, signature | The model and the JS writer agree on every vector; Rust checks all fixture families and external standards |
 | 2, done | Emit, read, fold for one person: JSONL segment, JSON spec, the two fold families, `"follow": "prev"`, `by`, a signing key, signing by default. `of` names a record's one thing, an id or a natural key; `about` only mentions. D8a, D8b and D8c are built: `sets` in the envelope, every slot that follows `keys`, the slice laws for one keyed thing and for a spec with a keyed slot, and the writer's anchor rule. | It does the old CLI's workable job, signed |
 | 3 | Standing: declarations, admission, stances, grants, presence key, retire through; then name tables and `resolve-by` | A strict store rejects visibly; a steward's changeset takes effect |
-| 4, started | Ticks: content and witness, boundaries, markers | A content tick recomputes to the same hash on two machines |
+| 4, done | Ticks: the tick record, its check, a tick over a cut, a write against a base. Boundaries and markers were left out | A content tick recomputes to the same hash on two machines |
 | 5 | Sharing: the git layout, then segment-list sync | Two clones converge |
 | 6 | Index and search, SQLite segments, collectors, lenses, `serve` | Something is slow, or a surface needs it |
 
