@@ -19,6 +19,38 @@ In brief:
 - `loops ls --fields name,status --plain` is the Monday-morning read without a spec: a plain-text view, asked for explicitly, on `ls` and `of`.
 - A read remembers which segments it has checked: on a 9,000-record store a fold goes from 0.53 s to 0.24 s. `loops check` still checks everything.
 - `loops read` and `loops fold` take `--plain` too: a spec's result as text, for every result shape.
+- `loops tick` can cover a cut: `--as-of <time>` for the records emitted before a time with what they build on, `--cover <id>` for named records with what is under them.
+
+### `loops tick` over a cut: `--as-of` and `--cover`
+
+Ruled on 2026-11-20 ([the cut note](notes/2026-11-15-the-cut.md), sections 1 to 3) and built on 2026-11-22. Rust only, in the CLI. Without the flags `loops tick` covers everything held, byte for byte as before.
+
+- `--as-of <time>` covers the records emitted before the time, and every record they build on through `prev`.
+- `--cover <id>`, repeated, covers the named records and every record under them.
+- The payload is the ordinary one. `covers` names the records outright and nothing in it says how they were chosen.
+
+**A real run, on the binary built from this change.** Two nights of three backups, the first night 412, 3 and 88 megabytes:
+
+| Command | Covers | Result | Checked in that store |
+| --- | ---: | --- | --- |
+| `loops tick backups.json --as-of 2026-11-17` | 3 | 3 runs, 503 | `same`, closure `yes`, 3 taken and not covered |
+| `loops tick backups.json` | 7 (the six and the tick above) | 6 runs, 1027 | |
+| `loops tick backups.json --cover <the second jellyfin backup>` | 2 (it and the first, which it revises) | 2 runs, 831 | `same`, closure `yes`, 4 taken and not covered |
+
+**Two questions the worker stopped on, both answered by the ruled note.**
+- **A record emitted exactly at the time is out.** The note says the bound reads as `below` does. The model's `upTo` took the time itself in; margins-claude made it strict the same day (!95), and its laws go through unchanged.
+- **A cut follows `prev` only.** The ruling is "a part closed downward over `prev`", and the note leaves `under` for standing. So `--cover y`, where `y` is under a grant outside the cut, covers `y` alone and checks `same` with closure `no`: the check's closure report counts `under` targets and a cut does not. "Closure no" therefore does not mean "not a cut"; saying which kind of target is outside is a refinement not built.
+
+**An erasure after the cut** behaves as the note's section 4 says: a tick as of a time before the erasure covers the erased record, lists it in `withheld`, counts its envelope and leaves its payload unread; it checks `same`.
+
+**Implementer choices; they stand under Kyle's ruling of 2026-11-21 (W7).** The full list is choice 28 of `rust/PLACE.md`.
+- `--as-of` takes an instant or a date; a date means its start. `--as-of` with `--cover` is a usage error.
+- The cut is computed in the CLI: it chooses what `make_tick` is given, and the tick's codec is untouched.
+- `--base` works beside both and still selects only the tick record's anchor.
+
+Checked by a randomized test over stores with skewed clocks: the cut equals a plain reference computation, every such tick checks `same`, and in 24 of 32 stores the cut held a record from outside the strict prefix.
+
+A Codex worker wrote it; the coordinator reviewed it, joined it with main and made the run above.
 
 ### The adoption step: the plain view on `read` and `fold`
 
@@ -141,6 +173,8 @@ That is the ruling's purpose: a write against an older read shows as a conflict.
 Checked by a randomized test: 320 cases, 217 with a base that did not hold what is under it, 67 with the exact shape of TK11's first example, 118 stating a `--prev` outside the base. In every case the write equals the one a writer holding exactly the effective base would make; the thing reads the same from the store's live records as from the whole store, before and after; and the whole store reads every key as it would after the bare write.
 
 CI: the fuzz tests' limit in the `model` job goes from 60 to 300 seconds. The tick fuzz tests added on 2026-11-22 took the run past 60 seconds on a busy runner, and this merge request's first pipeline was cut off there with every test so far passing.
+
+**The same three properties, from outside.** margins-claude wrote the fill again over its own Python reading (`sl-py/basefill.py`, in its repository) and ran 5,000 generated stores, 12,220 writes for each of three kinds of base. The filler's write never read otherwise from the live records alone, was always anchored, and the whole store always read as after the bare write. The bare write failed 2,802 times over arbitrary bases, and never when the printed count was 0. A base that is exactly the live records of a closed part was sound in all 6,109 cases though it is not closed downward. A stated `prev` kept beside the base without what is under it failed 1,003 times even over a closed base; joined first, as built, never.
 
 A Codex worker planned and wrote it; margins-claude checked the plan against the model; the coordinator reviewed it, joined it with main and made the runs above.
 
