@@ -13,6 +13,29 @@ In brief:
 - The base lemma is in the model as `keyed.base`, with a correction: an emit against a base keeps the store's names anchored only when the base is closed downward. A witness shows what breaks when it is not.
 - A fuzz run compares the model and Rust on ticks, with pairs of faults generated on purpose. Its first version agreed on 20,160 cases and missed a fault planted in Rust; the rebuilt one catches every planted swap tried. margins-claude's Python agrees with Rust on 80,000 more cases.
 - The tick has its mutation catalogue: 91 deliberate faults, each caught by something that runs. Five were not caught at first; four vectors and a check were added for them.
+- The adoption step has started: `loops ls` lists a store's kinds and things, and `loops --version` says which `loops` this is. Its plan has eight pieces; two need Kyle first (AD1, and the import of the old stores).
+
+### The adoption step: its plan, `loops ls` and `loops --version`
+
+Kyle ruled on 2026-11-21 (W1) that the adoption step's CLI pieces are built beside the tick work. Its exit is `loops` first on `PATH` for his daily work.
+
+**The plan** (a Codex worker's, 2026-11-22), as eight pieces: (1) `loops ls`, with things and a scan by the start of a name; (2) a plain-text view with relative times, and `--fields`, on `ls` and `of`; (3) the plain view on `read` and `fold`; (4) reads across several stores; (5, 6) the import of the old stores as a shadow; (7) the cache of checked segments (W2); (8) `--version`, and the walk that puts `loops` first on `PATH`. Pieces 4 to 6 need Kyle first: [AD1](DECISIONS.md#ad1-how-a-spec-finds-the-stores-it-names) is written, and the import's choices, which decide the id of every imported record, are owed as an entry. The others are the CLI's alone.
+
+**Built: `loops ls` and `loops --version`.**
+
+- `loops ls` answers the kinds a store holds with their counts of settled, admitted records. `loops ls --things` answers every thing: its name (a natural key, or a root's id), the kinds of its heads, its records, its heads, and its headline. `loops ls <prefix>` answers the things whose name starts with that text, literally: `task:` for natural keys, `r:ab` for roots.
+- The headline is the thing's `name` when one live setter holds it as text. Otherwise it says which of three it is: absent, unknown (the setter's payload is not held), or in conflict (several live setters). It never shows one side of a fork.
+- A real run on the stores of the entries below: the laptop of the tick example answers `backup` 6 and `tick` 2; a store with `task:kiln` answers its headline "Repair kiln"; the thing left with two heads by a write against a bare base answers 2 heads.
+- On 10,000 records in 2,000 things, `loops ls` takes 0.58 s and `loops ls --things` 0.60 s; nearly all of it is checking signatures, which piece 7 is for.
+- `loops --version` prints `strange-loops-next 0.1.0`, outside a store and with no key. The first line of `loops --help` is unchanged: an outside tool reads it.
+
+**Implementer choices; they stand under Kyle's ruling of 2026-11-21 (W7).** The full list is in `rust/PLACE.md`.
+- `ls` with no argument lists kinds, not things, so the first command in an unfamiliar store is short at any size.
+- A thing's name here is what `of` names: a mention in `about` and a payload's `name` make no thing name.
+- Two live setters of `name` are a conflict also when they wrote the same text, as `loops of` shows them.
+- JSON only so far. The plain view is the next piece, and it will be asked for with `--plain`, never chosen by whether the output is a terminal: a script's answer must not depend on how it was started.
+
+A Codex worker wrote both; the coordinator reviewed them, ran the gate and tried `ls` on real stores.
 
 ### The tick's mutation catalogue
 

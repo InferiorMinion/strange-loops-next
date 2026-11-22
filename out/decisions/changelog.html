@@ -219,7 +219,27 @@ The record starts where the old roadmap's did. For anything earlier, and for eve
 <li><p>The base lemma is in the model as <code>keyed.base</code>, with a correction: an emit against a base keeps the store's names anchored only when the base is closed downward. A witness shows what breaks when it is not.</p></li>
 <li><p>A fuzz run compares the model and Rust on ticks, with pairs of faults generated on purpose. Its first version agreed on 20,160 cases and missed a fault planted in Rust; the rebuilt one catches every planted swap tried. margins-claude's Python agrees with Rust on 80,000 more cases.</p></li>
 <li><p>The tick has its mutation catalogue: 91 deliberate faults, each caught by something that runs. Five were not caught at first; four vectors and a check were added for them.</p></li>
+<li><p>The adoption step has started: <code>loops ls</code> lists a store's kinds and things, and <code>loops --version</code> says which <code>loops</code> this is. Its plan has eight pieces; two need Kyle first (AD1, and the import of the old stores).</p></li>
 </ul>
+<h3 id="the-adoption-step-its-plan-loops-ls-and-loops---version">The adoption step: its plan, <code>loops ls</code> and <code>loops --version</code></h3>
+<p>Kyle ruled on 2026-11-21 (W1) that the adoption step's CLI pieces are built beside the tick work. Its exit is <code>loops</code> first on <code>PATH</code> for his daily work.</p>
+<p><strong>The plan</strong> (a Codex worker's, 2026-11-22), as eight pieces: (1) <code>loops ls</code>, with things and a scan by the start of a name; (2) a plain-text view with relative times, and <code>--fields</code>, on <code>ls</code> and <code>of</code>; (3) the plain view on <code>read</code> and <code>fold</code>; (4) reads across several stores; (5, 6) the import of the old stores as a shadow; (7) the cache of checked segments (W2); (8) <code>--version</code>, and the walk that puts <code>loops</code> first on <code>PATH</code>. Pieces 4 to 6 need Kyle first: <a href="index.html#ad1-how-a-spec-finds-the-stores-it-names">AD1</a> is written, and the import's choices, which decide the id of every imported record, are owed as an entry. The others are the CLI's alone.</p>
+<p><strong>Built: <code>loops ls</code> and <code>loops --version</code>.</strong></p>
+<ul>
+<li><p><code>loops ls</code> answers the kinds a store holds with their counts of settled, admitted records. <code>loops ls --things</code> answers every thing: its name (a natural key, or a root's id), the kinds of its heads, its records, its heads, and its headline. <code>loops ls &lt;prefix&gt;</code> answers the things whose name starts with that text, literally: <code>task:</code> for natural keys, <code>r:ab</code> for roots.</p></li>
+<li><p>The headline is the thing's <code>name</code> when one live setter holds it as text. Otherwise it says which of three it is: absent, unknown (the setter's payload is not held), or in conflict (several live setters). It never shows one side of a fork.</p></li>
+<li><p>A real run on the stores of the entries below: the laptop of the tick example answers <code>backup</code> 6 and <code>tick</code> 2; a store with <code>task:kiln</code> answers its headline &quot;Repair kiln&quot;; the thing left with two heads by a write against a bare base answers 2 heads.</p></li>
+<li><p>On 10,000 records in 2,000 things, <code>loops ls</code> takes 0.58 s and <code>loops ls --things</code> 0.60 s; nearly all of it is checking signatures, which piece 7 is for.</p></li>
+<li><p><code>loops --version</code> prints <code>strange-loops-next 0.1.0</code>, outside a store and with no key. The first line of <code>loops --help</code> is unchanged: an outside tool reads it.</p></li>
+</ul>
+<p><strong>Implementer choices; they stand under Kyle's ruling of 2026-11-21 (W7).</strong> The full list is in <code>rust/PLACE.md</code>.</p>
+<ul>
+<li><p><code>ls</code> with no argument lists kinds, not things, so the first command in an unfamiliar store is short at any size.</p></li>
+<li><p>A thing's name here is what <code>of</code> names: a mention in <code>about</code> and a payload's <code>name</code> make no thing name.</p></li>
+<li><p>Two live setters of <code>name</code> are a conflict also when they wrote the same text, as <code>loops of</code> shows them.</p></li>
+<li><p>JSON only so far. The plain view is the next piece, and it will be asked for with <code>--plain</code>, never chosen by whether the output is a terminal: a script's answer must not depend on how it was started.</p></li>
+</ul>
+<p>A Codex worker wrote both; the coordinator reviewed them, ran the gate and tried <code>ls</code> on real stores.</p>
 <h3 id="the-ticks-mutation-catalogue">The tick's mutation catalogue</h3>
 <p>Kyle's ruling W5 held the tick's mutants back until step 4's exit, which holds since 2026-11-21. The catalogue now has 419 entries: the 328 from before, unchanged, and 91 for the tick, over <code>SpecHash.lean</code>, <code>Tick.lean</code>, <code>TickCheck.lean</code>, the result reader in <code>Result.lean</code>, <code>env.when</code> in <code>Spec.lean</code> and the repeat check in <code>Json.lean</code>.</p>
 <p>Every one of the 91 was judged by the full runner on this machine, with ten minutes for each command:</p>

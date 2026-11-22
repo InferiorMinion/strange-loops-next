@@ -2992,3 +2992,121 @@ fn checking_a_tick_over_ticks_needs_only_the_outer_cover() {
         r#"{"answer":"same","closure":"yes","taken-not-covered":1}"#,
     );
 }
+
+#[test]
+fn ls_counts_admitted_ids_and_lists_things_by_literal_name() {
+    let s = Store::new("ls-inventory");
+    assert_eq!(s.ok(&["ls"]), r#"{"kinds":[]}"#);
+    assert_eq!(s.ok(&["ls", "--things"]), r#"{"things":[]}"#);
+
+    let root = s.ok(&[
+        "emit",
+        "note",
+        "--about",
+        "mention:only",
+        "name=display:only",
+    ]);
+    s.ok(&["emit", "update", "--prev", &root, "status=open"]);
+    s.changeset(r#"{"kind":"task","of":"task:lamp","payload":{}}"#);
+    let base = s.ok(&["emit", "task", "--of", "task:kiln", "name=Original"]);
+    s.changeset(&format!(
+        r#"{{"kind":"task","of":"task:kiln","prev":["{base}"],"sets":["name"],"payload":{{"name":"Left"}}}}
+{{"kind":"repair","of":"task:kiln","prev":["{base}"],"sets":["name"],"payload":{{"name":"Right"}}}}"#
+    ));
+
+    // A second form of the root in a different segment still counts once.
+    s.ok_with(&["import"], &s.ok(&["export"]));
+    assert_eq!(
+        s.ok(&["ls"]),
+        r#"{"kinds":[{"kind":"note","records":1},{"kind":"repair","records":1},{"kind":"task","records":3},{"kind":"update","records":1}]}"#
+    );
+    let root_row = format!(
+        r#"{{"headline":{{"state":"text","value":"display:only"}},"heads":1,"kinds":["update"],"records":2,"thing":"{root}"}}"#
+    );
+    let kiln = r#"{"headline":{"state":"conflict"},"heads":2,"kinds":["repair","task"],"records":3,"thing":"task:kiln"}"#;
+    let lamp = r#"{"headline":{"state":"absent"},"heads":1,"kinds":["task"],"records":1,"thing":"task:lamp"}"#;
+    assert_eq!(
+        s.ok(&["ls", "--things"]),
+        format!(r#"{{"things":[{root_row},{kiln},{lamp}]}}"#)
+    );
+    assert_eq!(
+        s.ok(&["ls", "task:"]),
+        format!(r#"{{"things":[{kiln},{lamp}]}}"#)
+    );
+    assert_eq!(
+        s.ok(&["ls", &root[..8]]),
+        format!(r#"{{"things":[{root_row}]}}"#)
+    );
+    for prefix in ["Task:", "mention:", "display:", "task:*", &base] {
+        assert_eq!(s.ok(&["ls", prefix]), r#"{"things":[]}"#, "{prefix}");
+    }
+}
+
+#[test]
+fn ls_reads_a_name_only_from_its_live_setters() {
+    let s = Store::new("ls-openings");
+    let a = s.ok(&["emit", "task", "--of", "task:one", "name=Secret"]);
+    s.ok(&["erase", &a]);
+    let bare = s.ok(&["get", &a]);
+    let reader = holding("ls-withheld", &bare);
+    assert_eq!(
+        reader.ok(&["ls"]),
+        r#"{"kinds":[{"kind":"task","records":1}]}"#
+    );
+    for store in [&s, &reader] {
+        assert_eq!(
+            store.ok(&["ls", "task:"]),
+            r#"{"things":[{"headline":{"state":"unknown"},"heads":1,"kinds":["task"],"records":1,"thing":"task:one"}]}"#
+        );
+    }
+    // The withheld whole record may set other keys, but this explicit setter
+    // now determines name (a list, even with one string, is not a text headline).
+    reader.ok(&[
+        "emit",
+        "task",
+        "--of",
+        "task:one",
+        r#"name:=["not a headline"]"#,
+    ]);
+    assert_eq!(
+        reader.ok(&["ls", "task:"]),
+        r#"{"things":[{"headline":{"state":"absent"},"heads":1,"kinds":["task"],"records":2,"thing":"task:one"}]}"#
+    );
+}
+
+#[test]
+fn ls_answers_from_checked_lines_then_reports_an_unclean_store() {
+    let s = Store::new("ls-dirty");
+    s.ok(&["emit", "note", "--of", "shelf:tools", "name=Tools"]);
+    let clean = holding("ls-clean", &s.ok(&["export"]));
+    let segment = &s.segments()[0];
+    let mut bytes = fs::read(segment).expect("segment");
+    bytes.extend_from_slice(b"not JSON\n");
+    fs::write(segment, bytes).expect("alter segment");
+    answers_then_refuses(
+        &s,
+        &clean,
+        &[
+            (&["ls"], ""),
+            (&["ls", "--things"], ""),
+            (&["ls", "missing:"], ""),
+        ],
+        "store-not-clean: 1 line refused, 1 segment altered; `loops check` lists them",
+    );
+}
+
+#[test]
+fn version_identifies_the_binary_outside_a_store_without_a_key() {
+    let dir = Path::new(env!("CARGO_TARGET_TMPDIR")).join("walk-ls-version");
+    fs::create_dir_all(&dir).expect("scratch directory");
+    let outside = Store { dir };
+    assert_eq!(
+        outside.ok(&["--version"]),
+        concat!("strange-loops-next ", env!("CARGO_PKG_VERSION"))
+    );
+    assert!(!outside.dir.join("device-key").exists());
+    assert_eq!(
+        outside.ok(&["--help"]).lines().next(),
+        Some("usage: loops [-C <dir>] <verb> ...")
+    );
+}

@@ -6,6 +6,7 @@
 //! lines that check, then is refused `store-not-clean` when a line or a
 //! segment did not.
 mod draft;
+mod ls;
 mod values;
 
 use loops::{
@@ -53,6 +54,9 @@ usage: loops [-C <dir>] <verb> ...
                                 --sets, --sets-nothing or --whole states it
   emit - [--fill]               read one JSONL changeset from stdin
                                 --fill applies the single-emit filler to each line
+  --version                     print the strange-loops-next version
+  ls                            list kinds and their record counts
+  ls --things | ls <prefix>     list things, optionally by literal name prefix
   get <id>                      one record
   of <thing>                    a thing's values, each key's from its live
                                 setters; its about, its heads, and how many
@@ -730,6 +734,10 @@ fn run(args: &[String]) -> Result<(), Fail> {
         "emit" => emit(&start, rest),
         "tick" => tick(&start, rest),
         "erase" => erase(&start, rest),
+        "--version" if rest.is_empty() => {
+            say(concat!("strange-loops-next ", env!("CARGO_PKG_VERSION")))
+        }
+        "ls" => ls::run(&start, rest),
         "get" => get(&start, rest),
         "of" => of(&start, rest),
         "read" => read(&start, rest),
