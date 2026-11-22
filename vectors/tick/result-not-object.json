@@ -1,0 +1,40 @@
+{
+  "vector": "result-not-object",
+  "layer": "tick",
+  "laws": ["tick.canonical"],
+  "source": "model",
+  "input": {
+    "op": "payload",
+    "payload": {
+      "rules": "1",
+      "spec": {
+        "vertex": "backups",
+        "from": [
+          {
+            "store": "lab",
+            "kind": ["backup"]
+          }
+        ],
+        "fold": {
+          "runs": {
+            "count": true
+          },
+          "mb": {
+            "sum": "mb"
+          },
+          "list": {
+            "collect": true
+          }
+        }
+      },
+      "spec-hash": "spec:gs9soetlnq1fqp17th66fedrl0oecag0uf101fm5ov2c46ss73ag",
+      "covers": ["r:000000000000000000000000000000000000000000000000000g", "r:0000000000000000000000000000000000000000000000000010", "r:000000000000000000000000000000000000000000000000001g", "r:0000000000000000000000000000000000000000000000000020", "r:000000000000000000000000000000000000000000000000002g", "r:0000000000000000000000000000000000000000000000000030"],
+      "result": [],
+      "result-hash": "res:puf201q4no9291dau07il7brt64cctmn1rdss29rpo11hirtjf0g"
+    }
+  },
+  "expect": {
+    "refused": "tick-result-invalid",
+    "path": "result"
+  }
+}

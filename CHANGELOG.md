@@ -25,6 +25,27 @@ In brief:
 - `loops emit - --fill` fills each line of a changeset as a single emit would, so a collector can write anchored records.
 - Kyle ruled the tick record (TK1 to TK9; TK9 as a `rules` member bound into the spec's hash) and the order of work (W1 to W6), each for its recommendation. One new entry, TK10, comes from planning the build.
 - The tick record's first piece is in the model: the spec's hash under a rules version, and the window field `env.when` (!72). Rust is being built.
+- The tick record's second piece is in the model: a reader for a claimed result, and the tick's payload with its two readers.
+
+### The tick record, piece 2: the result reader and the payload, in the model
+
+The second of the seven pieces. Rust does not run its vectors yet.
+
+- **The payload** (TK1 to TK5, TK9). `model/Loops/Tick.lean`: the members `rules`, `spec`, `spec-hash`, `covers`, `result`, `result-hash`, and `withheld` only when not empty. The six-backups example is a vector with its full text: 6 runs, 1027 megabytes, `spec:gs9soetl…`.
+- **Two readers.** The first checks what no version of the rules changes: the members, the version's spelling, that `spec` is an object, the two id lists (sorted sets of record ids, `withheld` inside `covers` and never written empty), the spelling of both hashes, then that `spec-hash` fits the raw `spec` under the label `rules` names and `result-hash` fits the raw `result`. It parses no spec. The second is for the binary's own version: it parses the spec, requires its text to be that of its parsed form, and reads the result against the slots. For another version it answers which one; for a spec whose hash fits and that the parser refuses, it answers that it cannot read the spec.
+- **The result reader.** `readResult` in `model/Loops/Result.lean` reads a claimed result against a spec's slots: the shape of each fold type, integers as decimal text, ids as record ids. It does not ask whether the parts agree. A result that says 6 runs and lists 5 ids reads; the check of piece 3 will answer `differs` for it (TK10, row 4).
+- **Laws.** `tick.canonical`: what is written reads back, and whatever reads has one JCS text, reordered members included. `tick.record`: a spec reads a tick record by the payload reading and nothing more: `rules` and the hashes as text, `covers` and `withheld` as sets of ids, `spec` and `result` present with no value.
+- **Vectors.** 61 more in `vectors/tick/`, 72 in all: the example, an empty cover, an empty fold, each result shape, three ticks read by a spec (the TK6 example: count 3, 2 covering the first jellyfin backup, a sum of `result` that is 0 with 3 unread), a payload under rules 2, and one file for each single fault.
+
+**Implementer choices; they stand under Kyle's rulings of 2026-11-21 (TK7, W4, W7).**
+- **Seventeen refusal codes, each with the path of what broke:** `tick-not-object`, `tick-member-duplicate`, `tick-member-unknown`, `tick-member-missing`, `tick-rules-invalid`, `tick-spec-not-object`, `tick-ids-not-array`, `tick-id-invalid`, `tick-id-duplicate`, `tick-ids-unsorted`, `tick-withheld-empty`, `tick-withheld-outside`, `tick-hash-invalid`, `tick-spec-hash-mismatch`, `tick-result-hash-mismatch`, `tick-spec-noncanonical`, `tick-result-invalid`. One code serves both id lists and both hashes; the path says which. The plan had a code for each member; the worker built the shorter set and the coordinator kept it.
+- **The order for a payload with several faults** (inside this repository only, W4): not an object; a repeated member; an unknown member; the first missing member in the order `rules`, `spec`, `spec-hash`, `covers`, `result`, `result-hash`; the version; `spec` not an object; `covers`, then `withheld` (not an array, a bad id, a repeat, the order; then empty, then outside `covers`); the spelling of `spec-hash`, then of `result-hash`; the spec's hash; the result's hash. Then, for the binary's own version: the spec does not parse; its text is not its parsed form's; the result's shape, slot by slot in the spec's order.
+- **A result's ids read back as held.** The codec drops what a reader held of each listed id, so the reader gives each the same value and `tick.canonical` is stated up to that.
+- **The example's hashes are the vector's own.** The vector uses the model's fixed record ids, so its result hash (`res:7s24f6bt…`) is not the one in the proposal, which used the laptop's ids.
+- Rows 3 to 6 of TK10 are built as recommended and are Kyle's to rule.
+- No mutation-catalogue entry is added (W5).
+
+A Codex worker wrote it; the coordinator reviewed it, ran the gates and recomputed the example's two hashes.
 
 ### The tick record, piece 1: the spec's hash and `env.when`, in the model
 

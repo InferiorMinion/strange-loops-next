@@ -1,0 +1,196 @@
+{
+  "vector": "shape-r04-grouped-ungrouped-unread",
+  "layer": "tick",
+  "laws": ["tick.canonical"],
+  "source": "model",
+  "input": {
+    "op": "write-payload",
+    "spec": {
+      "vertex": "grouped",
+      "from": [
+        {
+          "store": ".",
+          "kind": ["task"]
+        }
+      ],
+      "fold": {
+        "per-status": {
+          "count": true,
+          "by": "status"
+        },
+        "est-per-status": {
+          "sum": "est",
+          "by": "status"
+        },
+        "small-per-status": {
+          "collect": true,
+          "by": "status",
+          "where": {
+            "est": {
+              "below": 5
+            }
+          }
+        }
+      }
+    },
+    "records": [
+      {
+        "id": "r:000000000000000000000000000000000000000000000000073g",
+        "kind": "task",
+        "observer": "sl:kyle",
+        "about": [],
+        "of": "task:g1",
+        "prev": [],
+        "emitted": "2026-10-01T00:01:40Z",
+        "occurred": "2026-10-01T00:01:40Z",
+        "fields": {
+          "status": "open",
+          "est": 3
+        }
+      },
+      {
+        "id": "r:0000000000000000000000000000000000000000000000000740",
+        "kind": "task",
+        "observer": "sl:kyle",
+        "about": [],
+        "of": "task:g2",
+        "prev": [],
+        "emitted": "2026-10-01T00:01:50Z",
+        "occurred": "2026-10-01T00:01:50Z",
+        "fields": {
+          "status": "closed",
+          "est": 9
+        }
+      },
+      {
+        "id": "r:000000000000000000000000000000000000000000000000074g",
+        "kind": "task",
+        "observer": "sl:kyle",
+        "about": [],
+        "of": "task:g3",
+        "prev": [],
+        "emitted": "2026-10-01T00:02:00Z",
+        "occurred": "2026-10-01T00:02:00Z",
+        "fields": {
+          "status": "open",
+          "est": 2
+        }
+      },
+      {
+        "id": "r:0000000000000000000000000000000000000000000000000750",
+        "kind": "task",
+        "observer": "sl:kyle",
+        "about": [],
+        "of": "task:g4",
+        "prev": [],
+        "emitted": "2026-10-01T00:02:10Z",
+        "occurred": "2026-10-01T00:02:10Z",
+        "fields": {
+          "est": 1
+        }
+      },
+      {
+        "id": "r:000000000000000000000000000000000000000000000000075g",
+        "kind": "task",
+        "observer": "sl:kyle",
+        "about": [],
+        "of": "task:g5",
+        "prev": [],
+        "emitted": "2026-10-01T00:02:20Z",
+        "occurred": "2026-10-01T00:02:20Z",
+        "shown": "withheld"
+      },
+      {
+        "id": "r:0000000000000000000000000000000000000000000000000760",
+        "kind": "task",
+        "observer": "sl:kyle",
+        "about": [],
+        "of": "task:g6",
+        "prev": [],
+        "emitted": "2026-10-01T00:02:30Z",
+        "occurred": "2026-10-01T00:02:30Z",
+        "fields": {
+          "est": 7
+        }
+      }
+    ]
+  },
+  "expect": {
+    "payload": {
+      "rules": "1",
+      "spec": {
+        "vertex": "grouped",
+        "from": [
+          {
+            "store": ".",
+            "kind": ["task"]
+          }
+        ],
+        "fold": {
+          "per-status": {
+            "count": true,
+            "by": "status"
+          },
+          "est-per-status": {
+            "sum": "est",
+            "by": "status"
+          },
+          "small-per-status": {
+            "collect": true,
+            "by": "status",
+            "where": {
+              "est": {
+                "below": 5
+              }
+            }
+          }
+        }
+      },
+      "spec-hash": "spec:nm1o4qssf9q5rhfjphhk0o61506jlp8i6fvokq88j95bfcd1ha8g",
+      "covers": ["r:000000000000000000000000000000000000000000000000073g", "r:0000000000000000000000000000000000000000000000000740", "r:000000000000000000000000000000000000000000000000074g", "r:0000000000000000000000000000000000000000000000000750", "r:000000000000000000000000000000000000000000000000075g", "r:0000000000000000000000000000000000000000000000000760"],
+      "result": {
+        "per-status": {
+          "groups": {
+            "closed": {
+              "unread": "0",
+              "value": "1"
+            },
+            "open": {
+              "unread": "0",
+              "value": "2"
+            }
+          },
+          "ungrouped": "2",
+          "unread": "1"
+        },
+        "est-per-status": {
+          "groups": {
+            "closed": {
+              "unread": "0",
+              "value": "9"
+            },
+            "open": {
+              "unread": "0",
+              "value": "5"
+            }
+          },
+          "ungrouped": "2",
+          "unread": "1"
+        },
+        "small-per-status": {
+          "groups": {
+            "open": {
+              "heads": ["r:000000000000000000000000000000000000000000000000074g", "r:000000000000000000000000000000000000000000000000073g"],
+              "unread": "0"
+            }
+          },
+          "ungrouped": "1",
+          "unread": "1"
+        }
+      },
+      "result-hash": "res:kq4habija5qrdbs7dtscmcfillne1nojd0j4sjghnvsg533v8t90",
+      "withheld": ["r:000000000000000000000000000000000000000000000000075g"]
+    },
+    "jcs": "{\"covers\":[\"r:000000000000000000000000000000000000000000000000073g\",\"r:0000000000000000000000000000000000000000000000000740\",\"r:000000000000000000000000000000000000000000000000074g\",\"r:0000000000000000000000000000000000000000000000000750\",\"r:000000000000000000000000000000000000000000000000075g\",\"r:0000000000000000000000000000000000000000000000000760\"],\"result\":{\"est-per-status\":{\"groups\":{\"closed\":{\"unread\":\"0\",\"value\":\"9\"},\"open\":{\"unread\":\"0\",\"value\":\"5\"}},\"ungrouped\":\"2\",\"unread\":\"1\"},\"per-status\":{\"groups\":{\"closed\":{\"unread\":\"0\",\"value\":\"1\"},\"open\":{\"unread\":\"0\",\"value\":\"2\"}},\"ungrouped\":\"2\",\"unread\":\"1\"},\"small-per-status\":{\"groups\":{\"open\":{\"heads\":[\"r:000000000000000000000000000000000000000000000000074g\",\"r:000000000000000000000000000000000000000000000000073g\"],\"unread\":\"0\"}},\"ungrouped\":\"1\",\"unread\":\"1\"}},\"result-hash\":\"res:kq4habija5qrdbs7dtscmcfillne1nojd0j4sjghnvsg533v8t90\",\"rules\":\"1\",\"spec\":{\"fold\":{\"est-per-status\":{\"by\":\"status\",\"sum\":\"est\"},\"per-status\":{\"by\":\"status\",\"count\":true},\"small-per-status\":{\"by\":\"status\",\"collect\":true,\"where\":{\"est\":{\"below\":5}}}},\"from\":[{\"kind\":[\"task\"],\"store\":\".\"}],\"vertex\":\"grouped\"},\"spec-hash\":\"spec:nm1o4qssf9q5rhfjphhk0o61506jlp8i6fvokq88j95bfcd1ha8g\",\"withheld\":[\"r:000000000000000000000000000000000000000000000000075g\"]}"
+  }
+}

@@ -3,6 +3,7 @@ import Gen.Encode
 import Gen.ByteText
 import Gen.Records
 import Gen.Tick
+import Loops.Tick
 
 open Loops Gen
 
@@ -341,8 +342,29 @@ def specIdentityChecks : IO Unit := do
   ensure ((Cond.mk (.env .when) (.below (.time later))).eval {record with occurred := none} == .no)
     "window fallback at the excluded upper bound"
 
+def tickPayloadChecks : IO Unit := do
+  let .ok sp := Spec.ofJson Tick.backups | throw (IO.userError "backups spec")
+  let records : List Record := []
+  let p : TickPayload := ⟨Rules.current, sp, [], [], sp.run records⟩
+  let j := p.toJson sha256
+  let .ok decoded := readTickPayload sha256 Rules.current j | throw (IO.userError "empty-cover tick")
+  ensure (decoded == p) "empty-cover tick payload"
+  let other : Rules := ⟨2, by decide⟩
+  let foreign := ({p with rules := other} : TickPayload).toJson sha256
+  ensure (readTickMembers sha256 foreign).isOk "foreign rules members"
+  ensure (match readTickPayload sha256 Rules.current foreign with
+    | .error (.otherRules v) => v == other | _ => false) "foreign rules entered the slot reader"
+  let s : Spec := { vertex := "limited", slots := [⟨"rows", .collect none (some 1), [], none⟩] }
+  let claim : SlotValue := .heads [(1, .withheld), (1, .erased)] 7
+  let .ok r := readResult s (resultJson [("rows", claim)]) | throw (IO.userError "repeated listed id or limit")
+  ensure (r == [("rows", claim.unshown)]) "result read lost list entries or unread count"
+  let wrong := Json.obj [("rows", .obj [("heads", .arr []), ("unread", .str "-1")])]
+  ensure (refused (readResult s wrong)) "negative natural in result"
+  IO.println "tick payload and result reader checks pass"
+
 def main (args : List String) : IO Unit := do
   specIdentityChecks
+  tickPayloadChecks
   payloadChecks
   canonicalTextChecks
   rulingChecks

@@ -25,3 +25,4 @@ import Laws.Cut
 import Laws.Result
 import Laws.Payload
 import Laws.SpecHash
+import Laws.TickRead
