@@ -27,6 +27,35 @@ In brief:
 - The tick record's first piece is in the model: the spec's hash under a rules version, and the window field `env.when` (!72). Rust is being built.
 - The tick record's second piece is in the model: a reader for a claimed result, and the tick's payload with its two readers.
 - Rust has the spec's hash and `env.when`: `loops fold` takes a window on `env.when`, and Rust runs the 11 tick vectors it implements.
+- The tick record's third piece is in the model: what a tick claims, how one is made, and the check with its answers.
+
+### The tick record, piece 3: the claim and the check, in the model
+
+The third of the seven pieces, in `model/Loops/TickCheck.lean`. With it the model holds the whole tick record. Rust does not run its vectors yet.
+
+- **The claim** (TK4, TK5). Take the forms of the covered records, read every form of a withheld id without its payload, settle and admit inside that set alone, and run the spec. Nothing follows a covered tick's `covers`.
+- **Making a tick.** `covers` is every record given. `withheld` is every one of them not held open, the targets of a covered eraser among them.
+- **The check** (TK7, TK9, TK10). In the order the model decides:
+  1. The subject is not of kind `tick`: not a tick (`tick-kind`).
+  2. Its own payload is not held: cannot check.
+  3. The first reader refuses: not a tick, with its code.
+  4. Newer rules: cannot check. Older rules: cannot check, with what today's rules give: the same result, another result, or why that is not available.
+  5. A spec whose hash fits and that the parser refuses: cannot check. A spec not in its parsed form, or a result of the wrong shape: not a tick.
+  6. A held covered eraser names a covered record that `withheld` leaves out: not a tick (`tick-withheld-erased`), whatever else is missing.
+  7. Covered records not held, and payloads the tick read that are not held, are counted; if either count is not zero: cannot check, with both. A payload counts as held only when the checker's own reading shows it, so an eraser anywhere in the store takes it away.
+  8. The claim is run and its bytes compared: `same`, or `differs` with both hashes.
+- **The two reports** beside the answer. Closure: "no" as soon as one held covered record names a `prev` or `under` target outside `covers`; "yes" when every covered envelope is held and none does; else "unknown". Taken and not covered: the records outside `covers` that the spec's sources take from the whole store, read as `loops fold` reads it.
+- **Laws.** `tick.inputs`: two holders with consistent forms, each holding what step 7 asks, get the same result bytes. `tick.withheld`: holding the payload of a withheld record changes nothing. `tick.made`: a tick checked against the holding it was made from is `same`, and stays `same` when records arrive that are outside its cover and erase nothing in it. `tick.level`: the claim over a set that contains a tick does not depend on what that tick covers. None assumes anything of the hash function beyond its width.
+- **Vectors.** 41 more, 113 in `vectors/tick/`. The proposal's examples are among them: the six backups check `same`; a seventh backup leaves that `same` with one record taken and not covered, and a fresh tick is 7 and 1031; a covered `retired` record gives 5 and 615; a withheld payload gives 615 with 1 unread; a weekly tick over two nightly ticks checks `same` with no backup held; the smallest count under older rules was 0 and is 9 with 2 unread today.
+
+**Implementer choices; they stand under Kyle's rulings of 2026-11-21 (TK7, W4, W7). Rows 1 to 4 and 6 of TK10 are built as recommended and are his to rule.**
+- Two more refusal codes: `tick-kind` and `tick-withheld-erased`.
+- For a tick under older rules, "not available" names its reason: today's parser does not read the spec, the spec is not in today's parsed form, the tick ignores a covered eraser, or inputs are missing (with the counts).
+- The taken-and-not-covered report is given whenever a spec was read, also beside a refusal of the result's shape; closure is "unknown" until the first reader has passed.
+- `differs` compares bytes, not hashes: a runtime check uses a hash that collides on purpose and still gets `differs`.
+- No mutation-catalogue entry is added (W5).
+
+A Codex worker wrote it; the coordinator reviewed it and ran the gates.
 
 ### The tick record: Rust for the spec's hash and `env.when`
 
