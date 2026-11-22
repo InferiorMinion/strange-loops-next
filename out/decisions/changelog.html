@@ -221,7 +221,30 @@ The record starts where the old roadmap's did. For anything earlier, and for eve
 <li><p>The tick has its mutation catalogue: 91 deliberate faults, each caught by something that runs. Five were not caught at first; four vectors and a check were added for them.</p></li>
 <li><p>The adoption step has started: <code>loops ls</code> lists a store's kinds and things, and <code>loops --version</code> says which <code>loops</code> this is. Its plan has eight pieces; two need Kyle first (AD1, and the import of the old stores).</p></li>
 <li><p><code>loops emit --base</code> fills against what the writer read, a tick or named records, so a stale write shows as a conflict and does not silently replace a setter the writer never saw.</p></li>
+<li><p><code>loops ls --fields name,status --plain</code> is the Monday-morning read without a spec: a plain-text view, asked for explicitly, on <code>ls</code> and <code>of</code>.</p></li>
 </ul>
+<h3 id="the-adoption-step---fields-and-a-plain-view-on-ls-and-of">The adoption step: <code>--fields</code>, and a plain view on <code>ls</code> and <code>of</code></h3>
+<p>The second piece of the adoption plan. <code>loops ls</code> takes <code>--fields a,b,c</code>, and <code>ls</code> and <code>of</code> take <code>--plain</code>.</p>
+<p>A real run on a store from this session, a thing left in conflict by a write against an older base:</p>
+<pre><code>$ loops ls svc: --fields port,owner --plain
+THING         HEAD KINDS  RECORDS  HEADS  port          owner
+svc:jellyfin  svc         7        2      conflict (2)  sam
+</code></pre>
+<p>and on a store with one task and one note, <code>loops ls --things --fields name,status --plain</code> lists the task with <code>Repair kiln</code> and <code>open</code>, and the note with a dash in both columns.</p>
+<ul>
+<li><p><strong><code>--fields</code> is a projection.</strong> Each row carries those fields of the thing's keyed state. A thing that lacks a field is still listed. In JSON a field is its value with its JSON type, or unset, or not held, or in conflict with its setters.</p></li>
+<li><p><strong>One reader.</strong> <code>ls</code> and <code>of</code> take every field from the same code, so they cannot disagree about a thing. <code>loops of</code>, <code>read --values</code> and <code>fold --values</code> answer byte for byte what they answered before: 801 commands over 96 stores were compared between the old binary and the new.</p></li>
+<li><p><strong><code>--plain</code> is asked for, never guessed.</strong> Without it every answer is the JSON it was, on a terminal and in a pipe alike. A script's answer does not depend on how it was started. <code>--plain</code> with <code>--json</code> is a usage error.</p></li>
+<li><p><strong>What the plain view shows.</strong> Text prints bare. It keeps JSON quotes only where bare text would read as something else: empty text, text that parses as a number or a list, text equal to one of the view's own marks. A field that is unset shows a dash, one whose setter's payload is not held shows <code>unknown</code>, and competing setters show <code>conflict (2)</code>, never one side's value. Newlines and control characters in a value are escaped, so a payload cannot forge a row.</p></li>
+<li><p><strong>Times.</strong> <code>of --plain</code> shows each head's <code>emitted</code> relative to one reading of the clock (&quot;3 hours ago&quot;) and <code>occurred</code> as it was written. No JSON answer, record, result or export holds a relative time.</p></li>
+</ul>
+<p><strong>Implementer choices; they stand under Kyle's ruling of 2026-11-21 (W7).</strong> The full list is choice 25 of <code>rust/PLACE.md</code>.</p>
+<ul>
+<li><p>The plain view is for reading and may change; the help says so, and that scripts use the JSON.</p></li>
+<li><p><code>LOOPS_TEST_PLAIN_NOW</code> fixes &quot;now&quot; for the plain view's relative times, for tests only. It affects nothing else.</p></li>
+<li><p>Left for later, seen in use: a root's full id is a wide first column, and a conflict shows how many setters compete but not their values (<code>loops of</code> without <code>--plain</code> has them).</p></li>
+</ul>
+<p>A Codex worker wrote it in two rounds; the coordinator reviewed it, had text printed bare, joined it with main and tried it on real stores.</p>
 <h3 id="loops-emit---base-the-filler-against-a-base"><code>loops emit --base</code>: the filler against a base</h3>
 <p>Ruled on 2026-11-20 (<a href="note-2026-11-15-the-cut.html">the cut note</a>, section 8) and built on 2026-11-22. Rust only: <code>rust/place/src/fill.rs</code> and the CLI. The law is margins-claude's <code>keyed.base</code>, in the model since this morning. No protocol rule and no refusal code changed. Without a base, every emit on both paths writes byte for byte what it wrote before.</p>
 <p><code>--base &lt;tick&gt;</code> takes the records the tick covers; <code>--base-id &lt;id&gt;</code>, repeated, names records; both may be given. They work on <code>loops emit</code>, on <code>loops emit - --fill</code>, and on <code>loops tick</code>, where the base selects only the tick record's anchor and the payload still covers everything held.</p>

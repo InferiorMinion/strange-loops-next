@@ -7,6 +7,7 @@
 //! segment did not.
 mod draft;
 mod ls;
+mod plain;
 mod values;
 
 use loops::{
@@ -26,6 +27,7 @@ use loops_place::{
     key::Key,
     line::{Line, hash},
 };
+use plain::Format;
 use std::{
     cmp::Ordering,
     env, fs,
@@ -57,12 +59,14 @@ usage: loops [-C <dir>] <verb> ...
                                 read one JSONL changeset from stdin
                                 --fill uses one base plus earlier prepared lines
   --version                     print the strange-loops-next version
-  ls                            list kinds and their record counts
-  ls --things | ls <prefix>     list things, optionally by literal name prefix
+  ls [--plain]                  list kinds and their record counts
+  ls [--things | <prefix>] [--fields a,b,c] [--plain]
+                                list things by literal prefix or project their live fields
   get <id>                      one record
-  of <thing>                    a thing's values, each key's from its live
+  of <thing> [--plain]          a thing's values, each key's from its live
                                 setters; its about, its heads, and how many
                                 records are of it
+                                --plain is for reading and may change; scripts use the JSON
   read <vertex> [--values]      fold .loops/vertices/<vertex>.json
   fold <spec.json | -> [--values]
                                 fold a spec from a file or stdin
@@ -531,7 +535,7 @@ fn get(start: &Path, args: &[String]) -> Result<(), Fail> {
     answered(&held, say(&line.canon()))
 }
 
-fn of(start: &Path, args: &[String]) -> Result<(), Fail> {
+fn of(start: &Path, args: &[String], format: Format) -> Result<(), Fail> {
     let [thing] = args else {
         return Err(usage("of takes one thing"));
     };
@@ -550,6 +554,9 @@ fn of(start: &Path, args: &[String]) -> Result<(), Fail> {
     let n = records.len();
     let state = loops::live::LiveState::new(records);
     let heads = state.heads();
+    if format == Format::Plain {
+        return answered(&held, say(&plain::thing(&held, &thing, n, &state, &heads)?));
+    }
     let mut members = vec![
         ("thing", text(&thing)),
         (
@@ -786,6 +793,7 @@ fn check_report(held: &Held) -> Json {
 fn run(args: &[String]) -> Result<(), Fail> {
     let mut start = PathBuf::from(".");
     let mut rest = Vec::new();
+    let mut json = false;
     let mut args = args.iter();
     while let Some(arg) = args.next() {
         match arg.as_str() {
@@ -795,11 +803,23 @@ fn run(args: &[String]) -> Result<(), Fail> {
                     .ok_or_else(|| usage("-C takes a directory"))?
                     .into();
             }
-            // Every answer is already JSON or an id; a lens arrives with a later step.
-            "--json" => {}
+            "--json" => json = true,
             _ => rest.push(arg.clone()),
         }
     }
+    let format = if rest
+        .first()
+        .is_some_and(|v| matches!(v.as_str(), "ls" | "of"))
+        && rest.iter().any(|a| a == "--plain")
+    {
+        if json {
+            return Err(usage("--plain and --json cannot be combined"));
+        }
+        rest.retain(|a| a != "--plain");
+        Format::Plain
+    } else {
+        Format::Json
+    };
     let Some((verb, rest)) = rest.split_first() else {
         return Err(usage(USAGE));
     };
@@ -814,9 +834,9 @@ fn run(args: &[String]) -> Result<(), Fail> {
         "--version" if rest.is_empty() => {
             say(concat!("strange-loops-next ", env!("CARGO_PKG_VERSION")))
         }
-        "ls" => ls::run(&start, rest),
+        "ls" => ls::run(&start, rest, format),
+        "of" => of(&start, rest, format),
         "get" => get(&start, rest),
-        "of" => of(&start, rest),
         "read" => read(&start, rest),
         "fold" => fold(&start, rest),
         "export" => export(&start, rest),

@@ -1,80 +1,70 @@
 //! Inventory of the settled, admitted records in a store.
-use crate::{Fail, answered, count, find_store, object, realm, say, text, usage};
+use crate::values::{Field, Fields};
+use crate::{Fail, answered, count, find_store, object, plain, realm, say, text, usage};
 use loops::{
     json::{Json, canon_set, str_cmp},
     live::LiveState,
-    record::{Held, Record, Shown, Val},
+    record::Record,
 };
+use loops_place::dir::Held;
 use std::{collections::HashMap, path::Path};
-
-enum Headline {
-    Text(String),
-    Absent,
-    Unknown,
-    Conflict,
-}
-
-impl Headline {
-    fn from_state(state: &LiveState<'_>) -> Self {
-        let setters = state.setters("name");
-        match setters.as_slice() {
-            [one] if one.shown == Shown::Here => match one.get("name") {
-                Some(Held::One(Val::Str(value))) => Self::Text(value),
-                _ => Self::Absent,
-            },
-            // Whole records implicitly set every key. If none even mentions
-            // name, report absence (or uncertainty if an opening is missing).
-            many if many.len() > 1
-                && many.iter().any(|r| {
-                    r.declares().iter().any(|k| k == "name")
-                        || (r.shown == Shown::Here && r.fields.iter().any(|(k, _)| k == "name"))
-                }) =>
-            {
-                Self::Conflict
-            }
-            some if some.iter().any(|r| r.shown != Shown::Here) => Self::Unknown,
-            _ => Self::Absent,
-        }
-    }
-
-    fn into_json(self) -> Json {
-        let state = match self {
-            Self::Text(value) => {
-                return object(vec![("state", text("text")), ("value", text(value))]);
-            }
-            Self::Absent => "absent",
-            Self::Unknown => "unknown",
-            Self::Conflict => "conflict",
-        };
-        object(vec![("state", text(state))])
-    }
-}
 
 struct ThingRow {
     thing: String,
     kinds: Vec<String>,
     records: usize,
     heads: usize,
-    headline: Headline,
+    headline: Field,
+    fields: Vec<Field>,
 }
 
 impl ThingRow {
-    fn new(thing: String, records: Vec<&Record>) -> Self {
+    fn new(held: &Held, thing: String, records: Vec<&Record>, names: &[&str]) -> Self {
         let n = records.len();
         let state = LiveState::new(records);
         let heads = state.heads();
         let kinds = heads.iter().map(|r| r.kind.clone()).collect::<Vec<_>>();
+        let reader = Fields::new(held, &state);
         Self {
             thing,
             kinds: canon_set(&kinds),
             records: n,
             heads: heads.len(),
-            headline: Headline::from_state(&state),
+            headline: reader.read("name"),
+            fields: names.iter().map(|k| reader.read(k)).collect(),
         }
     }
 
-    fn into_json(self) -> Json {
-        object(vec![
+    fn cells(&self) -> Vec<String> {
+        let mut cells = vec![
+            plain::label(&self.thing),
+            self.kinds
+                .iter()
+                .map(|k| plain::label(k))
+                .collect::<Vec<_>>()
+                .join(", "),
+            self.records.to_string(),
+            self.heads.to_string(),
+        ];
+        if self.fields.is_empty() {
+            cells.push(match &self.headline {
+                Field::Value(v) if !matches!(v, Json::Str(_)) => "—".into(),
+                field => plain::field(field),
+            });
+        } else {
+            cells.extend(self.fields.iter().map(plain::field));
+        }
+        cells
+    }
+
+    fn into_json(self, names: &[&str]) -> Json {
+        let headline = match self.headline {
+            Field::Value(Json::Str(s)) => object(vec![("state", text("text")), ("value", text(s))]),
+            Field::Value(_) | Field::Unset => object(vec![("state", text("absent"))]),
+            Field::Unknown(_) => object(vec![("state", text("unknown"))]),
+            Field::Conflict(_) => object(vec![("state", text("conflict"))]),
+        };
+        let mut members = vec![
             ("thing", text(self.thing)),
             (
                 "kinds",
@@ -82,8 +72,21 @@ impl ThingRow {
             ),
             ("records", count(self.records)),
             ("heads", count(self.heads)),
-            ("headline", self.headline.into_json()),
-        ])
+            ("headline", headline),
+        ];
+        if !names.is_empty() {
+            members.push((
+                "fields",
+                Json::Obj(
+                    names
+                        .iter()
+                        .zip(self.fields)
+                        .map(|(k, v)| ((*k).to_owned(), v.projection()))
+                        .collect(),
+                ),
+            ));
+        }
+        object(members)
     }
 }
 
@@ -102,7 +105,7 @@ fn kind_counts(records: &[Record]) -> Vec<(String, usize)> {
     sorted(counts)
 }
 
-fn thing_rows(records: &[Record], prefix: &str) -> Vec<ThingRow> {
+fn thing_rows(held: &Held, records: &[Record], prefix: &str, names: &[&str]) -> Vec<ThingRow> {
     let mut groups = HashMap::<_, Vec<_>>::new();
     for record in records {
         let thing = record.thing();
@@ -112,34 +115,77 @@ fn thing_rows(records: &[Record], prefix: &str) -> Vec<ThingRow> {
     }
     sorted(groups)
         .into_iter()
-        .map(|(name, rs)| ThingRow::new(name, rs))
+        .map(|(name, rs)| ThingRow::new(held, name, rs, names))
         .collect()
 }
 
-pub(crate) fn run(start: &Path, args: &[String]) -> Result<(), Fail> {
-    let prefix = match args {
-        [] => None,
-        [arg] if arg == "--things" => Some(""),
-        [arg] if !arg.starts_with("--") => Some(arg.as_str()),
-        _ => return Err(usage("ls takes --things, one name prefix, or no arguments")),
-    };
+pub(crate) fn run(start: &Path, args: &[String], format: plain::Format) -> Result<(), Fail> {
+    let mut prefix = None;
+    let mut names = Vec::new();
+    let mut args = args.iter();
+    while let Some(arg) = args.next() {
+        match arg.as_str() {
+            "--fields" if names.is_empty() => {
+                let list = args
+                    .next()
+                    .ok_or_else(|| usage("--fields takes comma-separated field names"))?;
+                for key in list.split(',') {
+                    if key.is_empty() || names.contains(&key) {
+                        return Err(usage("--fields needs distinct, nonempty field names"));
+                    }
+                    names.push(key);
+                }
+            }
+            "--things" if prefix.is_none() => prefix = Some(""),
+            p if !p.starts_with("--") && prefix.is_none() => prefix = Some(p),
+            _ => {
+                return Err(usage("ls takes --things, one name prefix, or no arguments"));
+            }
+        }
+    }
     let held = find_store(start)?.read()?;
     let records = realm(&held);
-    let (key, rows) = match prefix {
-        None => (
-            "kinds",
-            kind_counts(&records)
-                .into_iter()
-                .map(|(kind, n)| object(vec![("kind", text(kind)), ("records", count(n))]))
-                .collect(),
-        ),
-        Some(p) => (
-            "things",
-            thing_rows(&records, p)
-                .into_iter()
-                .map(ThingRow::into_json)
-                .collect(),
-        ),
+    let output = if let Some(p) = prefix.or_else(|| (!names.is_empty()).then_some("")) {
+        let rows = thing_rows(&held, &records, p, &names);
+        if format == plain::Format::Plain {
+            let mut header = vec![
+                "THING".into(),
+                "HEAD KINDS".into(),
+                "RECORDS".into(),
+                "HEADS".into(),
+            ];
+            if names.is_empty() {
+                header.push("HEADLINE".into());
+            } else {
+                header.extend(names.iter().map(|k| plain::label(k)));
+            }
+            plain::table(header, rows.iter().map(ThingRow::cells))
+        } else {
+            object(vec![(
+                "things",
+                Json::Arr(rows.into_iter().map(|row| row.into_json(&names)).collect()),
+            )])
+            .canon()
+        }
+    } else {
+        let rows = kind_counts(&records);
+        if format == plain::Format::Plain {
+            plain::table(
+                vec!["KIND".into(), "RECORDS".into()],
+                rows.iter()
+                    .map(|(k, n)| vec![plain::label(k), n.to_string()]),
+            )
+        } else {
+            object(vec![(
+                "kinds",
+                Json::Arr(
+                    rows.into_iter()
+                        .map(|(k, n)| object(vec![("kind", text(k)), ("records", count(n))]))
+                        .collect(),
+                ),
+            )])
+            .canon()
+        }
     };
-    answered(&held, say(&object(vec![(key, Json::Arr(rows))]).canon()))
+    answered(&held, say(&output))
 }

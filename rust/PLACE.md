@@ -23,11 +23,11 @@ loops emit - [--fill [--base <tick-id>] [--base-id <id>]...]
                                     read one JSONL changeset from stdin
                                     --fill applies the single-emit filler to each line
 loops --version                     print the strange-loops-next version
-loops ls                            list kinds and their record counts
-loops ls --things | loops ls <prefix>
-                                    list things, optionally by literal name prefix
+loops ls [--plain]                  list kinds and their record counts
+loops ls [--things | <prefix>] [--fields a,b,c] [--plain]
+                                    list things or project their live fields
 loops get <id>                      one record
-loops of <thing>                    a thing's values, its about, its heads, how many records are of it
+loops of <thing> [--plain]          a thing's values, its about, its heads, how many records are of it
 loops read <vertex> [--values]      fold .loops/vertices/<vertex>.json
 loops fold <spec.json | -> [--values]
                                     fold a spec given as a file
@@ -501,6 +501,65 @@ Every verb that reads the store says when either happened (choice 18).
     in the base is admitted`. Covered ticks contribute only their own
     envelopes. These notices follow a successful write; conflict policy
     remains open for step 3.
+
+25. **Project keyed fields and show a plain view.** The owner ruled on
+    2026-11-21 (W1) that daily reads should be possible without a hand-written
+    spec, with the adoption step's CLI pieces built beside the tick work.
+
+    Implementer's choices
+
+    - `--fields name,status` selects the thing listing, optionally narrowed
+      by the positional prefix. Give the flag once, with distinct, nonempty,
+      comma-separated literal keys. Plain columns follow their written order.
+      Every matching row keeps its headline and gains a `fields` object in JSON.
+    - The headline, the projected fields and `of` read the same live setters.
+      A projected field has `state` equal to `value`, `unset`, `unknown` or
+      `conflict`. A value carries the original JSON under `value`, including
+      an explicit null. Unknowns and conflicts carry a `setters` array with
+      the IDs, visibility and available values in the same shape as `of`.
+      For a key nobody names, a live unheld whole-record setter leaves the
+      field unknown. The plain detail view says `other fields  unknown`
+      when whole-record openings are missing.
+    - Ask for `--plain` on `ls` or `of`. This display is for reading and may
+      change. Scripts use the default JSON or `--json`. The two explicit
+      formats together give a usage error. A pipe and a terminal get the
+      same format.
+    - Show ordinary text bare. Keep JSON quotes around empty text, text
+      with surrounding whitespace, a literal display marker (`—`, `unknown`,
+      `null`, `true`, `false`, `conflict (N)`), and text spelling a JSON
+      number, array or object. Other values use compact JSON. Unset reads
+      as `—`, unavailable as `unknown` and competing setters as `conflict (N)`.
+      Show `about` mentions space-separated with the same quoting, or `—`
+      when there are none. Escape controls throughout. Padded cells escape
+      non-ASCII characters other than the marker dash to keep columns aligned.
+      Detail lines and the last column retain printable Unicode.
+    - `of --plain` labels the times of each head by its full ID, in the same
+      head order as JSON. Read the clock once. Show `emitted` in whole
+      seconds, minutes, hours or days, and `now` within one second. Keep
+      `occurred` as written, with `—` for no claim. Walk tests may supply
+      `LOOPS_TEST_PLAIN_NOW`, a canonical UTC instant, exclusively for
+      this display clock. The writer continues to take `--emitted`.
+
+    For example, give `task:kiln` the name “Repair kiln” and update only its
+    status. A Monday read needs no spec file:
+
+    ```text
+    $ loops ls task: --fields name,status --plain
+    THING      HEAD KINDS  RECORDS  HEADS  name         status
+    task:kiln  task        2        1      Repair kiln  done
+    task:lamp  task        1        1      Fit lamp     —
+
+    $ loops of task:kiln --plain
+    thing  task:kiln
+    records  2
+    heads  1
+      name  Repair kiln
+      status  done
+    about  site:workshop
+    head  r:b2nlfg2kr0u2amvtfsbpbijvopv8vk2ussk9udfobbsd93joov9g
+      emitted  3 hours ago
+      occurred  2026-11-18/2026-11-19
+    ```
 
 ## Checked by
 

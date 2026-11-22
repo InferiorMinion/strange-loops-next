@@ -15,6 +15,34 @@ In brief:
 - The tick has its mutation catalogue: 91 deliberate faults, each caught by something that runs. Five were not caught at first; four vectors and a check were added for them.
 - The adoption step has started: `loops ls` lists a store's kinds and things, and `loops --version` says which `loops` this is. Its plan has eight pieces; two need Kyle first (AD1, and the import of the old stores).
 - `loops emit --base` fills against what the writer read, a tick or named records, so a stale write shows as a conflict and does not silently replace a setter the writer never saw.
+- `loops ls --fields name,status --plain` is the Monday-morning read without a spec: a plain-text view, asked for explicitly, on `ls` and `of`.
+
+### The adoption step: `--fields`, and a plain view on `ls` and `of`
+
+The second piece of the adoption plan. `loops ls` takes `--fields a,b,c`, and `ls` and `of` take `--plain`.
+
+A real run on a store from this session, a thing left in conflict by a write against an older base:
+
+```
+$ loops ls svc: --fields port,owner --plain
+THING         HEAD KINDS  RECORDS  HEADS  port          owner
+svc:jellyfin  svc         7        2      conflict (2)  sam
+```
+
+and on a store with one task and one note, `loops ls --things --fields name,status --plain` lists the task with `Repair kiln` and `open`, and the note with a dash in both columns.
+
+- **`--fields` is a projection.** Each row carries those fields of the thing's keyed state. A thing that lacks a field is still listed. In JSON a field is its value with its JSON type, or unset, or not held, or in conflict with its setters.
+- **One reader.** `ls` and `of` take every field from the same code, so they cannot disagree about a thing. `loops of`, `read --values` and `fold --values` answer byte for byte what they answered before: 801 commands over 96 stores were compared between the old binary and the new.
+- **`--plain` is asked for, never guessed.** Without it every answer is the JSON it was, on a terminal and in a pipe alike. A script's answer does not depend on how it was started. `--plain` with `--json` is a usage error.
+- **What the plain view shows.** Text prints bare. It keeps JSON quotes only where bare text would read as something else: empty text, text that parses as a number or a list, text equal to one of the view's own marks. A field that is unset shows a dash, one whose setter's payload is not held shows `unknown`, and competing setters show `conflict (2)`, never one side's value. Newlines and control characters in a value are escaped, so a payload cannot forge a row.
+- **Times.** `of --plain` shows each head's `emitted` relative to one reading of the clock ("3 hours ago") and `occurred` as it was written. No JSON answer, record, result or export holds a relative time.
+
+**Implementer choices; they stand under Kyle's ruling of 2026-11-21 (W7).** The full list is choice 25 of `rust/PLACE.md`.
+- The plain view is for reading and may change; the help says so, and that scripts use the JSON.
+- `LOOPS_TEST_PLAIN_NOW` fixes "now" for the plain view's relative times, for tests only. It affects nothing else.
+- Left for later, seen in use: a root's full id is a wide first column, and a conflict shows how many setters compete but not their values (`loops of` without `--plain` has them).
+
+A Codex worker wrote it in two rounds; the coordinator reviewed it, had text printed bare, joined it with main and tried it on real stores.
 
 ### `loops emit --base`: the filler against a base
 
