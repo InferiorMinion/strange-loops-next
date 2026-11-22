@@ -218,6 +218,7 @@ header.top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--g
 <tr><td><a href="#tk10-seven-details-of-the-check">TK10</a></td><td>Seven details of <code>loops tick --check</code> that the rulings leave open</td><td>As in its table; the build follows them meanwhile</td><td>Nothing yet: the check is three merge requests away</td></tr>
 <tr><td><a href="#tk11-a-write-against-a-base-that-does-not-hold-what-is-under-it">TK11</a></td><td>What <code>loops emit --base</code> does when the base does not hold what is under its records</td><td>Name the live records of the base together with what is under it; say how many of those the base did not hold</td><td>The filler against a base</td></tr>
 <tr><td><a href="#ad1-how-a-spec-finds-the-stores-it-names">AD1</a></td><td>How a spec finds the stores it names, and what a missing one answers</td><td>A per-user list of names and directories; a name bound to nothing refuses the whole read</td><td>Reads across several stores (adoption)</td></tr>
+<tr><td><a href="#ad2-how-an-old-store-becomes-records">AD2</a></td><td>How a fact of an old store becomes a record: its thing, its order, its times, who signs, where its origin is kept</td><td>As in its table: a keyed fact is a revision of <code>&lt;kind&gt;:&lt;key&gt;</code>; the old time is <code>occurred</code>; an import key signs</td><td>The shadow import (adoption)</td></tr>
 </tbody></table></div>
 <p>Every earlier entry is ruled (2026-11-21). TK11 is new on 2026-11-22.</p>
 <ul>
@@ -273,7 +274,7 @@ y   sets port 8097, over x
 <p><strong>Why C over A.</strong> A is the only option that stops the second problem. But the second problem is a question you have already set aside for step 3 in another form: what a strict store does with a write whose base is behind what the store holds. &quot;You replaced something you were not shown&quot; belongs with it, and a strict store can refuse both then. Until then C never refuses, never leaves a store that reads wrongly, and tells the writer what it did. margins-claude recommends C as the default too.</p>
 <p><strong>What it costs to change later.</strong> The choice is in the filler and one line of output. No record already written changes.</p>
 <h2 id="the-adoption-step">The adoption step</h2>
-<p>You ruled on 2026-11-21 (W1) that the adoption step's CLI pieces are built beside the tick work. A worker planned them on 2026-11-22. The pieces that are the CLI's alone are being built: <code>loops ls</code>, a scan by the start of a name, a plain-text view with relative times, a <code>--version</code>, and the cache of checked segments (W2). Two pieces need you first. AD1 is one. The other, the import of your old stores as a shadow, has about ten choices that decide the ids of every imported record; it comes as its own entry, with an example on a made-up copy of an old store's shape, once the first pieces have landed.</p>
+<p>You ruled on 2026-11-21 (W1) that the adoption step's CLI pieces are built beside the tick work. A worker planned them on 2026-11-22. The pieces that are the CLI's alone are being built: <code>loops ls</code>, a scan by the start of a name, a plain-text view with relative times, a <code>--version</code>, and the cache of checked segments (W2). Two pieces need you first. AD1 is one. The other is AD2, the import of your old stores as a shadow.</p>
 <h3 id="ad1-how-a-spec-finds-the-stores-it-names">AD1: how a spec finds the stores it names</h3>
 <p><strong>Question.</strong> A spec's <code>from</code> names a store for each source. Today the name is ignored. When a read may span several stores, how is a name turned into a directory, and what does a read answer when a name leads nowhere?</p>
 <p><strong>Example, run on today's binary.</strong> Two stores: <code>workshop</code> holds one task and one note, <code>yard</code> holds one task. One spec, <code>morning</code>:</p>
@@ -303,6 +304,39 @@ fold:  items = count
 </tbody></table></div>
 <p><strong>What changes for you.</strong> Under A and A, a spec that names one store today keeps its answer once that name is bound to its directory, and refuses until then. I would bind the names your existing vertices use before the strict rule is switched on, and list them for you first.</p>
 <p><strong>Not asked.</strong> <code>loops tick</code> and <code>loops tick --check</code> stay on the one store in the directory. A tick across stores would cover other records and is its own piece.</p>
+<h3 id="ad2-how-an-old-store-becomes-records">AD2: how an old store becomes records</h3>
+<p><strong>Question.</strong> The shadow import copies an old store into a new one, to be read beside the old tool. Each old fact becomes one signed record. Which record? The answers decide the id of every imported record, so they are yours, and they are cheap to change only before the first real import.</p>
+<p><strong>What an old store holds</strong> (the shape of yours; the values below are made up). A table of facts, each with an id, a kind, a time, an observer written as text, and a JSON payload. A vertex file says how each kind is read: <code>thread</code> by <code>name</code>, <code>log</code> collected. So three facts:</p>
+<pre><code>01ab  thread  2026-10-01 09:00  relay  {&quot;name&quot;:&quot;kiln&quot;,&quot;status&quot;:&quot;open&quot;,&quot;message&quot;:&quot;Repair kiln&quot;}
+01ac  thread  2026-10-03 16:30  relay  {&quot;name&quot;:&quot;kiln&quot;,&quot;status&quot;:&quot;done&quot;}
+01ad  log     2026-10-03 16:31  relay  {&quot;message&quot;:&quot;fired the kiln&quot;}
+</code></pre>
+<p>The old tool reads thread <code>kiln</code> as status <code>done</code>, message <code>Repair kiln</code>: a later fact of the same name overlays the fields it carries.</p>
+<p><strong>Example, run on the binary with the plain view</strong> (2026-11-22). The three facts written by hand as the recommended column below would write them (<code>loops emit - --fill</code>, with a key made for the import):</p>
+<pre><code>$ loops ls --plain
+KIND    RECORDS
+log     1
+thread  2
+
+$ loops ls thread: --fields name,status,message --plain
+THING        HEAD KINDS  RECORDS  HEADS  name  status  message
+thread:kiln  thread      2        1      kiln  done    Repair kiln
+</code></pre>
+<p>The second record names the first in <code>prev</code> and sets only <code>status</code>, so <code>message</code> still reads from the first. That is the old tool's answer.</p>
+<p><strong>The choices.</strong></p>
+<div class="table-scroll" tabindex="0"><table><thead><tr><th scope="col"></th><th scope="col">Choice</th><th scope="col">Recommended</th><th scope="col">The other way</th></tr></thead>
+<tbody>
+<tr><td>1</td><td><strong>What a keyed fact is of.</strong> A kind the vertex reads &quot;by&quot; a field.</td><td>The thing <code>&lt;kind&gt;:&lt;value of that field&gt;</code>, here <code>thread:kiln</code>. A later fact of the same name is a revision: it names what is live in <code>prev</code> and sets the fields it carries.</td><td>Every fact a root of its own. Then nothing overlays, and each read needs a spec that groups by the field.</td></tr>
+<tr><td>2</td><td><strong>A kind the vertex collects, or does not name.</strong></td><td>A root, as <code>log</code> above.</td><td>A thing per kind.</td></tr>
+<tr><td>3</td><td><strong>The order of revisions.</strong></td><td>The order in which the old store took the facts in (it keeps one). That is what the old tool's reading saw.</td><td>The facts' own times. Two facts with one time need a tie-break, and a backfilled fact would land in the past.</td></tr>
+<tr><td>4</td><td><strong>The times.</strong></td><td>The old time becomes <code>occurred</code>. <code>emitted</code> is the time of the import. A window on <code>env.when</code> then reads the old time.</td><td>The old time as <code>emitted</code>: the record would claim to have been written then, by a key that did not exist.</td></tr>
+<tr><td>5</td><td><strong>Who signs.</strong></td><td>A key made for the import. Every imported record says so in its observer, and can be told from what you write afterwards.</td><td>Your own key. Imported and new records look alike.</td></tr>
+<tr><td>6</td><td><strong>Where the old observer and the old id are kept.</strong></td><td>The old observer as a mention, <code>observer:relay</code>. The old id in a file beside the import, which also makes a second run write nothing. The payload is the old payload, untouched.</td><td>The old id as a mention on each record, or both as extra payload fields. Extra fields change what a spec reads.</td></tr>
+<tr><td>7</td><td><strong>The old ticks.</strong></td><td>Left out and counted. They are the old tool's own, and as kind <code>tick</code> the new check would call each &quot;not a tick&quot;.</td><td>Imported under another kind, for the record.</td></tr>
+<tr><td>8</td><td><strong>A fact held by two old stores.</strong></td><td>Imported into each new store it was in, with the same salt and time for the same old id, from the import's file. Where the fact has the same history in both stores, the two copies are then one record, and a read across the stores counts it once. Where the histories differ they are two records; I will count how often that happens in your stores before the import.</td><td>Imported once, into one store.</td></tr>
+</tbody></table></div>
+<p><strong>What I am not sure of, and will check before anything is built:</strong> whether your old stores hold kinds the vertex does not name, facts whose key field is missing, and payloads the new writer refuses (a number out of range, a repeated name). The import will count each and stop on the last kind; it will not guess.</p>
+<p><strong>Not asked.</strong> The import's verb and flags, its batches, and how the copy is compared with the old tool's reading are the implementer's. The old store is never written.</p>
 <h2 id="being-prepared">Being prepared</h2>
 <p>Nothing here needs you yet. It is listed so that you know what is coming.</p>
 <p><strong>Numbers stored as text</strong>, with the import (<a href="note-2026-11-21-order-of-work.html#w1-an-adoption-step-before-standing-and-sharing">W1</a>). <a href="note-2026-11-21-tick-record.html#tk6-what-a-spec-reads-of-a-tick">TK6</a> shows one use for it.</p>
