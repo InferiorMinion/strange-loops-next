@@ -20,6 +20,10 @@ loops emit <kind> [field=text | field:=json]... ["message"]
       [--sets <key>]... [--sets-nothing] [--whole]
 loops emit - [--fill]               read one JSONL changeset from stdin
                                     --fill applies the single-emit filler to each line
+loops --version                     print the strange-loops-next version
+loops ls                            list kinds and their record counts
+loops ls --things | loops ls <prefix>
+                                    list things, optionally by literal name prefix
 loops get <id>                      one record
 loops of <thing>                    a thing's values, its about, its heads, how many records are of it
 loops read <vertex> [--values]      fold .loops/vertices/<vertex>.json
@@ -421,6 +425,33 @@ Every verb that reads the store says when either happened (choice 18).
     id gives `{"answer":"same","closure":"yes","taken-not-covered":0}`.
     Emit a seventh backup and check that id again. The verdict is still
     `same` and `taken-not-covered` is now 1.
+
+23. **List the holding and identify the binary.** The owner ruled on
+    2026-11-21 (W1) that adoption's CLI pieces are built beside the tick work,
+    with `loops` first on PATH for daily work as the exit.
+
+    Implementer's choices
+
+    - `ls` returns `kinds` rows, one per observed envelope kind. Count
+      settled, admitted IDs, including superseded records and records
+      without an opening. Use the same unclean-store diagnostic as `of`.
+    - `ls --things` returns `things` rows. A positional prefix selects rows
+      by a literal, case-sensitive match on the whole thing name (written
+      `of`, or the root's full ID). Order rows and distinct head kinds by
+      UTF-16 code units. Each row counts all its records and its heads.
+    - Resolve the headline from the live setters of `name`. One open text
+      value gives `{"state":"text","value":"…"}`. A missing, unset or
+      non-text headline is `absent`. An unavailable opening that could
+      supply it is `unknown`. Multiple live setters for a declared or
+      observed name give `conflict`, even if they wrote the same text.
+      In each of those three cases the object has only its `state`.
+    - `--version` prints `strange-loops-next` and the Cargo package version.
+      It needs neither a store nor a key.
+
+    For example, emit `task --of task:kiln name=Kiln`, then
+    `task --of task:kiln status=open` with `loops emit`. `loops ls`
+    reports two task records. `loops ls task:` returns
+    `{"things":[{"headline":{"state":"text","value":"Kiln"},"heads":1,"kinds":["task"],"records":2,"thing":"task:kiln"}]}`.
 
 ## Checked by
 
