@@ -163,13 +163,37 @@ fn warn_unclean(held: &Held) {
     }
 }
 
+/// CLI reads can reuse the user's verification cache. The underlying
+/// directory always verifies signatures when read directly by `loops check`.
+struct Store {
+    dir: Dir,
+}
+
+impl Store {
+    fn read(&self) -> io::Result<Held> {
+        let cache = env::var_os("LOOPS_CACHE_DIR")
+            .map(PathBuf::from)
+            .or_else(|| {
+                env::var_os("XDG_CACHE_HOME")
+                    .map(PathBuf::from)
+                    .filter(|p| p.is_absolute())
+                    .or_else(|| env::var_os("HOME").map(|home| PathBuf::from(home).join(".cache")))
+                    .map(|dir| dir.join("loops"))
+            });
+        match cache {
+            Some(dir) => self.dir.read_with_cache(&dir),
+            None => self.dir.read(),
+        }
+    }
+}
+
 /// Finds the nearest `.loops/` at or above `start`, as git finds `.git`.
-fn find_store(start: &Path) -> Result<Dir, Fail> {
+fn find_store(start: &Path) -> Result<Store, Fail> {
     let start = fs::canonicalize(start)?;
     let mut at = Some(start.as_path());
     while let Some(dir) = at {
         if let Ok(place) = Dir::open(&dir.join(".loops")) {
-            return Ok(place);
+            return Ok(Store { dir: place });
         }
         at = dir.parent();
     }
@@ -426,7 +450,7 @@ fn emit(start: &Path, args: &[String]) -> Result<(), Fail> {
                     .map_err(|e| refused(e.code()))?
             }
         };
-        let lines = write_changeset(&place, &held, &key, &drafts)?;
+        let lines = write_changeset(&place.dir, &held, &key, &drafts)?;
         base_notices(notices);
         let records = drafts
             .iter()
@@ -441,7 +465,7 @@ fn emit(start: &Path, args: &[String]) -> Result<(), Fail> {
             .collect();
         return say(&object(vec![("records", Json::Arr(records))]).canon());
     }
-    write_one(&place, &held, &key, &now, args, None)
+    write_one(&place.dir, &held, &key, &now, args, None)
 }
 
 fn write_one(
@@ -513,8 +537,8 @@ fn erase(start: &Path, args: &[String]) -> Result<(), Fail> {
         ),
     };
     bound(&key, [&draft])?;
-    let lines = write_changeset(&place, &held, &key, &[draft])?;
-    let gone = place.purge(&ids)?;
+    let lines = write_changeset(&place.dir, &held, &key, &[draft])?;
+    let gone = place.dir.purge(&ids)?;
     say(&object(vec![
         ("id", text(lines.first().map_or("", Line::id))),
         ("openings-removed", count(gone)),
@@ -629,7 +653,7 @@ fn read(start: &Path, args: &[String], format: Format) -> Result<(), Fail> {
         return Err(usage("a vertex name is a file name without its .json"));
     }
     let place = find_store(start)?;
-    fold_text(start, &vertex_text(&place, vertex)?, view, format)
+    fold_text(start, &vertex_text(&place.dir, vertex)?, view, format)
 }
 fn vertex_text(place: &Dir, vertex: &str) -> Result<String, Fail> {
     let path = place.root().join("vertices").join(format!("{vertex}.json"));
@@ -679,7 +703,7 @@ fn tick(start: &Path, args: &[String]) -> Result<(), Fail> {
     let input = if source == "-" || !vertex_name(source) || start.join(source).is_file() {
         spec_file(start, source)?
     } else {
-        vertex_text(&place, source)?
+        vertex_text(&place.dir, source)?
     };
     let spec = parse_spec(&input)?;
     let held = place.read()?;
@@ -688,7 +712,7 @@ fn tick(start: &Path, args: &[String]) -> Result<(), Fail> {
     let payload = make_tick(spec, &forms).to_json(&hash);
     let key = signing_key(Missing::Make)?;
     let now = clock::now().ok_or_else(|| Fail::System("the clock is outside 1970–9999".into()))?;
-    write_one(&place, &held, &key, &now, flags, Some(payload))
+    write_one(&place.dir, &held, &key, &now, flags, Some(payload))
 }
 
 fn export(start: &Path, args: &[String]) -> Result<(), Fail> {
@@ -748,7 +772,7 @@ fn import(start: &Path, args: &[String]) -> Result<(), Fail> {
             Line::parse(line).map_err(|e| refused(format!("{} at line {}", e.code(), i + 1)))?,
         );
     }
-    let segments = place.append(&lines)?;
+    let segments = place.dir.append(&lines)?;
     say(&object(vec![
         ("lines", count(lines.len())),
         (
@@ -760,7 +784,7 @@ fn import(start: &Path, args: &[String]) -> Result<(), Fail> {
 }
 
 fn check(start: &Path) -> Result<(), Fail> {
-    let held = find_store(start)?.read()?;
+    let held = find_store(start)?.dir.read()?;
     answered(&held, say(&check_report(&held).canon()))
 }
 fn check_report(held: &Held) -> Json {

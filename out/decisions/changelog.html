@@ -222,7 +222,34 @@ The record starts where the old roadmap's did. For anything earlier, and for eve
 <li><p>The adoption step has started: <code>loops ls</code> lists a store's kinds and things, and <code>loops --version</code> says which <code>loops</code> this is. Its plan has eight pieces; two need Kyle first (AD1, and the import of the old stores).</p></li>
 <li><p><code>loops emit --base</code> fills against what the writer read, a tick or named records, so a stale write shows as a conflict and does not silently replace a setter the writer never saw.</p></li>
 <li><p><code>loops ls --fields name,status --plain</code> is the Monday-morning read without a spec: a plain-text view, asked for explicitly, on <code>ls</code> and <code>of</code>.</p></li>
+<li><p>A read remembers which segments it has checked: on a 9,000-record store a fold goes from 0.53 s to 0.24 s. <code>loops check</code> still checks everything.</p></li>
 </ul>
+<h3 id="the-adoption-step-the-cache-of-checked-segments">The adoption step: the cache of checked segments</h3>
+<p>Ruled by Kyle on 2026-11-21 (W2: yes, in the adoption step) and built as ruled, in <code>rust/place/src/cache.rs</code> and the CLI.</p>
+<ul>
+<li><p><strong>What it is.</strong> A file per user, <code>checked-segments-v1</code> under <code>~/.cache/loops/</code> (or <code>$XDG_CACHE_HOME/loops/</code>), holding the SHA-256 of each segment that this user's <code>loops</code> checked whole and found clean. Nothing else is in it. It is never inside a store, so a store cannot bring its own.</p></li>
+<li><p><strong>What a read does.</strong> It still reads and hashes every segment. On a hit it skips the signature verification of that segment's lines and makes every other check: shape, envelope, commitment and id, canonical line, the segment's name. A segment with a refused line, a name that does not fit its bytes, or an unterminated last line is never listed, so it is checked in full every time.</p></li>
+<li><p><strong>What never uses it.</strong> <code>loops check</code> and <code>import</code> verify every signature.</p></li>
+<li><p><strong>The property, tested:</strong> for the same bytes on disk, a read with the cache and a read without it give the same records, refusals, alterations, answers and exit status.</p></li>
+</ul>
+<p><strong>Measured</strong> by the coordinator on a store of 9,000 records in 20 segments, release build, medians of seven runs:</p>
+<div class="table-scroll" tabindex="0"><table><thead><tr><th scope="col">Command</th><th scope="col" class="align-right">No cache</th><th scope="col" class="align-right">Warm cache</th></tr></thead>
+<tbody>
+<tr><td>A fold that counts</td><td class="align-right">0.534 s</td><td class="align-right">0.235 s</td></tr>
+<tr><td><code>loops ls</code></td><td class="align-right">0.529 s</td><td class="align-right">0.242 s</td></tr>
+<tr><td><code>loops check</code></td><td class="align-right">0.523 s</td><td class="align-right">never uses it</td></tr>
+</tbody></table></div>
+<p>The worker measured 0.485 s and 0.181 s on a quieter machine. The ruling's estimate was &quot;under 0.2 s&quot;; it is about that. What remains is reading, hashing and parsing.</p>
+<p><strong>What the ruling accepts, shown by hand.</strong> The file is the user's own evidence. A segment with a bad signature whose digest is written into that file by hand is accepted by a plain read (<code>loops ls</code> answered, exit 0). <code>loops check</code> refuses it (<code>signature-invalid</code>), and so does the same read with no cache (<code>store-not-clean</code>). Whoever can write the user's cache directory can do this, and can already do worse to the user.</p>
+<p><strong>Implementer choices; they stand under Kyle's ruling of 2026-11-21 (W7).</strong> The full list is choice 26 of <code>rust/PLACE.md</code>.</p>
+<ul>
+<li><p><strong>The library's read is the full one.</strong> <code>Dir::read()</code> verifies everything and reads no environment. Only the <code>loops</code> binary opts in, in one function that every answering and writing verb but <code>check</code> uses. A first version had the library look the cache up itself, and the tests would then have written into the real per-user cache; the coordinator had that taken out, and every test that runs the binary now gets a cache directory of its own. The whole test suite, run with <code>HOME</code> set to an empty directory, leaves it empty.</p></li>
+<li><p><code>LOOPS_CACHE_DIR</code> names another directory; set to nothing it turns the cache off.</p></li>
+<li><p>A cache that is missing, unreadable, malformed or not the user's own (wrong permissions, a symlink, a path into a store) is ignored and the read checks everything. Writing it is atomic; two readers at once can lose an entry, which costs one later full check.</p></li>
+<li><p>A correctly named segment whose last line is unterminated reads as it did (the line is skipped, exit 0) and is never listed. The coordinator's brief had said such a segment refuses; the worker showed it does not, and no answer was changed.</p></li>
+</ul>
+<p><strong>Also here: the fuzz tests build Lean once.</strong> Four test files each started builds of the same Lean executables, so the first run after a model change failed one test and the second passed; it was seen three times. The real-Lean suites now share one entry point that builds before any test runs. Three runs on a stale build pass.</p>
+<p>A Codex worker wrote it; the coordinator reviewed it, joined it with main, ran the suite with an empty <code>HOME</code> and made the measurements and the poisoned-cache run above.</p>
 <h3 id="the-adoption-step---fields-and-a-plain-view-on-ls-and-of">The adoption step: <code>--fields</code>, and a plain view on <code>ls</code> and <code>of</code></h3>
 <p>The second piece of the adoption plan. <code>loops ls</code> takes <code>--fields a,b,c</code>, and <code>ls</code> and <code>of</code> take <code>--plain</code>.</p>
 <p>A real run on a store from this session, a thing left in conflict by a write against an older base:</p>

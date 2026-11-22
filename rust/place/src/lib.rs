@@ -13,6 +13,7 @@
 //!
 //! Standing arrives with step 3. Until then every signed line whose bytes
 //! check is held, and nothing here decides who may write.
+mod cache;
 pub mod clock;
 pub mod dir;
 pub mod fill;

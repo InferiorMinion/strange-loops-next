@@ -16,6 +16,38 @@ In brief:
 - The adoption step has started: `loops ls` lists a store's kinds and things, and `loops --version` says which `loops` this is. Its plan has eight pieces; two need Kyle first (AD1, and the import of the old stores).
 - `loops emit --base` fills against what the writer read, a tick or named records, so a stale write shows as a conflict and does not silently replace a setter the writer never saw.
 - `loops ls --fields name,status --plain` is the Monday-morning read without a spec: a plain-text view, asked for explicitly, on `ls` and `of`.
+- A read remembers which segments it has checked: on a 9,000-record store a fold goes from 0.53 s to 0.24 s. `loops check` still checks everything.
+
+### The adoption step: the cache of checked segments
+
+Ruled by Kyle on 2026-11-21 (W2: yes, in the adoption step) and built as ruled, in `rust/place/src/cache.rs` and the CLI.
+
+- **What it is.** A file per user, `checked-segments-v1` under `~/.cache/loops/` (or `$XDG_CACHE_HOME/loops/`), holding the SHA-256 of each segment that this user's `loops` checked whole and found clean. Nothing else is in it. It is never inside a store, so a store cannot bring its own.
+- **What a read does.** It still reads and hashes every segment. On a hit it skips the signature verification of that segment's lines and makes every other check: shape, envelope, commitment and id, canonical line, the segment's name. A segment with a refused line, a name that does not fit its bytes, or an unterminated last line is never listed, so it is checked in full every time.
+- **What never uses it.** `loops check` and `import` verify every signature.
+- **The property, tested:** for the same bytes on disk, a read with the cache and a read without it give the same records, refusals, alterations, answers and exit status.
+
+**Measured** by the coordinator on a store of 9,000 records in 20 segments, release build, medians of seven runs:
+
+| Command | No cache | Warm cache |
+| --- | ---: | ---: |
+| A fold that counts | 0.534 s | 0.235 s |
+| `loops ls` | 0.529 s | 0.242 s |
+| `loops check` | 0.523 s | never uses it |
+
+The worker measured 0.485 s and 0.181 s on a quieter machine. The ruling's estimate was "under 0.2 s"; it is about that. What remains is reading, hashing and parsing.
+
+**What the ruling accepts, shown by hand.** The file is the user's own evidence. A segment with a bad signature whose digest is written into that file by hand is accepted by a plain read (`loops ls` answered, exit 0). `loops check` refuses it (`signature-invalid`), and so does the same read with no cache (`store-not-clean`). Whoever can write the user's cache directory can do this, and can already do worse to the user.
+
+**Implementer choices; they stand under Kyle's ruling of 2026-11-21 (W7).** The full list is choice 26 of `rust/PLACE.md`.
+- **The library's read is the full one.** `Dir::read()` verifies everything and reads no environment. Only the `loops` binary opts in, in one function that every answering and writing verb but `check` uses. A first version had the library look the cache up itself, and the tests would then have written into the real per-user cache; the coordinator had that taken out, and every test that runs the binary now gets a cache directory of its own. The whole test suite, run with `HOME` set to an empty directory, leaves it empty.
+- `LOOPS_CACHE_DIR` names another directory; set to nothing it turns the cache off.
+- A cache that is missing, unreadable, malformed or not the user's own (wrong permissions, a symlink, a path into a store) is ignored and the read checks everything. Writing it is atomic; two readers at once can lose an entry, which costs one later full check.
+- A correctly named segment whose last line is unterminated reads as it did (the line is skipped, exit 0) and is never listed. The coordinator's brief had said such a segment refuses; the worker showed it does not, and no answer was changed.
+
+**Also here: the fuzz tests build Lean once.** Four test files each started builds of the same Lean executables, so the first run after a model change failed one test and the second passed; it was seen three times. The real-Lean suites now share one entry point that builds before any test runs. Three runs on a stale build pass.
+
+A Codex worker wrote it; the coordinator reviewed it, joined it with main, ran the suite with an empty `HOME` and made the measurements and the poisoned-cache run above.
 
 ### The adoption step: `--fields`, and a plain view on `ls` and `of`
 

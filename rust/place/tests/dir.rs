@@ -270,3 +270,163 @@ fn indexed_line_keeps_the_first_preferred_form_in_segment_order() {
         );
     }
 }
+
+fn cache_test_dir(name: &str) -> PathBuf {
+    let dir = std::env::temp_dir().join(format!("loops-cache-{name}-{}", std::process::id()));
+    fs::create_dir(&dir).expect("private test root");
+    dir
+}
+
+fn assert_same_read(place: &Dir, cache: &std::path::Path) {
+    let full = place.read().expect("verify all signatures");
+    for _ in 0..2 {
+        let cached = place.read_with_cache(cache).expect("ordinary read");
+        assert_eq!(cached.segments(), full.segments());
+        assert_eq!(cached.lines(), full.lines());
+        assert_eq!(cached.settled(), full.settled());
+        assert_eq!(cached.refused(), full.refused());
+        assert_eq!(cached.altered(), full.altered());
+    }
+}
+
+fn segment_digest(bytes: &[u8]) -> String {
+    loops::base32::base32(&loops_place::line::hash(bytes))
+}
+
+#[test]
+fn only_complete_clean_matching_segments_supply_cache_entries() {
+    let root = cache_test_dir("eligibility");
+    let place = Dir::init(&root.join(".loops")).expect("store");
+    let cache = root.join("cache");
+    let list = cache.join("checked-segments-v1");
+    let key = Key::generate().expect("key");
+    let good = line(&key, "checked", &[]);
+    place
+        .append(&[good.clone(), good.clone()])
+        .expect("segment");
+    let path = files(&place).remove(0);
+    let whole = fs::read(&path).expect("two lines");
+    assert_same_read(&place, &cache);
+    let remembered = format!("{}\n", segment_digest(&whole));
+    assert_eq!(fs::read_to_string(&list).expect("list"), remembered);
+    // A digest hit is insufficient when the name is wrong.
+    let wrong = path.with_file_name("wrong.jsonl");
+    fs::rename(&path, &wrong).expect("rename");
+    assert_same_read(&place, &cache);
+    assert_eq!(place.read().expect("full").altered().len(), 1);
+    fs::rename(&wrong, &path).expect("restore name");
+
+    // Both torn files hold their first line. Only the original name is altered.
+    let cut = &whole[..whole.len() - 1];
+    fs::write(&path, cut).expect("truncate");
+    assert_same_read(&place, &cache);
+    let held = place.read().expect("full");
+    assert_eq!(held.lines(), std::slice::from_ref(&good));
+    assert_eq!(held.altered().len(), 1);
+    let fitting = path.with_file_name(format!("{}.jsonl", segment_digest(cut)));
+    fs::rename(&path, &fitting).expect("match truncated bytes");
+    assert_same_read(&place, &cache);
+    assert_eq!(place.read().expect("full").altered(), Vec::<String>::new());
+    assert_eq!(fs::read_to_string(&list).expect("list"), remembered);
+
+    let invalid = format!("{}\n{{}}\n", good.render());
+    let bad = path.with_file_name(format!("{}.jsonl", segment_digest(invalid.as_bytes())));
+    fs::rename(fitting, &bad).expect("move segment");
+    fs::write(&bad, invalid).expect("replace bytes");
+    assert_same_read(&place, &cache);
+    assert_eq!(place.read().expect("full").refused().len(), 1);
+    assert_eq!(fs::read_to_string(&list).expect("list"), remembered);
+    fs::remove_dir_all(root).expect("clean test directory");
+}
+
+#[test]
+fn a_signature_change_with_the_same_size_and_time_misses_the_cache() {
+    let root = cache_test_dir("bytes");
+    let place = Dir::init(&root.join(".loops")).expect("store");
+    let cache = root.join("cache");
+    let list = cache.join("checked-segments-v1");
+    let good = line(&Key::generate().expect("key"), "one", &[]);
+    place.append(&[good]).expect("write");
+    assert_same_read(&place, &cache);
+    let path = files(&place).remove(0);
+    let modified = fs::metadata(&path)
+        .expect("stat")
+        .modified()
+        .expect("mtime");
+    let mut bytes = fs::read_to_string(&path).expect("line");
+    let offset = bytes.find("\"ed25519\":\"").expect("signature") + "\"ed25519\":\"".len();
+    let digit = if bytes.as_bytes()[offset] == b'0' {
+        "1"
+    } else {
+        "0"
+    };
+    bytes.replace_range(offset..=offset, digit);
+    fs::write(&path, &bytes).expect("changed signature");
+    fs::File::options()
+        .write(true)
+        .open(&path)
+        .expect("open")
+        .set_modified(modified)
+        .expect("restore mtime");
+    assert_same_read(&place, &cache);
+    let bad_hash = segment_digest(bytes.as_bytes());
+    let fitting = path.with_file_name(format!("{bad_hash}.jsonl"));
+    fs::rename(&path, &fitting).expect("matching name");
+    assert_same_read(&place, &cache);
+    assert_eq!(
+        place.read_with_cache(&cache).expect("read").refused()[0].refusal,
+        Refusal::SignatureInvalid
+    );
+
+    // A different verifier version, or a damaged list with one valid entry,
+    // cannot vouch for a signature. All entries of a corrupt list are ignored.
+    fs::write(&list, format!("{bad_hash}\n")).expect("test entry");
+    fs::rename(&list, cache.join("checked-segments-v0")).expect("older rules");
+    assert_same_read(&place, &cache);
+    fs::rename(cache.join("checked-segments-v0"), &list).expect("restore");
+    fs::write(&list, format!("{bad_hash}\ntruncated")).expect("corrupt list");
+    assert_same_read(&place, &cache);
+    // A cache hit skips just signature verification: a bad id still refuses.
+    bytes = bytes.replace("\"text\":\"one\"", "\"text\":\"two\"");
+    let digest = segment_digest(bytes.as_bytes());
+    let changed = path.with_file_name(format!("{digest}.jsonl"));
+    fs::rename(fitting, &changed).expect("rename");
+    fs::write(changed, bytes).expect("changed payload");
+    fs::write(&list, format!("{digest}\n")).expect("test entry");
+    assert_same_read(&place, &cache);
+    assert_eq!(
+        place.read().expect("full").refused()[0].refusal,
+        Refusal::IdMismatch
+    );
+    fs::remove_dir_all(root).expect("clean test directory");
+}
+
+#[test]
+fn a_store_cannot_supply_the_cache_and_cache_io_is_optional() {
+    let root = cache_test_dir("location");
+    let place = Dir::init(&root.join(".loops")).expect("store");
+    place
+        .append(&[line(&Key::generate().expect("key"), "one", &[])])
+        .expect("write");
+    let inside = place.root().join("cache");
+    assert_same_read(&place, &inside);
+    assert!(!inside.exists());
+    let blocked = root.join("ordinary-file");
+    fs::write(&blocked, "not a directory").expect("block directory creation");
+    assert_same_read(&place, &blocked.join("cache"));
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::{PermissionsExt, symlink};
+        let alias = root.join("alias");
+        symlink(place.root(), &alias).expect("alias to store");
+        assert_same_read(&place, &alias.join("cache"));
+        assert!(!inside.exists());
+        let readonly = root.join("readonly");
+        fs::create_dir(&readonly).expect("directory");
+        fs::set_permissions(&readonly, fs::Permissions::from_mode(0o500)).expect("unwritable");
+        assert_same_read(&place, &readonly);
+        assert_eq!(fs::read_dir(&readonly).expect("directory").count(), 0);
+        fs::set_permissions(&readonly, fs::Permissions::from_mode(0o700)).expect("restore");
+    }
+    fs::remove_dir_all(root).expect("clean test directory");
+}

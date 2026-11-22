@@ -95,6 +95,7 @@ loops whoami
 .loops/segments/<key>/<hash>.jsonl    closed, immutable, named by the SHA-256 of its bytes
 .loops/vertices/<name>.json           a spec, as protocol/spec.md reads it
 ~/.config/loops/keys/device           the signing key's seed, 0600 (LOOPS_KEY_FILE, or LOOPS_KEY as text)
+$XDG_CACHE_HOME/loops/checked-segments-v1   previously verified segment digests (choice 26)
 ```
 
 A segment holds the lines one key signed in one changeset. Writing it is a
@@ -103,9 +104,9 @@ rename into place, so a reader sees a whole changeset or none
 a store merge by adding files, in git or by `export | import`, and what they
 hold is the union.
 
-Reading checks every line: the envelope and the writer's checks, the id
-against the envelope and commitment, the signature against the id, and the
-canonical spelling. A line that fails is listed by `loops check`, never
+Reading checks each complete line's envelope, commitment, id, signature and
+canonical spelling. A reader can reuse its own previous signature verification
+for an identical complete segment (choice 26). A line that fails is listed by `loops check`, never
 held. A segment whose name is not the hash of its bytes is listed as altered.
 Every verb that reads the store says when either happened (choice 18).
 
@@ -563,7 +564,57 @@ Every verb that reads the store says when either happened (choice 18).
       occurred  2026-11-18/2026-11-19
     ```
 
-26. **Read a spec result in plain text.** The owner ruled on 2026-11-21
+26. **Remember which segments this user verified.** The owner ruled on
+    2026-11-21 that the adoption step may reuse signature verification for
+    whole, clean segments this user's own reader checked. [W2](../notes/2026-11-21-order-of-work.md#w2-remember-which-segments-were-checked)
+
+    - The library's `Dir::read()` verifies all signatures. The binary selects
+      the user's cache directory and calls `Dir::read_with_cache` for ordinary
+      store reads. `loops check` calls `Dir::read()` directly.
+    - For the same store bytes, reading with evidence produced by this verifier
+      and reading without it give the same records, refusals, alterations,
+      answers and exit status. Every read hashes the buffer it decodes. A fitting
+      filename, UTF-8 text, a final newline and a successful check of every line
+      are required to remember a digest. On a hit the reader skips only the
+      Ed25519 verification. It still checks the key and signature encodings.
+    - A torn final line is skipped on every read. If truncation left the old
+      filename, the segment is altered. If the filename fits the truncated
+      bytes and the complete lines pass, the read succeeds. Both versions
+      are ineligible for the cache. Purging an opening produces new segment
+      bytes which need their own verification.
+    - The optional file contains one canonical base32hex SHA-256 per line.
+      Its filename includes the line-check version, currently 1. Bump that
+      constant for stricter checks. The directory is `$XDG_CACHE_HOME/loops`,
+      falling back to `~/.cache/loops`. `LOOPS_CACHE_DIR` overrides it with an
+      absolute directory. An empty override disables caching. Paths into the
+      store, including symlinked directories, and symlinked cache files are
+      excluded.
+    - On Unix, create the cache directory with mode 0700 and the file with
+      mode 0600. Ignore group- or world-writable cache directories and files
+      accessible to other users. A missing or malformed list supplies no hits.
+      Cache I/O failures leave the store answer intact. Publish additions by
+      renaming a uniquely created sibling file. Concurrent readers can lose
+      an addition, which costs one more verification. Obsolete hashes can
+      remain after erasure and the user can delete the file at any time.
+    - `loops check` bypasses the cache, including updates. Import always
+      verifies incoming lines. A user who plants a correctly spelled digest
+      for a complete, correctly named segment can make an ordinary read
+      accept a bad signature. Only the user's own cache has that authority.
+      A full check detects the bad signature.
+    - Release measurements used 9,000 signed fact records in 20 segments of
+      450. Each timing is the median of seven new processes after one warm-up.
+      Cold runs removed the verifier cache before each process. The OS file
+      cache stayed warm. Each emit updated the same held thing, then the
+      benchmark restored the original set of segments.
+
+      | Command | Cold cache | Warm cache |
+      | --- | ---: | ---: |
+      | `loops check` (always verifies) | 0.496 s | — |
+      | Count fold | 0.485 s | 0.181 s |
+      | `loops ls` | 0.479 s | 0.180 s |
+      | One `loops emit` of a held thing | 0.491 s | 0.185 s |
+
+27. **Read a spec result in plain text.** The owner ruled on 2026-11-21
     (W1) that the adoption step includes a plain view for daily reading.
 
     Implementer's choices
