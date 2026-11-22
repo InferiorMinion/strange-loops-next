@@ -10,6 +10,7 @@ The record starts where the old roadmap's did. For anything earlier, and for eve
 ## 2026-11-22
 
 In brief:
+- The model's prefix at a time is strict, as `loops tick --as-of` is: a record emitted at the time itself is not in it.
 - The base lemma is in the model as `keyed.base`, with a correction: an emit against a base keeps the store's names anchored only when the base is closed downward. A witness shows what breaks when it is not.
 - A fuzz run compares the model and Rust on ticks, with pairs of faults generated on purpose. Its first version agreed on 20,160 cases and missed a fault planted in Rust; the rebuilt one catches every planted swap tried. margins-claude's Python agrees with Rust on 80,000 more cases.
 - The tick has its mutation catalogue: 91 deliberate faults, each caught by something that runs. Five were not caught at first; four vectors and a check were added for them.
@@ -196,6 +197,16 @@ So `vectors/tick/` has 131 files. Rust passed the four new ones unchanged.
 - The evidence keeps the five first verdicts beside the final ones, so the gaps stay on record.
 
 A Codex worker wrote the entries, ran them and added the vectors; the coordinator reviewed the run, joined it with main and ran the gate.
+
+### The prefix at a time is strict
+
+`upTo W T` in `model/Laws/Cut.lean` is now the records emitted before `T`; it took a record emitted at `T` itself in. The cut note's section 2 says the bound reads as `below` does, and `loops tick --as-of <time>` is built that way, so the model's name and the CLI now mean the same set at the boundary too. The coordinator's worker found the difference in the model's own witness: at one second the old prefix held `c`, emitted at one second, and the strict one does not.
+
+- The laws of `cut.prefix` hold as before with the bound changed: `prefix_down_iff` (every prefix is closed downward exactly when no record names a later one), `heldOf_prefix`. The first's proof no longer uses the prefix at a record's own time; it uses the prefix at the time of a record named later, which would hold the namer.
+- The witness `prefix_reads_wrongly` is at two seconds, where the prefix is again `a` and `c`.
+- No vector, no Rust and no protocol rule depends on `upTo`.
+
+margins-claude wrote it.
 
 ### The base lemma: an emit against a base
 

@@ -216,6 +216,7 @@ The record starts where the old roadmap's did. For anything earlier, and for eve
 <h2 id="2026-11-22">2026-11-22</h2>
 <p>In brief:</p>
 <ul>
+<li><p>The model's prefix at a time is strict, as <code>loops tick --as-of</code> is: a record emitted at the time itself is not in it.</p></li>
 <li><p>The base lemma is in the model as <code>keyed.base</code>, with a correction: an emit against a base keeps the store's names anchored only when the base is closed downward. A witness shows what breaks when it is not.</p></li>
 <li><p>A fuzz run compares the model and Rust on ticks, with pairs of faults generated on purpose. Its first version agreed on 20,160 cases and missed a fault planted in Rust; the rebuilt one catches every planted swap tried. margins-claude's Python agrees with Rust on 80,000 more cases.</p></li>
 <li><p>The tick has its mutation catalogue: 91 deliberate faults, each caught by something that runs. Five were not caught at first; four vectors and a check were added for them.</p></li>
@@ -372,6 +373,14 @@ svc:jellyfin  svc         7        2      conflict (2)  sam
 <li><p>The evidence keeps the five first verdicts beside the final ones, so the gaps stay on record.</p></li>
 </ul>
 <p>A Codex worker wrote the entries, ran them and added the vectors; the coordinator reviewed the run, joined it with main and ran the gate.</p>
+<h3 id="the-prefix-at-a-time-is-strict">The prefix at a time is strict</h3>
+<p><code>upTo W T</code> in <code>model/Laws/Cut.lean</code> is now the records emitted before <code>T</code>; it took a record emitted at <code>T</code> itself in. The cut note's section 2 says the bound reads as <code>below</code> does, and <code>loops tick --as-of &lt;time&gt;</code> is built that way, so the model's name and the CLI now mean the same set at the boundary too. The coordinator's worker found the difference in the model's own witness: at one second the old prefix held <code>c</code>, emitted at one second, and the strict one does not.</p>
+<ul>
+<li><p>The laws of <code>cut.prefix</code> hold as before with the bound changed: <code>prefix_down_iff</code> (every prefix is closed downward exactly when no record names a later one), <code>heldOf_prefix</code>. The first's proof no longer uses the prefix at a record's own time; it uses the prefix at the time of a record named later, which would hold the namer.</p></li>
+<li><p>The witness <code>prefix_reads_wrongly</code> is at two seconds, where the prefix is again <code>a</code> and <code>c</code>.</p></li>
+<li><p>No vector, no Rust and no protocol rule depends on <code>upTo</code>.</p></li>
+</ul>
+<p>margins-claude wrote it.</p>
 <h3 id="the-base-lemma-an-emit-against-a-base">The base lemma: an emit against a base</h3>
 <p>The filler against a base (the cut note, section 8, ruled 2026-11-20) names the base's live records of the thing. This is the law for it, in <code>model/Laws/LiveSlice.lean</code>, indexed as <code>keyed.base</code>. Model only: no vector, no Rust, no protocol rule.</p>
 <ul>
