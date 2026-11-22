@@ -1196,6 +1196,16 @@ fn a_verb_that_answers_from_a_store_that_does_not_check_answers_then_refuses() {
     let (code, id, err) = answer(&s, &["emit", "note", "--about", thing, "seen"], "");
     assert_eq!((code, err), (0, format!("warning: {why}")));
     assert!(id.starts_with("r:"));
+
+    let (code, tick, err) = answer(&s, &["tick", "decisions"], "");
+    assert_eq!((code, err), (0, format!("warning: {why}")));
+    let (_, line, _) = answer(&s, &["get", tick.trim_end()], "");
+    let mut covered = [kept, id.trim_end().to_owned()];
+    covered.sort_unstable();
+    assert_eq!(
+        strings(&parse_json(&line).expect("tick"), &["payload", "covers"]),
+        covered
+    );
 }
 
 #[test]
@@ -2658,4 +2668,139 @@ fn literal_predecessors_use_the_holding_at_inference_time() {
         ),
         &[a, b],
     );
+}
+
+const BACKUPS: &str = r#"{"vertex":"backups","from":[{"store":"lab","kind":["backup"]}],"fold":{
+  "runs":{"count":true},"mb":{"sum":"mb"},"list":{"collect":true}}}"#;
+
+fn emit_backups(s: &Store) -> Vec<String> {
+    [
+        ("2026-11-16", "jellyfin", 412),
+        ("2026-11-16", "pihole", 3),
+        ("2026-11-16", "gitea", 88),
+        ("2026-11-17", "jellyfin", 419),
+        ("2026-11-17", "pihole", 10),
+        ("2026-11-17", "gitea", 95),
+    ]
+    .iter()
+    .map(|(night, service, mb)| {
+        s.ok(&[
+            "emit",
+            "backup",
+            "--occurred",
+            night,
+            &format!("svc={service}"),
+            &format!("mb:={mb}"),
+        ])
+    })
+    .collect()
+}
+
+#[test]
+fn tick_writers_agree_on_the_payload_across_stores() {
+    use loops::{
+        result::{read_result, result_hash},
+        spec::Spec,
+        spec_hash::Rules,
+    };
+    use loops_place::line::hash;
+
+    let a = Store::new("tick-a");
+    let b = Store::new("tick-b");
+    let mut backups = emit_backups(&a);
+    backups.sort_unstable();
+    b.ok_with(&["import"], &a.ok(&["export"]));
+
+    let vertices = a.dir.join(".loops/vertices");
+    fs::create_dir_all(&vertices).expect("vertices");
+    fs::write(vertices.join("backups.json"), BACKUPS).expect("vertex");
+    fs::write(b.dir.join("backups.json"), BACKUPS).expect("spec file");
+    let id_a = a.ok(&["tick", "backups"]);
+    let id_b = b.ok(&["tick", "backups.json", "--of", "tick:backups"]);
+    let first = a.json(&["get", &id_a]);
+    let other = b.json(&["get", &id_b]);
+    assert_ne!(id_a, id_b);
+    assert_ne!(
+        text(&first, &["env", "observer"]),
+        text(&other, &["env", "observer"])
+    );
+    assert_eq!(text(&first, &["env", "kind"]), "tick");
+    assert!(!has(&first, &["env"], "of"));
+    let payload = at(&first, &["payload"]);
+    assert_eq!(
+        payload.canon().as_bytes(),
+        at(&other, &["payload"]).canon().as_bytes()
+    );
+    assert_eq!(text(payload, &["rules"]), "1");
+    assert_eq!(strings(payload, &["covers"]), backups);
+    assert!(!has(payload, &[], "withheld"));
+    let result = at(payload, &["result"]);
+    assert_eq!(text(result, &["runs", "value"]), "6");
+    assert_eq!(text(result, &["mb", "value"]), "1027");
+    let mut collected = strings(result, &["list", "heads"]);
+    collected.sort_unstable();
+    assert_eq!(collected, backups);
+    let spec = Spec::of_json(&parse_json(BACKUPS).expect("JSON")).expect("spec");
+    assert_eq!(
+        text(payload, &["spec-hash"]),
+        spec.hash(&hash, &Rules::current())
+    );
+    assert_eq!(
+        text(payload, &["result-hash"]),
+        result_hash(&hash, &read_result(&spec, result).expect("result"))
+    );
+
+    let over_ticks = format!(
+        r#"{{"vertex":"ticks","from":[{{"store":".","kind":["tick"]}}],"fold":{{
+        "covering":{{"count":true,"where":{{"covers":{{"is":"{}"}}}}}}}}}}"#,
+        backups[0]
+    );
+    let folded = parse_json(&a.ok_with(&["fold", "-"], &over_ticks)).expect("fold");
+    assert_eq!(
+        at(&folded, &["covering", "value"]),
+        &Json::Int(1_i64.into())
+    );
+
+    let next_id = b.ok_with(&["tick", "-", "--of", "tick:backups"], BACKUPS);
+    let next = b.json(&["get", &next_id]);
+    assert_eq!(
+        strings(&next, &["env", "prev"]),
+        std::slice::from_ref(&id_b)
+    );
+    backups.push(id_b);
+    backups.sort_unstable();
+    assert_eq!(strings(&next, &["payload", "covers"]), backups);
+    assert_eq!(text(&next, &["payload", "result", "runs", "value"]), "6");
+}
+
+#[test]
+fn tick_covers_the_eraser_and_withholds_the_erased_backup() {
+    let s = Store::new("tick-erased");
+    let mut covers = emit_backups(&s);
+    let target = covers[0].clone();
+    let eraser = s.json(&["erase", &target]);
+    covers.push(text(&eraser, &["id"]).to_owned());
+    covers.sort_unstable();
+
+    let id = s.ok_with(&["tick", "-"], BACKUPS);
+    let tick = s.json(&["get", &id]);
+    let payload = at(&tick, &["payload"]);
+    assert_eq!(strings(payload, &["covers"]), covers);
+    assert_eq!(strings(payload, &["withheld"]), [target]);
+    assert_eq!(text(payload, &["result", "runs", "value"]), "6");
+    assert_eq!(text(payload, &["result", "mb", "value"]), "615");
+    assert_eq!(text(payload, &["result", "mb", "unread"]), "1");
+}
+
+#[test]
+fn tick_refuses_the_same_spec_as_fold_without_writing() {
+    let s = Store::new("tick-invalid");
+    s.ok(&["emit", "backup", "mb:=3"]);
+    let before = s.ok(&["export"]);
+    for bad in ["{", r#"{"vertex":"backups"}"#] {
+        let refusal = s.fails(&["fold", "-"], bad);
+        assert_eq!(refusal.0, 1);
+        assert_eq!(s.fails(&["tick", "-"], bad), refusal);
+        assert_eq!(s.ok(&["export"]), before);
+    }
 }
