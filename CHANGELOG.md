@@ -17,6 +17,37 @@ In brief:
 - `loops emit --base` fills against what the writer read, a tick or named records, so a stale write shows as a conflict and does not silently replace a setter the writer never saw.
 - `loops ls --fields name,status --plain` is the Monday-morning read without a spec: a plain-text view, asked for explicitly, on `ls` and `of`.
 - A read remembers which segments it has checked: on a 9,000-record store a fold goes from 0.53 s to 0.24 s. `loops check` still checks everything.
+- `loops read` and `loops fold` take `--plain` too: a spec's result as text, for every result shape.
+
+### The adoption step: the plain view on `read` and `fold`
+
+The third piece of the adoption plan. `loops read <vertex> --plain` and `loops fold <spec> --plain` print a spec's result as text for a person, for every shape a result has: a count, a sum, a smallest and a largest (with "nothing read" told from zero), a collect, their grouped forms, and latest-by following `prev` or `keys`. A saved vertex and a spec file print alike.
+
+A real run, on the made-up import store of [AD2](DECISIONS.md#ad2-how-an-old-store-becomes-records): a spec with a count of open threads, a count by status and a keyed latest-by prints
+
+```
+open  0
+by status
+  group  done  1
+  1 ungrouped
+  0 not read
+threads
+  thing  r:6m708qdm…
+  thing  thread:kiln
+```
+
+with each thing's heads under it; with `--values` each thing shows its fields, its heads' times and its `about`, by the same rules as `loops of --plain`.
+
+- **Slots print in the spec's written order,** not the result's sorted one.
+- **The same rules as the plain view of `ls` and `of`:** asked for with `--plain` only; `--plain` with `--json` is a usage error; text bare unless ambiguous; nothing relative in any JSON. The JSON answers of every verb are byte for byte what they were: 1,907 commands over 121 stores were compared.
+- **A flaky test, found and fixed.** One new test failed about one run in ten: it piped a spec into a `loops` that refuses its arguments and exits before reading, and the shared test helper failed on the write. The helper now accepts that a child may exit without reading its input. Forty runs since were clean.
+
+**Implementer choices; they stand under Kyle's ruling of 2026-11-21 (W7).** The full list is choice 27 of `rust/PLACE.md`.
+- Every listed id is printed whole. A grouped slot always shows its `ungrouped` and `not read` counts; elsewhere a zero is left out.
+- "Not read" says "needed payload or field unavailable": the result alone cannot tell a payload that is not held from a field that is missing or in conflict.
+- Left for later, seen in use: without `--values` a keyed latest-by prints ids only, which tells a person little.
+
+A Codex worker wrote it; the coordinator reviewed it, found the flaky test, joined the branch with main and tried it on a store.
 
 ### The adoption step: the cache of checked segments
 
