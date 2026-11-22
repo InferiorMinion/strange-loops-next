@@ -40,7 +40,7 @@ The generator uses FNV-1a seed mixing and xorshift32, not `Math.random`.
 |---|---|---|
 | `--seed S` | `1` | Seed text |
 | `--n N` | `70` | Total cases |
-| `--family F` | all eight | One family |
+| `--family F` | all eight | One family. Selecting `tick` runs Lean and Rust |
 | `--out DIR` | new temporary directory | Run artifacts |
 | `--replay FILE` | none | One input vector or mismatch artifact |
 | `--rust` | off | Add Rust; require reduction for generated disagreements |
@@ -61,6 +61,23 @@ Record signing can cost more than the reader families.
 Do not run engine checks or campaigns during source mutation checks.
 The Step-1 command above checks 5,600 cases on Node 22.
 See [REPORT.md](REPORT.md) for counts and limits.
+
+### Tick lane
+
+`--family tick` compares the Lean and Rust executables. The frozen JavaScript witness has no tick operation (W3). The legacy eight-family schedule and its seed streams apply to the default and `--rust` commands.
+
+```sh
+node interop/fuzz/run.mjs --family tick --seed tick-ci-1 --n 288 --chunk-size 144
+node interop/fuzz/run.mjs --family tick --replay /tmp/ticks/mismatches/000000.json
+```
+
+Each block of eight cases contains three two-fault cases, one three-fault case, and four cases from the random six-operation rotation. The two-fault schedule sweeps the compatible pairs in [model decision order](tick-order.mjs), starting with adjacent sites. The seed varies the holdings, duplicate paths, fixture operation, general folds, and third faults. A full pair sweep takes 15,424 cases.
+
+The pairs address particular wire positions. For example, a list can contain an invalid id, a repeated valid id and a descending pair at different positions. A missing list cannot also contain a bad id. Each run's `excludedPairs` maps every incompatible pair to its reason. The `pairs` entries are `[planted, confirmed]`. A triple plants three pairs. Only pairs for which Lean returns the visible first decision earn confirmation. The comparison uses the refusal path, both counts for missing inputs, and the diagnostic for older rules. With newer rules the model skips result-hash fit, so the version answer confirms that combination. The threshold in the evidence test is three confirmations per pair, including one from each seed.
+
+Random reader cases start from a fitted claim. Zero to four mutation attempts can change either hash, its input, or both. Repeated names reach the executables as raw JSON. Random writers and checkers draw slots from the general spec generator. For a general `check-tick`, a preliminary Lean `write-payload` batch supplies the claim. The two executables then check the same materialized subject and holding. Replay reads those inputs directly. Counts cover only the comparison batch. The `replayFolds` counters credit each fold type once per `same` or `differs` case that contains it.
+
+The model decides multi-fault precedence inside this repository (W4). Both executables must decode the fixture, and the comparison includes the complete answer and reports. A mismatch prints the seed, input and responses, saves a replay file, and uses the ordinary bounded shrinker. Generated numbers are finite and strings are well formed.
 
 ### Batch interface
 
