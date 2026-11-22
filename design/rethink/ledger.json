@@ -403,7 +403,7 @@
     "group": "Lenses and context",
     "status": "settled",
     "claim": "An emit may state a base, and then it names what was live in that base.",
-    "why": "<code>loops emit</code> names every live record the store holds now. A writer who read earlier, a lens applying an edit or an agent acting on a context it was given, then replaces a setter it never read, and nothing shows it: 2,975 of 10,127 keys in the experiment. Against a stated base, a tick or ids, the same emit leaves a visible conflict instead. With no base an emit claims its writer read everything the store holds. Ruled on 2026-11-20; not built. Whether a strict store warns or fails on such an emit is left for standing. Version 36."
+    "why": "<code>loops emit</code> names every live record the store holds now. A writer who read earlier, a lens applying an edit or an agent acting on a context it was given, then replaces a setter it never read, and nothing shows it: 2,975 of 10,127 keys in the experiment. Against a stated base, a tick or ids, the same emit leaves a visible conflict instead. With no base an emit claims its writer read everything the store holds. Ruled on 2026-11-20 and built on 2026-11-22 as <code>--base</code> and <code>--base-id</code>; the law is <code>keyed.base</code>. A base that leaves out a record under its own is taken together with what is under it, and the writer is told (open as TK11). Whether a strict store warns or fails on such an emit is left for standing. Version 36."
   },
   {
     "kind": "decision",
