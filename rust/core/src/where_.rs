@@ -364,7 +364,7 @@ impl Tests {
 }
 
 /// Lean: `Loops.Refusal.code`, model/Loops/Spec.lean.
-/// This type names the closed refusal vocabulary for spec parsing.
+/// This type names the refusal vocabulary for spec and tick parsing.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum RefusalCode {
@@ -398,6 +398,40 @@ pub enum RefusalCode {
     FoldArgument,
     /// A `by` names nothing to group by, or its fold type takes none.
     ByInvalid,
+    /// The tick payload must be an object.
+    TickNotObject,
+    /// An outer payload member name repeats.
+    TickMemberDuplicate,
+    /// An outer payload member name is unknown.
+    TickMemberUnknown,
+    /// A required payload member is missing.
+    TickMemberMissing,
+    /// The rules version has invalid spelling.
+    TickRulesInvalid,
+    /// The supplied spec must be an object.
+    TickSpecNotObject,
+    /// A covered or withheld id list must be an array.
+    TickIdsNotArray,
+    /// A covered or withheld id has invalid spelling.
+    TickIdInvalid,
+    /// A covered or withheld id repeats.
+    TickIdDuplicate,
+    /// A covered or withheld id list is out of order.
+    TickIdsUnsorted,
+    /// A written withheld list is empty.
+    TickWithheldEmpty,
+    /// A withheld id is outside the cover.
+    TickWithheldOutside,
+    /// A hash prefix or digest has invalid spelling.
+    TickHashInvalid,
+    /// The spec hash disagrees with the raw member.
+    TickSpecHashMismatch,
+    /// The result hash disagrees with the raw member.
+    TickResultHashMismatch,
+    /// The spec differs from its parsed form in JCS.
+    TickSpecNoncanonical,
+    /// The claimed result has an invalid shape or value.
+    TickResultInvalid,
 }
 impl RefusalCode {
     /// Lean: `Loops.Refusal.code`, model/Loops/Spec.lean.
@@ -419,6 +453,23 @@ impl RefusalCode {
             Self::LimitInvalid => "limit-invalid",
             Self::FoldArgument => "fold-argument",
             Self::ByInvalid => "by-invalid",
+            Self::TickNotObject => "tick-not-object",
+            Self::TickMemberDuplicate => "tick-member-duplicate",
+            Self::TickMemberUnknown => "tick-member-unknown",
+            Self::TickMemberMissing => "tick-member-missing",
+            Self::TickRulesInvalid => "tick-rules-invalid",
+            Self::TickSpecNotObject => "tick-spec-not-object",
+            Self::TickIdsNotArray => "tick-ids-not-array",
+            Self::TickIdInvalid => "tick-id-invalid",
+            Self::TickIdDuplicate => "tick-id-duplicate",
+            Self::TickIdsUnsorted => "tick-ids-unsorted",
+            Self::TickWithheldEmpty => "tick-withheld-empty",
+            Self::TickWithheldOutside => "tick-withheld-outside",
+            Self::TickHashInvalid => "tick-hash-invalid",
+            Self::TickSpecHashMismatch => "tick-spec-hash-mismatch",
+            Self::TickResultHashMismatch => "tick-result-hash-mismatch",
+            Self::TickSpecNoncanonical => "tick-spec-noncanonical",
+            Self::TickResultInvalid => "tick-result-invalid",
         }
     }
 }
