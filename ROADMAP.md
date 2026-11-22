@@ -29,7 +29,6 @@ The payload values, the result hash's prefix and the tick record, all ruled by K
 
 Each is ruled in [the cut note](notes/2026-11-15-the-cut.md); the section is in brackets.
 
-- The filler takes a base, a tick or ids, and names that base's live records (8). The law is in the model (`keyed.base`, changelog 2026-11-22): the store keeps anchored names when the base is closed downward, and can lose them when it is not.
 - A CLI verb that shows a result hash.
 
 **Step 4 is done when** a content tick recomputes to the same hash on two machines.

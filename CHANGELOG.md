@@ -14,6 +14,43 @@ In brief:
 - A fuzz run compares the model and Rust on ticks, with pairs of faults generated on purpose. Its first version agreed on 20,160 cases and missed a fault planted in Rust; the rebuilt one catches every planted swap tried. margins-claude's Python agrees with Rust on 80,000 more cases.
 - The tick has its mutation catalogue: 91 deliberate faults, each caught by something that runs. Five were not caught at first; four vectors and a check were added for them.
 - The adoption step has started: `loops ls` lists a store's kinds and things, and `loops --version` says which `loops` this is. Its plan has eight pieces; two need Kyle first (AD1, and the import of the old stores).
+- `loops emit --base` fills against what the writer read, a tick or named records, so a stale write shows as a conflict and does not silently replace a setter the writer never saw.
+
+### `loops emit --base`: the filler against a base
+
+Ruled on 2026-11-20 ([the cut note](notes/2026-11-15-the-cut.md), section 8) and built on 2026-11-22. Rust only: `rust/place/src/fill.rs` and the CLI. The law is margins-claude's `keyed.base`, in the model since this morning. No protocol rule and no refusal code changed. Without a base, every emit on both paths writes byte for byte what it wrote before.
+
+`--base <tick>` takes the records the tick covers; `--base-id <id>`, repeated, names records; both may be given. They work on `loops emit`, on `loops emit - --fill`, and on `loops tick`, where the base selects only the tick record's anchor and the payload still covers everything held.
+
+**A real run, on the binary built from this change.** One thing, `svc:jellyfin`, in a store that also has a tick T written before the peer's update:
+
+| Step | What the store then reads |
+| --- | --- |
+| A peer sets `port` to 9000 | `port` 9000, one head |
+| A writer who read only T sets `port` to 9001 with `--base T` | `port` in conflict between 9001 and 9000, two heads |
+| The same write with no base | `port` 9002, one head: the peer's value is replaced and nothing shows it |
+
+That is the ruling's purpose: a write against an older read shows as a conflict.
+
+**A base that does not hold what is under it** is [TK11](DECISIONS.md#tk11-a-write-against-a-base-that-does-not-hold-what-is-under-it), open for Kyle and built to its recommended option, C. The filler takes the selected records of the thing together with what is under them in the store, and tells the writer how many records it named that the base did not show. TK11's two examples, on the built binary:
+
+- `x` sets `port` and `owner`, `y` sets `port` over it. `loops emit svc --of svc:jellyfin port=8098 --base-id y` names `x` and `y` and prints "the base did not show 1 record that this emit names". The whole store, and a store holding only the thing's live records, both read `port` 8098 and `owner` kyle with one head. With the bare base, the second store read a conflict that did not exist.
+- `owner=sam` against `--base-id y` replaces `owner` kyle, which the base did not show. The line is printed and the envelope names `x`. Only refusing would stop this; that is TK11's option A, and it is one branch in the filler.
+
+**margins-claude checked the plan against its law before it was code** and found one hole, in the coordinator's wording: a stated `--prev` outside the base named a record without what is under it. So stated `--prev` targets join the selection before "what is under it" is taken, and the count includes them.
+
+**Implementer choices; they stand under Kyle's ruling of 2026-11-21 (W7).** The full list is choice 24 of `rust/PLACE.md`.
+- Two flags, because a tick named as a record is otherwise ambiguous with the tick as a set of records.
+- Everything the filler judges is judged in the base: `prev`, the keys an emit sets when "the thing is held", and the copied `about` and `occurred`. A first emit of a thing the base does not hold is a whole-read first emit, also when the store holds the thing; the CLI says "the base covers no record of" the thing.
+- The base tick's payload must be held, and the envelope of every record it covers (`id-unknown` names a missing one). A covered payload need not be held. A tick under another rules version is read once the first reader accepts it.
+- In a changeset, one base serves every line, and each line is filled against it and the lines prepared before.
+- No warning about a stale base or a conflict: whether a store warns or declines is left for step 3.
+
+Checked by a randomized test: 320 cases, 217 with a base that did not hold what is under it, 67 with the exact shape of TK11's first example, 118 stating a `--prev` outside the base. In every case the write equals the one a writer holding exactly the effective base would make; the thing reads the same from the store's live records as from the whole store, before and after; and the whole store reads every key as it would after the bare write.
+
+CI: the fuzz tests' limit in the `model` job goes from 60 to 300 seconds. The tick fuzz tests added on 2026-11-22 took the run past 60 seconds on a busy runner, and this merge request's first pipeline was cut off there with every test so far passing.
+
+A Codex worker planned and wrote it; margins-claude checked the plan against the model; the coordinator reviewed it, joined it with main and made the runs above.
 
 ### The adoption step: its plan, `loops ls` and `loops --version`
 

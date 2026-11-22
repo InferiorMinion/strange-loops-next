@@ -12,7 +12,7 @@ use loops::{
     record::{Record, id_text},
     stored, things,
 };
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 /// Where a draft's `sets` comes from.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -69,6 +69,100 @@ pub fn one(
     Ok(anchor(realm, draft, statement.about, statement.occurred))
 }
 
+/// Information about the selected base for a successfully written emit.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum BaseNotice {
+    /// The effective base holds no record of this thing.
+    Empty(String),
+    /// There were records of this thing but none passed admission.
+    Unadmitted(String),
+    /// Number of distinct written predecessors absent from the tick cover and literal ids.
+    Named(usize),
+}
+
+/// Keep the selected and prepared forms for settlement and admission. Close the
+/// thing's records and its stated predecessors through locally held prev links.
+fn effective_forms(
+    held: &Held,
+    selected: &[Record],
+    prepared: &[Record],
+    stated: &[String],
+    thing: &str,
+) -> Vec<Record> {
+    let mut forms = selected.to_vec();
+    forms.extend_from_slice(prepared);
+    let mut seen: HashSet<_> = forms.iter().map(|r| id_text(&r.id)).collect();
+    let mut todo = stated.to_vec();
+    for r in forms.iter().filter(|r| r.is_of(thing)) {
+        todo.extend(r.prev.iter().map(id_text));
+    }
+    while let Some(id) = todo.pop() {
+        if !seen.insert(id.clone()) {
+            continue;
+        }
+        let Some(line) = held.line(&id) else {
+            continue;
+        };
+        let record = line.record();
+        if record.is_of(thing) {
+            todo.extend(record.prev.iter().map(id_text));
+            forms.push(record);
+        }
+    }
+    forms
+}
+
+/// TK11 option C. The notice compares the final envelope with the selection
+/// as supplied, before adding stated predecessors, earlier lines or ancestors.
+fn fill_base(
+    held: &Held,
+    selected: &[Record],
+    prepared: &[Record],
+    view: &impl Fn(&str) -> Option<batch::Held>,
+    mut row: Statement,
+) -> Result<(Draft, Vec<BaseNotice>), batch::Error> {
+    row.draft = of(view, row.draft)?;
+    let Some(thing) = row.draft.env.of.as_deref().filter(|t| !batch::is_label(t)) else {
+        return Ok((row.draft, Vec::new()));
+    };
+    let forms = effective_forms(held, selected, prepared, &row.draft.env.prev, thing);
+    let realm = things::realm(&forms, |_, _| true);
+    let records: Vec<_> = realm.iter().filter(|r| r.is_of(thing)).collect();
+    let mut notices = Vec::new();
+    if records.is_empty() {
+        notices.push(if forms.iter().any(|r| r.is_of(thing)) {
+            BaseNotice::Unadmitted(thing.to_owned())
+        } else {
+            BaseNotice::Empty(thing.to_owned())
+        });
+    }
+    let state = live::LiveState::new(records);
+    let draft = sets(&realm, row.draft, row.sets);
+    let draft = anchor_state(&state, draft, row.about, row.occurred);
+    let shown: HashSet<_> = selected.iter().map(|r| id_text(&r.id)).collect();
+    let n = draft
+        .env
+        .prev
+        .iter()
+        .filter(|id| !shown.contains(*id))
+        .count();
+    if n > 0 {
+        notices.push(BaseNotice::Named(n));
+    }
+    Ok((draft, notices))
+}
+
+/// Fill one emit against the selected forms and their held predecessors.
+/// # Errors
+/// Returns the usual inference refusals for explicitly stated predecessors.
+pub fn one_with_base(
+    held: &Held,
+    selected: &[Record],
+    row: Statement,
+) -> Result<(Draft, Vec<BaseNotice>), batch::Error> {
+    fill_base(held, selected, &[], &|id| held.writer_view(id), row)
+}
+
 /// Visit a line's prerequisites first, in input order among siblings. Finish
 /// the entire graph check before any line can refuse during filling.
 fn preparation_order(rows: &[Statement]) -> Result<Vec<usize>, batch::Error> {
@@ -116,8 +210,25 @@ fn preparation_order(rows: &[Statement]) -> Result<Vec<usize>, batch::Error> {
 /// # Errors
 /// Label refusals precede per-line inference and writer field refusals.
 pub fn changeset(held: &Held, rows: &[Statement]) -> Result<Vec<Draft>, batch::Error> {
+    changeset_with_base(held, rows, None).map(|(drafts, _)| drafts)
+}
+
+/// Prepare against one selection for the changeset, adding each prepared line.
+/// Deliver collected notices only after the caller's final append succeeds.
+/// # Errors
+/// Returns the same label, inference and field errors as [`changeset`].
+pub fn changeset_with_base(
+    held: &Held,
+    rows: &[Statement],
+    selected: Option<&[Record]>,
+) -> Result<(Vec<Draft>, Vec<BaseNotice>), batch::Error> {
+    let mut notices = Vec::new();
     let order = preparation_order(rows)?;
-    let mut records: Vec<_> = held.lines().iter().map(Line::record).collect();
+    let mut records = if selected.is_some() {
+        Vec::new()
+    } else {
+        held.lines().iter().map(Line::record).collect()
+    };
     let mut staged = HashMap::<String, batch::Held>::new();
     let mut labels = HashMap::<&str, String>::new();
     let mut filled = Vec::with_capacity(rows.len());
@@ -126,7 +237,13 @@ pub fn changeset(held: &Held, rows: &[Statement]) -> Result<Vec<Draft>, batch::E
         row.draft.env = batch::subst_env(&row.draft.env, |name| labels.get(name).cloned())
             .ok_or(batch::Error::LabelUnknown)?;
         let view = |id: &str| staged.get(id).cloned().or_else(|| held.writer_view(id));
-        let draft = one(&view, &things::realm(&records, |_, _| true), row)?;
+        let draft = if let Some(base) = selected {
+            let (draft, row_notices) = fill_base(held, base, &records, &view, row)?;
+            notices.extend(row_notices);
+            draft
+        } else {
+            one(&view, &things::realm(&records, |_, _| true), row)?
+        };
         let written = stored::write(draft.env.clone(), draft.salt.clone(), draft.payload.clone())?;
         let id = stored::id_of(&hash, written.env(), &draft.commit(&hash));
         records.push(record_from(&id, written.env(), Some(written.payload())));
@@ -143,7 +260,10 @@ pub fn changeset(held: &Held, rows: &[Statement]) -> Result<Vec<Draft>, batch::E
         filled.push((i, draft));
     }
     filled.sort_unstable_by_key(|(i, _)| *i);
-    Ok(filled.into_iter().map(|(_, draft)| draft).collect())
+    Ok((
+        filled.into_iter().map(|(_, draft)| draft).collect(),
+        notices,
+    ))
 }
 
 /// A revision written without `of` is of what it replaces: the thing of each
@@ -215,11 +335,20 @@ pub fn sets(realm: &[Record], mut draft: Draft, sets: Sets) -> Draft {
 /// thing's heads, every one of which the emit now builds on.
 /// With [`Occurred::Copied`], the emit carries `occurred` when every head
 /// states the same text.
-pub fn anchor(realm: &[Record], mut draft: Draft, about: About, occurred: Occurred) -> Draft {
+pub fn anchor(realm: &[Record], draft: Draft, about: About, occurred: Occurred) -> Draft {
     let Some(thing) = draft.env.of.clone().filter(|t| !batch::is_label(t)) else {
         return draft;
     };
     let state = live::LiveState::new(realm.iter().filter(|r| r.is_of(&thing)).collect());
+    anchor_state(&state, draft, about, occurred)
+}
+
+fn anchor_state(
+    state: &live::LiveState<'_>,
+    mut draft: Draft,
+    about: About,
+    occurred: Occurred,
+) -> Draft {
     draft.env.prev.extend(state.live().map(|r| id_text(&r.id)));
     draft.env.prev = canon_set(&draft.env.prev);
     if about == About::Stated && occurred == Occurred::Stated {
