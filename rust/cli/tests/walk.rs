@@ -192,6 +192,44 @@ fn payload_field_examples_match_the_model_through_emit_and_fold() {
 }
 
 #[test]
+fn a_backfilled_revision_moves_the_head_out_of_the_window() {
+    let store = Store::new("window");
+    let emit = |fields: &[&str]| {
+        let mut args = vec!["emit", "backup", "--emitted", "2026-11-21T20:00:00Z"];
+        args.extend(fields);
+        store.ok(&args)
+    };
+    let first = emit(&["first report"]);
+    emit(&[
+        "--prev",
+        &first,
+        "--occurred",
+        "2026-11-16",
+        "corrected date",
+    ]);
+    emit(&["--occurred", "2026-11-17", "older backup"]);
+
+    let spec = r#"{"vertex":"backups","from":[{"store":".","kind":["backup"]}],"fold":{
+        "occurred":{"count":true,"where":{"env.occurred":{"at-least":"2026-11-21","below":"2026-11-22"}}},
+        "emitted":{"count":true,"where":{"env.emitted":{"at-least":"2026-11-21","below":"2026-11-22"}}},
+        "when":{"count":true,"where":{"env.when":{"at-least":"2026-11-21","below":"2026-11-22"}}},
+        "heads":{"count":true,"follow":"prev","where":{"env.when":{"at-least":"2026-11-21","below":"2026-11-22"}}}}}"#;
+    let slots = parse_json(&store.ok_with(&["fold", "-"], spec)).expect("fold result");
+    for (slot, count) in [
+        ("occurred", 0_u64),
+        ("emitted", 3),
+        ("when", 1),
+        ("heads", 0),
+    ] {
+        assert_eq!(
+            tally(&slots, slot),
+            (Json::Int(count.into()), Json::Int(0_u64.into())),
+            "{slot}"
+        );
+    }
+}
+
+#[test]
 fn count_and_sum_follow_the_heads() {
     let s = Store::new("now");
     let n = |v: i64, u: i64| (Json::Int(v.into()), Json::Int(u.into()));

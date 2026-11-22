@@ -15,6 +15,7 @@ pub mod read;
 pub mod record;
 pub mod result;
 pub mod spec;
+pub mod spec_hash;
 pub mod stored;
 pub mod things;
 pub mod time;

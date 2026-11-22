@@ -193,7 +193,7 @@
   "implementations": [
     {"name": "the model", "what": "<code>lake exe gen</code> computes protocol-vector answers. The theorem files separately prove the listed laws.", "dirs": "*"},
     {"name": "the JS implementation", "what": "<code>interop/js/check.mjs</code> checks the earlier fixtures and standards. JavaScript does not run tick (W3).", "dirs": "*", "except": ["tick"], "checker": "interop/js/check.mjs"},
-    {"name": "the Rust implementation", "what": "The Rust workspace checks the earlier fixture families and external standards. Rust does not run tick yet.", "dirs": "*", "except": ["tick"]}
+    {"name": "the Rust implementation", "what": "The Rust workspace checks every fixture family and the external standards.", "dirs": "*"}
   ],
   "demos": [
     {"law": "count.perm", "vector": "fold/count/02-three", "kind": "orders", "change": "Deliver them in another order", "stays": "count"},

@@ -24,7 +24,7 @@ Every file has the same envelope:
 
 The 11 files cover spec identity and the window field. Under `input.op = "hash"` each sample supplies a spec and a rules version. Its answer gives the parsed JCS text, the hash of that text and the hash of the raw member under that version. The `domains` case exposes the label bytes and the bytes that distinguish the spec preimage from commitment and result preimages. The `window` cases run the supplied spec over reader records and return its canonical result object.
 
-The model recomputes each answer with `lake exe run --check`. This family is not run by JavaScript (W3) and is not run by Rust yet.
+The model recomputes each answer with `lake exe run --check`. Rust runs all 11 fixtures, while JavaScript (W3) only checks their count.
 
 ## `payload`
 
