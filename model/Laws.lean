@@ -26,3 +26,4 @@ import Laws.Result
 import Laws.Payload
 import Laws.SpecHash
 import Laws.TickRead
+import Laws.TickCheck

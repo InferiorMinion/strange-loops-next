@@ -251,6 +251,15 @@ No law yet states the whole-view slot incrementally, and `admit.late` still boun
 
 The reference SHA-256 supplies both digest widths by `Gen.sha256_length`. No collision property is assumed.
 
+## The tick claim and check (`model/Laws/TickCheck.lean`)
+
+| Law | Theorem | Says | Vectors |
+|---|---|---|---|
+| `tick.inputs` | `tick_inputs` | For one spec and two id lists, jointly consistent holders with zero missing records and zero missing openings on each side get equal canonical result bytes. | `tick/six-reordered`, `tick/missing-both`, `tick/admit-inside` |
+| `tick.withheld` | `tick_withheld`, `tick_withheld_copy` | Exchanging a withheld id's form for another form of its envelope preserves all slots. A consistent holding that already has such a form may also add another copy. | `tick/withheld-open-at-checker`, `tick/covered-erasure` |
+| `tick.made` | `checkTick_made`, `checkTick_made_late`, `checkTick_made_of_width` | For a fitting spec and any holding, the current-version check of its made payload under SHA-256 answers same. Appending forms whose ids are outside the cover and that erase no covered id preserves that verdict. The proof works for any hash giving 32 bytes on the two preimages of this payload. | `tick/six-made`, `tick/late-backup`, `tick/late-retired` |
+| `tick.level` | `tick_level`, `tick_level_append` | Equal lists of covered forms give equal slots. Appending forms with ids outside the cover leaves the claim unchanged, including when a covered tick names those ids. | `tick/weekly-one-level` |
+
 ## The canonical result (`model/Laws/Result.lean`)
 
 [`result.md`](result.md) is the codec: a vertex's whole result as JCS text with every integer a decimal string and every listed record its id alone, and the hash of that text framed by `loops/result-hash/v1:`. These are its laws.
@@ -329,7 +338,7 @@ Which texts are points is the definition itself (`dateDays?`, `instant?`),
 pinned by the vectors rather than by a theorem about the grammar. The
 acceptance and decimal-order proofs are adapted from Gemini's review.
 
-The laws hold for any hash function. The vectors use SHA-256 and Ed25519 reference code in `model/Gen/`.
+The wire self-check in `tick.made` uses the reference SHA-256 and its proved digest width. The other hashing laws state their hash parameters and any width premises. The vectors use SHA-256 and Ed25519 reference code in `model/Gen/`.
 Before writing, that code checks FIPS 180-4 and RFC 8032 values.
 
 ## What these laws don't promise

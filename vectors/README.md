@@ -26,7 +26,11 @@ The first 11 files cover spec identity and the window field. Under `input.op = "
 
 The payload fixtures use `write-payload` to run the supplied spec on the supplied records, write the payload and read its JCS text back. The expected payload includes both hashes. With `payload`, the supplied member values are read directly, including single-fault examples and well-formed claims whose numbers and ids do not agree. The `payload-text` cases carry the original JSON text so that a fixture parser preserves duplicate names. With `members`, only the shared wire shape and hashes are checked, even for an unfamiliar rules version. The `fields` and `read-ticks` operations project held tick payloads and exercise a spec over three tick records.
 
-The model recomputes each answer with `lake exe run --check`. Rust runs the 11 fixtures of the first three operations (`hash`, `domains`, `window`) and counts the other 61 as pending. JavaScript (W3) only checks the family's file count.
+With `make-and-check`, the writer makes a tick from the supplied spec and forms. The checker uses its own forms, defaulting to the writer's. The answer includes the full payload and the check. When `fresh` is true it also includes the tick payload made independently over the checker's holding. A form with an explicit `opening` reads its fields through the ordinary stored-payload projection.
+
+With `check-tick`, the fixture supplies a subject kind, its payload when held, the checker's forms and the checker's rules version. The verdict includes both missing-input counts or both result hashes when applicable. The separate closure report is yes, no or unknown. The taken-not-covered count is null until the checker has a spec in parsed form. An older tick can report today's comparison or the reason it is unavailable.
+
+The model recomputes each answer with `lake exe run --check`. Rust runs the 11 fixtures of the first three operations (`hash`, `domains`, `window`) and counts the other 102 as pending. JavaScript (W3) only checks the family's file count.
 
 ## `payload`
 

@@ -197,7 +197,7 @@ for (const [name, check] of [...FAMILIES, [STANDARD, checkStandard]]) {
 // Step 4 is model-only in the frozen JavaScript witness. Count these files
 // separately so they cannot inflate the number of checks that passed.
 const tickCount = countJson(join(dir, "tick"));
-if (tickCount !== 72) failures.push(`tick: expected 72 vectors, found ${tickCount}`);
+if (tickCount !== 113) failures.push(`tick: expected 113 vectors, found ${tickCount}`);
 console.log(`tick      ${tickCount} files not run by JavaScript (W3)`);
 
 // Every other directory of vectors has a family.

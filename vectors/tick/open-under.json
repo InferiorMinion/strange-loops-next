@@ -1,0 +1,87 @@
+{
+  "vector": "open-under",
+  "layer": "tick",
+  "laws": ["tick.made"],
+  "source": "model",
+  "input": {
+    "op": "make-and-check",
+    "spec": {
+      "vertex": "backups",
+      "from": [
+        {
+          "store": "lab",
+          "kind": ["backup"]
+        }
+      ],
+      "fold": {
+        "runs": {
+          "count": true,
+          "follow": "prev"
+        },
+        "mb": {
+          "sum": "mb",
+          "follow": "prev"
+        }
+      }
+    },
+    "writer": [
+      {
+        "id": "r:000000000000000000000000000000000000000000000000003g",
+        "kind": "retired",
+        "observer": "sl:laptop",
+        "about": ["svc:pihole"],
+        "of": "r:000000000000000000000000000000000000000000000000000g",
+        "prev": [],
+        "under": "r:000000000000000000000000000000000000000000000000000g",
+        "emitted": "2026-11-21T20:00:00Z",
+        "occurred": "2026-11-17",
+        "fields": {
+          "mb": 4,
+          "svc": "pihole"
+        }
+      }
+    ]
+  },
+  "expect": {
+    "payload": {
+      "rules": "1",
+      "spec": {
+        "vertex": "backups",
+        "from": [
+          {
+            "store": "lab",
+            "kind": ["backup"]
+          }
+        ],
+        "fold": {
+          "runs": {
+            "count": true,
+            "follow": "prev"
+          },
+          "mb": {
+            "sum": "mb",
+            "follow": "prev"
+          }
+        }
+      },
+      "spec-hash": "spec:9o52t7rapuutq6eou689d6pk6sacabmi2etag73p5363il38g2o0",
+      "covers": ["r:000000000000000000000000000000000000000000000000003g"],
+      "result": {
+        "runs": {
+          "unread": "0",
+          "value": "0"
+        },
+        "mb": {
+          "unread": "0",
+          "value": "0"
+        }
+      },
+      "result-hash": "res:h7ciddeu1au8m7mfirojtor146p3iignpve3js00ie4tckaqcj60"
+    },
+    "check": {
+      "answer": "same",
+      "closure": "no",
+      "taken-not-covered": 0
+    }
+  }
+}
