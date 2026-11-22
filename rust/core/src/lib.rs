@@ -18,6 +18,7 @@ pub mod spec;
 pub mod spec_hash;
 pub mod stored;
 pub mod things;
+pub mod tick;
 pub mod time;
 pub mod where_;
 

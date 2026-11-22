@@ -1,11 +1,20 @@
-//! Input-only answers for the operations in model/Gen/Tick.lean.
+//! Input-only answers for model/Gen/Tick.lean and model/Gen/TickPayload.lean.
 use crate::reader::{list, members, object, record, required, text};
 use loops::{
     json::Json,
+    record::{Record, Shown, payload_fields},
     result::{result_json, result_preimage},
+    spec::Spec,
     spec_hash::{Rules, spec_hash_of, spec_label, spec_preimage_of},
+    tick::{TickPayload, TickReadError, read_tick_members, read_tick_payload, tick_ids},
+    where_::Refusal,
 };
 use sha2::{Digest, Sha256};
+use std::collections::BTreeSet;
+
+fn sha256(bytes: &[u8]) -> Vec<u8> {
+    Sha256::digest(bytes).to_vec()
+}
 
 fn read_rules(j: &Json) -> Result<Rules, String> {
     Rules::of_json(j).ok_or_else(|| "rules: expected canonical positive decimal text".into())
@@ -14,7 +23,6 @@ fn read_rules(j: &Json) -> Result<Rules, String> {
 fn hash(input: &Json) -> Result<Json, String> {
     let kvs = members("input", &["op", "samples"], input)?;
     let samples = list("input.samples", required("input", kvs, "samples")?)?;
-    let sha256 = |bytes: &[u8]| Sha256::digest(bytes).to_vec();
     samples
         .iter()
         .enumerate()
@@ -57,7 +65,7 @@ fn domains(input: &Json) -> Result<Json, String> {
     ]))
 }
 
-fn window(input: &Json) -> Result<Json, String> {
+fn spec_records(input: &Json) -> Result<(Spec, Vec<Record>), String> {
     let kvs = members("input", &["op", "spec", "records"], input)?;
     let spec = crate::spec::parsed(required("input", kvs, "spec")?)?;
     let records = list("input.records", required("input", kvs, "records")?)?
@@ -65,6 +73,139 @@ fn window(input: &Json) -> Result<Json, String> {
         .enumerate()
         .map(|(i, r)| record(&format!("input.records[{i}]"), r))
         .collect::<Result<Vec<_>, _>>()?;
+    Ok((spec, records))
+}
+
+fn window(input: &Json) -> Result<Json, String> {
+    let (spec, records) = spec_records(input)?;
+    Ok(result_json(&spec.run(&records)))
+}
+
+fn refusal(f: Refusal) -> Json {
+    Json::Obj(vec![
+        ("refused".into(), Json::Str(f.code().into())),
+        ("path".into(), Json::Str(f.path)),
+    ])
+}
+
+fn read_back(raw: &Json) -> Result<Json, String> {
+    let current = Rules::current();
+    let payload = match read_tick_payload(&sha256, &current, raw) {
+        Ok(p) => p,
+        Err(TickReadError::Invalid(f)) => return Ok(refusal(f)),
+        Err(TickReadError::OtherRules(v)) => {
+            return Ok(Json::Obj(vec![("other-rules".into(), Json::Str(v.text()))]));
+        }
+        Err(TickReadError::UnreadableSpec) => {
+            return Ok(Json::Obj(vec![(
+                "cannot-read".into(),
+                Json::Str("spec".into()),
+            )]));
+        }
+    };
+    let encoded = payload.to_json(&sha256);
+    let jcs = encoded.canon();
+    if jcs != raw.canon() {
+        return Err("reading changed the payload's canonical bytes".into());
+    }
+    let canonical = crate::parse_json(&jcs).map_err(|e| e.to_string())?;
+    let again =
+        read_tick_payload(&sha256, &current, &canonical).map_err(|_| "JCS payload did not read")?;
+    if again.bytes(&sha256) != jcs.as_bytes() {
+        return Err("second reading changed the bytes".into());
+    }
+    Ok(Json::Obj(vec![
+        ("payload".into(), encoded),
+        ("jcs".into(), Json::Str(jcs)),
+    ]))
+}
+
+fn write_payload(input: &Json) -> Result<Json, String> {
+    let (spec, records) = spec_records(input)?;
+    let mut covers = BTreeSet::new();
+    let mut withheld = BTreeSet::new();
+    for r in &records {
+        covers.insert(r.id);
+        if r.shown != Shown::Here {
+            withheld.insert(r.id);
+        }
+    }
+    let payload = TickPayload {
+        rules: Rules::current(),
+        covers: covers.into_iter().collect(),
+        withheld: withheld.into_iter().collect(),
+        result: spec.run(&records),
+        spec,
+    };
+    let j = payload.to_json(&sha256);
+    let q =
+        read_tick_payload(&sha256, &payload.rules, &j).map_err(|_| "written payload refused")?;
+    // Compare the result with shown erased, retaining all member and list orders.
+    if q.spec != payload.spec
+        || q.covers != payload.covers
+        || q.withheld != payload.withheld
+        || result_json(&q.result) != result_json(&payload.result)
+    {
+        return Err("written result did not read back in normal form".into());
+    }
+    read_back(&j)
+}
+
+fn payload_member(input: &Json) -> Result<&Json, String> {
+    required(
+        "input",
+        members("input", &["op", "payload"], input)?,
+        "payload",
+    )
+}
+
+fn payload(input: &Json) -> Result<Json, String> {
+    read_back(payload_member(input)?)
+}
+
+fn payload_text(input: &Json) -> Result<Json, String> {
+    let kvs = members("input", &["op", "text"], input)?;
+    let raw = text("input.text", required("input", kvs, "text")?)?;
+    read_back(&crate::parse_json(raw).map_err(|e| e.to_string())?)
+}
+
+fn raw_members(input: &Json) -> Result<Json, String> {
+    let m = match read_tick_members(&sha256, payload_member(input)?) {
+        Ok(m) => m,
+        Err(f) => return Ok(refusal(f)),
+    };
+    // Canonical JSONL cannot echo an opaque object with repeated names.
+    if !m.spec().keys_distinct() || !m.result().keys_distinct() {
+        return Err("input.payload: repeated member in the raw members answer".into());
+    }
+    Ok(Json::Obj(vec![
+        ("rules".into(), Json::Str(m.rules().text())),
+        ("spec".into(), m.spec().clone()),
+        ("result".into(), m.result().clone()),
+        ("covers".into(), tick_ids(m.covers())),
+        ("withheld".into(), tick_ids(m.withheld())),
+    ]))
+}
+
+fn fields(input: &Json) -> Result<Json, String> {
+    crate::payload::fields(payload_member(input)?)
+}
+
+fn read_ticks(input: &Json) -> Result<Json, String> {
+    let kvs = members("input", &["op", "spec", "ticks"], input)?;
+    let spec = crate::spec::parsed(required("input", kvs, "spec")?)?;
+    let mut records = Vec::new();
+    for (i, j) in list("input.ticks", required("input", kvs, "ticks")?)?
+        .iter()
+        .enumerate()
+    {
+        let path = format!("input.ticks[{i}]");
+        let pair = members(&path, &["record", "payload"], j)?;
+        let mut r = record(&format!("{path}.record"), required(&path, pair, "record")?)?;
+        r.fields = payload_fields(required(&path, pair, "payload")?);
+        r.shown = Shown::Here;
+        records.push(r);
+    }
     Ok(result_json(&spec.run(&records)))
 }
 
@@ -75,6 +216,12 @@ fn operation(name: &str) -> Option<Operation> {
         "hash" => Some(hash),
         "domains" => Some(domains),
         "window" => Some(window),
+        "write-payload" => Some(write_payload),
+        "payload" => Some(payload),
+        "payload-text" => Some(payload_text),
+        "members" => Some(raw_members),
+        "fields" => Some(fields),
+        "read-ticks" => Some(read_ticks),
         _ => None,
     }
 }
