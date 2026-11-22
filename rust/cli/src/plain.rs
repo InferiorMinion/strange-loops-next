@@ -1,5 +1,7 @@
-//! Human-readable views. Only the detail view consults the clock.
+//! Human-readable views of inventory, things and spec results.
+mod fold;
 mod json_syntax;
+pub(crate) use fold::fold;
 
 use crate::{
     Fail, usage,
@@ -69,10 +71,16 @@ fn text(s: &str) -> String {
     }
 }
 
+fn value(v: &Json) -> String {
+    match v {
+        Json::Str(s) => text(s),
+        _ => visible(&v.canon()),
+    }
+}
+
 pub(crate) fn field(f: &Field) -> String {
     match f {
-        Field::Value(Json::Str(s)) => text(s),
-        Field::Value(v) => visible(&v.canon()),
+        Field::Value(v) => value(v),
         Field::Unset => "—".into(),
         Field::Unknown(_) => "unknown".into(),
         Field::Conflict(rs) => format!("conflict ({})", rs.len()),
@@ -162,26 +170,8 @@ pub(crate) fn thing(
         label(name),
         heads.len()
     );
-    let fields = Fields::new(held, state);
-    for k in &fields.names {
-        write!(out, "\n  {}  {}", label(k), field(&fields.read(k))).expect("write string");
-    }
-    if state.whole().iter().any(|r| r.shown != Shown::Here) {
-        out.push_str("\nother fields  unknown");
-    }
-    out.push_str("\nabout  ");
-    let mentions = thing_about(heads);
-    if mentions.is_empty() {
-        out.push('—');
-    } else {
-        out.push_str(
-            &mentions
-                .iter()
-                .map(|s| text(s))
-                .collect::<Vec<_>>()
-                .join(" "),
-        );
-    }
+    keyed_fields(&mut out, held, state, "");
+    write!(out, "\nabout  {}", mentions(&thing_about(heads))).expect("write string");
     for head in heads {
         write!(
             out,
@@ -193,4 +183,23 @@ pub(crate) fn thing(
         .expect("write string");
     }
     Ok(out)
+}
+
+/// Field state is read identically in the thing and keyed fold views.
+fn keyed_fields(out: &mut String, held: &Held, state: &LiveState<'_>, indent: &str) {
+    let fields = Fields::new(held, state);
+    for k in &fields.names {
+        write!(out, "\n{indent}  {}  {}", label(k), field(&fields.read(k))).expect("write string");
+    }
+    if state.whole().iter().any(|r| r.shown != Shown::Here) {
+        write!(out, "\n{indent}other fields  unknown").expect("write string");
+    }
+}
+
+fn mentions(names: &[String]) -> String {
+    if names.is_empty() {
+        "—".into()
+    } else {
+        names.iter().map(|s| text(s)).collect::<Vec<_>>().join(" ")
+    }
 }
