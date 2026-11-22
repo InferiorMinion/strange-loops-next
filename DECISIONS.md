@@ -19,7 +19,7 @@ Everything that waits on Kyle, in one place. Each entry has the question, an exa
 | [TK6](#tk6-what-a-spec-reads-of-a-tick) | What a later spec reads of a tick | Nothing new: the payload rules of 2026-11-21. A total across ticks is not in step 4 | The tick record |
 | [TK7](#tk7-checking-a-tick) | How a tick is checked | A verb with three answers; a store admits a tick without checking it | The first tick, and step 4's exit |
 | [TK8](#tk8-the-name-of-the-window-field) | The name of the window field | `env.when` | The window field |
-| [TK9](#tk9-which-rules-a-tick-was-folded-under) | How a tick says which rules it was folded under | The label inside the spec's hash is the version of the rules; it goes to `v2` when what a spec answers changes | The tick record |
+| [TK9](#tk9-which-rules-a-tick-was-folded-under) | How a tick says which rules it was folded under | A member `rules`, bound into the spec's hash; it goes to `2` when what a spec answers changes (changed 2026-11-21, after Neon's review) | The tick record |
 | [W1](#w1-an-adoption-step-before-standing-and-sharing) | An adoption step before standing and sharing | Yes, after ticks, with its CLI pieces built beside the tick work | The order of work |
 | [W2](#w2-remember-which-segments-were-checked) | Remember which segments were checked | Yes, in the adoption step | Read speed on big stores |
 | [W3](#w3-stop-extending-the-javascript-implementation) | Stop extending the JavaScript implementation | Yes, as a trial for step 4 | How step 4 is built |
@@ -257,6 +257,7 @@ The weekly total today is a tick over the six records themselves: 1027.
 | `cannot check` | Covered records are not held, or payloads the tick read open are not held. It says how many of each. |
 
 A record that is not a tick is refused with a reason: for example its `result-hash` is not the hash of its `result`. The refusal codes are chosen when it is built, under [W4](#w4-the-refusal-for-input-that-is-wrong-twice).
+A tick whose own payload the store does not hold, because it was erased or never arrived, answers `cannot check`, not "not a tick" (Neon).
 
 **Example** (the verb is not built; this is what it would answer). The laptop writes the tick over the six records and the NAS has synced.
 - `loops tick --check` on the NAS: `same`.
@@ -313,12 +314,27 @@ The spec did not change by one byte. Had a tick been written this morning, a che
 - The design page already says this: "the spec hash pins the fold-vocabulary version".
 - Nothing is at `v1` yet. `v1` will mean the rules as they stand when the first tick is built.
 
-**Options.**
-- **A (recommended).** The label in the spec's hash is the version. No new member.
-- **B.** A member of its own, `"rules": "1"`. It can be read without trying each label. It is one more member to keep true.
-- **C.** Nothing. A tick made before a change of rules reads as a false tick after it.
+**What the proposal gets wrong: a newer tick on an older machine.** Neon found it. The laptop moves to `v2` and writes a tick. The NAS still runs `v1` and checks it.
+- With the version only inside the hash, the NAS knows one label. The hash does not fit it, and a hash that fits no label it knows looks the same as a forged one. The NAS answers "not a tick" about an honest tick.
+- With a member `"rules": "2"`, the NAS reads the member first and answers "cannot check: made under newer rules".
 
-margins-claude raised this.
+**Options.**
+- **A.** The label in the spec's hash is the version. No new member. This was the recommendation until Neon's review.
+- **B.** A member of its own, `"rules": "1"`, and the hash's label stays fixed. It can be read without trying each label. Nothing ties it to the hash, so the same spec has one hash under every version, and a store of results keyed by that hash would serve an old answer.
+- **C.** Nothing. A tick made before a change of rules reads as a false tick after it.
+- **D (recommended).** Both: the member `"rules": "1"`, and the label made from it, `loops/spec-hash/v1:`. The check reads the member, then requires the hash to fit that label, so the member cannot drift from the hash. It costs one short member.
+
+**What D gives beyond the answer on an older machine.**
+- After a change of rules, the ticks to make again are found by a spec: `where rules is "1"`. With A only the check verb knows.
+- A check does not try each old label in turn.
+- Equal inputs still give equal results, because the spec's hash still changes with the rules.
+
+**Three things to settle with it.** The coordinator's view; none is built.
+- **What "the rules" covers.** Everything between the covered records and the result's bytes: settling, admission, what a source takes, the tests, the folds and the payload reading. Not only the fold types. Standing (step 3) is likely to change admission, so a `2` is already in sight, beside the one Neon names ("numbers stored as text", in Being prepared).
+- **What does not raise it.** A new fold type or test changes no existing spec's answer, so the number stays. An older machine then meets a spec it cannot parse under a number it knows. It must answer "cannot check: this binary cannot read the spec". "Not a tick" is kept for what no version could mend: a member missing, or a hash that does not fit what it is the hash of. A fault in one implementation is not a change of rules either: the model is the rule.
+- **A change voids every earlier tick, also those it cannot touch.** A `count` by kind is not changed by how `min` reads a list, yet its ticks become "made under older rules" too. So beside that answer the check says what today's rules give: "under today's rules: the same result" or "another result". Neither is a verdict on the writer.
+
+**Views.** margins-claude raised the question. Neon proposes D (its words: option B, keeping the versioned label). The coordinator agrees and has changed the recommendation from A to D.
 
 ### What follows from these, with no ruling asked
 
@@ -368,6 +384,7 @@ Neon and margins-claude both support an adoption step before standing.
 - *A or C, never B. If A, keep step 4 tight to its exit and let the CLI-only adoption work run in parallel.* I agree, and it is now the recommended row. The CLI pieces touch nothing in the model, a Codex worker can build each, and their choices are implementer choices under your ruling of 2026-11-21. The tick proposal is mine to write and does not wait on them.
 - *Do not let issue #8 gate adoption.* Issue #8 is the law for a reader that caches. You ruled on 2026-11-11 that it is step 4's first law. No caching reader is being built, since the read path is fast enough without one. I agree with Neon: the law should be stated when a caching reader is built, and should not hold up step 4's exit. That changes your ruling of 2026-11-11, so it is part of this entry: **say whether issue #8 leaves step 4.**
 - *The shadow import should write a few large segments, not one per record.* Agreed. It is how the import would be built anyway (`loops import` or `emit -`).
+- *Reads across stores must take the union of the named stores first, then run each source over it* (from its review of the tick record). Agreed, and it is what `protocol/spec.md` says now. A tick's check runs every source over `covers` and ignores the store names ([TK3](#tk3-how-a-tick-names-its-spec)). If a fold routed each source to its own store, `loops fold` and the check would disagree whenever a record in one store fits another source.
 
 **Done when** `loops` is first on `PATH` for daily work.
 

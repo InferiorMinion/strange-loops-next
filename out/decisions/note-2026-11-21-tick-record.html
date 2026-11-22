@@ -203,12 +203,14 @@ header.top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--g
 <li><a href="#5-what-a-spec-reads-of-a-tick">5. What a spec reads of a tick</a></li>
 <li><a href="#6-laws-to-state-when-it-is-built">6. Laws to state when it is built</a></li>
 <li><a href="#7-what-margins-claude-answered">7. What margins-claude answered</a></li>
-<li><a href="#8-the-runs-behind-the-examples">8. The runs behind the examples</a></li></ul></details>
+<li><a href="#8-the-runs-behind-the-examples">8. The runs behind the examples</a></li>
+<li><a href="#9-what-neon-answered">9. What Neon answered</a></li></ul></details>
 <article>
 <h1 id="step-4-the-tick-record-design-note">Step 4: the tick record, design note</h1>
 <p><strong>Proposal by the coordinator, 2026-11-21, for Kyle's rulings before any code.</strong> Nothing here is built and nothing is ruled.
 The questions, each with an example, are in <a href="index.html#the-tick-record">DECISIONS.md</a> as TK1 to TK9. This note holds the exact form behind them.
 margins-claude reviewed the draft the same day. Its four additions (the rules' version, what <code>covers</code> must hold, <code>withheld</code> beside a covered eraser, a tick outliving an erasure) are in the text, and its answers are in section 7.
+Neon reviewed TK1 to TK9 the same day. It agrees with eight and moved TK9 to a stated member bound into the hash; its points are in sections 1, 2, 4 and 6, and in section 9.
 It rests on <a href="note-2026-11-15-the-cut.html">the cut note</a> (ruled 2026-11-20), <a href="https://github.com/kgruel/strange-loops-next/blob/main/protocol/result.md">the result codec</a> and <a href="note-2026-11-21-payload-values.html">the payload reading</a> (ruled 2026-11-21).</p>
 <h2 id="1-the-record">1. The record</h2>
 <p>A tick is a record of kind <code>tick</code>. Its envelope is an ordinary one: <code>observer</code> is whoever ran the fold, <code>emitted</code> is their now, and the record is signed.
@@ -217,22 +219,23 @@ It rests on <a href="note-2026-11-15-the-cut.html">the cut note</a> (ruled 2026-
 <div class="table-scroll" tabindex="0"><table><thead><tr><th scope="col">Member</th><th scope="col">Holds</th><th scope="col">Written</th></tr></thead>
 <tbody>
 <tr><td><code>spec</code></td><td>the spec in its parsed form (<a href="https://github.com/kgruel/strange-loops-next/blob/main/protocol/spec.md">spec.md</a>, &quot;The parsed form&quot;)</td><td>always</td></tr>
-<tr><td><code>spec-hash</code></td><td>the hash of <code>spec</code>, below</td><td>always</td></tr>
+<tr><td><code>rules</code></td><td>the version of the rules the fold ran under, as text: <code>&quot;1&quot;</code> (TK9, option D)</td><td>always</td></tr>
+<tr><td><code>spec-hash</code></td><td>the hash of <code>spec</code> under that version, below</td><td>always</td></tr>
 <tr><td><code>covers</code></td><td>the ids of the records folded: a set of record ids, sorted by UTF-16 code units, each once</td><td>always, <code>[]</code> when empty</td></tr>
 <tr><td><code>withheld</code></td><td>exactly the covered ids folded without a payload, those a covered record erases among them: a set of record ids, sorted the same way, each one a member of <code>covers</code></td><td>only when not empty</td></tr>
 <tr><td><code>result</code></td><td>the canonical result object (<a href="https://github.com/kgruel/strange-loops-next/blob/main/protocol/result.md">result.md</a>): integers as decimal text, ids without <code>shown</code></td><td>always</td></tr>
 <tr><td><code>result-hash</code></td><td>the hash of <code>result</code>'s canonical bytes, <code>res:…</code></td><td>always</td></tr>
 </tbody></table></div>
-<p>A payload is a tick's when it has this shape, <code>spec</code> parses to itself, <code>spec-hash</code> is the hash of <code>spec</code>, <code>result</code> is a canonical result for <code>spec</code>'s slots, and <code>result-hash</code> is its hash.
+<p>A payload is a tick's when it has this shape, <code>spec</code> parses to itself, <code>spec-hash</code> is the hash of <code>spec</code> under the label that <code>rules</code> names, <code>result</code> is a canonical result for <code>spec</code>'s slots, and <code>result-hash</code> is its hash.
 The payload's bytes in the record are its JCS text, as for any payload, so two ticks with equal members are equal bytes.</p>
 <h2 id="2-the-specs-hash">2. The spec's hash</h2>
-<pre><code>preimage  = &quot;loops/spec-hash/v1:&quot; ‖ JCS(parsed form)        (the label in UTF-8)
+<pre><code>preimage  = &quot;loops/spec-hash/v&quot; ‖ rules ‖ &quot;:&quot; ‖ JCS(parsed form)        (the label in UTF-8; &quot;loops/spec-hash/v1:&quot; for rules &quot;1&quot;)
 spec-hash = &quot;spec:&quot; + base32hex(SHA-256(preimage))
 </code></pre>
 <ul>
 <li><p>The parsed form keeps <code>vertex</code>, <code>from</code> and each slot as <a href="https://github.com/kgruel/strange-loops-next/blob/main/protocol/spec.md">spec.md</a> says, and drops <code>note</code> and the carried keys. It parses back to itself (<code>spec.parse</code>), so it is one text for one parsed spec.</p></li>
-<li><p><strong>The label is the version of the rules too</strong> (TK9): of what a spec answers, and not only of how the hash is made. A change that alters any spec's answer takes the next label, so every spec's hash changes with it. A check tries the labels it knows, and answers &quot;cannot check: made under older rules&quot; for a tick whose hash fits an older one.</p></li>
-<li><p>The label is 19 bytes and must not be 16, for the reason <a href="https://github.com/kgruel/strange-loops-next/blob/main/protocol/result.md">result.md</a> gives for its own label. Its 17th byte is <code>v</code>, and no JCS text starts with <code>v</code>, so no record's commitment has this preimage. It differs from the result label at the seventh byte.</p></li>
+<li><p><strong>The label is the version of the rules too</strong> (TK9): of what a spec answers, and not only of how the hash is made. A change that alters any spec's answer takes the next label, so every spec's hash changes with it. The payload states the version as <code>rules</code> (option D, after Neon's review), so a check reads it and does not try labels: it answers &quot;cannot check: made under older rules&quot; or &quot;made under newer rules&quot;, and &quot;not a tick&quot; only when the hash does not fit the label <code>rules</code> names. Under option A there is no member, a check tries the labels it knows, and a newer tick reads as a false one on an older machine.</p></li>
+<li><p>The label is 19 bytes while <code>rules</code> is one digit, and must not be 16, for the reason <a href="https://github.com/kgruel/strange-loops-next/blob/main/protocol/result.md">result.md</a> gives for its own label. Its 17th byte is <code>v</code>, and no JCS text starts with <code>v</code>, so no record's commitment has this preimage. It differs from the result label at the seventh byte.</p></li>
 <li><p><code>spec:…</code> has the shape of a typed reference, so a writer may put it in <code>about</code>, and a <code>from</code> can then take the ticks of one spec by their envelopes.</p></li>
 <li><p>When a carried key (<code>window</code>, <code>param</code>, <code>covers</code>) is read one day, it enters the parsed form. A spec that does not write it keeps its hash.</p></li>
 </ul>
@@ -243,14 +246,15 @@ spec-hash = &quot;spec:&quot; + base32hex(SHA-256(preimage))
 <li><p><strong>The store names in <code>from</code> select nothing.</strong> <code>covers</code> names the records; the run applies each source's <code>kind</code>, <code>about</code> and <code>of</code> and the slots to them.</p></li>
 <li><p><strong>What <code>covers</code> must hold.</strong> A spec's answer depends on records it does not take: an eraser of a taken record, a successor of another kind, and such a successor's targets (<code>spec.slice</code>; vector <code>realm/07-kind-change-supersedes</code>). A tick over the taken records alone is a true claim that can differ from what <code>loops fold</code> shows. So <code>loops tick</code> covers what the store holds, or a cut of it, until the Rust can compute a spec's slice.</p></li>
 <li><p><strong>Admission inside the set</strong> is the built rule over the records given. Whether the set is a cut, or a slice of one, is the writer's care and is not part of the claim. <code>loops tick</code> chooses only such sets: everything held, the records as of a time (<code>downOf W (upTo W T)</code>), or the ids named with what is under them.</p></li>
-<li><p><strong>The inputs</strong> are <code>spec-hash</code>, <code>covers</code> and <code>withheld</code>. Equal inputs give equal <code>result</code> bytes.</p></li>
+<li><p><strong>The inputs</strong> are <code>spec-hash</code>, <code>covers</code> and <code>withheld</code>. The version of the rules is inside <code>spec-hash</code>. Equal inputs give equal <code>result</code> bytes.</p></li>
 <li><p><strong>A tick among the covered records</strong> is one record. Its payload is read as any payload is; nothing follows its <code>covers</code>.</p></li>
 </ul>
 <h2 id="4-the-check">4. The check</h2>
 <p><code>loops tick --check &lt;id&gt;</code> reads the record and answers:</p>
 <ul>
 <li><p><strong>not a tick</strong>, with a refusal code, when the payload fails section 1, or when <code>covers</code> names a record and its eraser and <code>withheld</code> leaves the erased one out. The second needs the eraser's envelope, so only a holder of it finds it.</p></li>
-<li><p><strong>cannot check: made under older rules</strong> when <code>spec-hash</code> fits an older label (section 2).</p></li>
+<li><p><strong>cannot check: made under older rules</strong>, or <strong>newer rules</strong>, when <code>rules</code> is not the version this binary folds under (section 2). Beside &quot;older&quot; it says what today's rules give, the same result or another, as a report and not a verdict.</p></li>
+<li><p><strong>cannot check</strong> when the tick's own payload is not held, or when <code>spec</code> does not parse under a version this binary knows: a later binary may have added a fold type without changing the version.</p></li>
 <li><p><strong>cannot check</strong> when the store lacks a covered record, or lacks the payload of a covered record that <code>withheld</code> does not name. It counts each.</p></li>
 <li><p><strong>same</strong> or <strong>differs</strong> otherwise, after running section 3 and comparing the result's canonical bytes with <code>result</code>.</p></li>
 </ul>
@@ -265,7 +269,7 @@ The check goes one level: a covered tick is a record to it. Beside its answer it
 <p>Nothing new. By the payload reading:</p>
 <div class="table-scroll" tabindex="0"><table><thead><tr><th scope="col">Member</th><th scope="col">Reads as</th><th scope="col">Tests</th></tr></thead>
 <tbody>
-<tr><td><code>spec-hash</code>, <code>result-hash</code></td><td>text</td><td><code>is</code>, <code>not</code>, <code>present</code>, <code>by</code></td></tr>
+<tr><td><code>rules</code>, <code>spec-hash</code>, <code>result-hash</code></td><td>text</td><td><code>is</code>, <code>not</code>, <code>present</code>, <code>by</code></td></tr>
 <tr><td><code>covers</code>, <code>withheld</code></td><td>a set of text</td><td><code>is</code> (membership), <code>not</code>, <code>present</code>, <code>by</code> (one group for each id)</td></tr>
 <tr><td><code>spec</code>, <code>result</code></td><td>present, with no value</td><td><code>present</code>, <code>absent</code></td></tr>
 </tbody></table></div>
@@ -276,7 +280,7 @@ The check goes one level: a covered tick is a record to it. Beside its answer it
 <li><p><code>tick.inputs</code>: equal <code>spec</code>, <code>covers</code> and <code>withheld</code> give equal result bytes. From <code>settle.set</code>, the fold laws (the set decides) and <code>result.exact</code>.</p></li>
 <li><p><code>tick.withheld</code>: a holder with the payload of a record that <code>withheld</code> names, reading it without, gets what a holder without it gets. From <code>settle.set</code>.</p></li>
 <li><p><code>tick.canonical</code>: a tick's payload has one text; reading it back gives the same tick.</p></li>
-<li><p><code>spec.hash</code>: two parsed specs with one hash preimage are equal.</p></li>
+<li><p><code>spec.hash</code>: two parsed specs with one hash preimage are equal up to the order of their slots and of the members of a <code>where</code>, and so give the same result bytes. The model keeps slots as a list in written order and JCS sorts an object's members, so plain equality is false (Neon). The check of section 1, &quot;<code>spec</code> parses to itself&quot;, compares JCS texts for the same reason.</p></li>
 <li><p><code>tick.record</code>: what a spec reads of a tick is the payload reading of its payload (<code>payload.read</code>); no new reading.</p></li>
 <li><p>The base lemma (margins-claude's fourth cut MR): for any set B, an emit of a thing whose <code>prev</code> is the live records of the thing in B satisfies <code>Anchoring</code> in B with the emit added.</p></li>
 </ul>
@@ -316,6 +320,14 @@ loops -C cov fold backups.json                      runs 6, mb 615 with 1 unread
 <li><p>TK8's store is the NAS above with one more backup emitted without <code>--occurred</code>.</p></li>
 <li><p>TK4's third example: <code>loops emit retired &quot;…&quot; --prev r:kvvv…</code> in a store holding the six, then a spec with <code>{&quot;count&quot;: true, &quot;follow&quot;: &quot;prev&quot;}</code> and <code>{&quot;sum&quot;: &quot;mb&quot;, &quot;follow&quot;: &quot;prev&quot;}</code>: 5 and 615 there, 6 and 1027 over the six alone.</p></li>
 <li><p>TK9's two answers are the PV2 example of this morning's <code>DECISIONS.md</code> (0 with 0 unread) and the same fold on tonight's binary (9 with 2 unread).</p></li>
+</ul>
+<h2 id="9-what-neon-answered">9. What Neon answered</h2>
+<ul>
+<li><p><strong>TK9.</strong> A version held only in the hash's label reads, on an older machine, as a hash that fits nothing: &quot;not a tick&quot; about an honest tick. A member <code>rules</code> beside a label made from it lets any binary say older or newer, and lets a spec find the ticks of one version. Taken as option D.</p></li>
+<li><p><strong>TK3 with reads across stores (W1).</strong> A tick's check runs every source's <code>kind</code>, <code>about</code> and <code>of</code> over <code>covers</code>, and the store names select nothing. So a fold across several stores must take the union of the named stores first and run each source over that union, as <a href="https://github.com/kgruel/strange-loops-next/blob/main/protocol/spec.md">spec.md</a> says now. If it routed each source to its own store, <code>loops fold</code> and the check would disagree whenever a record in one store fits another source.</p></li>
+<li><p><strong>TK5 with TK7.</strong> <code>withheld</code> lists what was folded without a payload, also for a spec that reads no payload. So when a covered record is erased after a tick of a <code>count</code>, the check answers &quot;cannot check: 1 payload the tick read is not held&quot;, where the cut note says a result made of references can still be recomputed. That is stricter than it need be, and simple. A later check may answer <code>same</code> for a spec that provably reads no payload; nothing in the record stops that.</p></li>
+<li><p><strong>The <code>spec.hash</code> law</strong> is equality up to member order (section 6).</p></li>
+<li><p><strong>An erased tick</strong> answers &quot;cannot check&quot; (section 4).</p></li>
 </ul>
 </article>
 </main>
