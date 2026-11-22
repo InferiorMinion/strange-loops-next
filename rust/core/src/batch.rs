@@ -386,6 +386,24 @@ fn writer_priority(error: stored::Error) -> u8 {
     }
 }
 
+/// Checks the names before resolving any label or checking any writer field.
+/// # Errors
+/// Duplicate labels precede references to unknown labels.
+pub fn check_label_names<'a>(mut ds: impl Iterator<Item = &'a Draft> + Clone) -> Result<(), Error> {
+    let labels: Vec<_> = ds.clone().filter_map(|d| d.label.as_deref()).collect();
+    if labels
+        .iter()
+        .enumerate()
+        .any(|(i, label)| labels[..i].contains(label))
+    {
+        return Err(Error::LabelDuplicate);
+    }
+    if !ds.all(|d| d.refs().iter().all(|r| labels.contains(&r.as_str()))) {
+        return Err(Error::LabelUnknown);
+    }
+    Ok(())
+}
+
 /// Lean: `Loops.resolveBatch`, model/Loops/Batch.lean.
 /// Resolves labels, writes checked records, and checks prev targets while preserving the original draft order.
 /// # Errors
@@ -396,20 +414,7 @@ pub fn resolve_batch(
     held: &impl Fn(&str) -> Option<Held>,
     ds: &[Draft],
 ) -> Result<Vec<Written>, Error> {
-    let labels: Vec<_> = ds.iter().filter_map(|d| d.label.as_deref()).collect();
-    if labels
-        .iter()
-        .enumerate()
-        .any(|(i, label)| labels[..i].contains(label))
-    {
-        return Err(Error::LabelDuplicate);
-    }
-    if !ds
-        .iter()
-        .all(|d| d.refs().iter().all(|r| labels.contains(&r.as_str())))
-    {
-        return Err(Error::LabelUnknown);
-    }
+    check_label_names(ds.iter())?;
     let mapping = resolve_rounds(h, &Nat(BigUint::from(ds.len())), &[], ds)?;
     let resolved: Vec<_> = ds
         .iter()

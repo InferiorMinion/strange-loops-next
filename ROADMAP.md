@@ -30,7 +30,6 @@ The payload values and the result hash's prefix, ruled by Kyle on 2026-11-21, ar
 Each is ruled in [the cut note](notes/2026-11-15-the-cut.md); the section is in brackets.
 
 - A window is a `where` on the span that content order already uses, under its own field name. The name is not chosen (5).
-- The changeset path (`emit -`) gets an option that asks for the filler (7).
 - The filler takes a base, a tick or ids, and names that base's live records (8). margins-claude holds its base lemma until this piece is briefed.
 - A CLI verb that shows a result hash.
 - The caching reader's law: a reader that caches must keep what a record with an unknown `prev` supersedes (issue #8; Kyle, 2026-11-11: step 4's first law). Whether it stays in step 4 is part of [W1](DECISIONS.md#w1-an-adoption-step-before-standing-and-sharing).

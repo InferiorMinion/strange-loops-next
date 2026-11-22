@@ -3,7 +3,7 @@
 Step 2 of the build sequence: emit, read and fold for one person, signed.
 `loops-place` (`rust/place`) is the first code around the pure core that
 touches a disk, a clock and a key. `loops` (`rust/cli`) is the CLI over it.
-`loops_place::fill` holds what the single-record emit fills in.
+`loops_place::fill` holds what a single emit or a filled changeset writes into its envelopes.
 The core gained nothing; `loops-eval` gained one export, `slots_json`.
 
 None of this is protocol yet. The stored line is (`protocol/record.md`);
@@ -18,7 +18,8 @@ loops emit <kind> [field=text | field:=json]... ["message"]
       [--of <thing>] [--about <thing>]... [--no-about] [--prev <id>]...
       [--erases <id>]... [--occurred <when> | --no-occurred] [--under <id>]
       [--sets <key>]... [--sets-nothing] [--whole]
-loops emit -                        drafts as JSONL on stdin: one changeset
+loops emit - [--fill]               read one JSONL changeset from stdin
+                                    --fill applies the single-emit filler to each line
 loops get <id>                      one record
 loops of <thing>                    a thing's values, its about, its heads, how many records are of it
 loops read <vertex> [--values]      fold .loops/vertices/<vertex>.json
@@ -60,8 +61,10 @@ loops whoami
   unless `--about` or `--no-about` states it; see choices 12 and 13.
 * An emit copies `occurred` when every head states the same text, unless
   `--occurred` or `--no-occurred` states it. See choice 19.
-* `emit -` fills nothing in: a changeset states its own `of`, `sets`, `prev`,
-  `about` and `occurred`.
+* A plain `emit -` changeset states its own `of`, `sets`, `prev`, `about`
+  and `occurred`. `emit - --fill` fills each line against the store and the
+  records prepared before it. The changeset is written in one segment.
+  See choice 20.
 * `loops of` shows a thing's values, each key's from its live setters, beside
   its `about` and its heads; `read` and `fold` write the values beside the
   ids with `--values`. The values view is the CLI's, not the protocol's: a
@@ -152,7 +155,7 @@ Every verb that reads the store says when either happened (choice 18).
    doesn't hold is `prev-unknown`, since there is nothing to fill `of` in
    from, and targets of different things are `prev-unrelated`. On this path
    only, these precede the writer's other checks. This replaces the earlier
-   "a revision without `--about` is about what it replaces". `emit -` fills
+   "a revision without `--about` is about what it replaces". Plain `emit -` fills
    nothing in: a changeset states `of` itself, and may use a label there,
    as in `about`, `prev` and `under`.
    Kyle confirmed on 2026-11-10 that only the single-record path fills `of`
@@ -225,7 +228,7 @@ Every verb that reads the store says when either happened (choice 18).
     nothing, which unsets every key, takes `--whole`. `--erases` and
     `--under` change nothing here. The payload on this path is always an
     object, so the keys it names are always its members; a repeated field is
-    the writer's `member-duplicate`. `emit -` fills nothing in.
+    the writer's `member-duplicate`. Plain `emit -` fills nothing in.
 16. **`loops of` shows the thing's values.** It answers `{"thing", "about",
     "heads", "records", "values", "setters"?, "unheld"?}`. `about` is the union
     of the heads' mentions, as an emit copies it (choice 12). `heads` are the
@@ -295,6 +298,83 @@ Every verb that reads the store says when either happened (choice 18).
     occurrence and `--no-occurred` clears it. The two together are a usage
     error. This builds the ruling of 2026-11-20 in
     `notes/2026-11-15-the-cut.md`, section 5.
+
+20. **A changeset can ask for the single-emit filler.** The owner ruled on
+    2026-11-20 that plain `emit -` continues to fill nothing in and a
+    collector can request the filler for a whole changeset with one option.
+    [The cut, section 7](../notes/2026-11-15-the-cut.md#7-unanchored-records)
+
+    Implementer's choices
+
+    - The invocation is `loops emit - --fill`.
+    - Omitting `about`, `occurred` or `sets` requests its default. A stated
+      value supplies the entire field. `"about":[]` clears the mentions,
+      `"occurred":null` clears the occurrence, `"sets":[]` sets no key,
+      and `"sets":null` writes a whole-read record. Only filled input gives
+      the two null forms these meanings.
+    - A stated `prev` gains every live record of the thing, including live
+      non-heads. An empty array and omission both request the full anchor.
+      Use plain `emit -` to write exact predecessors and make a fork.
+    - Each prepared record has its final id and is available to later lines.
+      Infer `of` against all held envelopes, including those just prepared.
+      Read liveness and head metadata after settling and admitting that
+      combined holding. This is the current-holding case of the filler.
+    - Visit lines in input order, preparing a line's labelled prerequisites
+      first, in input order among siblings. Substitute their final ids in
+      `of`, `prev`, `about` and `under` before filling the line.
+    - Only labels schedule prerequisites. Inferring `of` from a literal
+      predecessor requires its envelope at preparation time. A stated `of`
+      leaves target checks to the final batch, which can see later literal ids.
+    - Parse the changeset and bind its observers, then check duplicate,
+      unknown and cyclic labels, in that order. In preparation order, each
+      line infers `of` (possibly `prev-unknown` or `prev-unrelated`),
+      fills the remaining fields and meets the writer's field checks.
+      The first such failure ends preparation.
+    - Both paths share the single-record filler and the conversion of a
+      checked envelope into a reader's record. The usual batch writer checks
+      all prepared drafts together before any signature and segment append.
+    - Keep the segment and the `{"records":[...]}` answer in input order.
+      Each answer entry gives the id and its original label when supplied.
+    - A non-object payload supplies no inferred keys and is read whole
+      unless it states `sets`. A changeset keeps its one default clock
+      reading and the salt chosen for each line.
+
+    For these examples `H` is the only record of `task:1`, a whole-read
+    head mentioning `project:p` with occurrence `2009`. Letters in an
+    envelope stand for full record ids. The examples show the varying
+    envelope fields. Each record also has its kind, observer and emitted time.
+
+    Take each of these three inputs independently against `H`.
+
+    ```jsonl
+    {"kind":"task","of":"task:1","payload":{"x":1}}
+    {"kind":"task","of":"task:1","about":[],"occurred":null,"sets":[],"prev":[],"payload":{"x":1}}
+    {"kind":"task","of":"task:1","sets":null,"payload":{"x":1}}
+    ```
+
+    Their respective envelope fields are
+
+    ```jsonl
+    {"of":"task:1","prev":["H"],"about":["project:p"],"occurred":"2009","sets":["x"]}
+    {"of":"task:1","prev":["H"],"sets":[]}
+    {"of":"task:1","prev":["H"],"about":["project:p"],"occurred":"2009"}
+    ```
+
+    Now take these two inputs together against the same `H`.
+
+    ```jsonl
+    {"kind":"task","of":"task:1","about":["project:q"],"occurred":"2010","payload":{"x":1}}
+    {"kind":"task","of":"task:1","payload":{"y":2}}
+    ```
+
+    The first record, `A`, changes only `x`. The second copies its metadata
+    from `A` and names both `A` and the still-live whole-read `H` in
+    canonical id order.
+
+    ```jsonl
+    {"of":"task:1","prev":["H"],"about":["project:q"],"occurred":"2010","sets":["x"]}
+    {"of":"task:1","prev":["H","A"],"about":["project:q"],"occurred":"2010","sets":["y"]}
+    ```
 
 ## Checked by
 
