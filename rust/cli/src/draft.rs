@@ -1,15 +1,19 @@
 //! Drafts from the command line and from JSONL, in the design's flat shape:
 //! envelope fields beside `payload`, with an optional `label` and `salt`.
-use crate::{Fail, refused, usage};
+use crate::{Fail, cut::Cut, link, refused, thing_ref, usage};
 use loops::{
     base32,
     batch::Draft,
     envelope::{self, Env},
     json::Json,
+    spec::Spec,
+    tick::make_tick,
 };
 use loops_place::{
+    dir::Held,
     fill::{About, Occurred, Sets, Statement},
     key,
+    line::hash,
 };
 
 fn new_salt() -> Result<Vec<u8>, Fail> {
@@ -65,6 +69,12 @@ fn add_base(base: &mut Option<BaseArgs>, flag: &str, id: String) -> Result<(), F
     Ok(())
 }
 
+fn next_value<'a>(args: &mut impl Iterator<Item = &'a String>, flag: &str) -> Result<String, Fail> {
+    args.next()
+        .cloned()
+        .ok_or_else(|| usage(format!("{flag} takes a value")))
+}
+
 /// Flags after the JSONL dash, entered only for the changeset syntax.
 pub(crate) fn changeset_args(args: &[String]) -> Result<(JsonlMode, Option<BaseArgs>), Fail> {
     let mut args = args.iter();
@@ -74,10 +84,7 @@ pub(crate) fn changeset_args(args: &[String]) -> Result<(JsonlMode, Option<BaseA
         match flag.as_str() {
             "--fill" if !fill => fill = true,
             "--base" | "--base-id" => {
-                let id = args
-                    .next()
-                    .ok_or_else(|| usage(format!("{flag} takes a value")))?;
-                add_base(&mut base, flag, id.clone())?;
+                add_base(&mut base, flag, next_value(&mut args, flag)?)?;
             }
             _ => return Err(usage(format!("unexpected changeset option {flag}"))),
         }
@@ -97,31 +104,30 @@ pub(crate) fn changeset_args(args: &[String]) -> Result<(JsonlMode, Option<BaseA
 
 /// `emit <kind> [field=text | field:=json]... ["message"]` and its flags.
 /// `field=text` is always text and `field:=json` a JSON value, as `HTTPie` writes them.
-/// `link` resolves a record id the person typed; `thing` resolves what `--of` names.
 /// The draft comes back with whether it states its `about`: with `--about`,
 /// once or more, or `--no-about` for none; without either it is copied. And
 /// with whether it states its `sets`: with `--sets`, once or more,
 /// `--sets-nothing` for none, or `--whole` for a whole-read emit; without
 /// any of them it sets the keys it names, when its thing is held.
 /// `--occurred` and `--no-occurred` each state what goes into the envelope.
-/// With a tick payload the writer already knows the kind and payload, so
-/// only the envelope flags are read from the arguments.
+/// A tick spec supplies the payload after the writer selects its holding.
 pub(crate) fn from_args(
     args: &[String],
-    tick_payload: Option<Json>,
+    tick_spec: Option<Spec>,
     now: &str,
     observer: &str,
-    link: impl Fn(&str) -> Result<String, Fail>,
-    thing: impl Fn(&str) -> Result<String, Fail>,
+    held: &Held,
 ) -> Result<(Statement, Option<BaseArgs>), Fail> {
     let mut base = None;
+    let mut cut = Cut::All;
     let mut env = Env {
         emitted: now.to_owned(),
         observer: observer.to_owned(),
         ..Env::default()
     };
     let mut salt = None;
-    let mut kind = tick_payload.as_ref().map(|_| "tick".to_owned());
+    let verb = if tick_spec.is_some() { "tick" } else { "emit" };
+    let mut kind = tick_spec.as_ref().map(|_| "tick".to_owned());
     let mut fields: Vec<(String, Json)> = Vec::new();
     let mut message = None;
     let mut nothing = false;
@@ -129,11 +135,10 @@ pub(crate) fn from_args(
     let mut no_about = false;
     let mut no_occurred = false;
     let mut rest = args.iter();
-    let verb = if kind.is_some() { "tick" } else { "emit" };
     let mut options = true;
     while let Some(arg) = rest.next() {
         if !options || !arg.starts_with("--") {
-            if tick_payload.is_some() {
+            if tick_spec.is_some() {
                 return Err(usage("tick takes only envelope flags after the spec"));
             }
             emit_argument(arg, &mut kind, &mut fields, &mut message)?;
@@ -149,13 +154,14 @@ pub(crate) fn from_args(
         match arg.as_str() {
             "--" => options = false,
             "--json" => {}
+            "--as-of" | "--cover" if tick_spec.is_some() => cut.select(arg, value()?)?,
             "--about" => env.about.push(value()?),
             "--base" | "--base-id" => add_base(&mut base, arg, value()?)?,
             "--no-about" => no_about = true,
-            "--of" => env.of = Some(thing(&value()?)?),
-            "--prev" => env.prev.push(link(&value()?)?),
-            "--erases" => env.erases.push(link(&value()?)?),
-            "--under" => env.under = Some(link(&value()?)?),
+            "--of" => env.of = Some(thing_ref(held, &value()?)?),
+            "--prev" => env.prev.push(link(held, &value()?)?),
+            "--erases" => env.erases.push(link(held, &value()?)?),
+            "--under" => env.under = Some(link(held, &value()?)?),
             // `--sets` names one key the emit sets; `--sets-nothing` states an
             // empty `sets`, an emit that sets no key; `--whole` states no
             // `sets`, an emit read whole. Without any of them an emit of a
@@ -208,7 +214,10 @@ pub(crate) fn from_args(
         label: None,
         env,
         salt: salt.map_or_else(new_salt, Ok)?,
-        payload: tick_payload.unwrap_or(Json::Obj(fields)),
+        payload: match tick_spec {
+            Some(spec) => make_tick(spec, &cut.forms(held)?).to_json(&hash),
+            None => Json::Obj(fields),
+        },
     };
     Ok((
         Statement {

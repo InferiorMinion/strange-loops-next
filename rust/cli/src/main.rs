@@ -5,6 +5,7 @@
 //! A verb that answers from the store's records writes its answer from the
 //! lines that check, then is refused `store-not-clean` when a line or a
 //! segment did not.
+mod cut;
 mod draft;
 mod ls;
 mod plain;
@@ -17,7 +18,7 @@ use loops::{
     spec::Spec,
     spec_hash::Rules,
     things,
-    tick::{make_tick, read_tick_members},
+    tick::read_tick_members,
     tick_check::{TickAnswer, TickSubject, check_tick, tick_open},
 };
 use loops_place::{
@@ -79,8 +80,11 @@ usage: loops [-C <dir>] <verb> ...
                                 --values adds stored envelopes to listed heads,
                                 held payloads to collect and prev entries,
                                 and about and values to keyed things
-  tick <vertex | spec-file | -> [emit envelope flags]
-                                write a tick over everything held
+  tick <vertex | spec-file | -> [--as-of <time> | --cover <id> ...] [emit envelope flags]
+                                default to everything held
+                                --as-of selects records emitted strictly before the instant or date’s start
+                                repeat --cover to select records by id or unique prefix
+                                both cuts include all held prev ancestors
                                 a base selects only the tick's envelope anchor
                                 a final -- is allowed; no arguments may follow it
   tick --check <id>             check a tick against this store and print the verdict and reports
@@ -480,16 +484,9 @@ fn write_one(
     key: &Key,
     now: &str,
     args: &[String],
-    tick_payload: Option<Json>,
+    tick_spec: Option<Spec>,
 ) -> Result<(), Fail> {
-    let (statement, selector) = draft::from_args(
-        args,
-        tick_payload,
-        now,
-        &key.public(),
-        |given| link(held, given),
-        |given| thing_ref(held, given),
-    )?;
+    let (statement, selector) = draft::from_args(args, tick_spec, now, &key.public(), held)?;
     let (draft, notices) = if let Some(args) = selector {
         fill::one_with_base(held, &base_forms(held, args)?, statement)
     } else {
@@ -714,11 +711,9 @@ fn tick(start: &Path, args: &[String]) -> Result<(), Fail> {
     let spec = parse_spec(&input)?;
     let held = place.read()?;
     warn_unclean(&held);
-    let forms = held_forms(&held);
-    let payload = make_tick(spec, &forms).to_json(&hash);
     let key = signing_key(Missing::Make)?;
     let now = clock::now().ok_or_else(|| Fail::System("the clock is outside 1970–9999".into()))?;
-    write_one(&place.dir, &held, &key, &now, flags, Some(payload))
+    write_one(&place.dir, &held, &key, &now, flags, Some(spec))
 }
 
 fn export(start: &Path, args: &[String]) -> Result<(), Fail> {

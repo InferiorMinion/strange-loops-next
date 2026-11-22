@@ -33,8 +33,8 @@ loops read <vertex> [--values] [--plain]
                                     fold .loops/vertices/<vertex>.json
 loops fold <spec.json | -> [--values] [--plain]
                                     fold a spec from a file or stdin
-loops tick <vertex | spec-file | -> [emit envelope flags]
-                                    write a tick over everything held, with an optional base for its envelope
+loops tick <vertex | spec-file | -> [--as-of <time> | --cover <id> ...] [emit envelope flags]
+                                    fold everything held by default, or a cut (choice 28)
 loops tick --check <id>             check a tick against this store and print the verdict and reports
 loops erase <id>... ["why"]         emit an erasure, and drop the openings held here
 loops export [--kind <k>] [--of <thing>] [--about <thing>]
@@ -392,7 +392,7 @@ Every verb that reads the store says when either happened (choice 18).
     {"of":"task:1","prev":["H","A"],"about":["project:q"],"occurred":"2010","sets":["y"]}
     ```
 
-21. **`loops tick` covers the whole holding.** The owner ruled on 2026-11-21
+21. **By default `loops tick` covers the whole holding.** The owner ruled on 2026-11-21
     (TK1–TK5) that a tick is an ordinary record whose payload is the whole
     tick, covering every record folded. [The tick record](../protocol/tick.md)
 
@@ -486,7 +486,7 @@ Every verb that reads the store says when either happened (choice 18).
     stated predecessor can supply `of` from the writer's full lookup. In
     a filled changeset the same starting selection applies throughout. Add
     earlier prepared forms before taking the closure for each line.
-    Tick writes use the base for their envelope and fold the whole holding.
+    Tick writes use the base for their envelope. Choice 27 selects what they fold.
 
     Suppose a marker covers the original `status` setter of `task:42`. A
     peer then changes that status. Writing `loops emit task --of task:42
@@ -677,7 +677,34 @@ Every verb that reads the store says when either happened (choice 18).
           r:atco26o6
     ```
 
-28. **End emit options and learn a new writer's identity.** Issue 11
+28. **Write a tick over a cut.** The owner ruled that a tick may fold the
+    downward closure over `prev` of the records emitted before a time or of
+    the ids the writer names. [The cut, §§1–3](../notes/2026-11-15-the-cut.md)
+
+    - `--as-of` accepts an instant or a date from the envelope time-test
+      grammar. A date means its start. The note specifies a strict seed
+      (`emitted < T`), like a window’s upper bound. The model’s `upTo`
+      is strict too, since 2026-11-22. A selected record can pull in
+      a predecessor whose clock reads T or later.
+    - Repeat `--cover` for the union of the named records and their held
+      predecessors. Each operand resolves like `get`, by full id or unique
+      prefix. Choose one selector per tick. Without either, choice 21 applies.
+    - Follow held `prev` links across the entire store. The check reports
+      closure independently, over both `prev` and `under`. A tick with an
+      outside `under` target can check `same` with closure `no`. The cut
+      note leaves `under` for standing. An `erases` link does not extend a cut.
+    - The ordinary payload names every id in the cut. A covered backup whose
+      opening the store has lost to an outside eraser is withheld in the
+      claim. Its envelope can be counted and its size is unread. A writer’s
+      `--base` selects the tick envelope’s anchor independently of the cut.
+
+    For example, six backups were emitted at midnight on November 16 and 17.
+    The first night recorded jellyfin at 412 MB, pihole at 3 MB and gitea at
+    88 MB. `loops tick backups --as-of 2026-11-17` covers those three ids.
+    The count is 3 and the sum is 503 MB. Checking it in that store gives
+    `same`, closure `yes`, and 3 taken outside the cover.
+
+29. **End emit options and learn a new writer's identity.** Issue 11
     asks for dash-leading message text and the signing identity before
     writing the first record.
 

@@ -216,6 +216,7 @@ The record starts where the old roadmap's did. For anything earlier, and for eve
 <h2 id="2026-11-22">2026-11-22</h2>
 <p>In brief:</p>
 <ul>
+<li><p>The model's prefix at a time is strict, as <code>loops tick --as-of</code> is: a record emitted at the time itself is not in it.</p></li>
 <li><p>The base lemma is in the model as <code>keyed.base</code>, with a correction: an emit against a base keeps the store's names anchored only when the base is closed downward. A witness shows what breaks when it is not.</p></li>
 <li><p>A fuzz run compares the model and Rust on ticks, with pairs of faults generated on purpose. Its first version agreed on 20,160 cases and missed a fault planted in Rust; the rebuilt one catches every planted swap tried. margins-claude's Python agrees with Rust on 80,000 more cases.</p></li>
 <li><p>The tick has its mutation catalogue: 91 deliberate faults, each caught by something that runs. Five were not caught at first; four vectors and a check were added for them.</p></li>
@@ -224,7 +225,36 @@ The record starts where the old roadmap's did. For anything earlier, and for eve
 <li><p><code>loops ls --fields name,status --plain</code> is the Monday-morning read without a spec: a plain-text view, asked for explicitly, on <code>ls</code> and <code>of</code>.</p></li>
 <li><p>A read remembers which segments it has checked: on a 9,000-record store a fold goes from 0.53 s to 0.24 s. <code>loops check</code> still checks everything.</p></li>
 <li><p><code>loops read</code> and <code>loops fold</code> take <code>--plain</code> too: a spec's result as text, for every result shape.</p></li>
+<li><p><code>loops tick</code> can cover a cut: <code>--as-of &lt;time&gt;</code> for the records emitted before a time with what they build on, <code>--cover &lt;id&gt;</code> for named records with what is under them.</p></li>
 </ul>
+<h3 id="loops-tick-over-a-cut---as-of-and---cover"><code>loops tick</code> over a cut: <code>--as-of</code> and <code>--cover</code></h3>
+<p>Ruled on 2026-11-20 (<a href="note-2026-11-15-the-cut.html">the cut note</a>, sections 1 to 3) and built on 2026-11-22. Rust only, in the CLI. Without the flags <code>loops tick</code> covers everything held, byte for byte as before.</p>
+<ul>
+<li><p><code>--as-of &lt;time&gt;</code> covers the records emitted before the time, and every record they build on through <code>prev</code>.</p></li>
+<li><p><code>--cover &lt;id&gt;</code>, repeated, covers the named records and every record under them.</p></li>
+<li><p>The payload is the ordinary one. <code>covers</code> names the records outright and nothing in it says how they were chosen.</p></li>
+</ul>
+<p><strong>A real run, on the binary built from this change.</strong> Two nights of three backups, the first night 412, 3 and 88 megabytes:</p>
+<div class="table-scroll" tabindex="0"><table><thead><tr><th scope="col">Command</th><th scope="col" class="align-right">Covers</th><th scope="col">Result</th><th scope="col">Checked in that store</th></tr></thead>
+<tbody>
+<tr><td><code>loops tick backups.json --as-of 2026-11-17</code></td><td class="align-right">3</td><td>3 runs, 503</td><td><code>same</code>, closure <code>yes</code>, 3 taken and not covered</td></tr>
+<tr><td><code>loops tick backups.json</code></td><td class="align-right">7 (the six and the tick above)</td><td>6 runs, 1027</td><td></td></tr>
+<tr><td><code>loops tick backups.json --cover &lt;the second jellyfin backup&gt;</code></td><td class="align-right">2 (it and the first, which it revises)</td><td>2 runs, 831</td><td><code>same</code>, closure <code>yes</code>, 4 taken and not covered</td></tr>
+</tbody></table></div>
+<p><strong>Two questions the worker stopped on, both answered by the ruled note.</strong></p>
+<ul>
+<li><p><strong>A record emitted exactly at the time is out.</strong> The note says the bound reads as <code>below</code> does. The model's <code>upTo</code> took the time itself in; margins-claude made it strict the same day (!95), and its laws go through unchanged.</p></li>
+<li><p><strong>A cut follows <code>prev</code> only.</strong> The ruling is &quot;a part closed downward over <code>prev</code>&quot;, and the note leaves <code>under</code> for standing. So <code>--cover y</code>, where <code>y</code> is under a grant outside the cut, covers <code>y</code> alone and checks <code>same</code> with closure <code>no</code>: the check's closure report counts <code>under</code> targets and a cut does not. &quot;Closure no&quot; therefore does not mean &quot;not a cut&quot;; saying which kind of target is outside is a refinement not built.</p></li>
+</ul>
+<p><strong>An erasure after the cut</strong> behaves as the note's section 4 says: a tick as of a time before the erasure covers the erased record, lists it in <code>withheld</code>, counts its envelope and leaves its payload unread; it checks <code>same</code>.</p>
+<p><strong>Implementer choices; they stand under Kyle's ruling of 2026-11-21 (W7).</strong> The full list is choice 28 of <code>rust/PLACE.md</code>.</p>
+<ul>
+<li><p><code>--as-of</code> takes an instant or a date; a date means its start. <code>--as-of</code> with <code>--cover</code> is a usage error.</p></li>
+<li><p>The cut is computed in the CLI: it chooses what <code>make_tick</code> is given, and the tick's codec is untouched.</p></li>
+<li><p><code>--base</code> works beside both and still selects only the tick record's anchor.</p></li>
+</ul>
+<p>Checked by a randomized test over stores with skewed clocks: the cut equals a plain reference computation, every such tick checks <code>same</code>, and in 24 of 32 stores the cut held a record from outside the strict prefix.</p>
+<p>A Codex worker wrote it; the coordinator reviewed it, joined it with main and made the run above.</p>
 <h3 id="the-adoption-step-the-plain-view-on-read-and-fold">The adoption step: the plain view on <code>read</code> and <code>fold</code></h3>
 <p>The third piece of the adoption plan. <code>loops read &lt;vertex&gt; --plain</code> and <code>loops fold &lt;spec&gt; --plain</code> print a spec's result as text for a person, for every shape a result has: a count, a sum, a smallest and a largest (with &quot;nothing read&quot; told from zero), a collect, their grouped forms, and latest-by following <code>prev</code> or <code>keys</code>. A saved vertex and a spec file print alike.</p>
 <p>A real run, on the made-up import store of <a href="index.html#ad2-how-an-old-store-becomes-records">AD2</a>: a spec with a count of open threads, a count by status and a keyed latest-by prints</p>
@@ -325,6 +355,7 @@ svc:jellyfin  svc         7        2      conflict (2)  sam
 </ul>
 <p>Checked by a randomized test: 320 cases, 217 with a base that did not hold what is under it, 67 with the exact shape of TK11's first example, 118 stating a <code>--prev</code> outside the base. In every case the write equals the one a writer holding exactly the effective base would make; the thing reads the same from the store's live records as from the whole store, before and after; and the whole store reads every key as it would after the bare write.</p>
 <p>CI: the fuzz tests' limit in the <code>model</code> job goes from 60 to 300 seconds. The tick fuzz tests added on 2026-11-22 took the run past 60 seconds on a busy runner, and this merge request's first pipeline was cut off there with every test so far passing.</p>
+<p><strong>The same three properties, from outside.</strong> margins-claude wrote the fill again over its own Python reading (<code>sl-py/basefill.py</code>, in its repository) and ran 5,000 generated stores, 12,220 writes for each of three kinds of base. The filler's write never read otherwise from the live records alone, was always anchored, and the whole store always read as after the bare write. The bare write failed 2,802 times over arbitrary bases, and never when the printed count was 0. A base that is exactly the live records of a closed part was sound in all 6,109 cases though it is not closed downward. A stated <code>prev</code> kept beside the base without what is under it failed 1,003 times even over a closed base; joined first, as built, never.</p>
 <p>A Codex worker planned and wrote it; margins-claude checked the plan against the model; the coordinator reviewed it, joined it with main and made the runs above.</p>
 <h3 id="the-adoption-step-its-plan-loops-ls-and-loops---version">The adoption step: its plan, <code>loops ls</code> and <code>loops --version</code></h3>
 <p>Kyle ruled on 2026-11-21 (W1) that the adoption step's CLI pieces are built beside the tick work. Its exit is <code>loops</code> first on <code>PATH</code> for his daily work.</p>
@@ -372,6 +403,14 @@ svc:jellyfin  svc         7        2      conflict (2)  sam
 <li><p>The evidence keeps the five first verdicts beside the final ones, so the gaps stay on record.</p></li>
 </ul>
 <p>A Codex worker wrote the entries, ran them and added the vectors; the coordinator reviewed the run, joined it with main and ran the gate.</p>
+<h3 id="the-prefix-at-a-time-is-strict">The prefix at a time is strict</h3>
+<p><code>upTo W T</code> in <code>model/Laws/Cut.lean</code> is now the records emitted before <code>T</code>; it took a record emitted at <code>T</code> itself in. The cut note's section 2 says the bound reads as <code>below</code> does, and <code>loops tick --as-of &lt;time&gt;</code> is built that way, so the model's name and the CLI now mean the same set at the boundary too. The coordinator's worker found the difference in the model's own witness: at one second the old prefix held <code>c</code>, emitted at one second, and the strict one does not.</p>
+<ul>
+<li><p>The laws of <code>cut.prefix</code> hold as before with the bound changed: <code>prefix_down_iff</code> (every prefix is closed downward exactly when no record names a later one), <code>heldOf_prefix</code>. The first's proof no longer uses the prefix at a record's own time; it uses the prefix at the time of a record named later, which would hold the namer.</p></li>
+<li><p>The witness <code>prefix_reads_wrongly</code> is at two seconds, where the prefix is again <code>a</code> and <code>c</code>.</p></li>
+<li><p>No vector, no Rust and no protocol rule depends on <code>upTo</code>.</p></li>
+</ul>
+<p>margins-claude wrote it.</p>
 <h3 id="the-base-lemma-an-emit-against-a-base">The base lemma: an emit against a base</h3>
 <p>The filler against a base (the cut note, section 8, ruled 2026-11-20) names the base's live records of the thing. This is the law for it, in <code>model/Laws/LiveSlice.lean</code>, indexed as <code>keyed.base</code>. Model only: no vector, no Rust, no protocol rule.</p>
 <ul>

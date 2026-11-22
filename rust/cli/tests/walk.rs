@@ -4382,6 +4382,285 @@ fn plain_fold_reports_missing_group_inputs_usage_and_unclean_lines() {
     }
 }
 
+fn assert_cut_report(s: &Store, tick: &str, closure: &str, outside: usize) {
+    assert_tick_check(
+        s,
+        tick,
+        0,
+        &format!(r#"{{"answer":"same","closure":"{closure}","taken-not-covered":{outside}}}"#),
+    );
+}
+
+#[test]
+fn tick_cut_two_nights_and_a_late_backup() {
+    let s = Store::new("tick-cut-nights");
+    let mut first = Vec::new();
+    for (night, sizes) in [(16, [412, 3, 88]), (17, [419, 10, 95])] {
+        for (service, mb) in ["jellyfin", "pihole", "gitea"].into_iter().zip(sizes) {
+            let id = s.ok(&[
+                "emit",
+                "backup",
+                &format!("svc={service}"),
+                &format!("mb:={mb}"),
+                "--emitted",
+                &format!("2026-11-{night}T00:00:00Z"),
+            ]);
+            if night == 16 {
+                first.push(id);
+            }
+        }
+    }
+    first.sort_unstable();
+    let id = s.ok_with(&["tick", "-", "--as-of", "2026-11-17"], BACKUPS);
+    let tick = s.json(&["get", &id]);
+    let p = at(&tick, &["payload"]);
+    assert_eq!(strings(p, &["covers"]), first);
+    assert!(!has(p, &[], "withheld"));
+    assert_eq!(text(p, &["result", "runs", "value"]), "3");
+    assert_eq!(text(p, &["result", "mb", "value"]), "503");
+    assert_cut_report(&s, &id, "yes", 3);
+    s.ok(&["emit", "backup", "mb:=4"]);
+    assert_cut_report(&s, &id, "yes", 4);
+}
+
+#[test]
+fn tick_cut_skew_and_named_revision() {
+    let s = Store::new("tick-cut-skew");
+    let ids = s.changeset(
+        r#"{"label":"@a","kind":"note","of":"task:x","emitted":"2000-01-01T00:00:00Z"}
+{"label":"@b","kind":"note","of":"task:x","prev":["@a"],"emitted":"2000-01-01T00:00:05Z"}
+{"kind":"backup","of":"task:x","prev":["@b"],"emitted":"2000-01-01T00:00:01Z"}
+{"kind":"backup","emitted":"2000-01-02T00:00:00Z"}"#,
+    );
+    let mut chain = ids[..3].to_vec();
+    chain.sort_unstable();
+    for (flags, expected, outside) in [
+        (vec!["--as-of", "2000-01-01T00:00:01Z"], &ids[..1], 2),
+        (vec!["--as-of", "2000-01-01T00:00:02Z"], &chain[..], 1),
+        (vec!["--cover", &ids[2][2..14]], &chain[..], 1),
+        (
+            vec!["--cover", &ids[0], "--cover", &ids[2], "--cover", &ids[0]],
+            &chain[..],
+            1,
+        ),
+    ] {
+        let id = s.ok_with(&[&["tick", "-"][..], &flags].concat(), BACKUPS);
+        assert_eq!(
+            strings(&s.json(&["get", &id]), &["payload", "covers"]),
+            expected
+        );
+        assert_cut_report(&s, &id, "yes", outside);
+    }
+}
+
+#[test]
+fn tick_cut_leaves_under_and_erases_outside() {
+    let s = Store::new("tick-cut-under");
+    let grant = s.ok(&["emit", "grant"]);
+    let target = s.ok(&["emit", "backup"]);
+    let y = s.ok(&["emit", "note", "--under", &grant, "--erases", &target]);
+    let id = s.ok_with(&["tick", "-", "--cover", &y], BACKUPS);
+    assert_eq!(strings(&s.json(&["get", &id]), &["payload", "covers"]), [y]);
+    assert_cut_report(&s, &id, "no", 1);
+}
+
+#[test]
+fn tick_cut_after_local_erasure_withholds_the_opening() {
+    let s = Store::new("tick-cut-erasure");
+    let target = s.ok(&[
+        "emit",
+        "backup",
+        "mb:=412",
+        "--emitted",
+        "2000-01-01T00:00:00Z",
+    ]);
+    // Leave the target's original open line on disk. Even an outside eraser
+    // with no local purge makes that opening unavailable to this writer.
+    s.ok(&[
+        "emit",
+        "erasure",
+        "--erases",
+        &target,
+        "--emitted",
+        "2000-01-03T00:00:00Z",
+    ]);
+    let id = s.ok_with(&["tick", "-", "--as-of", "2000-01-02"], BACKUPS);
+    let line = s.json(&["get", &id]);
+    let p = at(&line, &["payload"]);
+    assert_eq!(strings(p, &["covers"]), std::slice::from_ref(&target));
+    assert_eq!(strings(p, &["withheld"]), [target]);
+    assert_eq!(text(p, &["result", "runs", "value"]), "1");
+    assert_eq!(text(p, &["result", "mb", "value"]), "0");
+    assert_eq!(text(p, &["result", "mb", "unread"]), "1");
+    assert_cut_report(&s, &id, "yes", 0);
+}
+
+#[test]
+fn tick_cut_and_base_choose_payload_and_anchor_independently() {
+    let s = Store::new("tick-cut-base");
+    let anchor = s.ok(&["emit", "note", "--of", "tick:series", "--emitted", WHEN]);
+    let base = s.ok_with(&["tick", "-", "--emitted", WHEN], BACKUPS);
+    s.ok(&["emit", "note", "--of", "tick:series", "--emitted", WHEN]);
+    let backup = s.ok(&["emit", "backup", "--emitted", "2000-01-01T00:00:00Z"]);
+    for (flag, value) in [("--cover", backup.as_str()), ("--as-of", "2000-01-02")] {
+        let id = s.ok_with(
+            &[
+                "tick",
+                "-",
+                "--base",
+                &base,
+                flag,
+                value,
+                "--of",
+                "tick:series",
+            ],
+            BACKUPS,
+        );
+        assert_eq!(prev(&s, &id), std::slice::from_ref(&anchor));
+        assert_eq!(
+            strings(&s.json(&["get", &id]), &["payload", "covers"]),
+            std::slice::from_ref(&backup)
+        );
+        assert_cut_report(&s, &id, "yes", 0);
+    }
+}
+
+#[test]
+fn tick_cut_usage_and_id_refusals_leave_store_intact() {
+    let s = Store::new("tick-cut-invalid");
+    let ids = s.changeset(
+        &r#"{"kind":"backup"}
+"#
+        .repeat(33),
+    );
+    let before = s.ok(&["export"]);
+    for flags in [
+        vec!["--as-of", "2000", "--cover", &ids[0]],
+        vec!["--cover", &ids[0], "--as-of", "2000"],
+        vec!["--as-of", "2000", "--as-of", "2001"],
+        vec!["--as-of", "2000/2001"],
+        vec!["--as-of", "2000-02-30"],
+        vec!["--cover"],
+        vec!["--as-of"],
+    ] {
+        assert_eq!(
+            s.fails(&[&["tick", "-"][..], &flags].concat(), BACKUPS).0,
+            2,
+            "{flags:?}"
+        );
+    }
+    let prefix = ids
+        .iter()
+        .map(|id| &id[2..3])
+        .find(|p| ids.iter().filter(|id| id[2..].starts_with(p)).count() >= 2)
+        .expect("33 records share a first base32 digit");
+    for operand in [prefix, "no-such-id"] {
+        assert_eq!(
+            s.fails(&["tick", "-", "--cover", operand], BACKUPS),
+            s.fails(&["get", operand], "")
+        );
+    }
+    assert_eq!(s.ok(&["export"]), before);
+}
+
+#[test]
+fn tick_cut_full_cover_matches_default_signed_tick() {
+    let s = Store::new("tick-cut-default");
+    let first = s.ok(&["emit", "backup"]);
+    let second = s.ok(&["emit", "note", "--erases", &first]);
+    let fixed = ["tick", "-", "--emitted", WHEN, "--salt", SALT];
+    let default = s.ok_with(&fixed, BACKUPS);
+    let explicit = s.ok_with(
+        &[&fixed[..], &["--cover", &second, "--cover", &first]].concat(),
+        BACKUPS,
+    );
+    assert_eq!(default, explicit);
+}
+
+#[test]
+fn tick_cut_random_skewed_stores_match_reference_and_replay() {
+    const SEED: u32 = 0xc071_2026;
+    const CASES: usize = 32;
+    eprintln!("tick cut seed {SEED:#x}, {CASES} stores");
+    let mut state = SEED;
+    let mut pick = |limit: usize| {
+        state = state.wrapping_mul(1_664_525).wrapping_add(1_013_904_223);
+        usize::try_from(state >> 8).expect("24 random bits fit usize") % limit
+    };
+    let mut skewed = 0;
+    for case in 0..CASES {
+        let s = Store::new(&format!("tick-cut-random-{case}"));
+        let n = 6 + pick(13);
+        let bound = pick(16);
+        let stamp = |sec| format!("2000-01-01T00:00:{sec:02}Z");
+        let mut edges = Vec::new();
+        let mut seed = Vec::new();
+        let mut drafts = Vec::new();
+        for i in 0..n {
+            let sec = pick(16);
+            let mut parents = Vec::new();
+            if i > 0 {
+                for _ in 0..pick(4) {
+                    parents.push(pick(i));
+                }
+                parents.sort_unstable();
+                parents.dedup();
+            }
+            let prev = parents
+                .iter()
+                .map(|p| format!(r#""@r{p}""#))
+                .collect::<Vec<_>>()
+                .join(",");
+            drafts.push(format!(r#"{{"label":"@r{i}","kind":"backup","of":"task:x","emitted":"{}","prev":[{prev}],"payload":{{"mb":{i}}}}}"#,stamp(sec)));
+            edges.push(parents);
+            seed.push(sec < bound);
+        }
+        let ids = s.changeset(&drafts.join("\n"));
+        // Saturate the strict prefix by repeated scans, independently of the
+        // CLI's id index and traversal order.
+        let mut selected = seed.clone();
+        loop {
+            let before = selected.clone();
+            for (i, parents) in edges.iter().enumerate() {
+                if before[i] {
+                    for &p in parents {
+                        selected[p] = true;
+                    }
+                }
+            }
+            if selected == before {
+                break;
+            }
+        }
+        skewed += usize::from(selected != seed);
+        let mut expected: Vec<_> = ids
+            .iter()
+            .zip(selected)
+            .filter(|(_, yes)| *yes)
+            .map(|(id, _)| id.clone())
+            .collect();
+        expected.sort_unstable();
+        let id = s.ok_with(&["tick", "-", "--as-of", &stamp(bound)], BACKUPS);
+        let tick = s.json(&["get", &id]);
+        assert_eq!(
+            strings(&tick, &["payload", "covers"]),
+            expected,
+            "seed {SEED:#x}, case {case}"
+        );
+        let verdict = s.json(&["tick", "--check", &id]);
+        let report = format!(
+            r#"{{"answer":"same","closure":"yes","taken-not-covered":{}}}"#,
+            n - expected.len()
+        );
+        assert_eq!(verdict.canon(), report, "seed {SEED:#x}, case {case}");
+    }
+    assert!(
+        skewed > 0,
+        "seed {SEED:#x} must pull in a clock-skewed ancestor"
+    );
+    eprintln!("{skewed} stores pulled in a predecessor outside the strict prefix");
+}
+
 #[test]
 fn emit_ends_options_before_literal_fields_and_message() {
     let s = Store::new("emit-end-options");
