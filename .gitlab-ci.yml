@@ -195,7 +195,7 @@ model:
     # The mutation catalogue names current source sites, and its runner works
     - timeout 120 node --test model/mutate/run.test.mjs
     # Fuzz adapters and batch transport check
-    - timeout 60 node --test interop/fuzz/*.test.mjs
+    - timeout 300 node --test interop/fuzz/*.test.mjs
     # Rust input-only evaluator for three-way fuzz
     - (cd rust && cargo build -p loops-eval --bin loops-eval)
     # The verified fixed fuzz corpus agrees

@@ -2993,6 +2993,595 @@ fn checking_a_tick_over_ticks_needs_only_the_outer_cover() {
     );
 }
 
+const BASE_THING: &str = "svc:jellyfin";
+const ONE_UNSHOWN: &str = "the base did not show 1 record that this emit names";
+const TWO_UNSHOWN: &str = "the base did not show 2 records that this emit names";
+
+fn fixed_write(store: &Store, args: &[&str], notice: &str) -> String {
+    let mut command = vec!["emit", "--emitted", WHEN, "--salt", SALT];
+    command.extend(args);
+    let (status, out, err) = answer(store, &command, "");
+    assert_eq!((status, err), (0, notice.to_owned()), "{args:?}");
+    out.trim_end().to_owned()
+}
+
+fn jellyfin(s: &Store) -> (String, String) {
+    let x = fixed_emit(
+        s,
+        &[
+            "service",
+            "--of",
+            BASE_THING,
+            "port=8096",
+            "owner=kyle",
+            "--sets",
+            "port",
+            "--sets",
+            "owner",
+        ],
+    );
+    let y = fixed_emit(s, &["service", "--of", BASE_THING, "port=8097"]);
+    (x, y)
+}
+
+fn prev(s: &Store, id: &str) -> Vec<String> {
+    let line = s.json(&["get", id]);
+    if has(&line, &["env"], "prev") {
+        strings(&line, &["env", "prev"])
+    } else {
+        Vec::new()
+    }
+}
+
+fn import_ids(from: &Store, into: &Store, ids: &[String]) {
+    let lines = ids
+        .iter()
+        .map(|id| from.ok(&["get", id]))
+        .collect::<Vec<_>>()
+        .join("\n");
+    into.ok_with(&["import"], &lines);
+}
+
+#[test]
+fn tk11_names_the_unseen_owner_setter_for_either_edit() {
+    for (edit, value) in [("port=8098", "kyle"), ("owner=sam", "sam")] {
+        let s = fixed_store(&format!("tk11-{value}"));
+        let (x, y) = jellyfin(&s);
+        let z = fixed_write(
+            &s,
+            &["service", "--of", BASE_THING, edit, "--base-id", &y],
+            ONE_UNSHOWN,
+        );
+        let mut expected = vec![x, y];
+        expected.sort();
+        assert_eq!(prev(&s, &z), expected);
+        let whole = s.json(&["of", BASE_THING]);
+        assert_eq!(head_ids(&whole), [z]);
+        assert_eq!(text(&whole, &["values", "owner"]), value);
+        if edit == "port=8098" {
+            let slice = fixed_store("tk11-live-slice");
+            let live = live_of(&s, BASE_THING);
+            assert_eq!(live.len(), 2);
+            import_ids(&s, &slice, &live);
+            let sliced = slice.json(&["of", BASE_THING]);
+            assert_eq!(at(&whole, &["heads"]), at(&sliced, &["heads"]));
+            assert_eq!(at(&whole, &["values"]), at(&sliced, &["values"]));
+            assert_eq!(text(&sliced, &["values", "port"]), "8098");
+            // y is dead under this live slice. No additional live id is named.
+            let bare = fixed_emit(&slice, &["service", "--of", BASE_THING, "title=test"]);
+            let based = fixed_write(
+                &s,
+                &[
+                    "service",
+                    "--of",
+                    BASE_THING,
+                    "title=test",
+                    "--base-id",
+                    &live[0],
+                    "--base-id",
+                    &live[1],
+                ],
+                "",
+            );
+            assert_eq!(s.ok(&["get", &based]), slice.ok(&["get", &bare]));
+        }
+    }
+}
+
+#[test]
+fn a_base_counts_distinct_live_ancestors_and_follows_only_prev() {
+    let s = fixed_store("base-links");
+    let (x, y) = jellyfin(&s);
+    let z = fixed_emit(&s, &["service", "--of", BASE_THING, "title=home"]);
+    let id = fixed_write(
+        &s,
+        &[
+            "service",
+            "--of",
+            BASE_THING,
+            "port=8098",
+            "--base-id",
+            &z,
+            "--base-id",
+            &z,
+        ],
+        TWO_UNSHOWN,
+    );
+    let mut expected = vec![x.clone(), y.clone(), z];
+    expected.sort();
+    assert_eq!(prev(&s, &id), expected);
+
+    let input = format!(
+        r#"{{"kind":"service","of":"{BASE_THING}","under":"{y}","erases":["{x}"],"payload":{{"title":"reset"}}}}"#
+    );
+    let separate = ids(
+        &parse_json(&s.ok_with(&["emit", "-"], &input)).expect("batch"),
+        &["records"],
+    );
+    let id = fixed_write(
+        &s,
+        &["service", "--of", BASE_THING, "--base-id", &separate[0]],
+        "",
+    );
+    assert_eq!(prev(&s, &id), separate);
+}
+
+#[test]
+fn stated_predecessor_outside_the_cover_brings_its_live_ancestors() {
+    let s = fixed_store("base-stated");
+    let marker = s.ok_with(&["tick", "-"], SPEC);
+    let (x, y) = jellyfin(&s);
+    let z = fixed_write(
+        &s,
+        &["service", "port=8098", "--base", &marker, "--prev", &y],
+        TWO_UNSHOWN,
+    );
+    let mut expected = vec![x, y.clone()];
+    expected.sort();
+    assert_eq!(prev(&s, &z), expected);
+    let slice = fixed_store("base-stated-live");
+    import_ids(&s, &slice, &live_of(&s, BASE_THING));
+    for store in [&s, &slice] {
+        let state = store.json(&["of", BASE_THING]);
+        assert_eq!(head_ids(&state), [z.as_str()]);
+        assert_eq!(text(&state, &["values", "port"]), "8098");
+        assert_eq!(text(&state, &["values", "owner"]), "kyle");
+    }
+
+    // Y is now dead under Z. Both the stated Y and the live X count once.
+    let joined = fixed_write(
+        &s,
+        &["service", "--base-id", &z, "--prev", &y, "--prev", &y],
+        TWO_UNSHOWN,
+    );
+    expected.push(z);
+    expected.sort();
+    assert_eq!(prev(&s, &joined), expected);
+}
+
+#[test]
+fn tick_cover_and_literal_ids_form_one_base_on_both_paths() {
+    let s = fixed_store("base-union");
+    let left = fixed_emit(&s, &["service", "--of", BASE_THING, "owner=kyle"]);
+    let marker = s.ok_with(&["tick", "-"], SPEC);
+    let row = r#"{"kind":"service","of":"svc:jellyfin","payload":{"port":"8096"}}"#;
+    let right = ids(
+        &parse_json(&s.ok_with(&["emit", "-"], row)).expect("batch"),
+        &["records"],
+    );
+    let mut expected = vec![left.clone(), right[0].clone()];
+    expected.sort();
+    let joined = fixed_write(
+        &s,
+        &[
+            "service",
+            "--of",
+            BASE_THING,
+            "--base",
+            &marker,
+            "--base-id",
+            &right[0],
+            "--base-id",
+            &left,
+        ],
+        "",
+    );
+    assert_eq!(prev(&s, &joined), expected);
+    let (status, out, err) = answer(
+        &s,
+        &[
+            "emit",
+            "-",
+            "--fill",
+            "--base-id",
+            &right[0],
+            "--base",
+            &marker,
+        ],
+        row,
+    );
+    assert_eq!((status, err), (0, String::new()));
+    let batch = ids(&parse_json(&out).expect("batch"), &["records"]);
+    assert_eq!(prev(&s, &batch[0]), expected);
+}
+
+#[test]
+fn full_base_and_both_default_fills_write_the_original_bytes() {
+    let mut signed = Vec::new();
+    for mode in ["single", "based", "jsonl", "based-jsonl"] {
+        let s = fixed_store(&format!("base-identical-{mode}"));
+        let (x, y) = jellyfin(&s);
+        let id = match mode {
+            "single" => fixed_emit(&s, &["service", "--of", BASE_THING, "port=8098"]),
+            "based" => fixed_write(
+                &s,
+                &[
+                    "service",
+                    "--of",
+                    BASE_THING,
+                    "port=8098",
+                    "--base-id",
+                    &x,
+                    "--base-id",
+                    &y,
+                ],
+                "",
+            ),
+            _ => {
+                let mut args = FILL.to_vec();
+                if mode == "based-jsonl" {
+                    args.extend(["--base-id", &x, "--base-id", &y]);
+                }
+                let input = format!(
+                    r#"{{"kind":"service","of":"{BASE_THING}","emitted":"{WHEN}","salt":"{SALT}","payload":{{"port":"8098"}}}}"#
+                );
+                let (status, out, err) = answer(&s, &args, &input);
+                assert_eq!((status, err), (0, String::new()));
+                ids(&parse_json(&out).expect("answer"), &["records"])[0].clone()
+            }
+        };
+        // Captured before changing the writer, with the same key, time and salts.
+        assert_eq!(id, "r:55h8n6chc4v2lvrvbp3qakt6pkc7albhrp0ok8lht1birida3dp0");
+        signed.push(s.ok(&["get", &id]));
+    }
+    assert!(signed.windows(2).all(|w| w[0] == w[1]));
+}
+
+#[test]
+fn a_tick_base_forks_the_older_read_and_preserves_explicit_predecessors() {
+    let s = fixed_store("base-stale");
+    let original = s.ok(&[
+        "emit",
+        "task",
+        "--of",
+        "task:42",
+        "--sets",
+        "status",
+        "--about",
+        "project:old",
+        "--occurred",
+        "2009",
+        "status=open",
+    ]);
+    let marker = s.ok_with(&["tick", "-", "--of", "tick:series"], SPEC);
+    let peer = s.ok(&[
+        "emit",
+        "task",
+        "--of",
+        "task:42",
+        "--about",
+        "project:peer",
+        "--occurred",
+        "2010",
+        "status=review",
+    ]);
+    let edit = fixed_write(
+        &s,
+        &[
+            "task",
+            "--of",
+            "task:42",
+            "status=done",
+            "--base",
+            &marker[2..12],
+        ],
+        "",
+    );
+    let got = s.json(&["get", &edit]);
+    assert_eq!(prev(&s, &edit), [original.as_str()]);
+    assert_eq!(strings(&got, &["env", "about"]), ["project:old"]);
+    assert_eq!(text(&got, &["env", "occurred"]), "2009");
+    let state = s.json(&["of", "task:42"]);
+    let mut heads = head_ids(&state);
+    heads.sort();
+    let mut both = vec![peer.clone(), edit];
+    both.sort();
+    assert_eq!(heads, both);
+    assert!(!has(&state, &["values"], "status"));
+    assert_eq!(ids(&state, &["setters", "status"]), head_ids(&state));
+    let spec = r#"{"vertex":"fork","from":[{"store":"."}],"fold":{"now":{"latest-by":"of","follow":"prev"}}}"#;
+    let folded = parse_json(&s.ok_with(&["fold", "-"], spec)).expect("fold");
+    assert_eq!(
+        ids(&folded, &["now", "things", "task:42"]),
+        head_ids(&state)
+    );
+
+    let explicit = fixed_write(
+        &s,
+        &[
+            "task",
+            "--prev",
+            &peer,
+            "--base",
+            &marker,
+            "--no-about",
+            "--no-occurred",
+            "status=joined",
+        ],
+        ONE_UNSHOWN,
+    );
+    assert_eq!(prev(&s, &explicit), [peer]);
+    let line = s.json(&["get", &explicit]);
+    assert_eq!(text(&line, &["env", "of"]), "task:42");
+    assert!(!has(&line, &["env"], "about") && !has(&line, &["env"], "occurred"));
+}
+
+#[test]
+fn an_empty_task_base_does_not_open_a_nested_tick() {
+    let s = fixed_store("base-daily");
+    let a = fixed_emit(&s, &["task", "--of", "task:42", "status=open"]);
+    let daily = s.ok_with(&["tick", "-", "--of", "tick:daily"], SPEC);
+    let other = fixed_store("base-weekly");
+    import_ids(&s, &other, std::slice::from_ref(&daily));
+    let weekly = other.ok_with(&["tick", "-"], SPEC);
+    import_ids(&other, &s, std::slice::from_ref(&weekly));
+    let empty = "the base covers no record of task:42";
+    let new = fixed_write(
+        &s,
+        &["task", "--of", "task:42", "--base", &weekly, "status=done"],
+        empty,
+    );
+    assert_eq!(prev(&s, &new), Vec::<String>::new());
+    assert!(!has(&s.json(&["get", &new]), &["env"], "sets"));
+    let stated = fixed_write(
+        &s,
+        &["task", "--prev", &a, "--base", &weekly, "status=done"],
+        ONE_UNSHOWN,
+    );
+    assert_eq!(prev(&s, &stated), [a]);
+
+    // The same tick can itself be the literal member, even with a peer tick held.
+    let earlier = s.ok_with(&["tick", "-", "--of", "tick:daily"], SPEC);
+    let before = s.ok(&["export"]).lines().count();
+    let (status, out, err) = answer(
+        &s,
+        &["tick", "-", "--of", "tick:daily", "--base-id", &daily],
+        SPEC,
+    );
+    assert_eq!((status, err), (0, String::new()));
+    let tick = out.trim_end();
+    assert_eq!(prev(&s, tick), [daily]);
+    let covers = strings(&s.json(&["get", tick]), &["payload", "covers"]);
+    assert_eq!(covers.len(), before);
+    assert!(covers.contains(&earlier));
+}
+
+#[test]
+fn based_changesets_chain_on_prepared_envelopes_and_report_only_after_append() {
+    let s = fixed_store("base-staged");
+    let (x, y) = jellyfin(&s);
+    let late = fixed_emit(&s, &["service", "--of", BASE_THING, "port=late"]);
+    let args = ["emit", "-", "--fill", "--base-id", &y];
+    let rows = r#"{"kind":"service","of":"svc:jellyfin","prev":["@first"],"payload":{"owner":"sam"}}
+{"kind":"service","label":"@first","of":"svc:jellyfin","about":["project:q"],"occurred":"2010","payload":{"port":"8098"}}"#;
+    let before = s.segments();
+    let (status, out, err) = answer(&s, &args, &format!("{rows}\n{{\"kind\":\"\"}}"));
+    assert_eq!(
+        (status, out, err),
+        (1, String::new(), "refused: kind-empty".into())
+    );
+    assert_eq!(s.segments(), before);
+    let (status, out, err) = answer(&s, &args, rows);
+    assert_eq!((status, err), (0, format!("{ONE_UNSHOWN}\n{TWO_UNSHOWN}")));
+    let records = ids(&parse_json(&out).expect("batch"), &["records"]);
+    let mut first = vec![x.clone(), y];
+    first.sort();
+    assert_eq!(prev(&s, &records[1]), first);
+    let mut second = vec![x, records[1].clone()];
+    second.sort();
+    assert_eq!(prev(&s, &records[0]), second);
+    let line = s.json(&["get", &records[0]]);
+    assert_eq!(strings(&line, &["env", "about"]), ["project:q"]);
+    assert_eq!(text(&line, &["env", "occurred"]), "2010");
+    assert!(!second.contains(&late));
+}
+
+fn refuses_base(s: &Store, selector: &[&str], why: &str) {
+    let before = s.segments();
+    let mut args = vec!["emit", "note", "--of", "task:42"];
+    args.extend(selector);
+    assert_eq!(
+        answer(s, &args, ""),
+        (1, String::new(), format!("refused: {why}"))
+    );
+    assert_eq!(s.segments(), before);
+}
+
+#[test]
+fn base_resolution_checks_every_covered_envelope_and_only_the_markers_opening() {
+    let a = fixed_store("base-resolution");
+    let x = a.ok(&[
+        "emit",
+        "task",
+        "--of",
+        "task:42",
+        "--about",
+        "project:p",
+        "--occurred",
+        "2009",
+    ]);
+    let irrelevant = a.ok(&["emit", "other"]);
+    let tick = a.ok_with(&["tick", "-"], SPEC);
+    let b = fixed_store("base-resolution-b");
+    import_ids(&a, &b, &[x.clone(), tick.clone()]);
+    refuses_base(
+        &b,
+        &["--base", &tick],
+        &format!("id-unknown: {irrelevant} covered by {tick}"),
+    );
+    refuses_base(&b, &["--base", &x], "tick-kind at kind");
+    for flag in ["--base", "--base-id"] {
+        refuses_base(&b, &[flag, "zzz"], "id-unknown: zzz");
+    }
+    let malformed = b.ok(&["emit", "tick", "extra=x"]);
+    refuses_base(&b, &["--base", &malformed], "tick-member-unknown at extra");
+
+    let mut prefix = None;
+    let mut seen = std::collections::HashSet::new();
+    for _ in 0..33 {
+        let id = b.ok(&["emit", "other"]);
+        if !seen.insert(id.as_bytes()[2]) {
+            prefix = Some(id[2..3].to_owned());
+            break;
+        }
+    }
+    let p = prefix.expect("two ids with same first digit");
+    for flag in ["--base", "--base-id"] {
+        let get = b.fails(&["get", &p], "");
+        assert!(get.1.starts_with("refused: id-ambiguous"));
+        assert_eq!(b.fails(&["emit", "task", flag, &p], ""), get);
+    }
+    for args in [
+        vec!["emit", "task", "--base", &tick, "--base", &tick],
+        vec!["emit", "task", "--base"],
+        vec!["emit", "-", "--base-id", &x],
+        vec!["tick", "--check", &tick, "--base", &x],
+    ] {
+        assert_eq!(b.fails(&args, "").0, 2);
+    }
+
+    a.ok(&["erase", &x]);
+    let withheld = fixed_store("base-withheld-setter");
+    import_ids(&a, &withheld, &[x.clone(), irrelevant, tick.clone()]);
+    for store in [&a, &withheld] {
+        let id = fixed_write(
+            store,
+            &["task", "--of", "task:42", "status=done", "--base", &tick],
+            "",
+        );
+        let line = store.json(&["get", &id]);
+        assert_eq!(prev(store, &id), [x.as_str()]);
+        assert_eq!(strings(&line, &["env", "about"]), ["project:p"]);
+        assert_eq!(text(&line, &["env", "occurred"]), "2009");
+    }
+
+    let eraser = a.json(&["erase", &tick]);
+    import_ids(&a, &b, &[text(&eraser, &["id"]).into()]);
+    let bare = fixed_store("base-bare-marker");
+    import_ids(&a, &bare, std::slice::from_ref(&tick));
+    for store in [&a, &b, &bare] {
+        refuses_base(store, &["--base", &tick], "the tick's payload is not held");
+    }
+    let id = fixed_write(&bare, &["note", "--of", &tick, "--base-id", &tick], "");
+    assert_eq!(prev(&bare, &id), [tick]);
+}
+
+#[test]
+fn a_base_uses_the_version_aware_common_tick_reader() {
+    use loops::spec_hash::{Rules, spec_hash_of};
+    use loops_place::line::hash;
+    let s = fixed_store("base-newer");
+    let x = s.ok(&["emit", "task", "--of", "task:42"]);
+    let spec = parse_json(r#"{"future":true}"#).expect("opaque spec");
+    let wrong_result = format!("res:{}", "0".repeat(52));
+    let marker = |version: &str, sh: &str, rh: &str| {
+        s.ok(&[
+            "emit",
+            "tick",
+            &format!("rules={version}"),
+            &format!("spec:={}", spec.canon()),
+            &format!("spec-hash={sh}"),
+            &format!("covers:=[\"{x}\"]"),
+            "result:=false",
+            &format!("result-hash={rh}"),
+        ])
+    };
+    let rules = Rules::of_json(&str_json("2")).expect("version");
+    let sh = spec_hash_of(&hash, &rules, &spec);
+    let future = marker("2", &sh, &wrong_result);
+    let id = fixed_write(&s, &["task", "--of", "task:42", "--base", &future], "");
+    assert_eq!(prev(&s, &id), [x.as_str()]);
+    let bad = marker("2", &sh, "res:BAD");
+    refuses_base(&s, &["--base", &bad], "tick-hash-invalid at result-hash");
+    let current = spec_hash_of(&hash, &Rules::current(), &spec);
+    let bad = marker("2", &current, &wrong_result);
+    refuses_base(
+        &s,
+        &["--base", &bad],
+        "tick-spec-hash-mismatch at spec-hash",
+    );
+    let bad = marker("1", &current, &wrong_result);
+    refuses_base(
+        &s,
+        &["--base", &bad],
+        "tick-result-hash-mismatch at result-hash",
+    );
+}
+
+#[test]
+fn base_admission_is_local_and_ancestry_stops_at_missing_or_unrelated_envelopes() {
+    use loops::{envelope::Env, stored};
+    use loops_place::{key::Key, line::Line};
+    let s = fixed_store("base-admit");
+    let unrelated = fixed_emit(&s, &["other", "--of", "other:thing"]);
+    let key = Key::from_text(&"0".repeat(52)).expect("fixed key");
+    let writer = stored::write(
+        Env {
+            kind: "task".into(),
+            of: Some("task:42".into()),
+            prev: vec![unrelated.clone()],
+            emitted: WHEN.into(),
+            observer: key.public(),
+            ..Env::default()
+        },
+        vec![0; 16],
+        Json::Null,
+    )
+    .expect("checked envelope");
+    let orphan = Line::sign(&writer, &key);
+    let partial = fixed_store("base-missing-parent");
+    for store in [&s, &partial] {
+        store.ok_with(&["import"], &orphan.render());
+        let id = fixed_write(
+            store,
+            &["task", "--of", "task:42", "--base-id", orphan.id()],
+            "",
+        );
+        assert_eq!(prev(store, &id), [orphan.id()]);
+    }
+    let id = fixed_write(
+        &s,
+        &[
+            "task",
+            "--of",
+            "task:42",
+            "--base-id",
+            orphan.id(),
+            "--base-id",
+            &unrelated,
+        ],
+        "no record of task:42 in the base is admitted",
+    );
+    assert_eq!(prev(&s, &id), Vec::<String>::new());
+    assert!(!has(&s.json(&["get", &id]), &["env"], "sets"));
+    let explicit = fixed_write(
+        &s,
+        &["task", "--prev", orphan.id(), "--base-id", &unrelated],
+        &format!("no record of task:42 in the base is admitted\n{ONE_UNSHOWN}"),
+    );
+    assert_eq!(prev(&s, &explicit), [orphan.id()]);
+}
+
 #[test]
 fn ls_counts_admitted_ids_and_lists_things_by_literal_name() {
     let s = Store::new("ls-inventory");

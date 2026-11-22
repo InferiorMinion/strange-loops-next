@@ -38,6 +38,58 @@ fn emit_argument(
     Ok(())
 }
 
+/// A command-level selection; an id may name a tick literally.
+#[derive(Default)]
+pub(crate) struct BaseArgs {
+    pub(crate) tick: Option<String>,
+    pub(crate) ids: Vec<String>,
+}
+
+fn add_base(base: &mut Option<BaseArgs>, flag: &str, id: String) -> Result<(), Fail> {
+    if id.is_empty() || id == "r:" || id.starts_with("--") {
+        return Err(usage(format!("{flag} takes a record id or prefix")));
+    }
+    let base = base.get_or_insert_with(BaseArgs::default);
+    if flag == "--base-id" {
+        base.ids.push(id);
+    } else if base.tick.is_some() {
+        return Err(usage("use --base once"));
+    } else {
+        base.tick = Some(id);
+    }
+    Ok(())
+}
+
+/// Flags after the JSONL dash, entered only for the changeset syntax.
+pub(crate) fn changeset_args(args: &[String]) -> Result<(JsonlMode, Option<BaseArgs>), Fail> {
+    let mut args = args.iter();
+    let mut fill = false;
+    let mut base = None;
+    while let Some(flag) = args.next() {
+        match flag.as_str() {
+            "--fill" if !fill => fill = true,
+            "--base" | "--base-id" => {
+                let id = args
+                    .next()
+                    .ok_or_else(|| usage(format!("{flag} takes a value")))?;
+                add_base(&mut base, flag, id.clone())?;
+            }
+            _ => return Err(usage(format!("unexpected changeset option {flag}"))),
+        }
+    }
+    if !fill && base.is_some() {
+        return Err(usage("a changeset base requires --fill"));
+    }
+    Ok((
+        if fill {
+            JsonlMode::Fill
+        } else {
+            JsonlMode::Plain
+        },
+        base,
+    ))
+}
+
 /// `emit <kind> [field=text | field:=json]... ["message"]` and its flags.
 /// `field=text` is always text and `field:=json` a JSON value, as `HTTPie` writes them.
 /// `link` resolves a record id the person typed; `thing` resolves what `--of` names.
@@ -56,7 +108,8 @@ pub(crate) fn from_args(
     observer: &str,
     link: impl Fn(&str) -> Result<String, Fail>,
     thing: impl Fn(&str) -> Result<String, Fail>,
-) -> Result<Statement, Fail> {
+) -> Result<(Statement, Option<BaseArgs>), Fail> {
+    let mut base = None;
     let mut env = Env {
         emitted: now.to_owned(),
         observer: observer.to_owned(),
@@ -79,6 +132,7 @@ pub(crate) fn from_args(
         };
         match arg.as_str() {
             "--about" => env.about.push(value()?),
+            "--base" | "--base-id" => add_base(&mut base, arg, value()?)?,
             "--no-about" => no_about = true,
             "--of" => env.of = Some(thing(&value()?)?),
             "--prev" => env.prev.push(link(&value()?)?),
@@ -150,12 +204,15 @@ pub(crate) fn from_args(
         salt: salt.map_or_else(new_salt, Ok)?,
         payload: tick_payload.unwrap_or(Json::Obj(fields)),
     };
-    Ok(Statement {
-        draft,
-        about,
-        occurred,
-        sets,
-    })
+    Ok((
+        Statement {
+            draft,
+            about,
+            occurred,
+            sets,
+        },
+        base,
+    ))
 }
 
 fn shape(line: usize, what: &str) -> Fail {
