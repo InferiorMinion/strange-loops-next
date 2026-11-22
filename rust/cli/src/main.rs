@@ -14,6 +14,7 @@ use loops::{
     record::{Record, Shown, id_text},
     spec::Spec,
     things,
+    tick::make_tick,
 };
 use loops_place::{
     clock,
@@ -60,6 +61,8 @@ usage: loops [-C <dir>] <verb> ...
                                 --values adds stored envelopes to listed heads,
                                 held payloads to collect and prev entries,
                                 and about and values to keyed things
+  tick <vertex | spec-file | -> [emit envelope flags]
+                                write a tick over everything held (no time cut, id cut or slice)
   erase <id>... [\"why\"]         emit an erasure, and drop the openings held here
   export [--kind <k>] [--of <thing>] [--about <thing>]   stored lines, oldest first
   import [<file> | -]           add stored lines; a store is the union
@@ -351,17 +354,29 @@ fn emit(start: &Path, args: &[String]) -> Result<(), Fail> {
             .collect();
         return say(&object(vec![("records", Json::Arr(records))]).canon());
     }
+    write_one(&place, &held, &key, &now, args, None)
+}
+
+fn write_one(
+    place: &Dir,
+    held: &Held,
+    key: &Key,
+    now: &str,
+    args: &[String],
+    tick_payload: Option<Json>,
+) -> Result<(), Fail> {
     let statement = draft::from_args(
         args,
-        &now,
+        tick_payload,
+        now,
         &key.public(),
-        |given| link(&held, given),
-        |given| thing_ref(&held, given),
+        |given| link(held, given),
+        |given| thing_ref(held, given),
     )?;
-    let draft = fill::one(&|id| held.writer_view(id), &realm(&held), statement)
+    let draft = fill::one(&|id| held.writer_view(id), &realm(held), statement)
         .map_err(|e| refused(e.code()))?;
-    bound(&key, [&draft])?;
-    let lines = write_changeset(&place, &held, &key, &[draft])?;
+    bound(key, [&draft])?;
+    let lines = write_changeset(place, held, key, &[draft])?;
     say(lines.first().map_or("", Line::id))
 }
 
@@ -470,9 +485,12 @@ fn view(args: &[String]) -> (View, Vec<&String>) {
         (View::Values, rest)
     }
 }
-fn fold_text(start: &Path, spec: &str, view: View) -> Result<(), Fail> {
+fn parse_spec(spec: &str) -> Result<Spec, Fail> {
     let json = loops_eval::parse_json(spec).map_err(|e| refused(format!("spec-not-json: {e}")))?;
-    let spec = Spec::of_json(&json).map_err(|e| refused(format!("{} at {}", e.code(), e.path)))?;
+    Spec::of_json(&json).map_err(|e| refused(format!("{} at {}", e.code(), e.path)))
+}
+fn fold_text(start: &Path, spec: &str, view: View) -> Result<(), Fail> {
+    let spec = parse_spec(spec)?;
     let held = find_store(start)?.read()?;
     let admitted = realm(&held);
     let slots = loops_eval::slots_json(spec.run_admitted(&admitted));
@@ -489,32 +507,60 @@ fn fold(start: &Path, args: &[String]) -> Result<(), Fail> {
             "fold takes one spec file, or - for stdin, and may take --values",
         ));
     };
-    let mut spec = String::new();
-    if *file == "-" {
+    fold_text(start, &spec_file(start, file)?, view)
+}
+fn spec_file(start: &Path, file: &str) -> Result<String, Fail> {
+    if file == "-" {
+        let mut spec = String::new();
         io::stdin().read_to_string(&mut spec)?;
+        Ok(spec)
     } else {
-        spec = fs::read_to_string(start.join(file))?;
+        Ok(fs::read_to_string(start.join(file))?)
     }
-    fold_text(start, &spec, view)
+}
+fn vertex_name(name: &str) -> bool {
+    !name.contains(['/', '\\']) && !name.starts_with('.')
 }
 fn read(start: &Path, args: &[String]) -> Result<(), Fail> {
     let (view, args) = view(args);
     let [vertex] = args.as_slice() else {
         return Err(usage("read takes one vertex name, and may take --values"));
     };
-    if vertex.contains(['/', '\\']) || vertex.starts_with('.') {
+    if !vertex_name(vertex) {
         return Err(usage("a vertex name is a file name without its .json"));
     }
     let place = find_store(start)?;
+    fold_text(start, &vertex_text(&place, vertex)?, view)
+}
+fn vertex_text(place: &Dir, vertex: &str) -> Result<String, Fail> {
     let path = place.root().join("vertices").join(format!("{vertex}.json"));
-    let spec = fs::read_to_string(&path).map_err(|e| {
+    fs::read_to_string(&path).map_err(|e| {
         if e.kind() == io::ErrorKind::NotFound {
             refused(format!("vertex-unknown: {}", path.display()))
         } else {
             e.into()
         }
-    })?;
-    fold_text(start, &spec, view)
+    })
+}
+
+fn tick(start: &Path, args: &[String]) -> Result<(), Fail> {
+    let Some((source, flags)) = args.split_first() else {
+        return Err(usage("tick takes a vertex, a spec file, or - for stdin"));
+    };
+    let place = find_store(start)?;
+    let input = if source == "-" || !vertex_name(source) || start.join(source).is_file() {
+        spec_file(start, source)?
+    } else {
+        vertex_text(&place, source)?
+    };
+    let spec = parse_spec(&input)?;
+    let held = place.read()?;
+    warn_unclean(&held);
+    let forms = held.lines().iter().map(Line::record).collect::<Vec<_>>();
+    let payload = make_tick(spec, &forms).to_json(&hash);
+    let key = signing_key(Missing::Make)?;
+    let now = clock::now().ok_or_else(|| Fail::System("the clock is outside 1970–9999".into()))?;
+    write_one(&place, &held, &key, &now, flags, Some(payload))
 }
 
 fn export(start: &Path, args: &[String]) -> Result<(), Fail> {
@@ -648,6 +694,7 @@ fn run(args: &[String]) -> Result<(), Fail> {
             say(&place.root().display().to_string())
         }
         "emit" => emit(&start, rest),
+        "tick" => tick(&start, rest),
         "erase" => erase(&start, rest),
         "get" => get(&start, rest),
         "of" => of(&start, rest),

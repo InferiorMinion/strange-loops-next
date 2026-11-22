@@ -25,6 +25,8 @@ loops of <thing>                    a thing's values, its about, its heads, how 
 loops read <vertex> [--values]      fold .loops/vertices/<vertex>.json
 loops fold <spec.json | -> [--values]
                                     fold a spec given as a file
+loops tick <vertex | spec-file | -> [emit envelope flags]
+                                    write a tick over everything held (no time cut, id cut or slice)
 loops erase <id>... ["why"]         emit an erasure, and drop the openings held here
 loops export [--kind <k>] [--of <thing>] [--about <thing>]
 loops import [<file> | -]
@@ -73,7 +75,7 @@ loops whoami
 * Every answer is JSON or an id. Lenses are a later step, so `--json` is accepted and changes nothing.
 * `read`, `fold`, `of`, `get` and `export` answer from the lines that check,
   and are then refused `store-not-clean` when a line was refused or a
-  segment is altered, as `check` is; `emit` and `erase` warn and go on. See
+  segment is altered, as `check` is; `emit`, `tick` and `erase` warn and go on. See
   choice 18.
 
 ## On disk
@@ -375,6 +377,30 @@ Every verb that reads the store says when either happened (choice 18).
     {"of":"task:1","prev":["H"],"about":["project:q"],"occurred":"2010","sets":["x"]}
     {"of":"task:1","prev":["H","A"],"about":["project:q"],"occurred":"2010","sets":["y"]}
     ```
+
+21. **`loops tick` covers the whole holding.** The owner ruled on 2026-11-21
+    (TK1–TK5) that a tick is an ordinary record whose payload is the whole
+    tick, covering every record folded. [The tick record](../protocol/tick.md)
+
+    Implementer's choices
+
+    - Give the spec first. `-` reads stdin. A file in the working directory
+      (the directory given by `-C`, when supplied) takes precedence over a
+      vertex of the same name. A bare vertex name reads
+      `.loops/vertices/<name>.json`. An explicit path reads the file there.
+    - Use the checked lines from one store reading for the tick and its
+      envelope. An unclean store gives the same warning as on `emit`.
+      The core determines which openings are withheld. The new record is
+      appended after the fold.
+    - Take the envelope flags of single-record `emit`, including its
+      `--observer`, `--emitted` and `--salt` options. The observer must
+      bind to the signing key. The spec and the holding supply the whole
+      payload. Print the signed record's id. With no flags the tick is a root.
+
+    For example, with just six backups held, run
+    `loops tick backups --of tick:backups` twice. The first tick covers
+    the six backups. The second covers those six and the first tick, and
+    names the first tick in `prev`. A slot counting backups still gives six.
 
 ## Checked by
 
