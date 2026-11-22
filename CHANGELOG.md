@@ -27,7 +27,7 @@ In brief:
 
 ### Ruled by Kyle, 2026-11-21: the tick record and the order of work
 
-Each was an entry in `DECISIONS.md`, with an example. Kyle ruled for the recommendation every time. The rulings reached the coordinator through Neon, which Kyle told in its own session to send them.
+Each was an entry in `DECISIONS.md`, with an example. Kyle ruled for the recommendation every time. The rulings reached the coordinator through Neon, which Kyle told in its own session to send them. Kyle confirmed them in the coordinator's session the same evening, by asking for this record to be merged.
 The entries as they were put are kept in [the tick record note](notes/2026-11-21-tick-record.md#10-the-questions-as-they-were-put) and [the order-of-work note](notes/2026-11-21-order-of-work.md).
 
 **The tick record, TK1 to TK9.** The exact form is in [the note](notes/2026-11-21-tick-record.md), sections 1 to 6. Not built yet.
