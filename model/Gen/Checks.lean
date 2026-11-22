@@ -376,6 +376,11 @@ def tickCheckChecks : IO Unit := do
   let .ok sp := Spec.ofJson Tick.backups | throw (IO.userError "backups spec")
   let r : Record := { id := 1, kind := "backup", observer := "o:test", prev := [], emitted := stampAt 0 }
   let e := { r with id := 2, erases := [1] }
+  -- The check stops on the missing opening. Exercise the claim itself: an
+  -- eraser outside C must not act while settling the forms inside C.
+  let opened := { r with fields := [("mb", .one (.int 4))] }
+  ensure (resultBytes (tickRun sp [r.id] [] [opened, e]) == resultBytes (sp.run [opened]))
+    "a claim settled an eraser outside its cover"
   let p := makeTick sp [r]
   let subject := fun (p : TickPayload) => TickSubject.mk "tick" (some (p.toJson sha256))
   ensure ((checkTick sha256 Rules.current (subject p) [r, e]).answer == .missing ⟨0, 1⟩)

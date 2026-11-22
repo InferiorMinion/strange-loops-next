@@ -1,0 +1,126 @@
+{
+  "vector": "check-padded-count",
+  "layer": "tick",
+  "laws": ["tick.canonical"],
+  "source": "model",
+  "input": {
+    "op": "check-tick",
+    "current": "1",
+    "subject": {
+      "kind": "tick",
+      "payload": {
+        "rules": "1",
+        "spec": {
+          "vertex": "backups",
+          "from": [
+            {
+              "store": "lab",
+              "kind": ["backup"]
+            }
+          ],
+          "fold": {
+            "runs": {
+              "count": true
+            }
+          }
+        },
+        "spec-hash": "spec:6t7m82rausaehd5i1f8fa2qfoiukolgoejnis9n2sr8s63gukt8g",
+        "covers": ["r:000000000000000000000000000000000000000000000000000g", "r:0000000000000000000000000000000000000000000000000010", "r:000000000000000000000000000000000000000000000000001g", "r:0000000000000000000000000000000000000000000000000020", "r:000000000000000000000000000000000000000000000000002g", "r:0000000000000000000000000000000000000000000000000030"],
+        "result": {
+          "runs": {
+            "unread": "0",
+            "value": "06"
+          }
+        },
+        "result-hash": "res:a0h95n44jasmdvb23sqpvoabht22knslg1fuh2kv74qdun8vnv9g"
+      }
+    },
+    "checker": [
+      {
+        "id": "r:000000000000000000000000000000000000000000000000000g",
+        "kind": "backup",
+        "observer": "sl:laptop",
+        "about": ["svc:jellyfin"],
+        "prev": [],
+        "emitted": "2026-11-21T20:00:00Z",
+        "occurred": "2026-11-16",
+        "fields": {
+          "svc": "jellyfin",
+          "mb": 412
+        }
+      },
+      {
+        "id": "r:0000000000000000000000000000000000000000000000000010",
+        "kind": "backup",
+        "observer": "sl:laptop",
+        "about": ["svc:pihole"],
+        "prev": [],
+        "emitted": "2026-11-21T20:00:00Z",
+        "occurred": "2026-11-16",
+        "fields": {
+          "svc": "pihole",
+          "mb": 3
+        }
+      },
+      {
+        "id": "r:000000000000000000000000000000000000000000000000001g",
+        "kind": "backup",
+        "observer": "sl:laptop",
+        "about": ["svc:gitea"],
+        "prev": [],
+        "emitted": "2026-11-21T20:00:00Z",
+        "occurred": "2026-11-16",
+        "fields": {
+          "svc": "gitea",
+          "mb": 88
+        }
+      },
+      {
+        "id": "r:0000000000000000000000000000000000000000000000000020",
+        "kind": "backup",
+        "observer": "sl:laptop",
+        "about": ["svc:jellyfin"],
+        "prev": [],
+        "emitted": "2026-11-21T20:00:00Z",
+        "occurred": "2026-11-17",
+        "fields": {
+          "svc": "jellyfin",
+          "mb": 419
+        }
+      },
+      {
+        "id": "r:000000000000000000000000000000000000000000000000002g",
+        "kind": "backup",
+        "observer": "sl:laptop",
+        "about": ["svc:pihole"],
+        "prev": [],
+        "emitted": "2026-11-21T20:00:00Z",
+        "occurred": "2026-11-17",
+        "fields": {
+          "svc": "pihole",
+          "mb": 10
+        }
+      },
+      {
+        "id": "r:0000000000000000000000000000000000000000000000000030",
+        "kind": "backup",
+        "observer": "sl:laptop",
+        "about": ["svc:gitea"],
+        "prev": [],
+        "emitted": "2026-11-21T20:00:00Z",
+        "occurred": "2026-11-17",
+        "fields": {
+          "svc": "gitea",
+          "mb": 95
+        }
+      }
+    ]
+  },
+  "expect": {
+    "answer": "not a tick",
+    "refused": "tick-result-invalid",
+    "path": "result.runs.value",
+    "closure": "yes",
+    "taken-not-covered": 0
+  }
+}

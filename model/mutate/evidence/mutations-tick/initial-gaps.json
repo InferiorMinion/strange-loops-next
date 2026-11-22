@@ -1,0 +1,104 @@
+{
+  "catalogue": 5,
+  "mutants": [
+    {
+      "id": "tick-padded-natural",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "none"
+    },
+    {
+      "id": "tick-settle-outside",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "none"
+    },
+    {
+      "id": "tick-follow-inner-covers",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "none"
+    },
+    {
+      "id": "tick-check-text-order",
+      "status": "survived",
+      "commands": [
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        },
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        },
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        },
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "tick-unheld-before-kind",
+      "status": "survived",
+      "commands": [
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        },
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        },
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        },
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        }
+      ]
+    }
+  ]
+}

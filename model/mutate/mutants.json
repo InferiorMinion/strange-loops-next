@@ -2591,5 +2591,733 @@
     "before": "| .payload f => Tri.agree ((rs.filter (liveFor rs f)).map c.eval) (.ofBool (c.op.test []))",
     "after": "| .payload f =>\n    let ss := rs.filter (liveFor rs f)\n    if (match c.op with | .is _ => true | _ => false) &&\n        ss.all (fun r => match r.get f with | some (.many _) => r.shown == .here | _ => false) &&\n        ss.any (fun r => c.eval r == .yes) then .yes\n    else Tri.agree (ss.map c.eval) (.ofBool (c.op.test []))",
     "reason": "Accept an equality test on live lists when any setter answers yes."
+  },
+  {
+    "id": "tick-label-domain",
+    "file": "SpecHash.lean",
+    "definition": "Loops.specLabel",
+    "before": "\"loops/spec-hash/v\" ++ v.text ++ \":\"",
+    "after": "\"loops/spec/v\" ++ v.text ++ \":\"",
+    "reason": "Use the spec domain without its hash qualifier."
+  },
+  {
+    "id": "tick-label-fixed",
+    "file": "SpecHash.lean",
+    "definition": "Loops.specLabel",
+    "before": "\"loops/spec-hash/v\" ++ v.text ++ \":\"",
+    "after": "\"loops/spec-hash/v\" ++ \"1\" ++ \":\"",
+    "reason": "Frame every spec under version one."
+  },
+  {
+    "id": "tick-label-colon",
+    "file": "SpecHash.lean",
+    "definition": "Loops.specLabel",
+    "before": "\"loops/spec-hash/v\" ++ v.text ++ \":\"",
+    "after": "\"loops/spec-hash/v\" ++ v.text",
+    "reason": "Omit the delimiter between the version and the spec."
+  },
+  {
+    "id": "tick-spec-prefix",
+    "file": "SpecHash.lean",
+    "definition": "Loops.specHashOf",
+    "before": "\"spec:\" ++ base32",
+    "after": "\"res:\" ++ base32",
+    "reason": "Write a spec identity with the result prefix."
+  },
+  {
+    "id": "tick-rules-leading-zero",
+    "file": "SpecHash.lean",
+    "definition": "Loops.Rules.ofJson?",
+    "before": "natOf? s.toList",
+    "after": "s.toNat?",
+    "reason": "Accept padded decimal versions as their unpadded value."
+  },
+  {
+    "id": "tick-rules-zero",
+    "file": "SpecHash.lean",
+    "definition": "Loops.Rules.ofJson?",
+    "before": "some ⟨n, h⟩\n    else none",
+    "after": "some ⟨n, h⟩\n    else some Rules.current",
+    "reason": "Read zero as the default evaluation version."
+  },
+  {
+    "id": "tick-rules-text-order",
+    "file": "SpecHash.lean",
+    "definition": "Loops.instOrdRules",
+    "before": "compare a.number b.number",
+    "after": "compare a.text b.text",
+    "reason": "Compare version digits lexicographically."
+  },
+  {
+    "id": "tick-when-occurred",
+    "file": "Spec.lean",
+    "definition": "Loops.Field.read",
+    "before": "| .env .when, r => some [.time r.span]",
+    "after": "| .env .when, r => some (r.occurred.toList.map (.time ∘ (·.span)))",
+    "reason": "Lose the emitted instant when occurred is absent."
+  },
+  {
+    "id": "tick-when-emitted",
+    "file": "Spec.lean",
+    "definition": "Loops.Field.read",
+    "before": "| .env .when, r => some [.time r.span]",
+    "after": "| .env .when, r => some [.time (Span.point r.emitted.moment)]",
+    "reason": "Use the emitted instant for a backfilled occurrence."
+  },
+  {
+    "id": "tick-when-unheld",
+    "file": "Spec.lean",
+    "definition": "Loops.Field.read",
+    "before": "| .env .when, r => some [.time r.span]",
+    "after": "| .env .when, r => if r.shown == .here then some [.time r.span] else none",
+    "reason": "Hide the envelope window with the payload."
+  },
+  {
+    "id": "tick-write-rules",
+    "file": "Tick.lean",
+    "definition": "Loops.TickMembers.toJson",
+    "before": "(\"rules\", .str m.rules.text)",
+    "after": "(\"version\", .str m.rules.text)",
+    "reason": "Write the rules member as version."
+  },
+  {
+    "id": "tick-write-spec",
+    "file": "Tick.lean",
+    "definition": "Loops.TickMembers.toJson",
+    "before": "(\"spec\", m.spec)",
+    "after": "(\"vertex\", m.spec)",
+    "reason": "Write the spec member as vertex."
+  },
+  {
+    "id": "tick-write-spec-hash",
+    "file": "Tick.lean",
+    "definition": "Loops.TickMembers.toJson",
+    "before": "(\"spec-hash\", .str (specHashOf H m.rules m.spec))",
+    "after": "(\"specHash\", .str (specHashOf H m.rules m.spec))",
+    "reason": "Write the spec-hash member as specHash."
+  },
+  {
+    "id": "tick-write-covers",
+    "file": "Tick.lean",
+    "definition": "Loops.TickMembers.toJson",
+    "before": "(\"covers\", tickIds m.covers)",
+    "after": "(\"covered\", tickIds m.covers)",
+    "reason": "Write the covers member as covered."
+  },
+  {
+    "id": "tick-write-result",
+    "file": "Tick.lean",
+    "definition": "Loops.TickMembers.toJson",
+    "before": "(\"result\", m.result)",
+    "after": "(\"slots\", m.result)",
+    "reason": "Write the result member as slots."
+  },
+  {
+    "id": "tick-write-result-hash",
+    "file": "Tick.lean",
+    "definition": "Loops.TickMembers.toJson",
+    "before": "(\"result-hash\", .str (resultHashOf H m.result))",
+    "after": "(\"resultHash\", .str (resultHashOf H m.result))",
+    "reason": "Write the result-hash member as resultHash."
+  },
+  {
+    "id": "tick-write-withheld",
+    "file": "Tick.lean",
+    "definition": "Loops.TickMembers.toJson",
+    "before": "(\"withheld\", tickIds m.withheld)",
+    "after": "(\"unheld\", tickIds m.withheld)",
+    "reason": "Write the withheld member as unheld."
+  },
+  {
+    "id": "tick-write-empty-withheld",
+    "file": "Tick.lean",
+    "definition": "Loops.TickMembers.toJson",
+    "before": "if m.withheld.isEmpty then [] else [(\"withheld\", tickIds m.withheld)]",
+    "after": "[(\"withheld\", tickIds m.withheld)]",
+    "reason": "Always emit the optional withheld array."
+  },
+  {
+    "id": "tick-omit-withheld",
+    "file": "Tick.lean",
+    "definition": "Loops.TickMembers.toJson",
+    "before": "if m.withheld.isEmpty then [] else [(\"withheld\", tickIds m.withheld)]",
+    "after": "[]",
+    "reason": "Drop the withheld declaration even when openings are missing."
+  },
+  {
+    "id": "tick-allow-unsorted",
+    "file": "Tick.lean",
+    "definition": "Loops.TickReader.ids",
+    "before": "  if !ns.Pairwise (· < ·) then refuse \"tick-ids-unsorted\" k\n",
+    "after": "",
+    "reason": "Require distinct ids but accept either array in writer order."
+  },
+  {
+    "id": "tick-allow-repeated-ids",
+    "file": "Tick.lean",
+    "definition": "Loops.TickReader.ids",
+    "before": "  if !ns.Nodup then refuse \"tick-id-duplicate\" k\n  if !ns.Pairwise (· < ·)",
+    "after": "  if !ns.Pairwise (· ≤ ·)",
+    "reason": "Read nondecreasing ids as a sorted set even with a repeated id."
+  },
+  {
+    "id": "tick-allow-outsider",
+    "file": "Tick.lean",
+    "definition": "Loops.TickReader.withheldIds",
+    "before": "    if !xs.all covers.contains then refuse \"tick-withheld-outside\" \"withheld\"",
+    "after": "    let _ := covers",
+    "reason": "Accept a withheld id that the claim does not cover."
+  },
+  {
+    "id": "tick-read-empty-withheld",
+    "file": "Tick.lean",
+    "definition": "Loops.TickReader.withheldIds",
+    "before": "    if xs.isEmpty then refuse \"tick-withheld-empty\" \"withheld\"\n",
+    "after": "",
+    "reason": "Treat an explicit empty withheld list as absence."
+  },
+  {
+    "id": "tick-duplicate-top-only",
+    "file": "Tick.lean",
+    "definition": "Loops.readTickMembers",
+    "before": "!(Json.obj kvs).keysDistinct",
+    "after": "!(kvs.map Prod.fst).Nodup",
+    "reason": "Check duplicate names only at the payload root."
+  },
+  {
+    "id": "tick-duplicate-array-path",
+    "file": "Tick.lean",
+    "definition": "Loops.TickReader.repeatIn",
+    "before": "s!\"{path}[{i}]\"",
+    "after": "s!\"{path}.{i}\"",
+    "reason": "Render a duplicate name in an array using a dot instead of an index."
+  },
+  {
+    "id": "tick-hash-spelling",
+    "file": "Tick.lean",
+    "definition": "Loops.TickReader.hashText",
+    "before": "!byteText 32 (String.ofList (s.toList.drop pre.length))",
+    "after": "s.length == pre.length",
+    "reason": "Accept any nonempty digest suffix on a well-prefixed hash."
+  },
+  {
+    "id": "tick-spec-reader-version",
+    "file": "Tick.lean",
+    "definition": "Loops.TickReader.values",
+    "before": "specHash != specHashOf H rules spec",
+    "after": "specHash != specHashOf H current spec",
+    "reason": "Verify a foreign spec under the local rules label."
+  },
+  {
+    "id": "tick-result-newer-fit",
+    "file": "Tick.lean",
+    "definition": "Loops.TickReader.values",
+    "before": "rules.number ≤ current.number && resHash",
+    "after": "resHash",
+    "reason": "Require the current result codec to explain newer hashes."
+  },
+  {
+    "id": "tick-result-own-unchecked",
+    "file": "Tick.lean",
+    "definition": "Loops.TickReader.values",
+    "before": "rules.number ≤ current.number && resHash",
+    "after": "rules.number < current.number && resHash",
+    "reason": "Skip verification of a result hash under the current rules."
+  },
+  {
+    "id": "tick-allow-raw-spec",
+    "file": "Tick.lean",
+    "definition": "Loops.TickMembers.readSpec",
+    "before": "  if m.spec.canon != sp.toJson.canon then throw (.invalid ⟨\"tick-spec-noncanonical\", \"spec\"⟩)\n",
+    "after": "",
+    "reason": "Silently normalize a carried spec on read."
+  },
+  {
+    "id": "tick-skip-shape",
+    "file": "Tick.lean",
+    "definition": "Loops.TickMembers.readSlots",
+    "before": "let r ← (readResult sp m.result).mapError fun path => ⟨\"tick-result-invalid\", path⟩",
+    "after": "let r := (readResult sp m.result).toOption.getD []",
+    "reason": "Treat a result shape failure as an empty result."
+  },
+  {
+    "id": "tick-unknown-member",
+    "file": "Tick.lean",
+    "definition": "Loops.readTickMembers",
+    "before": "!(TickReader.requiredNames ++ [\"withheld\"]).contains kv.1",
+    "after": "kv.1.isEmpty",
+    "reason": "Ignore extra named payload members as extensions."
+  },
+  {
+    "id": "tick-skip-spec-object",
+    "file": "Tick.lean",
+    "definition": "Loops.TickReader.values",
+    "before": "  unless spec matches .obj _ do refuse \"tick-spec-not-object\" \"spec\"\n",
+    "after": "",
+    "reason": "Leave spec object validation to the version-specific parser."
+  },
+  {
+    "id": "tick-skip-other-rules",
+    "file": "Tick.lean",
+    "definition": "Loops.TickMembers.readPayload",
+    "before": "if m.rules != current then throw (.otherRules m.rules)",
+    "after": "if m.rules.number < current.number then throw (.otherRules m.rules)",
+    "reason": "Try to parse newer payloads under local rules."
+  },
+  {
+    "id": "tick-duplicate-skip-arrays",
+    "file": "Json.lean",
+    "definition": "Loops.Json.keysDistinct",
+    "before": "| .arr xs => Json.allDistinct xs",
+    "after": "| .arr _ => true",
+    "reason": "Stop duplicate-name validation at arrays."
+  },
+  {
+    "id": "tick-negative-count",
+    "file": "Result.lean",
+    "definition": "Loops.ResultReader.group",
+    "before": "| .count _ => return .nat ⟨← get p kvs \"value\" nat, u⟩",
+    "after": "| .count _ => return .nat ⟨(← get p kvs \"value\" integer).natAbs, u⟩",
+    "reason": "Read the magnitude of a negative count."
+  },
+  {
+    "id": "tick-negative-unread",
+    "file": "Result.lean",
+    "definition": "Loops.ResultReader.group",
+    "before": "let u ← get p kvs \"unread\" nat\n  match ty",
+    "after": "let u := (← get p kvs \"unread\" integer).natAbs\n  match ty",
+    "reason": "Use a signed decoder for the number of unread records."
+  },
+  {
+    "id": "tick-minus-zero",
+    "file": "Result.lean",
+    "definition": "Loops.ResultReader.integer",
+    "before": "required p (intOf? s)",
+    "after": "required p (if s == \"-0\" then some 0 else intOf? s)",
+    "reason": "Normalize a negative zero sum to zero."
+  },
+  {
+    "id": "tick-padded-natural",
+    "file": "Result.lean",
+    "definition": "Loops.ResultReader.nat",
+    "before": "required p (natOf? s.toList)",
+    "after": "required p s.toNat?",
+    "reason": "Accept a padded natural in a result slot."
+  },
+  {
+    "id": "tick-sum-null",
+    "file": "Result.lean",
+    "definition": "Loops.ResultReader.group",
+    "before": "| .sum .. => return .int ⟨← get p kvs \"value\" integer, u⟩",
+    "after": "| .sum .. => return .int ⟨(← get p kvs \"value\" optInt).getD 0, u⟩",
+    "reason": "Read null as an empty sum."
+  },
+  {
+    "id": "tick-extra-result-member",
+    "file": "Result.lean",
+    "definition": "Loops.ResultReader.fixed",
+    "before": "  if let some (k, _) := kvs.find? (fun kv => !names.contains kv.1) then throw (member p k)\n",
+    "after": "",
+    "reason": "Ignore unknown slot or result members."
+  },
+  {
+    "id": "tick-default-missing-unread",
+    "file": "Result.lean",
+    "definition": "Loops.ResultReader.group",
+    "before": "  let kvs ← fixed p [\"unread\", name] j",
+    "after": "  let j := match j with\n    | .obj kvs => if (kvs.lookup \"unread\").isNone then Json.obj ((\"unread\", .str \"0\") :: kvs) else j\n    | _ => j\n  let kvs ← fixed p [\"unread\", name] j",
+    "reason": "Supply zero when a result omits unread."
+  },
+  {
+    "id": "tick-result-id-spelling",
+    "file": "Result.lean",
+    "definition": "Loops.ResultReader.ids",
+    "before": "let id ← required s!\"{p}[{i}]\" (recordIdOf? j)",
+    "after": "let id ← required s!\"{p}[{i}]\" (match j with | .str _ => some ((recordIdOf? j).getD 0) | _ => none)",
+    "reason": "Substitute the zero id for malformed text in a head list."
+  },
+  {
+    "id": "tick-result-id-order",
+    "file": "Result.lean",
+    "definition": "Loops.ResultReader.ids",
+    "before": "| .arr xs => xs.zipIdx.mapM fun (j, i) => do",
+    "after": "| .arr xs => xs.reverse.zipIdx.mapM fun (j, i) => do",
+    "reason": "Reverse the ordered head list while reading it."
+  },
+  {
+    "id": "tick-group-counts-swapped",
+    "file": "Result.lean",
+    "definition": "Loops.ResultReader.slot",
+    "before": "return .groups gs (← get p kvs \"unread\" nat) m",
+    "after": "return .groups gs m (← get p kvs \"unread\" nat)",
+    "reason": "Decode grouped unread and ungrouped counts in the opposite positions."
+  },
+  {
+    "id": "tick-keyed-heads-whole",
+    "file": "Result.lean",
+    "definition": "Loops.ResultReader.keyed",
+    "before": "return ⟨keys, whole, heads⟩",
+    "after": "return ⟨keys, heads, whole⟩",
+    "reason": "Swap whole-read emitters and live heads in a keyed result."
+  },
+  {
+    "id": "tick-unmasked",
+    "file": "TickCheck.lean",
+    "definition": "Loops.tickRun",
+    "before": "sp.run (settle ((coveredForms covers forms).map (tickMask withheld)))",
+    "after": "sp.run (settle (coveredForms covers forms))",
+    "reason": "Replay using every locally held opening, including withheld ones."
+  },
+  {
+    "id": "tick-mask-first-form",
+    "file": "TickCheck.lean",
+    "definition": "Loops.tickRun",
+    "before": "sp.run (settle ((coveredForms covers forms).map (tickMask withheld)))",
+    "after": "let (_, masked) := (coveredForms covers forms).foldl (fun (st : List RecordId × List Record) r =>\n    (r.id :: st.1, (if st.1.contains r.id then r else tickMask withheld r) :: st.2)) ([], [])\n  sp.run (settle masked.reverse)",
+    "reason": "Mask only the first form encountered for each withheld id."
+  },
+  {
+    "id": "tick-settle-outside",
+    "file": "TickCheck.lean",
+    "definition": "Loops.tickRun",
+    "before": "sp.run (settle ((coveredForms covers forms).map (tickMask withheld)))",
+    "after": "sp.run (coveredForms covers (settle (forms.map (tickMask withheld))))",
+    "reason": "Settle including outside erasers before restricting to the cover."
+  },
+  {
+    "id": "tick-admit-outside",
+    "file": "TickCheck.lean",
+    "definition": "Loops.tickRun",
+    "before": "sp.run (settle ((coveredForms covers forms).map (tickMask withheld)))",
+    "after": "sp.run (coveredForms covers (realm (fun _ _ => true) (forms.map (tickMask withheld))))",
+    "reason": "Admit revisions against outside predecessors before cutting to the cover."
+  },
+  {
+    "id": "tick-follow-inner-covers",
+    "file": "TickCheck.lean",
+    "definition": "Loops.tickRun",
+    "before": "sp.run (settle ((coveredForms covers forms).map (tickMask withheld)))",
+    "after": "let more := (coveredForms covers forms).flatMap fun r =>\n    if r.kind == \"tick\" && !withheld.contains r.id then\n      match r.get \"covers\" with\n      | some (.many vs) => vs.filterMap fun v => match v with\n        | .str s => recordIdOf? (.str s)\n        | _ => none\n      | _ => []\n    else []\n  sp.run (settle ((coveredForms (covers ++ more) forms).map (tickMask withheld)))",
+    "reason": "Expand the claim with locally available ids named by an open covered tick."
+  },
+  {
+    "id": "tick-cover-only-taken",
+    "file": "TickCheck.lean",
+    "definition": "Loops.makeTick",
+    "before": "let covers := idsOf forms",
+    "after": "let covers := idsOf (sp.select forms)",
+    "reason": "Cover only records the sources take."
+  },
+  {
+    "id": "tick-made-forgets-eraser",
+    "file": "TickCheck.lean",
+    "definition": "Loops.makeTick",
+    "before": "!tickOpen forms i\n  ⟨",
+    "after": "!(forms.any fun r => r.id == i && r.shown == .here)\n  ⟨",
+    "reason": "Keep a covered opening when a covered eraser names it."
+  },
+  {
+    "id": "tick-made-ignores-erased",
+    "file": "TickCheck.lean",
+    "definition": "Loops.makeTick",
+    "before": "!tickOpen forms i\n  ⟨",
+    "after": "!tickOpen forms i && !forms.any (fun r => r.id == i && r.shown == .erased)\n  ⟨",
+    "reason": "Record withheld forms but omit records already settled as erased."
+  },
+  {
+    "id": "tick-open-with-eraser",
+    "file": "TickCheck.lean",
+    "definition": "Loops.tickOpen",
+    "before": " && !erasedIn forms i",
+    "after": "",
+    "reason": "Count any retained opening as accessible despite a local eraser."
+  },
+  {
+    "id": "tick-closure-prev-only",
+    "file": "TickCheck.lean",
+    "definition": "Loops.tickClosure",
+    "before": "r.prev.all covers.contains && r.under.all covers.contains",
+    "after": "r.prev.all covers.contains",
+    "reason": "Ignore under links in the closure report."
+  },
+  {
+    "id": "tick-closure-under-only",
+    "file": "TickCheck.lean",
+    "definition": "Loops.tickClosure",
+    "before": "r.prev.all covers.contains && r.under.all covers.contains",
+    "after": "r.under.all covers.contains",
+    "reason": "Ignore prev links in the closure report."
+  },
+  {
+    "id": "tick-closure-missing-yes",
+    "file": "TickCheck.lean",
+    "definition": "Loops.tickClosure",
+    "before": "else if covers.all (idsOf forms).contains then .yes else .unknown",
+    "after": "else .yes",
+    "reason": "Declare closure without seeing every covered envelope."
+  },
+  {
+    "id": "tick-closure-missing-first",
+    "file": "TickCheck.lean",
+    "definition": "Loops.tickClosure",
+    "before": "if (coveredForms covers forms).any (fun r =>\n      !",
+    "after": "if !covers.all (idsOf forms).contains then .unknown\n  else if (coveredForms covers forms).any (fun r =>\n      !",
+    "reason": "Report unknown even when a held link already disproves closure."
+  },
+  {
+    "id": "tick-outside-before-admit",
+    "file": "TickCheck.lean",
+    "definition": "Loops.takenOutside",
+    "before": "((realm (fun _ _ => true) forms).filter",
+    "after": "((settle forms).filter",
+    "reason": "Count taken but inadmissible outside records."
+  },
+  {
+    "id": "tick-outside-includes-covered",
+    "file": "TickCheck.lean",
+    "definition": "Loops.takenOutside",
+    "before": "!covers.contains r.id && sp.takes r",
+    "after": "sp.takes r",
+    "reason": "Include covered ids in the outside count."
+  },
+  {
+    "id": "tick-swap-counts",
+    "file": "TickCheck.lean",
+    "definition": "Loops.tickMissing",
+    "before": "⟨(covers.filter fun i => !held.contains i).length,\n   (covers.filter fun i => held.contains i && !withheld.contains i && !tickOpen forms i).length⟩",
+    "after": "⟨(covers.filter fun i => held.contains i && !withheld.contains i && !tickOpen forms i).length,\n   (covers.filter fun i => !held.contains i).length⟩",
+    "reason": "Report missing records as missing openings and vice versa."
+  },
+  {
+    "id": "tick-count-twice",
+    "file": "TickCheck.lean",
+    "definition": "Loops.tickMissing",
+    "before": "held.contains i && !withheld.contains i && !tickOpen forms i",
+    "after": "!withheld.contains i && !tickOpen forms i",
+    "reason": "Count a missing record again as a missing opening."
+  },
+  {
+    "id": "tick-demand-withheld-opening",
+    "file": "TickCheck.lean",
+    "definition": "Loops.tickMissing",
+    "before": "held.contains i && !withheld.contains i && !tickOpen forms i",
+    "after": "held.contains i && !tickOpen forms i",
+    "reason": "Demand payloads even for explicitly withheld records."
+  },
+  {
+    "id": "tick-ignore-covered-eraser",
+    "file": "TickCheck.lean",
+    "definition": "Loops.replayIssue",
+    "before": "if (coveredForms covers forms).any (fun r => r.erases.any (fun i => covers.contains i && !withheld.contains i))",
+    "after": "if false",
+    "reason": "Ignore evidence that the tick concealed a covered erasure."
+  },
+  {
+    "id": "tick-missing-before-eraser",
+    "file": "TickCheck.lean",
+    "definition": "Loops.replayIssue",
+    "before": "if (coveredForms covers forms).any (fun r => r.erases.any (fun i => covers.contains i && !withheld.contains i))",
+    "after": "let missing := tickMissing covers withheld forms\n  if missing != ⟨0, 0⟩ then some (.missing missing)\n  else if (coveredForms covers forms).any (fun r => r.erases.any (fun i => covers.contains i && !withheld.contains i))",
+    "reason": "Wait for complete inputs before reporting an ignored erasure."
+  },
+  {
+    "id": "tick-outside-eraser-fault",
+    "file": "TickCheck.lean",
+    "definition": "Loops.replayIssue",
+    "before": "if (coveredForms covers forms).any (fun r => r.erases.any (fun i => covers.contains i && !withheld.contains i))",
+    "after": "if forms.any (fun r => r.erases.any (fun i => covers.contains i && !withheld.contains i))",
+    "reason": "Blame the tick for erasers outside its covered set."
+  },
+  {
+    "id": "tick-skip-missing",
+    "file": "TickCheck.lean",
+    "definition": "Loops.replayIssue",
+    "before": "if missing == ⟨0, 0⟩ then none else some (.missing missing)",
+    "after": "if missing.records == 0 || missing.openings == 0 then none else some (.missing missing)",
+    "reason": "Replay unless both kinds of input are missing."
+  },
+  {
+    "id": "tick-compare-hashes",
+    "file": "TickCheck.lean",
+    "definition": "Loops.replayTick",
+    "before": "utf8 m.result.canon == resultBytes computed",
+    "after": "resultHashOf H m.result == resultHash H computed",
+    "reason": "Treat equal result digests as equal canonical bytes."
+  },
+  {
+    "id": "tick-differs-hashes-swapped",
+    "file": "TickCheck.lean",
+    "definition": "Loops.checkMembers",
+    "before": ".differs claimed computed) => .differs claimed computed",
+    "after": ".differs claimed computed) => .differs computed claimed",
+    "reason": "Swap the claimed and replayed hashes in a difference."
+  },
+  {
+    "id": "tick-no-kind-test",
+    "file": "TickCheck.lean",
+    "definition": "Loops.checkTick",
+    "before": "if subject.kind != \"tick\" then",
+    "after": "if subject.kind.isEmpty then",
+    "reason": "Accept a well-shaped tick payload from any named kind."
+  },
+  {
+    "id": "tick-unheld-as-malformed",
+    "file": "TickCheck.lean",
+    "definition": "Loops.checkTick",
+    "before": "| none => { answer := .payloadUnheld }",
+    "after": "| none => { answer := .notTick ⟨\"tick-not-object\", \"\"⟩ }",
+    "reason": "Treat an unavailable subject opening as JSON null."
+  },
+  {
+    "id": "tick-version-before-reader",
+    "file": "TickCheck.lean",
+    "definition": "Loops.checkTick",
+    "before": "| some j => match readTickMembers H current j with\n      | .error f => { answer := .notTick f }\n      | .ok m => checkMembers H current m forms",
+    "after": "| some j => Id.run do\n      if let .obj kvs := j then\n        if let some rules := (kvs.lookup \"rules\").bind Rules.ofJson? then\n          if current.number < rules.number then return { answer := .newer }\n      match readTickMembers H current j with\n      | .error f => return { answer := .notTick f }\n      | .ok m => return checkMembers H current m forms",
+    "reason": "Decide newer rules from an unverified version member."
+  },
+  {
+    "id": "tick-reader-fault-as-unreadable",
+    "file": "TickCheck.lean",
+    "definition": "Loops.checkTick",
+    "before": "| .error f => { answer := .notTick f }",
+    "after": "| .error _ => { answer := .unreadableSpec }",
+    "reason": "Report a structural fault as an unsupported spec."
+  },
+  {
+    "id": "tick-older-as-newer",
+    "file": "TickCheck.lean",
+    "definition": "Loops.checkMembers",
+    "before": "if current.number < m.rules.number then return",
+    "after": "if current.number != m.rules.number then return",
+    "reason": "Classify every foreign version as newer."
+  },
+  {
+    "id": "tick-newer-as-current",
+    "file": "TickCheck.lean",
+    "definition": "Loops.checkMembers",
+    "before": "if current.number < m.rules.number then return",
+    "after": "if false then return",
+    "reason": "Try the current parser and replay on a newer tick."
+  },
+  {
+    "id": "tick-unreadable-as-malformed",
+    "file": "TickCheck.lean",
+    "definition": "Loops.checkMembers",
+    "before": "else .unreadableSpec, closure, none",
+    "after": "else .notTick ⟨\"tick-spec-noncanonical\", \"spec\"⟩, closure, none",
+    "reason": "Treat an unreadable current spec as structurally malformed."
+  },
+  {
+    "id": "tick-skip-check-slots",
+    "file": "TickCheck.lean",
+    "definition": "Loops.checkMembers",
+    "before": "match m.readSlots sp with\n  | .error f => return ⟨.notTick f, closure, taken⟩\n  | .ok _ =>",
+    "after": "match m.readSlots sp with\n  | .error _ | .ok _ =>",
+    "reason": "Replay a malformed current result instead of issuing a shape refusal."
+  },
+  {
+    "id": "tick-today-always-same",
+    "file": "TickCheck.lean",
+    "definition": "Loops.checkMembers",
+    "before": "| .ok (.differs ..) => .another",
+    "after": "| .ok (.differs ..) => .same",
+    "reason": "Report agreement today even when an older raw claim differs."
+  },
+  {
+    "id": "tick-older-needs-shape",
+    "file": "TickCheck.lean",
+    "definition": "Loops.checkMembers",
+    "before": "if older then\n    let today",
+    "after": "if older then\n    if let .error f := m.readSlots sp then return ⟨.notTick f, closure, taken⟩\n    let today",
+    "reason": "Require an older result to have a current slot shape."
+  },
+  {
+    "id": "tick-lost-outside-report",
+    "file": "TickCheck.lean",
+    "definition": "Loops.checkMembers",
+    "before": "let taken := some (takenOutside sp m.covers forms)",
+    "after": "let taken := if older then none else some (takenOutside sp m.covers forms)",
+    "reason": "Suppress the outside count after successfully parsing an older spec."
+  },
+  {
+    "id": "tick-label-unversioned",
+    "file": "SpecHash.lean",
+    "definition": "Loops.specLabel",
+    "before": "\"loops/spec-hash/v\" ++ v.text ++ \":\"",
+    "after": "\"loops/spec-hash/v:\"",
+    "reason": "Leave all version digits out of the spec label."
+  },
+  {
+    "id": "tick-check-text-order",
+    "file": "TickCheck.lean",
+    "definition": "Loops.checkMembers",
+    "before": "if current.number < m.rules.number then return",
+    "after": "if current.text < m.rules.text then return",
+    "reason": "Use dictionary order to decide whether the binary can read the claim."
+  },
+  {
+    "id": "tick-lose-unavailable-why",
+    "file": "TickCheck.lean",
+    "definition": "Loops.checkMembers",
+    "before": "| .error why => TodayReport.unavailable why",
+    "after": "| .error _ => TodayReport.unreadableSpec",
+    "reason": "Blame the spec whenever older replay lacks input evidence."
+  },
+  {
+    "id": "tick-duplicates-after-members",
+    "file": "Tick.lean",
+    "definition": "Loops.readTickMembers",
+    "before": "  if !(Json.obj kvs).keysDistinct then\n    refuse \"tick-member-duplicate\" ((TickReader.repeatAt none (.obj kvs)).getD \"\")\n  if let some (name, _) := kvs.find? (fun kv => !(TickReader.requiredNames ++ [\"withheld\"]).contains kv.1) then\n    refuse \"tick-member-unknown\" name",
+    "after": "  if let some (name, _) := kvs.find? (fun kv => !(TickReader.requiredNames ++ [\"withheld\"]).contains kv.1) then\n    refuse \"tick-member-unknown\" name\n  if !(Json.obj kvs).keysDistinct then\n    refuse \"tick-member-duplicate\" ((TickReader.repeatAt none (.obj kvs)).getD \"\")",
+    "reason": "Read the payload vocabulary before rejecting repeated names."
+  },
+  {
+    "id": "tick-skip-spec-fit",
+    "file": "Tick.lean",
+    "definition": "Loops.TickReader.values",
+    "before": "if specHash != specHashOf H rules spec then",
+    "after": "if rules == current && specHash != specHashOf H rules spec then",
+    "reason": "Leave a foreign spec hash unchecked."
+  },
+  {
+    "id": "tick-result-hide-duplicates",
+    "file": "Result.lean",
+    "definition": "Loops.ResultReader.ids",
+    "before": "  | .arr xs => xs.zipIdx.mapM fun (j, i) => do\n      let id ← required s!\"{p}[{i}]\" (recordIdOf? j)\n      return (id, .here)",
+    "after": "  | .arr xs => do\n    let hs : List (RecordId × Shown) ← xs.zipIdx.mapM fun (j, i) => do\n      let id ← required s!\"{p}[{i}]\" (recordIdOf? j)\n      return (id, .here)\n    return hs.eraseDups",
+    "reason": "Read a collected head list as a set and silently discard repeated ids."
+  },
+  {
+    "id": "tick-hash-normalized-member",
+    "file": "SpecHash.lean",
+    "definition": "Loops.specPreimageOf",
+    "before": "utf8 (specLabel v) ++ utf8 j.canon",
+    "after": "utf8 (specLabel v) ++ utf8 (match Spec.ofJson j with | .ok sp => sp.toJson.canon | .error _ => j.canon)",
+    "reason": "Normalize a readable raw spec before hashing its supplied member."
+  },
+  {
+    "id": "tick-write-local-label",
+    "file": "Tick.lean",
+    "definition": "Loops.TickMembers.toJson",
+    "before": "specHashOf H m.rules m.spec",
+    "after": "specHashOf H Rules.current m.spec",
+    "reason": "Write a foreign payload using the local spec hash label."
+  },
+  {
+    "id": "tick-covers-arrival-order",
+    "file": "TickCheck.lean",
+    "definition": "Loops.makeTick",
+    "before": "let covers := idsOf forms",
+    "after": "let covers := (forms.map Record.id).eraseDups",
+    "reason": "Deduplicate covered ids in arrival order instead of sorting them."
+  },
+  {
+    "id": "tick-unheld-before-kind",
+    "file": "TickCheck.lean",
+    "definition": "Loops.checkTick",
+    "before": "if subject.kind != \"tick\" then",
+    "after": "if subject.payload.isNone then { answer := .payloadUnheld }\n  else if subject.kind != \"tick\" then",
+    "reason": "Demand the opening before checking the envelope kind."
   }
 ]
