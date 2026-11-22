@@ -32,6 +32,32 @@ In brief:
 - The tick has its protocol page, `protocol/tick.md`. margins-claude's Python ran every tick vector from the prose and found two gaps in the readers; both are closed in the model and in Rust.
 - Rust checks a tick: all 126 tick vectors run in Rust, none pending.
 - `loops tick <spec>` writes a tick. Two stores holding the same six backups, with different keys, wrote payloads equal byte for byte.
+- `loops tick --check <id>` checks a tick. A tick written on one machine checks `same` on a second: step 4's exit criterion holds. Closing the step is Kyle's to say.
+
+### `loops tick --check <id>`, and step 4's exit criterion
+
+The second half of piece 7, the last. The verb resolves an id as `get` does, takes the record's payload only when the store's own reading holds it open, checks it against everything the store holds with the core's `check_tick`, and prints one JSON object: the answer and the two reports, spelled as the vectors spell them.
+
+**Step 4 is done when a content tick recomputes to the same hash on two machines.** A real run on the release binary, continuing the two stores of the entry below. The laptop's tick `r:uqmk623s…` covers the six backups.
+
+| Where it is checked | Answer | Exit |
+| --- | --- | --- |
+| The NAS, after importing the tick | `same`, closure `yes`, 0 taken and not covered | 0 |
+| The NAS, after a seventh backup of 4 megabytes | `same`, 1 taken and not covered. A fresh tick there: 7 runs, 1031 | 0 |
+| A machine holding four of the six | `cannot check`: 2 records, 0 payloads missing | 1 |
+| A copy where one backup was erased afterwards | `cannot check`: 0 records, 1 payload missing | 1 |
+| The laptop, on a tick written by hand that claims 1028 | `differs`, with both hashes. The store took the record without complaint | 1 |
+
+Each line is the answer the proposal of this morning predicted for it (TK4, TK5, TK7). The same cases are CLI walk tests, the first under the name `a_tick_written_on_one_machine_checks_same_on_a_second`. Whether step 4 is closed is Kyle's to say: boundaries, markers, the runner and cuts by time or by ids were never in its exit and are not built.
+
+**Implementer choices; they stand under Kyle's ruling of 2026-11-21 (W7).** The full list is choice 22 of `rust/PLACE.md`.
+- **Exit status 0 only for `same`.** `differs`, `cannot check` and `not a tick` exit 1 with the answer on standard output and nothing on standard error, so `loops tick --check <id> && …` is safe in a script. The alternative was 0 whenever the check completes. Kyle is asked.
+- **No rule at the door.** `import` and `emit` take a tick that would answer `differs` or "not a tick"; tests show both.
+- **A store whose lines do not all check** answers and is then refused `store-not-clean`, as the other answering verbs are.
+- **Checking needs no signing key.**
+- The vector evaluator's function that spells an answer is now public (`loops_eval::tick_check_json`), so the CLI and the vectors share one spelling.
+
+A Codex worker wrote it; the coordinator reviewed it, ran the gate and made the run above.
 
 ### `loops tick <spec>` writes a tick
 

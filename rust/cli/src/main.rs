@@ -13,8 +13,10 @@ use loops::{
     json::Json,
     record::{Record, Shown, id_text},
     spec::Spec,
+    spec_hash::Rules,
     things,
     tick::make_tick,
+    tick_check::{TickAnswer, TickSubject, check_tick, tick_open},
 };
 use loops_place::{
     clock,
@@ -63,17 +65,20 @@ usage: loops [-C <dir>] <verb> ...
                                 and about and values to keyed things
   tick <vertex | spec-file | -> [emit envelope flags]
                                 write a tick over everything held (no time cut, id cut or slice)
+  tick --check <id>             check a tick against this store and print the verdict and reports
   erase <id>... [\"why\"]         emit an erasure, and drop the openings held here
   export [--kind <k>] [--of <thing>] [--about <thing>]   stored lines, oldest first
   import [<file> | -]           add stored lines; a store is the union
   check                         verify every segment and line
   whoami                        the key and observer this machine writes as";
 
-/// How a command ends without its answer.
+/// A non-success verdict, a failure, or a closed output stream.
 enum Fail {
     Usage(String),
     Refused(String),
     System(String),
+    /// The tick verdict was printed and calls for exit 1.
+    TickNotSame,
     /// Whoever was reading our answer stopped.
     Closed,
 }
@@ -543,10 +548,39 @@ fn vertex_text(place: &Dir, vertex: &str) -> Result<String, Fail> {
     })
 }
 
+fn held_forms(held: &Held) -> Vec<Record> {
+    held.lines().iter().map(Line::record).collect()
+}
+
+fn check_held_tick(start: &Path, args: &[String]) -> Result<(), Fail> {
+    let [given] = args else {
+        return Err(usage("tick --check takes one record id or unique prefix"));
+    };
+    let held = find_store(start)?.read()?;
+    let id = one_id(&held, given)?;
+    let line = held
+        .line(&id)
+        .ok_or_else(|| refused(format!("id-unknown: {given}")))?;
+    let forms = held_forms(&held);
+    let subject = TickSubject {
+        kind: &line.env().kind,
+        payload: line
+            .payload()
+            .filter(|_| tick_open(&forms, &line.record().id)),
+    };
+    let check = check_tick(&hash, &Rules::current(), subject, &forms);
+    let same = check.answer == TickAnswer::Same;
+    answered(&held, say(&loops_eval::tick_check_json(check).canon()))?;
+    if same { Ok(()) } else { Err(Fail::TickNotSame) }
+}
+
 fn tick(start: &Path, args: &[String]) -> Result<(), Fail> {
     let Some((source, flags)) = args.split_first() else {
         return Err(usage("tick takes a vertex, a spec file, or - for stdin"));
     };
+    if source == "--check" {
+        return check_held_tick(start, flags);
+    }
     let place = find_store(start)?;
     let input = if source == "-" || !vertex_name(source) || start.join(source).is_file() {
         spec_file(start, source)?
@@ -556,7 +590,7 @@ fn tick(start: &Path, args: &[String]) -> Result<(), Fail> {
     let spec = parse_spec(&input)?;
     let held = place.read()?;
     warn_unclean(&held);
-    let forms = held.lines().iter().map(Line::record).collect::<Vec<_>>();
+    let forms = held_forms(&held);
     let payload = make_tick(spec, &forms).to_json(&hash);
     let key = signing_key(Missing::Make)?;
     let now = clock::now().ok_or_else(|| Fail::System("the clock is outside 1970–9999".into()))?;
@@ -724,6 +758,7 @@ fn main() -> ExitCode {
     let args: Vec<String> = env::args().skip(1).collect();
     match run(&args) {
         Ok(()) | Err(Fail::Closed) => ExitCode::SUCCESS,
+        Err(Fail::TickNotSame) => ExitCode::from(1),
         Err(Fail::Refused(code)) => {
             eprintln!("refused: {code}");
             ExitCode::from(1)

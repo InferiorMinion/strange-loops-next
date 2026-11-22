@@ -1206,6 +1206,12 @@ fn a_verb_that_answers_from_a_store_that_does_not_check_answers_then_refuses() {
         strings(&parse_json(&line).expect("tick"), &["payload", "covers"]),
         covered
     );
+    let (code, verdict, err) = answer(&s, &["tick", "--check", tick.trim_end()], "");
+    assert_eq!(
+        verdict.trim_end(),
+        r#"{"answer":"same","closure":"yes","taken-not-covered":0}"#
+    );
+    assert_eq!((code, err), (1, format!("refused: {why}")));
 }
 
 #[test]
@@ -2803,4 +2809,186 @@ fn tick_refuses_the_same_spec_as_fold_without_writing() {
         assert_eq!(s.fails(&["tick", "-"], bad), refusal);
         assert_eq!(s.ok(&["export"]), before);
     }
+}
+
+fn assert_tick_check(s: &Store, id: &str, status: i32, expected: &str) {
+    let (code, out, err) = answer(s, &["tick", "--check", id], "");
+    assert_eq!((code, err.as_str()), (status, ""), "{id}: {out}");
+    assert_eq!(
+        out,
+        format!(
+            "{}\n",
+            parse_json(expected).expect("expected verdict").canon()
+        )
+    );
+}
+
+#[test]
+fn a_tick_written_on_one_machine_checks_same_on_a_second() {
+    let a = Store::new("exit-a");
+    let b = Store::new("exit-b");
+    fs::write(
+        b.dir.join("device-key"),
+        loops_place::key::Key::generate()
+            .expect("second key")
+            .text(),
+    )
+    .expect("second key file");
+    emit_backups(&a);
+    let id = a.ok_with(&["tick", "-"], BACKUPS);
+    b.ok_with(&["import"], &a.ok(&["export"]));
+    assert_ne!(a.json(&["whoami"]), b.json(&["whoami"]));
+    assert_tick_check(
+        &b,
+        &id,
+        0,
+        r#"{"answer":"same","closure":"yes","taken-not-covered":0}"#,
+    );
+
+    b.ok(&["emit", "backup", "mb:=4"]);
+    assert_tick_check(
+        &b,
+        &id[2..id.len() - 1],
+        0,
+        r#"{"answer":"same","closure":"yes","taken-not-covered":1}"#,
+    );
+    let fresh = b.ok_with(&["tick", "-"], BACKUPS);
+    let line = b.json(&["get", &fresh]);
+    assert_eq!(text(&line, &["payload", "result", "runs", "value"]), "7");
+    assert_eq!(text(&line, &["payload", "result", "mb", "value"]), "1031");
+}
+
+#[test]
+fn tick_check_counts_absent_records_and_locally_erased_openings() {
+    let a = Store::new("check-inputs-a");
+    let b = Store::new("check-inputs-b");
+    let backups = emit_backups(&a);
+    let id = a.ok_with(&["tick", "-"], BACKUPS);
+    b.ok_with(&["import"], &a.ok(&["get", &id]));
+    for backup in &backups[..4] {
+        b.ok_with(&["import"], &a.ok(&["get", backup]));
+    }
+    assert_tick_check(
+        &b,
+        &id,
+        1,
+        r#"{"answer":"cannot check","reason":"missing inputs",
+        "missing-records":2,"missing-openings":0,"closure":"unknown","taken-not-covered":0}"#,
+    );
+
+    b.ok_with(&["import"], &a.ok(&["export", "--kind", "backup"]));
+    let eraser = a.json(&["erase", &backups[0]]);
+    b.ok_with(&["import"], &a.ok(&["get", text(&eraser, &["id"])]));
+    assert_tick_check(
+        &b,
+        &id,
+        1,
+        r#"{"answer":"cannot check","reason":"missing inputs",
+        "missing-records":0,"missing-openings":1,"closure":"yes","taken-not-covered":0}"#,
+    );
+
+    let eraser = a.json(&["erase", &id]);
+    b.ok_with(&["import"], &a.ok(&["get", text(&eraser, &["id"])]));
+    // B still has the original signed line on disk. C gets only its commitment.
+    let c = Store::new("check-inputs-c");
+    c.ok_with(&["import"], &a.ok(&["get", &id]));
+    for store in [&b, &c] {
+        assert_tick_check(
+            store,
+            &id,
+            1,
+            r#"{"answer":"cannot check","reason":"the tick's payload is not held",
+            "closure":"unknown","taken-not-covered":null}"#,
+        );
+    }
+}
+
+#[test]
+fn incorrect_claims_and_malformed_ticks_are_imported_as_records() {
+    use loops::result::result_hash_of;
+    use loops_place::line::hash;
+
+    let a = Store::new("check-claims-a");
+    let b = Store::new("check-claims-b");
+    let backups = emit_backups(&a);
+    let id = a.ok_with(&["tick", "-"], BACKUPS);
+    let line = a.json(&["get", &id]);
+    let payload = at(&line, &["payload"]);
+    let altered = at(payload, &["result"])
+        .canon()
+        .replace(r#""1027""#, r#""1028""#);
+    let claimed = result_hash_of(&hash, &parse_json(&altered).expect("altered result"));
+    let computed = text(payload, &["result-hash"]);
+    assert_ne!(claimed, computed);
+    let hand = a.ok(&[
+        "emit",
+        "tick",
+        "rules=1",
+        &format!("spec:={}", at(payload, &["spec"]).canon()),
+        &format!("spec-hash={}", text(payload, &["spec-hash"])),
+        &format!("covers:={}", at(payload, &["covers"]).canon()),
+        &format!("result:={altered}"),
+        &format!("result-hash={claimed}"),
+    ]);
+    let malformed = a.ok(&["emit", "tick", "text=hello"]);
+    b.ok_with(&["import"], &a.ok(&["export"]));
+    assert_tick_check(
+        &b,
+        &hand,
+        1,
+        &format!(
+            r#"{{"answer":"differs","claimed-hash":"{claimed}",
+        "computed-hash":"{computed}","closure":"yes","taken-not-covered":0}}"#
+        ),
+    );
+    assert_tick_check(
+        &b,
+        &malformed,
+        1,
+        r#"{"answer":"not a tick","refused":"tick-member-unknown",
+        "path":"text","closure":"unknown","taken-not-covered":null}"#,
+    );
+    assert_tick_check(
+        &b,
+        &backups[0],
+        1,
+        r#"{"answer":"not a tick","refused":"tick-kind",
+        "path":"kind","closure":"unknown","taken-not-covered":null}"#,
+    );
+
+    for prefix in ["zzzz", "r:"] {
+        let refusal = answer(&b, &["get", prefix], "");
+        assert_eq!(refusal.0, 1);
+        assert_eq!(answer(&b, &["tick", "--check", prefix], ""), refusal);
+    }
+    for args in [&["tick", "--check"][..], &["tick", "--check", &id, &hand]] {
+        assert_eq!(b.fails(args, "").0, 2);
+    }
+}
+
+#[test]
+fn checking_a_tick_over_ticks_needs_only_the_outer_cover() {
+    let daily = Store::new("check-daily");
+    let weekly = Store::new("check-weekly");
+    let checker = Store::new("check-weekly-reader");
+    emit_backups(&daily);
+    daily.ok_with(&["tick", "-"], BACKUPS);
+    daily.ok_with(&["tick", "-"], BACKUPS);
+    weekly.ok_with(&["import"], &daily.ok(&["export", "--kind", "tick"]));
+    weekly.ok(&["emit", "note", "end of week"]);
+    checker.ok_with(&["import"], &weekly.ok(&["export"]));
+    let spec = r#"{"vertex":"weekly","from":[{"store":".","kind":["tick","note"]}],"fold":{"entries":{"count":true}}}"#;
+    let id = weekly.ok_with(&["tick", "-"], spec);
+    let line = weekly.json(&["get", &id]);
+    assert_eq!(len(&line, &["payload", "covers"]), 3);
+    assert_eq!(text(&line, &["payload", "result", "entries", "value"]), "3");
+    checker.ok_with(&["import"], &line.canon());
+    assert_eq!(checker.ok(&["export", "--kind", "backup"]), "");
+    // The weekly tick itself is now one taken record outside its cover.
+    assert_tick_check(
+        &checker,
+        &id,
+        0,
+        r#"{"answer":"same","closure":"yes","taken-not-covered":1}"#,
+    );
 }

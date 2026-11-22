@@ -92,8 +92,8 @@
       "purpose": "Fix a vertex's result at a moment, so others can cite it.",
       "state": "The vertex, the records it covers, listed exactly, and the result; an id over all three.",
       "principle": "Anyone holding the covered records recomputes the same tick.",
-      "pending": "Ruled: a tick folds a set named outright, a part closed downward over <code>prev</code> or a slice of one, and its result lists ids without what the reader holds of them. The record's form is ruled too (2026-11-21, <a href=\"../decisions/note-2026-11-21-tick-record.html\">the tick record note</a>): a tick is an ordinary record with no id but its record's. It is in the model with its laws and vectors, and Rust reads and writes its payload. Rust's check and the <code>loops tick</code> verb are not built yet.",
-      "laws": ["keyed.cut", "cut.prefix", "result.canonical"]
+      "pending": "Ruled: a tick folds a set named outright, a part closed downward over <code>prev</code> or a slice of one, and its result lists ids without what the reader holds of them. The record's form is ruled too (2026-11-21, <a href=\"../decisions/note-2026-11-21-tick-record.html\">the tick record note</a>): a tick is an ordinary record with no id but its record's. It is built: in the model with its laws and vectors, in Rust, and as <code>loops tick</code>, which writes one, and <code>loops tick --check</code>, which answers same, differs or cannot check. A tick written on one machine checks the same on a second. Not built: a cut by time or by ids, boundaries, markers and the runner.",
+      "laws": ["keyed.cut", "cut.prefix", "result.canonical", "tick.inputs", "tick.made", "tick.canonical"]
     },
     {
       "word": "lens",
