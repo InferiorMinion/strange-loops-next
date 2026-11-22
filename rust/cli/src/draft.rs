@@ -20,12 +20,17 @@ fn new_salt() -> Result<Vec<u8>, Fail> {
     key::salt().map_err(|e| Fail::System(e.to_string()))
 }
 
-/// Read an emit's next payload field or its final positional message.
+/// Read one positional argument: kind, payload field, or final message.
 fn emit_argument(
     arg: &str,
+    kind: &mut Option<String>,
     fields: &mut Vec<(String, Json)>,
     message: &mut Option<String>,
 ) -> Result<(), Fail> {
+    if kind.is_none() {
+        *kind = Some(arg.to_owned());
+        return Ok(());
+    }
     if message.is_some() {
         return Err(usage("the message comes last, after every field"));
     }
@@ -62,6 +67,17 @@ fn add_base(base: &mut Option<BaseArgs>, flag: &str, id: String) -> Result<(), F
         base.tick = Some(id);
     }
     Ok(())
+}
+
+/// The value of a flag of `emit` or `tick`. A flag may take "--" as its
+/// value, and the global `--json` keeps its meaning until the terminator.
+fn option_value<'a>(
+    args: &mut impl Iterator<Item = &'a String>,
+    flag: &str,
+) -> Result<String, Fail> {
+    args.find(|v| v.as_str() != "--json")
+        .cloned()
+        .ok_or_else(|| usage(format!("{flag} takes a value")))
 }
 
 fn next_value<'a>(args: &mut impl Iterator<Item = &'a String>, flag: &str) -> Result<String, Fail> {
@@ -130,9 +146,19 @@ pub(crate) fn from_args(
     let mut no_about = false;
     let mut no_occurred = false;
     let mut rest = args.iter();
+    let mut options = true;
     while let Some(arg) = rest.next() {
-        let mut value = || next_value(&mut rest, arg);
+        if !options || !arg.starts_with("--") {
+            if tick_spec.is_some() {
+                return Err(usage("tick takes only envelope flags after the spec"));
+            }
+            emit_argument(arg, &mut kind, &mut fields, &mut message)?;
+            continue;
+        }
+        let mut value = || option_value(&mut rest, arg);
         match arg.as_str() {
+            "--" => options = false,
+            "--json" => {}
             "--as-of" | "--cover" if tick_spec.is_some() => cut.select(arg, value()?)?,
             "--about" => env.about.push(value()?),
             "--base" | "--base-id" => add_base(&mut base, arg, value()?)?,
@@ -158,14 +184,7 @@ pub(crate) fn from_args(
             "--salt" => {
                 salt = Some(base32::decode(&value()?).ok_or_else(|| refused("salt-not-16-bytes"))?);
             }
-            flag if flag.starts_with("--") => {
-                return Err(usage(format!("{verb} does not take {flag}")));
-            }
-            _ if tick_spec.is_some() => {
-                return Err(usage("tick takes only envelope flags after the spec"));
-            }
-            _ if kind.is_none() => kind = Some(arg.clone()),
-            field => emit_argument(field, &mut fields, &mut message)?,
+            flag => return Err(usage(format!("{verb} does not take {flag}"))),
         }
     }
     if nothing && env.sets.as_ref().is_some_and(|keys| !keys.is_empty()) {

@@ -4137,7 +4137,7 @@ fn listings_and_of_share_name_evidence_on_every_thing() {
     }
     assert_eq!(
         monday(&s, &["ls", "task:", "--plain"]),
-        "THING          HEAD KINDS  RECORDS  HEADS  HEADLINE\ntask:erased    task        1        1      unknown\ntask:fork      task        2        2      conflict (2)\ntask:unset     task        1        1      —\ntask:whole     task        1        1      Whole\ntask:withheld  task        1        1      unknown\n"
+        "THING          HEAD KINDS  RECORDS  HEADS  HEADLINE\ntask:erased    task        1        1      unknown\ntask:fork      task        2        2      conflict (2): Right | Left\ntask:unset     task        1        1      —\ntask:whole     task        1        1      Whole\ntask:withheld  task        1        1      unknown\n"
     );
     for (thing, head, additional) in [
         ("task:erased", erased, "  name  unknown"),
@@ -4153,7 +4153,7 @@ fn listings_and_of_share_name_evidence_on_every_thing() {
     assert_eq!(
         monday(&s, &["of", "task:fork", "--plain"]),
         format!(
-            "thing  task:fork\nrecords  2\nheads  2\n  name  conflict (2)\nabout  —\nhead  {}\n  emitted  in 2 minutes\n  occurred  —\nhead  {}\n  emitted  3 hours ago\n  occurred  2026-11-19?\n",
+            "thing  task:fork\nrecords  2\nheads  2\n  name  conflict (2): Right | Left\nabout  —\nhead  {}\n  emitted  in 2 minutes\n  occurred  —\nhead  {}\n  emitted  3 hours ago\n  occurred  2026-11-19?\n",
             fork[1], fork[0]
         )
     );
@@ -4277,7 +4277,7 @@ fn save_morning(s: &Store, spec: &str) {
 
 #[test]
 fn plain_fold_and_read_show_each_shape_in_written_order() {
-    let s = Store::new("plain-fold-shapes");
+    let s = fixed_store("plain-fold-shapes");
     save_morning(&s, PLAIN_SHAPES);
     let spec_path = ".loops/vertices/morning.json";
     let groups = "  0 ungrouped\n  0 not read";
@@ -4287,13 +4287,13 @@ fn plain_fold_and_read_show_each_shape_in_written_order() {
     assert_eq!(monday(&s, &["read", "morning", "--plain"]), empty);
     // Independent heads on a fork. The newer head lacks n, so each grouped
     // numeric slot has an unread input alongside a real numeric zero.
-    let ids = s.changeset(r#"{"kind":"task","of":"task:kiln","emitted":"2026-11-20T09:00:00Z","sets":["area","n"],"payload":{"area":"42","n":0}}
-{"kind":"task","of":"task:kiln","emitted":"2026-11-20T10:00:00Z","sets":["area"],"payload":{"area":"42"}}"#);
-    let (a, b) = (&ids[0], &ids[1]);
+    let ids = s.changeset(r#"{"kind":"task","salt":"00000000000000000000000000","of":"task:kiln","emitted":"2026-11-20T09:00:00Z","sets":["area","n"],"payload":{"area":"42","n":0}}
+{"kind":"task","salt":"00000000000000000000000000","of":"task:kiln","emitted":"2026-11-20T10:00:00Z","sets":["area"],"payload":{"area":"42"}}"#);
+    let (a, b) = (&ids[0][..10], &ids[1][..10]);
     let why = "1 not read: needed payload or field unavailable";
     let grouped_numeric = format!("  group  \"42\"  0\n    {why}\n{groups}");
     let expected = format!(
-        "runs  2\ntotal  0\n  {why}\nlow  0\n  {why}\nhigh  0\n  {why}\nlist\n  {b}\n  {a}\ncounts\n  group  \"42\"  2\n{groups}\nsums\n{grouped_numeric}\nmins\n{grouped_numeric}\nmaxes\n{grouped_numeric}\nlists\n  group  \"42\"\n    {b}\n    {a}\n{groups}\nheads\n  thing  task:kiln\n    heads\n      {b}\n      {a}\nkeyed\n  thing  task:kiln\n    heads\n      {b}\n      {a}\n    setters  area\n      {b}\n      {a}\n    setters  n\n      {a}\n    whole  —\n"
+        "runs  2\ntotal  0\n  {why}\nlow  0\n  {why}\nhigh  0\n  {why}\nlist\n  {b}\n  {a}\ncounts\n  group  \"42\"  2\n{groups}\nsums\n{grouped_numeric}\nmins\n{grouped_numeric}\nmaxes\n{grouped_numeric}\nlists\n  group  \"42\"\n    {b}\n    {a}\n{groups}\nheads\n  thing  task:kiln\n    heads\n      {b}\n      {a}\nkeyed\n  thing  task:kiln  —\n    heads\n      {b}\n      {a}\n    setters  area\n      {b}\n      {a}\n    setters  n\n      {a}\n    whole  —\n"
     );
     assert_eq!(monday(&s, &["read", "morning", "--plain"]), expected);
     assert_eq!(monday(&s, &["fold", spec_path, "--plain"]), expected);
@@ -4308,9 +4308,9 @@ fn plain_fold_values_show_payloads_and_keyed_setters() {
     let s = fixed_store("plain-fold-values");
     let spec = r#"{"vertex":"morning","from":[{"store":".","kind":["task"]}],"fold":{"list":{"collect":true,"limit":1},"item":{"latest-by":"of","follow":"keys"}}}"#;
     save_morning(&s, spec);
-    let ids = s.changeset(r#"{"kind":"task","of":"task:kiln","emitted":"2026-11-20T09:00:00Z","occurred":"2026-11-18/2026-11-19","sets":["name","gone"],"payload":{"name":"Repair kiln"}}
-{"kind":"task","of":"task:kiln","emitted":"2026-11-20T12:02:00Z","sets":["name","status"],"payload":{"name":"Other","status":"done\n\u001b"}}"#);
-    let (a, b) = (&ids[0], &ids[1]);
+    let ids = s.changeset(r#"{"kind":"task","salt":"00000000000000000000000000","of":"task:kiln","emitted":"2026-11-20T09:00:00Z","occurred":"2026-11-18/2026-11-19","sets":["name","gone"],"payload":{"name":"Repair kiln"}}
+{"kind":"task","salt":"00000000000000000000000000","of":"task:kiln","emitted":"2026-11-20T12:02:00Z","sets":["name","status"],"payload":{"name":"Other","status":"done\n\u001b"}}"#);
+    let (a, b) = (&ids[0][..10], &ids[1][..10]);
     let observer = text(&s.json(&["whoami"]), &["observer"]).to_owned();
     let newer = format!("{b}  task\n");
     let head_meta = |indent: &str, when: &str, occurred: &str, sets: &str| {
@@ -4326,7 +4326,7 @@ fn plain_fold_values_show_payloads_and_keyed_setters() {
         r#"["gone","name"]"#,
     );
     let want = format!(
-        "list\n  {newer}{}\n    payload\n      name  Other\n      status  done\\n\\u001b\nitem\n  thing  task:kiln\n    heads\n      {newer}{}\n      {a}  task\n{a_meta}\n    setters  gone\n      {a}\n    setters  name\n      {b}\n      {a}\n    setters  status\n      {b}\n    whole  —\n    fields\n      gone  —\n      name  conflict (2)\n      status  done\\n\\u001b\n    about  —\n",
+        "list\n  {newer}{}\n    payload\n      name  Other\n      status  done\\n\\u001b\nitem\n  thing  task:kiln\n    heads\n      {newer}{}\n      {a}  task\n{a_meta}\n    setters  gone\n      {a}\n    setters  name\n      {b}\n      {a}\n    setters  status\n      {b}\n    whole  —\n    fields\n      gone  —\n      name  conflict (2): Other | Repair kiln\n      status  done\\n\\u001b\n    about  —\n",
         b_meta("    "),
         b_meta("        ")
     );
@@ -4343,7 +4343,12 @@ fn plain_fold_values_show_payloads_and_keyed_setters() {
     }
     s.ok(&["erase", b]);
     let erased = monday(&s, &["read", "morning", "--plain", "--values"]);
-    assert!(erased.contains(&format!("list\n  {b}  erased  task\n")));
+    assert!(
+        erased
+            .lines()
+            .nth(1)
+            .is_some_and(|line| line.ends_with("  erased  task"))
+    );
     assert!(erased.contains("    payload  unknown\n"));
     assert!(erased.contains("      status  unknown\n"));
     assert!(!erased.contains("done"));
@@ -4654,4 +4659,159 @@ fn tick_cut_random_skewed_stores_match_reference_and_replay() {
         "seed {SEED:#x} must pull in a clock-skewed ancestor"
     );
     eprintln!("{skewed} stores pulled in a predecessor outside the strict prefix");
+}
+
+#[test]
+fn emit_ends_options_before_literal_fields_and_message() {
+    let s = Store::new("emit-end-options");
+    assert_eq!(s.fails(&["emit", "message", "--leading-dashes"], "").0, 2);
+    let id = s.ok(&["emit", "message", "--", "--leading-dashes"]);
+    assert_eq!(
+        text(&s.json(&["get", &id]), &["payload", "text"]),
+        "--leading-dashes"
+    );
+
+    let id = s.ok(&[
+        "--json",
+        "emit",
+        "message",
+        "--of",
+        "chat:here",
+        "--",
+        "--of=literal",
+        "--qty:=2",
+        "--json",
+    ]);
+    let record = s.json(&["get", &id]);
+    assert_eq!(text(&record, &["env", "of"]), "chat:here");
+    assert_eq!(
+        at(&record, &["payload"]).canon(),
+        r#"{"--of":"literal","--qty":2,"text":"--json"}"#
+    );
+    assert_eq!(
+        s.fails(&["emit", "message", "--", "--first", "second"], "")
+            .0,
+        2
+    );
+    // Here the first "--" names the key that --sets declares.
+    let id = s.ok(&[
+        "emit",
+        "message",
+        "--sets",
+        "--",
+        "--json",
+        "--of",
+        "--json",
+        "chat:here",
+        "--",
+        "--=literal",
+    ]);
+    assert_eq!(text(&s.json(&["get", &id]), &["payload", "--"]), "literal");
+    let spec = r#"{"vertex":"morning","from":[{"store":"."}]}"#;
+    let tick = s.ok_with(&["tick", "-", "--"], spec);
+    assert_eq!(text(&s.json(&["get", &tick]), &["env", "kind"]), "tick");
+    let before = s.ok(&["export"]);
+    for trailing in ["x=1", "--no-about", "--json"] {
+        assert_eq!(s.fails(&["tick", "-", "--", trailing], spec).0, 2);
+    }
+    assert_eq!(s.ok(&["export"]), before);
+}
+
+#[test]
+fn whoami_can_make_the_writers_key_before_a_store_exists() {
+    let s = Store::scratch("whoami-init");
+    assert_eq!(s.fails(&["whoami"], "").0, 2);
+    let path = s.dir.join("device-key");
+    let (status, output, notice) = answer(&s, &["whoami", "--init"], "");
+    let id = output.trim_end();
+    assert_eq!(status, 0);
+    assert!(id.starts_with("k:"));
+    assert_eq!(
+        notice,
+        format!("loops: made signing key {id} at {}", path.display())
+    );
+    let seed = fs::read(&path).expect("key created");
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        assert_eq!(
+            fs::metadata(&path)
+                .expect("key metadata")
+                .permissions()
+                .mode()
+                & 0o777,
+            0o600
+        );
+    }
+    assert_eq!(
+        answer(&s, &["whoami", "--init"], ""),
+        (0, output.clone(), String::new())
+    );
+    assert_eq!(fs::read(&path).expect("existing key"), seed);
+    assert_eq!(text(&s.json(&["whoami"]), &["observer"]), id);
+    assert!(!s.dir.join(".loops").exists());
+    s.ok(&["init"]);
+    let record = s.ok(&["emit", "message", "hello"]);
+    assert_eq!(text(&s.json(&["get", &record]), &["sig", "key"]), id);
+}
+
+#[test]
+fn plain_root_prefixes_resolve_even_when_eight_digits_collide() {
+    let s = fixed_store("plain-colliding-prefixes");
+    // These two payloads, with the fixed key, instant and salt, share eight digits.
+    let a = fixed_emit(&s, &["task", "--whole", "n:=2513597"]);
+    let b = fixed_emit(&s, &["task", "--whole", "n:=2618869"]);
+    assert_eq!(&a[..10], &b[..10]);
+    let (pa, pb) = (&a[..11], &b[..11]);
+    let listing = monday(&s, &["ls", "--things", "--plain"]);
+    for (prefix, id) in [(pa, &a), (pb, &b)] {
+        assert!(
+            listing
+                .lines()
+                .any(|line| line.split_whitespace().next() == Some(prefix))
+        );
+        assert_eq!(text(&s.json(&["get", prefix]), &["id"]), id);
+        assert_eq!(text(&s.json(&["of", prefix]), &["thing"]), id);
+    }
+    // One record taken, but both are still candidates when resolving its ID.
+    let spec = format!(
+        r#"{{"vertex":"morning","from":[{{"store":".","of":"{a}"}}],"fold":{{"items":{{"latest-by":"of","follow":"keys"}}}}}}"#
+    );
+    save_morning(&s, &spec);
+    assert_eq!(
+        monday(&s, &["read", "morning", "--plain"]),
+        format!("items\n  thing  {pa}  —\n    heads\n      {pa}\n    whole\n      {pa}\n")
+    );
+}
+
+#[test]
+fn plain_conflicts_preview_each_live_setter_in_order() {
+    let s = Store::new("plain-conflict-previews");
+    let ids = s.changeset(r#"{"kind":"task","of":"task:kiln","emitted":"2026-11-20T09:00:00Z","sets":["name","port","note","x"],"payload":{"name":"Kiln","port":9000,"note":"long text that definitely exceeds forty characters here"}}
+{"kind":"task","of":"task:kiln","emitted":"2026-11-20T10:00:00Z","sets":["name","port","note","x"],"payload":{"name":"Oven","port":9001,"note":"one\ntwo\u001b","x":"unknown"}}"#);
+    let spec = r#"{"vertex":"morning","from":[{"store":"."}],"fold":{"items":{"latest-by":"of","follow":"keys"}}}"#;
+    save_morning(&s, spec);
+    let detail = monday(&s, &["of", "task:kiln", "--plain"]);
+    for line in [
+        "  name  conflict (2): Oven | Kiln",
+        r"  note  conflict (2): one\ntwo\u001b | long text that definitely exceeds forty…",
+        "  port  conflict (2): 9001 | 9000",
+        r#"  x  conflict (2): "unknown" | —"#,
+    ] {
+        assert!(detail.lines().any(|actual| actual == line), "{detail}");
+    }
+    assert!(
+        monday(&s, &["ls", "--fields", "port", "--plain"]).contains("conflict (2): 9001 | 9000")
+    );
+    assert!(
+        monday(&s, &["read", "morning", "--plain"])
+            .contains("  thing  task:kiln  conflict (2): Oven | Kiln\n")
+    );
+    assert!(
+        s.ok(&["of", "task:kiln"])
+            .contains("exceeds forty characters here")
+    );
+    s.ok(&["erase", &ids[0]]);
+    assert!(monday(&s, &["ls", "task:kiln", "--plain"]).contains("conflict (2): Oven | unknown"));
+    assert!(monday(&s, &["of", "task:kiln", "--plain"]).contains("conflict (2): 9001 | unknown"));
 }
