@@ -1,0 +1,4521 @@
+{
+  "catalogue": 328,
+  "mutants": [
+    {
+      "id": "things-prev-or",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "things-drop-may",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "none"
+    },
+    {
+      "id": "things-drop-erasure",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "fold-drop-prev-filter",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "fold-drop-named-guard",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "spec-unread-duplicates",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "none"
+    },
+    {
+      "id": "spec-below-time-inclusive",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "spec-atleast-time-strict",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "spec-source-all-any",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "families-unknown-no",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "families-drop-readable",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "none"
+    },
+    {
+      "id": "families-unread-zero",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "things-here-last",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "none"
+    },
+    {
+      "id": "things-no-self-anchor",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "things-negate-erases",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "fold-winner-last",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "fold-insert-nonstrict",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "fold-count-zero",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "spec-drop-head-choice",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "spec-drop-collect-choice",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "spec-collect-unknown-yes",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "spec-below-number-inclusive",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "stored-salt-check",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "unbuilt"
+    },
+    {
+      "id": "stored-commit-order",
+      "status": "killed-by-vector",
+      "commands": [
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        },
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "stored-refusal-last",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "record-newer-id-flip",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "record-num-hidden",
+      "status": "survived",
+      "commands": [
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        },
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "occurred-month-end",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "unbuilt"
+    },
+    {
+      "id": "occurred-open-stop",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "occurred-qualifier-and",
+      "status": "error",
+      "commands": [
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        },
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "failureDetail": "Generator nonzero"
+    },
+    {
+      "id": "record-num-drop-int",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "wide-batch-003",
+      "status": "error",
+      "commands": [
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        },
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "failureDetail": "Generator nonzero"
+    },
+    {
+      "id": "wide-batch-004",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "wide-batch-005",
+      "status": "error",
+      "commands": [
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        },
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "failureDetail": "Generator nonzero"
+    },
+    {
+      "id": "wide-batch-006",
+      "status": "error",
+      "commands": [
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        },
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "failureDetail": "Generator nonzero"
+    },
+    {
+      "id": "wide-batch-007",
+      "status": "error",
+      "commands": [
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        },
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "failureDetail": "Generator nonzero"
+    },
+    {
+      "id": "wide-envelope-008",
+      "status": "error",
+      "commands": [
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        },
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "failureDetail": "Generator nonzero"
+    },
+    {
+      "id": "wide-envelope-009",
+      "status": "error",
+      "commands": [
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        },
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "failureDetail": "Generator nonzero"
+    },
+    {
+      "id": "wide-envelope-010",
+      "status": "error",
+      "commands": [
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        },
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "failureDetail": "Generator nonzero"
+    },
+    {
+      "id": "wide-envelope-011",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "wide-families-012",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "wide-families-013",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "checks"
+    },
+    {
+      "id": "wide-families-014",
+      "status": "killed-by-vector",
+      "commands": [
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        },
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "wide-families-015",
+      "status": "killed-by-vector",
+      "commands": [
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        },
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "wide-families-016",
+      "status": "killed-by-vector",
+      "commands": [
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        },
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "wide-families-017",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "wide-fold-019",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "wide-fold-020",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "wide-json-021",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "wide-json-022",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "wide-json-023",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "wide-json-025",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "wide-json-026",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "wide-json-027",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "wide-json-028",
+      "status": "error",
+      "commands": [
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        },
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "failureDetail": "Generator nonzero"
+    },
+    {
+      "id": "wide-json-029",
+      "status": "error",
+      "commands": [
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        },
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "failureDetail": "Generator nonzero"
+    },
+    {
+      "id": "wide-json-030",
+      "status": "error",
+      "commands": [
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        },
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "failureDetail": "Generator nonzero"
+    },
+    {
+      "id": "wide-lens-031",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "wide-lens-032",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "wide-lens-033",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "wide-lens-034",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "wide-lens-036",
+      "status": "killed-by-vector",
+      "commands": [
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        },
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "wide-lens-037",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "wide-lens-038",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "wide-lens-039",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "wide-lens-041",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "wide-occurred-042",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "wide-occurred-043",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "unbuilt"
+    },
+    {
+      "id": "wide-record-044",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "wide-record-049",
+      "status": "killed-by-vector",
+      "commands": [
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        },
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "wide-record-050",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "wide-spec-051",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "wide-spec-052",
+      "status": "killed-by-vector",
+      "commands": [
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        },
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "wide-spec-053",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "wide-spec-054",
+      "status": "error",
+      "commands": [
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        },
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "failureDetail": "Generator nonzero"
+    },
+    {
+      "id": "wide-spec-055",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "wide-spec-056",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "wide-spec-057",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "wide-spec-059",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "wide-spec-061",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "wide-spec-062",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "wide-spec-063",
+      "status": "killed-by-vector",
+      "commands": [
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        },
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "wide-spec-064",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "checks"
+    },
+    {
+      "id": "wide-spec-066",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "wide-spec-067",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "wide-spec-068",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "wide-spec-069",
+      "status": "killed-by-vector",
+      "commands": [
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        },
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "wide-spec-070",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "wide-spec-073",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "wide-spec-074",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "wide-spec-076",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "wide-stored-081",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "checks"
+    },
+    {
+      "id": "wide-things-083",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "wide-things-084",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "wide-time-091",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "wide-time-092",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "wide-time-093",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "wide-time-095",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "unbuilt"
+    },
+    {
+      "id": "wide-time-096",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "wide-time-097",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "coverage-json-json-alldistinct",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "coverage-json-json-membersdistinct",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "coverage-spec-parsearg",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "coverage-spec-parsebound",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "coverage-spec-parseop",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "coverage-spec-parsewhere",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "coverage-spec-slotfollow",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "coverage-spec-parseslot",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "coverage-spec-parsekinds",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "coverage-spec-sourcestore",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "coverage-spec-json-repeatin",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "coverage-spec-json-repeatmember",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "coverage-occurred-span-closed-",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "unbuilt"
+    },
+    {
+      "id": "coverage-occurred-between",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "coverage-time-instant-",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "coverage-spec-slottests",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "coverage-spec-sourcekinds",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "coverage-spec-specslots",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "coverage-base32-bit-order",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "finish-batch-subst",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "finish-batch-envthings",
+      "status": "killed-by-vector",
+      "commands": [
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        },
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "finish-batch-checkprev",
+      "status": "killed-by-vector",
+      "commands": [
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        },
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "finish-envelope-env-tojson",
+      "status": "killed-by-vector",
+      "commands": [
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        },
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "finish-families-acc-fold",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "finish-families-tri-ofbool",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "finish-fold-count-fold",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "finish-fold-insertrec",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "finish-fold-latestby-fold",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "finish-fold-latestby-others",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "finish-fold-latest-others",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "finish-fold-sum-fold",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "finish-fold-max-fold",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "finish-fold-min-fold",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "finish-json-sortby",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "none"
+    },
+    {
+      "id": "finish-json-hexdigit",
+      "status": "survived",
+      "commands": [
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        },
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "finish-json-json-canonall",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "finish-json-json-canonmembers",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "none"
+    },
+    {
+      "id": "finish-occurred-halves",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "unbuilt"
+    },
+    {
+      "id": "finish-occurred-claim-of",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "unbuilt"
+    },
+    {
+      "id": "finish-record-digestdigits",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "finish-record-record-span",
+      "status": "killed-by-vector",
+      "commands": [
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        },
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "finish-spec-field-name",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "finish-spec-field-onenvelope",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "finish-spec-arg-matches",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "finish-spec-cond-eval",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "finish-spec-cond-all",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "finish-spec-chosen",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "finish-spec-memberpath",
+      "status": "killed-by-vector",
+      "commands": [
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        },
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "finish-spec-slottype",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "finish-spec-parsesource",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "finish-spec-json-repeatat",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "finish-spec-specvertex",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "finish-spec-specsources",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "finish-spec-spec-ofobject",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "finish-spec-arg-tojson",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "finish-spec-slot-tojson",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "finish-spec-source-tojson",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "finish-stored-stored-commit",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "finish-stored-write",
+      "status": "error",
+      "commands": [
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        },
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "failureDetail": "Generator nonzero"
+    },
+    {
+      "id": "finish-things-idsof",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "finish-things-refusalof",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "finish-things-admit",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "finish-things-statein",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "extra-lens-apply",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "extra-spec-parsefield",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "extra-lens-render",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "extra-lens-diff",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "extra-fold-latest-winner",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "extra-occurred-span-before",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "extra-record-addressed",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "none"
+    },
+    {
+      "id": "extra-things-thingsof",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "extra-things-settle",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "extra-things-perthing",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "extra-spec-shownids",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "extra-spec-spec-run",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "extra-spec-tests-tojson",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "extra-spec-spec-tojson",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "extra-families-sum-acc",
+      "status": "killed-by-vector",
+      "commands": [
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        },
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "extra-families-max-acc",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "checks"
+    },
+    {
+      "id": "extra-families-min-acc",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "checks"
+    },
+    {
+      "id": "last-families-count-acc",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "last-families-tri-refines",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "none"
+    },
+    {
+      "id": "last-things-forms",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "none"
+    },
+    {
+      "id": "last-things-envonly",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "none"
+    },
+    {
+      "id": "last-spec-tests-conds",
+      "status": "survived",
+      "commands": [
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        },
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "last-json-utf16",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "last-json-quote",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "step1-base32-reencode",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "step1-fraction-final-zero",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "step1-seconds-bound",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "step1-zone-only-z",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "step1-envelope-keys-remove",
+      "status": "error",
+      "commands": [
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        },
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "failureDetail": "Generator nonzero"
+    },
+    {
+      "id": "step1-envelope-keys-after-value",
+      "status": "error",
+      "commands": [
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        },
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "failureDetail": "Generator nonzero"
+    },
+    {
+      "id": "step1-draft-keys-after-values",
+      "status": "error",
+      "commands": [
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        },
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "failureDetail": "Generator nonzero"
+    },
+    {
+      "id": "step1-record-keys-after-values",
+      "status": "error",
+      "commands": [
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        },
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "failureDetail": "Generator nonzero"
+    },
+    {
+      "id": "d1-base-problem-remove",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "d1-read-text-first",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "d2-lone-low-accepted",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "d2-lone-high-accepted",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "d2-low-surrogate-range",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "checks"
+    },
+    {
+      "id": "d2-high-surrogate-range",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "checks"
+    },
+    {
+      "id": "d8-thing-ignores-of",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "d8-of-not-typed-skipped",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "d8-of-missing-skipped",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "d8-of-not-root-skipped",
+      "status": "killed-by-vector",
+      "commands": [
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        },
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "d8-unrelated-ignores-target-of",
+      "status": "killed-by-vector",
+      "commands": [
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        },
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "d8-subst-of-skipped",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "d8-source-of-by-about",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "d8-source-of-typed",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "d8-env-of-reads-thing",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "shape-not-object-skipped",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "shape-not-object-before-unknown",
+      "status": "error",
+      "commands": [
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        },
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "failureDetail": "Generator nonzero"
+    },
+    {
+      "id": "shape-draft-without-env-passes",
+      "status": "error",
+      "commands": [
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        },
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "failureDetail": "Generator nonzero"
+    },
+    {
+      "id": "read-wrong-type-accepted",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "read-wrong-set-empty",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "read-missing-kind-filled",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "read-salt-not-text-filled",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "read-salt-not-base32-filled",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "under-subst-skipped",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "under-refs-skipped",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "follow-pool-every",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "follow-pool-heads-always",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "follow-count-every",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "follow-max-every",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "follow-sum-parse-dropped",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "follow-count-not-written",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "follow-json-inverted",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "follow-count-envelope-first",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "follow-count-unknown-first",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "by-group-before-admit",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "by-group-before-heads",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "by-empty-groups-kept",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "by-unknown-in-group",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "by-membership-once",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "by-unreadable-ungrouped",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "by-on-latest-by",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "under-unknown-skipped",
+      "status": "killed-by-vector",
+      "commands": [
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        },
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "under-unknown-before-prev",
+      "status": "killed-by-vector",
+      "commands": [
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        },
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "under-unknown-after-of-not-root",
+      "status": "killed-by-vector",
+      "commands": [
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        },
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "under-unknown-store-only",
+      "status": "error",
+      "commands": [
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        },
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "failureDetail": "Generator nonzero"
+    },
+    {
+      "id": "sets-not-keys-skipped",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "sets-empty-name-accepted",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "sets-before-erases",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "sets-after-of-missing",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "sets-write-code-after-of-missing",
+      "status": "error",
+      "commands": [
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        },
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "failureDetail": "Generator nonzero"
+    },
+    {
+      "id": "sets-empty-left-out",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "sets-not-canonical",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "sets-field-unknown",
+      "status": "error",
+      "commands": [
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        },
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "failureDetail": "Generator nonzero"
+    },
+    {
+      "id": "sets-read-dropped",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "sets-key-as-label",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "keys-live-for-no-above",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "keys-whole-sets-nothing",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "keys-env-not-live",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "keys-whole-always-live",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "keys-above-direct",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "keys-upward-one-step",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "keys-from-heads",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "keys-whole-not-live",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "keys-heads-are-live",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "keys-chosen-by-live",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "keys-tests-on-heads",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "keys-unheld-skipped",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "keys-unset-unknown",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "keys-differ-yes",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "keys-unread-no",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "keys-follow-anywhere",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "keys-parsed-as-prev",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "keys-written-as-prev",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "keys-run-as-prev",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "keys-withhold-drops-sets",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "keys-slots-every-record-chooses",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "keys-slots-unchosen-unknown",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "keys-slots-first-of-two-setters",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "keys-slots-unreadable-not-unread",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "keys-slots-count-unknown-dropped",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "keys-slots-collect-heads",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "keys-slots-collect-no-limit",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "keys-slots-limit-over-records",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "keys-slots-limit-cuts-things",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "keys-slots-limit-oldest-first",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "keys-slots-things-repeated",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "keys-slots-every-record-listed",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "keys-slots-replaced-setters",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "keys-slots-payload-key-from-heads",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "keys-slots-envelope-key-every-head",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "keys-slots-unheld-key-read",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "keys-slots-unreadable-key-dropped",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "keys-slots-ungrouped-dropped",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "keys-slots-grouped-as-records",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "keys-slots-count-as-records",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "keys-slots-sum-over-heads",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "keys-slots-collect-as-prev",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "keys-slots-pool-swapped",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "keys-slots-collect-not-following",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "keys-slots-count-parsed-unfollowed",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "result-digit-offset",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "result-digits-dropped",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "result-digits-unreversed",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "result-negative-off-by-one",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "result-digit-range",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "checks"
+    },
+    {
+      "id": "result-value-order",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "checks"
+    },
+    {
+      "id": "result-leading-zero",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "checks"
+    },
+    {
+      "id": "result-negative-read-positive",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "checks"
+    },
+    {
+      "id": "result-ids-reversed",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "result-null-as-zero",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "result-keyed-heads-whole",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "result-groups-counts-swapped",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "result-things-first-head",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "result-first-slot-only",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "result-label-version",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "result-label-16-bytes",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "result-hash-unframed",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "result-unshown-keeps-shown",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "none"
+    },
+    {
+      "id": "result-unshown-groups-kept",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "none"
+    },
+    {
+      "id": "payload-nonobject-field",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "payload-drop-other-field",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "payload-whole-as-number",
+      "status": "survived",
+      "commands": [
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        },
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "payload-fraction-member",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "payload-flatten-nested",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "payload-list-first-match",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "payload-empty-absent",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "payload-other-absent",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "payload-list-atleast-any",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "payload-list-below-any",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "payload-list-first-key",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "payload-list-repeat-key",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "checks"
+    },
+    {
+      "id": "payload-list-first-number",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "payload-keys-union-is",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    }
+  ]
+}

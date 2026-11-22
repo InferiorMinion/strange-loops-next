@@ -60,7 +60,6 @@ Each step extends the model's laws, computes protocol vectors, then implements R
 None needs a ruling. Each is built when it is the cheapest useful thing to do.
 
 - `loops emit` takes `--` to end its options, and a verb makes a signing key without emitting (issue #11).
-- The full mutation catalogue runs over the result codec's nineteen entries.
 - The JavaScript sum is exact only to a signed 128-bit limit, and the law index calls it unbounded: make one of them true.
 - The fuzz generator puts lists, objects and `null` in the `spec/run` and `result` families only: give them to the `fold`, `realm` and `scenario` families too.
 

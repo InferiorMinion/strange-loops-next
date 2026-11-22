@@ -242,16 +242,16 @@ model-mutants:
 # The full mutation catalogue, on request only: run a pipeline with the variable
 # MUTATION_FULL set (Build > Pipelines > New pipeline, or the API). It is not a
 # gate and no merge waits for it. model/mutate/run.mjs applies each catalogue
-# entry to the checkout in turn, builds, regenerates the vectors into a copy and
-# compares, so it takes hours on one machine; `parallel` splits the catalogue
-# into shards that each take every nth entry. A shard fails only when an entry
+# entry to the checkout in turn and builds. If generated vectors match, it runs
+# `run --check` and then `checks`. A mutant that passes both survives. Parallel
+# jobs take every nth catalogue entry. A shard fails only when an entry
 # could not be judged (a timeout, a generator failure) or the source was not
 # restored. A survivor does not fail it. A build rejection keeps that status and
 # gains a second verdict from what runs without the laws: the generator, the
 # vectors, `run --check` and `checks` (model/mutate/README.md). It is no verdict
 # on the proofs, and the entries it leaves on proofs alone still need their logs
 # read; mutation-report lists them. Results and logs are kept as artifacts, and
-# mutation-report joins them. Each build or generator command gets
+# mutation-report joins them. Each command gets
 # MUTATION_TIMEOUT seconds, 600 unless set: on a busy runner a build that
 # rebuilds most of the model passes the runner's own default of 180, and a
 # timed-out entry is not judged. MUTATION_ONLY, a comma-separated list of entry

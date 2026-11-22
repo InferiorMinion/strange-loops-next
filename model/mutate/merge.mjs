@@ -60,7 +60,11 @@ export async function main(args) {
   const { merged, problems } = merge(ids, shards);
   if (output) await writeFile(output, `${JSON.stringify(merged, null, 2)}\n`);
   console.log(`${merged.mutants.length} of ${merged.catalogue} entries: ${Object.entries(merged.counts).map(([k, n]) => `${n} ${k}`).join(', ')}`);
-  for (const m of merged.mutants.filter(m => m.status === 'survived')) console.log(`survived: ${m.id} (${m.file}:${m.line})`);
+  for (const m of merged.mutants) {
+    if (['survived', 'killed-by-run-check', 'killed-by-checks'].includes(m.status)) {
+      console.log(`${m.status}: ${m.id} (${m.file}:${m.line})`);
+    }
+  }
   if (merged.runtime) {
     console.log(`rejected by build, at run time: ${Object.entries(merged.runtime).map(([k, n]) => `${n} ${k}`).join(', ')}`);
     for (const id of merged.proofsAlone) console.log(`on proofs alone: ${id}`);
