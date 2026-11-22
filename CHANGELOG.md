@@ -21,6 +21,24 @@ In brief:
 - `loops read` and `loops fold` take `--plain` too: a spec's result as text, for every result shape.
 - `loops tick` can cover a cut: `--as-of <time>` for the records emitted before a time with what they build on, `--cover <id>` for named records with what is under them.
 - Issue 11 is done: `loops emit -- "--text"` and `loops whoami --init`. The plain view shows a conflict's values and prints record ids as short prefixes that can be typed back.
+- The roadmap's last two small pieces: the JavaScript sum is unbounded, as the law index said it was, and the fuzz gives lists, objects and `null` to the `fold`, `realm` and `scenario` families: 24,576 cases agree three ways.
+
+### The JavaScript sum, and lists in three more fuzz families
+
+The last two of the roadmap's small pieces.
+
+**The JavaScript sum is unbounded.** The law index said the model, the JavaScript and Rust all sum with unbounded integers. That was false of the JavaScript: it refused with `sum-overflow` past a signed 128-bit sum. The guard is removed, which removes a difference from the model; the JavaScript is frozen for new features only (W3). A sum started at 2^127 − 1 with 2 added gives 170141183460469231731687303715884105729 in all three, and each has a test for it. No vector could reach the old limit: from zero it needs more than 2^74 records.
+
+**Lists, objects and `null` in the `fold`, `realm` and `scenario` fuzz families.** They were generated for `spec/run` and `result` only, though since the payload reading every fold reads a list as a set. The three families now draw payload values as `spec/run` does.
+
+- **Campaign:** 24,576 cases over three seeds (`lists-fold-1`, `lists-realm-1`, `lists-scenario-1`), three ways: 21,548 answers agree, 3,028 are malformed inputs every implementation's decoder refuses, none differ. The inputs held 41,632 lists, 6,972 objects and 6,679 nulls. The coordinator ran 4,500 more with seeds of its own: none differ.
+- **What no longer reproduces.** The three families' generated inputs changed for every seed, so the 17 earlier campaigns that mixed families cannot be regenerated case for case in those families. Their retained evidence is kept as it was and is history; the other families and the tick lane generate byte for byte what they did (55,040 and 66,816 inputs compared).
+
+**Implementer choices; they stand under Kyle's ruling of 2026-11-21 (W7).**
+- The JavaScript's record-facing sum still answers a JavaScript number while the sum is a safe whole number, and a big integer past that, as before.
+- In the widened families a record's structured value is the same in every form and arrival order, and `n` and `score` alternate so ordinary numeric and missing-field cases stay covered.
+
+A Codex worker wrote both; the coordinator reviewed them and ran the extra cases.
 
 ### Three small CLI pieces: issue 11, and two gaps in the plain view
 

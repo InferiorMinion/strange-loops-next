@@ -57,8 +57,7 @@ Each step extends the model's laws, computes protocol vectors, then implements R
 
 None needs a ruling. Each is built when it is the cheapest useful thing to do.
 
-- The JavaScript sum is exact only to a signed 128-bit limit, and the law index calls it unbounded: make one of them true.
-- The fuzz generator puts lists, objects and `null` in the `spec/run` and `result` families only: give them to the `fold`, `realm` and `scenario` families too.
+- None is left (2026-11-22). The last were issue 11, the JavaScript sum, and lists in the other fuzz families.
 
 ## All steps
 
