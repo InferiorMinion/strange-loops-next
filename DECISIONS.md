@@ -11,8 +11,9 @@ Everything that waits on Kyle, in one place. Each entry has the question, an exa
 | Id | Question | Recommended | What waits on it |
 | --- | --- | --- | --- |
 | [TK10](#tk10-seven-details-of-the-check) | Seven details of `loops tick --check` that the rulings leave open | As in its table; the build follows them meanwhile | Nothing yet: the check is three merge requests away |
+| [TK11](#tk11-a-write-against-a-base-that-does-not-hold-what-is-under-it) | What `loops emit --base` does when the base does not hold what is under its records | Name the live records of the base together with what is under it; say how many of those the base did not hold | The filler against a base |
 
-Every earlier entry is ruled (2026-11-21).
+Every earlier entry is ruled (2026-11-21). TK11 is new on 2026-11-22.
 
 - The tick record, TK1 to TK9: ruled, and being built. The questions as they were put, with their examples, are in [the tick record note](notes/2026-11-21-tick-record.md#10-the-questions-as-they-were-put).
 - The order of work, W1 to W6: ruled. The entries as put are in [the order-of-work note](notes/2026-11-21-order-of-work.md).
@@ -40,6 +41,49 @@ Nothing here is built, so each answer below is what the verb would say. The stor
 | 7 | **The result's hash on a tick from a later version.** The label inside the result's hash has its own version (`loops/result-hash/v1:`), and a later version of the rules may change the result's bytes and take a new one. | A tick states `"rules": "2"`, and version 2 writes results under `loops/result-hash/v2:`. The NAS runs version 1 and knows one label. | For `rules` above its own, the NAS checks that `result-hash` is spelled as a hash and does not ask whether it fits. Then `cannot check: made under newer rules`. For its own version and older ones it knows the label and requires the fit. margins-claude found this. | Require the fit under the label the binary knows. An honest version 2 tick is then "not a tick" on the NAS: the fault your ruling on TK9 removed from the spec's hash, back in the result's. |
 
 **What is not asked.** The names of the refusal codes and their order for input that is wrong twice are the implementer's, under your rulings on TK7 and W4, and go in the changelog. So do the two reports beside the answer (whether `covers` holds every `prev` and `under` target its records name; how many more records the spec would take now) and the verb's flags.
+
+### TK11: a write against a base that does not hold what is under it
+
+**Question.** You ruled on 2026-11-20 that the filler takes a base, a tick or ids, and names that base's live records of the thing. What does it do when the base does not hold the records under its own?
+
+**Why it comes up.** margins-claude proved the law for the filler (`keyed.base`, 2026-11-22) and in doing so found its earlier answer wrong: it had said any base will do. A base that leaves out a record under one of its own can leave the store reading wrongly from its live records. `loops tick` covers everything a store holds, so its ticks never do this. A tick over a chosen set of ids can, and so can ids named by hand.
+
+**Example, run on today's binary** (the writes against a base made with `loops emit -`, since `--base` is not built). One thing, `svc:jellyfin`:
+
+```
+x   sets port 8096 and owner kyle
+y   sets port 8097, over x
+```
+
+The base is `y` alone. Two things go wrong, and they are different.
+
+*First, a conflict that does not exist.* A writer sets `port` to 8098 against the base and names `y`, the one record live in the base.
+
+| Read from | `port` | Heads |
+| --- | --- | --- |
+| The whole store (x, y and the new record) | 8098 | 1 |
+| The thing's live records alone (x and the new record) | in conflict: 8098 and 8096 | 2 |
+
+`x` is still live, for `owner`, and the new record does not name it. A reader who holds only the live records has no record that puts the new one above `x`. A tick with a small `covers`, or a clone that fetched only what is live, is such a reader.
+
+*Second, a value replaced that the writer was never shown.* Reading `y` alone shows `port` 8097 and no `owner`. The writer sets `owner` to sam against the base. The whole store then reads `owner` sam, one head, no conflict. `owner` kyle is gone and nothing showed it to the writer or says so now. This follows from what `prev` means: a record over `y` is over everything under `y`.
+
+**Options.**
+
+| | What the filler does | First problem | Second problem |
+| --- | --- | --- | --- |
+| **C (recommended)** | Names the live records of the base **together with what is under it in the store**. Here the new record names `x` and `y`. It says on standard error how many records under the base it named that the base did not hold. | Gone: the store always reads the same from its live records. margins-claude's law covers it (`anchored_emit_down`). | Still happens, and the envelope now names what was replaced. The line on standard error tells the writer. |
+| A | Refuses the write when the base leaves out a record that is live under it. Needs a new refusal code. | Gone | Gone |
+| B | Writes naming the bare base's live records, with a note. | Stays, for good, for every later reader of that thing's live records. | Still happens, and nothing names what was replaced. |
+
+- For a base that holds everything under it, and for a base that is exactly a thing's live records, all three write the same record. That is every tick `loops tick` writes today. The count C prints is 0 for those.
+- Under C, ids as a base means the ids with what is under them. That is margins-claude's answer and it is always sound.
+- C opens nothing: a tick among the covered records stays one record (TK4). It follows `prev` only, inside one thing.
+- B is worse than C in every case and is listed for completeness.
+
+**Why C over A.** A is the only option that stops the second problem. But the second problem is a question you have already set aside for step 3 in another form: what a strict store does with a write whose base is behind what the store holds. "You replaced something you were not shown" belongs with it, and a strict store can refuse both then. Until then C never refuses, never leaves a store that reads wrongly, and tells the writer what it did. margins-claude recommends C as the default too.
+
+**What it costs to change later.** The choice is in the filler and one line of output. No record already written changes.
 
 ## Being prepared
 
