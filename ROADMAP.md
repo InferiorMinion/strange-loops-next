@@ -43,7 +43,7 @@ Kyle ruled on 2026-11-21 for one step between ticks and standing, adoption, with
 
 | Order | Step | Builds | Done when |
 | --- | --- | --- | --- |
-| started 2026-11-22; `loops ls`, `--fields`, the plain view and `--version` are built | Adoption | The old stores imported as a shadow; `ls`, a scan by name prefix, relative times and a plain-text view; reads across several stores; a cache of checked segments | `loops` is first on `PATH` for daily work |
+| started 2026-11-22; `loops ls`, `--fields`, the plain view, `--version` and the cache of checked segments are built | Adoption | The old stores imported as a shadow; `ls`, a scan by name prefix, relative times and a plain-text view; reads across several stores; a cache of checked segments | `loops` is first on `PATH` for daily work |
 | then | 3, standing | Declarations, admission, stances, grants, presence key, retire through; then name tables and `resolve-by` | A strict store rejects visibly; a steward's changeset takes effect |
 | with it | 5, sharing | The git layout, then segment-list sync | Two clones converge |
 | later | 6 | Index and search, SQLite segments, collectors, lenses, `serve` | Something is slow, or a surface needs it |

@@ -14,7 +14,8 @@
 //! segment by the same lines with openings erased. A segment whose name is
 //! not the hash of its bytes changed some other way; [`Held::altered`] lists
 //! those.
-use crate::line::{Line, Refusal, hash};
+use crate::cache::Checked;
+use crate::line::{Line, Refusal, SignatureCheck, hash};
 use loops::{base32, batch, record::Record, things};
 use std::{
     collections::HashMap,
@@ -124,7 +125,7 @@ impl Dir {
             .into_owned()
     }
 
-    /// Reads every segment.
+    /// Reads every segment and verifies every signature without using a cache.
     ///
     /// A last line without its line ending is a write that never finished, and
     /// is skipped. A line that does not check is listed, not held.
@@ -132,19 +133,42 @@ impl Dir {
     /// # Errors
     /// Returns the file system's error.
     pub fn read(&self) -> io::Result<Held> {
+        self.read_segments(None)
+    }
+
+    /// Read with the user's checked-segment list in the given cache directory.
+    /// An unavailable cache falls back to full verification.
+    /// # Errors
+    /// Returns store I/O errors.
+    pub fn read_with_cache(&self, dir: &Path) -> io::Result<Held> {
+        self.read_segments(Checked::open(dir, &self.root))
+    }
+
+    fn read_segments(&self, mut cache: Option<Checked>) -> io::Result<Held> {
         let mut held = Held::default();
         for path in self.segments()? {
             let bytes = fs::read(&path)?;
             let segment = self.relative(&path);
             held.segments += 1;
-            if path.file_name().and_then(|n| n.to_str()) != Some(name_of(&bytes).as_str()) {
+            let digest = base32::base32(&hash(&bytes));
+            let named = path.file_stem().and_then(|n| n.to_str()) == Some(&digest);
+            if !named {
                 held.altered.push(segment.clone());
             }
             let text = String::from_utf8_lossy(&bytes);
+            let eligible =
+                named && bytes.ends_with(b"\n") && matches!(text, std::borrow::Cow::Borrowed(_));
+            let hit = eligible && cache.as_ref().is_some_and(|c| c.contains(&digest));
+            let check = if hit {
+                SignatureCheck::PreviouslyVerified
+            } else {
+                SignatureCheck::Verify
+            };
+            let before = held.refused.len();
             let mut lines: Vec<&str> = text.split('\n').collect();
             lines.pop();
             for (i, line) in lines.into_iter().enumerate() {
-                match Line::parse(line) {
+                match Line::parse_segment(line, check) {
                     Ok(line) => held.lines.push(line),
                     Err(refusal) => held.refused.push(Refused {
                         segment: segment.clone(),
@@ -153,6 +177,14 @@ impl Dir {
                     }),
                 }
             }
+            if eligible && !hit && before == held.refused.len() {
+                if let Some(c) = &mut cache {
+                    c.remember(digest);
+                }
+            }
+        }
+        if let Some(c) = cache {
+            let _ = c.save();
         }
         Ok(held)
     }

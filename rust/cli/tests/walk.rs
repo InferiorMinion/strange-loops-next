@@ -10,24 +10,38 @@ use std::{
 
 struct Store {
     dir: PathBuf,
+    scratch: PathBuf,
 }
 impl Store {
+    fn scratch(name: &str) -> Self {
+        let scratch = PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join(format!("walk-{name}"));
+        let _ = fs::remove_dir_all(&scratch);
+        let dir = scratch.join("store");
+        fs::create_dir_all(&dir).expect("store scratch directory");
+        fs::create_dir(scratch.join("home")).expect("child home");
+        Self { dir, scratch }
+    }
     fn new(name: &str) -> Self {
-        let dir = PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join(format!("walk-{name}"));
-        let _ = fs::remove_dir_all(&dir);
-        fs::create_dir_all(&dir).expect("scratch directory");
-        let store = Self { dir };
+        let store = Self::scratch(name);
         store.ok(&["init"]);
         store
     }
-    fn run(&self, args: &[&str], stdin: &str) -> Output {
-        let mut child = Command::new(env!("CARGO_BIN_EXE_loops"))
-            .arg("-C")
+    fn command(&self, args: &[&str]) -> Command {
+        let mut cmd = Command::new(env!("CARGO_BIN_EXE_loops"));
+        cmd.arg("-C")
             .arg(&self.dir)
             .args(args)
+            .env("HOME", self.scratch.join("home"))
+            .env_remove("XDG_CACHE_HOME")
+            .env("LOOPS_CACHE_DIR", self.scratch.join("cache"))
             .env_remove("LOOPS_KEY")
             .env_remove("LOOPS_OBSERVER")
-            .env("LOOPS_KEY_FILE", self.dir.join("device-key"))
+            .env("LOOPS_KEY_FILE", self.dir.join("device-key"));
+        cmd
+    }
+    fn run(&self, args: &[&str], stdin: &str) -> Output {
+        let mut child = self
+            .command(args)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
@@ -1085,6 +1099,7 @@ fn usage_refusals_and_a_missing_store_exit_apart() {
     assert_eq!(s.ok(&["export"]), held);
     let nowhere = Store {
         dir: Path::new("/").to_owned(),
+        ..Store::scratch("no-store")
     };
     assert_eq!(nowhere.fails(&["export"], "").0, 2);
 }
@@ -3686,9 +3701,7 @@ fn ls_answers_from_checked_lines_then_reports_an_unclean_store() {
 
 #[test]
 fn version_identifies_the_binary_outside_a_store_without_a_key() {
-    let dir = Path::new(env!("CARGO_TARGET_TMPDIR")).join("walk-ls-version");
-    fs::create_dir_all(&dir).expect("scratch directory");
-    let outside = Store { dir };
+    let outside = Store::scratch("ls-version");
     assert_eq!(
         outside.ok(&["--version"]),
         concat!("strange-loops-next ", env!("CARGO_PKG_VERSION"))
@@ -3700,13 +3713,282 @@ fn version_identifies_the_binary_outside_a_store_without_a_key() {
     );
 }
 
+struct WalkCache(PathBuf);
+
+impl WalkCache {
+    fn new(name: &str) -> Self {
+        let path =
+            std::env::temp_dir().join(format!("loops-walk-cache-{name}-{}", std::process::id()));
+        let mut dir = fs::DirBuilder::new();
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::DirBuilderExt;
+            dir.mode(0o700);
+        }
+        dir.create(&path).expect("test cache");
+        Self(path)
+    }
+
+    fn list(&self) -> PathBuf {
+        self.0.join("checked-segments-v1")
+    }
+
+    fn command(&self, store: &Store, args: &[&str]) -> Command {
+        let mut cmd = store.command(args);
+        cmd.env("LOOPS_CACHE_DIR", &self.0);
+        cmd
+    }
+
+    fn compare_fold(&self, store: &Store, count: &str, status: i32) {
+        let spec = store.dir.join("count.json");
+        fs::write(
+            &spec,
+            r#"{"vertex":"c","from":[{"store":"."}],"fold":{"facts":{"count":true}}}"#,
+        )
+        .expect("spec");
+        let args = ["fold", spec.to_str().expect("spec path")];
+        let full = self
+            .command(store, &args)
+            .env("LOOPS_CACHE_DIR", "")
+            .output()
+            .expect("full fold");
+        assert_eq!(full.status.code(), Some(status));
+        assert_eq!(
+            String::from_utf8_lossy(&full.stdout).trim(),
+            format!(r#"{{"facts":{{"unread":0,"value":{count}}}}}"#)
+        );
+        assert_eq!(
+            String::from_utf8_lossy(&full.stderr).contains("store-not-clean"),
+            status == 1
+        );
+        for _ in 0..2 {
+            let cached = self.command(store, &args).output().expect("cached fold");
+            assert_eq!(
+                (cached.status, &cached.stdout, &cached.stderr),
+                (full.status, &full.stdout, &full.stderr)
+            );
+        }
+    }
+}
+
+impl Drop for WalkCache {
+    fn drop(&mut self) {
+        let _ = fs::remove_dir_all(&self.0);
+    }
+}
+
+fn cache_digest(bytes: &[u8]) -> String {
+    loops::base32::base32(&loops_place::line::hash(bytes))
+}
+
+#[test]
+fn cached_folds_preserve_the_answer_and_exit_status_for_each_segment_condition() {
+    let store = Store::new("cache-fold");
+    let cache = WalkCache::new("fold");
+    store.changeset("{\"kind\":\"note\"}\n{\"kind\":\"note\"}");
+    cache.compare_fold(&store, "2", 0);
+    let path = store.segments().remove(0);
+    let whole = fs::read(&path).expect("segment");
+    let wrong = path.with_file_name("wrong.jsonl");
+    fs::rename(&path, &wrong).expect("wrong name on cached bytes");
+    cache.compare_fold(&store, "2", 1);
+    fs::rename(&wrong, &path).expect("restore");
+    let cut = &whole[..whole.len() - 1];
+    fs::write(&path, cut).expect("truncate");
+    cache.compare_fold(&store, "1", 1);
+    let fits = path.with_file_name(format!("{}.jsonl", cache_digest(cut)));
+    fs::rename(&path, &fits).expect("name matches truncated bytes");
+    cache.compare_fold(&store, "1", 0);
+    let mut bad = whole.clone();
+    bad.extend_from_slice(b"{}\n");
+    let named_bad = path.with_file_name(format!("{}.jsonl", cache_digest(&bad)));
+    fs::rename(&fits, &named_bad).expect("one segment");
+    fs::write(named_bad, bad).expect("refused line");
+    cache.compare_fold(&store, "2", 1);
+    assert_eq!(
+        fs::read_to_string(cache.list()).expect("list"),
+        format!("{}\n", cache_digest(&whole))
+    );
+}
+
+#[test]
+fn check_and_import_verify_signatures_even_with_a_poisoned_user_cache() {
+    let store = Store::new("cache-check");
+    let cache = WalkCache::new("check");
+    store.changeset(r#"{"kind":"note"}"#);
+    let check = || cache.command(&store, &["check"]).output().expect("check");
+    assert!(check().status.success());
+    assert!(!cache.list().exists());
+    cache.compare_fold(&store, "1", 0);
+    let path = store.segments().remove(0);
+    let mut line = fs::read_to_string(&path).expect("segment");
+    let prefix = "\"ed25519\":\"";
+    let pos = line.find(prefix).expect("signature") + prefix.len();
+    let digit = if line.as_bytes()[pos] == b'0' {
+        "1"
+    } else {
+        "0"
+    };
+    line.replace_range(pos..=pos, digit);
+    let digest = cache_digest(line.as_bytes());
+    let renamed = path.with_file_name(format!("{digest}.jsonl"));
+    fs::rename(&path, &renamed).expect("fitting name");
+    fs::write(&renamed, &line).expect("segment");
+    fs::write(cache.list(), format!("{digest}\n")).expect("poison own cache");
+    let cached = cache.command(&store, &["export"]).output().expect("export");
+    assert!(cached.status.success());
+    assert_eq!(cached.stdout, line.as_bytes());
+    let full = check();
+    assert_eq!(full.status.code(), Some(1));
+    assert!(String::from_utf8_lossy(&full.stdout).contains("signature-invalid"));
+    assert!(String::from_utf8_lossy(&full.stderr).contains("store-not-clean"));
+    let import = cache
+        .command(&store, &["import", renamed.to_str().expect("segment path")])
+        .output()
+        .expect("import");
+    assert_eq!(import.status.code(), Some(1));
+    assert!(String::from_utf8_lossy(&import.stderr).contains("signature-invalid"));
+    // Even an entry planted by the user cannot skip verification when the
+    // name or framing fails. The bad complete line must now be refused.
+    let wrong = path.with_file_name("renamed.jsonl");
+    fs::rename(&renamed, &wrong).expect("wrong filename");
+    cache.compare_fold(&store, "0", 1);
+    line.push('{');
+    let truncated_hash = cache_digest(line.as_bytes());
+    let truncated = path.with_file_name(format!("{truncated_hash}.jsonl"));
+    fs::rename(wrong, &truncated).expect("fitting filename");
+    fs::write(truncated, line).expect("incomplete tail after the complete line");
+    fs::write(cache.list(), format!("{truncated_hash}\n")).expect("test entry");
+    cache.compare_fold(&store, "0", 1);
+}
+
+#[test]
+fn erase_rechecks_the_rewritten_segment_and_concurrent_readers_publish_whole_lists() {
+    let cache = WalkCache::new("parallel");
+    let a = Store::new("cache-parallel-a");
+    let b = Store::new("cache-parallel-b");
+    let rows = r#"{"kind":"note","payload":{"text":"erase me"}}"#;
+    let input = vec![rows; 48].join("\n");
+    let id = a.changeset(&input).remove(0);
+    b.changeset(&input);
+    let mut children = Vec::new();
+    for s in [&a, &b] {
+        children.push(
+            cache
+                .command(s, &["ls"])
+                .stdout(Stdio::null())
+                .spawn()
+                .expect("read"),
+        );
+    }
+    for mut child in children {
+        assert!(child.wait().expect("exit").success());
+    }
+    let digests = |s: &Store| {
+        s.segments()
+            .iter()
+            .map(|p| cache_digest(&fs::read(p).expect("segment")))
+            .collect::<Vec<_>>()
+    };
+    let original = digests(&a);
+    let mut both = original.clone();
+    both.extend(digests(&b));
+    let list = fs::read_to_string(cache.list()).expect("complete published list");
+    assert!(list.ends_with('\n') && list.lines().all(|d| both.iter().any(|hash| hash == d)));
+    for store in [&a, &b] {
+        cache.compare_fold(store, "48", 0);
+    }
+    let erase = cache.command(&a, &["erase", &id]).output().expect("erase");
+    assert!(erase.status.success());
+    let after = digests(&a);
+    assert_eq!(after.len(), 2);
+    assert!(after.iter().all(|d| !original.contains(d)));
+    let exported = cache
+        .command(&a, &["export"])
+        .output()
+        .expect("read purged store");
+    assert!(exported.status.success());
+    let held = String::from_utf8(exported.stdout).expect("export");
+    let erased = held
+        .lines()
+        .map(|l| parse_json(l).expect("line"))
+        .find(|l| text(l, &["id"]) == id)
+        .expect("purged record");
+    assert!(has(&erased, &[], "commit") && !has(&erased, &[], "payload"));
+    let list = fs::read_to_string(cache.list()).expect("updated list");
+    assert!(
+        both.iter()
+            .chain(&after)
+            .all(|d| list.lines().any(|line| line == d))
+    );
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        assert_eq!(
+            fs::metadata(cache.list())
+                .expect("file")
+                .permissions()
+                .mode()
+                & 0o777,
+            0o600
+        );
+    }
+}
+
+#[test]
+fn segment_cache_uses_the_users_cache_directory() {
+    let store = Store::new("cache-home");
+    store.changeset(r#"{"kind":"note"}"#);
+    let scratch = WalkCache::new("home");
+    let xdg = scratch.0.join("xdg");
+    let home = scratch.0.join("home");
+    let default = home.join(".cache/loops/checked-segments-v1");
+    let read = || {
+        let mut cmd = scratch.command(&store, &["export"]);
+        cmd.env_remove("LOOPS_CACHE_DIR").env("HOME", &home);
+        cmd
+    };
+    assert!(
+        read()
+            .env("XDG_CACHE_HOME", &xdg)
+            .output()
+            .expect("XDG")
+            .status
+            .success()
+    );
+    assert!(xdg.join("loops/checked-segments-v1").is_file());
+    assert!(!default.exists());
+    assert!(
+        read()
+            .env_remove("XDG_CACHE_HOME")
+            .output()
+            .expect("fallback")
+            .status
+            .success()
+    );
+    assert!(default.is_file());
+}
+
+#[test]
+fn ordinary_walk_populates_only_its_own_verification_cache() {
+    let store = Store::new("private-cache");
+    let list = store.scratch.join("cache/checked-segments-v1");
+    assert!(!list.exists());
+    store.ok(&["emit", "note", "hello"]);
+    store.ok(&["ls"]);
+    let segment = store.segments().pop().expect("one segment");
+    let digest = cache_digest(&fs::read(segment).expect("segment bytes"));
+    assert_eq!(
+        fs::read_to_string(list).expect("walk's cache"),
+        format!("{digest}\n")
+    );
+    assert!(!store.scratch.join("home/.cache").exists());
+}
+
 /// Put the test clock on this child only; other walks can run concurrently.
 fn monday(s: &Store, args: &[&str]) -> String {
-    let out = Command::new(env!("CARGO_BIN_EXE_loops"))
-        .arg("-C")
-        .arg(&s.dir)
-        .args(args)
-        .env("LOOPS_KEY_FILE", s.dir.join("device-key"))
+    let out = s
+        .command(args)
         .env("LOOPS_TEST_PLAIN_NOW", "2026-11-20T12:00:00Z")
         .output()
         .expect("plain view");
