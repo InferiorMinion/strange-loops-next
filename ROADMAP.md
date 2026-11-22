@@ -22,7 +22,7 @@ The payload values and the result hash's prefix, ruled by Kyle on 2026-11-21, ar
 
 | Order | Work | State | Waits on |
 | --- | --- | --- | --- |
-| 1 | **The tick record:** what a tick holds, how `covers` is stated and checked, and the input key. | Ruled 2026-11-21 ([the note](notes/2026-11-21-tick-record.md)). Being built in seven pieces (changelog, 2026-11-21). Pieces 1 to 3 are in the model (the spec's hash and `env.when`; the result reader and the payload; the claim and the check). Rust has piece 1, so `loops fold` takes a window on `env.when`. The model's piece 3, the claim and the check, is in: the model holds the whole tick record. Rust has the payload and the result reader, and the tick has its protocol page, [`protocol/tick.md`](protocol/tick.md). Rust checks a tick too: all 126 tick vectors run in Rust. `loops tick <spec>` writes a tick. Next: `loops tick --check <id>` and the two-machine test that is step 4's exit. | [TK10](DECISIONS.md#tk10-seven-details-of-the-check) for the check's details |
+| 1 | **The tick record:** what a tick holds, how `covers` is stated and checked, and the input key. | Ruled 2026-11-21 ([the note](notes/2026-11-21-tick-record.md)). Being built in seven pieces (changelog, 2026-11-21). Pieces 1 to 3 are in the model (the spec's hash and `env.when`; the result reader and the payload; the claim and the check). Rust has piece 1, so `loops fold` takes a window on `env.when`. The model's piece 3, the claim and the check, is in: the model holds the whole tick record. Rust has the payload and the result reader, and the tick has its protocol page, [`protocol/tick.md`](protocol/tick.md). Rust checks a tick too: all 126 tick vectors run in Rust. `loops tick <spec>` writes a tick and `loops tick --check <id>` checks one. | [TK10](DECISIONS.md#tk10-seven-details-of-the-check) for the check's details |
 | 2 | **Step 4's ruled pieces** (list below). | Ruled 2026-11-20. Not built. | Some wait on the tick record |
 
 ### Step 4: ruled and not built
@@ -33,6 +33,7 @@ Each is ruled in [the cut note](notes/2026-11-15-the-cut.md); the section is in 
 - A CLI verb that shows a result hash.
 
 **Step 4 is done when** a content tick recomputes to the same hash on two machines.
+**That holds since 2026-11-21:** a tick written on one machine checks `same` on a second, in the tree's tests and on real stores (changelog). Closing the step is Kyle's to say.
 Not in step 4 yet: boundaries and markers, the runner, and what verifying a deep tick tree costs.
 Not in step 4 any more: the caching reader's law (issue #8). It is stated when a caching reader is built (ruled 2026-11-21, amending 2026-11-11).
 
