@@ -1,8 +1,8 @@
 //! Render the typed slot results before JSON sorts their member names.
-use super::{keyed_fields, label, mentions, now, relative, text, value};
+use super::{Prefixes, headline, keyed_fields, label, now, relative, text, value};
 use crate::{
     Fail,
-    values::{View, records_by_thing, shown_name, thing_about},
+    values::{Fields, View, records_by_thing, shown_name, thing_about},
 };
 use loops::{
     json::{Json, str_cmp},
@@ -18,6 +18,7 @@ use std::{cell::OnceCell, collections::HashMap, fmt::Write};
 struct Reading<'a> {
     held: &'a Held,
     realm: &'a [Record],
+    ids: Prefixes<'a>,
     things: OnceCell<HashMap<String, Vec<&'a Record>>>,
     view: View,
     clock: Option<Moment>,
@@ -55,7 +56,7 @@ impl Reading<'_> {
         }
         for (digest, shown) in records {
             let id = id_text(digest);
-            write!(out, "\n{indent}{id}").expect("write string");
+            write!(out, "\n{indent}{}", self.ids.short(&id)).expect("write string");
             if self.view == View::Ids {
                 continue;
             }
@@ -82,12 +83,23 @@ impl Reading<'_> {
             .expect("write string");
             if let Json::Obj(members) = env.to_json() {
                 for (key, v) in members {
-                    match key.as_str() {
-                        "kind" | "emitted" | "occurred" => continue,
-                        "about" => write!(out, "\n{indent}  about  {}", mentions(&env.about)),
-                        _ => write!(out, "\n{indent}  {key}  {}", value(&v)),
-                    }
-                    .expect("write string");
+                    let rendered = match (key.as_str(), &v) {
+                        ("kind" | "emitted" | "occurred", _) => continue,
+                        ("of" | "under", Json::Str(id)) => text(self.ids.short(id)),
+                        ("about", _) => self.ids.mentions(&env.about),
+                        ("prev" | "erases", Json::Arr(ids)) => {
+                            let shortened = ids
+                                .iter()
+                                .map(|id| match id {
+                                    Json::Str(id) => Json::Str(self.ids.short(id).into()),
+                                    other => other.clone(),
+                                })
+                                .collect();
+                            value(&Json::Arr(shortened))
+                        }
+                        _ => value(&v),
+                    };
+                    write!(out, "\n{indent}  {key}  {rendered}").expect("write string");
                 }
             }
             if detail == Detail::Payload {
@@ -161,7 +173,8 @@ impl Reading<'_> {
                     out.push_str("  —");
                 }
                 for (name, heads) in things {
-                    write!(out, "\n  thing  {}\n    heads", text(&name)).expect("write string");
+                    write!(out, "\n  thing  {}\n    heads", text(self.ids.short(&name)))
+                        .expect("write string");
                     self.records(out, "      ", &heads, Detail::Payload)?;
                 }
                 unread(out, "  ", &count);
@@ -174,7 +187,15 @@ impl Reading<'_> {
                     out.push_str("  —");
                 }
                 for (name, view) in things {
-                    write!(out, "\n  thing  {}\n    heads", text(&name)).expect("write string");
+                    let records = &self.things.get_or_init(|| records_by_thing(self.realm))[&name];
+                    let state = LiveState::new(records.clone());
+                    write!(out, "\n  thing  {}", text(self.ids.short(&name)))
+                        .expect("write string");
+                    if self.view == View::Ids {
+                        let name = Fields::new(self.held, &state).read("name");
+                        write!(out, "  {}", headline(&name)).expect("write string");
+                    }
+                    out.push_str("\n    heads");
                     self.records(out, "      ", &view.heads, Detail::Envelope)?;
                     for (key, setters) in view.keys {
                         write!(out, "\n    setters  {}", text(&key)).expect("write string");
@@ -183,15 +204,12 @@ impl Reading<'_> {
                     out.push_str("\n    whole");
                     self.records(out, "      ", &view.whole, Detail::Id)?;
                     if self.view == View::Values {
-                        let records =
-                            &self.things.get_or_init(|| records_by_thing(self.realm))[&name];
-                        let state = LiveState::new(records.clone());
                         out.push_str("\n    fields");
                         keyed_fields(out, self.held, &state, "    ");
                         write!(
                             out,
                             "\n    about  {}",
-                            mentions(&thing_about(&state.heads()))
+                            self.ids.mentions(&thing_about(&state.heads()))
                         )
                         .expect("write string");
                     }
@@ -216,6 +234,7 @@ pub(crate) fn fold(
     let mut reading = Reading {
         held,
         realm,
+        ids: Prefixes::new(held),
         things: OnceCell::new(),
         view,
         clock: None,

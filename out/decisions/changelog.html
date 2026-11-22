@@ -226,7 +226,25 @@ The record starts where the old roadmap's did. For anything earlier, and for eve
 <li><p>A read remembers which segments it has checked: on a 9,000-record store a fold goes from 0.53 s to 0.24 s. <code>loops check</code> still checks everything.</p></li>
 <li><p><code>loops read</code> and <code>loops fold</code> take <code>--plain</code> too: a spec's result as text, for every result shape.</p></li>
 <li><p><code>loops tick</code> can cover a cut: <code>--as-of &lt;time&gt;</code> for the records emitted before a time with what they build on, <code>--cover &lt;id&gt;</code> for named records with what is under them.</p></li>
+<li><p>Issue 11 is done: <code>loops emit -- &quot;--text&quot;</code> and <code>loops whoami --init</code>. The plain view shows a conflict's values and prints record ids as short prefixes that can be typed back.</p></li>
 </ul>
+<h3 id="three-small-cli-pieces-issue-11-and-two-gaps-in-the-plain-view">Three small CLI pieces: issue 11, and two gaps in the plain view</h3>
+<p><strong><code>--</code> ends <code>emit</code>'s options</strong> (issue 11, from the outside user). <code>loops emit message &quot;--leading-dashes&quot;</code> was a usage error, since every token starting with <code>--</code> was taken for a flag. Now <code>loops emit message -- &quot;--leading-dashes&quot;</code> writes the text. Before <code>--</code> nothing changes.</p>
+<p><strong><code>loops whoami --init</code></strong> (issue 11). An agent given its own key file could not learn its identity before its first record: <code>whoami</code> refused with &quot;the first emit makes one&quot;. <code>whoami --init</code> makes the key exactly as the first emit would, prints the <code>k:…</code> id, needs no store, and prints the same id again when the key exists. Plain <code>whoami</code> is unchanged.</p>
+<p><strong>The plain view, after using it.</strong></p>
+<ul>
+<li><p>A conflict shows what each side says, in the setters' order: <code>conflict (2): &quot;9003&quot; | &quot;9002&quot;</code>. A side whose payload is not held shows <code>unknown</code>. Long values are cut; <code>loops of</code> without <code>--plain</code> has them whole.</p></li>
+<li><p>A record id prints as its shortest prefix that is unique in the store, eight digits or more: <code>r:lde1lssu</code>. <code>loops get</code> and <code>loops of</code> take such a prefix, so what is printed can be typed back. A root no longer makes a wide first column.</p></li>
+<li><p>A keyed latest-by without <code>--values</code> prints each thing's headline beside its name.</p></li>
+</ul>
+<p>The JSON answers of every verb are byte for byte what they were: 2,219 commands over 131 stores were compared, and the signed records of the existing write commands too.</p>
+<p><strong>Implementer choices; they stand under Kyle's ruling of 2026-11-21 (W7).</strong> Choice 29 of <code>rust/PLACE.md</code>, and amendments to choices 25 and 27.</p>
+<ul>
+<li><p><code>whoami --init</code>, not a verb of its own: it is the identity lookup with the making added.</p></li>
+<li><p>After <code>--</code>, <code>--json</code> is text like any other token. <code>loops tick &lt;spec&gt; --</code> takes nothing after it.</p></li>
+<li><p>A prefix is unique against every record the store holds, not only those shown.</p></li>
+</ul>
+<p>A Codex worker wrote them; the coordinator reviewed them, joined them with main (the argument parser by hand, where it met the tick's new flags) and tried each.</p>
 <h3 id="loops-tick-over-a-cut---as-of-and---cover"><code>loops tick</code> over a cut: <code>--as-of</code> and <code>--cover</code></h3>
 <p>Ruled on 2026-11-20 (<a href="note-2026-11-15-the-cut.html">the cut note</a>, sections 1 to 3) and built on 2026-11-22. Rust only, in the CLI. Without the flags <code>loops tick</code> covers everything held, byte for byte as before.</p>
 <ul>
