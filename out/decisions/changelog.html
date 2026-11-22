@@ -229,9 +229,21 @@ The record starts where the old roadmap's did. For anything earlier, and for eve
 <li><p>Issue 11 is done: <code>loops emit -- &quot;--text&quot;</code> and <code>loops whoami --init</code>. The plain view shows a conflict's values and prints record ids as short prefixes that can be typed back.</p></li>
 <li><p>The roadmap's last two small pieces: the JavaScript sum is unbounded, as the law index said it was, and the fuzz gives lists, objects and <code>null</code> to the <code>fold</code>, <code>realm</code> and <code>scenario</code> families: 24,576 cases agree three ways.</p></li>
 <li><p>Kyle ruled TK10 (seven details of <code>loops tick --check</code>, each as recommended) and TK11 (a write against a base that does not hold what is under it: option C). Both were already built that way, so no code changed.</p></li>
+<li><p><strong>Kyle closed step 4 (ticks)</strong>, and ruled that <code>loops tick --check</code> exits 0 only for <code>same</code> (TK12), as built. Adoption is the step in hand; what is left of it waits on AD1 and AD2.</p></li>
 </ul>
+<h3 id="step-4-closed-and-tk12">Step 4 closed, and TK12</h3>
+<p>Ruled by Kyle on 2026-11-22, in the coordinator's session, after TK10 and TK11 (the entry below).</p>
+<p><strong>Step 4 meets its exit criterion and is closed.</strong> The step was done when a content tick recomputes to the same hash on two machines. That has held since 2026-11-21, in the tree's tests and on real stores: the laptop's tick over the six backups checks <code>same</code> on the NAS (the entry of 2026-11-21 has the run).</p>
+<ul>
+<li><p>Built in the step: the result codec; the tick record in the model, with its laws, vectors and <code>protocol/tick.md</code>, and in Rust; <code>loops tick &lt;spec&gt;</code> and <code>loops tick --check &lt;id&gt;</code>; a tick over a cut, by time or by ids; <code>loops emit</code> copying <code>occurred</code>, the filler on a changeset, and the filler against a base; the tick's fuzz run and its mutation catalogue.</p></li>
+<li><p>Not built, and never in the exit: boundaries, markers, the runner, and what verifying a deep tick tree costs. They come back when something wants them.</p></li>
+<li><p>No separate verb shows a result hash. A tick carries its result's hash, and the roadmap lists the verb as a small piece.</p></li>
+<li><p>The JavaScript was frozen as a trial for step 4 (W3), to be looked at again when ticks are done. That look is now due; the roadmap says so.</p></li>
+</ul>
+<p><strong>TK12: the exit status of <code>loops tick --check</code>.</strong> 0 only for <code>same</code>. <code>differs</code>, <code>cannot check</code> and &quot;not a tick&quot; exit 1, with the answer on standard output and nothing on standard error, so <code>loops tick --check &lt;id&gt; &amp;&amp; …</code> is safe in a script. This is what was built (choice 22 of <code>rust/PLACE.md</code>). The entry as put is in <a href="note-2026-11-21-tick-record.html#tk12-the-exit-status-of-the-check">the tick record note</a>, section 11.</p>
+<p>Open in <code>DECISIONS.md</code> after this: AD1 and AD2. Kyle is still weighing both; nothing else that is ruled is unbuilt.</p>
 <h3 id="ruled-by-kyle-2026-11-22-tk10-and-tk11">Ruled by Kyle, 2026-11-22: TK10 and TK11</h3>
-<p>Each was an entry in <code>DECISIONS.md</code>, with an example. Kyle ruled both in the coordinator's session. The entries as they were put are kept in <a href="note-2026-11-21-tick-record.html#11-two-later-questions-as-they-were-put">the tick record note</a>, section 11.
+<p>Each was an entry in <code>DECISIONS.md</code>, with an example. Kyle ruled both in the coordinator's session. The entries as they were put are kept in <a href="note-2026-11-21-tick-record.html#11-the-later-questions-as-they-were-put">the tick record note</a>, section 11.
 Both were built to their recommendations before the ruling, so it changed no code, no vector and no record.</p>
 <p><strong>TK10: seven details of <code>loops tick --check</code>.</strong> Each row for its recommendation.</p>
 <ol>
@@ -244,7 +256,7 @@ Both were built to their recommendations before the ruling, so it changed no cod
 <li><p>For <code>rules</code> above its own, a binary checks that <code>result-hash</code> is spelled as a hash and does not ask whether it fits. For its own version and older ones it requires the fit.</p></li>
 </ol>
 <p><strong>TK11: a write against a base that does not hold what is under it.</strong> Option C. The filler names the live records of the base together with what is under them in the store, and says on standard error how many records it named that the base did not hold. It never refuses. A value the writer was not shown can still be replaced; the envelope names what was replaced and the line tells the writer. Refusing such a write (option A) belongs with the strict store's policy, which Kyle left for step 3.</p>
-<p>Open in <code>DECISIONS.md</code> after this: S4 (closing step 4), TK12 (the exit status of the check), AD1 and AD2.</p>
+<p>Open in <code>DECISIONS.md</code> after this: S4 (closing step 4), TK12 (the exit status of the check), AD1 and AD2. The first two were ruled later the same day (the entry above).</p>
 <h3 id="the-javascript-sum-and-lists-in-three-more-fuzz-families">The JavaScript sum, and lists in three more fuzz families</h3>
 <p>The last two of the roadmap's small pieces.</p>
 <p><strong>The JavaScript sum is unbounded.</strong> The law index said the model, the JavaScript and Rust all sum with unbounded integers. That was false of the JavaScript: it refused with <code>sum-overflow</code> past a signed 128-bit sum. The guard is removed, which removes a difference from the model; the JavaScript is frozen for new features only (W3). A sum started at 2^127 − 1 with 2 added gives 170141183460469231731687303715884105729 in all three, and each has a test for it. No vector could reach the old limit: from zero it needs more than 2^74 records.</p>

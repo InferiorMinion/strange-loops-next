@@ -23,10 +23,25 @@ In brief:
 - Issue 11 is done: `loops emit -- "--text"` and `loops whoami --init`. The plain view shows a conflict's values and prints record ids as short prefixes that can be typed back.
 - The roadmap's last two small pieces: the JavaScript sum is unbounded, as the law index said it was, and the fuzz gives lists, objects and `null` to the `fold`, `realm` and `scenario` families: 24,576 cases agree three ways.
 - Kyle ruled TK10 (seven details of `loops tick --check`, each as recommended) and TK11 (a write against a base that does not hold what is under it: option C). Both were already built that way, so no code changed.
+- **Kyle closed step 4 (ticks)**, and ruled that `loops tick --check` exits 0 only for `same` (TK12), as built. Adoption is the step in hand; what is left of it waits on AD1 and AD2.
+
+### Step 4 closed, and TK12
+
+Ruled by Kyle on 2026-11-22, in the coordinator's session, after TK10 and TK11 (the entry below).
+
+**Step 4 meets its exit criterion and is closed.** The step was done when a content tick recomputes to the same hash on two machines. That has held since 2026-11-21, in the tree's tests and on real stores: the laptop's tick over the six backups checks `same` on the NAS (the entry of 2026-11-21 has the run).
+- Built in the step: the result codec; the tick record in the model, with its laws, vectors and `protocol/tick.md`, and in Rust; `loops tick <spec>` and `loops tick --check <id>`; a tick over a cut, by time or by ids; `loops emit` copying `occurred`, the filler on a changeset, and the filler against a base; the tick's fuzz run and its mutation catalogue.
+- Not built, and never in the exit: boundaries, markers, the runner, and what verifying a deep tick tree costs. They come back when something wants them.
+- No separate verb shows a result hash. A tick carries its result's hash, and the roadmap lists the verb as a small piece.
+- The JavaScript was frozen as a trial for step 4 (W3), to be looked at again when ticks are done. That look is now due; the roadmap says so.
+
+**TK12: the exit status of `loops tick --check`.** 0 only for `same`. `differs`, `cannot check` and "not a tick" exit 1, with the answer on standard output and nothing on standard error, so `loops tick --check <id> && …` is safe in a script. This is what was built (choice 22 of `rust/PLACE.md`). The entry as put is in [the tick record note](notes/2026-11-21-tick-record.md#tk12-the-exit-status-of-the-check), section 11.
+
+Open in `DECISIONS.md` after this: AD1 and AD2. Kyle is still weighing both; nothing else that is ruled is unbuilt.
 
 ### Ruled by Kyle, 2026-11-22: TK10 and TK11
 
-Each was an entry in `DECISIONS.md`, with an example. Kyle ruled both in the coordinator's session. The entries as they were put are kept in [the tick record note](notes/2026-11-21-tick-record.md#11-two-later-questions-as-they-were-put), section 11.
+Each was an entry in `DECISIONS.md`, with an example. Kyle ruled both in the coordinator's session. The entries as they were put are kept in [the tick record note](notes/2026-11-21-tick-record.md#11-the-later-questions-as-they-were-put), section 11.
 Both were built to their recommendations before the ruling, so it changed no code, no vector and no record.
 
 **TK10: seven details of `loops tick --check`.** Each row for its recommendation.
@@ -40,7 +55,7 @@ Both were built to their recommendations before the ruling, so it changed no cod
 
 **TK11: a write against a base that does not hold what is under it.** Option C. The filler names the live records of the base together with what is under them in the store, and says on standard error how many records it named that the base did not hold. It never refuses. A value the writer was not shown can still be replaced; the envelope names what was replaced and the line tells the writer. Refusing such a write (option A) belongs with the strict store's policy, which Kyle left for step 3.
 
-Open in `DECISIONS.md` after this: S4 (closing step 4), TK12 (the exit status of the check), AD1 and AD2.
+Open in `DECISIONS.md` after this: S4 (closing step 4), TK12 (the exit status of the check), AD1 and AD2. The first two were ruled later the same day (the entry above).
 
 ### The JavaScript sum, and lists in three more fuzz families
 

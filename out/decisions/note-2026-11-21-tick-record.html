@@ -207,12 +207,12 @@ header.top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--g
 <li><a href="#8-the-runs-behind-the-examples">8. The runs behind the examples</a></li>
 <li><a href="#9-what-neon-answered">9. What Neon answered</a></li>
 <li><a href="#10-the-questions-as-they-were-put">10. The questions as they were put</a></li>
-<li><a href="#11-two-later-questions-as-they-were-put">11. Two later questions, as they were put</a></li></ul></details>
+<li><a href="#11-the-later-questions-as-they-were-put">11. The later questions, as they were put</a></li></ul></details>
 <article>
 <h1 id="step-4-the-tick-record-design-note">Step 4: the tick record, design note</h1>
 <p><strong>Ruled by Kyle on 2026-11-21: TK1 to TK9, each for its recommendation, and TK9 for option D with its three points.</strong> Proposed by the coordinator the same day. Nothing here is built yet.
 The questions as they were put, each with its example, are in <a href="#10-the-questions-as-they-were-put">section 10</a>. Sections 1 to 6 hold the exact form behind them.
-<strong>Ruled by Kyle on 2026-11-22: TK10, each of its seven rows for the recommendation, and TK11 for option C.</strong> Both came from building the tick record and were built to their recommendations before he ruled; they are in <a href="#11-two-later-questions-as-they-were-put">section 11</a>.
+<strong>Ruled by Kyle on 2026-11-22: TK10, each of its seven rows for the recommendation, and TK11 for option C.</strong> Both came from building the tick record and were built to their recommendations before he ruled; they are in <a href="#11-the-later-questions-as-they-were-put">section 11</a>. TK12, the exit status of the check, was ruled the same day for what was built, and is there too.
 margins-claude reviewed the draft the same day. Its four additions (the rules' version, what <code>covers</code> must hold, <code>withheld</code> beside a covered eraser, a tick outliving an erasure) are in the text, and its answers are in section 7.
 Neon reviewed TK1 to TK9 the same day. It agrees with eight and moved TK9 to a stated member bound into the hash; its points are in sections 1, 2, 4 and 6, and in section 9.
 It rests on <a href="note-2026-11-15-the-cut.html">the cut note</a> (ruled 2026-11-20), <a href="https://github.com/kgruel/strange-loops-next/blob/main/protocol/result.md">the result codec</a> and <a href="note-2026-11-21-payload-values.html">the payload reading</a> (ruled 2026-11-21).</p>
@@ -620,9 +620,9 @@ The field takes the tests that <code>env.occurred</code> takes, and compares the
 <li><p><strong>Ticking again.</strong> When a late record arrives, a new tick names the old one in <code>prev</code>, as any revision does. A record with <code>prev</code> states what it is of, so the two ticks are records of one thing: the first tick's id, or a name such as <code>tick:backups:2026-11-16</code>. No new rule.</p></li>
 </ul>
 <p><strong>Not in this proposal:</strong> boundaries and markers, the runner, where a tick lands (<code>into</code>), a record on the tick of how its set was chosen (the window's span, &quot;by reference&quot;), smaller <code>covers</code> by the slice laws, parameters, and pins.</p>
-<h2 id="11-two-later-questions-as-they-were-put">11. Two later questions, as they were put</h2>
-<p>These are the two entries of <code>DECISIONS.md</code> that came from building the tick record, as Kyle read them. He ruled both on 2026-11-22: TK10 for the recommended column in all seven rows, TK11 for option C.
-&quot;Recommended&quot;, &quot;nothing here is built&quot; and &quot;not built&quot; in the text are as written then. Both were built to their recommendations before the ruling, so the ruling changed no code: the check is in the changelog under 2026-11-21, and <code>loops emit --base</code> under 2026-11-22.</p>
+<h2 id="11-the-later-questions-as-they-were-put">11. The later questions, as they were put</h2>
+<p>These are the three entries of <code>DECISIONS.md</code> that came from building step 4, as Kyle read them. He ruled all three on 2026-11-22: TK10 for the recommended column in all seven rows, TK11 for option C, TK12 for option A.
+&quot;Recommended&quot;, &quot;nothing here is built&quot; and &quot;not built&quot; in the text are as written then. Each was built to its recommendation before the ruling, so the ruling changed no code: the check is in the changelog under 2026-11-21, and <code>loops emit --base</code> under 2026-11-22.</p>
 <h3 id="tk10-seven-details-of-the-check">TK10: seven details of the check</h3>
 <p><strong>Question.</strong> The plan for the build, and margins-claude's check of the vectors, found seven places where TK1 to TK9 do not say what <code>loops tick --check</code> answers. What should it answer in each?</p>
 <p>Nothing here is built, so each answer below is what the verb would say. The store is the one of the tick record's examples: six backups, and the laptop's tick T over them (<code>runs</code> 6, <code>mb</code> 1027). The build follows the recommended column until you rule otherwise; changing a row later changes one branch of the check and its vectors.</p>
@@ -668,6 +668,22 @@ y   sets port 8097, over x
 </ul>
 <p><strong>Why C over A.</strong> A is the only option that stops the second problem. But the second problem is a question you have already set aside for step 3 in another form: what a strict store does with a write whose base is behind what the store holds. &quot;You replaced something you were not shown&quot; belongs with it, and a strict store can refuse both then. Until then C never refuses, never leaves a store that reads wrongly, and tells the writer what it did. margins-claude recommends C as the default too.</p>
 <p><strong>What it costs to change later.</strong> The choice is in the filler and one line of output. No record already written changes.</p>
+<h3 id="tk12-the-exit-status-of-the-check">TK12: the exit status of the check</h3>
+<p><strong>Question.</strong> <code>loops tick --check &lt;id&gt;</code> prints its answer on standard output. What is its exit status?</p>
+<p><strong>Example, run on the release binary</strong> (2026-11-21; the stores of the tick record's examples, as built):</p>
+<div class="table-scroll" tabindex="0"><table><thead><tr><th scope="col">Where the laptop's tick is checked</th><th scope="col">Answer</th><th scope="col">Exit, as built</th></tr></thead>
+<tbody>
+<tr><td>The NAS, after importing the tick</td><td><code>same</code></td><td>0</td></tr>
+<tr><td>A machine holding four of the six backups</td><td><code>cannot check</code>: 2 records missing</td><td>1</td></tr>
+<tr><td>A copy where one backup was erased afterwards</td><td><code>cannot check</code>: 1 payload missing</td><td>1</td></tr>
+<tr><td>The laptop, on a tick written by hand that claims 1028</td><td><code>differs</code></td><td>1</td></tr>
+</tbody></table></div>
+<div class="table-scroll" tabindex="0"><table><thead><tr><th scope="col"></th><th scope="col">The status</th><th scope="col"></th></tr></thead>
+<tbody>
+<tr><td><strong>A (recommended, built)</strong></td><td>0 only for <code>same</code>. <code>differs</code>, <code>cannot check</code> and &quot;not a tick&quot; exit 1, with the answer on standard output and nothing on standard error.</td><td><code>loops tick --check &lt;id&gt; &amp;&amp; deploy</code> is safe. A script that wants to tell <code>differs</code> from <code>cannot check</code> reads the answer.</td></tr>
+<tr><td>B</td><td>0 whenever the check completes, whatever it answers.</td><td>The status then says only &quot;the verb ran&quot;. A script that forgets to read the answer goes on after <code>differs</code>.</td></tr>
+</tbody></table></div>
+<p><strong>What it costs to change later.</strong> One line in the CLI and its walk tests. No record or answer changes.</p>
 </article>
 </main>
 <script>

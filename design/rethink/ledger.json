@@ -479,6 +479,13 @@
     "kind": "decision",
     "group": "Building",
     "status": "settled",
+    "claim": "Step 4 is closed: a tick written on one machine checks the same on a second.",
+    "why": "<code>loops tick</code> writes a tick and <code>loops tick --check</code> answers same, differs or cannot check, and exits 0 only for same. A tick can cover a cut, by time or by ids, and a write can state a tick as its base. Kyle closed the step on 2026-11-22. Boundaries, markers and the runner were never in its exit and are not built. Adoption comes next: the old stores imported as a shadow, and reads across several stores. Version 36."
+  },
+  {
+    "kind": "decision",
+    "group": "Building",
+    "status": "settled",
     "claim": "Only a choice that changes bytes or answers comes to Kyle.",
     "why": "A choice that changes a record's bytes or id, a result's bytes or hash, a refusal code, or what a spec answers is his, and is asked with a worked example. Every other implementer choice is written in the changelog and stands unless he objects. What is next, what waits on him and what was built are three documents, <code>ROADMAP.md</code>, <code>DECISIONS.md</code> and <code>CHANGELOG.md</code>, and <a href=\"../decisions/\">the Decisions page</a> renders them. Ruled on 2026-11-21. Version 36."
   }

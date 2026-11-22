@@ -2,7 +2,7 @@
 
 Everything that waits on Kyle, in one place. Each entry has the question, an example, the options and a recommendation.
 
-- An entry leaves this file when it is ruled. The entries ruled on 2026-11-21 have left it: PV1 to PV7, RC1, W7, E1 and I10, then TK1 to TK9 and W1 to W6. TK10 and TK11 left it on 2026-11-22.
+- An entry leaves this file when it is ruled. The entries ruled on 2026-11-21 have left it: PV1 to PV7, RC1, W7, E1 and I10, then TK1 to TK9 and W1 to W6. TK10 to TK12 and S4 left it on 2026-11-22.
 - The ruling is written in [CHANGELOG.md](CHANGELOG.md) under its date, and one line is added to [Ruled](#ruled) at the end of this file.
 - What is next once these are ruled is in [ROADMAP.md](ROADMAP.md).
 - "Today" in an example means the `loops` binary built from main on 2026-11-21. Every "today" answer below was run, not predicted.
@@ -10,51 +10,15 @@ Everything that waits on Kyle, in one place. Each entry has the question, an exa
 
 | Id | Question | Recommended | What waits on it |
 | --- | --- | --- | --- |
-| [S4](#s4-closing-step-4) | Is step 4 (ticks) closed? | Yes: its exit criterion has held since 2026-11-21 | Nothing is blocked; the roadmap says "started" until you say |
-| [TK12](#tk12-the-exit-status-of-the-check) | The exit status of `loops tick --check` | 0 only for `same`, as built | Nothing: a script that tests the status |
 | [AD1](#ad1-how-a-spec-finds-the-stores-it-names) | How a spec finds the stores it names, and what a missing one answers | A per-user list of names and directories; a name bound to nothing refuses the whole read | Reads across several stores (adoption) |
 | [AD2](#ad2-how-an-old-store-becomes-records) | How a fact of an old store becomes a record: its thing, its order, its times, who signs, where its origin is kept | As in its table: a keyed fact is a revision of `<kind>:<key>`; the old time is `occurred`; an import key signs | The shadow import (adoption) |
 
-Every earlier entry is ruled: the last were TK10 and TK11, on 2026-11-22. S4 and TK12 are short; AD1 and AD2 block the rest of the adoption step.
+Every earlier entry is ruled: the last were TK10 to TK12 and the closing of step 4, on 2026-11-22. AD1 and AD2 block the rest of the adoption step. Neither is pressing: everything else that is ruled is built.
 
-- The tick record, TK1 to TK11: ruled and built. The questions as they were put, with their examples, are in [the tick record note](notes/2026-11-21-tick-record.md#10-the-questions-as-they-were-put), sections 10 and 11.
+- The tick record, TK1 to TK12: ruled and built. Step 4 is closed. The questions as they were put, with their examples, are in [the tick record note](notes/2026-11-21-tick-record.md#10-the-questions-as-they-were-put), sections 10 and 11.
 - The order of work, W1 to W6: ruled. The entries as put are in [the order-of-work note](notes/2026-11-21-order-of-work.md).
 
-TK10 to TK12 came from building step 4. More may follow: any choice that changes a tick's bytes, a refusal code or a check's answer and that the rulings do not settle.
-
 After this: [what is being prepared](#being-prepared), [what you deferred](#deferred-by-you) and [what is ruled](#ruled). Nothing waits to be confirmed: under your ruling of 2026-11-21 an implementer choice comes here only when it changes bytes or answers.
-
-## Two short questions
-
-### S4: closing step 4
-
-**Question.** Is step 4 (ticks) closed?
-
-**Where it stands.** The step is done when a content tick recomputes to the same hash on two machines. That has held since 2026-11-21, in the tree's tests and on real stores: the laptop's tick over the six backups checks `same` on the NAS (the run is in the next entry's table). Since then a tick can also cover a cut, by time or by ids, and a write can state a tick as its base.
-
-**What closing does not claim.** Boundaries, markers and the runner are not built and were never in the exit. They stay listed in the roadmap as not in step 4 yet.
-
-**Recommended.** Close it. The roadmap then says "done" for step 4, and adoption is the step in hand.
-
-### TK12: the exit status of the check
-
-**Question.** `loops tick --check <id>` prints its answer on standard output. What is its exit status?
-
-**Example, run on the release binary** (2026-11-21; the stores of the tick record's examples, as built):
-
-| Where the laptop's tick is checked | Answer | Exit, as built |
-| --- | --- | --- |
-| The NAS, after importing the tick | `same` | 0 |
-| A machine holding four of the six backups | `cannot check`: 2 records missing | 1 |
-| A copy where one backup was erased afterwards | `cannot check`: 1 payload missing | 1 |
-| The laptop, on a tick written by hand that claims 1028 | `differs` | 1 |
-
-| | The status | |
-| --- | --- | --- |
-| **A (recommended, built)** | 0 only for `same`. `differs`, `cannot check` and "not a tick" exit 1, with the answer on standard output and nothing on standard error. | `loops tick --check <id> && deploy` is safe. A script that wants to tell `differs` from `cannot check` reads the answer. |
-| B | 0 whenever the check completes, whatever it answers. | The status then says only "the verb ran". A script that forgets to read the answer goes on after `differs`. |
-
-**What it costs to change later.** One line in the CLI and its walk tests. No record or answer changes.
 
 ## The adoption step
 
@@ -167,7 +131,9 @@ One line for each ruling, newest first. The full text is in [CHANGELOG.md](CHANG
 
 | Date | Ruling | Where |
 | --- | --- | --- |
-| 2026-11-22 | TK10, seven details of `loops tick --check`, each as recommended: an erased payload is not read from old bytes; a covered eraser the tick ignores is not a tick at once; under newer rules the check tests only what no version changes, and a result's hash only for its spelling; a result no fold could give is `differs`; `rules` is a positive whole number as text; a spec this binary cannot read is `cannot check` | Changelog; [the tick record note](notes/2026-11-21-tick-record.md#11-two-later-questions-as-they-were-put), section 11 |
+| 2026-11-22 | Step 4 (ticks) meets its exit criterion and is closed | Changelog |
+| 2026-11-22 | TK12: `loops tick --check` exits 0 only for `same` | Changelog; the tick record note, section 11 |
+| 2026-11-22 | TK10, seven details of `loops tick --check`, each as recommended: an erased payload is not read from old bytes; a covered eraser the tick ignores is not a tick at once; under newer rules the check tests only what no version changes, and a result's hash only for its spelling; a result no fold could give is `differs`; `rules` is a positive whole number as text; a spec this binary cannot read is `cannot check` | Changelog; [the tick record note](notes/2026-11-21-tick-record.md#11-the-later-questions-as-they-were-put), section 11 |
 | 2026-11-22 | TK11, option C: a write against a base names the base's live records together with what is under them in the store, and says how many it named that the base did not hold | Changelog; the tick record note, section 11 |
 | 2026-11-21 | The tick record, TK1 to TK9: an ordinary record of kind `tick`; it carries its result and the result's hash; it carries its spec and the spec's hash; `covers` lists every record folded; `withheld` lists those read without a payload; a spec reads a tick by the payload reading; a verb checks and no store refuses a tick; the window field is `env.when`; a member `rules` bound into the spec's hash | Changelog; [the tick record note](notes/2026-11-21-tick-record.md) |
 | 2026-11-21 | The order of work, W1 to W6: an adoption step after ticks, its CLI pieces beside the tick work; a cache of checked segments in that step; the JavaScript frozen as a trial for step 4; one refusal per input inside the repository, single faults in the protocol text; the mutant check stays; `out/` stays committed | Changelog; [the order-of-work note](notes/2026-11-21-order-of-work.md) |
