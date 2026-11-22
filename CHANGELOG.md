@@ -23,7 +23,7 @@ In brief:
 - The roadmap, the decisions, the changelog and the notes are published as a fifth design page, and the rethink and grammar pages are brought up to the rulings since 2026-11-13.
 - The full mutation catalogue ran over all 328 entries: 324 caught, two known survivors, and two new ones that are now caught. The full runner asks what the per-merge check asks.
 - `loops emit - --fill` fills each line of a changeset as a single emit would, so a collector can write anchored records.
-- Kyle ruled the tick record (TK1 to TK9; TK9 as a `rules` member bound into the spec's hash) and the order of work (W1 to W6), each for its recommendation. Nothing waits on him.
+- Kyle ruled the tick record (TK1 to TK9; TK9 as a `rules` member bound into the spec's hash) and the order of work (W1 to W6), each for its recommendation. One new entry, TK10, comes from planning the build.
 
 ### Ruled by Kyle, 2026-11-21: the tick record and the order of work
 
@@ -54,7 +54,7 @@ The entries as they were put are kept in [the tick record note](notes/2026-11-21
 - **W5.** The mutant check on every merge request stays. Step 4's mutants are added after its exit.
 - **W6.** `out/` stays committed.
 
-Nothing is open in `DECISIONS.md`.
+Open in `DECISIONS.md`: TK10, six details of the check that the plan for the build found.
 
 ### A changeset can ask for the filler: `loops emit - --fill`
 
