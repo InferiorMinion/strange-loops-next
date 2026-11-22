@@ -28,9 +28,10 @@ loops ls [--things | <prefix>] [--fields a,b,c] [--plain]
                                     list things or project their live fields
 loops get <id>                      one record
 loops of <thing> [--plain]          a thing's values, its about, its heads, how many records are of it
-loops read <vertex> [--values]      fold .loops/vertices/<vertex>.json
-loops fold <spec.json | -> [--values]
-                                    fold a spec given as a file
+loops read <vertex> [--values] [--plain]
+                                    fold .loops/vertices/<vertex>.json
+loops fold <spec.json | -> [--values] [--plain]
+                                    fold a spec from a file or stdin
 loops tick <vertex | spec-file | -> [emit envelope flags]
                                     write a tick over everything held, with an optional base for its envelope
 loops tick --check <id>             check a tick against this store and print the verdict and reports
@@ -81,7 +82,8 @@ loops whoami
   ids with `--values`. The values view is the CLI's, not the protocol's: a
   fold answers ids, and without `--values` `read` and `fold` answer exactly
   that. See choices 16 and 17.
-* Every answer is JSON or an id. Lenses are a later step, so `--json` is accepted and changes nothing.
+* Scripts can request the default JSON with `--json`. For a human-readable
+  display, `ls`, `of`, `read` and `fold` accept `--plain`. See choices 25 and 26.
 * `read`, `fold`, `of`, `get`, `export` and `tick --check` answer from the lines that check,
   and are then refused `store-not-clean` when a line was refused or a
   segment is altered, as `check` is; `emit`, writing a tick, and `erase` warn and go on. See
@@ -559,6 +561,53 @@ Every verb that reads the store says when either happened (choice 18).
     head  r:b2nlfg2kr0u2amvtfsbpbijvopv8vk2ussk9udfobbsd93joov9g
       emitted  3 hours ago
       occurred  2026-11-18/2026-11-19
+    ```
+
+26. **Read a spec result in plain text.** The owner ruled on 2026-11-21
+    (W1) that the adoption step includes a plain view for daily reading.
+
+    Implementer's choices
+
+    - `read --plain` and `fold --plain` show one slot after another in the
+      spec's written order. A spec with no slots reads `no slots`. Counts
+      and sums keep all their digits. An empty minimum or maximum reads
+      `nothing read`. An empty record or thing list reads `—`.
+    - Indent the members of each group or thing under its name. Keep the
+      result's order within each list and print full record IDs. Every grouped
+      slot shows both its ungrouped count and its top-level unread count.
+      A nonzero unread count can mean a needed opening, field, numeric value
+      or test result was unavailable. A group's own unread count appears
+      inside that group.
+    - `--values` shows the listed head's kind, envelope and, for collect or
+      latest-by following `prev`, its held payload. Escape text and show times
+      as in choice 25. Read the display clock once, at the first detailed head.
+      For latest-by following `keys`, show the heads, setter IDs and whole
+      records, then the same field states and mentions as `of --plain`.
+      Mark erased and withheld entries when showing values.
+
+    For example, a workshop stores one task with `area=shop` and `hours:=3`.
+    Its saved morning spec counts jobs, sums hours by area and follows the
+    tasks' keys. The task was emitted with `--whole`.
+
+    ```json
+    {"vertex":"morning","from":[{"store":".","kind":["task"]}],"fold":{
+      "jobs":{"count":true},"hours":{"sum":"hours","by":"area"},
+      "items":{"latest-by":"of","follow":"keys"}}}
+    ```
+
+    ```text
+    $ loops read morning --plain
+    jobs  1
+    hours
+      group  shop  3
+      0 ungrouped
+      0 not read
+    items
+      thing  task:kiln
+        heads
+          r:atco26o6tms597g8safo3gm3v50g30qnck50vq6e1rmpdna94c1g
+        whole
+          r:atco26o6tms597g8safo3gm3v50g30qnck50vq6e1rmpdna94c1g
     ```
 
 ## Checked by

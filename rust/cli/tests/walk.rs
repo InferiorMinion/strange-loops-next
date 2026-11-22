@@ -3973,3 +3973,117 @@ fn plain_text_quotes_only_ambiguous_values() {
         "THING        HEAD KINDS  RECORDS  HEADS  absent  name\ntask:quotes  task        1        1      \"—\"     \"unknown\"\n"
     );
 }
+
+const PLAIN_SHAPES: &str = r#"{"vertex":"morning","from":[{"store":".","kind":["task"]}],"fold":{
+    "runs":{"count":true},"total":{"sum":"n"},"low":{"min":"n"},"high":{"max":"n"},"list":{"collect":true},
+    "counts":{"count":true,"by":"area"},"sums":{"sum":"n","by":"area"},"mins":{"min":"n","by":"area"},
+    "maxes":{"max":"n","by":"area"},"lists":{"collect":true,"by":"area"},
+    "heads":{"latest-by":"of","follow":"prev"},"keyed":{"latest-by":"of","follow":"keys"}}}"#;
+
+fn save_morning(s: &Store, spec: &str) {
+    let dir = s.dir.join(".loops/vertices");
+    fs::create_dir_all(&dir).expect("vertices");
+    fs::write(dir.join("morning.json"), spec).expect("saved spec");
+}
+
+#[test]
+fn plain_fold_and_read_show_each_shape_in_written_order() {
+    let s = Store::new("plain-fold-shapes");
+    save_morning(&s, PLAIN_SHAPES);
+    let spec_path = ".loops/vertices/morning.json";
+    let groups = "  0 ungrouped\n  0 not read";
+    let empty = format!(
+        "runs  0\ntotal  0\nlow  nothing read\nhigh  nothing read\nlist  —\ncounts\n{groups}\nsums\n{groups}\nmins\n{groups}\nmaxes\n{groups}\nlists\n{groups}\nheads  —\nkeyed  —\n"
+    );
+    assert_eq!(monday(&s, &["read", "morning", "--plain"]), empty);
+    // Independent heads on a fork. The newer head lacks n, so each grouped
+    // numeric slot has an unread input alongside a real numeric zero.
+    let ids = s.changeset(r#"{"kind":"task","of":"task:kiln","emitted":"2026-11-20T09:00:00Z","sets":["area","n"],"payload":{"area":"42","n":0}}
+{"kind":"task","of":"task:kiln","emitted":"2026-11-20T10:00:00Z","sets":["area"],"payload":{"area":"42"}}"#);
+    let (a, b) = (&ids[0], &ids[1]);
+    let why = "1 not read: needed payload or field unavailable";
+    let grouped_numeric = format!("  group  \"42\"  0\n    {why}\n{groups}");
+    let expected = format!(
+        "runs  2\ntotal  0\n  {why}\nlow  0\n  {why}\nhigh  0\n  {why}\nlist\n  {b}\n  {a}\ncounts\n  group  \"42\"  2\n{groups}\nsums\n{grouped_numeric}\nmins\n{grouped_numeric}\nmaxes\n{grouped_numeric}\nlists\n  group  \"42\"\n    {b}\n    {a}\n{groups}\nheads\n  thing  task:kiln\n    heads\n      {b}\n      {a}\nkeyed\n  thing  task:kiln\n    heads\n      {b}\n      {a}\n    setters  area\n      {b}\n      {a}\n    setters  n\n      {a}\n    whole  —\n"
+    );
+    assert_eq!(monday(&s, &["read", "morning", "--plain"]), expected);
+    assert_eq!(monday(&s, &["fold", spec_path, "--plain"]), expected);
+    assert_eq!(
+        answer(&s, &["fold", "-", "--plain"], PLAIN_SHAPES),
+        (0, expected, String::new())
+    );
+}
+
+#[test]
+fn plain_fold_values_show_payloads_and_keyed_setters() {
+    let s = fixed_store("plain-fold-values");
+    let spec = r#"{"vertex":"morning","from":[{"store":".","kind":["task"]}],"fold":{"list":{"collect":true,"limit":1},"item":{"latest-by":"of","follow":"keys"}}}"#;
+    save_morning(&s, spec);
+    let ids = s.changeset(r#"{"kind":"task","of":"task:kiln","emitted":"2026-11-20T09:00:00Z","occurred":"2026-11-18/2026-11-19","sets":["name","gone"],"payload":{"name":"Repair kiln"}}
+{"kind":"task","of":"task:kiln","emitted":"2026-11-20T12:02:00Z","sets":["name","status"],"payload":{"name":"Other","status":"done\n\u001b"}}"#);
+    let (a, b) = (&ids[0], &ids[1]);
+    let observer = text(&s.json(&["whoami"]), &["observer"]).to_owned();
+    let newer = format!("{b}  task\n");
+    let head_meta = |indent: &str, when: &str, occurred: &str, sets: &str| {
+        format!(
+            "{indent}emitted  {when}\n{indent}occurred  {occurred}\n{indent}observer  {observer}\n{indent}of  task:kiln\n{indent}sets  {sets}"
+        )
+    };
+    let b_meta = |indent| head_meta(indent, "in 2 minutes", "—", r#"["name","status"]"#);
+    let a_meta = head_meta(
+        "        ",
+        "3 hours ago",
+        "2026-11-18/2026-11-19",
+        r#"["gone","name"]"#,
+    );
+    let want = format!(
+        "list\n  {newer}{}\n    payload\n      name  Other\n      status  done\\n\\u001b\nitem\n  thing  task:kiln\n    heads\n      {newer}{}\n      {a}  task\n{a_meta}\n    setters  gone\n      {a}\n    setters  name\n      {b}\n      {a}\n    setters  status\n      {b}\n    whole  —\n    fields\n      gone  —\n      name  conflict (2)\n      status  done\\n\\u001b\n    about  —\n",
+        b_meta("    "),
+        b_meta("        ")
+    );
+    for args in [
+        ["read", "morning", "--values", "--plain"],
+        [
+            "fold",
+            ".loops/vertices/morning.json",
+            "--plain",
+            "--values",
+        ],
+    ] {
+        assert_eq!(monday(&s, &args), want);
+    }
+    s.ok(&["erase", b]);
+    let erased = monday(&s, &["read", "morning", "--plain", "--values"]);
+    assert!(erased.contains(&format!("list\n  {b}  erased  task\n")));
+    assert!(erased.contains("    payload  unknown\n"));
+    assert!(erased.contains("      status  unknown\n"));
+    assert!(!erased.contains("done"));
+}
+
+#[test]
+fn plain_fold_reports_missing_group_inputs_usage_and_unclean_lines() {
+    let s = Store::new("plain-fold-unclean");
+    let spec = r#"{"vertex":"morning","from":[{"store":".","kind":["task"]}],"fold":{"areas":{"count":true,"by":"area"}}}"#;
+    save_morning(&s, spec);
+    let id = s.ok(&["emit", "task", "area=shop"]);
+    s.ok(&["erase", &id]);
+    s.ok(&["emit", "task", "name=Other"]);
+    let want = "areas\n  1 ungrouped\n  1 not read: needed payload or field unavailable\n";
+    for args in [
+        &["fold", "-", "--plain", "--json"][..],
+        &["--json", "read", "morning", "--plain"],
+    ] {
+        let (code, out, err) = answer(&s, args, spec);
+        assert_eq!((code, out), (2, String::new()));
+        assert!(err.contains("--plain and --json"));
+    }
+    let segment = &s.segments()[0];
+    let mut bytes = fs::read(segment).expect("read segment");
+    bytes.extend_from_slice(b"not JSON\n");
+    fs::write(segment, bytes).expect("torn segment");
+    for args in [["fold", "-", "--plain"], ["read", "morning", "--plain"]] {
+        let (code, out, err) = answer(&s, &args, spec);
+        assert_eq!((code, out.as_str()), (1, want));
+        assert!(err.contains("store-not-clean"));
+    }
+}
