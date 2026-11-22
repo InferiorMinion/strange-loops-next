@@ -2056,6 +2056,15 @@
    "states":
    "∀ {rs : List Loops.Record} {o : Option String} {r : Loops.Record}, Loops.liveK rs o r = true ↔ Loops.setsK o r = true ∧ ∀ (q : Loops.Record), q ∈ Loops.above rs r → Loops.setsK o q = false",
    "module": "Laws.LiveSlice"},
+  "Loops.liveK_emit_more":
+  {"uses":
+   ["Loops.Fresh.above_new",
+    "Loops.Fresh.above_old",
+    "Loops.Reach.trans",
+    "Loops.mem_above"],
+   "states":
+   "∀ {W : List Loops.Record} {y y' : Loops.Record}, Loops.Fresh y W → Loops.Fresh y' W → (∀ (p : Loops.RecordId), p ∈ y.prev → p ∈ y'.prev) → (∀ (p' : Loops.RecordId), p' ∈ y'.prev → ∃ p, p ∈ y.prev ∧ ∃ x, x.id = p' ∧ Loops.Reach W [x.id] p) → ∀ (o : Option String), Loops.setsK o y = Loops.setsK o y' → ∀ {r : Loops.Record}, Loops.liveK (y :: W) o r = Loops.liveK (y' :: W) o r",
+   "module": "Laws.LiveSlice"},
   "Loops.liveIn_thing":
   {"uses": ["Loops.isOf_iff"],
    "states":
@@ -6624,6 +6633,21 @@
    "states":
    "∀ {hs : List (Loops.RecordId × Loops.Shown)} {unread : Nat} {hs_1 : List (Loops.RecordId × Loops.Shown)} {unread_1 : Nat}, Loops.GroupValue.heads hs unread = Loops.GroupValue.heads hs_1 unread_1 → hs = hs_1 ∧ unread = unread_1",
    "module": "Loops.Spec"},
+  "Loops.Fresh.reach":
+  {"uses": [],
+   "states":
+   "∀ {y : Loops.Record} {W : List Loops.Record}, Loops.Fresh y W → ∀ {r : Loops.Record} {i : Loops.RecordId}, Loops.Reach (y :: W) [r.id] i → i ≠ y.id → Loops.Reach W [r.id] i",
+   "module": "Laws.LiveSlice"},
+  "Loops.Fresh.above_old":
+  {"uses": ["Loops.Fresh.reach", "Loops.above_sub", "Loops.mem_above"],
+   "states":
+   "∀ {y : Loops.Record} {W : List Loops.Record}, Loops.Fresh y W → ∀ {r q : Loops.Record}, q ∈ W → (q ∈ Loops.above (y :: W) r ↔ q ∈ Loops.above W r)",
+   "module": "Laws.LiveSlice"},
+  "Loops.Fresh.above_new":
+  {"uses": ["Loops.Fresh.reach", "Loops.Reach.sub", "Loops.mem_above"],
+   "states":
+   "∀ {y : Loops.Record} {W : List Loops.Record}, Loops.Fresh y W → ∀ {r : Loops.Record}, y ∈ Loops.above (y :: W) r ↔ ∃ p, p ∈ y.prev ∧ Loops.Reach W [r.id] p",
+   "module": "Laws.LiveSlice"},
   "Loops.Forms.sub":
   {"uses": [],
    "states":

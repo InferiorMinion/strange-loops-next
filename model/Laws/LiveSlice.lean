@@ -34,7 +34,9 @@ replaced can look live. These laws say when a part reads as the whole does.
   that names the live records of a part of the holding, a part that holds what
   the writers of its records held, leaves the holding anchored. A part closed
   downward will do, and so will a part of one that holds its live records
-  (`anchored_emit_live`). Another may not (`base_closed_needed`).
+  (`anchored_emit_live`). Another may not (`base_closed_needed`). Naming more
+  of what is already under the emit changes no reading of the whole
+  (`liveK_emit_more`).
 
 Three of these need `prev` to have no cycle among the records held
 (`NoCycle`). An id is a hash of an envelope that holds its `prev`, so real
@@ -566,6 +568,77 @@ theorem anchored_emit_live {saw : Record → List Record} {W B D : List Record} 
   anchored_emit_down ha hW hw hc hy h
     (fun p hp => let ⟨x, hx, e⟩ := hn p hp; ⟨x, hBD x hx, e⟩)
     (fun x hx hlx => hr x (hl x hx hlx) (live_part hBD hlx))
+
+/-! ### Naming more of what is already under the emit
+
+Two emits that differ only in `prev`: the second names what the first names,
+and besides only records already under the first. Then the same records are
+above every record of the holding, so the holding reads every key the same
+with either. Naming the live records of a base's closure, and not of the bare
+base, is this: it adds witnesses for a reader of a part and changes nothing
+for a reader of the whole. -/
+
+/-- A new record: nothing held names it, and it does not name itself. -/
+def Fresh (y : Record) (W : List Record) : Prop := y.id ∉ y.prev ∧ ∀ q ∈ W, y.id ∉ q.prev
+
+/-- A new record carries no path between the records already held. -/
+theorem Fresh.reach {y : Record} {W : List Record} (hf : Fresh y W) {r : Record} {i : RecordId}
+    (h : Reach (y :: W) [r.id] i) : i ≠ y.id → Reach W [r.id] i := by
+  induction h with
+  | base hi => exact fun _ => .base hi
+  | @up q p hq hp _ ih =>
+    intro hne
+    rcases mem_cons.1 hq with rfl | hqW
+    · exact absurd rfl hne
+    · exact .up hqW hp (ih fun e => hf.2 q hqW (e ▸ hp))
+
+/-- What is above a record among the records already held does not change. -/
+theorem Fresh.above_old {y : Record} {W : List Record} (hf : Fresh y W) {r q : Record} (hq : q ∈ W) :
+    q ∈ above (y :: W) r ↔ q ∈ above W r := by
+  constructor
+  · intro h
+    obtain ⟨-, p, hp, hr⟩ := mem_above.1 h
+    exact mem_above.2 ⟨hq, p, hp, hf.reach hr fun e => hf.2 q hq (e ▸ hp)⟩
+  · exact above_sub fun x hx => mem_cons_of_mem _ hx
+
+/-- The new record is above exactly what its names reach. -/
+theorem Fresh.above_new {y : Record} {W : List Record} (hf : Fresh y W) {r : Record} :
+    y ∈ above (y :: W) r ↔ ∃ p ∈ y.prev, Reach W [r.id] p := by
+  constructor
+  · intro h
+    obtain ⟨-, p, hp, hr⟩ := mem_above.1 h
+    exact ⟨p, hp, hf.reach hr fun e => hf.1 (e ▸ hp)⟩
+  · rintro ⟨p, hp, hr⟩
+    exact mem_above.2 ⟨mem_cons_self, p, hp, hr.sub fun x hx => mem_cons_of_mem _ hx⟩
+
+/-- **Naming more of what is under an emit changes no reading of the whole.**
+`y'` names what `y` names and, besides, only records under a name of `y`; the
+two set the same keys. Then every record of the holding is live for a key with
+`y'` exactly when it is with `y`. -/
+theorem liveK_emit_more {W : List Record} {y y' : Record} (hf : Fresh y W) (hf' : Fresh y' W)
+    (hsub : ∀ p ∈ y.prev, p ∈ y'.prev)
+    (hunder : ∀ p' ∈ y'.prev, ∃ p ∈ y.prev, ∃ x : Record, x.id = p' ∧ Reach W [x.id] p)
+    (o : Option String) (hs : setsK o y = setsK o y') {r : Record} :
+    liveK (y :: W) o r = liveK (y' :: W) o r := by
+  have new : (∃ p ∈ y.prev, Reach W [r.id] p) ↔ ∃ p ∈ y'.prev, Reach W [r.id] p := by
+    constructor
+    · rintro ⟨p, hp, hr⟩; exact ⟨p, hsub p hp, hr⟩
+    · rintro ⟨p', hp', hr⟩
+      obtain ⟨p, hp, x, rfl, hx⟩ := hunder p' hp'
+      exact ⟨p, hp, hr.trans hx⟩
+  have key : (above (y :: W) r).any (setsK o) = true ↔ (above (y' :: W) r).any (setsK o) = true := by
+    simp only [any_eq_true]
+    constructor
+    · rintro ⟨q, hq, hsq⟩
+      rcases mem_cons.1 (mem_above.1 hq).1 with rfl | hqW
+      · exact ⟨y', hf'.above_new.2 (new.1 (hf.above_new.1 hq)), hs ▸ hsq⟩
+      · exact ⟨q, (hf'.above_old hqW).2 ((hf.above_old hqW).1 hq), hsq⟩
+    · rintro ⟨q, hq, hsq⟩
+      rcases mem_cons.1 (mem_above.1 hq).1 with rfl | hqW
+      · exact ⟨y, hf.above_new.2 (new.2 (hf'.above_new.1 hq)), hs ▸ hsq⟩
+      · exact ⟨q, (hf.above_old hqW).2 ((hf'.above_old hqW).1 hq), hsq⟩
+  simp only [liveK]
+  rw [Bool.eq_iff_iff.2 key]
 
 /-! ## The boundaries
 
