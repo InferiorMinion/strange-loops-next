@@ -2,10 +2,177 @@
 
 ## Scope
 
-This report covers the JS, Lean, and Rust campaign over the generator after a keyed collect's `limit` came to count things, each listed whole.
+This report records the Lean–Rust tick campaign and the earlier JS, Lean, and Rust campaign over keyed collect limits.
 It also preserves the `keyed-slots-2`, `keyed-slots-1`, `keyed-1`, `sets-1`, `under-1`, `issue-7-1`, `by-collect-1`, `by-shape-1`, `shape-follow-1` and `by-1` campaigns, the two issue #1 campaigns, the `follow-2` campaign, the D8a and D8b campaign, the D1–D6 campaign, the Step-1 campaign and earlier two-way campaigns as historical findings.
 Their counts are historical: the generator changed with D8, with issue #1, with `follow`, with `by`, with issue #7, with `under-unknown`, with `sets`, with `"follow": "keys"` on latest-by, with it on the other fold types, with several payload tests on keyed slots and with keyed collects whose limit falls inside a thing, so the same seeds now generate different inputs.
-The harness covers record, fold, spec, realm, scenario, batch, and lens inputs.
+The main generator covers record, fold, spec, realm, scenario, batch, lens and payload inputs. The explicitly selected tick lane compares Lean and Rust.
+
+## Tick decision order, Lean and Rust
+
+On `dc2a52d`, the two executables agreed on all 46,656 inputs, including 30,456 protocol refusals. A second generation from the three seeds reproduced every compared fixture byte for byte. Reversing the Rust hash-spelling checks in a scratch build produced a disagreement on case 58 of `tick-1`. The previous lane completed all 6,720 cases on that swap.
+
+| Seed and pair evidence | Cases | Match | Protocol refusal | Decoder refusal | Mismatch | Seconds |
+|---|---|---|---|---|---|---|
+| [tick-order-1](evidence/tick-order-1/summary.json) | 15552 | 5440 | 10112 | 0 | 0 | 553.82 |
+| [tick-order-2](evidence/tick-order-2/summary.json) | 15552 | 5393 | 10159 | 0 | 0 | 557.22 |
+| [tick-order-3](evidence/tick-order-3/summary.json) | 15552 | 5367 | 10185 | 0 | 0 | 551.98 |
+
+```sh
+export PATH="$HOME/.elan/bin:$PATH"
+for seed in tick-order-1 tick-order-2 tick-order-3; do
+  node interop/fuzz/run.mjs --family tick --seed "$seed" --n 15552 --chunk-size 192 --out "/tmp/$seed"
+done
+```
+
+The 114 decision sites give 6,441 unordered pairs of positions. Of these, 5,784 admit joint edits. Each seed summary lists the remaining 657 with the reason at that position. For example, replacing `covers` with a scalar removes its array elements, and a single hash field cannot carry both a malformed string and a well-spelled wrong digest. Duplicate names, extra names, list entries, and named map entries can have independent faults in the same input.
+
+The campaign planted 17,496 exact pairs and 5,832 triples alongside 23,328 random cases. Its 34,992 recorded pair observations have 29,160 visible winners confirmed by the model. A triple contributes one masked pair. Accidental coincidences in the random mix receive no credit. The minimum was three confirmations per compatible pair, one in each seed. With newer rules, the result fit check is skipped. With missing records and openings the model must return both counts. The older-rules witness also checks today’s diagnostic.
+
+| Confirmations across seeds | Number of pairs |
+|---|---|
+| 3 | 1067 |
+| 4 | 1433 |
+| 5 | 1301 |
+| 6 | 965 |
+| 7 | 535 |
+| 8 | 276 |
+| 9 | 134 |
+| 10 | 42 |
+| 11 | 20 |
+| 12 | 10 |
+| 13 | 1 |
+
+The two misspellings occurred together 11 times and Lean confirmed the earlier site 11 times. The full per-pair counts and incompatibility reasons are in the three seed summaries above.
+
+| Operation | Cases | Answers |
+|---|---|---|
+| check-tick | 17,060 | refused 12,966, same 1,384, made under older rules 825, differs 803, missing inputs 512, made under newer rules 288, this binary cannot read the spec 168, the tick's payload is not held 114 |
+| make-and-check | 3,888 | same 2,246, missing inputs 1,642 |
+| members | 4,224 | refused 2,836, members 1,388 |
+| payload | 13,708 | refused 12,108, other-rules 1,001, payload 435, cannot-read 164 |
+| payload-text | 3,888 | refused 2,546, other-rules 870, payload 438, cannot-read 34 |
+| write-payload | 3,888 | payload 3,888 |
+
+For older rules, “another result” occurred 295 times, “the same result” occurred 274 times, “missing inputs” occurred 239 times, “this binary cannot read the spec” occurred 9 times, “spec is not in today's parsed form” occurred 4 times, “tick-withheld-erased” occurred 4 times.
+
+Each general checker starts from a Lean writer payload with random slots from the general spec generator. A comparison replays the materialized claim independently in Lean and Rust. Changing a slot’s unread count and refitting its hash can produce a shape-valid wrong claim for any fold. The earlier campaign recorded 100 same and 8 differs in 3,360 checks.
+
+| Check verdict | Count | Sum | Min | Max | Collect | Latest-by |
+|---|---|---|---|---|---|---|
+| differs | 466 | 317 | 209 | 251 | 380 | 263 |
+| same | 800 | 534 | 379 | 442 | 632 | 502 |
+
+A case with several different fold types contributes to each applicable column.
+
+| Refusal | Cases |
+|---|---|
+| tick-hash-invalid | 1017 |
+| tick-id-duplicate | 1207 |
+| tick-id-invalid | 2091 |
+| tick-ids-not-array | 1227 |
+| tick-ids-unsorted | 1232 |
+| tick-kind | 632 |
+| tick-member-duplicate | 1867 |
+| tick-member-missing | 2995 |
+| tick-member-unknown | 1731 |
+| tick-not-object | 965 |
+| tick-result-hash-mismatch | 517 |
+| tick-result-invalid | 10156 |
+| tick-rules-invalid | 1110 |
+| tick-spec-hash-mismatch | 819 |
+| tick-spec-noncanonical | 364 |
+| tick-spec-not-object | 1018 |
+| tick-withheld-empty | 767 |
+| tick-withheld-erased | 10 |
+| tick-withheld-outside | 731 |
+
+### Rust order swaps
+
+Each row uses a fresh edit of the original Rust source in a scratch copy, a rebuilt `loops-eval`, and seed `tick-1`. Case numbers are one-based and include all operations. The hash-spelling run used 6,720 cases. Each other run used 288. All used chunks of 192 and `--no-shrink` to measure first detection against the original stream. Restoring the sources and rebuilding yielded zero mismatches on the 288-case control.
+
+| Reversed checks | First disagreement | Model | Mutated Rust |
+|---|---|---|---|
+| Hash spelling, spec then result | 58 | `tick-hash-invalid spec-hash` | `tick-hash-invalid result-hash` |
+| Hash fit, spec then result | 65 | `tick-spec-hash-mismatch spec-hash` | `tick-result-hash-mismatch result-hash` |
+| Required rules then spec | 17 | `tick-member-missing rules` | `tick-member-missing spec` |
+| Required spec then spec-hash | 18 | `tick-member-missing spec` | `tick-member-missing spec-hash` |
+| Required spec-hash then covers | 19 | `tick-member-missing spec-hash` | `tick-member-missing covers` |
+| Required covers then result | 25 | `tick-member-missing covers` | `tick-member-missing result` |
+| Required result then result-hash | 26 | `tick-member-missing result` | `tick-member-missing result-hash` |
+| Duplicate ids then descending ids | 42 | `tick-id-duplicate covers` | `tick-ids-unsorted covers` |
+| Keyed heads then keys | 162 | `tick-result-invalid result.c.things.t:one.heads[1]` | `tick-result-invalid result.c.things.t:one.keys` |
+| Keyed keys then whole | 171 | `tick-result-invalid result.c.things.t:one.keys.n[1]` | `tick-result-invalid result.c.things.t:one.whole` |
+| Grouped ungrouped then unread | 137 | `tick-result-invalid result.b.ungrouped` | `tick-result-invalid result.b.unread` |
+| Extra result slot then missing slot | 75 | `tick-result-invalid result.extra` | `tick-result-invalid result.a` |
+| Subject kind then held payload | 1 | `tick-kind kind` | the tick's payload is not held |
+| Ignored eraser then missing inputs | 219 | `tick-withheld-erased withheld` | missing inputs |
+
+```sh
+node interop/fuzz/run.mjs --family tick --seed tick-1 --n 6720 --chunk-size 192 --no-shrink
+node interop/fuzz/run.mjs --family tick --seed tick-1 --n 288 --chunk-size 192 --no-shrink
+```
+
+During generator development, a shared JavaScript id array made a keyed-heads edit also change an earlier grouped slot. The model returned the earlier group path. Allocating independent arrays and checking each site alone corrected the witness. No discrepancy between the unmodified Lean and Rust engines was found. The CI job keeps 288 cases with seed `tick-ci-1`. It took 15.0 seconds wall time during this campaign. The legacy input-stream digest tests and the two real 28-case `ci-1` runs passed. Their two-way and three-way input directories compared byte for byte.
+
+## Historical tick readers and check, Lean and Rust
+
+Base commit `dc2a52d`, Node 25.9.0. Each seed ran 6,720 fixtures in 35 batches of 192. Both executables read the same input files. The JavaScript witness received no tick cases.
+
+| Seed and retained summary | Cases | Match | Protocol refusal | Decoder refusal | Mismatch | Seconds |
+|---|---:|---:|---:|---:|---:|---:|
+| [tick-1](evidence/tick-1/summary.json) | 6,720 | 3,817 | 2,903 | 0 | 0 | 94.30 |
+| [tick-2](evidence/tick-2/summary.json) | 6,720 | 3,818 | 2,902 | 0 | 0 | 94.96 |
+| [tick-3](evidence/tick-3/summary.json) | 6,720 | 3,820 | 2,900 | 0 | 0 | 94.70 |
+
+All 20,160 cases agreed. 8,705 were protocol refusals. Every generated fixture decoded, and no implementation or generator disagreement required a fix or reduction.
+
+| Operation | Cases | Answers across all three seeds |
+|---|---:|---|
+| `payload` | 3,360 | other-rules 740, refused 2,196, payload 398, cannot-read 26 |
+| `members` | 3,360 | members 1,225, refused 2,135 |
+| `payload-text` | 3,360 | refused 2,222, other-rules 718, payload 390, cannot-read 30 |
+| `write-payload` | 3,360 | payload 3,360 |
+| `make-and-check` | 3,360 | same 1,923, missing inputs 1,437 |
+| `check-tick` | 3,360 | refused 2,152, the tick's payload is not held 300, missing inputs 127, made under newer rules 358, made under older rules 298, same 100, this binary cannot read the spec 17, differs 8 |
+
+For older rules, today’s diagnostic was “missing inputs” 123, “the same result” 126, “another result” 14, “this binary cannot read the spec” 15, “spec is not in today's parsed form” 17, “tick-withheld-erased” 3.
+
+The readers and checker returned these refusal codes. The comparison includes each path, closure and outside count.
+
+| Refusal | Cases |
+|---|---:|
+| `tick-hash-invalid` | 298 |
+| `tick-id-duplicate` | 491 |
+| `tick-id-invalid` | 490 |
+| `tick-ids-not-array` | 485 |
+| `tick-ids-unsorted` | 453 |
+| `tick-kind` | 339 |
+| `tick-member-duplicate` | 887 |
+| `tick-member-missing` | 629 |
+| `tick-member-unknown` | 789 |
+| `tick-not-object` | 953 |
+| `tick-result-hash-mismatch` | 177 |
+| `tick-result-invalid` | 56 |
+| `tick-rules-invalid` | 678 |
+| `tick-spec-hash-mismatch` | 495 |
+| `tick-spec-noncanonical` | 67 |
+| `tick-spec-not-object` | 619 |
+| `tick-withheld-empty` | 416 |
+| `tick-withheld-erased` | 4 |
+| `tick-withheld-outside` | 379 |
+
+The reader and checker cases drew zero through four mutation attempts (3,357, 5,085, 1,736, 1,626, 1,636 cases respectively). 4,998 drew multiple edits. An edit can mask an earlier fault or leave a valid value. W4 gives the model’s refusal order authority within this comparison.
+
+The generator constructs a count and optional sum claim over a small known holding. A direct harness test compares 36 unmutated claims with the model writer. The general writer cases draw one to four slots from the existing spec generator. The corpus uses finite numbers and well-formed Unicode. It covers repeated names on the wire, including within arrays and opaque members, changes to the checker’s holding and version, and optionally refitted hashes.
+
+The independent CI seed `tick-ci-1` ran 288 cases in two chunks of 144 in 5.656 seconds wall time on this checkout. The pre-change byte-stream digests for 256 cases on each of `ci-1` and `collect-limit-1` match in both legacy modes. The 28-case legacy CI seed also passed both real runs with identical input files.
+
+```sh
+for seed in tick-1 tick-2 tick-3; do
+  node interop/fuzz/run.mjs --family tick --seed "$seed" --n 6720 --chunk-size 192 --out "/tmp/$seed"
+  python3 interop/fuzz/summarize.py campaign "/tmp/$seed" "$seed"
+done
+```
 
 ## A keyed collect's limit over things: three-way campaign
 

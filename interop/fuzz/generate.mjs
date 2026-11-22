@@ -11,7 +11,7 @@ export function base32(bytes) {
   }
   return out + (bits ? B32[(value << (5 - bits)) & 31] : '');
 }
-function random(seed, index, family) {
+export function random(seed, index, family) {
   let state = 2166136261;
   for (const byte of new TextEncoder().encode(JSON.stringify([String(seed), index, family]))) {
     state = Math.imul(state ^ byte, 16777619) >>> 0;
@@ -22,7 +22,7 @@ function random(seed, index, family) {
   return { int, pick: xs => xs[int(xs.length)], bytes: n => Array.from({ length: n }, () => int(256)) };
 }
 const clone = value => structuredClone(value);
-function shuffled(xs, rng) {
+export function shuffled(xs, rng) {
   const out = [...xs];
   for (let i = out.length - 1; i > 0; i--) { const j = rng.int(i + 1); [out[i], out[j]] = [out[j], out[i]]; }
   return out;
@@ -34,7 +34,7 @@ function source(rng, rs) {
   if (choice === 1 || choice === 2) from.of = r.of ?? r.id;
   return from;
 }
-function spec(rng, rs) {
+export function spec(rng, rs) {
   return {
     vertex: `vertex-${rng.int(1000)}`, from: [source(rng, rs)],
     fold: {
@@ -133,7 +133,7 @@ function ofFor(rng, prev, earlier, things) {
   const roll = rng.int(8);
   return roll < 3 ? undefined : roll < 6 ? things[0] : roll === 6 ? things[1] : earlier.length ? thingOf(rng.pick(earlier)) : undefined;
 }
-function records(rng) {
+export function records(rng) {
   const ids = Array.from({ length: 1 + rng.int(7) }, () => `r:${base32(rng.bytes(32))}`);
   const things = [`t:${rng.int(30)}`, `t:${rng.int(30) + 30}`];
   const out = [];

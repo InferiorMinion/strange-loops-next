@@ -145,6 +145,8 @@ private def cases : Except String (List (String × List String × J)) := do
     made "retired-successor" ordinary follow (xs ++ [retired]) none false,
     made "late-retired" ordinary follow xs (some (xs ++ [retired])) true,
     made "admit-inside" inputs sp [revision] (some [revision, first]) true,
+    made "outside-erased-taken" ordinary sp xs
+      (some (xs ++ [seventh, {eraser with id := 8, erases := [seventh.id]}])) false,
     made "taken-after-admit" ordinary sp [first] (some [first, revision]) false,
     made "withheld-backup" hidden sp xsHidden none false,
     made "withheld-open-at-checker" hidden sp xsHidden (some (xs ++ [first.withhold, first])) false,

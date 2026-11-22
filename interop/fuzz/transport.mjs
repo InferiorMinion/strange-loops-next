@@ -1,4 +1,5 @@
 import { spawnSync } from 'node:child_process';
+import { repeatedTickText } from './tick-wire.mjs';
 import { parseOutputJson } from '../answers.mjs';
 import { mkdtemp, mkdir, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -72,6 +73,7 @@ const NUMBER_TEXT = /^-?(0|[1-9]\d*)(\.\d+)?([eE][+-]?\d+)?$/;
 const spelled = v => v !== null && typeof v === 'object' && !Array.isArray(v) && Object.keys(v).length === 1
   && typeof v.$number === 'string' && NUMBER_TEXT.test(v.$number);
 export function inputText(value) {
+  if (value?.layer === 'tick' && (value.fuzz?.repeat || value.fuzz?.repeats)) return repeatedTickText(value);
   return JSON.stringify(value, (_key, v) => spelled(v) ? JSON.rawJSON(v.$number) : v);
 }
 

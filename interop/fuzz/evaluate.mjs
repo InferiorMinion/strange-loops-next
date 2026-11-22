@@ -191,11 +191,12 @@ function comparison(outcomes) {
 // JS must also report malformed input (throw) where Lean does, or it is a mismatch.
 const MALFORMED_HELD = new Set(['record', 'batch']);
 
-export function assess(vector, response, { rawText, js = evaluateJS } = {}) {
+export function assess(vector, response, { rawText, js = evaluateJS, tick = false } = {}) {
   const bundled = response && Object.hasOwn(response, 'lean');
   const responses = { lean: bundled ? response.lean : response };
   if (bundled && Object.hasOwn(response, 'rust')) responses.rust = response.rust;
-  const outcomes = {}, result = { implementations: ['js', ...Object.keys(responses)], responses };
+  if (tick && !responses.rust) throw new Error('tick lane requires both Lean and Rust answers');
+  const outcomes = {}, result = { implementations: tick ? ['lean', 'rust'] : ['js', ...Object.keys(responses)], responses };
   for (const [name, r] of Object.entries(responses)) {
     const hasError = r && Object.hasOwn(r, 'error'), hasExpect = r && Object.hasOwn(r, 'expect');
     if (!r || hasError === hasExpect || (hasError && typeof r.error !== 'string')) {
@@ -205,6 +206,24 @@ export function assess(vector, response, { rawText, js = evaluateJS } = {}) {
     if (hasError) result[`${name}Error`] = r.error;
     else result[name] = r.expect;
   }
+  if (!tick) assessJS(vector, responses, outcomes, result, js, rawText);
+  result.comparison = comparison(outcomes);
+  if (Object.values(responses).every(r => Object.hasOwn(r, 'error'))
+    && (tick || ['not-called', 'decoder-refusal'].includes(outcomes.js.status))) {
+    result.status = 'decoder-refusal';
+    result.diagnostic = responses.lean.error;
+    result.diagnostics = Object.fromEntries(Object.entries(responses).map(([name, r]) => [name, r.error]));
+  } else if (Object.values(outcomes).some(o => o.status !== 'decoded' && o.status !== 'answered')
+    || result.comparison.partition.length !== 1) {
+    result.status = 'mismatch';
+  } else {
+    const refused = responses.lean.expect?.refused ?? (tick && responses.lean.expect?.check?.refused);
+    result.status = typeof refused === 'string' || refused === true ? 'protocol-refusal' : 'match';
+  }
+  return result;
+}
+
+function assessJS(vector, responses, outcomes, result, js, rawText) {
   if (outcomes.lean.status === 'decoder-refusal' && !MALFORMED_HELD.has(vector.layer)) {
     outcomes.js = { status: 'not-called' };
   } else if (outcomes.lean.status === 'decoder-refusal') {
@@ -233,18 +252,4 @@ export function assess(vector, response, { rawText, js = evaluateJS } = {}) {
       if (order !== -1) result.order = order;
     }
   }
-  result.comparison = comparison(outcomes);
-  if (Object.values(responses).every(r => Object.hasOwn(r, 'error'))
-    && ['not-called', 'decoder-refusal'].includes(outcomes.js.status)) {
-    result.status = 'decoder-refusal';
-    result.diagnostic = responses.lean.error;
-    result.diagnostics = Object.fromEntries(Object.entries(responses).map(([name, r]) => [name, r.error]));
-  } else if (Object.values(outcomes).some(o => o.status !== 'decoded' && o.status !== 'answered')
-    || result.comparison.partition.length !== 1) {
-    result.status = 'mismatch';
-  } else {
-    const refused = responses.lean.expect?.refused;
-    result.status = typeof refused === 'string' || refused === true ? 'protocol-refusal' : 'match';
-  }
-  return result;
 }
