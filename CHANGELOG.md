@@ -11,6 +11,39 @@ The record starts where the old roadmap's did. For anything earlier, and for eve
 
 In brief:
 - A fuzz run compares the model and Rust on ticks, with pairs of faults generated on purpose. Its first version agreed on 20,160 cases and missed a fault planted in Rust; the rebuilt one catches every planted swap tried. margins-claude's Python agrees with Rust on 80,000 more cases.
+- The tick has its mutation catalogue: 91 deliberate faults, each caught by something that runs. Five were not caught at first; four vectors and a check were added for them.
+
+### The tick's mutation catalogue
+
+Kyle's ruling W5 held the tick's mutants back until step 4's exit, which holds since 2026-11-21. The catalogue now has 419 entries: the 328 from before, unchanged, and 91 for the tick, over `SpecHash.lean`, `Tick.lean`, `TickCheck.lean`, the result reader in `Result.lean`, `env.when` in `Spec.lean` and the repeat check in `Json.lean`.
+
+Every one of the 91 was judged by the full runner on this machine, with ten minutes for each command:
+
+| Outcome | Entries |
+| --- | ---: |
+| Rejected by the build, and also caught by something that runs | 66 |
+| Builds, and a vector changes | 24 |
+| Builds, and a runtime check fails | 1 |
+| Survives, or stands on proofs alone | 0 |
+
+**Five were not caught at first, and each was a real gap.** Two survived outright and three stood on proofs alone. All five change what a reader or a checker answers, so each got something that runs:
+
+| Fault | What now catches it |
+| --- | --- |
+| Rules versions compared as text in the check (`"10"` before `"2"`) | Vector `newer-ten-under-two`: a version 2 checker meets a rules 10 tick |
+| An unheld payload answered before the wrong kind | Vector `wrong-kind-unheld`: a note whose payload is not held is still `tick-kind` |
+| A count with a leading zero accepted (`"06"`) | Vector `check-padded-count`, with the hash refitted |
+| A covered tick's own `covers` followed | Vector `weekly-inner-records-held`: the checker holds the six backups too, and the weekly tick still counts three records |
+| The claim settled over the whole holding, not the covered set | A runtime check on `tickRun`: an eraser outside the cover does not change the covered result's bytes |
+
+So `vectors/tick/` has 131 files. Rust passed the four new ones unchanged.
+
+**Implementer choices; they stand under Kyle's ruling of 2026-11-21 (W7).**
+- Eight of the new entries join the sample that every merge request runs (58 in all), spread over five files.
+- One swap that cannot be an entry: an empty `withheld` against a `withheld` outside `covers` reads the same either way round (margins-claude found this in its own fuzz).
+- The evidence keeps the five first verdicts beside the final ones, so the gaps stay on record.
+
+A Codex worker wrote the entries, ran them and added the vectors; the coordinator reviewed the run, joined it with main and ran the gate.
 
 ### The tick fuzz: holding Rust to the model's order
 

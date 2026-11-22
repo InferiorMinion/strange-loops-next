@@ -217,7 +217,35 @@ The record starts where the old roadmap's did. For anything earlier, and for eve
 <p>In brief:</p>
 <ul>
 <li><p>A fuzz run compares the model and Rust on ticks, with pairs of faults generated on purpose. Its first version agreed on 20,160 cases and missed a fault planted in Rust; the rebuilt one catches every planted swap tried. margins-claude's Python agrees with Rust on 80,000 more cases.</p></li>
+<li><p>The tick has its mutation catalogue: 91 deliberate faults, each caught by something that runs. Five were not caught at first; four vectors and a check were added for them.</p></li>
 </ul>
+<h3 id="the-ticks-mutation-catalogue">The tick's mutation catalogue</h3>
+<p>Kyle's ruling W5 held the tick's mutants back until step 4's exit, which holds since 2026-11-21. The catalogue now has 419 entries: the 328 from before, unchanged, and 91 for the tick, over <code>SpecHash.lean</code>, <code>Tick.lean</code>, <code>TickCheck.lean</code>, the result reader in <code>Result.lean</code>, <code>env.when</code> in <code>Spec.lean</code> and the repeat check in <code>Json.lean</code>.</p>
+<p>Every one of the 91 was judged by the full runner on this machine, with ten minutes for each command:</p>
+<div class="table-scroll" tabindex="0"><table><thead><tr><th scope="col">Outcome</th><th scope="col" class="align-right">Entries</th></tr></thead>
+<tbody>
+<tr><td>Rejected by the build, and also caught by something that runs</td><td class="align-right">66</td></tr>
+<tr><td>Builds, and a vector changes</td><td class="align-right">24</td></tr>
+<tr><td>Builds, and a runtime check fails</td><td class="align-right">1</td></tr>
+<tr><td>Survives, or stands on proofs alone</td><td class="align-right">0</td></tr>
+</tbody></table></div>
+<p><strong>Five were not caught at first, and each was a real gap.</strong> Two survived outright and three stood on proofs alone. All five change what a reader or a checker answers, so each got something that runs:</p>
+<div class="table-scroll" tabindex="0"><table><thead><tr><th scope="col">Fault</th><th scope="col">What now catches it</th></tr></thead>
+<tbody>
+<tr><td>Rules versions compared as text in the check (<code>&quot;10&quot;</code> before <code>&quot;2&quot;</code>)</td><td>Vector <code>newer-ten-under-two</code>: a version 2 checker meets a rules 10 tick</td></tr>
+<tr><td>An unheld payload answered before the wrong kind</td><td>Vector <code>wrong-kind-unheld</code>: a note whose payload is not held is still <code>tick-kind</code></td></tr>
+<tr><td>A count with a leading zero accepted (<code>&quot;06&quot;</code>)</td><td>Vector <code>check-padded-count</code>, with the hash refitted</td></tr>
+<tr><td>A covered tick's own <code>covers</code> followed</td><td>Vector <code>weekly-inner-records-held</code>: the checker holds the six backups too, and the weekly tick still counts three records</td></tr>
+<tr><td>The claim settled over the whole holding, not the covered set</td><td>A runtime check on <code>tickRun</code>: an eraser outside the cover does not change the covered result's bytes</td></tr>
+</tbody></table></div>
+<p>So <code>vectors/tick/</code> has 131 files. Rust passed the four new ones unchanged.</p>
+<p><strong>Implementer choices; they stand under Kyle's ruling of 2026-11-21 (W7).</strong></p>
+<ul>
+<li><p>Eight of the new entries join the sample that every merge request runs (58 in all), spread over five files.</p></li>
+<li><p>One swap that cannot be an entry: an empty <code>withheld</code> against a <code>withheld</code> outside <code>covers</code> reads the same either way round (margins-claude found this in its own fuzz).</p></li>
+<li><p>The evidence keeps the five first verdicts beside the final ones, so the gaps stay on record.</p></li>
+</ul>
+<p>A Codex worker wrote the entries, ran them and added the vectors; the coordinator reviewed the run, joined it with main and ran the gate.</p>
 <h3 id="the-tick-fuzz-holding-rust-to-the-models-order">The tick fuzz: holding Rust to the model's order</h3>
 <p>The order of refusals for input that is wrong twice is pinned in no protocol text (W4). Inside this repository the model's order decides, and a fuzz run is what holds Rust to it. The JavaScript is frozen (W3), so this run compares Lean and Rust only: <code>node interop/fuzz/run.mjs --family tick</code>.</p>
 <ul>

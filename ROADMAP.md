@@ -22,7 +22,7 @@ The payload values, the result hash's prefix and the tick record, all ruled by K
 
 | Order | Work | State | Waits on |
 | --- | --- | --- | --- |
-| 1 | **The tick record:** what a tick holds, how `covers` is stated and checked, and the input key. | Built (changelog, 2026-11-21 and 2026-11-22): the model with its laws and 127 vectors, [`protocol/tick.md`](protocol/tick.md), Rust, `loops tick <spec>` and `loops tick --check <id>`, and a fuzz run that holds Rust to the model's order. Its mutation catalogue is in work. | Kyle: closing step 4, and [TK10](DECISIONS.md#tk10-seven-details-of-the-check) |
+| 1 | **The tick record:** what a tick holds, how `covers` is stated and checked, and the input key. | Built (changelog, 2026-11-21 and 2026-11-22): the model with its laws and 131 vectors, [`protocol/tick.md`](protocol/tick.md), Rust, `loops tick <spec>` and `loops tick --check <id>`, and a fuzz run that holds Rust to the model's order. Its mutation catalogue has 91 entries, each caught. | Kyle: closing step 4, and [TK10](DECISIONS.md#tk10-seven-details-of-the-check) |
 | 2 | **Step 4's ruled pieces** (list below). | Ruled 2026-11-20. Not built. | Some wait on the tick record |
 
 ### Step 4: ruled and not built
