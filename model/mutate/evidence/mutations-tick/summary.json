@@ -1,0 +1,1325 @@
+{
+  "catalogue": 91,
+  "mutants": [
+    {
+      "id": "tick-label-domain",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "tick-label-fixed",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "tick-label-colon",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "tick-spec-prefix",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "tick-rules-leading-zero",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "tick-rules-zero",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "checks"
+    },
+    {
+      "id": "tick-rules-text-order",
+      "status": "killed-by-checks",
+      "commands": [
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        },
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        },
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        },
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "tick-when-occurred",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "tick-when-emitted",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "tick-when-unheld",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "checks"
+    },
+    {
+      "id": "tick-write-rules",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "tick-write-spec",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "tick-write-spec-hash",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "tick-write-covers",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "tick-write-result",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "tick-write-result-hash",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "tick-write-withheld",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "tick-write-empty-withheld",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "tick-omit-withheld",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "tick-allow-unsorted",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "tick-allow-repeated-ids",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "tick-allow-outsider",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "tick-read-empty-withheld",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "tick-duplicate-top-only",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "tick-duplicate-array-path",
+      "status": "killed-by-vector",
+      "commands": [
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        },
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "tick-hash-spelling",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "tick-spec-reader-version",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "tick-result-newer-fit",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "tick-result-own-unchecked",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "tick-allow-raw-spec",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "tick-skip-shape",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "tick-unknown-member",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "tick-skip-spec-object",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "tick-skip-other-rules",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "tick-duplicate-skip-arrays",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "tick-negative-count",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "tick-negative-unread",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "tick-minus-zero",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "tick-padded-natural",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "tick-sum-null",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "tick-extra-result-member",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "tick-default-missing-unread",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "tick-result-id-spelling",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "tick-result-id-order",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "tick-group-counts-swapped",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "tick-keyed-heads-whole",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "tick-unmasked",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "tick-mask-first-form",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "tick-settle-outside",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "checks"
+    },
+    {
+      "id": "tick-admit-outside",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "tick-follow-inner-covers",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "tick-cover-only-taken",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "tick-made-forgets-eraser",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "tick-made-ignores-erased",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "tick-open-with-eraser",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "tick-closure-prev-only",
+      "status": "killed-by-vector",
+      "commands": [
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        },
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "tick-closure-under-only",
+      "status": "killed-by-vector",
+      "commands": [
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        },
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "tick-closure-missing-yes",
+      "status": "killed-by-vector",
+      "commands": [
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        },
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "tick-closure-missing-first",
+      "status": "killed-by-vector",
+      "commands": [
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        },
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "tick-outside-before-admit",
+      "status": "killed-by-vector",
+      "commands": [
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        },
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "tick-outside-includes-covered",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "tick-swap-counts",
+      "status": "killed-by-vector",
+      "commands": [
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        },
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "tick-count-twice",
+      "status": "killed-by-vector",
+      "commands": [
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        },
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "tick-demand-withheld-opening",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "tick-ignore-covered-eraser",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "tick-missing-before-eraser",
+      "status": "killed-by-vector",
+      "commands": [
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        },
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "tick-outside-eraser-fault",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "tick-skip-missing",
+      "status": "killed-by-vector",
+      "commands": [
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        },
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "tick-compare-hashes",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "checks"
+    },
+    {
+      "id": "tick-differs-hashes-swapped",
+      "status": "killed-by-vector",
+      "commands": [
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        },
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "tick-no-kind-test",
+      "status": "killed-by-vector",
+      "commands": [
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        },
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "tick-unheld-as-malformed",
+      "status": "killed-by-vector",
+      "commands": [
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        },
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "tick-version-before-reader",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "tick-reader-fault-as-unreadable",
+      "status": "killed-by-vector",
+      "commands": [
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        },
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "tick-older-as-newer",
+      "status": "killed-by-vector",
+      "commands": [
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        },
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "tick-newer-as-current",
+      "status": "killed-by-vector",
+      "commands": [
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        },
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "tick-unreadable-as-malformed",
+      "status": "killed-by-vector",
+      "commands": [
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        },
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "tick-skip-check-slots",
+      "status": "killed-by-vector",
+      "commands": [
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        },
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "tick-today-always-same",
+      "status": "killed-by-vector",
+      "commands": [
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        },
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "tick-older-needs-shape",
+      "status": "killed-by-vector",
+      "commands": [
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        },
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "tick-lost-outside-report",
+      "status": "killed-by-vector",
+      "commands": [
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        },
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "tick-label-unversioned",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "tick-check-text-order",
+      "status": "killed-by-vector",
+      "commands": [
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        },
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "tick-lose-unavailable-why",
+      "status": "killed-by-vector",
+      "commands": [
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        },
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "tick-duplicates-after-members",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "checks"
+    },
+    {
+      "id": "tick-skip-spec-fit",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "tick-result-hide-duplicates",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "generator"
+    },
+    {
+      "id": "tick-hash-normalized-member",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "tick-write-local-label",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "tick-covers-arrival-order",
+      "status": "rejected-by-build",
+      "commands": [
+        {
+          "status": "nonzero",
+          "code": 1,
+          "signal": null,
+          "error": null
+        }
+      ],
+      "runtimeVerdict": "vector"
+    },
+    {
+      "id": "tick-unheld-before-kind",
+      "status": "killed-by-vector",
+      "commands": [
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        },
+        {
+          "status": "ok",
+          "code": 0,
+          "signal": null,
+          "error": null
+        }
+      ]
+    }
+  ]
+}

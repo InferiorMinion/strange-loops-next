@@ -19,6 +19,7 @@ A keyed collect's `limit` counting things adds four, over `Loops.keyedValue`, `L
 The canonical result (D7) adds nineteen, over `model/Loops/Result.lean`: 314 entries total. Seventeen change what the codec writes or reads. Two, `result-unshown-keeps-shown` and `result-unshown-groups-kept`, change how the laws compare results. `Gen/Checks.lean` exercises that comparison on a grouped head.
 Ordinary payload fields retarget thirteen entries at lookup, the shared numeric steps and folds, their named accumulators, and the maximum over heads. The catalogue retains 314 entries.
 Payload reading adds fourteen entries (328 total) and retargets `record-num-drop-int`, `wide-record-049` and `by-unreadable-ungrouped`. The cheap runner exercises all seventeen changes against the runtime checks.
+Step 4 adds 91 entries (419 total), from spec identity and the envelope window to the tick payload, claim and check. The definitions below name the new entries. [REPORT.md](REPORT.md) records each outcome.
 The raw-reader ordering mutations target library definitions under `Loops`.
 The cheap runner uses those fourteen replacements and the four former D6 survivors.
 It requires runtime failures after successful builds.
@@ -146,7 +147,7 @@ The catalogue includes existing entries without definition metadata.
 - `Loops.Json.canon`: covered by `wide-json-026`
 - `Loops.Json.canonAll`: covered by `finish-json-json-canonall`
 - `Loops.Json.canonMembers`: covered by `finish-json-json-canonmembers`
-- `Loops.Json.keysDistinct`: covered by `wide-json-027`
+- `Loops.Json.keysDistinct`: covered by `wide-json-027`, `tick-duplicate-skip-arrays`
 - `Loops.Json.allDistinct`: covered by `coverage-json-json-alldistinct`
 - `Loops.Json.membersDistinct`: covered by `coverage-json-json-membersdistinct`
 - `Loops.maxExact`: excluded: It is a fixed numeric bound. No direct eligible operation.
@@ -238,7 +239,7 @@ The catalogue includes existing entries without definition metadata.
 - `Loops.Field.name`: covered by `finish-spec-field-name`
 - `Loops.Field.onEnvelope`: covered by `finish-spec-field-onenvelope`
 - `Loops.Field.type`: covered by `wide-spec-054`
-- `Loops.Field.read`: covered by `wide-spec-055`, `d8-env-of-reads-thing`
+- `Loops.Field.read`: covered by `wide-spec-055`, `d8-env-of-reads-thing`, `tick-when-occurred`, `tick-when-emitted`, `tick-when-unheld`
 - `Loops.Arg.matches`: covered by `finish-spec-arg-matches`
 - `Loops.Item.atLeast`: covered by `spec-atleast-time-strict`
 - `Loops.Item.below`: covered by `spec-below-time-inclusive`, `spec-below-number-inclusive`
@@ -324,6 +325,14 @@ The catalogue includes existing entries without definition metadata.
 - `Loops.Keyed.view`: excluded: It only maps `shownIds`, which other entries cover
 - `Loops.Follow.name`: covered by `keys-written-as-prev`
 
+## model/Loops/SpecHash.lean
+
+- `Loops.specLabel`: covered by `tick-label-domain`, `tick-label-fixed`, `tick-label-colon`, `tick-label-unversioned`
+- `Loops.specPreimageOf`: covered by `tick-hash-normalized-member`
+- `Loops.specHashOf`: covered by `tick-spec-prefix`
+- `Loops.Rules.ofJson?`: covered by `tick-rules-leading-zero`, `tick-rules-zero`
+- `Loops.instOrdRules`: covered by `tick-rules-text-order`
+
 ## model/Loops/Stored.lean
 
 - `Loops.utf8`: excluded: It converts a string to bytes. No direct eligible operation.
@@ -366,6 +375,13 @@ The catalogue includes existing entries without definition metadata.
 - `Loops.unshownIds`: covered by `result-unshown-keeps-shown`
 - `Loops.GroupValue.unshown`, `Loops.KeyedView.unshown`, `Loops.unshownResult`: excluded: Each applies `unshownIds` or `SlotValue.unshown` by shape, which those entries mutate.
 - `Loops.SlotValue.unshown`: covered by `result-unshown-groups-kept`
+- `Loops.ResultReader.group`: covered by `tick-negative-count`, `tick-negative-unread`, `tick-sum-null`, `tick-default-missing-unread`
+- `Loops.ResultReader.integer`: covered by `tick-minus-zero`
+- `Loops.ResultReader.nat`: covered by `tick-padded-natural`
+- `Loops.ResultReader.fixed`: covered by `tick-extra-result-member`
+- `Loops.ResultReader.ids`: covered by `tick-result-id-spelling`, `tick-result-id-order`, `tick-result-hide-duplicates`
+- `Loops.ResultReader.slot`: covered by `tick-group-counts-swapped`
+- `Loops.ResultReader.keyed`: covered by `tick-keyed-heads-whole`
 
 ## model/Loops/Things.lean
 
@@ -386,6 +402,32 @@ The catalogue includes existing entries without definition metadata.
 - `Loops.realm`: excluded: It composes settle and admit. No direct eligible operation.
 - `Loops.stateIn`: covered by `finish-things-statein`
 - `Loops.perThing`: covered by `extra-things-perthing`
+
+## model/Loops/Tick.lean
+
+- `Loops.TickMembers.toJson`: covered by `tick-write-rules`, `tick-write-spec`, `tick-write-spec-hash`, `tick-write-covers`, `tick-write-result`, `tick-write-result-hash`, `tick-write-withheld`, `tick-write-empty-withheld`, `tick-omit-withheld`, `tick-write-local-label`
+- `Loops.TickReader.ids`: covered by `tick-allow-unsorted`, `tick-allow-repeated-ids`
+- `Loops.TickReader.withheldIds`: covered by `tick-allow-outsider`, `tick-read-empty-withheld`
+- `Loops.readTickMembers`: covered by `tick-duplicate-top-only`, `tick-unknown-member`, `tick-duplicates-after-members`
+- `Loops.TickReader.repeatIn`: covered by `tick-duplicate-array-path`
+- `Loops.TickReader.hashText`: covered by `tick-hash-spelling`
+- `Loops.TickReader.values`: covered by `tick-spec-reader-version`, `tick-result-newer-fit`, `tick-result-own-unchecked`, `tick-skip-spec-object`, `tick-skip-spec-fit`
+- `Loops.TickMembers.readSpec`: covered by `tick-allow-raw-spec`
+- `Loops.TickMembers.readSlots`: covered by `tick-skip-shape`
+- `Loops.TickMembers.readPayload`: covered by `tick-skip-other-rules`
+
+## model/Loops/TickCheck.lean
+
+- `Loops.tickRun`: covered by `tick-unmasked`, `tick-mask-first-form`, `tick-settle-outside`, `tick-admit-outside`, `tick-follow-inner-covers`
+- `Loops.makeTick`: covered by `tick-cover-only-taken`, `tick-made-forgets-eraser`, `tick-made-ignores-erased`, `tick-covers-arrival-order`
+- `Loops.tickOpen`: covered by `tick-open-with-eraser`
+- `Loops.tickClosure`: covered by `tick-closure-prev-only`, `tick-closure-under-only`, `tick-closure-missing-yes`, `tick-closure-missing-first`
+- `Loops.takenOutside`: covered by `tick-outside-before-admit`, `tick-outside-includes-covered`
+- `Loops.tickMissing`: covered by `tick-swap-counts`, `tick-count-twice`, `tick-demand-withheld-opening`
+- `Loops.replayIssue`: covered by `tick-ignore-covered-eraser`, `tick-missing-before-eraser`, `tick-outside-eraser-fault`, `tick-skip-missing`
+- `Loops.replayTick`: covered by `tick-compare-hashes`
+- `Loops.checkMembers`: covered by `tick-differs-hashes-swapped`, `tick-older-as-newer`, `tick-newer-as-current`, `tick-unreadable-as-malformed`, `tick-skip-check-slots`, `tick-today-always-same`, `tick-older-needs-shape`, `tick-lost-outside-report`, `tick-check-text-order`, `tick-lose-unavailable-why`
+- `Loops.checkTick`: covered by `tick-no-kind-test`, `tick-unheld-as-malformed`, `tick-version-before-reader`, `tick-reader-fault-as-unreadable`, `tick-unheld-before-kind`
 
 ## model/Loops/Time.lean
 

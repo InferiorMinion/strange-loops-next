@@ -98,7 +98,16 @@ class EvidenceTest(unittest.TestCase):
         self.assertEqual(campaign['totals']['cases'], 5600)
         self.assertEqual(campaign['totals']['mismatch'], 42)
         self.assertEqual(campaign['families']['lens']['mismatch'], 42)
-        self.assertEqual(list(result['mutations']), ['mutations-d1-d6', 'mutations-d8ab', 'mutations-d8c', 'mutations-fixes2', 'mutations-payload'])
+        self.assertEqual(list(result['mutations']), ['mutations-d1-d6', 'mutations-d8ab', 'mutations-d8c', 'mutations-fixes2', 'mutations-payload', 'mutations-tick'])
+        tick = result['mutations']['mutations-tick']
+        self.assertEqual(tick['total'], 91)
+        self.assertEqual(tick['outcomes'], {'rejected-by-build': 66, 'killed-by-vector': 24, 'killed-by-checks': 1})
+        self.assertEqual(tick['runtime'], {'vector': 33, 'generator': 28, 'checks': 5})
+        self.assertEqual(tick['survivors'], [])
+        self.assertEqual(tick['proofsAlone'], [])
+        first = summarize.mutation_report(summarize.read(summarize.MUTATIONS / 'mutations-tick/initial-gaps.json'))
+        self.assertEqual(first['survivors'], ['tick-check-text-order', 'tick-unheld-before-kind'])
+        self.assertEqual(first['proofsAlone'], ['tick-padded-natural', 'tick-settle-outside', 'tick-follow-inner-covers'])
         payload = result['mutations']['mutations-payload']
         self.assertEqual(payload['total'], 328)
         self.assertEqual(payload['outcomes'], {'error': 22, 'killed-by-vector': 20, 'rejected-by-build': 282, 'survived': 4})

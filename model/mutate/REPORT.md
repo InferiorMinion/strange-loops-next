@@ -1,5 +1,158 @@
 # Lean model mutation report
 
+## Step 4 after the two-store exit, at `f001758`
+
+The run selected the 91 tick entries added to the previous 328. Each uses a single exact replacement in a library file. The original 328 catalogue entries retain their sites and replacements.
+
+Each batch ran locally with `node model/mutate/run.mjs --only <ids> --timeout 600 --output <file>`. Concurrent batches used separate scratch trees and indexes against the same commit. Each checked the baseline build and generated corpus first, restored its source between entries, and rebuilt the baseline on exit. After a build rejection, the executable verdict records whether the programs detect the fault without the laws. A generator assertion exception is recorded as `generator`. A vector difference compares the complete generated fixture, including its input.
+
+| Final outcome | Entries |
+|---|---:|
+| `rejected-by-build` | 66 |
+| `killed-by-checks` | 1 |
+| `killed-by-vector` | 24 |
+
+Of the 66 build rejections, the executable-only runs found 33 `vector`, 28 `generator`, 5 `checks`. Every published replacement has executable evidence. All selected commands completed within their time limit.
+
+### What the first pass missed
+
+Two entries survived outright and three stood on proofs alone. All five change observable behavior. The table pairs each first verdict with the rerun after adding evidence.
+
+| Entry | First pass | Rerun | What separates the two behaviors |
+|---|---|---|---|
+| `tick-padded-natural` | rejected-by-build / none | rejected-by-build / vector | The natural reader accepted padded decimal text. The existing negative and signed-zero examples cannot distinguish that grammar. `check-padded-count` refits the result hash over `06` and requires `tick-result-invalid` at `result.runs.value`. |
+| `tick-settle-outside` | rejected-by-build / none | rejected-by-build / checks | With an outside eraser and an undeclared lost opening, the store check stops before replay. `tickRun` itself must still settle the cover in isolation. The new runtime assertion compares the claim's bytes to a run on the one covered backup while the supplied forms also contain its outside eraser. |
+| `tick-follow-inner-covers` | rejected-by-build / none | rejected-by-build / vector | The old weekly checker held none of the inner backups. `weekly-inner-records-held` gives it all six alongside the two nightly ticks and the note. The claim still counts three, the check says `same`, and the outside count is six. |
+| `tick-check-text-order` | survived | killed-by-vector | The executable comparison of the `Ord Rules` instance already used 2 and 10. The check dispatch compares the version fields separately. `newer-ten-under-two` puts rules 10 on the wire and rules 2 in the checker and requires `made under newer rules`. |
+| `tick-unheld-before-kind` | survived | killed-by-vector | The old wrong-kind subject had an opening. The old unheld subject had kind tick. `wrong-kind-unheld` checks a note from its envelope alone and requires `tick-kind` at `kind`. |
+
+Rust ran all four new vectors through its existing tick evaluator. The tick family now has 130 files. JavaScript continues to count that family under W3. The pure-claim check runs in `lake exe checks`.
+
+The cheap runner killed 50 of 50 in 14m 16.151s before the change and 58 of 58 in 13m 44.141s afterward. These are individual wall-clock measurements on a shared build machine. The added guards were `tick-label-colon`, `tick-rules-text-order`, `tick-when-unheld`, `tick-result-newer-fit`, `tick-duplicate-array-path`, `tick-negative-unread`, `tick-missing-before-eraser` and `tick-compare-hashes`.
+
+The [final summary](evidence/mutations-tick/summary.json) contains one verdict per published replacement. The [first-pass evidence](evidence/mutations-tick/initial-gaps.json) retains the five entries before their new checks. Both use the mutation evidence importer's format. The tables give a changed fixture or assertion for each executable verdict. For a vector, `(+N)` counts the other files changed. Build coordinates identify the first diagnostic in the log.
+
+### Json.lean
+
+| Entry | Outcome | First build diagnostic or executable evidence |
+|---|---|---|
+| `tick-duplicate-skip-arrays` | rejected-by-build / vector | Laws/Parse.lean:156 · tick/spec-repeated-source.json (+3) |
+
+### Result.lean
+
+| Entry | Outcome | First build diagnostic or executable evidence |
+|---|---|---|
+| `tick-negative-count` | rejected-by-build / generator | Laws/TickRead.lean:178 · reading changed the payload's canonical bytes |
+| `tick-negative-unread` | rejected-by-build / generator | Laws/TickRead.lean:178 · reading changed the payload's canonical bytes |
+| `tick-minus-zero` | rejected-by-build / generator | Laws/Tick.lean:48 · reading changed the payload's canonical bytes |
+| `tick-padded-natural` | rejected-by-build / vector | Laws/Tick.lean:45 · tick/check-padded-count.json |
+| `tick-sum-null` | rejected-by-build / generator | Laws/TickRead.lean:178 · reading changed the payload's canonical bytes |
+| `tick-extra-result-member` | rejected-by-build / generator | Laws/TickRead.lean:68 · reading changed the payload's canonical bytes |
+| `tick-default-missing-unread` | rejected-by-build / generator | Laws/TickRead.lean:169 · reading changed the payload's canonical bytes |
+| `tick-result-id-spelling` | rejected-by-build / generator | Laws/TickRead.lean:130 · reading changed the payload's canonical bytes |
+| `tick-result-id-order` | rejected-by-build / generator | Laws/Tick.lean:23 · written result did not read back in normal form |
+| `tick-group-counts-swapped` | rejected-by-build / generator | Laws/Tick.lean:91 · written result did not read back in normal form |
+| `tick-keyed-heads-whole` | rejected-by-build / generator | Laws/Tick.lean:81 · written result did not read back in normal form |
+| `tick-result-hide-duplicates` | rejected-by-build / generator | Laws/Tick.lean:26 · reading changed the payload's canonical bytes |
+
+### Spec.lean
+
+| Entry | Outcome | First build diagnostic or executable evidence |
+|---|---|---|
+| `tick-when-occurred` | rejected-by-build / vector | Laws/Spec.lean:192 · tick/when-backfill.json |
+| `tick-when-emitted` | rejected-by-build / vector | Laws/Spec.lean:192 · tick/when-after-heads.json (+1) |
+| `tick-when-unheld` | rejected-by-build / checks | Laws/Spec.lean:192 · window operators on the occurrence span |
+
+### SpecHash.lean
+
+| Entry | Outcome | First build diagnostic or executable evidence |
+|---|---|---|
+| `tick-label-domain` | rejected-by-build / vector | Laws/SpecHash.lean:73 · tick/admit-inside.json (+119) |
+| `tick-label-fixed` | rejected-by-build / vector | Laws/SpecHash.lean:61 · tick/check-hash-before-version.json (+9) |
+| `tick-label-colon` | rejected-by-build / vector | Laws/SpecHash.lean:61 · tick/admit-inside.json (+119) |
+| `tick-spec-prefix` | rejected-by-build / generator | Laws/Tick.lean:232 · written payload refused |
+| `tick-rules-leading-zero` | rejected-by-build / generator | Laws/SpecHash.lean:11 · reading changed the payload's canonical bytes |
+| `tick-rules-zero` | rejected-by-build / checks | Laws/SpecHash.lean:22 · invalid rules version |
+| `tick-rules-text-order` | killed-by-checks | numeric rules order and binding |
+| `tick-label-unversioned` | rejected-by-build / vector | Laws/SpecHash.lean:61 · tick/admit-inside.json (+119) |
+| `tick-hash-normalized-member` | rejected-by-build / vector | Laws/SpecHash.lean:64 · tick/carried-note.json (+4) |
+
+### Tick.lean
+
+| Entry | Outcome | First build diagnostic or executable evidence |
+|---|---|---|
+| `tick-write-rules` | rejected-by-build / generator | Laws/Tick.lean:228 · written payload refused |
+| `tick-write-spec` | rejected-by-build / generator | Laws/Tick.lean:228 · written payload refused |
+| `tick-write-spec-hash` | rejected-by-build / generator | Laws/Tick.lean:228 · written payload refused |
+| `tick-write-covers` | rejected-by-build / generator | Laws/Tick.lean:228 · written payload refused |
+| `tick-write-result` | rejected-by-build / generator | Laws/Tick.lean:228 · written payload refused |
+| `tick-write-result-hash` | rejected-by-build / generator | Laws/Tick.lean:228 · written payload refused |
+| `tick-write-withheld` | rejected-by-build / generator | Laws/Tick.lean:228 · written payload refused |
+| `tick-write-empty-withheld` | rejected-by-build / generator | Laws/Tick.lean:228 · written payload refused |
+| `tick-omit-withheld` | rejected-by-build / generator | Laws/Tick.lean:228 · written result did not read back in normal form |
+| `tick-allow-unsorted` | rejected-by-build / vector | Laws/TickRead.lean:260 · tick/covers-unsorted.json (+1) |
+| `tick-allow-repeated-ids` | rejected-by-build / vector | Laws/Tick.lean:164 · tick/covers-duplicate-id.json (+1) |
+| `tick-allow-outsider` | rejected-by-build / vector | Laws/TickRead.lean:290 · tick/withheld-outside.json |
+| `tick-read-empty-withheld` | rejected-by-build / generator | Laws/TickRead.lean:290 · reading changed the payload's canonical bytes |
+| `tick-duplicate-top-only` | rejected-by-build / vector | Laws/TickRead.lean:331 · tick/result-repeated-group-value.json (+2) |
+| `tick-duplicate-array-path` | killed-by-vector | tick/spec-repeated-source.json |
+| `tick-hash-spelling` | rejected-by-build / vector | Laws/Tick.lean:170 · tick/check-newer-hash-spelling.json (+2) |
+| `tick-spec-reader-version` | rejected-by-build / vector | Laws/Tick.lean:228 · tick/check-hash-before-version.json (+15) |
+| `tick-result-newer-fit` | rejected-by-build / vector | Loops/Tick.lean:97 · tick/check-newer-result-label.json (+2) |
+| `tick-result-own-unchecked` | rejected-by-build / generator | Laws/TickRead.lean:314 · reading changed the payload's canonical bytes |
+| `tick-allow-raw-spec` | rejected-by-build / generator | Laws/TickRead.lean:399 · reading changed the payload's canonical bytes |
+| `tick-skip-shape` | rejected-by-build / generator | Laws/Tick.lean:276 · reading changed the payload's canonical bytes |
+| `tick-unknown-member` | rejected-by-build / generator | Laws/Tick.lean:228 · reading changed the payload's canonical bytes |
+| `tick-skip-spec-object` | rejected-by-build / vector | Laws/Tick.lean:247 · tick/spec-not-object.json |
+| `tick-skip-other-rules` | rejected-by-build / generator | Laws/TickRead.lean:395 · reading changed the payload's canonical bytes |
+| `tick-duplicates-after-members` | rejected-by-build / checks | Laws/TickRead.lean:331 · nested duplicate lost its path before member validation |
+| `tick-skip-spec-fit` | rejected-by-build / vector | Laws/TickRead.lean:314 · tick/check-hash-before-version.json (+1) |
+| `tick-write-local-label` | rejected-by-build / vector | Laws/Tick.lean:228 · tick/check-newer-hash-spelling.json (+4) |
+
+### TickCheck.lean
+
+| Entry | Outcome | First build diagnostic or executable evidence |
+|---|---|---|
+| `tick-unmasked` | rejected-by-build / vector | Laws/TickCheck.lean:33 · tick/make-erased.json (+1) |
+| `tick-mask-first-form` | rejected-by-build / vector | Laws/TickCheck.lean:33 · tick/withheld-open-at-checker.json |
+| `tick-settle-outside` | rejected-by-build / checks | Laws/TickCheck.lean:19 · a claim settled an eraser outside its cover |
+| `tick-admit-outside` | rejected-by-build / vector | Laws/TickCheck.lean:19 · tick/admit-inside.json |
+| `tick-follow-inner-covers` | rejected-by-build / vector | Laws/TickCheck.lean:19 · tick/weekly-inner-records-held.json |
+| `tick-cover-only-taken` | rejected-by-build / vector | Laws/TickCheck.lean:245 · tick/closed-cover.json (+12) |
+| `tick-made-forgets-eraser` | rejected-by-build / vector | Laws/TickCheck.lean:245 · tick/covered-erasure.json |
+| `tick-made-ignores-erased` | rejected-by-build / vector | Laws/TickCheck.lean:245 · tick/eraser-outside.json (+2) |
+| `tick-open-with-eraser` | rejected-by-build / vector | Laws/TickCheck.lean:52 · tick/covered-erasure.json (+1) |
+| `tick-closure-prev-only` | killed-by-vector | tick/open-under.json |
+| `tick-closure-under-only` | killed-by-vector | tick/admit-inside.json (+2) |
+| `tick-closure-missing-yes` | killed-by-vector | tick/closure-unknown.json (+5) |
+| `tick-closure-missing-first` | killed-by-vector | tick/open-prev-partial.json |
+| `tick-outside-before-admit` | killed-by-vector | tick/taken-after-admit.json |
+| `tick-outside-includes-covered` | rejected-by-build / vector | Loops/TickCheck.lean:65 · tick/check-invalid-result.json (+28) |
+| `tick-swap-counts` | killed-by-vector | tick/closure-unknown.json (+7) |
+| `tick-count-twice` | killed-by-vector | tick/closure-unknown.json (+2) |
+| `tick-demand-withheld-opening` | rejected-by-build / vector | Laws/TickCheck.lean:48 · tick/covered-erasure.json (+2) |
+| `tick-ignore-covered-eraser` | rejected-by-build / vector | Laws/TickCheck.lean:264 · tick/covered-eraser-omitted-partial.json (+2) |
+| `tick-missing-before-eraser` | killed-by-vector | tick/covered-eraser-omitted-partial.json (+2) |
+| `tick-outside-eraser-fault` | rejected-by-build / vector | Laws/TickCheck.lean:264 · tick/eraser-outside-retained.json |
+| `tick-skip-missing` | killed-by-vector | tick/closure-unknown.json (+7) |
+| `tick-compare-hashes` | rejected-by-build / checks | Laws/TickCheck.lean:292 · the verdict compared digests instead of bytes |
+| `tick-differs-hashes-swapped` | killed-by-vector | tick/different-result.json (+1) |
+| `tick-no-kind-test` | killed-by-vector | tick/wrong-kind.json |
+| `tick-unheld-as-malformed` | killed-by-vector | tick/own-payload-unheld.json |
+| `tick-version-before-reader` | rejected-by-build / vector | Laws/TickCheck.lean:292 · tick/check-hash-before-version.json (+2) |
+| `tick-reader-fault-as-unreadable` | killed-by-vector | tick/check-hash-before-version.json (+2) |
+| `tick-older-as-newer` | killed-by-vector | tick/older-different-today.json (+6) |
+| `tick-newer-as-current` | killed-by-vector | tick/check-newer-result-label.json (+1) |
+| `tick-unreadable-as-malformed` | killed-by-vector | tick/unreadable-spec.json |
+| `tick-skip-check-slots` | killed-by-vector | tick/check-invalid-result.json |
+| `tick-today-always-same` | killed-by-vector | tick/older-different-today.json (+1) |
+| `tick-older-needs-shape` | killed-by-vector | tick/older-foreign-result.json |
+| `tick-lost-outside-report` | killed-by-vector | tick/older-different-today.json (+4) |
+| `tick-check-text-order` | killed-by-vector | tick/newer-ten-under-two.json |
+| `tick-lose-unavailable-why` | killed-by-vector | tick/older-ignored-erasure.json (+1) |
+| `tick-covers-arrival-order` | rejected-by-build / vector | Laws/TickCheck.lean:245 · tick/admit-inside.json (+2) |
+| `tick-unheld-before-kind` | killed-by-vector | tick/wrong-kind-unheld.json |
+
 ## Full run in CI after the payload-field change, 2026-11-21
 
 GitLab pipeline 2190 ran all 328 entries on main at `48037ce`, in four shards with 600 seconds per command.

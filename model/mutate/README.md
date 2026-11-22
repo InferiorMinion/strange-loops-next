@@ -2,7 +2,7 @@
 
 Run `node model/mutate/run.mjs --list` to inspect the catalogue.
 Listing validates every replacement against the current source without changing files.
-The runner tests check all 328 entries and their unique source sites.
+The runner tests check all 419 entries and their unique source sites.
 The catalogue retains 187 original entries, retires two mutations, and adds eight guard mutations.
 Six more entries cover the D1 base boundary and the D2 code-unit reader.
 Nine more cover D8's `of`: the thing, the two envelope checks, `of-not-root`, the batch thing check, labels in `of`, `from.of` and `env.of`.
@@ -16,7 +16,8 @@ Twenty-one more cover count, sum, min, max and collect following `keys`: selecti
 Four more cover a keyed collect's limit counting things: a limit over records, things chosen and then their records cut, things ordered by their oldest live records, and a thing counted once per live record; `keys-slots-collect-heads` and `keys-slots-collect-no-limit` are retargeted at the collect's new site.
 Nineteen more cover the canonical result (D7): each digit's character, digits dropped or unreversed, a negative one off, `:` read as a digit, digits read in the wrong order, a leading zero or a negative read, a list reversed, `null` written as zero, a keyed thing's heads, `ungrouped` and `unread` swapped, a fork's first head alone, one slot alone, the label's version, a 16-byte label, the hash unframed, and `shown` kept where the laws set it aside.
 Fourteen payload entries cover shallow projection, presence, member equality, bounds, numeric reads, deduplication of keys and agreement between live setters. The cheap runner exercises all fourteen and the three retargeted sites.
-The source paths may name the Loops or Gen root; flat filenames still name Loops sources.
+After the two-machine exit, 91 entries cover spec-hash framing and rules, the window, both payload readers and the result shapes, masking and making the claim, and the check with its reports. The cheap sample takes eight of them. See [COVERAGE.md](COVERAGE.md) for the sites and [REPORT.md](REPORT.md) for the full runner's verdict on each.
+Catalogue paths are flat library filenames or start with `Loops/`. The additional `Gen/` guards live in the cheap runner itself.
 Run `node model/mutate/run.mjs --only things-prev-or,things-drop-may` to select mutations.
 Use `--shard i/n` to run every nth selected entry, starting at the ith; the n shards are disjoint and together cover the selection.
 Run `node model/mutate/merge.mjs --output merged.json results-*.json` to join the shards' results; it fails unless every catalogue entry, or with `--only` every entry named, was judged exactly once, with no error and the baseline restored.

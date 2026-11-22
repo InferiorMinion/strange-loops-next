@@ -25,7 +25,15 @@ const guardMutants = ["step1-base32-reencode","step1-fraction-final-zero","step1
   "payload-list-first-key",
   "payload-list-repeat-key",
   "payload-list-first-number",
-  "payload-keys-union-is"].map(id => {
+  "payload-keys-union-is",
+  "tick-label-colon",
+  "tick-rules-text-order",
+  "tick-when-unheld",
+  "tick-result-newer-fit",
+  "tick-duplicate-array-path",
+  "tick-negative-unread",
+  "tick-missing-before-eraser",
+  "tick-compare-hashes"].map(id => {
   const m = catalogue.find(m => m.id === id);
   if (!m) throw new Error(`missing guard mutant: ${id}`);
   return [m.id, m.file.includes("/") ? m.file : `Loops/${m.file}`, m.before, m.after];
