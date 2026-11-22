@@ -1,0 +1,116 @@
+{
+  "vector": "open-prev-partial",
+  "layer": "tick",
+  "laws": ["tick.inputs"],
+  "source": "model",
+  "input": {
+    "op": "make-and-check",
+    "spec": {
+      "vertex": "backups",
+      "from": [
+        {
+          "store": "lab",
+          "kind": ["backup"]
+        }
+      ],
+      "fold": {
+        "runs": {
+          "count": true,
+          "follow": "prev"
+        },
+        "mb": {
+          "sum": "mb",
+          "follow": "prev"
+        }
+      }
+    },
+    "writer": [
+      {
+        "id": "r:000000000000000000000000000000000000000000000000003g",
+        "kind": "retired",
+        "observer": "sl:laptop",
+        "about": ["svc:pihole"],
+        "of": "r:000000000000000000000000000000000000000000000000000g",
+        "prev": ["r:000000000000000000000000000000000000000000000000000g"],
+        "emitted": "2026-11-21T20:00:00Z",
+        "occurred": "2026-11-17",
+        "fields": {
+          "mb": 4,
+          "svc": "pihole"
+        }
+      },
+      {
+        "id": "r:0000000000000000000000000000000000000000000000000010",
+        "kind": "backup",
+        "observer": "sl:laptop",
+        "about": ["svc:pihole"],
+        "prev": [],
+        "emitted": "2026-11-21T20:00:00Z",
+        "occurred": "2026-11-16",
+        "shown": "withheld"
+      }
+    ],
+    "checker": [
+      {
+        "id": "r:000000000000000000000000000000000000000000000000003g",
+        "kind": "retired",
+        "observer": "sl:laptop",
+        "about": ["svc:pihole"],
+        "of": "r:000000000000000000000000000000000000000000000000000g",
+        "prev": ["r:000000000000000000000000000000000000000000000000000g"],
+        "emitted": "2026-11-21T20:00:00Z",
+        "occurred": "2026-11-17",
+        "fields": {
+          "mb": 4,
+          "svc": "pihole"
+        }
+      }
+    ]
+  },
+  "expect": {
+    "payload": {
+      "rules": "1",
+      "spec": {
+        "vertex": "backups",
+        "from": [
+          {
+            "store": "lab",
+            "kind": ["backup"]
+          }
+        ],
+        "fold": {
+          "runs": {
+            "count": true,
+            "follow": "prev"
+          },
+          "mb": {
+            "sum": "mb",
+            "follow": "prev"
+          }
+        }
+      },
+      "spec-hash": "spec:9o52t7rapuutq6eou689d6pk6sacabmi2etag73p5363il38g2o0",
+      "covers": ["r:0000000000000000000000000000000000000000000000000010", "r:000000000000000000000000000000000000000000000000003g"],
+      "result": {
+        "runs": {
+          "unread": "0",
+          "value": "1"
+        },
+        "mb": {
+          "unread": "1",
+          "value": "0"
+        }
+      },
+      "result-hash": "res:qeu3epquamarfuagno460sfprv4kq4vrsosiqqqpmjvgi9485bpg",
+      "withheld": ["r:0000000000000000000000000000000000000000000000000010"]
+    },
+    "check": {
+      "answer": "cannot check",
+      "reason": "missing inputs",
+      "missing-records": 1,
+      "missing-openings": 0,
+      "closure": "no",
+      "taken-not-covered": 0
+    }
+  }
+}

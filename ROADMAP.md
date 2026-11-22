@@ -22,7 +22,7 @@ The payload values and the result hash's prefix, ruled by Kyle on 2026-11-21, ar
 
 | Order | Work | State | Waits on |
 | --- | --- | --- | --- |
-| 1 | **The tick record:** what a tick holds, how `covers` is stated and checked, and the input key. | Ruled 2026-11-21 ([the note](notes/2026-11-21-tick-record.md)). Being built in seven pieces (changelog, 2026-11-21). Pieces 1 and 2 are in the model (the spec's hash and `env.when`; the result reader and the payload). Rust has piece 1, so `loops fold` takes a window on `env.when`. The model's piece 3, the claim and the check, is in work. | [TK10](DECISIONS.md#tk10-six-details-of-the-check) for the check's details |
+| 1 | **The tick record:** what a tick holds, how `covers` is stated and checked, and the input key. | Ruled 2026-11-21 ([the note](notes/2026-11-21-tick-record.md)). Being built in seven pieces (changelog, 2026-11-21). Pieces 1 to 3 are in the model (the spec's hash and `env.when`; the result reader and the payload; the claim and the check). Rust has piece 1, so `loops fold` takes a window on `env.when`. The model's piece 3, the claim and the check, is in: the model holds the whole tick record. Rust for the payload is in work; then the protocol page, Rust for the check, and the CLI verbs. | [TK10](DECISIONS.md#tk10-seven-details-of-the-check) for the check's details |
 | 2 | **Step 4's ruled pieces** (list below). | Ruled 2026-11-20. Not built. | Some wait on the tick record |
 
 ### Step 4: ruled and not built

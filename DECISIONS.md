@@ -10,7 +10,7 @@ Everything that waits on Kyle, in one place. Each entry has the question, an exa
 
 | Id | Question | Recommended | What waits on it |
 | --- | --- | --- | --- |
-| [TK10](#tk10-six-details-of-the-check) | Six details of `loops tick --check` that the rulings leave open | As in its table; the build follows them meanwhile | Nothing yet: the check is three merge requests away |
+| [TK10](#tk10-seven-details-of-the-check) | Seven details of `loops tick --check` that the rulings leave open | As in its table; the build follows them meanwhile | Nothing yet: the check is three merge requests away |
 
 Every earlier entry is ruled (2026-11-21).
 
@@ -23,9 +23,9 @@ After this: [what is being prepared](#being-prepared), [what you deferred](#defe
 
 ## The tick record, while it is built
 
-### TK10: six details of the check
+### TK10: seven details of the check
 
-**Question.** The plan for the build found six places where TK1 to TK9 do not say what `loops tick --check` answers. What should it answer in each?
+**Question.** The plan for the build, and margins-claude's check of the vectors, found seven places where TK1 to TK9 do not say what `loops tick --check` answers. What should it answer in each?
 
 Nothing here is built, so each answer below is what the verb would say. The store is the one of the tick record's examples: six backups, and the laptop's tick T over them (`runs` 6, `mb` 1027). The build follows the recommended column until you rule otherwise; changing a row later changes one branch of the check and its vectors.
 
@@ -37,6 +37,7 @@ Nothing here is built, so each answer below is what the verb would say. The stor
 | 4 | **A result that no fold could give.** | A tick like T whose `result` says `runs` 6 and lists five ids, with `result-hash` made from that. | With the six records held: `differs`. The reader checks a result's shape and spelling for its slots (an integer as decimal text, a list of ids) and nothing about whether its parts agree. | Not a tick. Each such test (a count equals its list's length, a listed id is covered) is one more rule that every implementation must share. |
 | 5 | **How `rules` is spelled.** | `"1"`, `"2"`, `"10"` against `"01"`, `"0"`, `""` and the number `1`. | A positive whole number as decimal text with no leading zero, compared as a number. The others are not a tick. | Any text, compared as text. Then `"10"` sorts before `"2"`. |
 | 6 | **A `spec` this binary's parser refuses.** | T with `"spec": 7` and a fitting hash; and T with a spec that uses a fold type from a later binary, with a fitting hash. | The first is not a tick: a spec is an object under every version. The second is `cannot check: this binary cannot read the spec`. Nonsense inside an object gets that answer too, since the check cannot tell it from a later binary's spec. | Treat every refused spec as not a tick. That is the false "not a tick" your ruling on TK9 removed. |
+| 7 | **The result's hash on a tick from a later version.** The label inside the result's hash has its own version (`loops/result-hash/v1:`), and a later version of the rules may change the result's bytes and take a new one. | A tick states `"rules": "2"`, and version 2 writes results under `loops/result-hash/v2:`. The NAS runs version 1 and knows one label. | For `rules` above its own, the NAS checks that `result-hash` is spelled as a hash and does not ask whether it fits. Then `cannot check: made under newer rules`. For its own version and older ones it knows the label and requires the fit. margins-claude found this. | Require the fit under the label the binary knows. An honest version 2 tick is then "not a tick" on the NAS: the fault your ruling on TK9 removed from the spec's hash, back in the result's. |
 
 **What is not asked.** The names of the refusal codes and their order for input that is wrong twice are the implementer's, under your rulings on TK7 and W4, and go in the changelog. So do the two reports beside the answer (whether `covers` holds every `prev` and `under` target its records name; how many more records the spec would take now) and the verb's flags.
 

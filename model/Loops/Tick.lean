@@ -105,13 +105,21 @@ def readTickMembers (H : Hash) (payload : Json) : Parse TickMembers := do
   let rh ← TickReader.field kvs "result-hash"
   TickReader.values H rawRules spec sh rawCovers result rh (kvs.lookup "withheld")
 
+/-- Today's interpretation of the raw spec, also used for an older tick's diagnostic. -/
+def TickMembers.readSpec (m : TickMembers) : Except TickReadError Spec := do
+  let sp ← (Spec.ofJson m.spec).mapError fun _ => .unreadableSpec
+  if m.spec.canon != sp.toJson.canon then throw (.invalid ⟨"tick-spec-noncanonical", "spec"⟩)
+  return sp
+
+def TickMembers.readSlots (m : TickMembers) (sp : Spec) : Parse TickPayload := do
+  let r ← (readResult sp m.result).mapError fun path => ⟨"tick-result-invalid", path⟩
+  return ⟨m.rules, sp, m.covers, m.withheld, r⟩
+
 /-- Interpret the hash-checked members only under the reader's own rules. -/
 def TickMembers.readPayload (m : TickMembers) (current : Rules) : Except TickReadError TickPayload := do
   if m.rules != current then throw (.otherRules m.rules)
-  let sp ← (Spec.ofJson m.spec).mapError fun _ => .unreadableSpec
-  if m.spec.canon != sp.toJson.canon then throw (.invalid ⟨"tick-spec-noncanonical", "spec"⟩)
-  let r ← (readResult sp m.result).mapError fun path => .invalid ⟨"tick-result-invalid", path⟩
-  return ⟨m.rules, sp, m.covers, m.withheld, r⟩
+  let sp ← m.readSpec
+  (m.readSlots sp).mapError .invalid
 
 def readTickPayload (H : Hash) (current : Rules) (j : Json) : Except TickReadError TickPayload := do
   let m ← (readTickMembers H j).mapError TickReadError.invalid

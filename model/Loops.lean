@@ -16,3 +16,4 @@ import Loops.Batch
 import Loops.Read
 import Loops.Lens
 import Loops.Tick
+import Loops.TickCheck

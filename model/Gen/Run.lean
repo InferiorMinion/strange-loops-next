@@ -9,7 +9,7 @@ import Gen.Realm
 import Gen.Scenario
 import Gen.Read
 import Gen.Result
-import Gen.TickPayload
+import Gen.TickCheck
 
 /-!
 # Run: the model's answer for an input
@@ -274,7 +274,7 @@ def answer (layer : String) (input : Json) : Dec J :=
     | "spec/run" => specRunRun input
     | "result" => resultRun input
     | "record" => recordRun input
-    | "tick" => TickPayloadVectors.answer input
+    | "tick" => TickCheckVectors.answer input
     | "payload" => Payload.answer input
     | "byte-text" => byteTextRun input
     | "batch" => batchRun input

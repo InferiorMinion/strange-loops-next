@@ -257,7 +257,7 @@ fn every_registered_json_and_every_arrival_order() {
     for (family, _) in FAMILIES {
         assert!(seen.iter().any(|s| s == family), "missing {family}");
     }
-    assert_eq!(pending, 0, "tick: update pending count after review");
+    assert_eq!(pending, 41, "tick: update pending count after review");
     assert_eq!(checked, 733);
     overflowing.sort();
     assert_eq!(
