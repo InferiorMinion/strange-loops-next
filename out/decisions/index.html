@@ -198,7 +198,7 @@ header.top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--g
 <p class="source">Rendered from <code>DECISIONS.md</code> in the repository.</p>
 <details class="contents"><summary>On this page</summary>
 <ul><li><a href="#at-a-glance">At a glance</a></li>
-<li><a href="#the-tick-record-while-it-is-built">The tick record, while it is built</a></li>
+<li><a href="#two-short-questions">Two short questions</a></li>
 <li><a href="#the-adoption-step">The adoption step</a></li>
 <li><a href="#being-prepared">Being prepared</a></li>
 <li><a href="#deferred-by-you">Deferred by you</a></li>
@@ -207,7 +207,7 @@ header.top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--g
 <h1 id="decisions">Decisions</h1>
 <p>Everything that waits on Kyle, in one place. Each entry has the question, an example, the options and a recommendation.</p>
 <ul>
-<li><p>An entry leaves this file when it is ruled. The entries ruled on 2026-11-21 have left it: PV1 to PV7, RC1, W7, E1 and I10, then TK1 to TK9 and W1 to W6.</p></li>
+<li><p>An entry leaves this file when it is ruled. The entries ruled on 2026-11-21 have left it: PV1 to PV7, RC1, W7, E1 and I10, then TK1 to TK9 and W1 to W6. TK10 and TK11 left it on 2026-11-22.</p></li>
 <li><p>The ruling is written in <a href="changelog.html">CHANGELOG.md</a> under its date, and one line is added to <a href="#ruled">Ruled</a> at the end of this file.</p></li>
 <li><p>What is next once these are ruled is in <a href="roadmap.html">ROADMAP.md</a>.</p></li>
 <li><p>&quot;Today&quot; in an example means the <code>loops</code> binary built from main on 2026-11-21. Every &quot;today&quot; answer below was run, not predicted.</p></li>
@@ -215,64 +215,40 @@ header.top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--g
 <h2 id="at-a-glance">At a glance</h2>
 <div class="table-scroll" tabindex="0"><table><thead><tr><th scope="col">Id</th><th scope="col">Question</th><th scope="col">Recommended</th><th scope="col">What waits on it</th></tr></thead>
 <tbody>
-<tr><td><a href="#tk10-seven-details-of-the-check">TK10</a></td><td>Seven details of <code>loops tick --check</code> that the rulings leave open</td><td>As in its table; the build follows them meanwhile</td><td>Nothing yet: the check is three merge requests away</td></tr>
-<tr><td><a href="#tk11-a-write-against-a-base-that-does-not-hold-what-is-under-it">TK11</a></td><td>What <code>loops emit --base</code> does when the base does not hold what is under its records</td><td>Name the live records of the base together with what is under it; say how many of those the base did not hold</td><td>The filler against a base</td></tr>
+<tr><td><a href="#s4-closing-step-4">S4</a></td><td>Is step 4 (ticks) closed?</td><td>Yes: its exit criterion has held since 2026-11-21</td><td>Nothing is blocked; the roadmap says &quot;started&quot; until you say</td></tr>
+<tr><td><a href="#tk12-the-exit-status-of-the-check">TK12</a></td><td>The exit status of <code>loops tick --check</code></td><td>0 only for <code>same</code>, as built</td><td>Nothing: a script that tests the status</td></tr>
 <tr><td><a href="#ad1-how-a-spec-finds-the-stores-it-names">AD1</a></td><td>How a spec finds the stores it names, and what a missing one answers</td><td>A per-user list of names and directories; a name bound to nothing refuses the whole read</td><td>Reads across several stores (adoption)</td></tr>
 <tr><td><a href="#ad2-how-an-old-store-becomes-records">AD2</a></td><td>How a fact of an old store becomes a record: its thing, its order, its times, who signs, where its origin is kept</td><td>As in its table: a keyed fact is a revision of <code>&lt;kind&gt;:&lt;key&gt;</code>; the old time is <code>occurred</code>; an import key signs</td><td>The shadow import (adoption)</td></tr>
 </tbody></table></div>
-<p>Every earlier entry is ruled (2026-11-21). TK11 is new on 2026-11-22.</p>
+<p>Every earlier entry is ruled: the last were TK10 and TK11, on 2026-11-22. S4 and TK12 are short; AD1 and AD2 block the rest of the adoption step.</p>
 <ul>
-<li><p>The tick record, TK1 to TK9: ruled, and being built. The questions as they were put, with their examples, are in <a href="note-2026-11-21-tick-record.html#10-the-questions-as-they-were-put">the tick record note</a>.</p></li>
+<li><p>The tick record, TK1 to TK11: ruled and built. The questions as they were put, with their examples, are in <a href="note-2026-11-21-tick-record.html#10-the-questions-as-they-were-put">the tick record note</a>, sections 10 and 11.</p></li>
 <li><p>The order of work, W1 to W6: ruled. The entries as put are in <a href="note-2026-11-21-order-of-work.html">the order-of-work note</a>.</p></li>
 </ul>
-<p>TK10 is the first entry that comes from building the tick record. More may follow: any choice that changes a tick's bytes, a refusal code or a check's answer and that the rulings do not settle.</p>
+<p>TK10 to TK12 came from building step 4. More may follow: any choice that changes a tick's bytes, a refusal code or a check's answer and that the rulings do not settle.</p>
 <p>After this: <a href="#being-prepared">what is being prepared</a>, <a href="#deferred-by-you">what you deferred</a> and <a href="#ruled">what is ruled</a>. Nothing waits to be confirmed: under your ruling of 2026-11-21 an implementer choice comes here only when it changes bytes or answers.</p>
-<h2 id="the-tick-record-while-it-is-built">The tick record, while it is built</h2>
-<h3 id="tk10-seven-details-of-the-check">TK10: seven details of the check</h3>
-<p><strong>Question.</strong> The plan for the build, and margins-claude's check of the vectors, found seven places where TK1 to TK9 do not say what <code>loops tick --check</code> answers. What should it answer in each?</p>
-<p>Nothing here is built, so each answer below is what the verb would say. The store is the one of the tick record's examples: six backups, and the laptop's tick T over them (<code>runs</code> 6, <code>mb</code> 1027). The build follows the recommended column until you rule otherwise; changing a row later changes one branch of the check and its vectors.</p>
-<div class="table-scroll" tabindex="0"><table><thead><tr><th scope="col"></th><th scope="col">The case</th><th scope="col">Example</th><th scope="col">Recommended</th><th scope="col">The other choice</th></tr></thead>
+<h2 id="two-short-questions">Two short questions</h2>
+<h3 id="s4-closing-step-4">S4: closing step 4</h3>
+<p><strong>Question.</strong> Is step 4 (ticks) closed?</p>
+<p><strong>Where it stands.</strong> The step is done when a content tick recomputes to the same hash on two machines. That has held since 2026-11-21, in the tree's tests and on real stores: the laptop's tick over the six backups checks <code>same</code> on the NAS (the run is in the next entry's table). Since then a tick can also cover a cut, by time or by ids, and a write can state a tick as its base.</p>
+<p><strong>What closing does not claim.</strong> Boundaries, markers and the runner are not built and were never in the exit. They stay listed in the roadmap as not in step 4 yet.</p>
+<p><strong>Recommended.</strong> Close it. The roadmap then says &quot;done&quot; for step 4, and adoption is the step in hand.</p>
+<h3 id="tk12-the-exit-status-of-the-check">TK12: the exit status of the check</h3>
+<p><strong>Question.</strong> <code>loops tick --check &lt;id&gt;</code> prints its answer on standard output. What is its exit status?</p>
+<p><strong>Example, run on the release binary</strong> (2026-11-21; the stores of the tick record's examples, as built):</p>
+<div class="table-scroll" tabindex="0"><table><thead><tr><th scope="col">Where the laptop's tick is checked</th><th scope="col">Answer</th><th scope="col">Exit, as built</th></tr></thead>
 <tbody>
-<tr><td>1</td><td><strong>A payload erased here, with its bytes still on disk.</strong> A store that imports an eraser does not rewrite its old segments.</td><td>The NAS imports an eraser of <code>r:kvvv…</code> after T was written. T does not cover the eraser. The payload's bytes are still in a segment, and <code>loops get r:kvvv…</code> no longer shows them. Run on today's binary with two stores: after the import, <code>get</code> answers the record without its payload, and one segment file still holds the payload's text.</td><td><code>cannot check: 1 payload the tick read is not held</code>. The check reads what the store's own reading gives, and no more.</td><td><code>same</code>, by reading the bytes. The check would then read what the store was told to forget.</td></tr>
-<tr><td>2</td><td><strong>A covered eraser that the tick ignores, on a machine missing other records.</strong></td><td>A tick covers the six and an eraser of <code>r:kvvv…</code>, and leaves <code>withheld</code> out. The checker holds the eraser and four of the six.</td><td>Not a tick, at once (<code>tick-withheld-erased</code>). The eraser's envelope and the tick prove it; no missing record could change it.</td><td><code>cannot check: 2 covered records are not held</code>, until every covered record has arrived.</td></tr>
-<tr><td>3</td><td><strong>A tick made under another version of the rules.</strong></td><td>A tick states <code>&quot;rules&quot;: &quot;2&quot;</code>. The NAS runs version 1.</td><td>The NAS checks only what no version changes: the members, the two id lists, that <code>spec-hash</code> fits the label for <code>2</code>, that <code>result-hash</code> fits <code>result</code>. Then <code>cannot check: made under newer rules</code>. It does not parse the spec or judge the result's shape.</td><td>Judge the spec and the result by today's grammar. A fold type added in version 2 would make an honest tick read as broken.</td></tr>
-<tr><td>4</td><td><strong>A result that no fold could give.</strong></td><td>A tick like T whose <code>result</code> says <code>runs</code> 6 and lists five ids, with <code>result-hash</code> made from that.</td><td>With the six records held: <code>differs</code>. The reader checks a result's shape and spelling for its slots (an integer as decimal text, a list of ids) and nothing about whether its parts agree.</td><td>Not a tick. Each such test (a count equals its list's length, a listed id is covered) is one more rule that every implementation must share.</td></tr>
-<tr><td>5</td><td><strong>How <code>rules</code> is spelled.</strong></td><td><code>&quot;1&quot;</code>, <code>&quot;2&quot;</code>, <code>&quot;10&quot;</code> against <code>&quot;01&quot;</code>, <code>&quot;0&quot;</code>, <code>&quot;&quot;</code> and the number <code>1</code>.</td><td>A positive whole number as decimal text with no leading zero, compared as a number. The others are not a tick.</td><td>Any text, compared as text. Then <code>&quot;10&quot;</code> sorts before <code>&quot;2&quot;</code>.</td></tr>
-<tr><td>6</td><td><strong>A <code>spec</code> this binary's parser refuses.</strong></td><td>T with <code>&quot;spec&quot;: 7</code> and a fitting hash; and T with a spec that uses a fold type from a later binary, with a fitting hash.</td><td>The first is not a tick: a spec is an object under every version. The second is <code>cannot check: this binary cannot read the spec</code>. Nonsense inside an object gets that answer too, since the check cannot tell it from a later binary's spec.</td><td>Treat every refused spec as not a tick. That is the false &quot;not a tick&quot; your ruling on TK9 removed.</td></tr>
-<tr><td>7</td><td><strong>The result's hash on a tick from a later version.</strong> The label inside the result's hash has its own version (<code>loops/result-hash/v1:</code>), and a later version of the rules may change the result's bytes and take a new one.</td><td>A tick states <code>&quot;rules&quot;: &quot;2&quot;</code>, and version 2 writes results under <code>loops/result-hash/v2:</code>. The NAS runs version 1 and knows one label.</td><td>For <code>rules</code> above its own, the NAS checks that <code>result-hash</code> is spelled as a hash and does not ask whether it fits. Then <code>cannot check: made under newer rules</code>. For its own version and older ones it knows the label and requires the fit. margins-claude found this.</td><td>Require the fit under the label the binary knows. An honest version 2 tick is then &quot;not a tick&quot; on the NAS: the fault your ruling on TK9 removed from the spec's hash, back in the result's.</td></tr>
+<tr><td>The NAS, after importing the tick</td><td><code>same</code></td><td>0</td></tr>
+<tr><td>A machine holding four of the six backups</td><td><code>cannot check</code>: 2 records missing</td><td>1</td></tr>
+<tr><td>A copy where one backup was erased afterwards</td><td><code>cannot check</code>: 1 payload missing</td><td>1</td></tr>
+<tr><td>The laptop, on a tick written by hand that claims 1028</td><td><code>differs</code></td><td>1</td></tr>
 </tbody></table></div>
-<p><strong>What is not asked.</strong> The names of the refusal codes and their order for input that is wrong twice are the implementer's, under your rulings on TK7 and W4, and go in the changelog. So do the two reports beside the answer (whether <code>covers</code> holds every <code>prev</code> and <code>under</code> target its records name; how many more records the spec would take now) and the verb's flags.</p>
-<h3 id="tk11-a-write-against-a-base-that-does-not-hold-what-is-under-it">TK11: a write against a base that does not hold what is under it</h3>
-<p><strong>Question.</strong> You ruled on 2026-11-20 that the filler takes a base, a tick or ids, and names that base's live records of the thing. What does it do when the base does not hold the records under its own?</p>
-<p><strong>Why it comes up.</strong> margins-claude proved the law for the filler (<code>keyed.base</code>, 2026-11-22) and in doing so found its earlier answer wrong: it had said any base will do. A base that leaves out a record under one of its own can leave the store reading wrongly from its live records. <code>loops tick</code> covers everything a store holds, so its ticks never do this. A tick over a chosen set of ids can, and so can ids named by hand.</p>
-<p><strong>Example, run on today's binary</strong> (the writes against a base made with <code>loops emit -</code>, since <code>--base</code> is not built). One thing, <code>svc:jellyfin</code>:</p>
-<pre><code>x   sets port 8096 and owner kyle
-y   sets port 8097, over x
-</code></pre>
-<p>The base is <code>y</code> alone. Two things go wrong, and they are different.</p>
-<p><em>First, a conflict that does not exist.</em> A writer sets <code>port</code> to 8098 against the base and names <code>y</code>, the one record live in the base.</p>
-<div class="table-scroll" tabindex="0"><table><thead><tr><th scope="col">Read from</th><th scope="col"><code>port</code></th><th scope="col">Heads</th></tr></thead>
+<div class="table-scroll" tabindex="0"><table><thead><tr><th scope="col"></th><th scope="col">The status</th><th scope="col"></th></tr></thead>
 <tbody>
-<tr><td>The whole store (x, y and the new record)</td><td>8098</td><td>1</td></tr>
-<tr><td>The thing's live records alone (x and the new record)</td><td>in conflict: 8098 and 8096</td><td>2</td></tr>
+<tr><td><strong>A (recommended, built)</strong></td><td>0 only for <code>same</code>. <code>differs</code>, <code>cannot check</code> and &quot;not a tick&quot; exit 1, with the answer on standard output and nothing on standard error.</td><td><code>loops tick --check &lt;id&gt; &amp;&amp; deploy</code> is safe. A script that wants to tell <code>differs</code> from <code>cannot check</code> reads the answer.</td></tr>
+<tr><td>B</td><td>0 whenever the check completes, whatever it answers.</td><td>The status then says only &quot;the verb ran&quot;. A script that forgets to read the answer goes on after <code>differs</code>.</td></tr>
 </tbody></table></div>
-<p><code>x</code> is still live, for <code>owner</code>, and the new record does not name it. A reader who holds only the live records has no record that puts the new one above <code>x</code>. A tick with a small <code>covers</code>, or a clone that fetched only what is live, is such a reader.</p>
-<p><em>Second, a value replaced that the writer was never shown.</em> Reading <code>y</code> alone shows <code>port</code> 8097 and no <code>owner</code>. The writer sets <code>owner</code> to sam against the base. The whole store then reads <code>owner</code> sam, one head, no conflict. <code>owner</code> kyle is gone and nothing showed it to the writer or says so now. This follows from what <code>prev</code> means: a record over <code>y</code> is over everything under <code>y</code>.</p>
-<p><strong>Options.</strong></p>
-<div class="table-scroll" tabindex="0"><table><thead><tr><th scope="col"></th><th scope="col">What the filler does</th><th scope="col">First problem</th><th scope="col">Second problem</th></tr></thead>
-<tbody>
-<tr><td><strong>C (recommended)</strong></td><td>Names the live records of the base <strong>together with what is under it in the store</strong>. Here the new record names <code>x</code> and <code>y</code>. It says on standard error how many records under the base it named that the base did not hold.</td><td>Gone: the store always reads the same from its live records. margins-claude's law covers it (<code>anchored_emit_down</code>).</td><td>Still happens, and the envelope now names what was replaced. The line on standard error tells the writer.</td></tr>
-<tr><td>A</td><td>Refuses the write when the base leaves out a record that is live under it. Needs a new refusal code.</td><td>Gone</td><td>Gone</td></tr>
-<tr><td>B</td><td>Writes naming the bare base's live records, with a note.</td><td>Stays, for good, for every later reader of that thing's live records.</td><td>Still happens, and nothing names what was replaced.</td></tr>
-</tbody></table></div>
-<ul>
-<li><p>For a base that holds everything under it, and for a base that is exactly a thing's live records, all three write the same record. That is every tick <code>loops tick</code> writes today. The count C prints is 0 for those.</p></li>
-<li><p>Under C, ids as a base means the ids with what is under them. That is margins-claude's answer and it is always sound.</p></li>
-<li><p>C opens nothing: a tick among the covered records stays one record (TK4). It follows <code>prev</code> only, inside one thing.</p></li>
-<li><p>B is worse than C in every case and is listed for completeness.</p></li>
-</ul>
-<p><strong>Why C over A.</strong> A is the only option that stops the second problem. But the second problem is a question you have already set aside for step 3 in another form: what a strict store does with a write whose base is behind what the store holds. &quot;You replaced something you were not shown&quot; belongs with it, and a strict store can refuse both then. Until then C never refuses, never leaves a store that reads wrongly, and tells the writer what it did. margins-claude recommends C as the default too.</p>
-<p><strong>What it costs to change later.</strong> The choice is in the filler and one line of output. No record already written changes.</p>
+<p><strong>What it costs to change later.</strong> One line in the CLI and its walk tests. No record or answer changes.</p>
 <h2 id="the-adoption-step">The adoption step</h2>
 <p>You ruled on 2026-11-21 (W1) that the adoption step's CLI pieces are built beside the tick work. A worker planned them on 2026-11-22. The pieces that are the CLI's alone are being built: <code>loops ls</code>, a scan by the start of a name, a plain-text view with relative times, a <code>--version</code>, and the cache of checked segments (W2). Two pieces need you first. AD1 is one. The other is AD2, the import of your old stores as a shadow.</p>
 <h3 id="ad1-how-a-spec-finds-the-stores-it-names">AD1: how a spec finds the stores it names</h3>
@@ -353,6 +329,8 @@ thread:kiln  thread      2        1      kiln  done    Repair kiln
 <p>One line for each ruling, newest first. The full text is in <a href="changelog.html">CHANGELOG.md</a> under the date, or in the note named.</p>
 <div class="table-scroll" tabindex="0"><table><thead><tr><th scope="col">Date</th><th scope="col">Ruling</th><th scope="col">Where</th></tr></thead>
 <tbody>
+<tr><td>2026-11-22</td><td>TK10, seven details of <code>loops tick --check</code>, each as recommended: an erased payload is not read from old bytes; a covered eraser the tick ignores is not a tick at once; under newer rules the check tests only what no version changes, and a result's hash only for its spelling; a result no fold could give is <code>differs</code>; <code>rules</code> is a positive whole number as text; a spec this binary cannot read is <code>cannot check</code></td><td>Changelog; <a href="note-2026-11-21-tick-record.html#11-two-later-questions-as-they-were-put">the tick record note</a>, section 11</td></tr>
+<tr><td>2026-11-22</td><td>TK11, option C: a write against a base names the base's live records together with what is under them in the store, and says how many it named that the base did not hold</td><td>Changelog; the tick record note, section 11</td></tr>
 <tr><td>2026-11-21</td><td>The tick record, TK1 to TK9: an ordinary record of kind <code>tick</code>; it carries its result and the result's hash; it carries its spec and the spec's hash; <code>covers</code> lists every record folded; <code>withheld</code> lists those read without a payload; a spec reads a tick by the payload reading; a verb checks and no store refuses a tick; the window field is <code>env.when</code>; a member <code>rules</code> bound into the spec's hash</td><td>Changelog; <a href="note-2026-11-21-tick-record.html">the tick record note</a></td></tr>
 <tr><td>2026-11-21</td><td>The order of work, W1 to W6: an adoption step after ticks, its CLI pieces beside the tick work; a cache of checked segments in that step; the JavaScript frozen as a trial for step 4; one refusal per input inside the repository, single faults in the protocol text; the mutant check stays; <code>out/</code> stays committed</td><td>Changelog; <a href="note-2026-11-21-order-of-work.html">the order-of-work note</a></td></tr>
 <tr><td>2026-11-21</td><td>Payload values, PV1 to PV7: the reading is stated in the model; <code>value</code> and <code>n</code> are ordinary fields; <code>present</code> means written; a list reads as a set under <code>is</code>, <code>not</code> and <code>by</code>; a list is never a number</td><td>Changelog; <a href="note-2026-11-21-payload-values.html">the payload values note</a></td></tr>

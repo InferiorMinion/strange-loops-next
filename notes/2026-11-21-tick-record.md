@@ -2,6 +2,7 @@
 
 **Ruled by Kyle on 2026-11-21: TK1 to TK9, each for its recommendation, and TK9 for option D with its three points.** Proposed by the coordinator the same day. Nothing here is built yet.
 The questions as they were put, each with its example, are in [section 10](#10-the-questions-as-they-were-put). Sections 1 to 6 hold the exact form behind them.
+**Ruled by Kyle on 2026-11-22: TK10, each of its seven rows for the recommendation, and TK11 for option C.** Both came from building the tick record and were built to their recommendations before he ruled; they are in [section 11](#11-two-later-questions-as-they-were-put).
 margins-claude reviewed the draft the same day. Its four additions (the rules' version, what `covers` must hold, `withheld` beside a covered eraser, a tick outliving an erasure) are in the text, and its answers are in section 7.
 Neon reviewed TK1 to TK9 the same day. It agrees with eight and moved TK9 to a stated member bound into the hash; its points are in sections 1, 2, 4 and 6, and in section 9.
 It rests on [the cut note](2026-11-15-the-cut.md) (ruled 2026-11-20), [the result codec](../protocol/result.md) and [the payload reading](2026-11-21-payload-values.md) (ruled 2026-11-21).
@@ -453,3 +454,69 @@ The spec did not change by one byte. Had a tick been written this morning, a che
 - **Ticking again.** When a late record arrives, a new tick names the old one in `prev`, as any revision does. A record with `prev` states what it is of, so the two ticks are records of one thing: the first tick's id, or a name such as `tick:backups:2026-11-16`. No new rule.
 
 **Not in this proposal:** boundaries and markers, the runner, where a tick lands (`into`), a record on the tick of how its set was chosen (the window's span, "by reference"), smaller `covers` by the slice laws, parameters, and pins.
+
+## 11. Two later questions, as they were put
+
+These are the two entries of `DECISIONS.md` that came from building the tick record, as Kyle read them. He ruled both on 2026-11-22: TK10 for the recommended column in all seven rows, TK11 for option C.
+"Recommended", "nothing here is built" and "not built" in the text are as written then. Both were built to their recommendations before the ruling, so the ruling changed no code: the check is in the changelog under 2026-11-21, and `loops emit --base` under 2026-11-22.
+
+### TK10: seven details of the check
+
+**Question.** The plan for the build, and margins-claude's check of the vectors, found seven places where TK1 to TK9 do not say what `loops tick --check` answers. What should it answer in each?
+
+Nothing here is built, so each answer below is what the verb would say. The store is the one of the tick record's examples: six backups, and the laptop's tick T over them (`runs` 6, `mb` 1027). The build follows the recommended column until you rule otherwise; changing a row later changes one branch of the check and its vectors.
+
+| | The case | Example | Recommended | The other choice |
+| --- | --- | --- | --- | --- |
+| 1 | **A payload erased here, with its bytes still on disk.** A store that imports an eraser does not rewrite its old segments. | The NAS imports an eraser of `r:kvvv…` after T was written. T does not cover the eraser. The payload's bytes are still in a segment, and `loops get r:kvvv…` no longer shows them. Run on today's binary with two stores: after the import, `get` answers the record without its payload, and one segment file still holds the payload's text. | `cannot check: 1 payload the tick read is not held`. The check reads what the store's own reading gives, and no more. | `same`, by reading the bytes. The check would then read what the store was told to forget. |
+| 2 | **A covered eraser that the tick ignores, on a machine missing other records.** | A tick covers the six and an eraser of `r:kvvv…`, and leaves `withheld` out. The checker holds the eraser and four of the six. | Not a tick, at once (`tick-withheld-erased`). The eraser's envelope and the tick prove it; no missing record could change it. | `cannot check: 2 covered records are not held`, until every covered record has arrived. |
+| 3 | **A tick made under another version of the rules.** | A tick states `"rules": "2"`. The NAS runs version 1. | The NAS checks only what no version changes: the members, the two id lists, that `spec-hash` fits the label for `2`, that `result-hash` fits `result`. Then `cannot check: made under newer rules`. It does not parse the spec or judge the result's shape. | Judge the spec and the result by today's grammar. A fold type added in version 2 would make an honest tick read as broken. |
+| 4 | **A result that no fold could give.** | A tick like T whose `result` says `runs` 6 and lists five ids, with `result-hash` made from that. | With the six records held: `differs`. The reader checks a result's shape and spelling for its slots (an integer as decimal text, a list of ids) and nothing about whether its parts agree. | Not a tick. Each such test (a count equals its list's length, a listed id is covered) is one more rule that every implementation must share. |
+| 5 | **How `rules` is spelled.** | `"1"`, `"2"`, `"10"` against `"01"`, `"0"`, `""` and the number `1`. | A positive whole number as decimal text with no leading zero, compared as a number. The others are not a tick. | Any text, compared as text. Then `"10"` sorts before `"2"`. |
+| 6 | **A `spec` this binary's parser refuses.** | T with `"spec": 7` and a fitting hash; and T with a spec that uses a fold type from a later binary, with a fitting hash. | The first is not a tick: a spec is an object under every version. The second is `cannot check: this binary cannot read the spec`. Nonsense inside an object gets that answer too, since the check cannot tell it from a later binary's spec. | Treat every refused spec as not a tick. That is the false "not a tick" your ruling on TK9 removed. |
+| 7 | **The result's hash on a tick from a later version.** The label inside the result's hash has its own version (`loops/result-hash/v1:`), and a later version of the rules may change the result's bytes and take a new one. | A tick states `"rules": "2"`, and version 2 writes results under `loops/result-hash/v2:`. The NAS runs version 1 and knows one label. | For `rules` above its own, the NAS checks that `result-hash` is spelled as a hash and does not ask whether it fits. Then `cannot check: made under newer rules`. For its own version and older ones it knows the label and requires the fit. margins-claude found this. | Require the fit under the label the binary knows. An honest version 2 tick is then "not a tick" on the NAS: the fault your ruling on TK9 removed from the spec's hash, back in the result's. |
+
+**What is not asked.** The names of the refusal codes and their order for input that is wrong twice are the implementer's, under your rulings on TK7 and W4, and go in the changelog. So do the two reports beside the answer (whether `covers` holds every `prev` and `under` target its records name; how many more records the spec would take now) and the verb's flags.
+
+### TK11: a write against a base that does not hold what is under it
+
+**Question.** You ruled on 2026-11-20 that the filler takes a base, a tick or ids, and names that base's live records of the thing. What does it do when the base does not hold the records under its own?
+
+**Why it comes up.** margins-claude proved the law for the filler (`keyed.base`, 2026-11-22) and in doing so found its earlier answer wrong: it had said any base will do. A base that leaves out a record under one of its own can leave the store reading wrongly from its live records. `loops tick` covers everything a store holds, so its ticks never do this. A tick over a chosen set of ids can, and so can ids named by hand.
+
+**Example, run on today's binary** (the writes against a base made with `loops emit -`, since `--base` is not built). One thing, `svc:jellyfin`:
+
+```
+x   sets port 8096 and owner kyle
+y   sets port 8097, over x
+```
+
+The base is `y` alone. Two things go wrong, and they are different.
+
+*First, a conflict that does not exist.* A writer sets `port` to 8098 against the base and names `y`, the one record live in the base.
+
+| Read from | `port` | Heads |
+| --- | --- | --- |
+| The whole store (x, y and the new record) | 8098 | 1 |
+| The thing's live records alone (x and the new record) | in conflict: 8098 and 8096 | 2 |
+
+`x` is still live, for `owner`, and the new record does not name it. A reader who holds only the live records has no record that puts the new one above `x`. A tick with a small `covers`, or a clone that fetched only what is live, is such a reader.
+
+*Second, a value replaced that the writer was never shown.* Reading `y` alone shows `port` 8097 and no `owner`. The writer sets `owner` to sam against the base. The whole store then reads `owner` sam, one head, no conflict. `owner` kyle is gone and nothing showed it to the writer or says so now. This follows from what `prev` means: a record over `y` is over everything under `y`.
+
+**Options.**
+
+| | What the filler does | First problem | Second problem |
+| --- | --- | --- | --- |
+| **C (recommended)** | Names the live records of the base **together with what is under it in the store**. Here the new record names `x` and `y`. It says on standard error how many records under the base it named that the base did not hold. | Gone: the store always reads the same from its live records. margins-claude's law covers it (`anchored_emit_down`). | Still happens, and the envelope now names what was replaced. The line on standard error tells the writer. |
+| A | Refuses the write when the base leaves out a record that is live under it. Needs a new refusal code. | Gone | Gone |
+| B | Writes naming the bare base's live records, with a note. | Stays, for good, for every later reader of that thing's live records. | Still happens, and nothing names what was replaced. |
+
+- For a base that holds everything under it, and for a base that is exactly a thing's live records, all three write the same record. That is every tick `loops tick` writes today. The count C prints is 0 for those.
+- Under C, ids as a base means the ids with what is under them. That is margins-claude's answer and it is always sound.
+- C opens nothing: a tick among the covered records stays one record (TK4). It follows `prev` only, inside one thing.
+- B is worse than C in every case and is listed for completeness.
+
+**Why C over A.** A is the only option that stops the second problem. But the second problem is a question you have already set aside for step 3 in another form: what a strict store does with a write whose base is behind what the store holds. "You replaced something you were not shown" belongs with it, and a strict store can refuse both then. Until then C never refuses, never leaves a store that reads wrongly, and tells the writer what it did. margins-claude recommends C as the default too.
+
+**What it costs to change later.** The choice is in the filler and one line of output. No record already written changes.

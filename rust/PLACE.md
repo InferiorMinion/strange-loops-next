@@ -466,8 +466,8 @@ Every verb that reads the store says when either happened (choice 18).
     tick T's `covers`. Each `--base-id R` selects one record, including a
     tick as an ordinary envelope. Both take a full id or unique held prefix.
     The base is the union of one optional tick cover and all literal ids.
-    This implements option C of [TK11](../DECISIONS.md#tk11-a-write-against-a-base-that-does-not-hold-what-is-under-it),
-    pending the owner's ruling.
+    This implements option C of [TK11](../notes/2026-11-21-tick-record.md#tk11-a-write-against-a-base-that-does-not-hold-what-is-under-it),
+    ruled by the owner on 2026-11-22.
 
     The marker must have kind `tick` and a locally accessible opening.
     Read its common members under the checker’s current rules. A marker
