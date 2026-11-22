@@ -31,6 +31,59 @@ In brief:
 - Rust has the tick's payload and the result reader, and runs 72 of the 113 tick vectors.
 - The tick has its protocol page, `protocol/tick.md`. margins-claude's Python ran every tick vector from the prose and found two gaps in the readers; both are closed in the model and in Rust.
 - Rust checks a tick: all 126 tick vectors run in Rust, none pending.
+- `loops tick <spec>` writes a tick. Two stores holding the same six backups, with different keys, wrote payloads equal byte for byte.
+- `loops tick --check <id>` checks a tick. A tick written on one machine checks `same` on a second: step 4's exit criterion holds. Closing the step is Kyle's to say.
+
+### `loops tick --check <id>`, and step 4's exit criterion
+
+The second half of piece 7, the last. The verb resolves an id as `get` does, takes the record's payload only when the store's own reading holds it open, checks it against everything the store holds with the core's `check_tick`, and prints one JSON object: the answer and the two reports, spelled as the vectors spell them.
+
+**Step 4 is done when a content tick recomputes to the same hash on two machines.** A real run on the release binary, continuing the two stores of the entry below. The laptop's tick `r:uqmk623s…` covers the six backups.
+
+| Where it is checked | Answer | Exit |
+| --- | --- | --- |
+| The NAS, after importing the tick | `same`, closure `yes`, 0 taken and not covered | 0 |
+| The NAS, after a seventh backup of 4 megabytes | `same`, 1 taken and not covered. A fresh tick there: 7 runs, 1031 | 0 |
+| A machine holding four of the six | `cannot check`: 2 records, 0 payloads missing | 1 |
+| A copy where one backup was erased afterwards | `cannot check`: 0 records, 1 payload missing | 1 |
+| The laptop, on a tick written by hand that claims 1028 | `differs`, with both hashes. The store took the record without complaint | 1 |
+
+Each line is the answer the proposal of this morning predicted for it (TK4, TK5, TK7). The same cases are CLI walk tests, the first under the name `a_tick_written_on_one_machine_checks_same_on_a_second`. Whether step 4 is closed is Kyle's to say: boundaries, markers, the runner and cuts by time or by ids were never in its exit and are not built.
+
+**Implementer choices; they stand under Kyle's ruling of 2026-11-21 (W7).** The full list is choice 22 of `rust/PLACE.md`.
+- **Exit status 0 only for `same`.** `differs`, `cannot check` and `not a tick` exit 1 with the answer on standard output and nothing on standard error, so `loops tick --check <id> && …` is safe in a script. The alternative was 0 whenever the check completes. Kyle is asked.
+- **No rule at the door.** `import` and `emit` take a tick that would answer `differs` or "not a tick"; tests show both.
+- **A store whose lines do not all check** answers and is then refused `store-not-clean`, as the other answering verbs are.
+- **Checking needs no signing key.**
+- The vector evaluator's function that spells an answer is now public (`loops_eval::tick_check_json`), so the CLI and the vectors share one spelling.
+
+A Codex worker wrote it; the coordinator reviewed it, ran the gate and made the run above.
+
+### `loops tick <spec>` writes a tick
+
+The first half of piece 7. The verb reads a spec as `loops fold` does, takes every record the store holds, makes the tick with the core's `make_tick`, and writes one signed record of kind `tick`. It prints the record's id. The verb that checks a tick is the next piece.
+
+A real run, on the release binary built from this change. The laptop holds the proposal's six backups; the NAS imports them and has its own signing key. Each runs `loops tick backups.json` before it has the other's tick.
+
+| | Laptop | NAS |
+| --- | --- | --- |
+| Record id | `r:uqmk623s…` | `r:8vphpr9i…` |
+| Observer | `k:qunercaf…` | `k:8lbav2tp…` |
+| Payload | 1,109 bytes | the same 1,109 bytes |
+| In it | `rules` "1", six `covers`, no `withheld`, `runs` 6, `mb` 1027, `spec:gs9soetl…` | the same |
+
+Both hashes in the payload recompute from the payload in a few lines of Python. `spec:gs9soetl…` is the hash the proposal worked out by hand.
+
+**Implementer choices; they stand under Kyle's ruling of 2026-11-21 (W7).** The full list is choice 21 of `rust/PLACE.md`.
+- **The envelope is the writer's, as on any record.** The record is what `loops emit tick` would write with this payload and the same envelope flags: it goes through the same filler and writer, and a test shows the two give the same signed record for the same key, salt and time. So `loops tick <spec>` alone writes a root, and `--of`, `--prev`, `--about`, `--occurred` and the rest of `emit`'s envelope flags mean what they mean there. A second tick `--of tick:backups` names the first in `prev` through the anchor.
+- **Everything held, and only that.** No cut by time or by ids, and no slice. A second tick covers the first as one record.
+- **The tick is made before its own record is appended**, so it never covers itself.
+- **How the spec is named.** `-` is stdin. A path, or a name that is a file under the directory, is read as a file. Any other bare name is a vertex under `.loops/vertices/`.
+- **A payload erased here is withheld**, also when its bytes are still in a segment: the store's own reading decides (TK10, row 1).
+- A store whose lines do not all check is handled as `emit` handles it: it warns, and the tick covers the lines that check.
+- A spec that does not parse writes nothing and is refused with the spec's code. No new refusal code.
+
+A Codex worker wrote it; the coordinator reviewed it, ran the gate and made the run above.
 
 ### The tick record: Rust for the check
 

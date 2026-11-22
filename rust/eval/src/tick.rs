@@ -1,5 +1,5 @@
 //! Input-only answers for the tick vector family.
-mod check;
+pub(crate) mod check;
 use crate::reader::{list, members, object, record, required, text};
 use loops::{
     json::Json,

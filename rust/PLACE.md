@@ -25,6 +25,9 @@ loops of <thing>                    a thing's values, its about, its heads, how 
 loops read <vertex> [--values]      fold .loops/vertices/<vertex>.json
 loops fold <spec.json | -> [--values]
                                     fold a spec given as a file
+loops tick <vertex | spec-file | -> [emit envelope flags]
+                                    write a tick over everything held (no time cut, id cut or slice)
+loops tick --check <id>             check a tick against this store and print the verdict and reports
 loops erase <id>... ["why"]         emit an erasure, and drop the openings held here
 loops export [--kind <k>] [--of <thing>] [--about <thing>]
 loops import [<file> | -]
@@ -71,9 +74,9 @@ loops whoami
   fold answers ids, and without `--values` `read` and `fold` answer exactly
   that. See choices 16 and 17.
 * Every answer is JSON or an id. Lenses are a later step, so `--json` is accepted and changes nothing.
-* `read`, `fold`, `of`, `get` and `export` answer from the lines that check,
+* `read`, `fold`, `of`, `get`, `export` and `tick --check` answer from the lines that check,
   and are then refused `store-not-clean` when a line was refused or a
-  segment is altered, as `check` is; `emit` and `erase` warn and go on. See
+  segment is altered, as `check` is; `emit`, writing a tick, and `erase` warn and go on. See
   choice 18.
 
 ## On disk
@@ -375,6 +378,49 @@ Every verb that reads the store says when either happened (choice 18).
     {"of":"task:1","prev":["H"],"about":["project:q"],"occurred":"2010","sets":["x"]}
     {"of":"task:1","prev":["H","A"],"about":["project:q"],"occurred":"2010","sets":["y"]}
     ```
+
+21. **`loops tick` covers the whole holding.** The owner ruled on 2026-11-21
+    (TK1–TK5) that a tick is an ordinary record whose payload is the whole
+    tick, covering every record folded. [The tick record](../protocol/tick.md)
+
+    Implementer's choices
+
+    - Give the spec first. `-` reads stdin. A file in the working directory
+      (the directory given by `-C`, when supplied) takes precedence over a
+      vertex of the same name. A bare vertex name reads
+      `.loops/vertices/<name>.json`. An explicit path reads the file there.
+    - Use the checked lines from one store reading for the tick and its
+      envelope. An unclean store gives the same warning as on `emit`.
+      The core determines which openings are withheld. The new record is
+      appended after the fold.
+    - Take the envelope flags of single-record `emit`, including its
+      `--observer`, `--emitted` and `--salt` options. The observer must
+      bind to the signing key. The spec and the holding supply the whole
+      payload. Print the signed record's id. With no flags the tick is a root.
+
+    For example, with just six backups held, run
+    `loops tick backups --of tick:backups` twice. The first tick covers
+    the six backups. The second covers those six and the first tick, and
+    names the first tick in `prev`. A slot counting backups still gives six.
+
+22. **Check a tick on request.** The owner ruled on 2026-11-21 (TK7) that
+    a verb checks a tick and a store accepts it under ordinary record
+    verification regardless of the tick's verdict. [The check](../protocol/tick.md#the-check)
+
+    Implementer's choices
+
+    - `loops tick --check <id>` takes one full id or unique prefix, as
+      `get` does. Use one reading of the store for the subject's opening
+      and the whole holding. The check needs no signing key.
+    - Print one JSON line using the vector formatter. On a clean store
+      `same` exits 0. Every other verdict exits 1 with the explanation on
+      stdout. An unclean store prints the verdict from the checked lines,
+      then reports `store-not-clean` on stderr and exits 1.
+
+    For example, import a tick and the six backups it covers. Checking its
+    id gives `{"answer":"same","closure":"yes","taken-not-covered":0}`.
+    Emit a seventh backup and check that id again. The verdict is still
+    `same` and `taken-not-covered` is now 1.
 
 ## Checked by
 

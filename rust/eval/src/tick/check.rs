@@ -42,7 +42,8 @@ fn today_json(today: TodayReport) -> Json {
     Json::Obj(fields)
 }
 
-fn check_json(check: TickCheck) -> Json {
+/// The check's verdict and both reports, as written in the tick vectors.
+pub fn check_json(check: TickCheck) -> Json {
     let cannot = |reason| {
         vec![
             ("answer".into(), string("cannot check")),

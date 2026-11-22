@@ -236,7 +236,52 @@ The record starts where the old roadmap's did. For anything earlier, and for eve
 <li><p>Rust has the tick's payload and the result reader, and runs 72 of the 113 tick vectors.</p></li>
 <li><p>The tick has its protocol page, <code>protocol/tick.md</code>. margins-claude's Python ran every tick vector from the prose and found two gaps in the readers; both are closed in the model and in Rust.</p></li>
 <li><p>Rust checks a tick: all 126 tick vectors run in Rust, none pending.</p></li>
+<li><p><code>loops tick &lt;spec&gt;</code> writes a tick. Two stores holding the same six backups, with different keys, wrote payloads equal byte for byte.</p></li>
+<li><p><code>loops tick --check &lt;id&gt;</code> checks a tick. A tick written on one machine checks <code>same</code> on a second: step 4's exit criterion holds. Closing the step is Kyle's to say.</p></li>
 </ul>
+<h3 id="loops-tick---check-id-and-step-4s-exit-criterion"><code>loops tick --check &lt;id&gt;</code>, and step 4's exit criterion</h3>
+<p>The second half of piece 7, the last. The verb resolves an id as <code>get</code> does, takes the record's payload only when the store's own reading holds it open, checks it against everything the store holds with the core's <code>check_tick</code>, and prints one JSON object: the answer and the two reports, spelled as the vectors spell them.</p>
+<p><strong>Step 4 is done when a content tick recomputes to the same hash on two machines.</strong> A real run on the release binary, continuing the two stores of the entry below. The laptop's tick <code>r:uqmk623s…</code> covers the six backups.</p>
+<div class="table-scroll" tabindex="0"><table><thead><tr><th scope="col">Where it is checked</th><th scope="col">Answer</th><th scope="col">Exit</th></tr></thead>
+<tbody>
+<tr><td>The NAS, after importing the tick</td><td><code>same</code>, closure <code>yes</code>, 0 taken and not covered</td><td>0</td></tr>
+<tr><td>The NAS, after a seventh backup of 4 megabytes</td><td><code>same</code>, 1 taken and not covered. A fresh tick there: 7 runs, 1031</td><td>0</td></tr>
+<tr><td>A machine holding four of the six</td><td><code>cannot check</code>: 2 records, 0 payloads missing</td><td>1</td></tr>
+<tr><td>A copy where one backup was erased afterwards</td><td><code>cannot check</code>: 0 records, 1 payload missing</td><td>1</td></tr>
+<tr><td>The laptop, on a tick written by hand that claims 1028</td><td><code>differs</code>, with both hashes. The store took the record without complaint</td><td>1</td></tr>
+</tbody></table></div>
+<p>Each line is the answer the proposal of this morning predicted for it (TK4, TK5, TK7). The same cases are CLI walk tests, the first under the name <code>a_tick_written_on_one_machine_checks_same_on_a_second</code>. Whether step 4 is closed is Kyle's to say: boundaries, markers, the runner and cuts by time or by ids were never in its exit and are not built.</p>
+<p><strong>Implementer choices; they stand under Kyle's ruling of 2026-11-21 (W7).</strong> The full list is choice 22 of <code>rust/PLACE.md</code>.</p>
+<ul>
+<li><p><strong>Exit status 0 only for <code>same</code>.</strong> <code>differs</code>, <code>cannot check</code> and <code>not a tick</code> exit 1 with the answer on standard output and nothing on standard error, so <code>loops tick --check &lt;id&gt; &amp;&amp; …</code> is safe in a script. The alternative was 0 whenever the check completes. Kyle is asked.</p></li>
+<li><p><strong>No rule at the door.</strong> <code>import</code> and <code>emit</code> take a tick that would answer <code>differs</code> or &quot;not a tick&quot;; tests show both.</p></li>
+<li><p><strong>A store whose lines do not all check</strong> answers and is then refused <code>store-not-clean</code>, as the other answering verbs are.</p></li>
+<li><p><strong>Checking needs no signing key.</strong></p></li>
+<li><p>The vector evaluator's function that spells an answer is now public (<code>loops_eval::tick_check_json</code>), so the CLI and the vectors share one spelling.</p></li>
+</ul>
+<p>A Codex worker wrote it; the coordinator reviewed it, ran the gate and made the run above.</p>
+<h3 id="loops-tick-spec-writes-a-tick"><code>loops tick &lt;spec&gt;</code> writes a tick</h3>
+<p>The first half of piece 7. The verb reads a spec as <code>loops fold</code> does, takes every record the store holds, makes the tick with the core's <code>make_tick</code>, and writes one signed record of kind <code>tick</code>. It prints the record's id. The verb that checks a tick is the next piece.</p>
+<p>A real run, on the release binary built from this change. The laptop holds the proposal's six backups; the NAS imports them and has its own signing key. Each runs <code>loops tick backups.json</code> before it has the other's tick.</p>
+<div class="table-scroll" tabindex="0"><table><thead><tr><th scope="col"></th><th scope="col">Laptop</th><th scope="col">NAS</th></tr></thead>
+<tbody>
+<tr><td>Record id</td><td><code>r:uqmk623s…</code></td><td><code>r:8vphpr9i…</code></td></tr>
+<tr><td>Observer</td><td><code>k:qunercaf…</code></td><td><code>k:8lbav2tp…</code></td></tr>
+<tr><td>Payload</td><td>1,109 bytes</td><td>the same 1,109 bytes</td></tr>
+<tr><td>In it</td><td><code>rules</code> &quot;1&quot;, six <code>covers</code>, no <code>withheld</code>, <code>runs</code> 6, <code>mb</code> 1027, <code>spec:gs9soetl…</code></td><td>the same</td></tr>
+</tbody></table></div>
+<p>Both hashes in the payload recompute from the payload in a few lines of Python. <code>spec:gs9soetl…</code> is the hash the proposal worked out by hand.</p>
+<p><strong>Implementer choices; they stand under Kyle's ruling of 2026-11-21 (W7).</strong> The full list is choice 21 of <code>rust/PLACE.md</code>.</p>
+<ul>
+<li><p><strong>The envelope is the writer's, as on any record.</strong> The record is what <code>loops emit tick</code> would write with this payload and the same envelope flags: it goes through the same filler and writer, and a test shows the two give the same signed record for the same key, salt and time. So <code>loops tick &lt;spec&gt;</code> alone writes a root, and <code>--of</code>, <code>--prev</code>, <code>--about</code>, <code>--occurred</code> and the rest of <code>emit</code>'s envelope flags mean what they mean there. A second tick <code>--of tick:backups</code> names the first in <code>prev</code> through the anchor.</p></li>
+<li><p><strong>Everything held, and only that.</strong> No cut by time or by ids, and no slice. A second tick covers the first as one record.</p></li>
+<li><p><strong>The tick is made before its own record is appended</strong>, so it never covers itself.</p></li>
+<li><p><strong>How the spec is named.</strong> <code>-</code> is stdin. A path, or a name that is a file under the directory, is read as a file. Any other bare name is a vertex under <code>.loops/vertices/</code>.</p></li>
+<li><p><strong>A payload erased here is withheld</strong>, also when its bytes are still in a segment: the store's own reading decides (TK10, row 1).</p></li>
+<li><p>A store whose lines do not all check is handled as <code>emit</code> handles it: it warns, and the tick covers the lines that check.</p></li>
+<li><p>A spec that does not parse writes nothing and is refused with the spec's code. No new refusal code.</p></li>
+</ul>
+<p>A Codex worker wrote it; the coordinator reviewed it, ran the gate and made the run above.</p>
 <h3 id="the-tick-record-rust-for-the-check">The tick record: Rust for the check</h3>
 <p>Piece 6 of the seven. <code>rust/core/src/tick_check.rs</code> has the claim's run, what a checker holds open, the missing counts, the covered eraser a tick ignores, closure, the count of records taken and not covered, and <code>check_tick</code> with the model's answers in the model's order.</p>
 <ul>

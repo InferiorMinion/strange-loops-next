@@ -16,6 +16,28 @@ fn new_salt() -> Result<Vec<u8>, Fail> {
     key::salt().map_err(|e| Fail::System(e.to_string()))
 }
 
+/// Read an emit's next payload field or its final positional message.
+fn emit_argument(
+    arg: &str,
+    fields: &mut Vec<(String, Json)>,
+    message: &mut Option<String>,
+) -> Result<(), Fail> {
+    if message.is_some() {
+        return Err(usage("the message comes last, after every field"));
+    }
+    match arg.split_once('=') {
+        Some((name, json)) if name.ends_with(':') && name.len() > 1 => {
+            let value = loops_eval::parse_json(json).map_err(|e| usage(format!("{arg}: {e}")))?;
+            fields.push((name[..name.len() - 1].to_owned(), value));
+        }
+        Some((name, value)) if !name.is_empty() => {
+            fields.push((name.to_owned(), Json::Str(value.to_owned())));
+        }
+        _ => *message = Some(arg.to_owned()),
+    }
+    Ok(())
+}
+
 /// `emit <kind> [field=text | field:=json]... ["message"]` and its flags.
 /// `field=text` is always text and `field:=json` a JSON value, as `HTTPie` writes them.
 /// `link` resolves a record id the person typed; `thing` resolves what `--of` names.
@@ -25,8 +47,11 @@ fn new_salt() -> Result<Vec<u8>, Fail> {
 /// `--sets-nothing` for none, or `--whole` for a whole-read emit; without
 /// any of them it sets the keys it names, when its thing is held.
 /// `--occurred` and `--no-occurred` each state what goes into the envelope.
+/// With a tick payload the writer already knows the kind and payload, so
+/// only the envelope flags are read from the arguments.
 pub(crate) fn from_args(
     args: &[String],
+    tick_payload: Option<Json>,
     now: &str,
     observer: &str,
     link: impl Fn(&str) -> Result<String, Fail>,
@@ -38,7 +63,7 @@ pub(crate) fn from_args(
         ..Env::default()
     };
     let mut salt = None;
-    let mut kind = None;
+    let mut kind = tick_payload.as_ref().map(|_| "tick".to_owned());
     let mut fields: Vec<(String, Json)> = Vec::new();
     let mut message = None;
     let mut nothing = false;
@@ -77,23 +102,18 @@ pub(crate) fn from_args(
                 salt = Some(base32::decode(&value()?).ok_or_else(|| refused("salt-not-16-bytes"))?);
             }
             flag if flag.starts_with("--") => {
-                return Err(usage(format!("emit does not take {flag}")));
+                let verb = if tick_payload.is_some() {
+                    "tick"
+                } else {
+                    "emit"
+                };
+                return Err(usage(format!("{verb} does not take {flag}")));
+            }
+            _ if tick_payload.is_some() => {
+                return Err(usage("tick takes only envelope flags after the spec"));
             }
             _ if kind.is_none() => kind = Some(arg.clone()),
-            _ if message.is_some() => {
-                return Err(usage("the message comes last, after every field"));
-            }
-            field => match field.split_once('=') {
-                Some((name, json)) if name.ends_with(':') && name.len() > 1 => {
-                    let value =
-                        loops_eval::parse_json(json).map_err(|e| usage(format!("{field}: {e}")))?;
-                    fields.push((name[..name.len() - 1].to_owned(), value));
-                }
-                Some((name, value)) if !name.is_empty() => {
-                    fields.push((name.to_owned(), Json::Str(value.to_owned())));
-                }
-                _ => message = Some(arg.clone()),
-            },
+            field => emit_argument(field, &mut fields, &mut message)?,
         }
     }
     if nothing && env.sets.as_ref().is_some_and(|keys| !keys.is_empty()) {
@@ -128,7 +148,7 @@ pub(crate) fn from_args(
         label: None,
         env,
         salt: salt.map_or_else(new_salt, Ok)?,
-        payload: Json::Obj(fields),
+        payload: tick_payload.unwrap_or(Json::Obj(fields)),
     };
     Ok(Statement {
         draft,
