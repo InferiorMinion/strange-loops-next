@@ -144,7 +144,7 @@ What the answer should be is already ruled: a fold across stores takes the union
 
 The old tool reads thread `kiln` as status `done`, message `Repair kiln`: a later fact of the same name overlays the fields it carries.
 
-**Example, run on today's binary.** The three facts written by hand as the recommended column below would write them (`loops emit - --fill`, with a key made for the import):
+**Example, run on the binary with the plain view** (2026-11-22). The three facts written by hand as the recommended column below would write them (`loops emit - --fill`, with a key made for the import):
 
 ```
 $ loops ls --plain
@@ -170,7 +170,7 @@ The second record names the first in `prev` and sets only `status`, so `message`
 | 5 | **Who signs.** | A key made for the import. Every imported record says so in its observer, and can be told from what you write afterwards. | Your own key. Imported and new records look alike. |
 | 6 | **Where the old observer and the old id are kept.** | The old observer as a mention, `observer:relay`. The old id in a file beside the import, which also makes a second run write nothing. The payload is the old payload, untouched. | The old id as a mention on each record, or both as extra payload fields. Extra fields change what a spec reads. |
 | 7 | **The old ticks.** | Left out and counted. They are the old tool's own, and as kind `tick` the new check would call each "not a tick". | Imported under another kind, for the record. |
-| 8 | **A fact held by two old stores.** | Imported into each new store it was in. Reads across stores take the union, and a record with one id counts once, so the copies must come out as the same record: the same salt and time for the same old id, from the import's file. | Imported once, into one store. |
+| 8 | **A fact held by two old stores.** | Imported into each new store it was in, with the same salt and time for the same old id, from the import's file. Where the fact has the same history in both stores, the two copies are then one record, and a read across the stores counts it once. Where the histories differ they are two records; I will count how often that happens in your stores before the import. | Imported once, into one store. |
 
 **What I am not sure of, and will check before anything is built:** whether your old stores hold kinds the vertex does not name, facts whose key field is missing, and payloads the new writer refuses (a number out of range, a repeated name). The import will count each and stop on the last kind; it will not guess.
 

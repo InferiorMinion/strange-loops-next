@@ -312,7 +312,7 @@ fold:  items = count
 01ad  log     2026-10-03 16:31  relay  {&quot;message&quot;:&quot;fired the kiln&quot;}
 </code></pre>
 <p>The old tool reads thread <code>kiln</code> as status <code>done</code>, message <code>Repair kiln</code>: a later fact of the same name overlays the fields it carries.</p>
-<p><strong>Example, run on today's binary.</strong> The three facts written by hand as the recommended column below would write them (<code>loops emit - --fill</code>, with a key made for the import):</p>
+<p><strong>Example, run on the binary with the plain view</strong> (2026-11-22). The three facts written by hand as the recommended column below would write them (<code>loops emit - --fill</code>, with a key made for the import):</p>
 <pre><code>$ loops ls --plain
 KIND    RECORDS
 log     1
@@ -333,7 +333,7 @@ thread:kiln  thread      2        1      kiln  done    Repair kiln
 <tr><td>5</td><td><strong>Who signs.</strong></td><td>A key made for the import. Every imported record says so in its observer, and can be told from what you write afterwards.</td><td>Your own key. Imported and new records look alike.</td></tr>
 <tr><td>6</td><td><strong>Where the old observer and the old id are kept.</strong></td><td>The old observer as a mention, <code>observer:relay</code>. The old id in a file beside the import, which also makes a second run write nothing. The payload is the old payload, untouched.</td><td>The old id as a mention on each record, or both as extra payload fields. Extra fields change what a spec reads.</td></tr>
 <tr><td>7</td><td><strong>The old ticks.</strong></td><td>Left out and counted. They are the old tool's own, and as kind <code>tick</code> the new check would call each &quot;not a tick&quot;.</td><td>Imported under another kind, for the record.</td></tr>
-<tr><td>8</td><td><strong>A fact held by two old stores.</strong></td><td>Imported into each new store it was in. Reads across stores take the union, and a record with one id counts once, so the copies must come out as the same record: the same salt and time for the same old id, from the import's file.</td><td>Imported once, into one store.</td></tr>
+<tr><td>8</td><td><strong>A fact held by two old stores.</strong></td><td>Imported into each new store it was in, with the same salt and time for the same old id, from the import's file. Where the fact has the same history in both stores, the two copies are then one record, and a read across the stores counts it once. Where the histories differ they are two records; I will count how often that happens in your stores before the import.</td><td>Imported once, into one store.</td></tr>
 </tbody></table></div>
 <p><strong>What I am not sure of, and will check before anything is built:</strong> whether your old stores hold kinds the vertex does not name, facts whose key field is missing, and payloads the new writer refuses (a number out of range, a repeated name). The import will count each and stop on the last kind; it will not guess.</p>
 <p><strong>Not asked.</strong> The import's verb and flags, its batches, and how the copy is compared with the old tool's reading are the implementer's. The old store is never written.</p>
