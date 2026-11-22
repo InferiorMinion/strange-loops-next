@@ -20,6 +20,27 @@ In brief:
 - A read remembers which segments it has checked: on a 9,000-record store a fold goes from 0.53 s to 0.24 s. `loops check` still checks everything.
 - `loops read` and `loops fold` take `--plain` too: a spec's result as text, for every result shape.
 - `loops tick` can cover a cut: `--as-of <time>` for the records emitted before a time with what they build on, `--cover <id>` for named records with what is under them.
+- Issue 11 is done: `loops emit -- "--text"` and `loops whoami --init`. The plain view shows a conflict's values and prints record ids as short prefixes that can be typed back.
+
+### Three small CLI pieces: issue 11, and two gaps in the plain view
+
+**`--` ends `emit`'s options** (issue 11, from the outside user). `loops emit message "--leading-dashes"` was a usage error, since every token starting with `--` was taken for a flag. Now `loops emit message -- "--leading-dashes"` writes the text. Before `--` nothing changes.
+
+**`loops whoami --init`** (issue 11). An agent given its own key file could not learn its identity before its first record: `whoami` refused with "the first emit makes one". `whoami --init` makes the key exactly as the first emit would, prints the `k:…` id, needs no store, and prints the same id again when the key exists. Plain `whoami` is unchanged.
+
+**The plain view, after using it.**
+- A conflict shows what each side says, in the setters' order: `conflict (2): "9003" | "9002"`. A side whose payload is not held shows `unknown`. Long values are cut; `loops of` without `--plain` has them whole.
+- A record id prints as its shortest prefix that is unique in the store, eight digits or more: `r:lde1lssu`. `loops get` and `loops of` take such a prefix, so what is printed can be typed back. A root no longer makes a wide first column.
+- A keyed latest-by without `--values` prints each thing's headline beside its name.
+
+The JSON answers of every verb are byte for byte what they were: 2,219 commands over 131 stores were compared, and the signed records of the existing write commands too.
+
+**Implementer choices; they stand under Kyle's ruling of 2026-11-21 (W7).** Choice 29 of `rust/PLACE.md`, and amendments to choices 25 and 27.
+- `whoami --init`, not a verb of its own: it is the identity lookup with the making added.
+- After `--`, `--json` is text like any other token. `loops tick <spec> --` takes nothing after it.
+- A prefix is unique against every record the store holds, not only those shown.
+
+A Codex worker wrote them; the coordinator reviewed them, joined them with main (the argument parser by hand, where it met the tick's new flags) and tried each.
 
 ### `loops tick` over a cut: `--as-of` and `--cover`
 

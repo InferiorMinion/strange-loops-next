@@ -69,6 +69,17 @@ fn add_base(base: &mut Option<BaseArgs>, flag: &str, id: String) -> Result<(), F
     Ok(())
 }
 
+/// The value of a flag of `emit` or `tick`. A flag may take "--" as its
+/// value, and the global `--json` keeps its meaning until the terminator.
+fn option_value<'a>(
+    args: &mut impl Iterator<Item = &'a String>,
+    flag: &str,
+) -> Result<String, Fail> {
+    args.find(|v| v.as_str() != "--json")
+        .cloned()
+        .ok_or_else(|| usage(format!("{flag} takes a value")))
+}
+
 fn next_value<'a>(args: &mut impl Iterator<Item = &'a String>, flag: &str) -> Result<String, Fail> {
     args.next()
         .cloned()
@@ -144,13 +155,7 @@ pub(crate) fn from_args(
             emit_argument(arg, &mut kind, &mut fields, &mut message)?;
             continue;
         }
-        // A preceding flag may have consumed "--" as its value. Global
-        // --json still has its usual meaning until the actual terminator.
-        let mut value = || {
-            rest.find(|v| v.as_str() != "--json")
-                .cloned()
-                .ok_or_else(|| usage(format!("{arg} takes a value")))
-        };
+        let mut value = || option_value(&mut rest, arg);
         match arg.as_str() {
             "--" => options = false,
             "--json" => {}
