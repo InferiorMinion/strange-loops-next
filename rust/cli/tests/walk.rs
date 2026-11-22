@@ -3,7 +3,7 @@ use loops::json::Json;
 use loops_eval::parse_json;
 use std::{
     fs,
-    io::Write,
+    io::{ErrorKind, Write},
     path::{Path, PathBuf},
     process::{Command, Output, Stdio},
 };
@@ -33,12 +33,19 @@ impl Store {
             .stderr(Stdio::piped())
             .spawn()
             .expect("loops runs");
-        child
+        if let Err(error) = child
             .stdin
             .take()
             .expect("stdin")
             .write_all(stdin.as_bytes())
-            .expect("stdin written");
+        {
+            // A usage refusal can exit before reading the supplied input.
+            assert_eq!(
+                error.kind(),
+                ErrorKind::BrokenPipe,
+                "writing stdin: {error}"
+            );
+        }
         child.wait_with_output().expect("loops exits")
     }
     fn ok_with(&self, args: &[&str], stdin: &str) -> String {
