@@ -191,6 +191,7 @@ header.top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--g
 <a href="changelog.html" aria-current="page">Changelog</a>
 <a href="note-2026-11-11-declared-keys.html">D8c: declared keys, design note</a>
 <a href="note-2026-11-15-the-cut.html">Step 4: the cut, design note</a>
+<a href="note-2026-11-21-order-of-work.html">The order of work, and how we work: W1 to W6</a>
 <a href="note-2026-11-21-payload-values.html">Payload values, design note</a>
 <a href="note-2026-11-21-tick-record.html">Step 4: the tick record, design note</a>
 <a href="note-retained-boundaries.html">Retained boundaries</a></nav>
@@ -227,7 +228,39 @@ The record starts where the old roadmap's did. For anything earlier, and for eve
 <li><p>The roadmap, the decisions, the changelog and the notes are published as a fifth design page, and the rethink and grammar pages are brought up to the rulings since 2026-11-13.</p></li>
 <li><p>The full mutation catalogue ran over all 328 entries: 324 caught, two known survivors, and two new ones that are now caught. The full runner asks what the per-merge check asks.</p></li>
 <li><p><code>loops emit - --fill</code> fills each line of a changeset as a single emit would, so a collector can write anchored records.</p></li>
+<li><p>Kyle ruled the tick record (TK1 to TK9; TK9 as a <code>rules</code> member bound into the spec's hash) and the order of work (W1 to W6), each for its recommendation. Nothing waits on him.</p></li>
 </ul>
+<h3 id="ruled-by-kyle-2026-11-21-the-tick-record-and-the-order-of-work">Ruled by Kyle, 2026-11-21: the tick record and the order of work</h3>
+<p>Each was an entry in <code>DECISIONS.md</code>, with an example. Kyle ruled for the recommendation every time. The rulings reached the coordinator through Neon, which Kyle told in its own session to send them.
+The entries as they were put are kept in <a href="note-2026-11-21-tick-record.html#10-the-questions-as-they-were-put">the tick record note</a> and <a href="note-2026-11-21-order-of-work.html">the order-of-work note</a>.</p>
+<p><strong>The tick record, TK1 to TK9.</strong> The exact form is in <a href="note-2026-11-21-tick-record.html">the note</a>, sections 1 to 6. Not built yet.</p>
+<ol>
+<li><p>A tick is an ordinary record of kind <code>tick</code>. Its payload is the whole tick, and it has no id but its record id.</p></li>
+<li><p>It carries its result and the result's hash.</p></li>
+<li><p>It carries its spec as parsed, and the spec's hash. The store names in <code>from</code> select nothing in a tick.</p></li>
+<li><p><code>covers</code> lists every record that was folded, each id once. A tick among them is one record and is never opened up.</p></li>
+<li><p><code>withheld</code> lists the covered records read without a payload, and is left out when empty.</p></li>
+<li><p>A later spec reads a tick by the payload reading and nothing more. A total across ticks is not in step 4.</p></li>
+<li><p>A verb checks a tick and answers <code>same</code>, <code>differs</code> or <code>cannot check</code>. No store refuses a tick on import or sync.</p></li>
+<li><p>The window field is <code>env.when</code>.</p></li>
+<li><p>A member <code>rules</code> states the version of the rules, and the label of the spec's hash is made from it (option D). With it:</p>
+<ul>
+<li><p>The rules are everything between the covered records and the result's bytes: settling, admission, what a source takes, the tests, the folds and the payload reading.</p></li>
+<li><p>A new fold type or test does not raise the number. A binary that cannot parse a spec whose hash fits answers &quot;cannot check: this binary cannot read the spec&quot;. A fault in one implementation is not a change of rules.</p></li>
+<li><p>For a tick made under older rules, the check also says what today's rules give, the same result or another.</p></li>
+</ul>
+<p>Neon's addition for the build: the check verifies <code>spec-hash</code> over the spec's JCS text before parsing it; a spec that parses and is not in its parsed form is not a tick.</p></li>
+</ol>
+<p><strong>The order of work, W1 to W6.</strong></p>
+<ul>
+<li><p><strong>W1.</strong> An adoption step comes after ticks and before standing. Its pieces that touch only the CLI (<code>ls</code>, the prefix scan, the plain view, reads across stores, the shadow import) are built beside the tick work. The caching reader's law (issue #8) leaves step 4 and is stated when a caching reader is built; this amends the ruling of 2026-11-11 that it is step 4's first law. Reads across stores take the union of the named stores first.</p></li>
+<li><p><strong>W2.</strong> A cache of which segments were checked, in the adoption step.</p></li>
+<li><p><strong>W3.</strong> The JavaScript is frozen at what it has, as a trial for step 4: ticks are built in Lean and Rust. It keeps passing its vectors. Looked at again when ticks are done. The workbench page will use the Rust core compiled for the browser.</p></li>
+<li><p><strong>W4.</strong> One refusal for every input, in the order the model checks; the implementer picks the order and notes it here. The protocol text and the vectors of a new step pin one fault each. The orders already pinned for records and specs stay.</p></li>
+<li><p><strong>W5.</strong> The mutant check on every merge request stays. Step 4's mutants are added after its exit.</p></li>
+<li><p><strong>W6.</strong> <code>out/</code> stays committed.</p></li>
+</ul>
+<p>Nothing is open in <code>DECISIONS.md</code>.</p>
 <h3 id="a-changeset-can-ask-for-the-filler-loops-emit-----fill">A changeset can ask for the filler: <code>loops emit - --fill</code></h3>
 <p>Ruled on 2026-11-20 (<a href="note-2026-11-15-the-cut.html">the cut note</a>, section 7) and built on 2026-11-21. Rust only: <code>rust/place/src/fill.rs</code> and the CLI. No protocol rule and no refusal code changed, and <code>loops emit -</code> without the option writes what it wrote before, byte for byte.</p>
 <p>With <code>--fill</code>, each line gets what <code>loops emit</code> would fill in for the same statement: <code>of</code> from its <code>prev</code>, the keys its payload names, every live record of its thing in <code>prev</code>, and the heads' <code>about</code> and <code>occurred</code>. The changeset is still written whole or not at all.</p>
