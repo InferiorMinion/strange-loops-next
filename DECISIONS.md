@@ -12,6 +12,7 @@ Everything that waits on Kyle, in one place. Each entry has the question, an exa
 | --- | --- | --- | --- |
 | [TK10](#tk10-seven-details-of-the-check) | Seven details of `loops tick --check` that the rulings leave open | As in its table; the build follows them meanwhile | Nothing yet: the check is three merge requests away |
 | [TK11](#tk11-a-write-against-a-base-that-does-not-hold-what-is-under-it) | What `loops emit --base` does when the base does not hold what is under its records | Name the live records of the base together with what is under it; say how many of those the base did not hold | The filler against a base |
+| [AD1](#ad1-how-a-spec-finds-the-stores-it-names) | How a spec finds the stores it names, and what a missing one answers | A per-user list of names and directories; a name bound to nothing refuses the whole read | Reads across several stores (adoption) |
 
 Every earlier entry is ruled (2026-11-21). TK11 is new on 2026-11-22.
 
@@ -84,6 +85,49 @@ The base is `y` alone. Two things go wrong, and they are different.
 **Why C over A.** A is the only option that stops the second problem. But the second problem is a question you have already set aside for step 3 in another form: what a strict store does with a write whose base is behind what the store holds. "You replaced something you were not shown" belongs with it, and a strict store can refuse both then. Until then C never refuses, never leaves a store that reads wrongly, and tells the writer what it did. margins-claude recommends C as the default too.
 
 **What it costs to change later.** The choice is in the filler and one line of output. No record already written changes.
+
+## The adoption step
+
+You ruled on 2026-11-21 (W1) that the adoption step's CLI pieces are built beside the tick work. A worker planned them on 2026-11-22. The pieces that are the CLI's alone are being built: `loops ls`, a scan by the start of a name, a plain-text view with relative times, a `--version`, and the cache of checked segments (W2). Two pieces need you first. AD1 is one. The other, the import of your old stores as a shadow, has about ten choices that decide the ids of every imported record; it comes as its own entry, with an example on a made-up copy of an old store's shape, once the first pieces have landed.
+
+### AD1: how a spec finds the stores it names
+
+**Question.** A spec's `from` names a store for each source. Today the name is ignored. When a read may span several stores, how is a name turned into a directory, and what does a read answer when a name leads nowhere?
+
+**Example, run on today's binary.** Two stores: `workshop` holds one task and one note, `yard` holds one task. One spec, `morning`:
+
+```
+from:  store workshop, kind task
+       store yard,     kind note
+fold:  items = count
+```
+
+| Run in | Today's answer | Why |
+| --- | --- | --- |
+| `workshop` | 2 | It counts the task and the note it holds. `yard` is never opened. |
+| `yard` | 1 | The same spec, another answer: it counts its own task. |
+| `workshop`, with the one store name changed to `no-such-store` | 2 | A name bound to nothing is answered from the directory all the same. |
+
+What the answer should be is already ruled: a fold across stores takes the union of the named stores first and runs every source over it ([the tick record note](notes/2026-11-21-tick-record.md), section 9, and `protocol/spec.md`). Here that is **3**: both tasks and the note, each record once. What is open is how the names resolve.
+
+**Options for finding a store.**
+
+| | A name means | Cost |
+| --- | --- | --- |
+| **A (recommended)** | An entry in a per-user list of names and directories (`~/.config/loops/stores.json`). The spec travels between machines unchanged; each machine says where its stores are. | You bind each name once per machine. Your existing specs name stores that are bound nowhere yet. |
+| B | A directory beside the current one with that name. | Renaming a directory changes what a spec reads. Stores that live apart cannot be named. |
+| C | A path written in the spec. | The path is part of the spec, so its hash, and every tick of it, differs between machines. |
+
+**Options for a name that leads nowhere.**
+
+| | The read answers | |
+| --- | --- | --- |
+| **A (recommended)** | Nothing on standard output, and a refusal that names the store (`store-unknown`). | A missing store is never mistaken for an empty one. Needs the new refusal code. |
+| B | What the stores that were found give, with a note. | The same spec gives another answer on a machine that lacks a store, as it does today. |
+
+**What changes for you.** Under A and A, a spec that names one store today keeps its answer once that name is bound to its directory, and refuses until then. I would bind the names your existing vertices use before the strict rule is switched on, and list them for you first.
+
+**Not asked.** `loops tick` and `loops tick --check` stay on the one store in the directory. A tick across stores would cover other records and is its own piece.
 
 ## Being prepared
 
