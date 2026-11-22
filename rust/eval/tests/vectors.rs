@@ -1,9 +1,9 @@
-//! Every family is registered. The tick family awaits its Rust implementation.
+//! Every family is registered. Tick operations are counted as run or pending.
 mod common;
 use common::{expected, json_files, root};
 use loops::{json::Json, occurred, time::Moment};
 use serde_json::{Value, json};
-use std::fs;
+use std::{fs, path::Path};
 
 const FAMILIES: &[(&str, usize)] = &[
     ("record", 197),
@@ -18,7 +18,7 @@ const FAMILIES: &[(&str, usize)] = &[
     ("batch", 83),
     ("standard", 12),
     ("result", 23),
-    ("tick", 72),
+    ("tick", 11),
 ];
 
 fn member<'a>(j: &'a Json, key: &str) -> &'a Json {
@@ -125,12 +125,7 @@ fn member_order(j: &Json) -> Vec<(String, Vec<String>)> {
 
 /// Every answer `answers` lists for a vector the strict decoder reads, against
 /// its `expect`. False when the strict decoder refuses the vector.
-fn every_listed_answer(
-    source: &str,
-    file: &std::path::Path,
-    want: &Json,
-    failures: &mut Vec<String>,
-) -> bool {
+fn every_listed_answer(source: &str, file: &Path, want: &Json, failures: &mut Vec<String>) -> bool {
     let Ok(raw) = loops_eval::parse_json(source) else {
         return false;
     };
@@ -163,6 +158,28 @@ fn assert_family_count(name: &str, files: usize) {
     assert_eq!(files, *count, "{name}: update exact registry after review");
 }
 
+fn check_standard(path: &Path, failures: &mut Vec<String>) -> usize {
+    // Each input and output is consumed once, as six byte-for-byte pairs.
+    let inputs = json_files(&path.join("jcs/input"));
+    let outputs = json_files(&path.join("jcs/output"));
+    assert_eq!((inputs.len(), outputs.len()), (6, 6));
+    let mut checked = 0;
+    for input in inputs {
+        let output = path
+            .join("jcs/output")
+            .join(input.file_name().expect("name"));
+        let got = loops_eval::parse_json(&fs::read_to_string(&input).expect("JCS input"))
+            .expect("RFC8259")
+            .canon();
+        let want = fs::read(&output).expect("JCS output");
+        if got.as_bytes() != want {
+            failures.push(format!("{}: JCS bytes differ", input.display()));
+        }
+        checked += 2;
+    }
+    checked
+}
+
 #[test]
 fn every_registered_json_and_every_arrival_order() {
     let root = root();
@@ -187,33 +204,21 @@ fn every_registered_json_and_every_arrival_order() {
             .to_str()
             .expect("UTF8")
             .to_owned();
-        let files = json_files(&path);
-        assert_family_count(&family, files.len());
-        if family == "tick" {
-            pending = files.len();
-            println!("tick: {pending} files not run by Rust yet");
-        } else if family == "standard" {
-            // Each input and output is consumed once, as six byte-for-byte pairs.
-            let inputs = json_files(&path.join("jcs/input"));
-            let outputs = json_files(&path.join("jcs/output"));
-            assert_eq!((inputs.len(), outputs.len()), (6, 6));
-            for input in inputs {
-                let output = path
-                    .join("jcs/output")
-                    .join(input.file_name().expect("name"));
-                let got = loops_eval::parse_json(&fs::read_to_string(&input).expect("JCS input"))
-                    .expect("RFC8259")
-                    .canon();
-                let want = fs::read(&output).expect("JCS output");
-                if got.as_bytes() != want {
-                    failures.push(format!("{input:?}: JCS bytes differ"));
-                }
-                checked += 2;
-            }
+        let before = checked;
+        if family == "standard" {
+            checked += check_standard(&path, &mut failures);
         } else {
-            for file in files {
+            for file in json_files(&path) {
                 let source = fs::read_to_string(&file).expect("vector");
                 let vector: Value = serde_json::from_str(&source).expect("vector JSON");
+                if family == "tick" {
+                    assert_eq!(vector["layer"], "tick", "{file:?}");
+                    let op = vector["input"]["op"].as_str().expect("tick input.op");
+                    if !loops_eval::supports_tick_op(op) {
+                        pending += 1;
+                        continue;
+                    }
+                }
                 let want = expected(vector.get("expect").expect("fixture expect"));
                 if family == "occurred" {
                     assert_eq!(
@@ -243,12 +248,17 @@ fn every_registered_json_and_every_arrival_order() {
                 checked += 1;
             }
         }
+        if family == "tick" && pending != 0 {
+            println!("tick: {pending} pending");
+        }
+        assert_family_count(&family, checked - before);
         seen.push(family);
     }
     for (family, _) in FAMILIES {
         assert!(seen.iter().any(|s| s == family), "missing {family}");
     }
-    assert_eq!(checked, 661);
+    assert_eq!(pending, 61, "tick: update pending count after review");
+    assert_eq!(checked, 672);
     overflowing.sort();
     assert_eq!(
         overflowing, OVERFLOWING,

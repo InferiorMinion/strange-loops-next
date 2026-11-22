@@ -231,7 +231,22 @@ The record starts where the old roadmap's did. For anything earlier, and for eve
 <li><p>Kyle ruled the tick record (TK1 to TK9; TK9 as a <code>rules</code> member bound into the spec's hash) and the order of work (W1 to W6), each for its recommendation. One new entry, TK10, comes from planning the build.</p></li>
 <li><p>The tick record's first piece is in the model: the spec's hash under a rules version, and the window field <code>env.when</code> (!72). Rust is being built.</p></li>
 <li><p>The tick record's second piece is in the model: a reader for a claimed result, and the tick's payload with its two readers.</p></li>
+<li><p>Rust has the spec's hash and <code>env.when</code>: <code>loops fold</code> takes a window on <code>env.when</code>, and Rust runs the 11 tick vectors it implements.</p></li>
 </ul>
+<h3 id="the-tick-record-rust-for-the-specs-hash-and-envwhen">The tick record: Rust for the spec's hash and <code>env.when</code></h3>
+<p>Rust for piece 1. <code>rust/core/src/spec_hash.rs</code> has the rules version, the label and the hash over a raw JSON member or a parsed spec. <code>env.when</code> is a test field in <code>rust/core/src/where_.rs</code>, so <code>loops fold</code> and <code>loops read</code> take a window on it today.</p>
+<p>A real store, in the CLI's walk tests: three backups emitted on 2026-11-21. The first states no <code>occurred</code>, a revision of it states <code>occurred</code> 2026-11-16, and a third states 2026-11-17. A window on 2026-11-21 counts 0 by <code>env.occurred</code>, 3 by <code>env.emitted</code> and 1 by <code>env.when</code>. A slot that follows <code>prev</code> counts 0 with the same window, because the backdated revision replaces the one record inside it.</p>
+<ul>
+<li><p><strong>Rust runs 11 of the 72 tick vectors and counts 61 as pending.</strong> A tick vector is run when its <code>input.op</code> is one the evaluator implements (<code>hash</code>, <code>domains</code>, <code>window</code>). The vector test pins both numbers, so a vector cannot move between them unseen. The pending ones are the payload's, whose Rust is piece 5.</p></li>
+<li><p><strong>The evidence page credits Rust by operation.</strong> <code>design/laws/laws.json</code> names the tick operations Rust runs, and a law is marked as checked by Rust only through vectors of those operations.</p></li>
+</ul>
+<p><strong>Implementer choices; they stand under Kyle's ruling of 2026-11-21 (W7).</strong></p>
+<ul>
+<li><p>A number past binary64's range inside a raw spec member is read as <code>null</code> by the vector evaluator when it hashes the member, as the model's canonical text writes it. No stored record can hold such a number, since the writer refuses it; this keeps Rust and the model equal on a vector's input.</p></li>
+<li><p><code>&quot;by&quot;: &quot;env.when&quot;</code> is refused <code>by-invalid</code>, the existing code for a <code>by</code> that names no grouping key.</p></li>
+<li><p>No new dependency, and no entry in <code>rust/GAPS.md</code>: nothing the model states here is left unchecked by Rust.</p></li>
+</ul>
+<p>A Codex worker wrote it; the coordinator reviewed it, brought it up to main (where the payload's vectors had arrived), set the run and pending counts, and made the evidence page's credit follow the operation.</p>
 <h3 id="the-tick-record-piece-2-the-result-reader-and-the-payload-in-the-model">The tick record, piece 2: the result reader and the payload, in the model</h3>
 <p>The second of the seven pieces. Rust does not run its vectors yet.</p>
 <ul>

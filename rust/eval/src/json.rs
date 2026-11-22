@@ -1,14 +1,22 @@
 //! RFC 8259 ingestion, preserving object order and repeated names.
 use crate::Error;
 use loops::{json::Json, number::Number};
-use serde::de::{self, Deserialize, Deserializer, MapAccess, SeqAccess, Visitor};
+use serde::de::{self, Deserialize, DeserializeSeed, Deserializer, MapAccess, SeqAccess, Visitor};
 use std::fmt;
 
-/// `OVERFLOW` selects what a lexeme past binary64's range becomes: an error,
-/// or the stand-in [`out_of_range`] gives.
-struct Raw<const OVERFLOW: bool>(Json);
-impl<'de, const OVERFLOW: bool> Deserialize<'de> for Raw<OVERFLOW> {
-    fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+/// How the receiving layer reads a lexeme past binary64's range.
+#[derive(Clone, Copy)]
+enum Overflow {
+    Reject,
+    OutOfRange,
+    /// Lean's Number.canon writes null for nonfinite numbers. In a spec these
+    /// numbers and null are also refused or discarded in the same positions.
+    SpecMember,
+}
+
+impl<'de> DeserializeSeed<'de> for Overflow {
+    type Value = Json;
+    fn deserialize<D: Deserializer<'de>>(self, d: D) -> Result<Json, D::Error> {
         // RawValue avoids serde_json's reserved number-map collision and gives
         // each numeric lexeme directly to binary64 parsing, exactly once.
         let raw = Box::<serde_json::value::RawValue>::deserialize(d)?;
@@ -16,17 +24,16 @@ impl<'de, const OVERFLOW: bool> Deserialize<'de> for Raw<OVERFLOW> {
         if matches!(text.as_bytes().first(), Some(b'-' | b'0'..=b'9')) {
             let n: Number = match text.parse() {
                 Ok(n) => n,
-                Err(error) => match out_of_range(text) {
-                    Some(n) if OVERFLOW => n,
+                Err(error) => match (self, out_of_range(text)) {
+                    (Self::OutOfRange, Some(n)) => n,
+                    (Self::SpecMember, Some(_)) => return Ok(Json::Null),
                     _ => return Err(de::Error::custom(error)),
                 },
             };
-            return Ok(Self(n.whole().map_or(Json::Number(n), Json::Int)));
+            return Ok(n.whole().map_or(Json::Number(n), Json::Int));
         }
         let mut parser = serde_json::Deserializer::from_str(text);
-        parser
-            .deserialize_any(RawVisitor::<OVERFLOW>)
-            .map_err(de::Error::custom)
+        parser.deserialize_any(self).map_err(de::Error::custom)
     }
 }
 
@@ -47,34 +54,33 @@ fn out_of_range(text: &str) -> Option<Number> {
     Number::new(f64::MAX.copysign(value)).ok()
 }
 
-struct RawVisitor<const OVERFLOW: bool>;
-impl<'de, const OVERFLOW: bool> Visitor<'de> for RawVisitor<OVERFLOW> {
-    type Value = Raw<OVERFLOW>;
+impl<'de> Visitor<'de> for Overflow {
+    type Value = Json;
     fn expecting(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str("RFC 8259 JSON with finite binary64 numbers")
     }
     fn visit_unit<E: de::Error>(self) -> Result<Self::Value, E> {
-        Ok(Raw(Json::Null))
+        Ok(Json::Null)
     }
     fn visit_bool<E: de::Error>(self, v: bool) -> Result<Self::Value, E> {
-        Ok(Raw(Json::Bool(v)))
+        Ok(Json::Bool(v))
     }
     fn visit_str<E: de::Error>(self, v: &str) -> Result<Self::Value, E> {
-        Ok(Raw(Json::Str(v.into())))
+        Ok(Json::Str(v.into()))
     }
     fn visit_seq<A: SeqAccess<'de>>(self, mut a: A) -> Result<Self::Value, A::Error> {
         let mut xs = Vec::new();
-        while let Some(Raw::<OVERFLOW>(v)) = a.next_element()? {
+        while let Some(v) = a.next_element_seed(self)? {
             xs.push(v);
         }
-        Ok(Raw(Json::Arr(xs)))
+        Ok(Json::Arr(xs))
     }
     fn visit_map<A: MapAccess<'de>>(self, mut a: A) -> Result<Self::Value, A::Error> {
         let mut xs = Vec::new();
-        while let Some((k, Raw::<OVERFLOW>(v))) = a.next_entry()? {
-            xs.push((k, v));
+        while let Some(k) = a.next_key()? {
+            xs.push((k, a.next_value_seed(self)?));
         }
-        Ok(Raw(Json::Obj(xs)))
+        Ok(Json::Obj(xs))
     }
 }
 
@@ -87,42 +93,43 @@ impl<'de, const OVERFLOW: bool> Visitor<'de> for RawVisitor<OVERFLOW> {
 /// # Errors
 /// Returns a location-bearing JSON error or a nonfinite-number refusal.
 pub fn parse_json(text: &str) -> Result<Json, Error> {
+    decode(text, Overflow::Reject)
+}
+
+fn decode(text: &str, overflow: Overflow) -> Result<Json, Error> {
     let mut d = serde_json::Deserializer::from_str(text);
-    let raw = Raw::<false>::deserialize(&mut d)?;
+    let value = overflow.deserialize(&mut d)?;
     d.end()?;
-    Ok(raw.0)
+    Ok(value)
 }
 
 /// [`parse_json`], except that a lexeme past binary64's range is carried to
 /// its reader as an out-of-range number instead of failing here. See
 /// [`out_of_range`] for where that is sound.
 pub(crate) fn parse_overflowing(text: &str) -> Result<Json, Error> {
-    let mut d = serde_json::Deserializer::from_str(text);
-    let raw = Raw::<true>::deserialize(&mut d)?;
-    d.end()?;
-    Ok(raw.0)
+    decode(text, Overflow::OutOfRange)
 }
 
 /// Decode a vector's `input` as its layer reads numbers (D3).
 ///
 /// A record's and a batch's payloads reach the writer's number check, and a
 /// spec reaches the spec parser, so overflow is carried there. A reader's
-/// records refuse a nonfinite number as malformed input, so `spec/run`'s
-/// `orders` and every other layer keep the strict decoder.
+/// records refuse a nonfinite number as malformed input. Tick specs can be
+/// hashed raw, including carried members, so their JCS must survive decoding.
 pub(crate) fn parse_input(layer: &str, text: &str) -> Result<Json, Error> {
     match layer.split('/').next() {
         Some("record" | "batch") => parse_overflowing(text),
-        Some("spec" | "result") => {
+        Some("spec" | "result" | "tick") => {
             let Envelope(entries) = serde_json::from_str(text)?;
             let members = entries
                 .into_iter()
                 .map(|(name, raw)| {
-                    let value = if name == "orders" {
-                        parse_json(raw.get())
-                    } else {
-                        parse_overflowing(raw.get())
+                    let overflow = match (layer, name.as_str()) {
+                        ("tick", "spec" | "samples") => Overflow::SpecMember,
+                        ("tick", _) | (_, "orders") => Overflow::Reject,
+                        _ => Overflow::OutOfRange,
                     };
-                    value.map(|json| (name, json))
+                    decode(raw.get(), overflow).map(|json| (name, json))
                 })
                 .collect::<Result<_, _>>()?;
             Ok(Json::Obj(members))
