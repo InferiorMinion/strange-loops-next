@@ -9,8 +9,8 @@ What is next, in order. This file holds no history and no open questions.
 ## Where we are
 
 - **Steps 0, 1 and 2 are done.** Kyle closed step 2 on 2026-11-20: `loops` emits, reads and folds for one person, signed, over `.loops/`.
-- **Step 4 (ticks) has started.** The cut laws are in the model and the result codec is built. What a fold reads from a payload is settled and stated in the model (2026-11-21), so a tick can pin a result hash. The tick record is proposed and not ruled ([TK1 to TK9](DECISIONS.md#the-tick-record)).
-- **Three implementations agree on every vector:** Lean (the model), JavaScript and Rust.
+- **Step 4 (ticks) has started.** The cut laws are in the model and the result codec is built. What a fold reads from a payload is settled and stated in the model (2026-11-21), so a tick can pin a result hash. The tick record is ruled (2026-11-21, [the note](notes/2026-11-21-tick-record.md)) and is being built.
+- **Three implementations agree on every vector:** Lean (the model), JavaScript and Rust. From ticks on, a piece is built in Lean and Rust; the JavaScript is frozen at what it has, as a trial for step 4 (ruled 2026-11-21).
 - **One outside user:** rex-tools, a chat room over the `loops` CLI. It found a slow read path (fixed 2026-11-21) and a gap in `--values` (fixed the same day).
 - **The old Python `loops` is still first on `PATH`** on Kyle's machine, and his day-to-day stores are still the old ones.
 
@@ -18,33 +18,33 @@ The evidence and its counts are kept where they are made: [the law index](design
 
 ## Now
 
-The payload values and the result hash's prefix, ruled by Kyle on 2026-11-21, are built. Nothing is being built today: the tick record waits on Kyle's rulings.
+The payload values and the result hash's prefix, ruled by Kyle on 2026-11-21, are built. The tick record, ruled the same day, is being built.
 
 | Order | Work | State | Waits on |
 | --- | --- | --- | --- |
-| 1 | **The tick record:** what a tick holds, how `covers` is stated and checked, and the input key. | Proposed 2026-11-21 as [TK1 to TK9](DECISIONS.md#the-tick-record), with [a note](notes/2026-11-21-tick-record.md). Not ruled. | Kyle: TK1 to TK9, and [W3, W4 and W5](DECISIONS.md#at-a-glance) before it is built |
+| 1 | **The tick record:** what a tick holds, how `covers` is stated and checked, and the input key. | Ruled 2026-11-21 ([the note](notes/2026-11-21-tick-record.md)). Being built in seven pieces (changelog, 2026-11-21). Piece 1, the spec's hash and `env.when`, is in the model; its Rust and the model's piece 2 are in work. | [TK10](DECISIONS.md#tk10-six-details-of-the-check) for the check's details |
 | 2 | **Step 4's ruled pieces** (list below). | Ruled 2026-11-20. Not built. | Some wait on the tick record |
 
 ### Step 4: ruled and not built
 
 Each is ruled in [the cut note](notes/2026-11-15-the-cut.md); the section is in brackets.
 
-- A window is a `where` on the span that content order already uses, under its own field name. The name is not chosen (5).
+- A window is a `where` on the span that content order already uses (5). The field is `env.when` (ruled 2026-11-21); it is in the model, and Rust is being built.
 - The filler takes a base, a tick or ids, and names that base's live records (8). margins-claude holds its base lemma until this piece is briefed.
 - A CLI verb that shows a result hash.
-- The caching reader's law: a reader that caches must keep what a record with an unknown `prev` supersedes (issue #8; Kyle, 2026-11-11: step 4's first law). Whether it stays in step 4 is part of [W1](DECISIONS.md#w1-an-adoption-step-before-standing-and-sharing).
 
 **Step 4 is done when** a content tick recomputes to the same hash on two machines.
 Not in step 4 yet: boundaries and markers, the runner, and what verifying a deep tick tree costs.
+Not in step 4 any more: the caching reader's law (issue #8). It is stated when a caching reader is built (ruled 2026-11-21, amending 2026-11-11).
 
 ## Next
 
 The order Kyle set on 2026-11-10 is: step 4 (ticks), then step 3 (standing) together with step 5 (sharing).
-The coordinator, margins-claude and Neon propose one step between ticks and standing. It is not ruled: [W1](DECISIONS.md#w1-an-adoption-step-before-standing-and-sharing).
+Kyle ruled on 2026-11-21 for one step between ticks and standing, adoption, with its CLI-only pieces built beside the tick work ([W1](notes/2026-11-21-order-of-work.md#w1-an-adoption-step-before-standing-and-sharing)).
 
 | Order | Step | Builds | Done when |
 | --- | --- | --- | --- |
-| after ticks, **proposed** | Adoption | The old stores imported as a shadow; `ls`, a scan by name prefix, relative times and a plain-text view; reads across several stores; a cache of checked segments | `loops` is first on `PATH` for daily work |
+| after ticks; its CLI pieces beside them | Adoption | The old stores imported as a shadow; `ls`, a scan by name prefix, relative times and a plain-text view; reads across several stores; a cache of checked segments | `loops` is first on `PATH` for daily work |
 | then | 3, standing | Declarations, admission, stances, grants, presence key, retire through; then name tables and `resolve-by` | A strict store rejects visibly; a steward's changeset takes effect |
 | with it | 5, sharing | The git layout, then segment-list sync | Two clones converge |
 | later | 6 | Index and search, SQLite segments, collectors, lenses, `serve` | Something is slow, or a surface needs it |
@@ -82,7 +82,7 @@ Costs are S, M, or L for relative effort, not schedules. None of these is schedu
 
 | Work | Value | Cost | Dependencies and blocking choices |
 | --- | --- | --- | --- |
-| Integrate a workbench page | Readers build scenarios and try vector presets | M: UI, validation, browser tests | Use the JS interpreter and scenario-vector presets; version localStorage drafts; never treat them as canonical storage |
+| Integrate a workbench page | Readers build scenarios and try vector presets | M: UI, validation, browser tests | Use the Rust core compiled for the browser (ruled 2026-11-21) and scenario-vector presets; version localStorage drafts; never treat them as canonical storage |
 | Turn horizons into Lean scenario vectors | Tests concrete compositions and exposes missing premises | L: model and scenario work | Start with minimal compositions of existing core; mark new boundary, tick, and service premises unimplemented before proof claims |
 | Prove binary64 roundtrip, then shortest | Strengthens assurance beyond sampled standard cases | L: formal number reasoning | Existing canonical formatter; neither proof blocks the settled standard choice |
 | Bridge source and fold records to hashes | Connects text, record bytes, IDs, and fold outputs | L: byte-level model and evidence | Defined source and writer boundaries; do not assume SHA correctness from bounded IDs |

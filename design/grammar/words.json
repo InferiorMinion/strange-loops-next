@@ -92,7 +92,7 @@
       "purpose": "Fix a vertex's result at a moment, so others can cite it.",
       "state": "The vertex, the records it covers, listed exactly, and the result; an id over all three.",
       "principle": "Anyone holding the covered records recomputes the same tick.",
-      "pending": "Ruled: a tick folds a set named outright, a part closed downward over <code>prev</code> or a slice of one, and its result lists ids without what the reader holds of them. The record's form is proposed and not ruled (<a href=\"../decisions/#the-tick-record\">TK1 to TK9</a>); under it a tick has no id but its record's.",
+      "pending": "Ruled: a tick folds a set named outright, a part closed downward over <code>prev</code> or a slice of one, and its result lists ids without what the reader holds of them. The record's form is ruled too (2026-11-21, <a href=\"../decisions/note-2026-11-21-tick-record.html\">the tick record note</a>) and not built: a tick is an ordinary record with no id but its record's.",
       "laws": ["keyed.cut", "cut.prefix", "result.canonical"]
     },
     {

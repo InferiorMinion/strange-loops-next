@@ -340,14 +340,14 @@
     "group": "Resolution · ticks",
     "status": "settled",
     "claim": "A window is a <code>where</code>, applied after the heads.",
-    "why": "A window tests the time content order already uses: a record's <code>occurred</code> when it states one, its <code>emitted</code> when it does not. Taking the window first, then folding, showed as current a record that a revision had moved out of the window in 428 of 660 trials. So a window is not a second mechanism beside <code>where</code>. Ruled on 2026-11-20; the field's name is not chosen (<code>env.when</code> is proposed), and it is not built. Version 36."
+    "why": "A window tests the time content order already uses: a record's <code>occurred</code> when it states one, its <code>emitted</code> when it does not. Taking the window first, then folding, showed as current a record that a revision had moved out of the window in 428 of 660 trials. So a window is not a second mechanism beside <code>where</code>. Ruled on 2026-11-20. The field is <code>env.when</code> (ruled 2026-11-21); it is in the model with its laws, and Rust is being built. Version 36."
   },
   {
     "kind": "decision",
     "group": "Resolution · ticks",
-    "status": "leaning",
+    "status": "settled",
     "claim": "The tick record is an ordinary record whose payload is the whole tick.",
-    "why": "Proposed on 2026-11-21 and not ruled (<a href=\"../decisions/#the-tick-record\">TK1 to TK9</a>). The payload holds the spec and its hash, <code>covers</code>, the covered records read without a payload, and the result with its hash. A tick among the covered records is one record, never opened up. A store admits a tick without checking it; a verb checks, and answers same, differs or cannot check. This would replace \"a content tick hashes its vertex, covered ids and result\" above: a tick would have no id but its record id. Version 36."
+    "why": "Ruled on 2026-11-21 (<a href=\"../decisions/note-2026-11-21-tick-record.html\">the tick record note</a>), not built yet. The payload holds the spec and its hash, the version of the rules, <code>covers</code>, the covered records read without a payload, and the result with its hash. A tick among the covered records is one record, never opened up. A store admits a tick without checking it; a verb checks, and answers same, differs or cannot check. This replaces \"a content tick hashes its vertex, covered ids and result\" above: a tick has no id but its record id. Version 36."
   },
   {
     "kind": "decision",

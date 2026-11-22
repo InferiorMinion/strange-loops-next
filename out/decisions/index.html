@@ -191,14 +191,14 @@ header.top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--g
 <a href="changelog.html">Changelog</a>
 <a href="note-2026-11-11-declared-keys.html">D8c: declared keys, design note</a>
 <a href="note-2026-11-15-the-cut.html">Step 4: the cut, design note</a>
+<a href="note-2026-11-21-order-of-work.html">The order of work, and how we work: W1 to W6</a>
 <a href="note-2026-11-21-payload-values.html">Payload values, design note</a>
 <a href="note-2026-11-21-tick-record.html">Step 4: the tick record, design note</a>
 <a href="note-retained-boundaries.html">Retained boundaries</a></nav>
 <p class="source">Rendered from <code>DECISIONS.md</code> in the repository.</p>
 <details class="contents"><summary>On this page</summary>
 <ul><li><a href="#at-a-glance">At a glance</a></li>
-<li><a href="#the-tick-record">The tick record</a></li>
-<li><a href="#order-of-work-and-how-we-work">Order of work, and how we work</a></li>
+<li><a href="#the-tick-record-while-it-is-built">The tick record, while it is built</a></li>
 <li><a href="#being-prepared">Being prepared</a></li>
 <li><a href="#deferred-by-you">Deferred by you</a></li>
 <li><a href="#ruled">Ruled</a></li></ul></details>
@@ -206,7 +206,7 @@ header.top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--g
 <h1 id="decisions">Decisions</h1>
 <p>Everything that waits on Kyle, in one place. Each entry has the question, an example, the options and a recommendation.</p>
 <ul>
-<li><p>An entry leaves this file when it is ruled. The entries ruled on 2026-11-21 (PV1 to PV7, RC1, W7, E1, I10) have left it.</p></li>
+<li><p>An entry leaves this file when it is ruled. The entries ruled on 2026-11-21 have left it: PV1 to PV7, RC1, W7, E1 and I10, then TK1 to TK9 and W1 to W6.</p></li>
 <li><p>The ruling is written in <a href="changelog.html">CHANGELOG.md</a> under its date, and one line is added to <a href="#ruled">Ruled</a> at the end of this file.</p></li>
 <li><p>What is next once these are ruled is in <a href="roadmap.html">ROADMAP.md</a>.</p></li>
 <li><p>&quot;Today&quot; in an example means the <code>loops</code> binary built from main on 2026-11-21. Every &quot;today&quot; answer below was run, not predicted.</p></li>
@@ -214,430 +214,32 @@ header.top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--g
 <h2 id="at-a-glance">At a glance</h2>
 <div class="table-scroll" tabindex="0"><table><thead><tr><th scope="col">Id</th><th scope="col">Question</th><th scope="col">Recommended</th><th scope="col">What waits on it</th></tr></thead>
 <tbody>
-<tr><td><a href="#tk1-a-tick-is-an-ordinary-record">TK1</a></td><td>Is a tick an ordinary record of kind <code>tick</code>?</td><td>Yes; its payload is the whole tick, and it has no id but its record id</td><td>The tick record</td></tr>
-<tr><td><a href="#tk2-a-tick-carries-its-result">TK2</a></td><td>Does a tick carry its result, or only the result's hash?</td><td>Both</td><td>The tick record</td></tr>
-<tr><td><a href="#tk3-how-a-tick-names-its-spec">TK3</a></td><td>How a tick names its spec</td><td>By a hash of the spec as parsed, and it carries the spec too</td><td>The tick record</td></tr>
-<tr><td><a href="#tk4-covers-lists-every-record-that-was-folded">TK4</a></td><td>What <code>covers</code> lists</td><td>Every record that was folded, each id once; a tick among them is one record</td><td>The tick record</td></tr>
-<tr><td><a href="#tk5-which-covered-records-were-read-without-a-payload">TK5</a></td><td>How a tick says which covered records it read without a payload</td><td>A list, <code>withheld</code>, left out when empty</td><td>The tick record</td></tr>
-<tr><td><a href="#tk6-what-a-spec-reads-of-a-tick">TK6</a></td><td>What a later spec reads of a tick</td><td>Nothing new: the payload rules of 2026-11-21. A total across ticks is not in step 4</td><td>The tick record</td></tr>
-<tr><td><a href="#tk7-checking-a-tick">TK7</a></td><td>How a tick is checked</td><td>A verb with three answers; a store admits a tick without checking it</td><td>The first tick, and step 4's exit</td></tr>
-<tr><td><a href="#tk8-the-name-of-the-window-field">TK8</a></td><td>The name of the window field</td><td><code>env.when</code></td><td>The window field</td></tr>
-<tr><td><a href="#tk9-which-rules-a-tick-was-folded-under">TK9</a></td><td>How a tick says which rules it was folded under</td><td>A member <code>rules</code>, bound into the spec's hash; it goes to <code>2</code> when what a spec answers changes (changed 2026-11-21, after Neon's review)</td><td>The tick record</td></tr>
-<tr><td><a href="#w1-an-adoption-step-before-standing-and-sharing">W1</a></td><td>An adoption step before standing and sharing</td><td>Yes, after ticks, with its CLI pieces built beside the tick work</td><td>The order of work</td></tr>
-<tr><td><a href="#w2-remember-which-segments-were-checked">W2</a></td><td>Remember which segments were checked</td><td>Yes, in the adoption step</td><td>Read speed on big stores</td></tr>
-<tr><td><a href="#w3-stop-extending-the-javascript-implementation">W3</a></td><td>Stop extending the JavaScript implementation</td><td>Yes, as a trial for step 4</td><td>How step 4 is built</td></tr>
-<tr><td><a href="#w4-the-refusal-for-input-that-is-wrong-twice">W4</a></td><td>The refusal for input that is wrong twice</td><td>One answer in the repository; the protocol text pins single faults only</td><td>How step 4 is built</td></tr>
-<tr><td><a href="#w5-the-mutant-check-on-every-merge-request">W5</a></td><td>The mutant check on every merge request, and new mutants for step 4</td><td>Keep (measured: under five minutes on the largest model change); add step 4's mutants after its exit</td><td>Nothing</td></tr>
-<tr><td><a href="#w6-generated-pages-in-the-repository">W6</a></td><td>Generated pages in the repository</td><td>Keep</td><td>Nothing</td></tr>
+<tr><td><a href="#tk10-six-details-of-the-check">TK10</a></td><td>Six details of <code>loops tick --check</code> that the rulings leave open</td><td>As in its table; the build follows them meanwhile</td><td>Nothing yet: the check is three merge requests away</td></tr>
 </tbody></table></div>
-<p>The tick record is the next thing to build, and TK1 to TK9 are its proposal (2026-11-21). margins-claude reviewed it; its four additions are in the entries, and TK9 is one of them. W3, W4 and W5 are wanted with them, before it is built.
-Each W entry ends with Neon's comments on it (2026-11-21) and what the coordinator makes of them.</p>
-<p>After the tick record and the W entries: <a href="#being-prepared">what is being prepared</a>, <a href="#deferred-by-you">what you deferred</a> and <a href="#ruled">what is ruled</a>. Nothing waits to be confirmed: under your ruling of 2026-11-21 an implementer choice comes here only when it changes bytes or answers.</p>
-<h2 id="the-tick-record">The tick record</h2>
-<p>A tick says: &quot;folding exactly these records with this spec gives this result.&quot;
-The cut note is ruled and the result codec is built. What the record itself holds is not designed, and these nine entries propose it.
-The technical form (the hash rule, the canonical forms, the laws to state) is in <a href="note-2026-11-21-tick-record.html">the tick record note</a>.</p>
-<p><strong>The example every entry uses.</strong> Your laptop's store holds six backup records: three services, the nights of 16 and 17 November.</p>
-<div class="table-scroll" tabindex="0"><table><thead><tr><th scope="col">Record</th><th scope="col">Service</th><th scope="col">Night</th><th scope="col" class="align-right"><code>mb</code></th></tr></thead>
+<p>Every earlier entry is ruled (2026-11-21).</p>
+<ul>
+<li><p>The tick record, TK1 to TK9: ruled, and being built. The questions as they were put, with their examples, are in <a href="note-2026-11-21-tick-record.html#10-the-questions-as-they-were-put">the tick record note</a>.</p></li>
+<li><p>The order of work, W1 to W6: ruled. The entries as put are in <a href="note-2026-11-21-order-of-work.html">the order-of-work note</a>.</p></li>
+</ul>
+<p>TK10 is the first entry that comes from building the tick record. More may follow: any choice that changes a tick's bytes, a refusal code or a check's answer and that the rulings do not settle.</p>
+<p>After this: <a href="#being-prepared">what is being prepared</a>, <a href="#deferred-by-you">what you deferred</a> and <a href="#ruled">what is ruled</a>. Nothing waits to be confirmed: under your ruling of 2026-11-21 an implementer choice comes here only when it changes bytes or answers.</p>
+<h2 id="the-tick-record-while-it-is-built">The tick record, while it is built</h2>
+<h3 id="tk10-six-details-of-the-check">TK10: six details of the check</h3>
+<p><strong>Question.</strong> The plan for the build found six places where TK1 to TK9 do not say what <code>loops tick --check</code> answers. What should it answer in each?</p>
+<p>Nothing here is built, so each answer below is what the verb would say. The store is the one of the tick record's examples: six backups, and the laptop's tick T over them (<code>runs</code> 6, <code>mb</code> 1027). The build follows the recommended column until you rule otherwise; changing a row later changes one branch of the check and its vectors.</p>
+<div class="table-scroll" tabindex="0"><table><thead><tr><th scope="col"></th><th scope="col">The case</th><th scope="col">Example</th><th scope="col">Recommended</th><th scope="col">The other choice</th></tr></thead>
 <tbody>
-<tr><td><code>r:kvvv…</code></td><td>jellyfin</td><td>16</td><td class="align-right">412</td></tr>
-<tr><td><code>r:ftlf…</code></td><td>pihole</td><td>16</td><td class="align-right">3</td></tr>
-<tr><td><code>r:6p8c…</code></td><td>gitea</td><td>16</td><td class="align-right">88</td></tr>
-<tr><td><code>r:fqqv…</code></td><td>jellyfin</td><td>17</td><td class="align-right">419</td></tr>
-<tr><td><code>r:vm0f…</code></td><td>pihole</td><td>17</td><td class="align-right">10</td></tr>
-<tr><td><code>r:53eo…</code></td><td>gitea</td><td>17</td><td class="align-right">95</td></tr>
+<tr><td>1</td><td><strong>A payload erased here, with its bytes still on disk.</strong> A store that imports an eraser does not rewrite its old segments.</td><td>The NAS imports an eraser of <code>r:kvvv…</code> after T was written. T does not cover the eraser. The payload's bytes are still in a segment, and <code>loops get r:kvvv…</code> no longer shows them. Run on today's binary with two stores: after the import, <code>get</code> answers the record without its payload, and one segment file still holds the payload's text.</td><td><code>cannot check: 1 payload the tick read is not held</code>. The check reads what the store's own reading gives, and no more.</td><td><code>same</code>, by reading the bytes. The check would then read what the store was told to forget.</td></tr>
+<tr><td>2</td><td><strong>A covered eraser that the tick ignores, on a machine missing other records.</strong></td><td>A tick covers the six and an eraser of <code>r:kvvv…</code>, and leaves <code>withheld</code> out. The checker holds the eraser and four of the six.</td><td>Not a tick, at once (<code>tick-withheld-erased</code>). The eraser's envelope and the tick prove it; no missing record could change it.</td><td><code>cannot check: 2 covered records are not held</code>, until every covered record has arrived.</td></tr>
+<tr><td>3</td><td><strong>A tick made under another version of the rules.</strong></td><td>A tick states <code>&quot;rules&quot;: &quot;2&quot;</code>. The NAS runs version 1.</td><td>The NAS checks only what no version changes: the members, the two id lists, that <code>spec-hash</code> fits the label for <code>2</code>, that <code>result-hash</code> fits <code>result</code>. Then <code>cannot check: made under newer rules</code>. It does not parse the spec or judge the result's shape.</td><td>Judge the spec and the result by today's grammar. A fold type added in version 2 would make an honest tick read as broken.</td></tr>
+<tr><td>4</td><td><strong>A result that no fold could give.</strong></td><td>A tick like T whose <code>result</code> says <code>runs</code> 6 and lists five ids, with <code>result-hash</code> made from that.</td><td>With the six records held: <code>differs</code>. The reader checks a result's shape and spelling for its slots (an integer as decimal text, a list of ids) and nothing about whether its parts agree.</td><td>Not a tick. Each such test (a count equals its list's length, a listed id is covered) is one more rule that every implementation must share.</td></tr>
+<tr><td>5</td><td><strong>How <code>rules</code> is spelled.</strong></td><td><code>&quot;1&quot;</code>, <code>&quot;2&quot;</code>, <code>&quot;10&quot;</code> against <code>&quot;01&quot;</code>, <code>&quot;0&quot;</code>, <code>&quot;&quot;</code> and the number <code>1</code>.</td><td>A positive whole number as decimal text with no leading zero, compared as a number. The others are not a tick.</td><td>Any text, compared as text. Then <code>&quot;10&quot;</code> sorts before <code>&quot;2&quot;</code>.</td></tr>
+<tr><td>6</td><td><strong>A <code>spec</code> this binary's parser refuses.</strong></td><td>T with <code>&quot;spec&quot;: 7</code> and a fitting hash; and T with a spec that uses a fold type from a later binary, with a fitting hash.</td><td>The first is not a tick: a spec is an object under every version. The second is <code>cannot check: this binary cannot read the spec</code>. Nonsense inside an object gets that answer too, since the check cannot tell it from a later binary's spec.</td><td>Treat every refused spec as not a tick. That is the false &quot;not a tick&quot; your ruling on TK9 removed.</td></tr>
 </tbody></table></div>
-<p>The spec <code>backups</code> counts them, adds up <code>mb</code> and lists them:</p>
-<pre><code>{&quot;vertex&quot;: &quot;backups&quot;, &quot;from&quot;: [{&quot;store&quot;: &quot;lab&quot;, &quot;kind&quot;: [&quot;backup&quot;]}],
- &quot;fold&quot;: {&quot;runs&quot;: {&quot;count&quot;: true}, &quot;mb&quot;: {&quot;sum&quot;: &quot;mb&quot;}, &quot;list&quot;: {&quot;collect&quot;: true}}}
-</code></pre>
-<p>Today <code>loops fold backups.json</code> on the laptop answers <code>runs</code> 6, <code>mb</code> 1027, and the six ids.
-The canonical result of that answer hashes to <code>res:d8eu…</code>. The CLI has no verb for the hash yet, so I computed it by the codec's rule; the same rule gives the hash of all 23 result vectors.</p>
-<p><strong>The tick this proposal would write for it</strong> (ids shortened):</p>
-<pre><code>env      kind &quot;tick&quot;, observer k:5eis… (you), emitted 2026-11-21T19:40:00Z, signed
-payload  {
-  &quot;spec&quot;:        {&quot;vertex&quot;: &quot;backups&quot;, &quot;from&quot;: [...], &quot;fold&quot;: {...}},
-  &quot;spec-hash&quot;:   &quot;spec:gs9s…&quot;,
-  &quot;covers&quot;:      [&quot;r:53eo…&quot;, &quot;r:6p8c…&quot;, &quot;r:fqqv…&quot;, &quot;r:ftlf…&quot;, &quot;r:kvvv…&quot;, &quot;r:vm0f…&quot;],
-  &quot;result&quot;:      {&quot;list&quot;: {&quot;heads&quot;: [six ids], &quot;unread&quot;: &quot;0&quot;},
-                  &quot;mb&quot;:   {&quot;unread&quot;: &quot;0&quot;, &quot;value&quot;: &quot;1027&quot;},
-                  &quot;runs&quot;: {&quot;unread&quot;: &quot;0&quot;, &quot;value&quot;: &quot;6&quot;}},
-  &quot;result-hash&quot;: &quot;res:d8eu…&quot;
-}
-</code></pre>
-<p>It is 1,097 bytes. Each entry below is about one part of it.</p>
-<h3 id="tk1-a-tick-is-an-ordinary-record">TK1: a tick is an ordinary record</h3>
-<p><strong>Question.</strong> Is a tick a record like any other, of kind <code>tick</code>, with the tick as its payload? Or is it a new sort of stored thing?</p>
-<p><strong>Example.</strong> With the tick above in the store:</p>
-<ul>
-<li><p><code>loops get r:…</code> shows it. <code>export</code>, <code>import</code>, <code>erase</code> and a sync treat it as they treat any record.</p></li>
-<li><p>You cite it by its record id, as you said on 2026-11-21.</p></li>
-<li><p>The NAS computes the same tick from the same six records. It writes its own record: another observer, another time, another id. The two payloads are the same bytes.</p></li>
-</ul>
-<p><strong>What &quot;ordinary&quot; means, exactly.</strong></p>
-<ul>
-<li><p>A store takes a tick as it takes any record. Nothing checks the payload when it is written or imported. Checking is a verb (<a href="#tk7-checking-a-tick">TK7</a>).</p></li>
-<li><p>A tick has no id but its record id. Two ticks say the same thing when their payloads are the same bytes.</p></li>
-<li><p>A content tick and a witness tick are the same record. In step 4 nothing in it says how its records were chosen. It claims only what it computed.</p></li>
-<li><p>Any record of kind <code>tick</code> whose payload has this shape is a tick. One whose payload does not is &quot;not a tick&quot; to the check, and still a record.</p></li>
-</ul>
-<p><strong>Options.</strong></p>
-<ul>
-<li><p><strong>A (recommended).</strong> An ordinary record. The payload is the whole tick.</p></li>
-<li><p><strong>B.</strong> As A, and the payload also holds a hash of the tick itself. The design page says a content tick's id is &quot;the hash of vertex, covers and result&quot;. It would let a spec group equal ticks by one text field. Nothing needs it yet, and any reader can compute it from the other fields, so it can be added later without touching a tick already written.</p></li>
-<li><p><strong>C.</strong> A stored value that is not a record: no observer, no signature. Then citing, sending, syncing and erasing a tick each need new rules.</p></li>
-</ul>
-<h3 id="tk2-a-tick-carries-its-result">TK2: a tick carries its result</h3>
-<p><strong>Question.</strong> Does the tick hold the result, or only the result's hash?</p>
-<p><strong>Example.</strong> The NAS was sent the tick for the night of the 16th and never got the three backup records under it.</p>
-<ul>
-<li><p><strong>With the result:</strong> <code>loops get</code> on the NAS shows <code>mb</code> 503 and the three ids. A weekly tick over the nightly ticks can be read there.</p></li>
-<li><p><strong>With the hash only:</strong> the NAS sees <code>res:5itq…</code> and can read nothing. Only a holder of the three records learns what the tick said.</p></li>
-</ul>
-<p><strong>The cost is size.</strong> The example tick is 1,097 bytes with its result and 643 without. A result that lists ids is as long as its list.</p>
-<p><strong>Options.</strong></p>
-<ul>
-<li><p><strong>A (recommended).</strong> The result, and its hash beside it. The hash is what two machines compare, and a spec can test or group by it. A tick whose hash is not the hash of its result is not a tick.</p></li>
-<li><p><strong>B.</strong> The hash only.</p></li>
-<li><p><strong>C.</strong> The result only. The hash can be computed, but then no text field names the result.</p></li>
-</ul>
-<p><strong>What A costs beyond size: a tick outlives an erasure.</strong> A result holds more than ids. A slot with <code>by</code> on a payload field writes that field's values as its group names. You ruled on 2026-11-10 that erasure is the emergency stop, so that the content travels no further. Erasing a backup record does not reach a tick that covered it: a <code>by svc</code> result in that tick still says <code>jellyfin</code>, on every machine the tick was sent to.</p>
-<ul>
-<li><p>The rule of conduct: when you erase a record, erase the ticks that cover it too. They are records, so <code>loops erase</code> works on them.</p></li>
-<li><p>Finding them is one test: <code>where covers is &lt;id&gt;</code> (<a href="#tk6-what-a-spec-reads-of-a-tick">TK6</a>). <code>loops erase</code> can list them when it runs.</p></li>
-<li><p>Option B does not avoid this. A hash of a small result can be guessed, and a tick with only a hash is of no use to a reader without the records.</p></li>
-</ul>
-<p>Neon raised carrying the result; margins-claude and I agree with A. margins-claude raised the erasure point.</p>
-<h3 id="tk3-how-a-tick-names-its-spec">TK3: how a tick names its spec</h3>
-<p><strong>Question.</strong> How does a tick say which spec it folded, and does it carry that spec?</p>
-<p><strong>Example.</strong> In January you add a slot, <code>largest</code>, to <code>backups.json</code>. In February someone checks November's tick.</p>
-<ul>
-<li><p><strong>With only a hash:</strong> the file on disk now hashes to something else. The spec that made the tick is gone unless someone digs it out of git. The tick cannot be checked.</p></li>
-<li><p><strong>With the spec in the tick:</strong> the check needs the tick and the six records, and nothing else.</p></li>
-</ul>
-<p><strong>The hash.</strong> <code>spec-hash</code> is a hash of the spec in its parsed form, the form the <code>spec/parse</code> vectors already pin. So:</p>
-<ul>
-<li><p>Changing a <code>note</code> keeps the hash. Notes are not in the parsed form.</p></li>
-<li><p>Renaming the vertex, renaming the store in <code>from</code>, or reordering the list of kinds gives another hash.</p></li>
-<li><p>The hash names the spec as it is written down. Two specs that mean the same and are written differently have two hashes.</p></li>
-</ul>
-<p><strong>Options.</strong></p>
-<ul>
-<li><p><strong>A (recommended).</strong> The hash, and the spec itself. The spec here is 136 bytes. A tick whose hash is not the hash of its spec is not a tick.</p></li>
-<li><p><strong>B.</strong> The hash only, as the design page has it. A tick can be checked only while someone keeps its spec.</p></li>
-<li><p><strong>C.</strong> A spec becomes a record in the store, and a tick cites that record's id. That belongs with standing (&quot;a store carries its vertices&quot;). A does not block it.</p></li>
-</ul>
-<p><strong>The store name selects nothing in a tick.</strong> <code>covers</code> already says which records were folded. A check runs the spec's <code>kind</code>, <code>about</code> and <code>of</code> tests and its slots over those records, and never asks which store. The name stays in the hashed text, so two machines write one tick only when they hold the same spec text.</p>
-<p><strong>A second choice inside this one.</strong> Should the hash leave out the vertex's name and the store names, so that it names only what the fold does? I recommend no: one written form, already pinned, is simpler than a second form made for hashing.</p>
-<h3 id="tk4-covers-lists-every-record-that-was-folded">TK4: <code>covers</code> lists every record that was folded</h3>
-<p><strong>Question.</strong> What does <code>covers</code> hold?</p>
-<p><strong>Proposal.</strong> The ids of every record the fold was given, each once, sorted. The result is what the spec gives when run over exactly those records and no others.
-<code>loops tick</code> gives the fold what the store holds, or a cut of it: all of it, and not only the records the spec takes. In the example the two are the same six, because the store holds nothing else. The second example below shows why they can differ.</p>
-<p><strong>Example: a late record.</strong> The NAS holds the six records and a seventh, a pihole backup that reached only the NAS.</p>
-<ul>
-<li><p><code>loops fold backups.json</code> on the NAS today: <code>runs</code> 7, <code>mb</code> 1031, hash <code>res:pm7t…</code>. That is the NAS's present, not the tick.</p></li>
-<li><p>Folding only the six that the tick covers, on the NAS: <code>runs</code> 6, <code>mb</code> 1027, hash <code>res:d8eu…</code>. The same hash as the laptop's. I ran this today by folding a store that holds only the six.</p></li>
-</ul>
-<p>So the list is what makes the tick mean the same on both machines.</p>
-<p><strong>Example: a record the spec does not take.</strong> jellyfin's disk is replaced and you write a record of another kind over its first backup: <code>loops emit retired &quot;this backup is void&quot; --prev r:kvvv…</code>. A second spec, <code>current</code>, counts the backups that nothing has replaced. Run today:</p>
-<div class="table-scroll" tabindex="0"><table><thead><tr><th scope="col">Folded</th><th scope="col"><code>current</code></th><th scope="col"><code>mb</code></th></tr></thead>
-<tbody>
-<tr><td>The store: the six backups and the <code>retired</code> record</td><td>5</td><td>615</td></tr>
-<tr><td>Only the six records the spec takes</td><td>6</td><td>1027</td></tr>
-</tbody></table></div>
-<p>The spec takes backups only, and its answer still depends on the <code>retired</code> record. A tick whose <code>covers</code> held only the six would be a true statement about those six, and it would not be what <code>loops fold</code> shows you. So <code>covers</code> holds the <code>retired</code> record too.</p>
-<p><strong>Example: a tick over ticks.</strong> You make a tick for each night, T16 and T17, and a weekly tick over them and one note.</p>
-<ul>
-<li><p>The weekly tick's <code>covers</code> holds three ids: T16, T17 and the note. It does not hold the six backup records.</p></li>
-<li><p>T16 and T17 are folded as records. The weekly fold reads what a spec can read of a tick (<a href="#tk6-what-a-spec-reads-of-a-tick">TK6</a>) and never opens them up.</p></li>
-<li><p>Checking the weekly tick needs those three records, not the six.</p></li>
-<li><p>The weekly tick is therefore not a tick over the six. It is another fold, with another result.</p></li>
-</ul>
-<p>This is Neon's subagent example: an orchestrator's tick covers two subagent ticks and its own three records, five ids and not 98.</p>
-<p><strong>What <code>covers</code> never holds.</strong> &quot;Everything tick X covers, and these too.&quot; It is shorter, but a check must then walk back through X, and what X names, to the start. All three agents reject it.</p>
-<p><strong>How the set is chosen in step 4.</strong> <code>loops tick</code> would take one of: every record the store holds; the records as of a time (by the ruled rule, section 2 of the cut note); or the ids you name, with what they build on. Whichever it is, the tick lists the ids outright. An empty list is allowed: &quot;the monitor saw nothing all night&quot; is a tick.</p>
-<p><strong>The cost is size.</strong> An id in the list is 57 bytes. Any tick made in homelab-audit lists all 9,053 ids, 516 KB, also for a spec that takes ten records. Two ways make ticks small, and neither changes the record:</p>
-<ul>
-<li><p>Name the records: a tick for each night over that night's records, and a weekly tick over the nightly ticks, as above.</p></li>
-<li><p>Cover only what the spec's answer depends on. The law that says which records those are is on main (<code>spec.slice</code>), and margins-claude's Python computes the set. The Rust does not yet. I would build it straight after step 4's exit, not in it.</p></li>
-</ul>
-<p><strong>Options.</strong></p>
-<ul>
-<li><p><strong>A (recommended).</strong> Every id, outright.</p></li>
-<li><p><strong>B.</strong> Ids, and &quot;what tick X covers&quot;: rejected above.</p></li>
-<li><p><strong>C.</strong> A hash of the set and no ids. Tiny. Then no one can say which records were folded, a late record cannot be seen, and an emit cannot use the tick as its base.</p></li>
-</ul>
-<h3 id="tk5-which-covered-records-were-read-without-a-payload">TK5: which covered records were read without a payload</h3>
-<p><strong>Question.</strong> A covered record may be held without its payload: erased, or never sent. How does the tick say which were read that way?</p>
-<p><strong>Example.</strong> On a copy that holds the six records, I erased jellyfin's first backup (<code>r:kvvv…</code>) and folded the same six:</p>
-<div class="table-scroll" tabindex="0"><table><thead><tr><th scope="col"></th><th scope="col"><code>runs</code></th><th scope="col"><code>mb</code></th><th scope="col"><code>list</code></th><th scope="col">Hash</th></tr></thead>
-<tbody>
-<tr><td>Payload held</td><td>6</td><td>1027, 0 unread</td><td>the six ids</td><td><code>res:d8eu…</code></td></tr>
-<tr><td>Payload erased</td><td>6</td><td>615, 1 unread</td><td>the same six ids</td><td><code>res:jv9h…</code></td></tr>
-</tbody></table></div>
-<p>Same spec, same six ids, two results. You ruled on 2026-11-20 that the tick must say which covered records were read open, so that one set of inputs never names two results.</p>
-<p><strong>Proposal.</strong> A list, <code>withheld</code>: the covered ids that were folded without a payload, sorted. It is left out when it is empty, so most ticks have no such member. The second holder's tick holds <code>&quot;withheld&quot;: [&quot;r:kvvv…&quot;]</code>.</p>
-<ul>
-<li><p>The spec's hash, <code>covers</code> and <code>withheld</code> together are the tick's inputs. Equal inputs give equal results; the fold laws already say so.</p></li>
-<li><p>Erased and never sent are one state here, as you ruled on 2026-11-10.</p></li>
-<li><p>The list has one right content: exactly the covered records that were folded without a payload. When <code>covers</code> holds a record and the record that erases it, the erased one is in <code>withheld</code>. A tick that leaves it out says the same thing in other bytes, so it is not a tick, and the check says so.</p></li>
-</ul>
-<p><strong>What a checker with other holdings does.</strong></p>
-<ul>
-<li><p>The tick says <code>r:kvvv…</code> was withheld, and the checker holds its payload: the checker leaves that payload unread and checks.</p></li>
-<li><p>The tick read all six open, and the checker lacks one payload: the answer is &quot;cannot check&quot; (<a href="#tk7-checking-a-tick">TK7</a>). The checker can write its own tick, with <code>withheld</code> stated. That is another tick, because its inputs differ.</p></li>
-</ul>
-<p><strong>Options.</strong></p>
-<ul>
-<li><p><strong>A (recommended).</strong> <code>withheld</code>, left out when empty.</p></li>
-<li><p><strong>B.</strong> A list of the records read open. It doubles nearly every tick.</p></li>
-<li><p><strong>C.</strong> Each entry of <code>covers</code> is an object, <code>{&quot;id&quot;, &quot;open&quot;}</code>. Then <code>covers</code> no longer reads as a set of ids to a spec (<a href="#tk6-what-a-spec-reads-of-a-tick">TK6</a>).</p></li>
-<li><p><strong>D.</strong> Nothing is stated. That is against the ruling.</p></li>
-</ul>
-<p>The name is yours to change. <code>withheld</code> is the word a reading already prints.</p>
-<h3 id="tk6-what-a-spec-reads-of-a-tick">TK6: what a spec reads of a tick</h3>
-<p><strong>Question.</strong> When a tick is itself folded (a weekly tick over nightly ticks, an orchestrator over subagents), what can the spec read of it?</p>
-<p><strong>Proposal.</strong> Nothing new. A tick is a record, and its payload is read by the rules you set on 2026-11-21:</p>
-<ul>
-<li><p><code>spec-hash</code> and <code>result-hash</code> are text: <code>is</code>, <code>not</code> and <code>by</code> work on them.</p></li>
-<li><p><code>covers</code> and <code>withheld</code> are lists, so they read as sets: <code>is</code> asks &quot;does it cover this record&quot;, and <code>by</code> groups a tick under each record it covers.</p></li>
-<li><p><code>spec</code> and <code>result</code> are objects: present, with no value a test or a sum can read.</p></li>
-</ul>
-<p><strong>Example, run today.</strong> I wrote three ticks by hand into the laptop's store: T16 (the three records of the 16th), T17 (the three of the 17th) and TJ (jellyfin's two). Then I folded a spec over the ticks:</p>
-<div class="table-scroll" tabindex="0"><table><thead><tr><th scope="col">Slot</th><th scope="col">Asks</th><th scope="col">Answer today</th></tr></thead>
-<tbody>
-<tr><td><code>count</code></td><td>How many ticks</td><td>3</td></tr>
-<tr><td><code>count</code> where <code>covers</code> is <code>r:kvvv…</code></td><td>Which cover jellyfin's first backup</td><td>2 (T16 and TJ)</td></tr>
-<tr><td><code>count</code> by <code>covers</code></td><td>How often each record is covered</td><td>jellyfin's two records: 2 each; the other four: 1 each</td></tr>
-<tr><td><code>count</code> by <code>spec-hash</code></td><td>Ticks of each spec</td><td>3 under <code>spec:gs9s…</code></td></tr>
-<tr><td><code>sum</code> of <code>result</code></td><td>A total across the ticks</td><td>0, with 3 unread</td></tr>
-</tbody></table></div>
-<p><strong>What this gives.</strong> A weekly tick can count and list the nightly ticks, find the ticks that cover a record, and find records covered twice.</p>
-<p><strong>What it does not give.</strong> It cannot add up <code>mb</code> across the nightly ticks. The number 503 sits inside <code>result</code>, and the rules read no member inside an object. It is also written as the text <code>&quot;503&quot;</code>, and a sum does not read text.
-The weekly total today is a tick over the six records themselves: 1027.</p>
-<p><strong>Options.</strong></p>
-<ul>
-<li><p><strong>A (recommended).</strong> Nothing new in step 4.</p></li>
-<li><p><strong>B.</strong> Two additions: a field name that reaches inside an object (<code>result.mb.value</code>), and a sum that reads a number written as text. Each changes what every spec answers, not only for ticks. Numbers as text is already coming with the import. I would take B up when a real spec needs a total across ticks.</p></li>
-<li><p><strong>C.</strong> The tick repeats some numbers at its top level as JSON numbers. A sum past 2^53 does not fit in one, and someone must choose which numbers.</p></li>
-</ul>
-<p><strong>A caution for B, whenever it comes.</strong> TJ overlaps T16 and T17. A total across the three would add jellyfin's backups twice: 503 + 524 + 831 = 1858, against 1027. The <code>by covers</code> slot above is how a spec sees that overlap.</p>
-<h3 id="tk7-checking-a-tick">TK7: checking a tick</h3>
-<p><strong>Question.</strong> How is a tick checked, and does a store refuse a tick that fails?</p>
-<p><strong>Proposal.</strong> A verb, <code>loops tick --check &lt;id&gt;</code>, with three answers:</p>
-<div class="table-scroll" tabindex="0"><table><thead><tr><th scope="col">Answer</th><th scope="col">When</th></tr></thead>
-<tbody>
-<tr><td><code>same</code></td><td>The store holds every covered record, with a payload for each one the tick read open. The fold gives the tick's result, byte for byte.</td></tr>
-<tr><td><code>differs</code></td><td>The same, and the fold gives another result. Both hashes are shown.</td></tr>
-<tr><td><code>cannot check</code></td><td>Covered records are not held, or payloads the tick read open are not held. It says how many of each.</td></tr>
-</tbody></table></div>
-<p>A record that is not a tick is refused with a reason: for example its <code>result-hash</code> is not the hash of its <code>result</code>. The refusal codes are chosen when it is built, under <a href="#w4-the-refusal-for-input-that-is-wrong-twice">W4</a>.
-A tick whose own payload the store does not hold, because it was erased or never arrived, answers <code>cannot check</code>, not &quot;not a tick&quot; (Neon).</p>
-<p><strong>Example</strong> (the verb is not built; this is what it would answer). The laptop writes the tick over the six records and the NAS has synced.</p>
-<ul>
-<li><p><code>loops tick --check</code> on the NAS: <code>same</code>.</p></li>
-<li><p>On a machine that holds four of the six: <code>cannot check: 2 covered records are not held</code>.</p></li>
-<li><p>On the copy where <code>r:kvvv…</code> is erased: <code>cannot check: 1 payload the tick read is not held</code>.</p></li>
-</ul>
-<p><strong>Step 4 is done when</strong> the first of those answers <code>same</code> on a second machine. Put the other way: the NAS makes its own tick over the same six, and its payload is the laptop's, byte for byte.</p>
-<p><strong>What the check does not do.</strong></p>
-<ul>
-<li><p>It does not refuse a tick at the door. <code>import</code> and a sync take a tick that would answer <code>differs</code>. A store that lacks the covered records cannot check, so a rule at the door would depend on what had arrived first, and two copies of one store could then differ. Whose ticks to believe is a question for standing (step 3).</p></li>
-<li><p>It checks one level. For the weekly tick it folds T16, T17 and the note. It does not check T16 itself.</p></li>
-<li><p>It does not say that the covered records were all there was. It reports two things beside its answer:</p>
-<ul>
-<li><p>Whether <code>covers</code> holds everything its own records build on. That is read from the covered records alone, so it is the same on every machine. A tick for which it is &quot;no&quot; is still a tick; it is a statement about a set that no one need ever have held.</p></li>
-<li><p>How many more records the spec would take from this store now: &quot;1 record the spec takes is not covered&quot;. That is the late record of <a href="#tk4-covers-lists-every-record-that-was-folded">TK4</a>. It counts only records the spec takes. It misses a late <code>retired</code> record, which the spec does not take; seeing those needs the function TK4 leaves for after the exit.</p></li>
-</ul></li>
-</ul>
-<p><strong>Options.</strong></p>
-<ul>
-<li><p><strong>A (recommended).</strong> The verb, three answers, and no rule at the door.</p></li>
-<li><p><strong>B.</strong> A store refuses a tick whose result it can recompute and finds different. Rejected above: the answer would depend on the order of arrival.</p></li>
-<li><p><strong>C.</strong> No verb. To check a tick you make your own and compare.</p></li>
-</ul>
-<h3 id="tk8-the-name-of-the-window-field">TK8: the name of the window field</h3>
-<p><strong>Question.</strong> You ruled on 2026-11-20 that a window is a <code>where</code> test on the time that content order already uses: a record's <code>occurred</code> when it states one, and its <code>emitted</code> when it does not. The field's name was left open.</p>
-<p><strong>Example, run today.</strong> The NAS holds eight backup records. Seven state <code>occurred</code> (the 16th or the 17th). Tonight's states none. All eight were written today. &quot;The backups of the 21st&quot;:</p>
-<div class="table-scroll" tabindex="0"><table><thead><tr><th scope="col">Test on</th><th scope="col">Bounds 21 Nov to 22 Nov</th><th scope="col">Why</th></tr></thead>
-<tbody>
-<tr><td><code>env.occurred</code></td><td>0</td><td>Tonight's record states no <code>occurred</code>, so it passes neither bound</td></tr>
-<tr><td><code>env.emitted</code></td><td>8</td><td>Every record was written today, the backfilled ones too</td></tr>
-<tr><td>the window field</td><td>1</td><td><code>occurred</code> where stated, otherwise <code>emitted</code></td></tr>
-</tbody></table></div>
-<p>Only the third is the answer you meant.</p>
-<p><strong>Options.</strong> <code>env.when</code> (recommended), <code>env.at</code>, <code>env.time</code>, <code>env.span</code>.
-The field takes the tests that <code>env.occurred</code> takes, and compares the start of the span as it does. Only the name is asked here.</p>
-<h3 id="tk9-which-rules-a-tick-was-folded-under">TK9: which rules a tick was folded under</h3>
-<p><strong>Question.</strong> A spec's text can stay the same while its answer changes, because the rules changed. How does a tick say which rules it was folded under?</p>
-<p><strong>Example.</strong> This happened today. &quot;The smallest number of snapshots any host has&quot;, a <code>min</code> of <code>n</code> over four backups:</p>
-<div class="table-scroll" tabindex="0"><table><thead><tr><th scope="col">Binary</th><th scope="col">Answer</th></tr></thead>
-<tbody>
-<tr><td>This morning's</td><td>0, with 0 unread</td></tr>
-<tr><td>Now, after your ruling PV2</td><td>9, with 2 unread</td></tr>
-</tbody></table></div>
-<p>The spec did not change by one byte. Had a tick been written this morning, a check tonight would answer <code>differs</code>, and its writer was honest.</p>
-<p><strong>Proposal.</strong> The spec's hash is made with a label, <code>loops/spec-hash/v1:</code>. That label is the version of the rules too. When a change alters what any spec answers, the label becomes <code>v2</code>, and every spec's hash changes with it.</p>
-<ul>
-<li><p>A check that meets a tick made under <code>v1</code> answers &quot;cannot check: made under older rules&quot;. It does not answer <code>differs</code>.</p></li>
-<li><p>A change of that sort is one that comes to you under your ruling of 2026-11-21 (W7), so each new version is ruled, never slipped in.</p></li>
-<li><p>The design page already says this: &quot;the spec hash pins the fold-vocabulary version&quot;.</p></li>
-<li><p>Nothing is at <code>v1</code> yet. <code>v1</code> will mean the rules as they stand when the first tick is built.</p></li>
-</ul>
-<p><strong>What the proposal gets wrong: a newer tick on an older machine.</strong> Neon found it. The laptop moves to <code>v2</code> and writes a tick. The NAS still runs <code>v1</code> and checks it.</p>
-<ul>
-<li><p>With the version only inside the hash, the NAS knows one label. The hash does not fit it, and a hash that fits no label it knows looks the same as a forged one. The NAS answers &quot;not a tick&quot; about an honest tick.</p></li>
-<li><p>With a member <code>&quot;rules&quot;: &quot;2&quot;</code>, the NAS reads the member first and answers &quot;cannot check: made under newer rules&quot;.</p></li>
-</ul>
-<p><strong>Options.</strong></p>
-<ul>
-<li><p><strong>A.</strong> The label in the spec's hash is the version. No new member. This was the recommendation until Neon's review.</p></li>
-<li><p><strong>B.</strong> A member of its own, <code>&quot;rules&quot;: &quot;1&quot;</code>, and the hash's label stays fixed. It can be read without trying each label. Nothing ties it to the hash, so the same spec has one hash under every version, and a store of results keyed by that hash would serve an old answer.</p></li>
-<li><p><strong>C.</strong> Nothing. A tick made before a change of rules reads as a false tick after it.</p></li>
-<li><p><strong>D (recommended).</strong> Both: the member <code>&quot;rules&quot;: &quot;1&quot;</code>, and the label made from it, <code>loops/spec-hash/v1:</code>. The check reads the member, then requires the hash to fit that label, so the member cannot drift from the hash. It costs one short member.</p></li>
-</ul>
-<p><strong>What D gives beyond the answer on an older machine.</strong></p>
-<ul>
-<li><p>After a change of rules, the ticks to make again are found by a spec: <code>where rules is &quot;1&quot;</code>. With A only the check verb knows.</p></li>
-<li><p>A check does not try each old label in turn.</p></li>
-<li><p>Equal inputs still give equal results, because the spec's hash still changes with the rules.</p></li>
-</ul>
-<p><strong>Three things to settle with it.</strong> The coordinator's view; none is built.</p>
-<ul>
-<li><p><strong>What &quot;the rules&quot; covers.</strong> Everything between the covered records and the result's bytes: settling, admission, what a source takes, the tests, the folds and the payload reading. Not only the fold types. Standing (step 3) is likely to change admission, so a <code>2</code> is already in sight, beside the one Neon names (&quot;numbers stored as text&quot;, in Being prepared).</p></li>
-<li><p><strong>What does not raise it.</strong> A new fold type or test changes no existing spec's answer, so the number stays. An older machine then meets a spec it cannot parse under a number it knows. It must answer &quot;cannot check: this binary cannot read the spec&quot;. &quot;Not a tick&quot; is kept for what no version could mend: a member missing, or a hash that does not fit what it is the hash of. A fault in one implementation is not a change of rules either: the model is the rule.</p></li>
-<li><p><strong>A change voids every earlier tick, also those it cannot touch.</strong> A <code>count</code> by kind is not changed by how <code>min</code> reads a list, yet its ticks become &quot;made under older rules&quot; too. So beside that answer the check says what today's rules give: &quot;under today's rules: the same result&quot; or &quot;another result&quot;. Neither is a verdict on the writer.</p></li>
-</ul>
-<p><strong>Views.</strong> margins-claude raised the question. Neon proposes D (its words: option B, keeping the versioned label). The coordinator agrees and has changed the recommendation from A to D.</p>
-<h3 id="what-follows-from-these-with-no-ruling-asked">What follows from these, with no ruling asked</h3>
-<ul>
-<li><p><strong>A reader's tick and a writer's base are one record used two ways.</strong> You ruled that an emit may state a base (the cut note, section 8). <code>loops emit task --of task:42 status=done --base &lt;tick&gt;</code> reads the tick's <code>covers</code> and names the records of <code>task:42</code> in it that were live there. The tick needs no extra member for this.</p></li>
-<li><p><strong>An inbox's read marker is a private local file, not a tick.</strong> All three agents agree. A tick is for a boundary worth citing: a handoff, a sign-off, a subagent's finished task.</p></li>
-<li><p><strong>A base that covers nothing of the thing.</strong> If the tick you name as a base is a tick over ticks, it holds no record of <code>task:42</code>. The emit then names nothing, and stands beside whatever the store holds of the thing as a second head. That is honest: the base knew nothing of the thing. <code>loops emit</code> says &quot;the base covers no record of task:42&quot;. margins-claude has the law for this ready: it holds for any set, closed or not.</p></li>
-<li><p><strong>Ticking again.</strong> When a late record arrives, a new tick names the old one in <code>prev</code>, as any revision does. A record with <code>prev</code> states what it is of, so the two ticks are records of one thing: the first tick's id, or a name such as <code>tick:backups:2026-11-16</code>. No new rule.</p></li>
-</ul>
-<p><strong>Not in this proposal:</strong> boundaries and markers, the runner, where a tick lands (<code>into</code>), a record on the tick of how its set was chosen (the window's span, &quot;by reference&quot;), smaller <code>covers</code> by the slice laws, parameters, and pins.</p>
-<h2 id="order-of-work-and-how-we-work">Order of work, and how we work</h2>
-<h3 id="w1-an-adoption-step-before-standing-and-sharing">W1: an adoption step before standing and sharing</h3>
-<p><strong>Question.</strong> Should a step that makes the new <code>loops</code> your daily tool come before standing and sharing?</p>
-<p><strong>Example: a Monday morning.</strong> With the old tool you typed <code>sl read project</code> and saw each item's name and status. With the new <code>loops</code> today:</p>
-<ul>
-<li><p>A read needs a JSON spec written by hand for each question (<code>.loops/vertices/project.json</code>).</p></li>
-<li><p>There is no <code>ls</code>. Nothing lists the things or kinds in a store without a spec.</p></li>
-<li><p>Nothing finds things by the start of a name. &quot;Every thing that starts with <code>task:</code>&quot; cannot be asked without a spec.</p></li>
-<li><p>Every answer is JSON.</p></li>
-<li><p>The shell finds the old Python <code>loops</code> first. rex-tools reads the text of <code>loops --help</code> to learn which one it got.</p></li>
-<li><p>Your 11,037 facts in six stores are not in it.</p></li>
-</ul>
-<p>So the only daily users of the new tool are agents.</p>
-<p><strong>What the step would build.</strong></p>
-<ul>
-<li><p>An import of the old stores as a shadow: the old tool stays in charge, and the copy is read beside it to compare.</p></li>
-<li><p><code>ls</code>, a scan by name prefix, relative times, and a plain-text view.</p></li>
-<li><p>Reads across several stores. A spec names a store in <code>from</code> today, and the name is ignored: a spec naming <code>homelab-audit</code> and <code>relay</code> was answered from whatever store was in the directory. In the old setup homelab-audit, homelab-coord and relay are three stores, and <code>generate_changelog.py</code> went around the CLI to combine them. This is the one piece Neon would not give up; it needs no change to the protocol.</p></li>
-<li><p>The cache of <a href="#w2-remember-which-segments-were-checked">W2</a>.</p></li>
-</ul>
-<p><strong>Options.</strong></p>
-<div class="table-scroll" tabindex="0"><table><thead><tr><th scope="col"></th><th scope="col">Order</th><th scope="col">When you would be using it daily</th></tr></thead>
-<tbody>
-<tr><td>A</td><td>Payload values, the tick record and a first tick, adoption, then standing with sharing</td><td>After ticks</td></tr>
-<tr><td><strong>A, in parallel (recommended)</strong></td><td>As A, and the adoption pieces that touch only the CLI (<code>ls</code>, the prefix scan, the plain view, reads across stores, the shadow import) are built beside the tick work</td><td>Piece by piece, from now</td></tr>
-<tr><td>B</td><td>Your order of 2026-11-10 as it stands: ticks, then standing with sharing. The adoption pieces stay &quot;later work&quot;.</td><td>After the two largest steps are built, with no daily use to test them</td></tr>
-<tr><td>C</td><td>Adoption first, then ticks</td><td>Soonest. Ticks, which Recall and handoffs between agents need, wait.</td></tr>
-</tbody></table></div>
-<p>I lean to A because the tick work is in motion: the laws are in the model and the codec is built. C is a fair choice too; the import needs nothing from ticks.
-Neon and margins-claude both support an adoption step before standing.</p>
-<p><strong>Neon's comments, and what I make of them.</strong></p>
-<ul>
-<li><p><em>A or C, never B. If A, keep step 4 tight to its exit and let the CLI-only adoption work run in parallel.</em> I agree, and it is now the recommended row. The CLI pieces touch nothing in the model, a Codex worker can build each, and their choices are implementer choices under your ruling of 2026-11-21. The tick proposal is mine to write and does not wait on them.</p></li>
-<li><p><em>Do not let issue #8 gate adoption.</em> Issue #8 is the law for a reader that caches. You ruled on 2026-11-11 that it is step 4's first law. No caching reader is being built, since the read path is fast enough without one. I agree with Neon: the law should be stated when a caching reader is built, and should not hold up step 4's exit. That changes your ruling of 2026-11-11, so it is part of this entry: <strong>say whether issue #8 leaves step 4.</strong></p></li>
-<li><p><em>The shadow import should write a few large segments, not one per record.</em> Agreed. It is how the import would be built anyway (<code>loops import</code> or <code>emit -</code>).</p></li>
-<li><p><em>Reads across stores must take the union of the named stores first, then run each source over it</em> (from its review of the tick record). Agreed, and it is what <code>protocol/spec.md</code> says now. A tick's check runs every source over <code>covers</code> and ignores the store names (<a href="#tk3-how-a-tick-names-its-spec">TK3</a>). If a fold routed each source to its own store, <code>loops fold</code> and the check would disagree whenever a record in one store fits another source.</p></li>
-</ul>
-<p><strong>Done when</strong> <code>loops</code> is first on <code>PATH</code> for daily work.</p>
-<h3 id="w2-remember-which-segments-were-checked">W2: remember which segments were checked</h3>
-<p><strong>Question.</strong> May a read skip the signature checks on a segment that this user's own <code>loops</code> has already checked?</p>
-<p><strong>Example.</strong> homelab-audit has 9,053 facts. Once imported, every <code>loops</code> command checks every signature before it answers: about half a second each time (measured: <code>loops check</code> over 9,000 records takes 0.53 s).
-A shell prompt or a chat hook that reads on every prompt pays that every time. Writing 2,000 records one emit at a time takes 145 s, because each emit checks all that came before.</p>
-<p><strong>The proposal</strong> (Neon's design; I think it is sound):</p>
-<ul>
-<li><p>A file per user, outside the store (under <code>~/.cache/loops/</code>), lists the hashes of segments that were checked whole and found clean.</p></li>
-<li><p>Every read still hashes each segment's bytes, so a segment changed in place is caught. Only the signature checks are skipped.</p></li>
-<li><p>A segment with a refused line is never listed, so <code>store-not-clean</code> still fires every time.</p></li>
-<li><p><code>loops check</code> ignores the file and checks everything.</p></li>
-<li><p>The file is named for the version of the checking rules that wrote it. A newer, stricter <code>loops</code> does not trust what an older one checked.</p></li>
-<li><p>The file is never inside <code>.loops/</code>. A store that came from a clone or a shared directory could otherwise bring its own &quot;already checked&quot; list.</p></li>
-</ul>
-<p><strong>Options.</strong></p>
-<ul>
-<li><p><strong>Yes, in the adoption step (recommended).</strong> That is when the first large store exists.</p></li>
-<li><p>Yes, now.</p></li>
-<li><p>No: every read checks everything, as today.</p></li>
-</ul>
-<p><strong>What it buys.</strong> Neon estimates a read of 9,000 records goes from about 0.6 s to under 0.2 s. That is an estimate, not a measurement.</p>
-<p><strong>Neon's comment.</strong> My first version of this entry left out the bullet about the version of the checking rules. Neon is right that it is required; it is added above.</p>
-<h3 id="w3-stop-extending-the-javascript-implementation">W3: stop extending the JavaScript implementation</h3>
-<p><strong>Question.</strong> Each protocol piece is built three times today: in Lean (the model), in JavaScript, and in Rust, and a fuzz run compares all three. Should the pieces from ticks on be built in Lean and Rust only?</p>
-<p><strong>Example: the tick record.</strong> The last piece built the present way was the result codec: <code>model/Loops/Result.lean</code>, <code>interop/js/result.mjs</code> and <code>rust/core/src/result.rs</code>, then the fuzz generator taught about it.</p>
-<div class="table-scroll" tabindex="0"><table><thead><tr><th scope="col"></th><th scope="col">The tick record is built in</th><th scope="col">Checked by</th></tr></thead>
-<tbody>
-<tr><td>A, as now</td><td>Lean, JavaScript, Rust</td><td>The three-way fuzz; margins-claude's Python from outside</td></tr>
-<tr><td><strong>B, freeze (recommended as a trial)</strong></td><td>Lean, Rust</td><td>A two-way fuzz; margins-claude's Python from outside</td></tr>
-<tr><td>C, retire JavaScript now</td><td>Lean, Rust</td><td>The same, and the existing layers lose their third implementation too</td></tr>
-</tbody></table></div>
-<p>Under B the JavaScript stays for everything it has today (records, folds, specs, the result codec) and is kept passing its vectors, the payload values change included. It does not grow ticks, standing or sync.</p>
-<p><strong>Views.</strong> Neon proposes B. margins-claude is against retiring it (C): JavaScript is what the in-repo fuzz compares, and its own Python lives in another repository and is not in CI. It has no objection to B as a trial for step 4, with the risk below. I recommend B for step 4 only, looked at again when ticks are done.</p>
-<p><strong>What B risks.</strong> When Lean and Rust disagree, no third implementation says which is wrong; the model wins by definition.</p>
-<p><strong>Neon's comments, and what I make of them.</strong></p>
-<ul>
-<li><p><em>The first version of this entry overstated the risk.</em> It said a misreading shared by Lean and Rust would go unseen because the same sessions write both. Neon is right: the same sessions write the JavaScript too, so it never guarded against that. The implementation written apart from us, from the prose, is margins-claude's Python, and it stays under every option. I have taken the sentence out.</p></li>
-<li><p><em>Updating JavaScript once for payload values, then freezing at step 4, is a clean trial.</em> Agreed; that is what B says.</p></li>
-<li><p><em>If B holds, the workbench page should use the Rust core compiled for the browser, not the JavaScript.</em> Agreed. The &quot;workbench page&quot; row in the roadmap changes when you rule B.</p></li>
-</ul>
-<p><strong>What I do not have.</strong> A count of faults that only the JavaScript side caught; margins-claude has none either. If you want it before ruling, I can go through the fuzz reports for it.</p>
-<h3 id="w4-the-refusal-for-input-that-is-wrong-twice">W4: the refusal for input that is wrong twice</h3>
-<p><strong>Question.</strong> When an input has two faults, must every implementation give the same one refusal, and who chooses which?</p>
-<p><strong>Example.</strong> This slot has two faults, an empty field name and an unknown <code>follow</code>:</p>
-<pre><code>{&quot;sum&quot;: &quot;&quot;, &quot;follow&quot;: &quot;next&quot;}      refused: follow-invalid at fold.total.follow
-{&quot;sum&quot;: &quot;&quot;}                        refused: fold-argument at fold.total.sum
-</code></pre>
-<p>The protocol pins that the first answer is <code>follow-invalid</code> and never <code>fold-argument</code>. All three implementations give exactly that. Neon counts about 70 lines of protocol text that pin such orders, and several of the orders came to you for a ruling.
-The same will come up for ticks: a tick that names a record nobody holds, and whose hash also does not match.</p>
-<p><strong>Options.</strong></p>
-<ul>
-<li><p><strong>A.</strong> As now: one answer, and the order is brought to you.</p></li>
-<li><p><strong>B (Neon).</strong> For new steps, pin the refusal for a single fault only. Input that is wrong twice is &quot;refused with one of the codes that apply&quot;.</p></li>
-<li><p><strong>C (recommended, with Neon's guardrail below).</strong> One answer for every input, in the order the model checks. The implementer picks that order and notes it in the changelog. It does not come to you.</p></li>
-</ul>
-<p><strong>Why not B.</strong> The fuzz compares answers for equality today. Under B it would need to know every code that applies to an input, which is more machinery than following the model's order. Or it accepts &quot;both refused&quot; and no longer sees an implementation that refuses for the wrong reason.</p>
-<p><strong>Neon's comment, and what I make of it.</strong> Neon accepts C and adds a guardrail: keep the exact order as a rule inside this repository, between Lean and Rust, and do not write tables of tie-breaks into <code>protocol/*.md</code> that bind a reader written from the prose. I agree, and would rule it this way for new steps:</p>
-<ul>
-<li><p>The protocol text names each refusal and the one fault that causes it.</p></li>
-<li><p>The vectors for a new step hold inputs with one fault each.</p></li>
-<li><p>For an input with several faults, the protocol says only that it is refused with one of the codes that apply. Inside the repository the model's order decides which, and the fuzz checks Lean and Rust for the same answer.</p></li>
-</ul>
-<p>The cost: two readers written from the prose may name different codes for an input that is wrong twice. Both refuse it. The orders already pinned for records and specs stay as they are.</p>
-<h3 id="w5-the-mutant-check-on-every-merge-request">W5: the mutant check on every merge request</h3>
-<p><strong>What it is.</strong> The mutation catalogue holds 314 deliberate faults, each tied to an exact line of the model. Every merge request runs a quick check that each one still finds its line, and that a sample of 33 are caught. The full run is separate and on request.</p>
-<p><strong>Example.</strong> Making <code>value</code> and <code>n</code> ordinary fields changes about 70 places in the model. Some of the 314 faults point at those lines.</p>
-<ul>
-<li><p><strong>With the check (today):</strong> the same merge request must re-point them, or the pipeline is red.</p></li>
-<li><p><strong>Without it (Neon):</strong> the merge request is smaller. The next full run reports those faults as not applying, and someone re-points them in a batch, later, away from the change that moved them.</p></li>
-</ul>
-<p><strong>Options.</strong> Keep it, or move it to the full run. <strong>Recommended: keep it.</strong></p>
-<p><strong>Measured, 2026-11-21.</strong> The <code>value</code> and <code>n</code> change was the test: it touched 218 files and the model's record itself. 13 of the 314 faults needed work (8 re-pointed, 5 rewritten, none retired), and it took under five minutes, four of them the runner. So the check cost almost nothing on the largest model change so far, and it caught the 13 in the merge request that moved them. I no longer have low confidence: keep it.</p>
-<p><strong>Neon's comment, and what I make of it.</strong> Neon agrees, and adds: write no new mutants for step 4 until ticks have survived real use. So far every piece has added its mutants in the same merge request (nineteen for the result codec). I agree in part: while the tick record's shape is still moving, mutants tied to its lines would be re-pointed again and again. I would add step 4's mutants once its exit is met, a content tick recomputed to the same hash on two machines, and not wait longer than that. <strong>Say whether step 4's mutants wait for its exit.</strong></p>
-<h3 id="w6-generated-pages-in-the-repository">W6: generated pages in the repository</h3>
-<p><strong>Question.</strong> Neon proposes that the generated HTML under <code>out/</code> stop being committed and be built in CI.</p>
-<p><strong>Example.</strong> A merge request that changes one law shows the Lean change and, below it, the regenerated <code>out/</code> pages. A reviewer scrolls past generated HTML.</p>
-<p><strong>What stands in the way.</strong> Your site's sync script (<code>projects.gruel.world/scripts/sync.sh</code>) refuses to copy output that is not committed: &quot;so every hosted revision is a commit you can check out and regenerate&quot;.</p>
-<p><strong>Options.</strong> Keep committing <code>out/</code>, or change the site's sync to build it. <strong>Recommended: keep.</strong> The rule in the sync script is a good one and the cost is noise in a diff.</p>
-<p><strong>Neon's comment.</strong> Keep, and mark <code>out/</code> as generated in <code>.gitattributes</code> so that a merge request folds those files away. That costs nothing and suits either ruling, so it is done (2026-11-21).
-The other half of Neon's point, counts kept by hand in the roadmap, is done: the roadmap no longer holds them.</p>
+<p><strong>What is not asked.</strong> The names of the refusal codes and their order for input that is wrong twice are the implementer's, under your rulings on TK7 and W4, and go in the changelog. So do the two reports beside the answer (whether <code>covers</code> holds every <code>prev</code> and <code>under</code> target its records name; how many more records the spec would take now) and the verb's flags.</p>
 <h2 id="being-prepared">Being prepared</h2>
 <p>Nothing here needs you yet. It is listed so that you know what is coming.</p>
-<p><strong>The tick record</strong> is no longer here: it is proposed above as <a href="#the-tick-record">TK1 to TK9</a>.</p>
-<p><strong>Numbers stored as text</strong>, with the import (<a href="#w1-an-adoption-step-before-standing-and-sharing">W1</a>). <a href="#tk6-what-a-spec-reads-of-a-tick">TK6</a> shows one use for it.</p>
+<p><strong>Numbers stored as text</strong>, with the import (<a href="note-2026-11-21-order-of-work.html#w1-an-adoption-step-before-standing-and-sharing">W1</a>). <a href="note-2026-11-21-tick-record.html#tk6-what-a-spec-reads-of-a-tick">TK6</a> shows one use for it.</p>
 <h2 id="deferred-by-you">Deferred by you</h2>
 <p>Not asked now. Each comes back when its step does.</p>
 <ul>
@@ -651,6 +253,8 @@ The other half of Neon's point, counts kept by hand in the roadmap, is done: the
 <p>One line for each ruling, newest first. The full text is in <a href="changelog.html">CHANGELOG.md</a> under the date, or in the note named.</p>
 <div class="table-scroll" tabindex="0"><table><thead><tr><th scope="col">Date</th><th scope="col">Ruling</th><th scope="col">Where</th></tr></thead>
 <tbody>
+<tr><td>2026-11-21</td><td>The tick record, TK1 to TK9: an ordinary record of kind <code>tick</code>; it carries its result and the result's hash; it carries its spec and the spec's hash; <code>covers</code> lists every record folded; <code>withheld</code> lists those read without a payload; a spec reads a tick by the payload reading; a verb checks and no store refuses a tick; the window field is <code>env.when</code>; a member <code>rules</code> bound into the spec's hash</td><td>Changelog; <a href="note-2026-11-21-tick-record.html">the tick record note</a></td></tr>
+<tr><td>2026-11-21</td><td>The order of work, W1 to W6: an adoption step after ticks, its CLI pieces beside the tick work; a cache of checked segments in that step; the JavaScript frozen as a trial for step 4; one refusal per input inside the repository, single faults in the protocol text; the mutant check stays; <code>out/</code> stays committed</td><td>Changelog; <a href="note-2026-11-21-order-of-work.html">the order-of-work note</a></td></tr>
 <tr><td>2026-11-21</td><td>Payload values, PV1 to PV7: the reading is stated in the model; <code>value</code> and <code>n</code> are ordinary fields; <code>present</code> means written; a list reads as a set under <code>is</code>, <code>not</code> and <code>by</code>; a list is never a number</td><td>Changelog; <a href="note-2026-11-21-payload-values.html">the payload values note</a></td></tr>
 <tr><td>2026-11-21</td><td>A result hash has its own prefix, <code>res:</code>; the codec's other choices confirmed</td><td>Changelog</td></tr>
 <tr><td>2026-11-21</td><td>Only a choice that changes bytes or answers comes to Kyle; other implementer choices stand unless he objects</td><td>Changelog</td></tr>
