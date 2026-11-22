@@ -88,27 +88,32 @@ test('tick replay accepts a named protocol vector and passes its original file t
   assert.equal(summary.operations['make-and-check'].same, 1);
 });
 
-// Digests of the actual JSONL generator streams at dc2a52d.
-test('two-way and three-way scheduling preserve the legacy family streams', async t => {
+// Pin the widened stream and, separately, the unchanged families as generated at c654812.
+test('two-way and three-way scheduling preserve the widened and unchanged family streams', async t => {
   const dir = await mkdtemp(join(tmpdir(), 'fuzz-test-streams-'));
   t.after(() => rm(dir, { recursive: true, force: true }));
-  for (const [seed, digest] of [
-    ['ci-1','00300fb5fbeda2f1db8ed5d29485b8ede8cb9ae9d7d0b4b9ddc8f5a622563510'],
-    ['collect-limit-1','f5231d0f701f9104147951e3e68e37418adc20674a69082925a83c8c3854fa27'],
+  for (const [seed, digest, unchangedDigest] of [
+    ['ci-1','e685bddaf7ff51e8bdc41936db197532582c62ce0ef1591d6ee066c3ddb91e38',
+      '0eefc4f6be65b3e39dfdfebda13b7162cce459ce597242651d106dfa85803443'],
+    ['collect-limit-1','ba2afc22d4a2e9dd473706230f7e9bf2a67d9aa104171dbb6d92e739847862bc',
+      '3227bb3425ca883d9008f086af420f6563d1face36884a06318c2b120a9e5aa2'],
   ]) {
     for (const rust of [false,true]) {
-      const hash = createHash('sha256');
+      const hash = createHash('sha256'), unchanged = createHash('sha256');
       const options = parseArgs([...(rust ? ['--rust'] : []),'--seed',seed,'--n','256','--out',join(dir, seed + rust)]);
       const { summary } = await campaign(options, { warm:false, js:() => [0], batch: async (vectors, opts) => {
         assert.equal(opts.rust, rust);
         return vectors.map(v => {
-          hash.update(inputText(v) + '\n');
+          const line = inputText(v) + '\n';
+          hash.update(line);
+          if (!['fold','realm','scenario'].includes(v.fuzz.family)) unchanged.update(line);
           return rust ? {lean:{expect:0}, rust:{expect:0}} : {expect:0};
         });
       } });
       assert.equal(summary.mismatches, 0);
       assert.deepEqual(summary.implementations, rust ? ['js','lean','rust'] : ['js','lean']);
       assert.equal(hash.digest('hex'), digest);
+      assert.equal(unchanged.digest('hex'), unchangedDigest);
     }
   }
 });

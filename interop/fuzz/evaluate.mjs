@@ -70,7 +70,10 @@ function recordAnswer(input, payloadTexts) {
 // One answer per arrival order exposes disagreement in any listed order.
 export function evaluateJS(vector, rawText) {
   const { layer, input } = vector;
-  if (folds[layer]) return input.orders.map(rs => folds[layer](rs, input));
+  // Generated observations can carry a number spelling. Replay has already
+  // decoded actual JSON, including any literal object named "$number".
+  const asWritten = value => rawText === undefined ? JSON.parse(inputText(value)) : value;
+  if (folds[layer]) return asWritten(input.orders).map(rs => folds[layer](rs, input));
   switch (layer) {
     case 'payload': {
       const text = rawText === undefined ? inputText(input.payload) : jsonSourceAt(rawText, ['input', 'payload']);
@@ -108,7 +111,7 @@ export function evaluateJS(vector, rawText) {
       if (!parsed.parsed) return [parsed];
       // Both spec readers admit their input. Settlement belongs to realm/scenario.
       // The orders are read as their file writes them, number spellings included.
-      const orders = rawText === undefined ? JSON.parse(inputText(input.orders)) : input.orders;
+      const orders = asWritten(input.orders);
       return orders.map(rs => S.runSpec(parsed.parsed, rs));
     }
     case 'batch': {
@@ -139,7 +142,7 @@ export function evaluateJS(vector, rawText) {
       return [resolveBatch(input.drafts, input.held)];
     }
     case 'realm': {
-      const forms = input.forms;
+      const forms = asWritten(input.forms);
       return Array.from({ length: Math.max(1, forms.length) }, (_, i) => {
         const { settled, refused, things, sum } = realm([...forms.slice(i), ...forms.slice(0, i)]);
         return { settled, refused, things, sum };
@@ -148,7 +151,7 @@ export function evaluateJS(vector, rawText) {
     case 'scenario': {
       const { parsed } = S.parseSpec(input.spec);
       if (!parsed) throw new Error('scenario spec does not parse');
-      const pool = new Map(input.records.map(r => [r.id, r]));
+      const pool = new Map(asWritten(input.records).map(r => [r.id, r]));
       const answers = input.steps.map(s => {
         const forms = new Map(s.forms.map(f => [f.id, formOf(pool.get(f.id), f.shown)]));
         return [step(parsed, input.thing, [...forms.values()]),

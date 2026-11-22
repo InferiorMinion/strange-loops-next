@@ -1,0 +1,24 @@
+{
+  "implementations": [
+    "js",
+    "lean",
+    "rust"
+  ],
+  "seed": "lists-fold-1",
+  "requested": 8192,
+  "counts": {
+    "fold": {
+      "cases": 8192,
+      "match": 7121,
+      "protocol-refusal": 0,
+      "decoder-refusal": 1071,
+      "mismatch": 0
+    }
+  },
+  "mismatches": 0,
+  "decoderRefusals": 1071,
+  "protocolRefusals": 0,
+  "chunks": 64,
+  "shrinkTrials": 0,
+  "seconds": 182.41214136
+}

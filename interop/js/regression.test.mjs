@@ -7,7 +7,7 @@ import { base32, base32Decode, fixedBytes, canonical, checkEnvelopeKeys, seal, w
 import { readVector } from "../answers.mjs";
 import { parseSpecText, readJson, slotNames, slotsText } from "./spec.mjs";
 import { resolveBatch } from "./batch.mjs";
-import { heads, latest, latestBy, count, sum, min, max } from "./fold.mjs";
+import { heads, latest, latestBy, count, sum, sumValues, min, max } from "./fold.mjs";
 import { admit, realm } from "./realm.mjs";
 import { parse, edit, diff, apply, baseProblem, render } from "./lens.mjs";
 import { lensEdit } from "./scenario.mjs";
@@ -310,6 +310,13 @@ test("native canonicalization still handles all 4000 standards independently of 
     if (Math.abs(n) > Number.MAX_SAFE_INTEGER) outside++;
   }
   assert.ok(outside > 0, "the standard corpus includes out-of-range magnitudes");
+});
+
+test("sum crosses both signed 128-bit bounds with safe whole addends", () => {
+  const subtotal = (2n ** 127n) - 1n;
+  const expected = 170141183460469231731687303715884105729n;
+  assert.equal(sumValues([2], subtotal), expected);
+  assert.equal(sumValues([-2], -subtotal), -expected);
 });
 
 test("numeric folds read safe whole values only", () => {

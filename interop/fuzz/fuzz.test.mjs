@@ -35,7 +35,7 @@ async function* jsonFiles(dir) {
 test('generation is deterministic, varied, balanced, and independent of scheduling', () => {
   const corpus = FAMILIES.flatMap(f => Array.from({ length: 8 }, (_, i) => generate('stable', i, f)));
   assert.equal(createHash('sha256').update(JSON.stringify(corpus)).digest('hex'),
-    '9c591121f8593ca2c87044a182247806e4d89bafe0d0d5139f1b1b043fda4f88');
+    '7cca0890b4cf769b0074c73f09389f4c0923fd2e3d6158a8362030d47b5afa73');
   const layers = new Set();
   for (const family of FAMILIES) {
     const seen = new Set();
@@ -59,6 +59,20 @@ test('generation is deterministic, varied, balanced, and independent of scheduli
   }
   for (const layer of FOLD_LAYERS) assert.ok(layers.has(`fold/${layer}`));
   assert.ok(layers.has('spec/run')); assert.ok(layers.has('spec/parse'));
+});
+
+test('the model sum crosses both signed 128-bit bounds with safe whole addends', () => {
+  const run = spawnSync('lake', ['env', 'lean', '--stdin'], {
+    cwd: join(ROOT, 'model'), encoding: 'utf8', timeout: 30000,
+    input: `import Loops.Fold
+open Loops
+#eval Sum.fold (fun _ => some 2) (2^127-1) [default]
+#eval Sum.fold (fun _ => some (-2)) (1-2^127) [default]
+`,
+  });
+  assert.equal(run.status, 0, run.error?.message ?? run.stdout + run.stderr);
+  const expected = '170141183460469231731687303715884105729';
+  assert.deepEqual(run.stdout.trim().split('\n'), [expected, '-' + expected]);
 });
 
 test('raw payload replay keeps objects named $number and checks stored input', () => {
@@ -86,6 +100,33 @@ test('generated keyed forks distinguish overlapping and disjoint lists at live s
     assert.equal(input.spec.fold['routes-groups'].by, 'routes');
   }
   assert.deepEqual(observed, new Set([true, false]));
+});
+
+test('select, realm sums and scenario slots receive lists, objects and written nulls', () => {
+  for (const family of ['fold', 'realm', 'scenario']) {
+    const seen = new Set();
+    for (let i = 0; i < 512 && seen.size < 4; i++) {
+      const { layer, input, fuzz } = generate('list-readers', i, family);
+      if (fuzz.nearMiss || (family === 'fold' && layer !== 'fold/select')) continue;
+      const records = input.orders?.[0] ?? input.forms ?? input.records;
+      for (const record of records) {
+        const v = record.fields?.n;
+        if (v === null) seen.add('null');
+        else if (Array.isArray(v)) seen.add(v.length ? 'nonempty list' : 'empty list');
+        else if (typeof v === 'object') seen.add('object');
+      }
+    }
+    assert.deepEqual(seen, new Set(['null', 'empty list', 'nonempty list', 'object']), family);
+  }
+});
+
+test('fold select reads a generated number spelling and preserves literal objects in replay', () => {
+  const vector = { layer: 'fold/select', input: { where: { n: { is: 80 } },
+    orders: [[{ emitted: '2024-01-01T00:00:00Z', fields: { n: [{ $number: '80.0' }] } }]] } };
+  const [generated] = evaluateJS(vector);
+  assert.deepEqual(generated, { count: { value: 1, unread: 0 }, sum: { value: 0, unread: 1 } });
+  const [literal] = evaluateJS(vector, JSON.stringify(vector));
+  assert.deepEqual(literal, { count: { value: 0, unread: 0 }, sum: { value: 0, unread: 0 } });
 });
 
 test('raw numeric folds use readable records and specs use settled forms', () => {
