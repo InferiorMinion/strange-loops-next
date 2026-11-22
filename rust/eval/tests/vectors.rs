@@ -18,7 +18,7 @@ const FAMILIES: &[(&str, usize)] = &[
     ("batch", 83),
     ("standard", 12),
     ("result", 23),
-    ("tick", 130),
+    ("tick", 131),
 ];
 
 fn member<'a>(j: &'a Json, key: &str) -> &'a Json {
@@ -258,7 +258,7 @@ fn every_registered_json_and_every_arrival_order() {
         assert!(seen.iter().any(|s| s == family), "missing {family}");
     }
     assert_eq!(pending, 0, "tick: update pending count after review");
-    assert_eq!(checked, 791);
+    assert_eq!(checked, 792);
     overflowing.sort();
     assert_eq!(
         overflowing, OVERFLOWING,

@@ -1,0 +1,93 @@
+{
+  "implementations": [
+    "lean",
+    "rust"
+  ],
+  "seed": "tick-3",
+  "requested": 6720,
+  "counts": {
+    "tick": {
+      "cases": 6720,
+      "match": 3820,
+      "protocol-refusal": 2900,
+      "decoder-refusal": 0,
+      "mismatch": 0
+    }
+  },
+  "mismatches": 0,
+  "decoderRefusals": 0,
+  "protocolRefusals": 2900,
+  "chunks": 35,
+  "shrinkTrials": 0,
+  "seconds": 94.703512172,
+  "operations": {
+    "payload": {
+      "payload": 116,
+      "refused": 753,
+      "other-rules": 245,
+      "cannot-read": 6
+    },
+    "members": {
+      "refused": 699,
+      "members": 421
+    },
+    "payload-text": {
+      "refused": 740,
+      "other-rules": 236,
+      "payload": 131,
+      "cannot-read": 13
+    },
+    "write-payload": {
+      "payload": 1120
+    },
+    "make-and-check": {
+      "missing inputs": 484,
+      "same": 636
+    },
+    "check-tick": {
+      "refused": 708,
+      "the tick's payload is not held": 107,
+      "made under newer rules": 117,
+      "made under older rules": 105,
+      "missing inputs": 42,
+      "same": 30,
+      "this binary cannot read the spec": 8,
+      "differs": 3
+    }
+  },
+  "refusals": {
+    "tick-member-duplicate": 328,
+    "tick-not-object": 307,
+    "tick-ids-unsorted": 147,
+    "tick-rules-invalid": 226,
+    "tick-id-duplicate": 157,
+    "tick-hash-invalid": 90,
+    "tick-ids-not-array": 170,
+    "tick-member-unknown": 263,
+    "tick-kind": 119,
+    "tick-spec-not-object": 221,
+    "tick-spec-hash-mismatch": 161,
+    "tick-id-invalid": 155,
+    "tick-member-missing": 214,
+    "tick-withheld-empty": 133,
+    "tick-withheld-outside": 118,
+    "tick-spec-noncanonical": 20,
+    "tick-result-hash-mismatch": 53,
+    "tick-result-invalid": 18
+  },
+  "today": {
+    "another result": 4,
+    "the same result": 44,
+    "missing inputs": 45,
+    "spec is not in today's parsed form": 5,
+    "this binary cannot read the spec": 6,
+    "tick-withheld-erased": 1
+  },
+  "faultCounts": {
+    "0": 1137,
+    "1": 1641,
+    "2": 595,
+    "3": 556,
+    "4": 551
+  }
+}

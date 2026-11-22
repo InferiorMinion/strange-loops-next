@@ -7,6 +7,27 @@ Each date starts with a short list. Under it is the record as it was written at 
 Since Kyle's ruling of 2026-11-21 (W7), only a choice that changes a record's bytes or id, a result's bytes or hash, a refusal code, or what a spec answers comes to him, through [DECISIONS.md](DECISIONS.md). Every other implementer choice is written here and stands unless he objects.
 The record starts where the old roadmap's did. For anything earlier, and for every merge, see `git log`.
 
+## 2026-11-22
+
+In brief:
+- A fuzz run compares the model and Rust on ticks, with pairs of faults generated on purpose. Its first version agreed on 20,160 cases and missed a fault planted in Rust; the rebuilt one catches every planted swap tried. margins-claude's Python agrees with Rust on 80,000 more cases.
+
+### The tick fuzz: holding Rust to the model's order
+
+The order of refusals for input that is wrong twice is pinned in no protocol text (W4). Inside this repository the model's order decides, and a fuzz run is what holds Rust to it. The JavaScript is frozen (W3), so this run compares Lean and Rust only: `node interop/fuzz/run.mjs --family tick`.
+
+- **The first version was not good enough, and a planted fault showed it.** It agreed on 20,160 cases over three seeds. The coordinator then swapped two checks in Rust's reader (the spelling of `spec-hash` and of `result-hash`), rebuilt, and ran a full seed: all 6,720 cases still agreed. The swapped Rust differs from the model only on a payload with both hashes misspelled, and the generator misspelled one or the other, never both. An order between two checks is exercised only by a case that holds both faults, so the number of agreeing cases measured nothing about order.
+- **The rebuilt version generates pairs on purpose and counts them.** `interop/fuzz/tick-order.mjs` lists 114 decision points of the readers and the check, in the model's order. Of their 6,441 pairs, 5,784 can be in one input; the other 657 are listed with the reason each cannot. Every pair that can was generated and confirmed by the model's answer at least three times, at least once in each seed, and the evidence test asserts it.
+- **The campaign.** 46,656 cases over three seeds (`tick-order-1` to `3`), 30,456 of them refusals: Lean and Rust agree on every one. The check now runs every fold type: 1,384 `same` and 803 `differs` answers, where the first version had 100 and 8.
+- **Planted swaps.** Fourteen pairs of adjacent checks were swapped in Rust, one at a time, by the worker: each was caught, the latest at case 219 of a seed. The hash-spelling swap that the first version missed is caught at case 58. The coordinator planted two more of its own in the result reader (the order of a latest-by slot's members, and which missing member of a scalar slot is named first), with its own seed: both caught within 1,536 cases, and the restored tree runs clean.
+- **An outside run agrees.** margins-claude fuzzed its Python against Rust (`sl-py/fuzz_tick.py`, in its own repository): 80,000 cases over two seeds with up to four faults each, none differing, every pair of its 59 faults at least 20 times a seed. Of 17 swaps planted in its Python, 16 were caught; the 17th, an empty `withheld` against a `withheld` outside `covers`, is the same either way round. Its base ticks have only count, sum and collect slots, so it does not reach the order inside groups or keyed things; this run does, and two of the planted swaps are there.
+- **In CI.** The fuzz job runs 288 cases of the lane (about 15 seconds). The thinnest catches need a few thousand cases, so the CI run is a smoke test and the campaign above is the evidence.
+- **One vector owed to margins-claude:** `outside-erased-taken`: a record outside the cover that the spec takes, erased by an eraser also outside, counts in "taken and not covered". 127 vectors in `vectors/tick/`. Rust passed it unchanged.
+
+No disagreement between the model and Rust was found by either version, so no Rust or model change came of it. The existing fuzz runs are unchanged: their generated inputs are byte for byte what they were.
+
+A Codex worker wrote both versions; the coordinator reviewed them and planted the faults named above.
+
 ## 2026-11-21
 
 In brief:

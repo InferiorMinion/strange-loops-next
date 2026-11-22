@@ -13,7 +13,7 @@ spec.loader.exec_module(summarize)
 class EvidenceTest(unittest.TestCase):
     def test_retained_artifacts(self):
         result = summarize.report()
-        self.assertEqual(list(result['campaigns']), ['by-1', 'by-collect-1', 'by-shape-1', 'collect-limit-1', 'd1-d6-1', 'd8ab-1', 'follow-2', 'issue-7-1', 'keyed-1', 'keyed-slots-1', 'keyed-slots-2', 'sets-1', 'shape-follow-1', 'shape-under-1', 'shape-under-2', 'step1-3', 'under-1'])
+        self.assertEqual(list(result['campaigns']), ['by-1', 'by-collect-1', 'by-shape-1', 'collect-limit-1', 'd1-d6-1', 'd8ab-1', 'follow-2', 'issue-7-1', 'keyed-1', 'keyed-slots-1', 'keyed-slots-2', 'sets-1', 'shape-follow-1', 'shape-under-1', 'shape-under-2', 'step1-3', 'tick-1', 'tick-2', 'tick-3', 'tick-order-1', 'tick-order-2', 'tick-order-3', 'under-1'])
         current = result['campaigns']['collect-limit-1']
         self.assertEqual(current['totals'], {'cases': 5600, 'match': 3638, 'protocol-refusal': 1579,
                                              'decoder-refusal': 383, 'mismatch': 0})
@@ -131,6 +131,67 @@ class EvidenceTest(unittest.TestCase):
         mutation = result['mutations']['mutations-fixes2']
         self.assertEqual(mutation['total'], 195)
         self.assertEqual(mutation['outcomes'], {'error': 16, 'killed-by-vector': 27, 'rejected-by-build': 146, 'survived': 6})
+
+    def test_tick_lane(self):
+        codes = set()
+        for seed, refusals in [('tick-1', 2903), ('tick-2', 2902), ('tick-3', 2900)]:
+            summary = summarize.read(summarize.CAMPAIGNS / seed / 'summary.json')
+            self.assertEqual(summary['seed'], seed)
+            self.assertEqual(summary['implementations'], ['lean', 'rust'])
+            self.assertEqual(summary['requested'], 6720)
+            self.assertEqual(summary['protocolRefusals'], refusals)
+            self.assertEqual(summary['mismatches'], 0)
+            self.assertEqual(summary['decoderRefusals'], 0)
+            counts = summary['operations']
+            self.assertEqual(set(counts), {'payload', 'members', 'payload-text', 'write-payload',
+                                           'make-and-check', 'check-tick'})
+            for outcomes in counts.values():
+                self.assertEqual(sum(outcomes.values()), 1120)
+            refused = sum(row.get('refused', 0) for row in counts.values())
+            self.assertEqual(refused, sum(summary['refusals'].values()))
+            self.assertEqual(refused, summary['protocolRefusals'])
+            self.assertEqual(sum(summary['today'].values()), counts['check-tick']['made under older rules'])
+            self.assertEqual(set(summary['faultCounts']), set('01234'))
+            self.assertEqual(sum(summary['faultCounts'].values()), 4 * 1120)
+            codes.update(summary['refusals'])
+        self.assertEqual(codes, {'tick-' + s for s in (
+            'not-object member-duplicate member-unknown member-missing rules-invalid spec-not-object '
+            'ids-not-array id-invalid id-duplicate ids-unsorted withheld-empty withheld-outside '
+            'hash-invalid spec-hash-mismatch result-hash-mismatch spec-noncanonical result-invalid '
+            'kind withheld-erased').split()})
+
+    def test_tick_order_campaign(self):
+        summaries = [summarize.read(summarize.CAMPAIGNS / f'tick-order-{i}' / 'summary.json')
+                     for i in range(1, 4)]
+        pairs = set(summaries[0]['pairs'])
+        excluded = summaries[0]['excludedPairs']
+        self.assertEqual(len(pairs), 5784)
+        self.assertEqual(len(excluded), 657)
+        self.assertFalse(pairs.intersection(excluded))
+        self.assertTrue(all(excluded.values()))
+        self.assertIn('spec-hash:spelling / result-hash:spelling', pairs)
+        for summary in summaries:
+            self.assertEqual(summary['requested'], 15552)
+            self.assertEqual(summary['implementations'], ['lean', 'rust'])
+            self.assertEqual((summary['mismatches'], summary['decoderRefusals']), (0, 0))
+            self.assertEqual(sum(sum(row.values()) for row in summary['operations'].values()), 15552)
+            self.assertEqual(sum(summary['refusals'].values()), summary['protocolRefusals'])
+            # Three pairs and one triple per block of eight: six planted
+            # pair observations. The two later sites of the triple are masked.
+            planted, confirmed = map(sum, zip(*summary['pairs'].values()))
+            self.assertEqual(planted, 6 * 1944)
+            self.assertEqual(confirmed, 5 * 1944)
+            self.assertEqual(set(summary['pairs']), pairs)
+            self.assertEqual(summary['excludedPairs'], excluded)
+            for name, (planted, confirmed) in summary['pairs'].items():
+                self.assertGreaterEqual(planted, confirmed, name)
+                self.assertGreaterEqual(confirmed, 1, name)
+            for verdict in ('same', 'differs'):
+                folds = summary['replayFolds'][verdict]
+                self.assertEqual(set(folds), {'count', 'sum', 'min', 'max', 'collect', 'latest-by'})
+                self.assertTrue(all(folds.values()))
+        for name in pairs:
+            self.assertGreaterEqual(sum(s['pairs'][name][1] for s in summaries), 3, name)
 
     def test_category_sum_rejected(self):
         summary = summarize.read(summarize.CAMPAIGNS / 'step1-3/summary.json')

@@ -1,0 +1,94 @@
+{
+  "implementations": [
+    "lean",
+    "rust"
+  ],
+  "seed": "tick-1",
+  "requested": 6720,
+  "counts": {
+    "tick": {
+      "cases": 6720,
+      "match": 3817,
+      "protocol-refusal": 2903,
+      "decoder-refusal": 0,
+      "mismatch": 0
+    }
+  },
+  "mismatches": 0,
+  "decoderRefusals": 0,
+  "protocolRefusals": 2903,
+  "chunks": 35,
+  "shrinkTrials": 0,
+  "seconds": 94.303078263,
+  "operations": {
+    "payload": {
+      "other-rules": 237,
+      "refused": 732,
+      "payload": 143,
+      "cannot-read": 8
+    },
+    "members": {
+      "members": 407,
+      "refused": 713
+    },
+    "payload-text": {
+      "refused": 735,
+      "other-rules": 243,
+      "payload": 134,
+      "cannot-read": 8
+    },
+    "write-payload": {
+      "payload": 1120
+    },
+    "make-and-check": {
+      "same": 641,
+      "missing inputs": 479
+    },
+    "check-tick": {
+      "refused": 723,
+      "the tick's payload is not held": 96,
+      "missing inputs": 43,
+      "made under newer rules": 119,
+      "made under older rules": 100,
+      "same": 33,
+      "this binary cannot read the spec": 3,
+      "differs": 3
+    }
+  },
+  "refusals": {
+    "tick-member-unknown": 259,
+    "tick-member-duplicate": 290,
+    "tick-not-object": 320,
+    "tick-id-invalid": 156,
+    "tick-withheld-outside": 130,
+    "tick-spec-not-object": 215,
+    "tick-member-missing": 196,
+    "tick-rules-invalid": 210,
+    "tick-spec-hash-mismatch": 177,
+    "tick-kind": 113,
+    "tick-ids-not-array": 154,
+    "tick-withheld-empty": 133,
+    "tick-id-duplicate": 178,
+    "tick-ids-unsorted": 160,
+    "tick-hash-invalid": 104,
+    "tick-result-hash-mismatch": 60,
+    "tick-spec-noncanonical": 27,
+    "tick-result-invalid": 20,
+    "tick-withheld-erased": 1
+  },
+  "today": {
+    "missing inputs": 46,
+    "the same result": 40,
+    "another result": 5,
+    "this binary cannot read the spec": 4,
+    "spec is not in today's parsed form": 4,
+    "tick-withheld-erased": 1
+  },
+  "faultCounts": {
+    "0": 1094,
+    "1": 1732,
+    "2": 587,
+    "3": 523,
+    "4": 544
+  }
+}
