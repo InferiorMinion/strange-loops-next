@@ -235,7 +235,21 @@ The record starts where the old roadmap's did. For anything earlier, and for eve
 <li><p>The tick record's third piece is in the model: what a tick claims, how one is made, and the check with its answers.</p></li>
 <li><p>Rust has the tick's payload and the result reader, and runs 72 of the 113 tick vectors.</p></li>
 <li><p>The tick has its protocol page, <code>protocol/tick.md</code>. margins-claude's Python ran every tick vector from the prose and found two gaps in the readers; both are closed in the model and in Rust.</p></li>
+<li><p>Rust checks a tick: all 126 tick vectors run in Rust, none pending.</p></li>
 </ul>
+<h3 id="the-tick-record-rust-for-the-check">The tick record: Rust for the check</h3>
+<p>Piece 6 of the seven. <code>rust/core/src/tick_check.rs</code> has the claim's run, what a checker holds open, the missing counts, the covered eraser a tick ignores, closure, the count of records taken and not covered, and <code>check_tick</code> with the model's answers in the model's order.</p>
+<ul>
+<li><p><strong>Rust runs all 126 tick vectors, none pending.</strong> With margins-claude's Python, the claim and the check now have three implementations that agree: the model, Rust, and one written from the prose.</p></li>
+<li><p><strong><code>differs</code> is decided on bytes</strong> and carries both hashes, as in the model: a test uses a hash that collides on purpose.</p></li>
+</ul>
+<p><strong>Implementer choices; they stand under Kyle's ruling of 2026-11-21 (W7).</strong></p>
+<ul>
+<li><p>The checker is its own module in the core, and the fixture's JSON spelling of an answer stays in the vector evaluator.</p></li>
+<li><p><code>rust/GAPS.md</code>: the one boundary is the evaluator's, as before. A number past binary64's range in a fixture's subject payload or openings is refused as malformed fixture input where the model answers; no stored record can hold one.</p></li>
+<li><p>No CLI change here: the verbs are their own piece.</p></li>
+</ul>
+<p>A Codex worker wrote it; the coordinator reviewed it and ran the gates.</p>
 <h3 id="the-tick-record-piece-4-the-protocol-page-and-two-amendments-from-an-outside-reading">The tick record, piece 4: the protocol page, and two amendments from an outside reading</h3>
 <p><strong>The outside reading.</strong> margins-claude wrote the tick's payload and the result reader into its Python (<code>sl-py</code>, in another repository) from the prose alone, then ran the vectors: the 11 of piece 1 agreed on the first run, and of the 72 after piece 2, one answer differed. It listed ten things the prose had left it to guess. Two were gaps in the model.</p>
 <ul>
