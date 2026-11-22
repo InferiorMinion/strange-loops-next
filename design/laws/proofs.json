@@ -73,6 +73,16 @@
    "states":
    "∀ {a b : Loops.Record}, Loops.SameEnvelope a b → a.withhold = b.withhold",
    "module": "Laws.Things"},
+  "Loops.window_filter_heads":
+  {"uses": [],
+   "states":
+   "∀ (t : String) (xs : List Loops.Record) (sel : Loops.Record → Bool) (op : Loops.Op) (cs : List Loops.Cond), List.filter (Loops.chosen sel ({ field := Loops.Field.env Loops.EnvField.when, op := op } :: cs)) (Loops.stateIn t xs).heads = List.filter (fun r => op.test [Loops.Item.time r.span] && Loops.chosen sel cs r) (Loops.stateIn t xs).heads",
+   "module": "Laws.Spec"},
+  "Loops.window_count_heads":
+  {"uses": [],
+   "states":
+   "∀ (name : String) (ops : List Loops.Op) (other : Loops.Tests) (sel : Loops.Record → Bool) (xs : List Loops.Record), { name := name, type := Loops.FoldType.count (some Loops.Follow.prev), tests := (Loops.Field.env Loops.EnvField.when, ops) :: other }.run sel xs = Loops.SlotValue.nat (Loops.Count.acc.select (fun r => if sel r = true then Loops.Cond.all (Loops.Tests.conds ((Loops.Field.env Loops.EnvField.when, ops) :: other)) r else Loops.Tri.no) (Loops.wholeHeads xs))",
+   "module": "Laws.Spec"},
   "Loops.whole_wholeHeads":
   {"uses": ["Loops.mem_wholeHeads"],
    "states":
@@ -592,6 +602,30 @@
    "states":
    "Loops.ss.spec.run (Loops.settle [Loops.ss.a]) ≠ Loops.ss.spec.run (Loops.settle [Loops.ss.a, Loops.ss.d])",
    "module": "Laws.SpecSlice"},
+  "Loops.specPreimage_ne_result":
+  {"uses": ["Loops.utf8_append", "Loops.utf8_eq"],
+   "states":
+   "∀ (v : Loops.Rules) (j : Loops.Json) (r : List (String × Loops.SlotValue)), Loops.specPreimageOf v j ≠ Loops.resultPreimage r",
+   "module": "Laws.SpecHash"},
+  "Loops.specPreimage_ne_commit":
+  {"uses":
+   ["Loops.Json.canon_head",
+    "Loops.utf8_append",
+    "Loops.utf8_eq",
+    "Loops.utf8_injective"],
+   "states":
+   "∀ (v : Loops.Rules) (j p : Loops.Json) {salt : List UInt8}, salt.length = 16 → Loops.specPreimageOf v j ≠ salt ++ Loops.utf8 p.canon",
+   "module": "Laws.SpecHash"},
+  "Loops.specPreimageOf_eq_iff":
+  {"uses":
+   ["Loops.Rules.read_text",
+    "Loops.digitChar_toNat",
+    "Loops.mem_revDigits",
+    "Loops.utf8_append",
+    "Loops.utf8_injective"],
+   "states":
+   "∀ {v w : Loops.Rules} {j k : Loops.Json}, Loops.specPreimageOf v j = Loops.specPreimageOf w k ↔ v = w ∧ j.canon = k.canon",
+   "module": "Laws.SpecHash"},
   "Loops.speaks_view":
   {"uses": ["Loops.binds_view", "Loops.root_view"],
    "states":
@@ -3572,6 +3606,10 @@
   {"uses": ["Loops.Json.keysDistinct_obj", "Loops.Op.toJson_distinct"],
    "states": "∀ {ts : Loops.Tests}, ts.Fits → ts.toJson.keysDistinct = true",
    "module": "Laws.Parse"},
+  "Loops.Tests.orderMembers_conds":
+  {"uses": [],
+   "states": "∀ (ts : Loops.Tests), ts.orderMembers.conds.Perm ts.conds",
+   "module": "Laws.SpecHash"},
   "Loops.Sum.repeats":
   {"uses": ["Loops.Sum.batch", "Loops.Sum.fold_eq"],
    "states":
@@ -3652,6 +3690,31 @@
    "states":
    "∀ {text : String} {moment : Loops.Moment} {ok : Loops.instant? text.toList = some moment} {text_1 : String} {moment_1 : Loops.Moment} {ok_1 : Loops.instant? text_1.toList = some moment_1}, { text := text, moment := moment, ok := ok } = { text := text_1, moment := moment_1, ok := ok_1 } → text = text_1 ∧ moment = moment_1",
    "module": "Loops.Occurred"},
+  "Loops.SpecText.Ordered.canon_inj":
+  {"uses":
+   ["Loops.Json.canon_head",
+    "Loops.Json.canon_prefix",
+    "Loops.Json.str.inj",
+    "Loops.canon_arr",
+    "Loops.canon_member_order",
+    "Loops.canon_obj",
+    "Loops.canon_str",
+    "Loops.eq_of_mem_of_nodup_map",
+    "Loops.escapes_prefix",
+    "Loops.intercalate_comma",
+    "Loops.memberText_head",
+    "Loops.natText_head",
+    "Loops.sortBy_perm",
+    "Loops.sortBy_sorted",
+    "Loops.utf16_inj"],
+   "states":
+   "∀ {key : String → List Nat} {a b : Loops.Json}, Loops.SpecText.Ordered key a → Loops.SpecText.Ordered key b → a.canon = b.canon → a = b",
+   "module": "Laws.SpecText"},
+  "Loops.SpecText.Ordered.brecOn":
+  {"uses": [],
+   "states":
+   "∀ {key : String → List Nat} {motive : (a : Loops.Json) → Loops.SpecText.Ordered key a → Prop} {a : Loops.Json} (t : Loops.SpecText.Ordered key a), (∀ (a : Loops.Json) (t : Loops.SpecText.Ordered key a), Loops.SpecText.Ordered.below t → motive a t) → motive a t",
+   "module": "Laws.SpecText"},
   "Loops.SpecSlice.theirs":
   {"uses": [],
    "states":
@@ -3770,11 +3833,33 @@
    "states":
    "∀ {sp : Loops.Spec}, (List.map (fun x => x.name) sp.slots).Nodup → ∀ (xs ys : List Loops.Record) (may may' : Loops.Record → Loops.Record → Bool), Loops.resultBytes (sp.run xs may) = Loops.resultBytes (sp.run ys may') ↔ Loops.unshownResult (sp.run xs may) = Loops.unshownResult (sp.run ys may')",
    "module": "Laws.Result"},
+  "Loops.Spec.resultBytes_orderMembers":
+  {"uses":
+   ["Loops.Cond.all_perm",
+    "Loops.Spec.run_names",
+    "Loops.Tests.orderMembers_conds",
+    "Loops.Tri.and_left_comm",
+    "Loops.canon_member_order"],
+   "states":
+   "∀ (sp : Loops.Spec), (List.map (fun x => x.name) sp.slots).Nodup → ∀ (xs : List Loops.Record) (may : Loops.Record → Loops.Record → Bool), Loops.resultBytes (sp.orderMembers.run xs may) = Loops.resultBytes (sp.run xs may)",
+   "module": "Laws.SpecHash"},
   "Loops.Spec.reparse":
   {"uses": ["Loops.Spec.ofJson_fits", "Loops.Spec.ofJson_toJson"],
    "states":
    "∀ {j : Loops.Json} {sp : Loops.Spec}, Loops.Spec.ofJson j = Except.ok sp → Loops.Spec.ofJson sp.toJson = Except.ok sp",
    "module": "Laws.Parse"},
+  "Loops.Spec.preimage_eq_iff":
+  {"uses":
+   ["Loops.Spec.memberEq_preimage",
+    "Loops.Spec.ofJson_toJson",
+    "Loops.SpecText.Ordered.canon_inj",
+    "Loops.canonMembers_eq",
+    "Loops.canon_member_order",
+    "Loops.specPreimageOf_eq_iff",
+    "Loops.utf16_inj"],
+   "states":
+   "∀ {a b : Loops.Spec}, a.Fits → b.Fits → ∀ {v w : Loops.Rules}, Loops.specPreimageOf v a.toJson = Loops.specPreimageOf w b.toJson ↔ v = w ∧ a.MemberEq b",
+   "module": "Laws.SpecHash"},
   "Loops.Spec.parsed_iff":
   {"uses": ["Loops.Spec.ofJson_fits", "Loops.Spec.ofJson_toJson"],
    "states":
@@ -3826,6 +3911,24 @@
    "states":
    "∀ {vertex : String} {sources : List Loops.Source} {slots : List Loops.Slot} {vertex_1 : String} {sources_1 : List Loops.Source} {slots_1 : List Loops.Slot}, { vertex := vertex, sources := sources, slots := slots } = { vertex := vertex_1, sources := sources_1, slots := slots_1 } → vertex = vertex_1 ∧ sources = sources_1 ∧ slots = slots_1",
    "module": "Loops.Spec"},
+  "Loops.Spec.memberEq_resultBytes":
+  {"uses": ["Loops.Spec.resultBytes_orderMembers"],
+   "states":
+   "∀ {a b : Loops.Spec}, a.MemberEq b → (List.map (fun x => x.name) a.slots).Nodup → (List.map (fun x => x.name) b.slots).Nodup → ∀ (xs : List Loops.Record) (may : Loops.Record → Loops.Record → Bool), Loops.resultBytes (a.run xs may) = Loops.resultBytes (b.run xs may)",
+   "module": "Laws.SpecHash"},
+  "Loops.Spec.memberEq_preimage":
+  {"uses":
+   ["Loops.canonMembers_eq",
+    "Loops.canon_member_order",
+    "Loops.specPreimageOf_eq_iff"],
+   "states":
+   "∀ {a b : Loops.Spec}, a.Fits → b.Fits → a.MemberEq b → ∀ (v : Loops.Rules), Loops.specPreimageOf v a.toJson = Loops.specPreimageOf v b.toJson",
+   "module": "Laws.SpecHash"},
+  "Loops.Spec.memberEq_hash":
+  {"uses": ["Loops.Spec.memberEq_preimage"],
+   "states":
+   "∀ {a b : Loops.Spec}, a.Fits → b.Fits → a.MemberEq b → ∀ (H : Loops.Hash) (v : Loops.Rules), Loops.Spec.hash H v a = Loops.Spec.hash H v b",
+   "module": "Laws.SpecHash"},
   "Loops.Spec.mem_select":
   {"uses": [],
    "states":
@@ -4417,6 +4520,40 @@
    "states":
    "∀ {a b : Loops.Record}, Loops.SameEnvelope a b → a.about = b.about",
    "module": "Loops.Record"},
+  "Loops.Rules.read_text":
+  {"uses": ["Loops.natOf?_natDigits"],
+   "states":
+   "∀ (v : Loops.Rules), Loops.Rules.ofJson? (Loops.Json.str v.text) = some v",
+   "module": "Laws.SpecHash"},
+  "Loops.Rules.positive":
+  {"uses": [],
+   "states": "∀ (self : Loops.Rules), 0 < self.number",
+   "module": "Loops.SpecHash"},
+  "Loops.Rules.ofJson?_eq_some_iff":
+  {"uses": ["Loops.Rules.read_text", "Loops.natDigits_natOf?"],
+   "states":
+   "∀ {j : Loops.Json} {v : Loops.Rules}, Loops.Rules.ofJson? j = some v ↔ j = Loops.Json.str v.text",
+   "module": "Laws.SpecHash"},
+  "Loops.Rules.mk.sizeOf_spec":
+  {"uses": [],
+   "states":
+   "∀ (number : Nat) (positive : 0 < number), sizeOf { number := number, positive := positive } = 1 + sizeOf number + sizeOf positive",
+   "module": "Loops.SpecHash"},
+  "Loops.Rules.mk.injEq":
+  {"uses": ["Loops.Rules.mk.inj"],
+   "states":
+   "∀ (number : Nat) (positive : 0 < number) (number_1 : Nat) (positive_1 : 0 < number_1), ({ number := number, positive := positive } = { number := number_1, positive := positive_1 }) = (number = number_1)",
+   "module": "Loops.SpecHash"},
+  "Loops.Rules.mk.inj":
+  {"uses": [],
+   "states":
+   "∀ {number : Nat} {positive : 0 < number} {number_1 : Nat} {positive_1 : 0 < number_1}, { number := number, positive := positive } = { number := number_1, positive := positive_1 } → number = number_1",
+   "module": "Loops.SpecHash"},
+  "Loops.Rules.mk.congr_simp":
+  {"uses": [],
+   "states":
+   "∀ (number number_1 : Nat) (e_number : number = number_1) (positive : 0 < number), { number := number, positive := positive } = { number := number_1, positive := ⋯ }",
+   "module": "Laws.SpecHash"},
   "Loops.Result.mk.sizeOf_spec":
   {"uses": [],
    "states":
@@ -5983,6 +6120,16 @@
   {"uses": [],
    "states": "sizeOf Loops.FieldType.ids = 1",
    "module": "Loops.Spec"},
+  "Loops.Field.when_occurred":
+  {"uses": [],
+   "states":
+   "∀ {r : Loops.Record} {c : Loops.Claim}, r.occurred = some c → (Loops.Field.env Loops.EnvField.when).read r = some [Loops.Item.time c.span]",
+   "module": "Laws.Spec"},
+  "Loops.Field.when_emitted":
+  {"uses": [],
+   "states":
+   "∀ {r : Loops.Record}, r.occurred = none → (Loops.Field.env Loops.EnvField.when).read r = some [Loops.Item.time (Loops.Span.point r.emitted.moment)]",
+   "module": "Laws.Spec"},
   "Loops.Field.payload.sizeOf_spec":
   {"uses": [],
    "states":
@@ -6036,6 +6183,10 @@
    "states":
    "∀ {ε α β : Type} {x : Except ε α} {f : α → Except ε β} {b : β}, x >>= f = Except.ok b ↔ ∃ a, x = Except.ok a ∧ f a = Except.ok b",
    "module": "Laws.Parse"},
+  "Loops.EnvField.when.sizeOf_spec":
+  {"uses": [],
+   "states": "sizeOf Loops.EnvField.when = 1",
+   "module": "Loops.Spec"},
   "Loops.EnvField.under.sizeOf_spec":
   {"uses": [],
    "states": "sizeOf Loops.EnvField.under = 1",

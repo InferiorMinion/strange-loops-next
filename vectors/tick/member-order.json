@@ -1,0 +1,149 @@
+{
+  "vector": "member-order",
+  "layer": "tick",
+  "laws": ["spec.hash"],
+  "source": "model",
+  "input": {
+    "op": "hash",
+    "samples": [
+      {
+        "rules": "1",
+        "spec": {
+          "vertex": "backups",
+          "from": [
+            {
+              "store": "lab",
+              "kind": ["backup"]
+            }
+          ],
+          "fold": {
+            "😀": {
+              "count": true,
+              "where": {
+                "mb": {
+                  "at-least": 3,
+                  "below": 12
+                },
+                "svc": {
+                  "present": true
+                }
+              }
+            },
+            "דּ": {
+              "collect": true
+            }
+          }
+        }
+      },
+      {
+        "rules": "1",
+        "spec": {
+          "vertex": "backups",
+          "from": [
+            {
+              "store": "lab",
+              "kind": ["backup"]
+            }
+          ],
+          "fold": {
+            "דּ": {
+              "collect": true
+            },
+            "😀": {
+              "count": true,
+              "where": {
+                "mb": {
+                  "at-least": 3,
+                  "below": 12
+                },
+                "svc": {
+                  "present": true
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        "rules": "1",
+        "spec": {
+          "vertex": "backups",
+          "from": [
+            {
+              "store": "lab",
+              "kind": ["backup"]
+            }
+          ],
+          "fold": {
+            "😀": {
+              "count": true,
+              "where": {
+                "svc": {
+                  "present": true
+                },
+                "mb": {
+                  "at-least": 3,
+                  "below": 12
+                }
+              }
+            },
+            "דּ": {
+              "collect": true
+            }
+          }
+        }
+      },
+      {
+        "rules": "1",
+        "spec": {
+          "vertex": "backups",
+          "from": [
+            {
+              "store": "lab",
+              "kind": ["backup"]
+            }
+          ],
+          "fold": {
+            "😀": {
+              "count": true,
+              "where": {
+                "mb": {
+                  "below": 12,
+                  "at-least": 3
+                },
+                "svc": {
+                  "present": true
+                }
+              }
+            },
+            "דּ": {
+              "collect": true
+            }
+          }
+        }
+      }
+    ]
+  },
+  "expect": [
+    {
+      "parsed-jcs": "{\"fold\":{\"😀\":{\"count\":true,\"where\":{\"mb\":{\"at-least\":3,\"below\":12},\"svc\":{\"present\":true}}},\"דּ\":{\"collect\":true}},\"from\":[{\"kind\":[\"backup\"],\"store\":\"lab\"}],\"vertex\":\"backups\"}",
+      "spec-hash": "spec:7jgv27lvr4dk023g3s48bdonmplnl4laprj4emankr3k7r4o20b0",
+      "raw-member-hash": "spec:7jgv27lvr4dk023g3s48bdonmplnl4laprj4emankr3k7r4o20b0"
+    },
+    {
+      "parsed-jcs": "{\"fold\":{\"😀\":{\"count\":true,\"where\":{\"mb\":{\"at-least\":3,\"below\":12},\"svc\":{\"present\":true}}},\"דּ\":{\"collect\":true}},\"from\":[{\"kind\":[\"backup\"],\"store\":\"lab\"}],\"vertex\":\"backups\"}",
+      "spec-hash": "spec:7jgv27lvr4dk023g3s48bdonmplnl4laprj4emankr3k7r4o20b0",
+      "raw-member-hash": "spec:7jgv27lvr4dk023g3s48bdonmplnl4laprj4emankr3k7r4o20b0"
+    },
+    {
+      "parsed-jcs": "{\"fold\":{\"😀\":{\"count\":true,\"where\":{\"mb\":{\"at-least\":3,\"below\":12},\"svc\":{\"present\":true}}},\"דּ\":{\"collect\":true}},\"from\":[{\"kind\":[\"backup\"],\"store\":\"lab\"}],\"vertex\":\"backups\"}",
+      "spec-hash": "spec:7jgv27lvr4dk023g3s48bdonmplnl4laprj4emankr3k7r4o20b0",
+      "raw-member-hash": "spec:7jgv27lvr4dk023g3s48bdonmplnl4laprj4emankr3k7r4o20b0"
+    },
+    {
+      "parsed-jcs": "{\"fold\":{\"😀\":{\"count\":true,\"where\":{\"mb\":{\"at-least\":3,\"below\":12},\"svc\":{\"present\":true}}},\"דּ\":{\"collect\":true}},\"from\":[{\"kind\":[\"backup\"],\"store\":\"lab\"}],\"vertex\":\"backups\"}",
+      "spec-hash": "spec:7jgv27lvr4dk023g3s48bdonmplnl4laprj4emankr3k7r4o20b0",
+      "raw-member-hash": "spec:7jgv27lvr4dk023g3s48bdonmplnl4laprj4emankr3k7r4o20b0"
+    }
+  ]
+}

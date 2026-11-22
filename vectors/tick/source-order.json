@@ -1,0 +1,77 @@
+{
+  "vector": "source-order",
+  "layer": "tick",
+  "laws": ["spec.hash"],
+  "source": "model",
+  "input": {
+    "op": "hash",
+    "samples": [
+      {
+        "rules": "1",
+        "spec": {
+          "vertex": "backups",
+          "from": [
+            {
+              "store": "lab",
+              "kind": ["backup"]
+            },
+            {
+              "store": "nas",
+              "kind": ["backup"]
+            }
+          ],
+          "fold": {
+            "runs": {
+              "count": true
+            },
+            "mb": {
+              "sum": "mb"
+            },
+            "list": {
+              "collect": true
+            }
+          }
+        }
+      },
+      {
+        "rules": "1",
+        "spec": {
+          "vertex": "backups",
+          "from": [
+            {
+              "store": "nas",
+              "kind": ["backup"]
+            },
+            {
+              "store": "lab",
+              "kind": ["backup"]
+            }
+          ],
+          "fold": {
+            "runs": {
+              "count": true
+            },
+            "mb": {
+              "sum": "mb"
+            },
+            "list": {
+              "collect": true
+            }
+          }
+        }
+      }
+    ]
+  },
+  "expect": [
+    {
+      "parsed-jcs": "{\"fold\":{\"list\":{\"collect\":true},\"mb\":{\"sum\":\"mb\"},\"runs\":{\"count\":true}},\"from\":[{\"kind\":[\"backup\"],\"store\":\"lab\"},{\"kind\":[\"backup\"],\"store\":\"nas\"}],\"vertex\":\"backups\"}",
+      "spec-hash": "spec:n3b5iajflnvovu1imr7c9dppou9ram42j5rpoobshhqtcpu8k48g",
+      "raw-member-hash": "spec:n3b5iajflnvovu1imr7c9dppou9ram42j5rpoobshhqtcpu8k48g"
+    },
+    {
+      "parsed-jcs": "{\"fold\":{\"list\":{\"collect\":true},\"mb\":{\"sum\":\"mb\"},\"runs\":{\"count\":true}},\"from\":[{\"kind\":[\"backup\"],\"store\":\"nas\"},{\"kind\":[\"backup\"],\"store\":\"lab\"}],\"vertex\":\"backups\"}",
+      "spec-hash": "spec:56lssaj4j0q2lpo1flt1ofabj3uf5em0jcm7pplp0of3q4jq04fg",
+      "raw-member-hash": "spec:56lssaj4j0q2lpo1flt1ofabj3uf5em0jcm7pplp0of3q4jq04fg"
+    }
+  ]
+}

@@ -1,0 +1,134 @@
+{
+  "vector": "when-backfill",
+  "layer": "tick",
+  "laws": ["window.span"],
+  "source": "model",
+  "input": {
+    "op": "window",
+    "spec": {
+      "vertex": "backups",
+      "from": [
+        {
+          "store": "lab",
+          "kind": ["backup"]
+        }
+      ],
+      "fold": {
+        "env.occurred": {
+          "count": true,
+          "where": {
+            "env.occurred": {
+              "at-least": "2026-11-21",
+              "below": "2026-11-22"
+            }
+          }
+        },
+        "env.emitted": {
+          "count": true,
+          "where": {
+            "env.emitted": {
+              "at-least": "2026-11-21",
+              "below": "2026-11-22"
+            }
+          }
+        },
+        "env.when": {
+          "count": true,
+          "where": {
+            "env.when": {
+              "at-least": "2026-11-21",
+              "below": "2026-11-22"
+            }
+          }
+        }
+      }
+    },
+    "records": [
+      {
+        "id": "r:000000000000000000000000000000000000000000000000000g",
+        "kind": "backup",
+        "observer": "sl:laptop",
+        "about": [],
+        "prev": [],
+        "emitted": "2026-11-21T20:00:00Z",
+        "occurred": "2026-11-16"
+      },
+      {
+        "id": "r:0000000000000000000000000000000000000000000000000010",
+        "kind": "backup",
+        "observer": "sl:laptop",
+        "about": [],
+        "prev": [],
+        "emitted": "2026-11-21T20:00:00Z",
+        "occurred": "2026-11-16"
+      },
+      {
+        "id": "r:000000000000000000000000000000000000000000000000001g",
+        "kind": "backup",
+        "observer": "sl:laptop",
+        "about": [],
+        "prev": [],
+        "emitted": "2026-11-21T20:00:00Z",
+        "occurred": "2026-11-16"
+      },
+      {
+        "id": "r:0000000000000000000000000000000000000000000000000020",
+        "kind": "backup",
+        "observer": "sl:laptop",
+        "about": [],
+        "prev": [],
+        "emitted": "2026-11-21T20:00:00Z",
+        "occurred": "2026-11-17"
+      },
+      {
+        "id": "r:000000000000000000000000000000000000000000000000002g",
+        "kind": "backup",
+        "observer": "sl:laptop",
+        "about": [],
+        "prev": [],
+        "emitted": "2026-11-21T20:00:00Z",
+        "occurred": "2026-11-17"
+      },
+      {
+        "id": "r:0000000000000000000000000000000000000000000000000030",
+        "kind": "backup",
+        "observer": "sl:laptop",
+        "about": [],
+        "prev": [],
+        "emitted": "2026-11-21T20:00:00Z",
+        "occurred": "2026-11-17"
+      },
+      {
+        "id": "r:000000000000000000000000000000000000000000000000003g",
+        "kind": "backup",
+        "observer": "sl:laptop",
+        "about": [],
+        "prev": [],
+        "emitted": "2026-11-21T20:00:00Z",
+        "occurred": "2026-11-17"
+      },
+      {
+        "id": "r:0000000000000000000000000000000000000000000000000040",
+        "kind": "backup",
+        "observer": "sl:laptop",
+        "about": [],
+        "prev": [],
+        "emitted": "2026-11-21T20:00:00Z"
+      }
+    ]
+  },
+  "expect": {
+    "env.occurred": {
+      "unread": "0",
+      "value": "0"
+    },
+    "env.emitted": {
+      "unread": "0",
+      "value": "8"
+    },
+    "env.when": {
+      "unread": "0",
+      "value": "1"
+    }
+  }
+}

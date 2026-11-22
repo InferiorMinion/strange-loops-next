@@ -1,0 +1,70 @@
+{
+  "vector": "carried-note",
+  "layer": "tick",
+  "laws": ["spec.hash"],
+  "source": "model",
+  "input": {
+    "op": "hash",
+    "samples": [
+      {
+        "rules": "1",
+        "spec": {
+          "vertex": "backups",
+          "from": [
+            {
+              "store": "lab",
+              "kind": ["backup"]
+            }
+          ],
+          "fold": {
+            "runs": {
+              "count": true
+            },
+            "mb": {
+              "sum": "mb"
+            },
+            "list": {
+              "collect": true
+            }
+          }
+        }
+      },
+      {
+        "rules": "1",
+        "spec": {
+          "note": "lab notes",
+          "vertex": "backups",
+          "from": [
+            {
+              "store": "lab",
+              "kind": ["backup"]
+            }
+          ],
+          "fold": {
+            "runs": {
+              "count": true
+            },
+            "mb": {
+              "sum": "mb"
+            },
+            "list": {
+              "collect": true
+            }
+          }
+        }
+      }
+    ]
+  },
+  "expect": [
+    {
+      "parsed-jcs": "{\"fold\":{\"list\":{\"collect\":true},\"mb\":{\"sum\":\"mb\"},\"runs\":{\"count\":true}},\"from\":[{\"kind\":[\"backup\"],\"store\":\"lab\"}],\"vertex\":\"backups\"}",
+      "spec-hash": "spec:gs9soetlnq1fqp17th66fedrl0oecag0uf101fm5ov2c46ss73ag",
+      "raw-member-hash": "spec:gs9soetlnq1fqp17th66fedrl0oecag0uf101fm5ov2c46ss73ag"
+    },
+    {
+      "parsed-jcs": "{\"fold\":{\"list\":{\"collect\":true},\"mb\":{\"sum\":\"mb\"},\"runs\":{\"count\":true}},\"from\":[{\"kind\":[\"backup\"],\"store\":\"lab\"}],\"vertex\":\"backups\"}",
+      "spec-hash": "spec:gs9soetlnq1fqp17th66fedrl0oecag0uf101fm5ov2c46ss73ag",
+      "raw-member-hash": "spec:uhvf4cnr2r7j1me4uv3pv0amsbigtstrej9691t6l2i5qnt2hal0"
+    }
+  ]
+}

@@ -107,7 +107,10 @@ export function joinLaws(root) {
     if (impl.dirs === "*" && !text.includes("no checker reads")) fail(`${impl.checker} claims every vector but doesn't refuse an unread directory`);
     if (impl.dirs !== "*") for (const d of impl.dirs) if (!text.includes(`join(dir, "${d}")`)) fail(`${impl.checker} doesn't read vectors/${d}`);
   }
-  const runBy = (paths) => data.implementations.filter((i) => paths.some((p) => i.dirs === "*" || i.dirs.includes(p.split("/")[0])));
+  const runBy = (paths) => data.implementations.filter((impl) => paths.some((path) => {
+    const family = path.split("/")[0];
+    return (impl.dirs === "*" || impl.dirs.includes(family)) && !impl.except?.includes(family);
+  }));
 
   // Law to law, from the proofs. The stack only rests downward: a proof of a law uses
   // theorems of its own layer or the ones below it, never above.
