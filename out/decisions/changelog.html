@@ -233,7 +233,20 @@ The record starts where the old roadmap's did. For anything earlier, and for eve
 <li><p>The tick record's second piece is in the model: a reader for a claimed result, and the tick's payload with its two readers.</p></li>
 <li><p>Rust has the spec's hash and <code>env.when</code>: <code>loops fold</code> takes a window on <code>env.when</code>, and Rust runs the 11 tick vectors it implements.</p></li>
 <li><p>The tick record's third piece is in the model: what a tick claims, how one is made, and the check with its answers.</p></li>
+<li><p>Rust has the tick's payload and the result reader, and runs 72 of the 113 tick vectors.</p></li>
 </ul>
+<h3 id="the-tick-record-rust-for-the-payload-and-the-result-reader">The tick record: Rust for the payload and the result reader</h3>
+<p>Piece 5 of the seven, taken before piece 4 because it needed nothing from the protocol page. <code>rust/core/src/tick.rs</code> has the payload, its JSON and bytes, and the two readers; <code>rust/core/src/result.rs</code> has <code>read_result</code> and the result hash over a raw member. The checks run in the model's order.</p>
+<ul>
+<li><p><strong>Rust runs 72 of the 113 tick vectors and counts 41 as pending</strong>: those of the claim and the check, whose Rust is piece 6. The evidence page credits Rust for <code>tick.canonical</code> and <code>tick.record</code> now.</p></li>
+<li><p><strong>The seventeen refusal codes</strong> are in the core's refusal vocabulary beside the spec's.</p></li>
+</ul>
+<p><strong>Implementer choices; they stand under Kyle's ruling of 2026-11-21 (W7).</strong></p>
+<ul>
+<li><p><strong>The core's types hold nothing a stored record cannot hold.</strong> The worker's first version added a variant for a number past binary64's range to the core's JSON and value types, to match the model on inputs outside the vectors. The coordinator had it taken out: the writer refuses such a number, so no tick's <code>spec</code> or <code>result</code> can hold one. The boundary stays in the vector evaluator, where it was, and <code>rust/GAPS.md</code> lists the fixture inputs on which the evaluator refuses and the model answers (an out-of-range number in a supplied payload; a repeated name inside a raw member that would be echoed). The coming Lean and Rust fuzz run leaves those out.</p></li>
+<li><p>No CLI change yet: <code>loops tick</code> is piece 7.</p></li>
+</ul>
+<p>A Codex worker wrote it in three rounds; the coordinator reviewed each, brought it up to main and set the run and pending counts.</p>
 <h3 id="the-tick-record-piece-3-the-claim-and-the-check-in-the-model">The tick record, piece 3: the claim and the check, in the model</h3>
 <p>The third of the seven pieces, in <code>model/Loops/TickCheck.lean</code>. With it the model holds the whole tick record. Rust does not run its vectors yet.</p>
 <ul>

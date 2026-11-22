@@ -28,6 +28,20 @@ In brief:
 - The tick record's second piece is in the model: a reader for a claimed result, and the tick's payload with its two readers.
 - Rust has the spec's hash and `env.when`: `loops fold` takes a window on `env.when`, and Rust runs the 11 tick vectors it implements.
 - The tick record's third piece is in the model: what a tick claims, how one is made, and the check with its answers.
+- Rust has the tick's payload and the result reader, and runs 72 of the 113 tick vectors.
+
+### The tick record: Rust for the payload and the result reader
+
+Piece 5 of the seven, taken before piece 4 because it needed nothing from the protocol page. `rust/core/src/tick.rs` has the payload, its JSON and bytes, and the two readers; `rust/core/src/result.rs` has `read_result` and the result hash over a raw member. The checks run in the model's order.
+
+- **Rust runs 72 of the 113 tick vectors and counts 41 as pending**: those of the claim and the check, whose Rust is piece 6. The evidence page credits Rust for `tick.canonical` and `tick.record` now.
+- **The seventeen refusal codes** are in the core's refusal vocabulary beside the spec's.
+
+**Implementer choices; they stand under Kyle's ruling of 2026-11-21 (W7).**
+- **The core's types hold nothing a stored record cannot hold.** The worker's first version added a variant for a number past binary64's range to the core's JSON and value types, to match the model on inputs outside the vectors. The coordinator had it taken out: the writer refuses such a number, so no tick's `spec` or `result` can hold one. The boundary stays in the vector evaluator, where it was, and `rust/GAPS.md` lists the fixture inputs on which the evaluator refuses and the model answers (an out-of-range number in a supplied payload; a repeated name inside a raw member that would be echoed). The coming Lean and Rust fuzz run leaves those out.
+- No CLI change yet: `loops tick` is piece 7.
+
+A Codex worker wrote it in three rounds; the coordinator reviewed each, brought it up to main and set the run and pending counts.
 
 ### The tick record, piece 3: the claim and the check, in the model
 

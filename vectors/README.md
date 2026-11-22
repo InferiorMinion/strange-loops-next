@@ -30,7 +30,7 @@ Both writing operations cover every supplied id, including records outside the s
 
 With `check-tick`, the fixture supplies a subject kind, its payload when held, the checker's forms and the checker's rules version. The verdict includes both missing-input counts or both result hashes when applicable. The separate closure report is yes, no or unknown. The taken-not-covered count is null until the checker has a spec in parsed form. An older tick can report today's comparison or the reason it is unavailable.
 
-The model recomputes each answer with `lake exe run --check`. Rust runs the 11 fixtures of the first three operations (`hash`, `domains`, `window`) and counts the other 102 as pending. JavaScript (W3) only checks the family's file count.
+The model recomputes each answer with `lake exe run --check`. Rust runs the 72 fixtures of the first nine operations and counts the 41 of `make-and-check` and `check-tick` as pending. JavaScript (W3) only checks the family's file count.
 
 ## `payload`
 

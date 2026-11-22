@@ -41,8 +41,12 @@ pub(crate) fn answers(layer: &str, input: &Json) -> Result<Vec<Json>, String> {
     }
     let kvs = members("input", &["payload"], input)?;
     let p = required("input", kvs, "payload")?;
+    Ok(vec![fields(p)?])
+}
+
+pub(super) fn fields(p: &Json) -> Result<Json, String> {
     if !p.keys_distinct() || !p.in_range() {
         return Err("input.payload: invalid stored payload".into());
     }
-    Ok(vec![tag("fields", fixture_fields(payload_fields(p)))])
+    Ok(tag("fields", fixture_fields(payload_fields(p))))
 }
