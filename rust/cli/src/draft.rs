@@ -8,7 +8,7 @@ use loops::{
     json::Json,
 };
 use loops_place::{
-    fill::{About, Occurred, Sets},
+    fill::{About, Occurred, Sets, Statement},
     key,
 };
 
@@ -31,7 +31,7 @@ pub(crate) fn from_args(
     observer: &str,
     link: impl Fn(&str) -> Result<String, Fail>,
     thing: impl Fn(&str) -> Result<String, Fail>,
-) -> Result<(Draft, About, Occurred, Sets), Fail> {
+) -> Result<Statement, Fail> {
     let mut env = Env {
         emitted: now.to_owned(),
         observer: observer.to_owned(),
@@ -127,13 +127,15 @@ pub(crate) fn from_args(
     let draft = Draft {
         label: None,
         env,
-        salt: match salt {
-            Some(salt) => salt,
-            None => new_salt()?,
-        },
+        salt: salt.map_or_else(new_salt, Ok)?,
         payload: Json::Obj(fields),
     };
-    Ok((draft, about, occurred, sets))
+    Ok(Statement {
+        draft,
+        about,
+        occurred,
+        sets,
+    })
 }
 
 fn shape(line: usize, what: &str) -> Fail {
@@ -145,6 +147,12 @@ const ENVELOPE_FIELDS: &[&str] = &[
     "kind", "observer", "emitted", "occurred", "about", "of", "prev", "under", "erases", "sets",
 ];
 
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(crate) enum JsonlMode {
+    Plain,
+    Fill,
+}
+
 /// One draft per line: a changeset. A line names what breaks, and nothing is
 /// written unless every line is taken.
 ///
@@ -154,11 +162,17 @@ const ENVELOPE_FIELDS: &[&str] = &[
 /// refused at once. Its envelope fields are read by the core's reader, as
 /// `Read.envOf` reads them: a field left out or of the wrong JSON type reads as
 /// unreadable text, so the batch writer refuses it with that field's own code,
-/// in the writer's order across the whole changeset, after label refusals.
+/// after label refusals (across the whole changeset in plain mode). In fill mode
+/// only, null `occurred` or `sets` states the absence of that optional field.
 /// `observer` and `emitted` are filled in only when the line leaves them out.
 /// A salt the line gives is read as the core reads one: text that is not
 /// base32hex is no bytes, refused as `salt-not-16-bytes` in that check's place.
-pub(crate) fn from_jsonl(input: &str, observer: &str, now: &str) -> Result<Vec<Draft>, Fail> {
+pub(crate) fn from_jsonl(
+    input: &str,
+    observer: &str,
+    now: &str,
+    mode: JsonlMode,
+) -> Result<Vec<Statement>, Fail> {
     let mut drafts = Vec::new();
     for (i, text) in input.lines().enumerate() {
         let line = i + 1;
@@ -172,6 +186,9 @@ pub(crate) fn from_jsonl(input: &str, observer: &str, now: &str) -> Result<Vec<D
         let mut payload = Json::Obj(Vec::new());
         let mut salt = None;
         let mut fields: Vec<(String, Json)> = Vec::new();
+        let mut about = About::Copied;
+        let mut occurred = Occurred::Copied;
+        let mut sets = Sets::Named;
         for (i, (name, value)) in members.iter().enumerate() {
             if members[..i].iter().any(|(earlier, _)| earlier == name) {
                 return Err(refused(format!("member-duplicate at line {line}: {name}")));
@@ -184,6 +201,18 @@ pub(crate) fn from_jsonl(input: &str, observer: &str, now: &str) -> Result<Vec<D
                 "payload" => payload = value.clone(),
                 "salt" => salt = Some(envelope::read_salt(Some(value))),
                 field if ENVELOPE_FIELDS.contains(&field) => {
+                    match field {
+                        "about" => about = About::Stated,
+                        "occurred" => occurred = Occurred::Stated,
+                        "sets" => sets = Sets::Stated,
+                        _ => {}
+                    }
+                    if mode == JsonlMode::Fill
+                        && *value == Json::Null
+                        && matches!(field, "occurred" | "sets")
+                    {
+                        continue;
+                    }
                     fields.push((name.clone(), value.clone()));
                 }
                 _ => {
@@ -203,15 +232,78 @@ pub(crate) fn from_jsonl(input: &str, observer: &str, now: &str) -> Result<Vec<D
         // reads values here; it refuses nothing a line can hold.
         let env = envelope::read(&format!("line {line}"), &Json::Obj(fields))
             .map_err(|e| shape(line, &e.to_string()))?;
-        drafts.push(Draft {
+        let draft = Draft {
             label,
             env,
-            salt: match salt {
-                Some(salt) => salt,
-                None => new_salt()?,
-            },
+            salt: salt.map_or_else(new_salt, Ok)?,
             payload,
+        };
+        drafts.push(Statement {
+            draft,
+            about,
+            occurred,
+            sets,
         });
     }
     Ok(drafts)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn field_presence_survives_decoding_for_the_filler() {
+        for mode in [JsonlMode::Fill, JsonlMode::Plain] {
+            let rows = from_jsonl(
+                r#"{}
+{"about":[],"occurred":null,"prev":[],"sets":[]}
+{"sets":null}
+{"about":["p:x"],"occurred":"2009","sets":["k"],"prev":["@x"]}
+{"about":null,"occurred":7,"prev":null,"sets":7}"#,
+                "k:test",
+                "now",
+                mode,
+            )
+            .ok()
+            .expect("shape passes");
+            let [missing, empty, whole, stated, bad] = rows.as_slice() else {
+                panic!("five rows")
+            };
+            assert_eq!(
+                (missing.about, missing.occurred, missing.sets),
+                (About::Copied, Occurred::Copied, Sets::Named)
+            );
+            assert_eq!(
+                (empty.about, empty.occurred, empty.sets),
+                (About::Stated, Occurred::Stated, Sets::Stated)
+            );
+            assert_eq!(missing.draft.env.about, empty.draft.env.about);
+            assert_eq!(missing.draft.env.prev, empty.draft.env.prev);
+            assert_eq!(missing.draft.env.sets, None);
+            assert_eq!(empty.draft.env.sets, Some(vec![]));
+            assert_eq!(whole.sets, Sets::Stated);
+            if mode == JsonlMode::Fill {
+                assert_eq!(empty.draft.env.occurred, None);
+                assert_eq!(whole.draft.env.sets, None);
+            } else {
+                assert_eq!(empty.draft.env.occurred.as_deref(), Some(""));
+                assert_eq!(whole.draft.env.sets, Some(vec![String::new()]));
+            }
+            assert_eq!(stated.draft.env.about, ["p:x"]);
+            assert_eq!(stated.draft.env.prev, ["@x"]);
+            assert_eq!(stated.draft.env.occurred.as_deref(), Some("2009"));
+            assert_eq!(stated.draft.env.sets, Some(vec!["k".into()]));
+            for row in [stated, bad] {
+                assert_eq!(
+                    (row.about, row.occurred, row.sets),
+                    (About::Stated, Occurred::Stated, Sets::Stated)
+                );
+            }
+            assert_eq!(bad.draft.env.about, [""]);
+            assert_eq!(bad.draft.env.prev, [""]);
+            assert_eq!(bad.draft.env.occurred.as_deref(), Some(""));
+            assert_eq!(bad.draft.env.sets, Some(vec![String::new()]));
+        }
+    }
 }

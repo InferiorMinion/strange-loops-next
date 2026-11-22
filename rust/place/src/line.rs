@@ -250,36 +250,40 @@ impl Line {
     /// Never for a line made by [`Line::sign`] or [`Line::parse`]: both check
     /// the ids and times this reads.
     pub fn record(&self) -> Record {
-        let env = self.env();
-        let ids = |xs: &[String]| {
-            loops::json::canon_set(xs)
-                .iter()
-                .map(|s| digest(s))
-                .collect()
-        };
-        let envelope = Record {
-            id: digest(&self.id),
-            kind: env.kind.clone(),
-            observer: env.observer.clone(),
-            about: loops::json::canon_set(&env.about),
-            of: env.of.clone(),
-            prev: ids(&env.prev),
-            under: env.under.as_deref().map(digest),
-            occurred: env.occurred.as_deref().map(|s| {
-                Claim::of(s).expect("a held line's occurred passed the envelope's span check")
-            }),
-            emitted: Stamp::of(&env.emitted)
-                .expect("a held line's emitted passed the envelope's instant check"),
-            erases: ids(&env.erases),
-            sets: env.sets.as_deref().map(loops::json::canon_set),
-            ..Record::default()
-        };
-        let Some(payload) = self.payload() else {
-            return envelope.erase();
-        };
-        Record {
-            fields: payload_fields(payload),
-            ..envelope
-        }
+        record_from(self.id(), self.env(), self.payload())
+    }
+}
+
+/// The reader's record from a checked envelope, also used before signing a changeset.
+pub(crate) fn record_from(id: &str, env: &Env, payload: Option<&Json>) -> Record {
+    let ids = |xs: &[String]| {
+        loops::json::canon_set(xs)
+            .iter()
+            .map(|s| digest(s))
+            .collect()
+    };
+    let envelope = Record {
+        id: digest(id),
+        kind: env.kind.clone(),
+        observer: env.observer.clone(),
+        about: loops::json::canon_set(&env.about),
+        of: env.of.clone(),
+        prev: ids(&env.prev),
+        under: env.under.as_deref().map(digest),
+        occurred: env.occurred.as_deref().map(|s| {
+            Claim::of(s).expect("a held line's occurred passed the envelope's span check")
+        }),
+        emitted: Stamp::of(&env.emitted)
+            .expect("a held line's emitted passed the envelope's instant check"),
+        erases: ids(&env.erases),
+        sets: env.sets.as_deref().map(loops::json::canon_set),
+        ..Record::default()
+    };
+    let Some(payload) = payload else {
+        return envelope.erase();
+    };
+    Record {
+        fields: payload_fields(payload),
+        ..envelope
     }
 }

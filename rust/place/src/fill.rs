@@ -1,17 +1,18 @@
-//! What `loops emit` fills in on the single-record path, before the batch
-//! writer checks the draft: `of`, `sets`, the anchor, `about` and `occurred`.
-//!
-//! The protocol never infers any of them. Each is written into the envelope
-//! at write time, and nothing reads it in later. A changeset (`loops emit -`)
-//! states its own `of`, `sets`, `prev`, `about` and `occurred`,
-//! and nothing here touches it.
+//! What single emits and opted-in changesets fill in at write time.
+//! A plain changeset states its own envelope fields.
+use crate::{
+    dir::Held,
+    line::{Line, hash, record_from},
+};
 use loops::{
     batch::{self, Draft},
     json::{Json, canon_set},
     live,
     occurred::Claim,
     record::{Record, id_text},
+    stored, things,
 };
+use std::collections::HashMap;
 
 /// Where a draft's `sets` comes from.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -40,6 +41,109 @@ pub enum Occurred {
     Stated,
     /// Copy the occurrence when every head states the same text.
     Copied,
+}
+
+/// One draft and the choices its writer made before envelope decoding.
+#[derive(Clone, Debug)]
+pub struct Statement {
+    /// The unchecked draft, including any batch label references.
+    pub draft: Draft,
+    /// Whether to copy the heads' mentions.
+    pub about: About,
+    /// Whether to copy an agreed occurrence.
+    pub occurred: Occurred,
+    /// Whether to derive the keys from an object payload.
+    pub sets: Sets,
+}
+
+/// Fill one statement against the writer's lookup and settled, admitted realm.
+/// # Errors
+/// Returns the inference refusals from [`of`].
+pub fn one(
+    view: &impl Fn(&str) -> Option<batch::Held>,
+    realm: &[Record],
+    statement: Statement,
+) -> Result<Draft, batch::Error> {
+    let draft = of(view, statement.draft)?;
+    let draft = sets(realm, draft, statement.sets);
+    Ok(anchor(realm, draft, statement.about, statement.occurred))
+}
+
+/// Visit a line's prerequisites first, in input order among siblings. Finish
+/// the entire graph check before any line can refuse during filling.
+fn preparation_order(rows: &[Statement]) -> Result<Vec<usize>, batch::Error> {
+    batch::check_label_names(rows.iter().map(|s| &s.draft))?;
+    let labels: HashMap<_, _> = rows
+        .iter()
+        .enumerate()
+        .filter_map(|(i, s)| Some((s.draft.label.as_deref()?, i)))
+        .collect();
+    let mut active = vec![false; rows.len()];
+    let mut done = vec![false; rows.len()];
+    let mut order = Vec::with_capacity(rows.len());
+    for i in 0..rows.len() {
+        let mut stack = vec![(i, false)];
+        while let Some((line, finish)) = stack.pop() {
+            if done[line] {
+                continue;
+            }
+            if finish {
+                done[line] = true;
+                order.push(line);
+                continue;
+            }
+            if active[line] {
+                return Err(batch::Error::LabelCycle);
+            }
+            active[line] = true;
+            stack.push((line, true));
+            let mut deps: Vec<_> = rows[line]
+                .draft
+                .refs()
+                .iter()
+                .map(|name| labels[name.as_str()])
+                .collect();
+            deps.sort_unstable();
+            deps.dedup();
+            stack.extend(deps.into_iter().rev().map(|dep| (dep, false)));
+        }
+    }
+    Ok(order)
+}
+
+/// Prepare a changeset in memory, using each filled id in later references.
+/// The result is in input order for the final batch writer and its target checks.
+/// # Errors
+/// Label refusals precede per-line inference and writer field refusals.
+pub fn changeset(held: &Held, rows: &[Statement]) -> Result<Vec<Draft>, batch::Error> {
+    let order = preparation_order(rows)?;
+    let mut records: Vec<_> = held.lines().iter().map(Line::record).collect();
+    let mut staged = HashMap::<String, batch::Held>::new();
+    let mut labels = HashMap::<&str, String>::new();
+    let mut filled = Vec::with_capacity(rows.len());
+    for i in order {
+        let mut row = rows[i].clone();
+        row.draft.env = batch::subst_env(&row.draft.env, |name| labels.get(name).cloned())
+            .ok_or(batch::Error::LabelUnknown)?;
+        let view = |id: &str| staged.get(id).cloned().or_else(|| held.writer_view(id));
+        let draft = one(&view, &things::realm(&records, |_, _| true), row)?;
+        let written = stored::write(draft.env.clone(), draft.salt.clone(), draft.payload.clone())?;
+        let id = stored::id_of(&hash, written.env(), &draft.commit(&hash));
+        records.push(record_from(&id, written.env(), Some(written.payload())));
+        if let Some(label) = rows[i].draft.label.as_deref() {
+            labels.insert(label, id.clone());
+        }
+        staged.insert(
+            id,
+            batch::Held {
+                of: draft.env.of.clone(),
+                prev: draft.env.prev.clone(),
+            },
+        );
+        filled.push((i, draft));
+    }
+    filled.sort_unstable_by_key(|(i, _)| *i);
+    Ok(filled.into_iter().map(|(_, draft)| draft).collect())
 }
 
 /// A revision written without `of` is of what it replaces: the thing of each
@@ -141,6 +245,37 @@ pub fn anchor(realm: &[Record], mut draft: Draft, about: About, occurred: Occurr
 mod tests {
     use super::*;
     use loops::record::Digest;
+
+    #[test]
+    fn prepare_transitive_prerequisites_first_in_input_order() {
+        let row = |label: &str, mentions: &[&str]| Statement {
+            draft: Draft {
+                label: Some(label.into()),
+                env: loops::envelope::Env {
+                    about: mentions.iter().map(|s| (*s).into()).collect(),
+                    ..Default::default()
+                },
+                ..Default::default()
+            },
+            about: About::Stated,
+            occurred: Occurred::Copied,
+            sets: Sets::Named,
+        };
+        let mut rows = vec![
+            row("@first", &["@right", "@left", "@right"]),
+            row("@independent", &[]),
+            row("@left", &["@deep"]),
+            row("@right", &[]),
+            row("@deep", &[]),
+        ];
+        assert_eq!(preparation_order(&rows), Ok(vec![4, 2, 3, 0, 1]));
+        rows.push(row("@cycle", &["@cycle"]));
+        assert_eq!(preparation_order(&rows), Err(batch::Error::LabelCycle));
+        rows.push(row("@unknown", &["@missing"]));
+        assert_eq!(preparation_order(&rows), Err(batch::Error::LabelUnknown));
+        rows.push(row("@first", &[]));
+        assert_eq!(preparation_order(&rows), Err(batch::Error::LabelDuplicate));
+    }
 
     #[test]
     fn occurred_requires_the_same_text_on_every_head() {

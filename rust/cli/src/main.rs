@@ -48,7 +48,8 @@ usage: loops [-C <dir>] <verb> ...
                                 --no-occurred states none; an emit of a thing
                                 held here sets the fields it names unless
                                 --sets, --sets-nothing or --whole states it
-  emit -                        drafts as JSONL on stdin: one changeset
+  emit - [--fill]               read one JSONL changeset from stdin
+                                --fill applies the single-emit filler to each line
   get <id>                      one record
   of <thing>                    a thing's values, each key's from its live
                                 setters; its about, its heads, and how many
@@ -229,9 +230,9 @@ fn signing_key(missing: Missing) -> Result<Key, Fail> {
 /// An observer that is not a typed reference at all, left mistyped in a
 /// changeset line among them, is the writer's to refuse with its own code,
 /// `observer-not-typed`, so it is not judged here.
-fn bound(key: &Key, drafts: &[batch::Draft]) -> Result<(), Fail> {
+fn bound<'a>(key: &Key, drafts: impl IntoIterator<Item = &'a batch::Draft>) -> Result<(), Fail> {
     match drafts
-        .iter()
+        .into_iter()
         .find(|d| envelope::typed_ref(&d.env.observer) && d.env.observer != key.public())
     {
         Some(draft) => Err(refused(format!(
@@ -307,7 +308,6 @@ fn write_changeset(
     key: &Key,
     drafts: &[batch::Draft],
 ) -> Result<Vec<Line>, Fail> {
-    bound(key, drafts)?;
     let written = batch::resolve_batch(&hash, &|id: &str| held.writer_view(id), drafts)
         .map_err(|e| refused(e.code()))?;
     let lines: Vec<Line> = written.iter().map(|w| Line::sign(w, key)).collect();
@@ -321,10 +321,22 @@ fn emit(start: &Path, args: &[String]) -> Result<(), Fail> {
     warn_unclean(&held);
     let key = signing_key(Missing::Make)?;
     let now = clock::now().ok_or_else(|| Fail::System("the clock is outside 1970–9999".into()))?;
-    if args == ["-"] {
+    if args == ["-"] || args == ["-", "--fill"] {
         let mut input = String::new();
         io::stdin().read_to_string(&mut input)?;
-        let drafts = draft::from_jsonl(&input, &key.public(), &now)?;
+        let mode = if args.len() == 1 {
+            draft::JsonlMode::Plain
+        } else {
+            draft::JsonlMode::Fill
+        };
+        let rows = draft::from_jsonl(&input, &key.public(), &now, mode)?;
+        bound(&key, rows.iter().map(|s| &s.draft))?;
+        let drafts = match mode {
+            draft::JsonlMode::Plain => rows.into_iter().map(|s| s.draft).collect(),
+            draft::JsonlMode::Fill => {
+                fill::changeset(&held, &rows).map_err(|e| refused(e.code()))?
+            }
+        };
         let lines = write_changeset(&place, &held, &key, &drafts)?;
         let records = drafts
             .iter()
@@ -339,22 +351,16 @@ fn emit(start: &Path, args: &[String]) -> Result<(), Fail> {
             .collect();
         return say(&object(vec![("records", Json::Arr(records))]).canon());
     }
-    let (draft, about, occurred, sets) = draft::from_args(
+    let statement = draft::from_args(
         args,
         &now,
         &key.public(),
         |given| link(&held, given),
         |given| thing_ref(&held, given),
     )?;
-    // A revision without `--of` is of what it replaces; then an emit of a
-    // thing held here sets the keys it names unless it states its `sets`; it
-    // names every live record of its thing held here, and copies the heads'
-    // `about` and agreed `occurred` unless it states its own. A refusal here
-    // precedes the writer's others.
-    let draft = fill::of(&|id: &str| held.writer_view(id), draft).map_err(|e| refused(e.code()))?;
-    let admitted = realm(&held);
-    let draft = fill::sets(&admitted, draft, sets);
-    let draft = fill::anchor(&admitted, draft, about, occurred);
+    let draft = fill::one(&|id| held.writer_view(id), &realm(&held), statement)
+        .map_err(|e| refused(e.code()))?;
+    bound(&key, [&draft])?;
     let lines = write_changeset(&place, &held, &key, &[draft])?;
     say(lines.first().map_or("", Line::id))
 }
@@ -399,6 +405,7 @@ fn erase(start: &Path, args: &[String]) -> Result<(), Fail> {
                 .collect(),
         ),
     };
+    bound(&key, [&draft])?;
     let lines = write_changeset(&place, &held, &key, &[draft])?;
     let gone = place.purge(&ids)?;
     say(&object(vec![

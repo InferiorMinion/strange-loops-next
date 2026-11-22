@@ -2204,3 +2204,420 @@ fn concurrent_route_lists_are_tested_per_setter_and_displayed_whole() {
         assert_eq!(without_values(&values).canon(), slots.canon());
     }
 }
+
+const FILL: &[&str] = &["emit", "-", "--fill"];
+const WHEN: &str = "2026-11-20T00:00:00Z";
+const SALT: &str = "00000000000000000000000000";
+
+fn fixed_store(name: &str) -> Store {
+    let s = Store::new(name);
+    fs::write(s.dir.join("device-key"), "0".repeat(52)).expect("fixed device key");
+    s
+}
+
+fn fixed_emit(s: &Store, fields: &[&str]) -> String {
+    let mut args = vec!["emit", "--emitted", WHEN, "--salt", SALT];
+    args.extend(fields);
+    s.ok(&args)
+}
+
+fn filled(s: &Store, rows: &str) -> Vec<String> {
+    let answer = s.ok_with(FILL, rows);
+    ids(
+        &parse_json(&answer).expect("changeset answer"),
+        &["records"],
+    )
+}
+
+/// Compare the full signed lines using the same observer, clock and salts.
+fn assert_twins(batch: &Store, singles: &Store, rows: &str, expected: &[String]) {
+    let input = rows
+        .lines()
+        .map(|line| {
+            let Json::Obj(mut fields) = parse_json(line).expect("input line") else {
+                panic!("object")
+            };
+            fields.push(("emitted".into(), Json::Str(WHEN.into())));
+            fields.push(("salt".into(), Json::Str(SALT.into())));
+            Json::Obj(fields).canon()
+        })
+        .collect::<Vec<_>>()
+        .join("\n");
+    let before = batch.segments();
+    let out = parse_json(&batch.ok_with(FILL, &input)).expect("filled answer");
+    assert_eq!(ids(&out, &["records"]), expected);
+    let Json::Arr(entries) = at(&out, &["records"]) else {
+        panic!("records")
+    };
+    for (entry, line) in entries.iter().zip(rows.lines()) {
+        let row = parse_json(line).expect("input line");
+        assert_eq!(has(entry, &[], "label"), has(&row, &[], "label"));
+        if has(&row, &[], "label") {
+            assert_eq!(text(entry, &["label"]), text(&row, &["label"]));
+        }
+    }
+    for id in expected {
+        assert_eq!(batch.ok(&["get", id]), singles.ok(&["get", id]));
+    }
+    let after = batch.segments();
+    assert_eq!(after.len(), before.len() + 1);
+    let segment = after
+        .iter()
+        .find(|p| !before.contains(p))
+        .expect("new segment");
+    let bytes = fs::read_to_string(segment).expect("read segment");
+    let stored_ids: Vec<_> = bytes
+        .lines()
+        .map(|line| text(&parse_json(line).expect("signed line"), &["id"]).to_owned())
+        .collect();
+    assert_eq!(stored_ids, expected);
+}
+
+#[test]
+fn one_and_two_filled_lines_match_successive_single_emits() {
+    let batch = fixed_store("filled-twin");
+    let singles = fixed_store("single-twin");
+    let head = fixed_emit(
+        &singles,
+        &[
+            "task",
+            "--of",
+            "task:1",
+            "--about",
+            "project:p",
+            "--occurred",
+            "2009",
+            "title=A",
+        ],
+    );
+    batch.ok_with(&["import"], &singles.ok(&["export"]));
+    let first = fixed_emit(&singles, &["task", "--prev", &head, "x:=1"]);
+    assert_twins(
+        &batch,
+        &singles,
+        &format!(r#"{{"kind":"task","prev":["{head}"],"payload":{{"x":1}}}}"#),
+        &[first],
+    );
+    let a = fixed_emit(
+        &singles,
+        &[
+            "task",
+            "--of",
+            "task:1",
+            "--about",
+            "project:q",
+            "--occurred",
+            "2010",
+            "x:=2",
+        ],
+    );
+    let b = fixed_emit(&singles, &["task", "--of", "task:1", "y:=3"]);
+    assert_twins(
+        &batch,
+        &singles,
+        r#"{"kind":"task","of":"task:1","about":["project:q"],"occurred":"2010","payload":{"x":2}}
+{"kind":"task","of":"task:1","payload":{"y":3}}"#,
+        &[a.clone(), b.clone()],
+    );
+    let last = batch.json(&["get", &b]);
+    let mut live = vec![head, a];
+    live.sort();
+    assert_eq!(strings(&last, &["env", "prev"]), live);
+    assert_eq!(head_ids(&batch.json(&["of", "task:1"])), [b]);
+}
+
+#[test]
+fn labelled_filled_changesets_match_the_ids_from_single_emits() {
+    let batch = fixed_store("filled-labels");
+    let singles = fixed_store("single-labels");
+    let root = fixed_emit(
+        &singles,
+        &["note", "--about", "project:p", "--occurred", "2009"],
+    );
+    let a = fixed_emit(&singles, &["note", "--prev", &root, "x:=1"]);
+    let b = fixed_emit(&singles, &["note", "--prev", &a, "--about", &root, "y:=2"]);
+    assert_twins(
+        &batch,
+        &singles,
+        r#"{"kind":"note","label":"@r","about":["project:p"],"occurred":"2009"}
+{"kind":"note","label":"@a","prev":["@r"],"payload":{"x":1}}
+{"kind":"note","prev":["@a"],"about":["@r"],"payload":{"y":2}}"#,
+        &[root, a, b],
+    );
+    let grant = fixed_emit(&singles, &["grant"]);
+    let acting = fixed_emit(&singles, &["act", "--under", &grant, "--about", &grant]);
+    assert_twins(
+        &batch,
+        &singles,
+        r#"{"kind":"act","under":"@grant","about":["@grant"]}
+{"kind":"grant","label":"@grant"}"#,
+        &[acting, grant],
+    );
+
+    let root = fixed_emit(&singles, &["task"]);
+    let a = fixed_emit(&singles, &["task", "--of", &root, "x:=1"]);
+    let b = fixed_emit(&singles, &["task", "--of", &root, "--prev", &a, "y:=2"]);
+    assert_twins(
+        &batch,
+        &singles,
+        r#"{"kind":"task","label":"@r"}
+{"kind":"task","label":"@a","of":"@r","payload":{"x":1}}
+{"kind":"task","of":"@r","prev":["@a"],"payload":{"y":2}}"#,
+        &[root, a, b],
+    );
+}
+
+#[test]
+fn filled_fields_and_absences_match_the_single_flags() {
+    for (i, (members, flags)) in [
+        (r#""about":[]"#, vec!["--no-about"]),
+        (r#""occurred":null"#, vec!["--no-occurred"]),
+        (r#""sets":[]"#, vec!["--sets-nothing"]),
+        (r#""sets":null"#, vec!["--whole"]),
+        (r#""prev":[]"#, vec![]),
+        (
+            r#""about":["project:q"],"occurred":"2010","sets":["other"]"#,
+            vec![
+                "--about",
+                "project:q",
+                "--occurred",
+                "2010",
+                "--sets",
+                "other",
+            ],
+        ),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let batch = fixed_store(&format!("fill-none-{i}"));
+        let singles = fixed_store(&format!("single-none-{i}"));
+        let old = fixed_emit(&singles, &["task", "--of", "task:1", "x:=0"]);
+        fixed_emit(
+            &singles,
+            &[
+                "task",
+                "--of",
+                "task:1",
+                "--about",
+                "project:p",
+                "--occurred",
+                "2009",
+                "--whole",
+                "x:=1",
+            ],
+        );
+        batch.ok_with(&["import"], &singles.ok(&["export"]));
+        let mut args = vec!["task", "--of", "task:1", "x:=2"];
+        let prev = if members.starts_with(r#""prev""#) {
+            String::new()
+        } else {
+            args.extend(["--prev", &old]);
+            format!(r#""prev":["{old}"],"#)
+        };
+        args.extend(flags);
+        let id = fixed_emit(&singles, &args);
+        assert_twins(
+            &batch,
+            &singles,
+            &format!(r#"{{"kind":"task","of":"task:1",{prev}{members},"payload":{{"x":2}}}}"#),
+            &[id],
+        );
+    }
+}
+
+#[test]
+fn a_filled_changeset_uses_envelopes_after_erasure_and_handles_nonobjects() {
+    let s = Store::new("filled-erased");
+    let h = s.ok(&[
+        "emit",
+        "task",
+        "--of",
+        "task:1",
+        "--about",
+        "project:p",
+        "--occurred",
+        "2009",
+    ]);
+    let rows = format!(
+        r#"{{"kind":"erasure","label":"@e","erases":["{h}"]}}
+{{"kind":"task","of":"task:1","under":"@e","payload":7}}
+{{"kind":"task","of":"task:fresh","payload":{{"x":2}}}}"#
+    );
+    let pair = filled(&s, &rows);
+    let eraser = s.json(&["get", &pair[0]]);
+    let task = s.json(&["get", &pair[1]]);
+    assert!(!has(&eraser, &["env"], "prev"));
+    assert_eq!(
+        strings(&eraser, &["env", "erases"]),
+        std::slice::from_ref(&h)
+    );
+    assert_eq!(strings(&task, &["env", "prev"]), [h]);
+    assert_eq!(strings(&task, &["env", "about"]), ["project:p"]);
+    assert_eq!(text(&task, &["env", "occurred"]), "2009");
+    assert_eq!(text(&task, &["env", "under"]), pair[0]);
+    assert!(!has(&task, &["env"], "sets"));
+    let fresh = s.json(&["get", &pair[2]]);
+    for key in ["prev", "sets", "about", "occurred"] {
+        assert!(!has(&fresh, &["env"], key));
+    }
+    s.changeset(r#"{"kind":"task","of":"task:1","occurred":"2010"}"#);
+    let join = filled(&s, r#"{"kind":"task","of":"task:1"}"#);
+    assert!(!has(&s.json(&["get", &join[0]]), &["env"], "occurred"));
+}
+
+#[test]
+fn filled_refusals_are_ordered_and_atomic() {
+    let s = fixed_store("filled-refusals");
+    let one = s.ok(&["emit", "task", "--of", "task:1"]);
+    let other = s.ok(&["emit", "task", "--of", "task:2"]);
+    let export = s.ok(&["export"]);
+    let segments = s.segments();
+    let unknown = format!("r:{}", "0".repeat(52));
+    let infer = format!(r#"{{"kind":"","prev":["{unknown}"]}}"#);
+    for (bad, expected) in [
+        (
+            format!("{infer}\n{{\"kind\":\"bad\",\"about\":[\"@missing\"]}}"),
+            "label-unknown",
+        ),
+        (
+            format!("{infer}\n{{\"label\":\"@c\",\"under\":\"@c\"}}"),
+            "label-cycle",
+        ),
+        (
+            format!("{infer}\n{{\"label\":\"@c\",\"under\":\"@missing\"}}\n{{\"label\":\"@c\"}}"),
+            "label-duplicate",
+        ),
+        (format!("{{\"kind\":7}}\n{infer}"), "kind-empty"),
+        (infer, "prev-unknown"),
+        (
+            format!(
+                r#"{{"kind":"task","label":"@new","of":"task:2"}}
+{{"kind":"task","prev":["@new","{one}","{other}"]}}"#
+            ),
+            "prev-unrelated",
+        ),
+        (
+            format!(r#"{{"kind":"","of":"task:1","prev":["{unknown}"]}}"#),
+            "kind-empty",
+        ),
+        (
+            format!(r#"{{"kind":"task","under":"{unknown}"}}"#),
+            "under-unknown",
+        ),
+        (format!(r#"{{"kind":"task","of":"{one}"}}"#), "of-not-root"),
+        (r#"{"kind":"task","about":null}"#.into(), "about-not-typed"),
+        (
+            r#"{"kind":"task","occurred":""}"#.into(),
+            "occurred-not-span",
+        ),
+        (r#"{"kind":"task","sets":[7]}"#.into(), "sets-not-keys"),
+        (
+            r#"{"sets":null,"sets":[]}"#.into(),
+            "member-duplicate at line 2: sets",
+        ),
+        (
+            r#"{"occurred":null,"extra":[]}"#.into(),
+            "draft-field-unknown at line 2: extra",
+        ),
+    ] {
+        let input = format!("{{\"kind\":\"valid\"}}\n{bad}");
+        assert_eq!(
+            answer(&s, FILL, &input),
+            (1, String::new(), format!("refused: {expected}")),
+            "{bad}"
+        );
+    }
+    assert_eq!(s.ok(&["export"]), export);
+    assert_eq!(s.segments(), segments);
+}
+
+#[test]
+fn plain_changeset_bytes_and_other_dash_invocations_are_preserved() {
+    let s = fixed_store("plain-bytes");
+    let rows = format!(
+        r#"{{"kind":"task","label":"@t","of":"task:1","emitted":"{WHEN}","salt":"{SALT}","payload":{{"x":1}}}}"#
+    );
+    let id = "r:bqhocbroujp93duvv8qd8g9a7mmd4id3r680mq6ljurjsf31nj50";
+    assert_eq!(
+        answer(&s, &["emit", "-"], &rows),
+        (
+            0,
+            format!("{{\"records\":[{{\"id\":\"{id}\",\"label\":\"@t\"}}]}}\n"),
+            String::new()
+        )
+    );
+    let key = "k:7dl2ff6emqi2qol3l382krodedij45bn3nh479hqo14a32qpr8kg";
+    let signature = "gvar8dvnb36qkp857ioc8blifn0lsv47jmf446rqaekl72gqsrlsik8ssa9limlgdho9ii5t9jf6viq5fhq94qa9661odj698rmnq2o";
+    let line = format!(
+        r#"{{"env":{{"emitted":"{WHEN}","kind":"task","observer":"{key}","of":"task:1"}},"id":"{id}","payload":{{"x":1}},"salt":"{SALT}","sig":{{"ed25519":"{signature}","key":"{key}"}}}}"#
+    );
+    assert_eq!(
+        answer(&s, &["export"], ""),
+        (0, format!("{line}\n"), String::new())
+    );
+    for (bad, code) in [
+        (r#"{"kind":"task","sets":null}"#, "sets-not-keys"),
+        (r#"{"kind":"task","occurred":null}"#, "occurred-not-span"),
+        (
+            r#"{"kind":"task","prev":["r:0000000000000000000000000000000000000000000000000000"]}"#,
+            "of-missing",
+        ),
+        (
+            "{\"salt\":null,\"kind\":\"ok\"}\n{\"kind\":null}",
+            "kind-empty",
+        ),
+        ("{\"kind\":null}\n{\"about\":[\"@x\"]}", "label-unknown"),
+    ] {
+        assert_eq!(
+            answer(&s, &["emit", "-"], bad),
+            (1, String::new(), format!("refused: {code}"))
+        );
+    }
+    assert_eq!(s.fails(&["emit", "task", "--fill"], "").0, 2);
+    let dash = s.ok_with(&["emit", "-", "extra"], "not JSONL");
+    let got = s.json(&["get", &dash]);
+    assert_eq!(text(&got, &["env", "kind"]), "-");
+    assert_eq!(text(&got, &["payload", "text"]), "extra");
+}
+
+#[test]
+fn literal_predecessors_use_the_holding_at_inference_time() {
+    let batch = fixed_store("filled-literal");
+    let singles = fixed_store("single-literal");
+    // Know R's future id without putting its envelope into the batch store.
+    let r = fixed_emit(&singles, &["note"]);
+    let root = format!(r#"{{"kind":"note","emitted":"{WHEN}","salt":"{SALT}"}}"#);
+    let missing = format!(
+        r#"{{"kind":"task","prev":["{r}"]}}
+{root}"#
+    );
+    assert_eq!(
+        batch.fails(FILL, &missing),
+        (1, "refused: prev-unknown".into())
+    );
+    assert_eq!(batch.segments(), Vec::<PathBuf>::new());
+    // With of stated, the final batch check can see the literal target.
+    let explicit = format!(
+        r#"{{"kind":"task","of":"{r}","prev":["{r}"]}}
+{root}"#
+    );
+    let ids = filled(&batch, &explicit);
+    assert_eq!(ids[1], r);
+    assert!(!has(&batch.json(&["get", &ids[0]]), &["env"], "sets"));
+
+    // Both targets of the next revision, one literal and one labelled, are
+    // now available when its thing is inferred.
+    singles.ok_with(&["import"], &batch.ok(&["export"]));
+    let a = fixed_emit(&singles, &["task", "--of", &r, "x:=1"]);
+    let b = fixed_emit(&singles, &["task", "--prev", &a, "--prev", &r, "y:=2"]);
+    assert_twins(
+        &batch,
+        &singles,
+        &format!(
+            r#"{{"kind":"task","label":"@a","of":"{r}","payload":{{"x":1}}}}
+{{"kind":"task","prev":["@a","{r}"],"payload":{{"y":2}}}}"#
+        ),
+        &[a, b],
+    );
+}

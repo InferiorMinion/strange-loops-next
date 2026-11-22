@@ -235,7 +235,7 @@
     "group": "Things",
     "status": "settled",
     "claim": "A writer's tool names every live record of the thing it writes.",
-    "why": "When every emit names every live record under it, the live records of a thing, read alone, give its whole keyed state (<code>keyed.anchored</code>), so a reader can hold a slice and not the history. <code>loops emit</code> fills this in. It also copies the heads' <code>about</code> and, since 2026-11-21, their <code>occurred</code> when they agree: an update to a thing that occurred in 2009 stays in 2009 unless its writer states a new occurrence. The protocol infers none of it: each is written into the envelope at write time, and a changeset (<code>emit -</code>) states its own. Version 36."
+    "why": "When every emit names every live record under it, the live records of a thing, read alone, give its whole keyed state (<code>keyed.anchored</code>), so a reader can hold a slice and not the history. <code>loops emit</code> fills this in. It also copies the heads' <code>about</code> and, since 2026-11-21, their <code>occurred</code> when they agree: an update to a thing that occurred in 2009 stays in 2009 unless its writer states a new occurrence. The protocol infers none of it: each is written into the envelope at write time, and a changeset (<code>emit -</code>) states its own, unless it asks for the same filling with <code>--fill</code>. Version 36."
   },
   {
     "kind": "decision",

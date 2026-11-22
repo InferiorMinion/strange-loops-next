@@ -22,6 +22,42 @@ In brief:
 - `loops emit` copies `occurred` from the heads when they agree; `--no-occurred` states none.
 - The roadmap, the decisions, the changelog and the notes are published as a fifth design page, and the rethink and grammar pages are brought up to the rulings since 2026-11-13.
 - The full mutation catalogue ran over all 328 entries: 324 caught, two known survivors, and two new ones that are now caught. The full runner asks what the per-merge check asks.
+- `loops emit - --fill` fills each line of a changeset as a single emit would, so a collector can write anchored records.
+
+### A changeset can ask for the filler: `loops emit - --fill`
+
+Ruled on 2026-11-20 ([the cut note](notes/2026-11-15-the-cut.md), section 7) and built on 2026-11-21. Rust only: `rust/place/src/fill.rs` and the CLI. No protocol rule and no refusal code changed, and `loops emit -` without the option writes what it wrote before, byte for byte.
+
+With `--fill`, each line gets what `loops emit` would fill in for the same statement: `of` from its `prev`, the keys its payload names, every live record of its thing in `prev`, and the heads' `about` and `occurred`. The changeset is still written whole or not at all.
+
+A real run, on a store holding one backup of `svc:jellyfin` (`H`, about `host:nas`, occurred 2026-11-16):
+
+```
+{"kind":"backup","of":"svc:jellyfin","payload":{"mb":419}}
+{"kind":"backup","of":"svc:jellyfin","occurred":"2026-11-18","payload":{"state":"ok"}}
+```
+
+| Line | `prev` | `about` | `occurred` | `sets` |
+| --- | --- | --- | --- | --- |
+| 1, with `--fill` | `H` | `host:nas` | 2026-11-16 | `mb` |
+| 2, with `--fill` | `H`, line 1 | `host:nas` | 2026-11-18 | `state` |
+| 1, without | none | none | none | none |
+
+**Implementer choices; they stand under Kyle's ruling of 2026-11-21 (W7).** The full list is choice 20 of `rust/PLACE.md`.
+
+- **The option is `--fill`, for the whole changeset.** `loops emit task --fill` is a usage error.
+- **Lines of one thing chain.** A line is filled against the store and the lines prepared before it, so the second line of a thing names the first, as two emits one after another would. The alternative was two heads made by the tool.
+- **How a line states none.** `"about": []` states no mentions; `"occurred": null` no occurrence; `"sets": []` sets no key; `"sets": null` is read whole. The two `null` forms mean this only with `--fill`; a plain changeset refuses them as before.
+- **A stated `prev` is kept and the live records are added**, as `--prev` does on a single emit. An exact `prev`, a fork on purpose, is written with a plain changeset.
+- **Labels.** A line's labelled prerequisites are prepared first, so a label in `of`, `prev`, `about` or `under` is the final id when the line is filled. A forward label works. The answer and the segment keep input order.
+- **Refusals with `--fill` go line by line** after the label checks: an earlier line's field refusal can come before a later line's `prev-unknown`. Without the option the order is unchanged.
+- **Only what the store holds.** The filler against a stated base (the cut note, section 8) is a separate piece and is not built.
+
+Checked by a randomized test: 320 cases, each written as one filled changeset and as single emits one after another with the same salts and times. The 207 accepted cases gave the same ids, envelopes and signatures; the 113 refused cases wrote nothing, and the refusal code differed in six, for the reason above. Three hand-written changesets with labels match their single emits too.
+
+Cost: the filler settles the store again for each line. On a store of 9,000 records, one `loops emit` takes 0.54 s and a filled changeset of 200 lines 3.4 s. A collector that writes thousands of lines in one changeset will want that made incremental.
+
+A Codex worker planned and wrote it, and the coordinator reviewed both rounds and ran it against a store.
 
 ### The full mutation run after the payload change
 
