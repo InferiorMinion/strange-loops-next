@@ -22,6 +22,25 @@ In brief:
 - `loops tick` can cover a cut: `--as-of <time>` for the records emitted before a time with what they build on, `--cover <id>` for named records with what is under them.
 - Issue 11 is done: `loops emit -- "--text"` and `loops whoami --init`. The plain view shows a conflict's values and prints record ids as short prefixes that can be typed back.
 - The roadmap's last two small pieces: the JavaScript sum is unbounded, as the law index said it was, and the fuzz gives lists, objects and `null` to the `fold`, `realm` and `scenario` families: 24,576 cases agree three ways.
+- Kyle ruled TK10 (seven details of `loops tick --check`, each as recommended) and TK11 (a write against a base that does not hold what is under it: option C). Both were already built that way, so no code changed.
+
+### Ruled by Kyle, 2026-11-22: TK10 and TK11
+
+Each was an entry in `DECISIONS.md`, with an example. Kyle ruled both in the coordinator's session. The entries as they were put are kept in [the tick record note](notes/2026-11-21-tick-record.md#11-two-later-questions-as-they-were-put), section 11.
+Both were built to their recommendations before the ruling, so it changed no code, no vector and no record.
+
+**TK10: seven details of `loops tick --check`.** Each row for its recommendation.
+1. A payload erased here is not read, also when its bytes are still in an old segment. The check reads what the store's own reading gives: `cannot check`, 1 payload not held.
+2. A tick that covers an eraser and leaves the erased record out of `withheld` is not a tick, at once (`tick-withheld-erased`), also on a machine that lacks other covered records.
+3. For a tick made under a later version of the rules, the check tests only what no version changes: the members, the two id lists, and that `spec-hash` fits the label for that version. Then `cannot check: made under newer rules`. It does not parse the spec or judge the result's shape.
+4. A result that no fold could give (6 runs and five ids listed) is `differs` once the records are held. The reader checks a result's shape and spelling, and nothing about whether its parts agree.
+5. `rules` is a positive whole number as decimal text with no leading zero, compared as a number. Anything else is not a tick.
+6. A `spec` that is not an object is not a tick. A spec this binary's parser refuses, with a fitting hash, is `cannot check: this binary cannot read the spec`.
+7. For `rules` above its own, a binary checks that `result-hash` is spelled as a hash and does not ask whether it fits. For its own version and older ones it requires the fit.
+
+**TK11: a write against a base that does not hold what is under it.** Option C. The filler names the live records of the base together with what is under them in the store, and says on standard error how many records it named that the base did not hold. It never refuses. A value the writer was not shown can still be replaced; the envelope names what was replaced and the line tells the writer. Refusing such a write (option A) belongs with the strict store's policy, which Kyle left for step 3.
+
+Open in `DECISIONS.md` after this: S4 (closing step 4), TK12 (the exit status of the check), AD1 and AD2.
 
 ### The JavaScript sum, and lists in three more fuzz families
 
@@ -195,7 +214,7 @@ Ruled on 2026-11-20 ([the cut note](notes/2026-11-15-the-cut.md), section 8) and
 
 That is the ruling's purpose: a write against an older read shows as a conflict.
 
-**A base that does not hold what is under it** is [TK11](DECISIONS.md#tk11-a-write-against-a-base-that-does-not-hold-what-is-under-it), open for Kyle and built to its recommended option, C. The filler takes the selected records of the thing together with what is under them in the store, and tells the writer how many records it named that the base did not show. TK11's two examples, on the built binary:
+**A base that does not hold what is under it** is [TK11](notes/2026-11-21-tick-record.md#tk11-a-write-against-a-base-that-does-not-hold-what-is-under-it), open for Kyle when this was written and built to its recommended option, C. He ruled for C later the same day. The filler takes the selected records of the thing together with what is under them in the store, and tells the writer how many records it named that the base did not show. TK11's two examples, on the built binary:
 
 - `x` sets `port` and `owner`, `y` sets `port` over it. `loops emit svc --of svc:jellyfin port=8098 --base-id y` names `x` and `y` and prints "the base did not show 1 record that this emit names". The whole store, and a store holding only the thing's live records, both read `port` 8098 and `owner` kyle with one head. With the bare base, the second store read a conflict that did not exist.
 - `owner=sam` against `--base-id y` replaces `owner` kyle, which the base did not show. The line is printed and the envelope names `x`. Only refusing would stop this; that is TK11's option A, and it is one branch in the filler.
