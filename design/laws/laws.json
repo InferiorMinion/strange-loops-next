@@ -41,6 +41,7 @@
       "Anchoring": {"where": "subject", "says": "writers that name every live record they hold, and hold what the writers of their records held", "laws": ["keyed.anchored", "keyed.cut", "keyed.base"]},
       "ClosedOver": {"where": "subject", "says": "a closed holding: it holds what the writers of its records held", "laws": ["keyed.anchored", "keyed.cut", "keyed.base"]},
       "Down": {"where": "subject", "says": "a part closed downward: it holds every held record one of its records names in <code>prev</code>", "laws": ["keyed.cut", "cut.prefix", "keyed.base"]},
+      "Fresh": {"where": "subject", "says": "a new record: no record held names it, and it does not name itself", "laws": ["keyed.base"]},
       "Covers": {"where": "subject", "says": "a part that covers a thing: its folded records of the thing are the whole's, hold the thing's live records and are witnessed for every key", "laws": ["keyed.spec-slice"]},
       "KeyedCover": {"where": "subject", "says": "a cover for a spec: a part that covers each thing, or folds no record of it the spec takes where the whole has no head of it the spec takes", "laws": ["keyed.spec-slice"]},
       "KeyedPart": {"where": "subject", "says": "a part of the forms held that, for each record of the thing it holds at all, holds every form and every record that erases it, and refuses the record when the whole does", "laws": ["keyed.slice", "keyed.spec-slice"]},
