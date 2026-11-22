@@ -104,9 +104,6 @@ For tick fixtures, the evaluator uses Lean's JCS spelling `null` for overflow
 in a top-level input `spec` or in `samples`. It requires finite binary64 numbers
 in a supplied `payload`, in the JSON inside `payload-text`, and in `ticks`
 and `records`. Lean can still give an answer for some such overflowing inputs.
-The `members` fixture operation also reports malformed input if a successful
-answer would echo a repeated name inside the raw spec or result. The canonical
-JSONL output would lose that repeat. These are evaluator input boundaries.
 
 The test suite consumes every merged JSON fixture, all six JCS byte pairs,
 4,000 IEEE-hex number rows and 128 SUPERCOP signing rows. There is no

@@ -6,11 +6,10 @@ use loops::{
     result::{result_json, result_preimage},
     spec::Spec,
     spec_hash::{Rules, spec_hash_of, spec_label, spec_preimage_of},
-    tick::{TickPayload, TickReadError, read_tick_members, read_tick_payload, tick_ids},
+    tick::{TickReadError, make_tick, read_tick_members, read_tick_payload, tick_ids},
     where_::Refusal,
 };
 use sha2::{Digest, Sha256};
-use std::collections::BTreeSet;
 
 fn sha256(bytes: &[u8]) -> Vec<u8> {
     Sha256::digest(bytes).to_vec()
@@ -122,21 +121,7 @@ fn read_back(raw: &Json) -> Result<Json, String> {
 
 fn write_payload(input: &Json) -> Result<Json, String> {
     let (spec, records) = spec_records(input)?;
-    let mut covers = BTreeSet::new();
-    let mut withheld = BTreeSet::new();
-    for r in &records {
-        covers.insert(r.id);
-        if r.shown != Shown::Here {
-            withheld.insert(r.id);
-        }
-    }
-    let payload = TickPayload {
-        rules: Rules::current(),
-        covers: covers.into_iter().collect(),
-        withheld: withheld.into_iter().collect(),
-        result: spec.run(&records),
-        spec,
-    };
+    let payload = make_tick(spec, &records);
     let j = payload.to_json(&sha256);
     let q =
         read_tick_payload(&sha256, &payload.rules, &j).map_err(|_| "written payload refused")?;
@@ -170,14 +155,10 @@ fn payload_text(input: &Json) -> Result<Json, String> {
 }
 
 fn raw_members(input: &Json) -> Result<Json, String> {
-    let m = match read_tick_members(&sha256, payload_member(input)?) {
+    let m = match read_tick_members(&sha256, &Rules::current(), payload_member(input)?) {
         Ok(m) => m,
         Err(f) => return Ok(refusal(f)),
     };
-    // Canonical JSONL cannot echo an opaque object with repeated names.
-    if !m.spec().keys_distinct() || !m.result().keys_distinct() {
-        return Err("input.payload: repeated member in the raw members answer".into());
-    }
     Ok(Json::Obj(vec![
         ("rules".into(), Json::Str(m.rules().text())),
         ("spec".into(), m.spec().clone()),

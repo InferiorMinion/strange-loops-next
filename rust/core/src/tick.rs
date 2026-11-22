@@ -3,10 +3,11 @@ use crate::{
     base32,
     json::Json,
     read::optional,
-    record::{Digest, id_text},
+    record::{Digest, Record, Shown, id_text, withholding},
     result::{read_result, record_id_of, result_hash_of, result_json},
-    spec::{SlotValue, Spec},
+    spec::{SlotValue, Spec, member_path},
     spec_hash::{Rules, spec_hash_of},
+    things::{ids_of, settle},
     where_::{Refusal, RefusalCode},
 };
 use std::{collections::HashSet, fmt};
@@ -26,11 +27,13 @@ pub struct TickPayload {
     pub result: Vec<(String, SlotValue)>,
 }
 
-/// The raw spec and result with their hashes verified by `read_tick_members`.
+/// The raw members after the hash checks applicable to this reader.
 #[derive(Debug, PartialEq, Eq)]
 pub struct TickMembers<'a> {
     /// The version named in the hash label.
     rules: Rules,
+    /// Whether this reader can interpret the checked members under its own rules.
+    own_rules: bool,
     /// The supplied spec object, before parsing.
     spec: &'a Json,
     /// Covered record ids in ascending order.
@@ -109,6 +112,35 @@ impl TickPayload {
     }
 }
 
+/// Lean: `Loops.makeTick`. Cover every supplied id and fold the settled, masked forms.
+pub fn make_tick(spec: Spec, forms: &[Record]) -> TickPayload {
+    let covers = ids_of(forms);
+    let mut open: HashSet<_> = forms
+        .iter()
+        .filter(|r| r.shown == Shown::Here)
+        .map(|r| r.id)
+        .collect();
+    for id in forms.iter().flat_map(|r| &r.erases) {
+        open.remove(id);
+    }
+    let withheld = covers
+        .iter()
+        .copied()
+        .filter(|id| !open.contains(id))
+        .collect();
+    let masked: Vec<_> = forms
+        .iter()
+        .map(|r| withholding(|r| !open.contains(&r.id), r))
+        .collect();
+    TickPayload {
+        rules: Rules::current(),
+        covers,
+        withheld,
+        result: spec.run(&settle(&masked)),
+        spec,
+    }
+}
+
 fn fault(code: RefusalCode, path: impl Into<String>) -> Refusal {
     Refusal {
         code,
@@ -172,20 +204,45 @@ const REQUIRED: [&str; 6] = [
     "result-hash",
 ];
 
-/// Check the shared wire format and both hashes before interpreting either raw member.
+// Tick paths include array indices. Visit a name before its value, in input order.
+fn repeat_at(value: &Json, path: Option<&str>) -> Option<String> {
+    match value {
+        Json::Obj(kvs) => {
+            let mut seen = HashSet::new();
+            for (key, value) in kvs {
+                let child = member_path(path, key);
+                if !seen.insert(key) {
+                    return Some(child);
+                }
+                if let Some(repeat) = repeat_at(value, Some(&child)) {
+                    return Some(repeat);
+                }
+            }
+            None
+        }
+        Json::Arr(xs) => xs
+            .iter()
+            .enumerate()
+            .find_map(|(i, x)| repeat_at(x, Some(&format!("{}[{i}]", path.unwrap_or_default())))),
+        _ => None,
+    }
+}
+
+/// Check the shared wire format and the spec hash. Check the result hash's fit
+/// for the reader's own and older rules, and its spelling for every version.
 ///
 /// # Errors
 /// Returns the first payload fault in the order defined by `Loops.readTickMembers`.
 pub fn read_tick_members<'a>(
     h: &impl Fn(&[u8]) -> Vec<u8>,
+    current: &Rules,
     payload: &'a Json,
 ) -> Result<TickMembers<'a>, Refusal> {
     let Json::Obj(kvs) = payload else {
         return Err(fault(RefusalCode::TickNotObject, ""));
     };
-    let mut seen = HashSet::new();
-    if let Some((k, _)) = kvs.iter().find(|(k, _)| !seen.insert(k)) {
-        return Err(fault(RefusalCode::TickMemberDuplicate, k));
+    if let Some(path) = repeat_at(payload, None) {
+        return Err(fault(RefusalCode::TickMemberDuplicate, path));
     }
     if let Some((k, _)) = kvs
         .iter()
@@ -212,10 +269,11 @@ pub fn read_tick_members<'a>(
     if spec_hash != spec_hash_of(h, &rules, spec) {
         return Err(fault(RefusalCode::TickSpecHashMismatch, "spec-hash"));
     }
-    if result_hash != result_hash_of(h, result) {
+    if &rules <= current && result_hash != result_hash_of(h, result) {
         return Err(fault(RefusalCode::TickResultHashMismatch, "result-hash"));
     }
     Ok(TickMembers {
+        own_rules: &rules == current,
         rules,
         spec,
         covers,
@@ -245,12 +303,12 @@ impl TickMembers<'_> {
         &self.withheld
     }
 
-    /// The verified raw result member.
+    /// The raw result member. Its hash has been checked for fit under own or older rules.
     pub fn result(&self) -> &Json {
         self.result
     }
 
-    /// Encode the raw members without interpreting the spec or result.
+    /// Encode the raw members using this codec's result hash label.
     pub fn to_json(&self, h: &impl Fn(&[u8]) -> Vec<u8>) -> Json {
         payload_json(
             h,
@@ -262,12 +320,12 @@ impl TickMembers<'_> {
         )
     }
 
-    /// Interpret a hash-checked claim under the reader's rules.
+    /// Interpret the claim under the rules passed to [`read_tick_members`].
     ///
     /// # Errors
     /// Returns the other version, an unreadable spec, or a canonical spec/result fault.
-    pub fn read_payload(self, current: &Rules) -> Result<TickPayload, TickReadError> {
-        if self.rules != *current {
+    pub fn read_payload(self) -> Result<TickPayload, TickReadError> {
+        if !self.own_rules {
             return Err(TickReadError::OtherRules(self.rules));
         }
         let spec = Spec::of_json(self.spec).map_err(|_| TickReadError::UnreadableSpec)?;
@@ -298,7 +356,7 @@ pub fn read_tick_payload(
     current: &Rules,
     payload: &Json,
 ) -> Result<TickPayload, TickReadError> {
-    read_tick_members(h, payload)
+    read_tick_members(h, current, payload)
         .map_err(TickReadError::Invalid)?
-        .read_payload(current)
+        .read_payload()
 }
