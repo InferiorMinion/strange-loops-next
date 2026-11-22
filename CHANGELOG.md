@@ -26,6 +26,23 @@ In brief:
 - Kyle ruled the tick record (TK1 to TK9; TK9 as a `rules` member bound into the spec's hash) and the order of work (W1 to W6), each for its recommendation. One new entry, TK10, comes from planning the build.
 - The tick record's first piece is in the model: the spec's hash under a rules version, and the window field `env.when` (!72). Rust is being built.
 - The tick record's second piece is in the model: a reader for a claimed result, and the tick's payload with its two readers.
+- Rust has the spec's hash and `env.when`: `loops fold` takes a window on `env.when`, and Rust runs the 11 tick vectors it implements.
+
+### The tick record: Rust for the spec's hash and `env.when`
+
+Rust for piece 1. `rust/core/src/spec_hash.rs` has the rules version, the label and the hash over a raw JSON member or a parsed spec. `env.when` is a test field in `rust/core/src/where_.rs`, so `loops fold` and `loops read` take a window on it today.
+
+A real store, in the CLI's walk tests: three backups emitted on 2026-11-21. The first states no `occurred`, a revision of it states `occurred` 2026-11-16, and a third states 2026-11-17. A window on 2026-11-21 counts 0 by `env.occurred`, 3 by `env.emitted` and 1 by `env.when`. A slot that follows `prev` counts 0 with the same window, because the backdated revision replaces the one record inside it.
+
+- **Rust runs 11 of the 72 tick vectors and counts 61 as pending.** A tick vector is run when its `input.op` is one the evaluator implements (`hash`, `domains`, `window`). The vector test pins both numbers, so a vector cannot move between them unseen. The pending ones are the payload's, whose Rust is piece 5.
+- **The evidence page credits Rust by operation.** `design/laws/laws.json` names the tick operations Rust runs, and a law is marked as checked by Rust only through vectors of those operations.
+
+**Implementer choices; they stand under Kyle's ruling of 2026-11-21 (W7).**
+- A number past binary64's range inside a raw spec member is read as `null` by the vector evaluator when it hashes the member, as the model's canonical text writes it. No stored record can hold such a number, since the writer refuses it; this keeps Rust and the model equal on a vector's input.
+- `"by": "env.when"` is refused `by-invalid`, the existing code for a `by` that names no grouping key.
+- No new dependency, and no entry in `rust/GAPS.md`: nothing the model states here is left unchecked by Rust.
+
+A Codex worker wrote it; the coordinator reviewed it, brought it up to main (where the payload's vectors had arrived), set the run and pending counts, and made the evidence page's credit follow the operation.
 
 ### The tick record, piece 2: the result reader and the payload, in the model
 

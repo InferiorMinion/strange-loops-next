@@ -5,7 +5,7 @@
 Run `lake exe gen ../vectors` from `model/`; never edit these fixtures by hand.
 CI regenerates them and fails on any difference.
 `standard/` holds external standards data; see its README.
-JS and the Rust workspace check the earlier fixture families and standards. Both check the file count of `tick/` separately.
+JS and the Rust workspace check the earlier fixture families and standards. Of `tick/`, Rust runs the operations it implements and pins how many files are pending; JS pins the file count.
 
 Every file has the same envelope:
 
@@ -26,7 +26,7 @@ The first 11 files cover spec identity and the window field. Under `input.op = "
 
 The payload fixtures use `write-payload` to run the supplied spec on the supplied records, write the payload and read its JCS text back. The expected payload includes both hashes. With `payload`, the supplied member values are read directly, including single-fault examples and well-formed claims whose numbers and ids do not agree. The `payload-text` cases carry the original JSON text so that a fixture parser preserves duplicate names. With `members`, only the shared wire shape and hashes are checked, even for an unfamiliar rules version. The `fields` and `read-ticks` operations project held tick payloads and exercise a spec over three tick records.
 
-The model recomputes each answer with `lake exe run --check`. Rust runs all 11 fixtures, while JavaScript (W3) only checks their count.
+The model recomputes each answer with `lake exe run --check`. Rust runs the 11 fixtures of the first three operations (`hash`, `domains`, `window`) and counts the other 61 as pending. JavaScript (W3) only checks the family's file count.
 
 ## `payload`
 
