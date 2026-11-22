@@ -1,0 +1,41 @@
+{
+  "vector": "result-groups-not-object",
+  "layer": "tick",
+  "laws": ["tick.canonical"],
+  "source": "model",
+  "input": {
+    "op": "payload",
+    "payload": {
+      "rules": "1",
+      "spec": {
+        "vertex": "backups",
+        "from": [
+          {
+            "store": "lab",
+            "kind": ["backup"]
+          }
+        ],
+        "fold": {
+          "small": {
+            "min": "mb",
+            "by": "svc"
+          }
+        }
+      },
+      "spec-hash": "spec:nlbvev8o2c1msind7o37ohip1dbdfmir50n8o5vteguspmqfg23g",
+      "covers": ["r:000000000000000000000000000000000000000000000000000g", "r:0000000000000000000000000000000000000000000000000010", "r:000000000000000000000000000000000000000000000000001g", "r:0000000000000000000000000000000000000000000000000020", "r:000000000000000000000000000000000000000000000000002g", "r:0000000000000000000000000000000000000000000000000030"],
+      "result": {
+        "small": {
+          "groups": [],
+          "ungrouped": "0",
+          "unread": "0"
+        }
+      },
+      "result-hash": "res:1ppgne6hn9b3vsb0g1o22tgm3f3rqc6pjp0f01opubh1i9uhj2gg"
+    }
+  },
+  "expect": {
+    "refused": "tick-result-invalid",
+    "path": "result.small.groups"
+  }
+}

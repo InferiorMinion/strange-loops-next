@@ -1,0 +1,119 @@
+{
+  "vector": "empty-fold",
+  "layer": "tick",
+  "laws": ["tick.canonical"],
+  "source": "model",
+  "input": {
+    "op": "write-payload",
+    "spec": {
+      "vertex": "backups",
+      "from": [
+        {
+          "store": "lab",
+          "kind": ["backup"]
+        }
+      ],
+      "fold": {}
+    },
+    "records": [
+      {
+        "id": "r:000000000000000000000000000000000000000000000000000g",
+        "kind": "backup",
+        "observer": "sl:laptop",
+        "about": ["svc:jellyfin"],
+        "prev": [],
+        "emitted": "2026-11-21T20:00:00Z",
+        "occurred": "2026-11-16",
+        "fields": {
+          "svc": "jellyfin",
+          "mb": 412
+        }
+      },
+      {
+        "id": "r:0000000000000000000000000000000000000000000000000010",
+        "kind": "backup",
+        "observer": "sl:laptop",
+        "about": ["svc:pihole"],
+        "prev": [],
+        "emitted": "2026-11-21T20:00:00Z",
+        "occurred": "2026-11-16",
+        "fields": {
+          "svc": "pihole",
+          "mb": 3
+        }
+      },
+      {
+        "id": "r:000000000000000000000000000000000000000000000000001g",
+        "kind": "backup",
+        "observer": "sl:laptop",
+        "about": ["svc:gitea"],
+        "prev": [],
+        "emitted": "2026-11-21T20:00:00Z",
+        "occurred": "2026-11-16",
+        "fields": {
+          "svc": "gitea",
+          "mb": 88
+        }
+      },
+      {
+        "id": "r:0000000000000000000000000000000000000000000000000020",
+        "kind": "backup",
+        "observer": "sl:laptop",
+        "about": ["svc:jellyfin"],
+        "prev": [],
+        "emitted": "2026-11-21T20:00:00Z",
+        "occurred": "2026-11-17",
+        "fields": {
+          "svc": "jellyfin",
+          "mb": 419
+        }
+      },
+      {
+        "id": "r:000000000000000000000000000000000000000000000000002g",
+        "kind": "backup",
+        "observer": "sl:laptop",
+        "about": ["svc:pihole"],
+        "prev": [],
+        "emitted": "2026-11-21T20:00:00Z",
+        "occurred": "2026-11-17",
+        "fields": {
+          "svc": "pihole",
+          "mb": 10
+        }
+      },
+      {
+        "id": "r:0000000000000000000000000000000000000000000000000030",
+        "kind": "backup",
+        "observer": "sl:laptop",
+        "about": ["svc:gitea"],
+        "prev": [],
+        "emitted": "2026-11-21T20:00:00Z",
+        "occurred": "2026-11-17",
+        "fields": {
+          "svc": "gitea",
+          "mb": 95
+        }
+      }
+    ]
+  },
+  "expect": {
+    "payload": {
+      "rules": "1",
+      "spec": {
+        "vertex": "backups",
+        "from": [
+          {
+            "store": "lab",
+            "kind": ["backup"]
+          }
+        ],
+        "fold": {}
+      },
+      "spec-hash": "spec:nmbca5plk3qggibc79i43871s9dk31aj526snpacilqqs55sskv0",
+      "covers": ["r:000000000000000000000000000000000000000000000000000g", "r:0000000000000000000000000000000000000000000000000010", "r:000000000000000000000000000000000000000000000000001g", "r:0000000000000000000000000000000000000000000000000020", "r:000000000000000000000000000000000000000000000000002g", "r:0000000000000000000000000000000000000000000000000030"],
+      "result": {},
+      "result-hash": "res:hhnn0ccfr2ajppo8rt3l4vgiou407aaahe9o73nhclfecl5aet0g"
+    },
+    "jcs": "{\"covers\":[\"r:000000000000000000000000000000000000000000000000000g\",\"r:0000000000000000000000000000000000000000000000000010\",\"r:000000000000000000000000000000000000000000000000001g\",\"r:0000000000000000000000000000000000000000000000000020\",\"r:000000000000000000000000000000000000000000000000002g\",\"r:0000000000000000000000000000000000000000000000000030\"],\"result\":{},\"result-hash\":\"res:hhnn0ccfr2ajppo8rt3l4vgiou407aaahe9o73nhclfecl5aet0g\",\"rules\":\"1\",\"spec\":{\"fold\":{},\"from\":[{\"kind\":[\"backup\"],\"store\":\"lab\"}],\"vertex\":\"backups\"},\"spec-hash\":\"spec:nmbca5plk3qggibc79i43871s9dk31aj526snpacilqqs55sskv0\"}"
+  }
+}

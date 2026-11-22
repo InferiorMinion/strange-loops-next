@@ -1086,6 +1086,15 @@
    "states":
    "∀ {xs ys : List Loops.Record}, (∀ (r : Loops.Record), r ∈ xs ↔ r ∈ ys) → ∀ (t : String) (r : Loops.Record), r ∈ Loops.recordsOf t xs ↔ r ∈ Loops.recordsOf t ys",
    "module": "Laws.Live"},
+  "Loops.recordIdOf?_idText":
+  {"uses":
+   ["Loops.bytes_bounded",
+    "Loops.idDigest_bytes_roundtrip",
+    "Loops.idDigest_length",
+    "Loops.unbase32_base32"],
+   "states":
+   "∀ (id : Loops.RecordId), Loops.recordIdOf? (Loops.Json.str (Loops.idText id)) = some id",
+   "module": "Laws.Tick"},
   "Loops.realm_taken":
   {"uses":
    ["Loops.SameEnvelope.prev",
@@ -1118,6 +1127,52 @@
    "states":
    "∀ (may : Loops.Record → Loops.Record → Bool) (xs : List Loops.Record), Loops.Addressed (Loops.realm may xs)",
    "module": "Laws.SpecSlice"},
+  "Loops.readTickPayload_text":
+  {"uses":
+   ["Loops.Spec.ofJson_fits",
+    "Loops.canonMembers_eq",
+    "Loops.readResult_text",
+    "Loops.readTickMembers_text"],
+   "states":
+   "∀ {H : Loops.Hash} {current : Loops.Rules} {j : Loops.Json} {p : Loops.TickPayload}, Loops.readTickPayload H current j = Except.ok p → j.canon = (p.toJson H).canon",
+   "module": "Laws.TickRead"},
+  "Loops.readTickMembers_text":
+  {"uses":
+   ["Loops.Rules.ofJson?_eq_some_iff",
+    "Loops.TickReader.firstRepeated.eq_def",
+    "Loops.bytes_bounded",
+    "Loops.bytes_idDigest",
+    "Loops.canonMembers_eq",
+    "Loops.eq_of_mem_of_nodup_map",
+    "Loops.lookup_mem",
+    "Loops.mem_sortBy",
+    "Loops.sortBy_ext",
+    "Loops.unbase32_eq_some_iff",
+    "Loops.utf16_inj"],
+   "states":
+   "∀ {H : Loops.Hash} {j : Loops.Json} {m : Loops.TickMembers}, Loops.readTickMembers H j = Except.ok m → j.canon = (m.toJson H).canon",
+   "module": "Laws.TickRead"},
+  "Loops.readResult_written":
+  {"uses": ["Loops.SlotValue.read_result"],
+   "states":
+   "∀ (s : Loops.Spec) (values : Loops.Slot → Loops.SlotValue), (List.map Loops.Slot.name s.slots).Nodup → (∀ (a : Loops.Slot), a ∈ s.slots → (values a).FitsSlot a) → have r := List.map (fun a => (a.name, values a)) s.slots; Loops.readResult s (Loops.resultJson r) = Except.ok (Loops.unshownResult r)",
+   "module": "Laws.Tick"},
+  "Loops.readResult_text":
+  {"uses":
+   ["Loops.bytes_bounded",
+    "Loops.bytes_idDigest",
+    "Loops.canonMembers_eq",
+    "Loops.eq_of_mem_of_nodup_map",
+    "Loops.intOf?_eq_some_iff",
+    "Loops.lookup_mem",
+    "Loops.mem_sortBy",
+    "Loops.natDigits_natOf?",
+    "Loops.sortBy_ext",
+    "Loops.unbase32_eq_some_iff",
+    "Loops.utf16_inj"],
+   "states":
+   "∀ {s : Loops.Spec} {j : Loops.Json} {r : List (String × Loops.SlotValue)}, (List.map Loops.Slot.name s.slots).Nodup → Loops.readResult s j = Except.ok r → j.canon = Loops.resultText r",
+   "module": "Laws.TickRead"},
   "Loops.readHeld_members_nameable":
   {"uses": ["Loops.HeldField.many.inj"],
    "states":
@@ -3602,6 +3657,97 @@
    "states":
    "∀ {ts ts' : List Loops.Tri}, (∀ (a : Loops.Tri), a ∈ ts ↔ a ∈ ts') → ∀ (n : Loops.Tri), Loops.Tri.agree ts n = Loops.Tri.agree ts' n",
    "module": "Laws.Live"},
+  "Loops.TickReader.firstRepeated.eq_def":
+  {"uses": [],
+   "states":
+   "∀ (seen x : List String), Loops.TickReader.firstRepeated seen x = match x with | [] => none | k :: ks => if seen.contains k = true then some k else Loops.TickReader.firstRepeated (k :: seen) ks",
+   "module": "Laws.Tick"},
+  "Loops.TickReadError.unreadableSpec.sizeOf_spec":
+  {"uses": [],
+   "states": "sizeOf Loops.TickReadError.unreadableSpec = 1",
+   "module": "Loops.Tick"},
+  "Loops.TickReadError.otherRules.sizeOf_spec":
+  {"uses": [],
+   "states":
+   "∀ (rules : Loops.Rules), sizeOf (Loops.TickReadError.otherRules rules) = 1 + sizeOf rules",
+   "module": "Loops.Tick"},
+  "Loops.TickReadError.otherRules.injEq":
+  {"uses": ["Loops.TickReadError.otherRules.inj"],
+   "states":
+   "∀ (rules rules_1 : Loops.Rules), (Loops.TickReadError.otherRules rules = Loops.TickReadError.otherRules rules_1) = (rules = rules_1)",
+   "module": "Loops.Tick"},
+  "Loops.TickReadError.otherRules.inj":
+  {"uses": [],
+   "states":
+   "∀ {rules rules_1 : Loops.Rules}, Loops.TickReadError.otherRules rules = Loops.TickReadError.otherRules rules_1 → rules = rules_1",
+   "module": "Loops.Tick"},
+  "Loops.TickReadError.invalid.sizeOf_spec":
+  {"uses": [],
+   "states":
+   "∀ (fault : Loops.Refusal), sizeOf (Loops.TickReadError.invalid fault) = 1 + sizeOf fault",
+   "module": "Loops.Tick"},
+  "Loops.TickReadError.invalid.injEq":
+  {"uses": ["Loops.TickReadError.invalid.inj"],
+   "states":
+   "∀ (fault fault_1 : Loops.Refusal), (Loops.TickReadError.invalid fault = Loops.TickReadError.invalid fault_1) = (fault = fault_1)",
+   "module": "Loops.Tick"},
+  "Loops.TickReadError.invalid.inj":
+  {"uses": [],
+   "states":
+   "∀ {fault fault_1 : Loops.Refusal}, Loops.TickReadError.invalid fault = Loops.TickReadError.invalid fault_1 → fault = fault_1",
+   "module": "Loops.Tick"},
+  "Loops.TickPayload.record_fields":
+  {"uses": [],
+   "states":
+   "∀ (p : Loops.TickPayload) (H : Loops.Hash) (env : Loops.Env) (salt : List UInt8) (r : Loops.Record), ((Loops.make env salt (p.toJson H)).readInto r).fields = [(\"rules\", Loops.HeldField.one (Loops.Val.str p.rules.text)), (\"spec\", Loops.HeldField.other), (\"spec-hash\", Loops.HeldField.one (Loops.Val.str (Loops.Spec.hash H p.rules p.spec))), (\"covers\", Loops.HeldField.many (List.map (Loops.Val.str ∘ Loops.idText) p.covers)), (\"result\", Loops.HeldField.other), (\"result-hash\", Loops.HeldField.one (Loops.Val.str (Loops.resultHash H p.result)))] ++ if p.withheld.isEmpty = true then [] else [(\"withheld\", Loops.HeldField.many (List.map (Loops.Val.str ∘ Loops.idText) p.withheld))]",
+   "module": "Laws.Tick"},
+  "Loops.TickPayload.read_written":
+  {"uses":
+   ["Loops.Spec.ofJson_toJson",
+    "Loops.TickPayload.read_members",
+    "Loops.readResult_written"],
+   "states":
+   "∀ (H : Loops.Hash) (v : Loops.Rules) (s : Loops.Spec), s.Fits → ∀ (covers withheld : List Loops.RecordId), List.Pairwise (fun x1 x2 => x1 < x2) covers → List.Pairwise (fun x1 x2 => x1 < x2) withheld → (∀ (i : Loops.RecordId), i ∈ withheld → i ∈ covers) → ∀ (values : Loops.Slot → Loops.SlotValue), (∀ (a : Loops.Slot), a ∈ s.slots → (values a).FitsSlot a) → (H (Loops.specPreimageOf v s.toJson)).length = 32 → (H (Loops.resultPreimage (List.map (fun a => (a.name, values a)) s.slots))).length = 32 → have r := List.map (fun a => (a.name, values a)) s.slots; have p := { rules := v, spec := s, covers := covers, withheld := withheld, result := r }; Loops.readTickPayload H v (p.toJson H) = Except.ok { rules := p.rules, spec := p.spec, covers := p.covers, withheld := p.withheld, result := Loops.unshownResult r }",
+   "module": "Laws.Tick"},
+  "Loops.TickPayload.read_members":
+  {"uses":
+   ["Loops.Rules.read_text",
+    "Loops.TickMembers.mk.injEq",
+    "Loops.byteText_eq_true_iff",
+    "Loops.recordIdOf?_idText"],
+   "states":
+   "∀ (p : Loops.TickPayload) (H : Loops.Hash), (H (Loops.specPreimageOf p.rules p.spec.toJson)).length = 32 → (H (Loops.resultPreimage p.result)).length = 32 → List.Pairwise (fun x1 x2 => x1 < x2) p.covers → List.Pairwise (fun x1 x2 => x1 < x2) p.withheld → (∀ (i : Loops.RecordId), i ∈ p.withheld → i ∈ p.covers) → Loops.readTickMembers H (p.toJson H) = Except.ok { rules := p.rules, spec := p.spec.toJson, covers := p.covers, withheld := p.withheld, result := Loops.resultJson p.result }",
+   "module": "Laws.Tick"},
+  "Loops.TickPayload.mk.sizeOf_spec":
+  {"uses": [],
+   "states":
+   "∀ (rules : Loops.Rules) (spec : Loops.Spec) (covers withheld : List Loops.RecordId) (result : List (String × Loops.SlotValue)), sizeOf { rules := rules, spec := spec, covers := covers, withheld := withheld, result := result } = 1 + sizeOf rules + sizeOf spec + sizeOf covers + sizeOf withheld + sizeOf result",
+   "module": "Loops.Tick"},
+  "Loops.TickPayload.mk.injEq":
+  {"uses": ["Loops.TickPayload.mk.inj"],
+   "states":
+   "∀ (rules : Loops.Rules) (spec : Loops.Spec) (covers withheld : List Loops.RecordId) (result : List (String × Loops.SlotValue)) (rules_1 : Loops.Rules) (spec_1 : Loops.Spec) (covers_1 withheld_1 : List Loops.RecordId) (result_1 : List (String × Loops.SlotValue)), ({ rules := rules, spec := spec, covers := covers, withheld := withheld, result := result } = { rules := rules_1, spec := spec_1, covers := covers_1, withheld := withheld_1, result := result_1 }) = (rules = rules_1 ∧ spec = spec_1 ∧ covers = covers_1 ∧ withheld = withheld_1 ∧ result = result_1)",
+   "module": "Loops.Tick"},
+  "Loops.TickPayload.mk.inj":
+  {"uses": [],
+   "states":
+   "∀ {rules : Loops.Rules} {spec : Loops.Spec} {covers withheld : List Loops.RecordId} {result : List (String × Loops.SlotValue)} {rules_1 : Loops.Rules} {spec_1 : Loops.Spec} {covers_1 withheld_1 : List Loops.RecordId} {result_1 : List (String × Loops.SlotValue)}, { rules := rules, spec := spec, covers := covers, withheld := withheld, result := result } = { rules := rules_1, spec := spec_1, covers := covers_1, withheld := withheld_1, result := result_1 } → rules = rules_1 ∧ spec = spec_1 ∧ covers = covers_1 ∧ withheld = withheld_1 ∧ result = result_1",
+   "module": "Loops.Tick"},
+  "Loops.TickMembers.mk.sizeOf_spec":
+  {"uses": [],
+   "states":
+   "∀ (rules : Loops.Rules) (spec : Loops.Json) (covers withheld : List Loops.RecordId) (result : Loops.Json), sizeOf { rules := rules, spec := spec, covers := covers, withheld := withheld, result := result } = 1 + sizeOf rules + sizeOf spec + sizeOf covers + sizeOf withheld + sizeOf result",
+   "module": "Loops.Tick"},
+  "Loops.TickMembers.mk.injEq":
+  {"uses": ["Loops.TickMembers.mk.inj"],
+   "states":
+   "∀ (rules : Loops.Rules) (spec : Loops.Json) (covers withheld : List Loops.RecordId) (result : Loops.Json) (rules_1 : Loops.Rules) (spec_1 : Loops.Json) (covers_1 withheld_1 : List Loops.RecordId) (result_1 : Loops.Json), ({ rules := rules, spec := spec, covers := covers, withheld := withheld, result := result } = { rules := rules_1, spec := spec_1, covers := covers_1, withheld := withheld_1, result := result_1 }) = (rules = rules_1 ∧ spec = spec_1 ∧ covers = covers_1 ∧ withheld = withheld_1 ∧ result = result_1)",
+   "module": "Loops.Tick"},
+  "Loops.TickMembers.mk.inj":
+  {"uses": [],
+   "states":
+   "∀ {rules : Loops.Rules} {spec : Loops.Json} {covers withheld : List Loops.RecordId} {result : Loops.Json} {rules_1 : Loops.Rules} {spec_1 : Loops.Json} {covers_1 withheld_1 : List Loops.RecordId} {result_1 : Loops.Json}, { rules := rules, spec := spec, covers := covers, withheld := withheld, result := result } = { rules := rules_1, spec := spec_1, covers := covers_1, withheld := withheld_1, result := result_1 } → rules = rules_1 ∧ spec = spec_1 ∧ covers = covers_1 ∧ withheld = withheld_1 ∧ result = result_1",
+   "module": "Loops.Tick"},
   "Loops.Tests.toJson_distinct":
   {"uses": ["Loops.Json.keysDistinct_obj", "Loops.Op.toJson_distinct"],
    "states": "∀ {ts : Loops.Tests}, ts.Fits → ts.toJson.keysDistinct = true",
@@ -4069,6 +4215,14 @@
    "states":
    "∀ {v w : Loops.SlotValue}, v.Like w → v.result = w.result → v.unshown = w.unshown",
    "module": "Laws.Result"},
+  "Loops.SlotValue.read_result":
+  {"uses":
+   ["Loops.intOf?_intText",
+    "Loops.natOf?_natDigits",
+    "Loops.recordIdOf?_idText"],
+   "states":
+   "∀ (v : Loops.SlotValue) (s : Loops.Slot) (p : String), v.FitsSlot s → Loops.ResultReader.slot s p v.result = Except.ok v.unshown",
+   "module": "Laws.Tick"},
   "Loops.SlotValue.opt.sizeOf_spec":
   {"uses": [],
    "states":

@@ -74,6 +74,12 @@ The bytes are the JCS text ([RFC 8785](https://www.rfc-editor.org/rfc/rfc8785)) 
 Every value in the object is a string, `null`, an array or an object, so JCS's rule for numbers is never used.
 A spec names each slot once, so no member name repeats.
 
+## Reading a claimed result
+
+The reader takes a parsed spec and a JSON value. It requires exactly the spec's named slots and the members of each slot's shape above. Every object has distinct member names. Thing names, group keys and payload keys are text. Every listed id must have the canonical spelling of a 32-byte record id. The reader preserves array order and multiplicity. It reconstructs slots in spec order and assigns each listed id the model's `here` value for the omitted `shown`.
+
+All integers use the decimal spelling above. Counts, `unread` and `ungrouped` must be nonnegative. Only a minimum or maximum accepts `null` at `value`. These checks apply inside groups as well. Reading does not reconcile counts with lists, check membership in a covered set, enforce a slot's limit, or test the order, uniqueness or agreement of listed ids. A claim with such a disagreement still reads. Comparing it with a run is a separate operation.
+
 ## The hash
 
 ```

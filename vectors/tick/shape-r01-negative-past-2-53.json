@@ -1,0 +1,123 @@
+{
+  "vector": "shape-r01-negative-past-2-53",
+  "layer": "tick",
+  "laws": ["tick.canonical"],
+  "source": "model",
+  "input": {
+    "op": "write-payload",
+    "spec": {
+      "vertex": "numbers",
+      "from": [
+        {
+          "store": ".",
+          "kind": ["task"]
+        }
+      ],
+      "fold": {
+        "count": {
+          "count": true
+        },
+        "sum": {
+          "sum": "n"
+        },
+        "min": {
+          "min": "n"
+        },
+        "max": {
+          "max": "n"
+        }
+      }
+    },
+    "records": [
+      {
+        "id": "r:000000000000000000000000000000000000000000000000070g",
+        "kind": "task",
+        "observer": "sl:kyle",
+        "about": [],
+        "of": "task:n1",
+        "prev": [],
+        "emitted": "2026-10-01T00:01:40Z",
+        "occurred": "2026-10-01T00:01:40Z",
+        "fields": {
+          "n": -9007199254740991
+        }
+      },
+      {
+        "id": "r:0000000000000000000000000000000000000000000000000710",
+        "kind": "task",
+        "observer": "sl:kyle",
+        "about": [],
+        "of": "task:n2",
+        "prev": [],
+        "emitted": "2026-10-01T00:01:50Z",
+        "occurred": "2026-10-01T00:01:50Z",
+        "fields": {
+          "n": -9007199254740991
+        }
+      },
+      {
+        "id": "r:000000000000000000000000000000000000000000000000071g",
+        "kind": "task",
+        "observer": "sl:kyle",
+        "about": [],
+        "of": "task:n3",
+        "prev": [],
+        "emitted": "2026-10-01T00:02:00Z",
+        "occurred": "2026-10-01T00:02:00Z",
+        "fields": {
+          "n": -2
+        }
+      }
+    ]
+  },
+  "expect": {
+    "payload": {
+      "rules": "1",
+      "spec": {
+        "vertex": "numbers",
+        "from": [
+          {
+            "store": ".",
+            "kind": ["task"]
+          }
+        ],
+        "fold": {
+          "count": {
+            "count": true
+          },
+          "sum": {
+            "sum": "n"
+          },
+          "min": {
+            "min": "n"
+          },
+          "max": {
+            "max": "n"
+          }
+        }
+      },
+      "spec-hash": "spec:uifumeleq8epskdnjtugs22e4gsik281gunqikhp1qdi984j13ug",
+      "covers": ["r:000000000000000000000000000000000000000000000000070g", "r:0000000000000000000000000000000000000000000000000710", "r:000000000000000000000000000000000000000000000000071g"],
+      "result": {
+        "count": {
+          "unread": "0",
+          "value": "3"
+        },
+        "sum": {
+          "unread": "0",
+          "value": "-18014398509481984"
+        },
+        "min": {
+          "unread": "0",
+          "value": "-9007199254740991"
+        },
+        "max": {
+          "unread": "0",
+          "value": "-2"
+        }
+      },
+      "result-hash": "res:4uqnkr6crqtcngqq5p0p3le58cmkt0b69i8q3it1qh6634qgtf90"
+    },
+    "jcs": "{\"covers\":[\"r:000000000000000000000000000000000000000000000000070g\",\"r:0000000000000000000000000000000000000000000000000710\",\"r:000000000000000000000000000000000000000000000000071g\"],\"result\":{\"count\":{\"unread\":\"0\",\"value\":\"3\"},\"max\":{\"unread\":\"0\",\"value\":\"-2\"},\"min\":{\"unread\":\"0\",\"value\":\"-9007199254740991\"},\"sum\":{\"unread\":\"0\",\"value\":\"-18014398509481984\"}},\"result-hash\":\"res:4uqnkr6crqtcngqq5p0p3le58cmkt0b69i8q3it1qh6634qgtf90\",\"rules\":\"1\",\"spec\":{\"fold\":{\"count\":{\"count\":true},\"max\":{\"max\":\"n\"},\"min\":{\"min\":\"n\"},\"sum\":{\"sum\":\"n\"}},\"from\":[{\"kind\":[\"task\"],\"store\":\".\"}],\"vertex\":\"numbers\"},\"spec-hash\":\"spec:uifumeleq8epskdnjtugs22e4gsik281gunqikhp1qdi984j13ug\"}"
+  }
+}

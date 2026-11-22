@@ -685,7 +685,8 @@ theorem resultHash_of_unshown (H : Hash) {r q : List (String × SlotValue)}
     resultText r = resultText q ∧ resultBytes r = resultBytes q ∧ resultPreimage r = resultPreimage q ∧
       resultHash H r = resultHash H q := by
   have ht : resultText r = resultText q := by rw [← resultText_unshown r, h, resultText_unshown]
-  simp [resultHash, resultPreimage, resultBytes, ht]
+  change _ ∧ _ ∧ _ ∧ ("res:" ++ base32 (H (resultPreimage r))) = ("res:" ++ base32 (H (resultPreimage q)))
+  simp [resultPreimage, resultBytes, ht]
 
 /-! ### Nothing else is lost -/
 

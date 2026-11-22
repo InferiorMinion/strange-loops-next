@@ -1,0 +1,145 @@
+{
+  "vector": "shape-r03-nothing-read",
+  "layer": "tick",
+  "laws": ["tick.canonical"],
+  "source": "model",
+  "input": {
+    "op": "write-payload",
+    "spec": {
+      "vertex": "nothing",
+      "from": [
+        {
+          "store": ".",
+          "kind": ["task"]
+        }
+      ],
+      "fold": {
+        "count": {
+          "count": true
+        },
+        "sum": {
+          "sum": "n"
+        },
+        "min": {
+          "min": "n"
+        },
+        "max": {
+          "max": "n"
+        },
+        "every": {
+          "collect": true
+        },
+        "current": {
+          "latest-by": "of",
+          "follow": "prev"
+        },
+        "state": {
+          "latest-by": "of",
+          "follow": "keys"
+        },
+        "per-status": {
+          "count": true,
+          "by": "status"
+        }
+      }
+    },
+    "records": [
+      {
+        "id": "r:0000000000000000000000000000000000000000000000000730",
+        "kind": "note",
+        "observer": "sl:kyle",
+        "about": [],
+        "of": "task:x",
+        "prev": [],
+        "emitted": "2026-10-01T00:01:40Z",
+        "occurred": "2026-10-01T00:01:40Z",
+        "fields": {
+          "status": "open",
+          "n": 4
+        }
+      }
+    ]
+  },
+  "expect": {
+    "payload": {
+      "rules": "1",
+      "spec": {
+        "vertex": "nothing",
+        "from": [
+          {
+            "store": ".",
+            "kind": ["task"]
+          }
+        ],
+        "fold": {
+          "count": {
+            "count": true
+          },
+          "sum": {
+            "sum": "n"
+          },
+          "min": {
+            "min": "n"
+          },
+          "max": {
+            "max": "n"
+          },
+          "every": {
+            "collect": true
+          },
+          "current": {
+            "latest-by": "of",
+            "follow": "prev"
+          },
+          "state": {
+            "latest-by": "of",
+            "follow": "keys"
+          },
+          "per-status": {
+            "count": true,
+            "by": "status"
+          }
+        }
+      },
+      "spec-hash": "spec:527rsscvlmf84oce8rfks23a868l26q7fnnpn1e0tug6912u1q60",
+      "covers": ["r:0000000000000000000000000000000000000000000000000730"],
+      "result": {
+        "count": {
+          "unread": "0",
+          "value": "0"
+        },
+        "sum": {
+          "unread": "0",
+          "value": "0"
+        },
+        "min": {
+          "unread": "0",
+          "value": null
+        },
+        "max": {
+          "unread": "0",
+          "value": null
+        },
+        "every": {
+          "heads": [],
+          "unread": "0"
+        },
+        "current": {
+          "things": {},
+          "unread": "0"
+        },
+        "state": {
+          "things": {},
+          "unread": "0"
+        },
+        "per-status": {
+          "groups": {},
+          "ungrouped": "0",
+          "unread": "0"
+        }
+      },
+      "result-hash": "res:omkdaek7pfhnk3g265l7b6df95hb5fpus9h6si6iolm543ldoio0"
+    },
+    "jcs": "{\"covers\":[\"r:0000000000000000000000000000000000000000000000000730\"],\"result\":{\"count\":{\"unread\":\"0\",\"value\":\"0\"},\"current\":{\"things\":{},\"unread\":\"0\"},\"every\":{\"heads\":[],\"unread\":\"0\"},\"max\":{\"unread\":\"0\",\"value\":null},\"min\":{\"unread\":\"0\",\"value\":null},\"per-status\":{\"groups\":{},\"ungrouped\":\"0\",\"unread\":\"0\"},\"state\":{\"things\":{},\"unread\":\"0\"},\"sum\":{\"unread\":\"0\",\"value\":\"0\"}},\"result-hash\":\"res:omkdaek7pfhnk3g265l7b6df95hb5fpus9h6si6iolm543ldoio0\",\"rules\":\"1\",\"spec\":{\"fold\":{\"count\":{\"count\":true},\"current\":{\"follow\":\"prev\",\"latest-by\":\"of\"},\"every\":{\"collect\":true},\"max\":{\"max\":\"n\"},\"min\":{\"min\":\"n\"},\"per-status\":{\"by\":\"status\",\"count\":true},\"state\":{\"follow\":\"keys\",\"latest-by\":\"of\"},\"sum\":{\"sum\":\"n\"}},\"from\":[{\"kind\":[\"task\"],\"store\":\".\"}],\"vertex\":\"nothing\"},\"spec-hash\":\"spec:527rsscvlmf84oce8rfks23a868l26q7fnnpn1e0tug6912u1q60\"}"
+  }
+}
