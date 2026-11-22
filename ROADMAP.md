@@ -9,7 +9,7 @@ What is next, in order. This file holds no history and no open questions.
 ## Where we are
 
 - **Steps 0, 1 and 2 are done.** Kyle closed step 2 on 2026-11-20: `loops` emits, reads and folds for one person, signed, over `.loops/`.
-- **Step 4 (ticks) has started.** The cut laws are in the model and the result codec is built. What a fold reads from a payload is settled and stated in the model (2026-11-21), so a tick can pin a result hash. The tick record is ruled (2026-11-21, [the note](notes/2026-11-21-tick-record.md)) and is being built.
+- **Step 4 (ticks) meets its exit criterion; Kyle has not closed it.** The tick record is built: `loops tick <spec>` writes a tick and `loops tick --check <id>` checks one, and a tick written on one machine checks `same` on a second (2026-11-21). Not built, and never part of the exit: a cut by time or by ids, boundaries, markers and the runner.
 - **Three implementations agree on every vector:** Lean (the model), JavaScript and Rust. From ticks on, a piece is built in Lean and Rust; the JavaScript is frozen at what it has, as a trial for step 4 (ruled 2026-11-21).
 - **One outside user:** rex-tools, a chat room over the `loops` CLI. It found a slow read path (fixed 2026-11-21) and a gap in `--values` (fixed the same day).
 - **The old Python `loops` is still first on `PATH`** on Kyle's machine, and his day-to-day stores are still the old ones.
@@ -18,11 +18,11 @@ The evidence and its counts are kept where they are made: [the law index](design
 
 ## Now
 
-The payload values and the result hash's prefix, ruled by Kyle on 2026-11-21, are built. The tick record, ruled the same day, is being built.
+The payload values, the result hash's prefix and the tick record, all ruled by Kyle on 2026-11-21, are built. Step 4's exit criterion holds; closing the step is Kyle's to say.
 
 | Order | Work | State | Waits on |
 | --- | --- | --- | --- |
-| 1 | **The tick record:** what a tick holds, how `covers` is stated and checked, and the input key. | Ruled 2026-11-21 ([the note](notes/2026-11-21-tick-record.md)). Being built in seven pieces (changelog, 2026-11-21). Pieces 1 to 3 are in the model (the spec's hash and `env.when`; the result reader and the payload; the claim and the check). Rust has piece 1, so `loops fold` takes a window on `env.when`. The model's piece 3, the claim and the check, is in: the model holds the whole tick record. Rust has the payload and the result reader, and the tick has its protocol page, [`protocol/tick.md`](protocol/tick.md). Rust checks a tick too: all 126 tick vectors run in Rust. `loops tick <spec>` writes a tick and `loops tick --check <id>` checks one. | [TK10](DECISIONS.md#tk10-seven-details-of-the-check) for the check's details |
+| 1 | **The tick record:** what a tick holds, how `covers` is stated and checked, and the input key. | Built (changelog, 2026-11-21 and 2026-11-22): the model with its laws and 127 vectors, [`protocol/tick.md`](protocol/tick.md), Rust, `loops tick <spec>` and `loops tick --check <id>`, and a fuzz run that holds Rust to the model's order. Its mutation catalogue is in work. | Kyle: closing step 4, and [TK10](DECISIONS.md#tk10-seven-details-of-the-check) |
 | 2 | **Step 4's ruled pieces** (list below). | Ruled 2026-11-20. Not built. | Some wait on the tick record |
 
 ### Step 4: ruled and not built
