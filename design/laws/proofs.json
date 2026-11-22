@@ -978,6 +978,16 @@
    "states":
    "∀ {saw : Loops.Record → List Loops.Record} {W : List Loops.Record}, Loops.Addressed W → Loops.Anchoring saw W → Loops.ClosedOver saw W → ∀ {x : Loops.Record}, x ∈ W → ∀ {i : Loops.RecordId}, Loops.Reach W [x.id] i → ∀ (y : Loops.Record), y ∈ W → i ∈ y.prev → x ∈ saw y",
    "module": "Laws.LiveSlice"},
+  "Loops.sawWith_self":
+  {"uses": [],
+   "states":
+   "∀ {saw : Loops.Record → List Loops.Record} {y : Loops.Record} {B : List Loops.Record}, Loops.sawWith saw y B y = B",
+   "module": "Laws.LiveSlice"},
+  "Loops.sawWith_ne":
+  {"uses": [],
+   "states":
+   "∀ {saw : Loops.Record → List Loops.Record} {y r : Loops.Record} {B : List Loops.Record}, r ≠ y → Loops.sawWith saw y B r = saw r",
+   "module": "Laws.LiveSlice"},
   "Loops.roots_iff":
   {"uses": [],
    "states":
@@ -2045,6 +2055,15 @@
   {"uses": [],
    "states":
    "∀ {rs : List Loops.Record} {o : Option String} {r : Loops.Record}, Loops.liveK rs o r = true ↔ Loops.setsK o r = true ∧ ∀ (q : Loops.Record), q ∈ Loops.above rs r → Loops.setsK o q = false",
+   "module": "Laws.LiveSlice"},
+  "Loops.liveK_emit_more":
+  {"uses":
+   ["Loops.Fresh.above_new",
+    "Loops.Fresh.above_old",
+    "Loops.Reach.trans",
+    "Loops.mem_above"],
+   "states":
+   "∀ {W : List Loops.Record} {y y' : Loops.Record}, Loops.Fresh y W → Loops.Fresh y' W → (∀ (p : Loops.RecordId), p ∈ y.prev → p ∈ y'.prev) → (∀ (p' : Loops.RecordId), p' ∈ y'.prev → ∃ p, p ∈ y.prev ∧ ∃ x, x.id = p' ∧ Loops.Reach W [x.id] p) → ∀ (o : Option String), Loops.setsK o y = Loops.setsK o y' → ∀ {r : Loops.Record}, Loops.liveK (y :: W) o r = Loops.liveK (y' :: W) o r",
    "module": "Laws.LiveSlice"},
   "Loops.liveIn_thing":
   {"uses": ["Loops.isOf_iff"],
@@ -3330,6 +3349,11 @@
    "states":
    "∀ {f : Loops.Record → Loops.Record}, Loops.View f → ∀ (s : Loops.Signed) (L k : String), (Loops.Signed.through f s).binds L k = s.binds L k",
    "module": "Laws.Keys"},
+  "Loops.base_closed_needed":
+  {"uses": ["Loops.Anchoring.of_checks"],
+   "states":
+   "Loops.Anchoring Loops.cl.saw [Loops.cl.x, Loops.cl.y] ∧ Loops.ClosedOver Loops.cl.saw [Loops.cl.x, Loops.cl.y] ∧ ¬Loops.ClosedOver Loops.cl.saw [Loops.cl.y] ∧ Loops.bs.w.prev = List.map (fun x => x.id) (Loops.liveOf [Loops.cl.y]) ∧ ¬Loops.Anchored [Loops.bs.w, Loops.cl.x, Loops.cl.y] ∧ Loops.liveFor (Loops.liveOf [Loops.bs.w, Loops.cl.x, Loops.cl.y]) \"a\" Loops.cl.x = true ∧ Loops.liveFor [Loops.bs.w, Loops.cl.x, Loops.cl.y] \"a\" Loops.cl.x = false",
+   "module": "Laws.LiveSlice"},
   "Loops.baseForm_some":
   {"uses": [],
    "states":
@@ -3406,6 +3430,25 @@
     "Loops.closedOver_of_down"],
    "states":
    "∀ {saw : Loops.Record → List Loops.Record} {S W : List Loops.Record}, Loops.Addressed W → Loops.NoCycle W → Loops.Anchoring saw W → Loops.ClosedOver saw W → Loops.Down S W → Loops.Anchored S",
+   "module": "Laws.LiveSlice"},
+  "Loops.anchored_emit_live":
+  {"uses": ["Loops.anchored_emit_down", "Loops.live_part"],
+   "states":
+   "∀ {saw : Loops.Record → List Loops.Record} {W B D : List Loops.Record} {y : Loops.Record}, Loops.Addressed (y :: W) → Loops.NoCycle W → Loops.Anchoring saw W → Loops.ClosedOver saw W → ¬y ∈ W → Loops.Down D W → (∀ (x : Loops.Record), x ∈ B → x ∈ D) → (∀ (x : Loops.Record), x ∈ D → Loops.live D x = true → x ∈ B) → (∀ (p : Loops.RecordId), p ∈ y.prev → ∃ x, x ∈ B ∧ x.id = p) → (∀ (x : Loops.Record), x ∈ B → Loops.live B x = true → x.id ∈ y.prev) → Loops.Anchored (y :: W)",
+   "module": "Laws.LiveSlice"},
+  "Loops.anchored_emit_down":
+  {"uses":
+   ["Loops.Down.part", "Loops.anchored_emit", "Loops.closedOver_of_down"],
+   "states":
+   "∀ {saw : Loops.Record → List Loops.Record} {W B : List Loops.Record} {y : Loops.Record}, Loops.Addressed (y :: W) → Loops.NoCycle W → Loops.Anchoring saw W → Loops.ClosedOver saw W → ¬y ∈ W → Loops.Down B W → (∀ (p : Loops.RecordId), p ∈ y.prev → ∃ x, x ∈ B ∧ x.id = p) → (∀ (x : Loops.Record), x ∈ B → Loops.live B x = true → x.id ∈ y.prev) → Loops.Anchored (y :: W)",
+   "module": "Laws.LiveSlice"},
+  "Loops.anchored_emit":
+  {"uses":
+   ["Loops.Anchoring.emit",
+    "Loops.ClosedOver.emit",
+    "Loops.anchored_of_written"],
+   "states":
+   "∀ {saw : Loops.Record → List Loops.Record} {W B : List Loops.Record} {y : Loops.Record}, Loops.Addressed (y :: W) → Loops.Anchoring saw W → Loops.ClosedOver saw W → ¬y ∈ W → (∀ (x : Loops.Record), x ∈ B → x ∈ W) → Loops.ClosedOver saw B → (∀ (p : Loops.RecordId), p ∈ y.prev → ∃ x, x ∈ B ∧ x.id = p) → (∀ (x : Loops.Record), x ∈ B → Loops.live B x = true → x.id ∈ y.prev) → Loops.Anchored (y :: W)",
    "module": "Laws.LiveSlice"},
   "Loops.anchoredKeys_slice":
   {"uses":
@@ -6590,6 +6633,21 @@
    "states":
    "∀ {hs : List (Loops.RecordId × Loops.Shown)} {unread : Nat} {hs_1 : List (Loops.RecordId × Loops.Shown)} {unread_1 : Nat}, Loops.GroupValue.heads hs unread = Loops.GroupValue.heads hs_1 unread_1 → hs = hs_1 ∧ unread = unread_1",
    "module": "Loops.Spec"},
+  "Loops.Fresh.reach":
+  {"uses": [],
+   "states":
+   "∀ {y : Loops.Record} {W : List Loops.Record}, Loops.Fresh y W → ∀ {r : Loops.Record} {i : Loops.RecordId}, Loops.Reach (y :: W) [r.id] i → i ≠ y.id → Loops.Reach W [r.id] i",
+   "module": "Laws.LiveSlice"},
+  "Loops.Fresh.above_old":
+  {"uses": ["Loops.Fresh.reach", "Loops.above_sub", "Loops.mem_above"],
+   "states":
+   "∀ {y : Loops.Record} {W : List Loops.Record}, Loops.Fresh y W → ∀ {r q : Loops.Record}, q ∈ W → (q ∈ Loops.above (y :: W) r ↔ q ∈ Loops.above W r)",
+   "module": "Laws.LiveSlice"},
+  "Loops.Fresh.above_new":
+  {"uses": ["Loops.Fresh.reach", "Loops.Reach.sub", "Loops.mem_above"],
+   "states":
+   "∀ {y : Loops.Record} {W : List Loops.Record}, Loops.Fresh y W → ∀ {r : Loops.Record}, y ∈ Loops.above (y :: W) r ↔ ∃ p, p ∈ y.prev ∧ Loops.Reach W [r.id] p",
+   "module": "Laws.LiveSlice"},
   "Loops.Forms.sub":
   {"uses": [],
    "states":
@@ -7262,6 +7320,11 @@
    "states":
    "∀ (t : String) (r : Loops.Record), { field := Loops.Field.env Loops.EnvField.about, op := Loops.Op.is (Loops.Arg.val (Loops.Val.str t)) }.eval r = Loops.Tri.ofBool (r.about.contains t)",
    "module": "Laws.Spec"},
+  "Loops.ClosedOver.emit":
+  {"uses": ["Loops.sawWith_ne", "Loops.sawWith_self"],
+   "states":
+   "∀ {saw : Loops.Record → List Loops.Record} {W B : List Loops.Record} {y : Loops.Record}, Loops.ClosedOver saw W → ¬y ∈ W → (∀ (x : Loops.Record), x ∈ B → x ∈ W) → Loops.ClosedOver (Loops.sawWith saw y B) (y :: W)",
+   "module": "Laws.LiveSlice"},
   "Loops.Claim.ok":
   {"uses": [],
    "states":
@@ -7516,6 +7579,16 @@
   {"uses": [],
    "states":
    "∀ {saw : Loops.Record → List Loops.Record} {W : List Loops.Record}, Loops.Anchoring saw W → ∀ (y : Loops.Record), y ∈ W → ∀ (p : Loops.RecordId), p ∈ y.prev → ∃ x, x ∈ saw y ∧ x.id = p",
+   "module": "Laws.LiveSlice"},
+  "Loops.Anchoring.emit":
+  {"uses":
+   ["Loops.Anchoring.names",
+    "Loops.Anchoring.rule",
+    "Loops.Anchoring.trans",
+    "Loops.sawWith_ne",
+    "Loops.sawWith_self"],
+   "states":
+   "∀ {saw : Loops.Record → List Loops.Record} {W B : List Loops.Record} {y : Loops.Record}, Loops.Anchoring saw W → Loops.ClosedOver saw W → ¬y ∈ W → (∀ (x : Loops.Record), x ∈ B → x ∈ W) → Loops.ClosedOver saw B → (∀ (p : Loops.RecordId), p ∈ y.prev → ∃ x, x ∈ B ∧ x.id = p) → (∀ (x : Loops.Record), x ∈ B → Loops.live B x = true → x.id ∈ y.prev) → Loops.Anchoring (Loops.sawWith saw y B) (y :: W)",
    "module": "Laws.LiveSlice"},
   "Loops.Anchored.keys":
   {"uses": [],
