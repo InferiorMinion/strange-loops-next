@@ -1,0 +1,24 @@
+{
+  "implementations": [
+    "js",
+    "lean",
+    "rust"
+  ],
+  "seed": "lists-realm-1",
+  "requested": 8192,
+  "counts": {
+    "realm": {
+      "cases": 8192,
+      "match": 7202,
+      "protocol-refusal": 0,
+      "decoder-refusal": 990,
+      "mismatch": 0
+    }
+  },
+  "mismatches": 0,
+  "decoderRefusals": 990,
+  "protocolRefusals": 0,
+  "chunks": 64,
+  "shrinkTrials": 0,
+  "seconds": 172.336846738
+}

@@ -102,16 +102,17 @@ function readNumbers(records, { field = "n", where } = {}) {
   return { xs, unread: unread + selected.length - xs.length };
 }
 
-// Sums accumulate in 128 bits, signed; past that, `sum-overflow`, never a wrap.
-// The value is a Number while it is a safe integer, else a BigInt.
-const LIMIT = 2n ** 127n;
+// Resume an exact subtotal with the readable whole values in this batch.
+// Keep the ordinary Number result while it is safe, then return a BigInt.
+export function sumValues(xs, initial = 0n) {
+  const total = xs.reduce((t, x) => t + BigInt(x), initial);
+  const safe = total <= BigInt(Number.MAX_SAFE_INTEGER) && total >= -BigInt(Number.MAX_SAFE_INTEGER);
+  return safe ? Number(total) : total;
+}
 
 export function sum(records, opts) {
   const { xs, unread } = readNumbers(records, opts);
-  const total = xs.reduce((t, x) => t + BigInt(x), 0n);
-  if (total >= LIMIT || total < -LIMIT) throw new Error("sum-overflow");
-  const safe = total <= BigInt(Number.MAX_SAFE_INTEGER) && total >= -BigInt(Number.MAX_SAFE_INTEGER);
-  return { value: safe ? Number(total) : total, unread };
+  return { value: sumValues(xs), unread };
 }
 
 const extremum = (pick) => (records, opts) => {

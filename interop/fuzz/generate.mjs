@@ -222,12 +222,18 @@ function observation(rng) {
     [{ $number: "80.0" }], { nested: key }, null, [key], [false, "false"], key, 3]);
 }
 
-function listSlots(input, rng, index) {
-  // Append the same fields to each form of an id in every order.
-  const values = new Map(input.orders[0].filter(r => r.fields).map(r => [r.id, observation(rng)]));
-  for (const order of input.orders) for (const r of order) {
-    if (r.fields) r.fields.sample = clone(values.get(r.id));
+// A held field of one id has the same value in every form and arrival order.
+function observations(orders, field, rng) {
+  const values = new Map();
+  for (const order of orders) for (const r of order) {
+    if (!r.fields) continue;
+    if (!values.has(r.id)) values.set(r.id, observation(rng));
+    r.fields[field] = clone(values.get(r.id));
   }
+}
+
+function listSlots(input, rng, index) {
+  observations(input.orders, "sample", rng);
   const slots = input.spec.fold;
   for (const follow of [undefined, "prev", "keys"]) {
     const mode = follow ?? "all", opts = follow ? { follow } : {};
@@ -783,5 +789,21 @@ export function generate(seed, index, family) {
     }
   }
   if (layer === "spec/run" && !nearMiss && !numeric) listSlots(input, rng, index);
+  // Draw after all existing mutations. Raw sum and extrema require a readable
+  // n; on those two layers put the observation in a different field.
+  if (!nearMiss && !numeric && ["fold", "realm", "scenario"].includes(family)) {
+    const orders = family === "fold" ? input.orders : [held];
+    // Alternate the observed field so ordinary scalar n and missing n still
+    // reach the numeric readers alongside the new list/object/null cases.
+    const field = ["fold/sum", "fold/extrema"].includes(layer) || (index & 8) ? "score" : "n";
+    observations(orders, field, rng);
+    if (layer === "fold/select" && rng.int(2)) {
+      input.where = { [field]: rng.pick([{ present: true }, { is: true }, { below: 3 }]) };
+    }
+    if (family === "scenario") {
+      input.spec.fold["written-observation"] = { count: true, where: { [field]: { present: true } } };
+      input.spec.fold["by-observation"] = { count: true, by: field };
+    }
+  }
   return { layer, input, fuzz: { seed: String(seed), index, family, nearMiss } };
 }

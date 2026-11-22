@@ -11,9 +11,19 @@ spec.loader.exec_module(summarize)
 
 
 class EvidenceTest(unittest.TestCase):
+    def test_lists_campaigns(self):
+        for family, matches, refused in [('fold', 7121, 1071), ('realm', 7202, 990), ('scenario', 7225, 967)]:
+            seed = f'lists-{family}-1'
+            summary = summarize.read(summarize.CAMPAIGNS / seed / 'summary.json')
+            self.assertEqual(summary['implementations'], ['js', 'lean', 'rust'])
+            self.assertEqual(summary['seed'], seed)
+            self.assertEqual(summary['counts'], {family: {
+                'cases': 8192, 'match': matches, 'decoder-refusal': refused,
+                'protocol-refusal': 0, 'mismatch': 0}})
+
     def test_retained_artifacts(self):
         result = summarize.report()
-        self.assertEqual(list(result['campaigns']), ['by-1', 'by-collect-1', 'by-shape-1', 'collect-limit-1', 'd1-d6-1', 'd8ab-1', 'follow-2', 'issue-7-1', 'keyed-1', 'keyed-slots-1', 'keyed-slots-2', 'sets-1', 'shape-follow-1', 'shape-under-1', 'shape-under-2', 'step1-3', 'tick-1', 'tick-2', 'tick-3', 'tick-order-1', 'tick-order-2', 'tick-order-3', 'under-1'])
+        self.assertEqual(list(result['campaigns']), ['by-1', 'by-collect-1', 'by-shape-1', 'collect-limit-1', 'd1-d6-1', 'd8ab-1', 'follow-2', 'issue-7-1', 'keyed-1', 'keyed-slots-1', 'keyed-slots-2', 'lists-fold-1', 'lists-realm-1', 'lists-scenario-1', 'sets-1', 'shape-follow-1', 'shape-under-1', 'shape-under-2', 'step1-3', 'tick-1', 'tick-2', 'tick-3', 'tick-order-1', 'tick-order-2', 'tick-order-3', 'under-1'])
         current = result['campaigns']['collect-limit-1']
         self.assertEqual(current['totals'], {'cases': 5600, 'match': 3638, 'protocol-refusal': 1579,
                                              'decoder-refusal': 383, 'mismatch': 0})

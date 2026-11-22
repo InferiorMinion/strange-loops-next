@@ -235,6 +235,20 @@ mod tests {
     }
 
     #[test]
+    fn sum_crosses_both_signed_128_bit_bounds() {
+        for sign in [1_i64, -1] {
+            let subtotal = i128::from(sign) * i128::MAX;
+            let initial = subtotal.to_string().parse().expect("decimal subtotal");
+            let total = sum_fold(|_| Some((2 * sign).into()), initial, &[Record::default()]);
+            let expected = format!(
+                "{}170141183460469231731687303715884105729",
+                if sign < 0 { "-" } else { "" }
+            );
+            assert_eq!(total.to_string(), expected);
+        }
+    }
+
+    #[test]
     fn latest_combines_per_thing_heads_without_global_suppression() {
         // The successor names a record of another thing: admission refuses it,
         // but the unadmitted per-thing fold must still leave thing:b its head.
