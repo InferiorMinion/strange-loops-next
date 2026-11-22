@@ -340,7 +340,7 @@
     "group": "Resolution · ticks",
     "status": "settled",
     "claim": "A window is a <code>where</code>, applied after the heads.",
-    "why": "A window tests the time content order already uses: a record's <code>occurred</code> when it states one, its <code>emitted</code> when it does not. Taking the window first, then folding, showed as current a record that a revision had moved out of the window in 428 of 660 trials. So a window is not a second mechanism beside <code>where</code>. Ruled on 2026-11-20; the field's name is not chosen (<code>env.when</code> is proposed), and it is not built. Version 36."
+    "why": "A window tests the time content order already uses: a record's <code>occurred</code> when it states one, its <code>emitted</code> when it does not. Taking the window first, then folding, showed as current a record that a revision had moved out of the window in 428 of 660 trials. So a window is not a second mechanism beside <code>where</code>. Ruled on 2026-11-20. The field is <code>env.when</code> (ruled 2026-11-21); it is in the model with its laws, and Rust is being built. Version 36."
   },
   {
     "kind": "decision",

@@ -24,6 +24,27 @@ In brief:
 - The full mutation catalogue ran over all 328 entries: 324 caught, two known survivors, and two new ones that are now caught. The full runner asks what the per-merge check asks.
 - `loops emit - --fill` fills each line of a changeset as a single emit would, so a collector can write anchored records.
 - Kyle ruled the tick record (TK1 to TK9; TK9 as a `rules` member bound into the spec's hash) and the order of work (W1 to W6), each for its recommendation. One new entry, TK10, comes from planning the build.
+- The tick record's first piece is in the model: the spec's hash under a rules version, and the window field `env.when` (!72). Rust is being built.
+
+### The tick record, piece 1: the spec's hash and `env.when`, in the model
+
+The plan for the tick record has seven pieces: (1) the spec's hash and the window field, (2) the result reader and the tick's payload, (3) the claim and the check, (4) the protocol text, (5) the Rust codec, (6) the Rust check, (7) the CLI verbs and the two-machine exit test. This is the first, in the model (!72). Rust for it is being built.
+
+- **The spec's hash** (TK3, TK9). `model/Loops/SpecHash.lean`: a rules version, the label `loops/spec-hash/v<rules>:`, and `spec:` + base32hex of SHA-256 over the label and the JCS text. It is taken of a raw JSON member, so a check can verify it before parsing the spec, and of a parsed spec. The `backups` example hashes to `spec:gs9soetl…`, as the proposal computed by hand.
+- **The window field** (TK8). `env.when` in a `where`: a record's `occurred` when it states one, else the instant of its `emitted`. It is always present and is read from the envelope, so also on a record held without its payload.
+- **Laws.** `spec.hash`: two parsed specs have the same hash input exactly when the rules version is the same and they differ only in the order of their slots, of a `where`'s fields, or of a field's operators; such specs give the same result bytes. `spec.no-commit` and `spec.no-result`: a spec's hash input is never a record's commitment input or a result's. `window.span` and `window.heads`: what `env.when` reads, and that a window filters the heads, so a revision outside the window still replaces a record inside it.
+- **Vectors.** Eleven in `vectors/tick/`: the example hash; member order giving one hash; source order, kind order, a renamed vertex or store, and the rules version each giving another; a dropped `note`; the label's bytes; and two window cases. A backfilled store counts 0 by `env.occurred`, 8 by `env.emitted` and 1 by `env.when` for the same day.
+
+**Implementer choices; they stand under Kyle's ruling of 2026-11-21 (W7) unless noted.**
+- **A rules version is a positive whole number as decimal text**, compared as a number. This one is row 5 of TK10 and is his to rule.
+- **The vectors are published with the model**, before Rust runs them. The Rust vector test and the JavaScript check each name the one directory `tick`, pin its file count and print that they do not run it; every other unknown directory still fails. Rust's exemption goes when its piece merges. The plan would have held the vectors back until then; publishing them lets margins-claude's Python start from them.
+- **Reading a carried key later is not a change of rules.** A tick carries the parsed form, which drops carried keys, so earlier ticks keep their meaning. `protocol/spec.md` says so.
+- **`env.when` is a test field only.** `"by": "env.when"` is refused.
+- **The window's laws are named `window.span` and `window.heads`.**
+- **The fuzz does not generate `env.when`.** Its field names come from a fixed list. Given by hand to the frozen JavaScript, a spec with `env.when` is refused `where-invalid`, which is what W3 means: the three-way fuzz stays on the vocabulary all three share.
+- No mutation-catalogue entry is added (W5).
+
+A Codex worker planned the seven pieces and wrote this one; the coordinator reviewed it, ran the gates and recomputed the 17 hashes of the vectors in Python.
 
 ### Ruled by Kyle, 2026-11-21: the tick record and the order of work
 
