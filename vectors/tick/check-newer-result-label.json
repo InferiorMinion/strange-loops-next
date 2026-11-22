@@ -1,0 +1,139 @@
+{
+  "vector": "check-newer-result-label",
+  "layer": "tick",
+  "laws": ["tick.inputs"],
+  "source": "model",
+  "input": {
+    "op": "check-tick",
+    "current": "1",
+    "subject": {
+      "kind": "tick",
+      "payload": {
+        "rules": "2",
+        "spec": {
+          "vertex": "backups",
+          "from": [
+            {
+              "store": "lab",
+              "kind": ["backup"]
+            }
+          ],
+          "fold": {
+            "runs": {
+              "count": true
+            },
+            "mb": {
+              "sum": "mb"
+            },
+            "list": {
+              "collect": true
+            }
+          }
+        },
+        "spec-hash": "spec:udpksieid9snrbse1a3q1hntgm7u38ank14mecavb34i70jnmpsg",
+        "covers": ["r:000000000000000000000000000000000000000000000000000g", "r:0000000000000000000000000000000000000000000000000010", "r:000000000000000000000000000000000000000000000000001g", "r:0000000000000000000000000000000000000000000000000020", "r:000000000000000000000000000000000000000000000000002g", "r:0000000000000000000000000000000000000000000000000030"],
+        "result": {
+          "runs": {
+            "unread": "0",
+            "value": "6"
+          },
+          "mb": {
+            "unread": "0",
+            "value": "1027"
+          },
+          "list": {
+            "heads": ["r:0000000000000000000000000000000000000000000000000030", "r:000000000000000000000000000000000000000000000000002g", "r:0000000000000000000000000000000000000000000000000020", "r:000000000000000000000000000000000000000000000000001g", "r:0000000000000000000000000000000000000000000000000010", "r:000000000000000000000000000000000000000000000000000g"],
+            "unread": "0"
+          }
+        },
+        "result-hash": "res:qou3ri28mbp31v8kksej7pmmrvrb429c7bln7gd672ipv2ek9kl0"
+      }
+    },
+    "checker": [
+      {
+        "id": "r:000000000000000000000000000000000000000000000000000g",
+        "kind": "backup",
+        "observer": "sl:laptop",
+        "about": ["svc:jellyfin"],
+        "prev": [],
+        "emitted": "2026-11-21T20:00:00Z",
+        "occurred": "2026-11-16",
+        "fields": {
+          "svc": "jellyfin",
+          "mb": 412
+        }
+      },
+      {
+        "id": "r:0000000000000000000000000000000000000000000000000010",
+        "kind": "backup",
+        "observer": "sl:laptop",
+        "about": ["svc:pihole"],
+        "prev": [],
+        "emitted": "2026-11-21T20:00:00Z",
+        "occurred": "2026-11-16",
+        "fields": {
+          "svc": "pihole",
+          "mb": 3
+        }
+      },
+      {
+        "id": "r:000000000000000000000000000000000000000000000000001g",
+        "kind": "backup",
+        "observer": "sl:laptop",
+        "about": ["svc:gitea"],
+        "prev": [],
+        "emitted": "2026-11-21T20:00:00Z",
+        "occurred": "2026-11-16",
+        "fields": {
+          "svc": "gitea",
+          "mb": 88
+        }
+      },
+      {
+        "id": "r:0000000000000000000000000000000000000000000000000020",
+        "kind": "backup",
+        "observer": "sl:laptop",
+        "about": ["svc:jellyfin"],
+        "prev": [],
+        "emitted": "2026-11-21T20:00:00Z",
+        "occurred": "2026-11-17",
+        "fields": {
+          "svc": "jellyfin",
+          "mb": 419
+        }
+      },
+      {
+        "id": "r:000000000000000000000000000000000000000000000000002g",
+        "kind": "backup",
+        "observer": "sl:laptop",
+        "about": ["svc:pihole"],
+        "prev": [],
+        "emitted": "2026-11-21T20:00:00Z",
+        "occurred": "2026-11-17",
+        "fields": {
+          "svc": "pihole",
+          "mb": 10
+        }
+      },
+      {
+        "id": "r:0000000000000000000000000000000000000000000000000030",
+        "kind": "backup",
+        "observer": "sl:laptop",
+        "about": ["svc:gitea"],
+        "prev": [],
+        "emitted": "2026-11-21T20:00:00Z",
+        "occurred": "2026-11-17",
+        "fields": {
+          "svc": "gitea",
+          "mb": 95
+        }
+      }
+    ]
+  },
+  "expect": {
+    "answer": "cannot check",
+    "reason": "made under newer rules",
+    "closure": "yes",
+    "taken-not-covered": null
+  }
+}

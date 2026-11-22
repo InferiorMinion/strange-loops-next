@@ -1099,6 +1099,11 @@
    "states":
    "Loops.utf8 Loops.resultLabel = Loops.utf8 \"loops/result-has\" ++ Loops.utf8 \"h/v1:\"",
    "module": "Laws.Result"},
+  "Loops.resultJson_distinct_of_slots":
+  {"uses": ["Loops.Json.keysDistinct_arr", "Loops.Json.keysDistinct_obj"],
+   "states":
+   "∀ (s : Loops.Spec) (values : Loops.Slot → Loops.SlotValue), s.Fits → (∀ (a : Loops.Slot), a ∈ s.slots → (values a).FitsSlot a) → (Loops.resultJson (List.map (fun a => (a.name, values a)) s.slots)).keysDistinct = true",
+   "module": "Laws.Tick"},
   "Loops.resultHash_of_unshown":
   {"uses": ["Loops.resultText_unshown"],
    "states":
@@ -1193,8 +1198,8 @@
    "module": "Laws.TickRead"},
   "Loops.readTickMembers_text":
   {"uses":
-   ["Loops.Rules.ofJson?_eq_some_iff",
-    "Loops.TickReader.firstRepeated.eq_def",
+   ["Loops.Json.keysDistinct_obj",
+    "Loops.Rules.ofJson?_eq_some_iff",
     "Loops.bytes_bounded",
     "Loops.bytes_idDigest",
     "Loops.canonMembers_eq",
@@ -1205,7 +1210,17 @@
     "Loops.unbase32_eq_some_iff",
     "Loops.utf16_inj"],
    "states":
-   "∀ {H : Loops.Hash} {j : Loops.Json} {m : Loops.TickMembers}, Loops.readTickMembers H j = Except.ok m → j.canon = (m.toJson H).canon",
+   "∀ {H : Loops.Hash} {current : Loops.Rules} {j : Loops.Json} {m : Loops.TickMembers}, Loops.readTickMembers H current j = Except.ok m → m.rules.number ≤ current.number → j.canon = (m.toJson H).canon",
+   "module": "Laws.TickRead"},
+  "Loops.readTickMembers_same_value":
+  {"uses": ["Loops.Json.wireValue_of_canon", "Loops.readTickMembers_distinct"],
+   "states":
+   "∀ {H : Loops.Hash} {current : Loops.Rules} {a b : Loops.Json} {ma mb : Loops.TickMembers}, Loops.readTickMembers H current a = Except.ok ma → Loops.readTickMembers H current b = Except.ok mb → a.Finite → b.Finite → a.canon = b.canon → a.wireValue = b.wireValue",
+   "module": "Laws.TickRead"},
+  "Loops.readTickMembers_distinct":
+  {"uses": [],
+   "states":
+   "∀ {H : Loops.Hash} {current : Loops.Rules} {j : Loops.Json} {m : Loops.TickMembers}, Loops.readTickMembers H current j = Except.ok m → j.keysDistinct = true",
    "module": "Laws.TickRead"},
   "Loops.readResult_written":
   {"uses": ["Loops.SlotValue.read_result"],
@@ -3179,10 +3194,12 @@
   {"uses":
    ["Loops.Slot.run_fitsSlot",
     "Loops.Spec.ofJson_toJson",
+    "Loops.Spec.toJson_distinct",
     "Loops.TickPayload.read_members",
     "Loops.idsOf_sorted",
     "Loops.mem_idsOf",
     "Loops.readResult_written",
+    "Loops.resultJson_distinct_of_slots",
     "Loops.tickMissing_zero",
     "Loops.tick_level_append"],
    "states":
@@ -3492,6 +3509,16 @@
    "states":
    "∀ {s : String} {p : List Char}, Loops.aboutPrefixOf s = some p → s = \"env.about:\" ++ String.ofList p",
    "module": "Laws.Parse"},
+  "Loops.Written.payload_wireValue":
+  {"uses":
+   ["Loops.Json.finite_of_inRange",
+    "Loops.Json.wireValue_of_canon",
+    "Loops.Writable.members",
+    "Loops.Writable.range",
+    "Loops.Written.ok"],
+   "states":
+   "∀ (a b : Loops.Written), a.payload.canon = b.payload.canon → a.payload.wireValue = b.payload.wireValue",
+   "module": "Laws.JsonValue"},
   "Loops.Written.ok":
   {"uses": [],
    "states":
@@ -3781,11 +3808,6 @@
    "states":
    "∀ {kind : String} {payload : Option Loops.Json} {kind_1 : String} {payload_1 : Option Loops.Json}, { kind := kind, payload := payload } = { kind := kind_1, payload := payload_1 } → kind = kind_1 ∧ payload = payload_1",
    "module": "Loops.TickCheck"},
-  "Loops.TickReader.firstRepeated.eq_def":
-  {"uses": [],
-   "states":
-   "∀ (seen x : List String), Loops.TickReader.firstRepeated seen x = match x with | [] => none | k :: ks => if seen.contains k = true then some k else Loops.TickReader.firstRepeated (k :: seen) ks",
-   "module": "Laws.Tick"},
   "Loops.TickReadError.unreadableSpec.sizeOf_spec":
   {"uses": [],
    "states": "sizeOf Loops.TickReadError.unreadableSpec = 1",
@@ -3828,19 +3850,23 @@
   "Loops.TickPayload.read_written":
   {"uses":
    ["Loops.Spec.ofJson_toJson",
+    "Loops.Spec.toJson_distinct",
     "Loops.TickPayload.read_members",
-    "Loops.readResult_written"],
+    "Loops.readResult_written",
+    "Loops.resultJson_distinct_of_slots"],
    "states":
    "∀ (H : Loops.Hash) (v : Loops.Rules) (s : Loops.Spec), s.Fits → ∀ (covers withheld : List Loops.RecordId), List.Pairwise (fun x1 x2 => x1 < x2) covers → List.Pairwise (fun x1 x2 => x1 < x2) withheld → (∀ (i : Loops.RecordId), i ∈ withheld → i ∈ covers) → ∀ (values : Loops.Slot → Loops.SlotValue), (∀ (a : Loops.Slot), a ∈ s.slots → (values a).FitsSlot a) → (H (Loops.specPreimageOf v s.toJson)).length = 32 → (H (Loops.resultPreimage (List.map (fun a => (a.name, values a)) s.slots))).length = 32 → have r := List.map (fun a => (a.name, values a)) s.slots; have p := { rules := v, spec := s, covers := covers, withheld := withheld, result := r }; Loops.readTickPayload H v (p.toJson H) = Except.ok { rules := p.rules, spec := p.spec, covers := p.covers, withheld := p.withheld, result := Loops.unshownResult r }",
    "module": "Laws.Tick"},
   "Loops.TickPayload.read_members":
   {"uses":
-   ["Loops.Rules.read_text",
+   ["Loops.Json.keysDistinct_arr",
+    "Loops.Json.keysDistinct_obj",
+    "Loops.Rules.read_text",
     "Loops.TickMembers.mk.injEq",
     "Loops.byteText_eq_true_iff",
     "Loops.recordIdOf?_idText"],
    "states":
-   "∀ (p : Loops.TickPayload) (H : Loops.Hash), (H (Loops.specPreimageOf p.rules p.spec.toJson)).length = 32 → (H (Loops.resultPreimage p.result)).length = 32 → List.Pairwise (fun x1 x2 => x1 < x2) p.covers → List.Pairwise (fun x1 x2 => x1 < x2) p.withheld → (∀ (i : Loops.RecordId), i ∈ p.withheld → i ∈ p.covers) → Loops.readTickMembers H (p.toJson H) = Except.ok { rules := p.rules, spec := p.spec.toJson, covers := p.covers, withheld := p.withheld, result := Loops.resultJson p.result }",
+   "∀ (p : Loops.TickPayload) (H : Loops.Hash) (current : Loops.Rules), p.spec.toJson.keysDistinct = true → (Loops.resultJson p.result).keysDistinct = true → (H (Loops.specPreimageOf p.rules p.spec.toJson)).length = 32 → (H (Loops.resultPreimage p.result)).length = 32 → List.Pairwise (fun x1 x2 => x1 < x2) p.covers → List.Pairwise (fun x1 x2 => x1 < x2) p.withheld → (∀ (i : Loops.RecordId), i ∈ p.withheld → i ∈ p.covers) → Loops.readTickMembers H current (p.toJson H) = Except.ok { rules := p.rules, spec := p.spec.toJson, covers := p.covers, withheld := p.withheld, result := Loops.resultJson p.result }",
    "module": "Laws.Tick"},
   "Loops.TickPayload.mk.sizeOf_spec":
   {"uses": [],
@@ -4070,18 +4096,44 @@
    "states":
    "∀ {text : String} {moment : Loops.Moment} {ok : Loops.instant? text.toList = some moment} {text_1 : String} {moment_1 : Loops.Moment} {ok_1 : Loops.instant? text_1.toList = some moment_1}, { text := text, moment := moment, ok := ok } = { text := text_1, moment := moment_1, ok := ok_1 } → text = text_1 ∧ moment = moment_1",
    "module": "Loops.Occurred"},
+  "Loops.SpecText.value_start":
+  {"uses": ["Loops.Json.canon_head"],
+   "states":
+   "∀ (v : Loops.Json) (close : Char), Loops.SpecText.delimiter close = true → ∃ c cs, v.canon.toList = c :: cs ∧ c ≠ close",
+   "module": "Laws.SpecText"},
+  "Loops.SpecText.splitElementsMap":
+  {"uses": ["Loops.intercalate_comma"],
+   "states":
+   "∀ {α : Type u_1} {β : Type u_2} (g : α → β) {as bs : List α} {close : Char}, Loops.SpecText.delimiter close = true → close ≠ ',' → ∀ {f : α → Loops.SpecText.Chars}, (∀ (a : α), ∃ c cs, f a = c :: cs ∧ c ≠ close) → (∀ (a : α), a ∈ as → ∀ (b : α), b ∈ bs → ∀ {X Y : Loops.SpecText.Chars}, Loops.SpecText.boundary X → Loops.SpecText.boundary Y → f a ++ X = f b ++ Y → g a = g b ∧ X = Y) → ∀ {X Y : Loops.SpecText.Chars}, Loops.SpecText.separated f close as X = Loops.SpecText.separated f close bs Y → List.map g as = List.map g bs ∧ X = Y",
+   "module": "Laws.SpecText"},
+  "Loops.SpecText.quoted_prefix":
+  {"uses": ["Loops.Json.canon_prefix", "Loops.Json.str.inj"],
+   "states":
+   "∀ {s t : String} {X Y : Loops.SpecText.Chars}, (Loops.Json.str s).canon.toList ++ X = (Loops.Json.str t).canon.toList ++ Y → s = t ∧ X = Y",
+   "module": "Laws.SpecText"},
+  "Loops.SpecText.primitive_boundary":
+  {"uses": [],
+   "states":
+   "∀ {a b X Y : Loops.SpecText.Chars}, (∀ (c : Char), c ∈ a → (!Loops.SpecText.delimiter c) = true) → (∀ (c : Char), c ∈ b → (!Loops.SpecText.delimiter c) = true) → Loops.SpecText.boundary X → Loops.SpecText.boundary Y → a ++ X = b ++ Y → a = b ∧ X = Y",
+   "module": "Laws.SpecText"},
+  "Loops.SpecText.int_chars":
+  {"uses": [],
+   "states":
+   "∀ (i : Int) (c : Char), c ∈ (Loops.Json.int i).canon.toList → (!Loops.SpecText.delimiter c) = true",
+   "module": "Laws.SpecText"},
   "Loops.SpecText.Ordered.canon_inj":
   {"uses":
-   ["Loops.Json.canon_head",
-    "Loops.Json.canon_prefix",
-    "Loops.Json.str.inj",
+   ["Loops.SpecText.int_chars",
+    "Loops.SpecText.primitive_boundary",
+    "Loops.SpecText.quoted_prefix",
+    "Loops.SpecText.splitElementsMap",
+    "Loops.SpecText.value_start",
     "Loops.canon_arr",
     "Loops.canon_member_order",
     "Loops.canon_obj",
     "Loops.canon_str",
     "Loops.eq_of_mem_of_nodup_map",
     "Loops.escapes_prefix",
-    "Loops.intercalate_comma",
     "Loops.memberText_head",
     "Loops.natText_head",
     "Loops.sortBy_perm",
@@ -5889,6 +5941,39 @@
    "states":
    "∀ {keys : List (String × List Loops.Record)} {whole heads : List Loops.Record} {keys_1 : List (String × List Loops.Record)} {whole_1 heads_1 : List Loops.Record}, { keys := keys, whole := whole, heads := heads } = { keys := keys_1, whole := whole_1, heads := heads_1 } → keys = keys_1 ∧ whole = whole_1 ∧ heads = heads_1",
    "module": "Loops.Live"},
+  "Loops.Json.wireValue_of_canon":
+  {"uses":
+   ["Loops.Json.WireValue.arr.injEq",
+    "Loops.Json.canon_head",
+    "Loops.Json.keysDistinct_arr",
+    "Loops.Json.keysDistinct_obj",
+    "Loops.Json.wireValue.eq_def",
+    "Loops.SpecText.primitive_boundary",
+    "Loops.SpecText.quoted_prefix",
+    "Loops.SpecText.splitElementsMap",
+    "Loops.SpecText.value_start",
+    "Loops.canon_arr",
+    "Loops.canon_member_order",
+    "Loops.canon_obj",
+    "Loops.canon_str",
+    "Loops.eq_of_mem_of_nodup_map",
+    "Loops.escapes_prefix",
+    "Loops.memberText_head",
+    "Loops.sortBy_go",
+    "Loops.sortBy_perm",
+    "Loops.sortBy_sorted",
+    "Loops.utf16_inj"],
+   "states":
+   "∀ {a b : Loops.Json}, a.Finite → b.Finite → a.keysDistinct = true → b.keysDistinct = true → a.canon = b.canon → a.wireValue = b.wireValue",
+   "module": "Laws.JsonValue"},
+  "Loops.Json.wireValue.eq_def":
+  {"uses":
+   ["Loops.Json.arr.sizeOf_spec",
+    "Loops.Json.obj.sizeOf_spec",
+    "Loops.sortBy_go"],
+   "states":
+   "∀ (j : Loops.Json), j.wireValue = match j with | Loops.Json.null => Loops.Json.WireValue.literal j.canon | Loops.Json.bool b => Loops.Json.WireValue.literal j.canon | Loops.Json.int i => Loops.Json.WireValue.literal j.canon | Loops.Json.number n => Loops.Json.WireValue.literal j.canon | Loops.Json.str s => Loops.Json.WireValue.str s | Loops.Json.arr xs => Loops.Json.WireValue.arr (List.map Loops.Json.wireValue xs) | Loops.Json.obj ms => Loops.Json.WireValue.obj (List.map (fun x => match x with | ⟨m, property⟩ => (m.fst, m.snd.wireValue)) (Loops.SpecText.sortedMembers ms).attach)",
+   "module": "Laws.JsonValue"},
   "Loops.Json.tail_prefix":
   {"uses":
    ["Loops.Json.arr.sizeOf_spec",
@@ -6077,6 +6162,10 @@
    "states":
    "∀ (x : Loops.Json), x.inRange = match x with | Loops.Json.int i => decide (-Loops.maxExact ≤ i) && decide (i ≤ Loops.maxExact) | Loops.Json.number n => n.inRange | Loops.Json.arr xs => Loops.Json.allInRange xs | Loops.Json.obj kvs => Loops.Json.membersInRange kvs | x => true",
    "module": "Laws.Write"},
+  "Loops.Json.finite_of_inRange":
+  {"uses": ["Loops.Number.finite_of_inRange"],
+   "states": "∀ (j : Loops.Json), j.inRange = true → j.Finite",
+   "module": "Laws.JsonValue"},
   "Loops.Json.elems_prefix":
   {"uses":
    ["Loops.Json.arr.sizeOf_spec",
@@ -6194,6 +6283,86 @@
    "states":
    "∀ (x : List Loops.Json), Loops.Json.allDistinct x = match x with | [] => true | x :: xs => x.keysDistinct && Loops.Json.allDistinct xs",
    "module": "Laws.Parse"},
+  "Loops.Json.WireValue.str.sizeOf_spec":
+  {"uses": [],
+   "states":
+   "∀ (s : String), sizeOf (Loops.Json.WireValue.str s) = 1 + sizeOf s",
+   "module": "Laws.JsonValue"},
+  "Loops.Json.WireValue.str.injEq":
+  {"uses": ["Loops.Json.WireValue.str.inj"],
+   "states":
+   "∀ (s s_1 : String), (Loops.Json.WireValue.str s = Loops.Json.WireValue.str s_1) = (s = s_1)",
+   "module": "Laws.JsonValue"},
+  "Loops.Json.WireValue.str.inj":
+  {"uses": [],
+   "states":
+   "∀ {s s_1 : String}, Loops.Json.WireValue.str s = Loops.Json.WireValue.str s_1 → s = s_1",
+   "module": "Laws.JsonValue"},
+  "Loops.Json.WireValue.obj.sizeOf_spec":
+  {"uses": [],
+   "states":
+   "∀ (xs : List (String × Loops.Json.WireValue)), sizeOf (Loops.Json.WireValue.obj xs) = 1 + sizeOf xs",
+   "module": "Laws.JsonValue"},
+  "Loops.Json.WireValue.obj.injEq":
+  {"uses": ["Loops.Json.WireValue.obj.inj"],
+   "states":
+   "∀ (xs xs_1 : List (String × Loops.Json.WireValue)), (Loops.Json.WireValue.obj xs = Loops.Json.WireValue.obj xs_1) = (xs = xs_1)",
+   "module": "Laws.JsonValue"},
+  "Loops.Json.WireValue.obj.inj":
+  {"uses": [],
+   "states":
+   "∀ {xs xs_1 : List (String × Loops.Json.WireValue)}, Loops.Json.WireValue.obj xs = Loops.Json.WireValue.obj xs_1 → xs = xs_1",
+   "module": "Laws.JsonValue"},
+  "Loops.Json.WireValue.literal.sizeOf_spec":
+  {"uses": [],
+   "states":
+   "∀ (token : String), sizeOf (Loops.Json.WireValue.literal token) = 1 + sizeOf token",
+   "module": "Laws.JsonValue"},
+  "Loops.Json.WireValue.literal.injEq":
+  {"uses": ["Loops.Json.WireValue.literal.inj"],
+   "states":
+   "∀ (token token_1 : String), (Loops.Json.WireValue.literal token = Loops.Json.WireValue.literal token_1) = (token = token_1)",
+   "module": "Laws.JsonValue"},
+  "Loops.Json.WireValue.literal.inj":
+  {"uses": [],
+   "states":
+   "∀ {token token_1 : String}, Loops.Json.WireValue.literal token = Loops.Json.WireValue.literal token_1 → token = token_1",
+   "module": "Laws.JsonValue"},
+  "Loops.Json.WireValue.brecOn_3.eq":
+  {"uses": [],
+   "states":
+   "∀ {motive_1 : Loops.Json.WireValue → Sort u} {motive_2 : List Loops.Json.WireValue → Sort u} {motive_3 : List (String × Loops.Json.WireValue) → Sort u} {motive_4 : String × Loops.Json.WireValue → Sort u} (t : String × Loops.Json.WireValue) (F_1 : (t : Loops.Json.WireValue) → t.below → motive_1 t) (F_2 : (t : List Loops.Json.WireValue) → Loops.Json.WireValue.below_1 t → motive_2 t) (F_3 : (t : List (String × Loops.Json.WireValue)) → Loops.Json.WireValue.below_2 t → motive_3 t) (F_4 : (t : String × Loops.Json.WireValue) → Loops.Json.WireValue.below_3 t → motive_4 t), Loops.Json.WireValue.brecOn_3 t F_1 F_2 F_3 F_4 = F_4 t (Loops.Json.WireValue.brecOn_3.go t F_1 F_2 F_3 F_4).2",
+   "module": "Laws.JsonValue"},
+  "Loops.Json.WireValue.brecOn_2.eq":
+  {"uses": [],
+   "states":
+   "∀ {motive_1 : Loops.Json.WireValue → Sort u} {motive_2 : List Loops.Json.WireValue → Sort u} {motive_3 : List (String × Loops.Json.WireValue) → Sort u} {motive_4 : String × Loops.Json.WireValue → Sort u} (t : List (String × Loops.Json.WireValue)) (F_1 : (t : Loops.Json.WireValue) → t.below → motive_1 t) (F_2 : (t : List Loops.Json.WireValue) → Loops.Json.WireValue.below_1 t → motive_2 t) (F_3 : (t : List (String × Loops.Json.WireValue)) → Loops.Json.WireValue.below_2 t → motive_3 t) (F_4 : (t : String × Loops.Json.WireValue) → Loops.Json.WireValue.below_3 t → motive_4 t), Loops.Json.WireValue.brecOn_2 t F_1 F_2 F_3 F_4 = F_3 t (Loops.Json.WireValue.brecOn_2.go t F_1 F_2 F_3 F_4).2",
+   "module": "Laws.JsonValue"},
+  "Loops.Json.WireValue.brecOn_1.eq":
+  {"uses": [],
+   "states":
+   "∀ {motive_1 : Loops.Json.WireValue → Sort u} {motive_2 : List Loops.Json.WireValue → Sort u} {motive_3 : List (String × Loops.Json.WireValue) → Sort u} {motive_4 : String × Loops.Json.WireValue → Sort u} (t : List Loops.Json.WireValue) (F_1 : (t : Loops.Json.WireValue) → t.below → motive_1 t) (F_2 : (t : List Loops.Json.WireValue) → Loops.Json.WireValue.below_1 t → motive_2 t) (F_3 : (t : List (String × Loops.Json.WireValue)) → Loops.Json.WireValue.below_2 t → motive_3 t) (F_4 : (t : String × Loops.Json.WireValue) → Loops.Json.WireValue.below_3 t → motive_4 t), Loops.Json.WireValue.brecOn_1 t F_1 F_2 F_3 F_4 = F_2 t (Loops.Json.WireValue.brecOn_1.go t F_1 F_2 F_3 F_4).2",
+   "module": "Laws.JsonValue"},
+  "Loops.Json.WireValue.brecOn.eq":
+  {"uses": [],
+   "states":
+   "∀ {motive_1 : Loops.Json.WireValue → Sort u} {motive_2 : List Loops.Json.WireValue → Sort u} {motive_3 : List (String × Loops.Json.WireValue) → Sort u} {motive_4 : String × Loops.Json.WireValue → Sort u} (t : Loops.Json.WireValue) (F_1 : (t : Loops.Json.WireValue) → t.below → motive_1 t) (F_2 : (t : List Loops.Json.WireValue) → Loops.Json.WireValue.below_1 t → motive_2 t) (F_3 : (t : List (String × Loops.Json.WireValue)) → Loops.Json.WireValue.below_2 t → motive_3 t) (F_4 : (t : String × Loops.Json.WireValue) → Loops.Json.WireValue.below_3 t → motive_4 t), t.brecOn F_1 F_2 F_3 F_4 = F_1 t (Loops.Json.WireValue.brecOn.go t F_1 F_2 F_3 F_4).2",
+   "module": "Laws.JsonValue"},
+  "Loops.Json.WireValue.arr.sizeOf_spec":
+  {"uses": [],
+   "states":
+   "∀ (xs : List Loops.Json.WireValue), sizeOf (Loops.Json.WireValue.arr xs) = 1 + sizeOf xs",
+   "module": "Laws.JsonValue"},
+  "Loops.Json.WireValue.arr.injEq":
+  {"uses": ["Loops.Json.WireValue.arr.inj"],
+   "states":
+   "∀ (xs xs_1 : List Loops.Json.WireValue), (Loops.Json.WireValue.arr xs = Loops.Json.WireValue.arr xs_1) = (xs = xs_1)",
+   "module": "Laws.JsonValue"},
+  "Loops.Json.WireValue.arr.inj":
+  {"uses": [],
+   "states":
+   "∀ {xs xs_1 : List Loops.Json.WireValue}, Loops.Json.WireValue.arr xs = Loops.Json.WireValue.arr xs_1 → xs = xs_1",
+   "module": "Laws.JsonValue"},
   "Loops.Json.PlainMembers.eq_def":
   {"uses": ["Loops.Json.brecOn_2.eq"],
    "states":
@@ -6209,6 +6378,11 @@
    "states":
    "∀ (x : Loops.Json), x.Plain = match x with | Loops.Json.null => True | Loops.Json.str s => True | Loops.Json.arr xs => Loops.Json.PlainAll xs | Loops.Json.obj kvs => Loops.Sorted (fun kv => Loops.utf16 kv.fst) kvs ∧ Loops.Json.PlainMembers kvs | Loops.Json.bool b => False | Loops.Json.int i => False | Loops.Json.number n => False",
    "module": "Laws.Result"},
+  "Loops.Json.Finite.brecOn":
+  {"uses": [],
+   "states":
+   "∀ {motive : (a : Loops.Json) → a.Finite → Prop} {a : Loops.Json} (t : a.Finite), (∀ (a : Loops.Json) (t : a.Finite), Loops.Json.Finite.below t → motive a t) → motive a t",
+   "module": "Laws.JsonValue"},
   "Loops.Item.val.sizeOf_spec":
   {"uses": [],
    "states": "∀ (v : Loops.Val), sizeOf (Loops.Item.val v) = 1 + sizeOf v",

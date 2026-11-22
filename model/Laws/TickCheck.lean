@@ -275,9 +275,10 @@ theorem checkTick_made_of_width (H : Hash) (sp : Spec) (hf : sp.Fits) (xs extra 
   have hs := idsOf_sorted xs
   have hw : p.withheld.Pairwise (· < ·) := hs.filter _
   have sub : ∀ i ∈ p.withheld, i ∈ p.covers := fun _ hi => (mem_filter.1 hi).1
-  have members := TickPayload.read_members p H hspec hresult hs hw sub
   let ys := admit (fun _ _ => true) (settle (masked p.covers p.withheld xs))
   let values := fun s : Slot => s.run sp.takes ys
+  have members := TickPayload.read_members p H Rules.current (Spec.toJson_distinct hf)
+    (resultJson_distinct_of_slots sp values hf (fun s hm => s.run_fitsSlot (hf.2.2.2.2 _ hm) _ _)) hspec hresult hs hw sub
   have slots : readResult sp (resultJson p.result) = .ok (unshownResult p.result) :=
     readResult_written sp values hf.2.2.2.1 (fun s hm => s.run_fitsSlot (hf.2.2.2.2 _ hm) _ _)
   have replay := made_replay_ready sp xs extra outside safe

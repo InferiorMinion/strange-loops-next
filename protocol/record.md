@@ -9,7 +9,7 @@ vectors in `vectors/record/`.
 
 | Field | Required | Holds |
 |---|---|---|
-| `kind` | yes | a label, non-empty |
+| `kind` | yes | a label, non-empty; [the tick record](tick.md) uses `tick` |
 | `observer` | yes | a typed reference (`prefix:value`), usually a lineage id `sl:…` |
 | `emitted` | yes | the observer's now: a canonical UTC instant |
 | `occurred` | no | the claimed past: a span, below |

@@ -351,7 +351,17 @@ def tickPayloadChecks : IO Unit := do
   ensure (decoded == p) "empty-cover tick payload"
   let other : Rules := ⟨2, by decide⟩
   let foreign := ({p with rules := other} : TickPayload).toJson sha256
-  ensure (readTickMembers sha256 foreign).isOk "foreign rules members"
+  ensure (readTickMembers sha256 Rules.current foreign).isOk "foreign rules members"
+  let repeated := Json.obj [("unknown", .arr [.null, .obj [("k", .null), ("k", .bool true)]])]
+  unless readTickMembers sha256 Rules.current repeated matches .error ⟨"tick-member-duplicate", "unknown[1].k"⟩ do
+    throw (IO.userError "nested duplicate lost its path before member validation")
+  let alternate := "res:" ++ base32 (sha256 (utf8 "loops/result-hash/v2:" ++ resultBytes p.result))
+  let changed := match foreign with
+    | .obj ms => Json.obj (ms.map fun (k,v) => (k, if k == "result-hash" then .str alternate else v))
+    | x => x
+  ensure (readTickMembers sha256 Rules.current changed).isOk "newer result hash judged by today's label"
+  unless readTickMembers sha256 other changed matches .error ⟨"tick-result-hash-mismatch", "result-hash"⟩ do
+    throw (IO.userError "own-version result hash unchecked")
   ensure (match readTickPayload sha256 Rules.current foreign with
     | .error (.otherRules v) => v == other | _ => false) "foreign rules entered the slot reader"
   let s : Spec := { vertex := "limited", slots := [⟨"rows", .collect none (some 1), [], none⟩] }

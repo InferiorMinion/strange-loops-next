@@ -343,7 +343,7 @@ the vectors.
 
 ## The spec's hash
 
-The current rules version is `"1"`. A version is a JSON string of ASCII decimal digits matching `[1-9][0-9]*`, of arbitrary length. Versions compare as positive integers.
+A [tick record](tick.md) carries the parsed spec and its versioned hash. The current rules version is `"1"`. A version is a JSON string of ASCII decimal digits matching `[1-9][0-9]*`, of arbitrary length. Versions compare as positive integers.
 
 1. Parse the spec and write its parsed form as described above. Even an empty `fold` is written.
 2. Encode that form as UTF-8 JCS. Prefix those bytes with the UTF-8 bytes of `loops/spec-hash/v`, the rules version text and a colon. The complete label under rules 1 is `loops/spec-hash/v1:`. The first byte of the JSON follows the colon immediately.

@@ -169,22 +169,78 @@ private theorem hash_written (p pre : String) (bs : List UInt8) (h : bs.length =
   have preOk := isPrefixOf_iff_prefix.2 (prefix_append pre.toList (base32 bs).toList)
   simp [TickReader.hashText, String.toList_append, ← String.length_toList, good, preOk]; rfl
 
-theorem TickPayload.read_members (p : TickPayload) (H : Hash)
+private theorem named_distinct {α} {xs : List (String × α)} {f : α → Json}
+    (names : (xs.map Prod.fst).Nodup) (values : ∀ x ∈ xs, (f x.2).keysDistinct = true) :
+    (Json.obj (xs.map fun x => (x.1, f x.2))).keysDistinct = true := by
+  apply Json.keysDistinct_obj.2
+  refine ⟨by simpa [map_map, Function.comp_def] using names, ?_⟩
+  intro kv hk
+  obtain ⟨x, hx, rfl⟩ := mem_map.1 hk
+  exact values x hx
+
+private theorem ids_distinct (xs) : (idsJson xs).keysDistinct = true := by
+  apply Json.keysDistinct_arr.2
+  rintro x hx
+  obtain ⟨_, _, rfl⟩ := mem_map.1 hx
+  rfl
+
+private theorem group_distinct (g : GroupValue) : g.result.keysDistinct = true := by
+  cases g with
+  | opt r => rcases r with ⟨_ | v,u⟩ <;> rfl
+  | _ => simp +decide [GroupValue.result, Json.keysDistinct, Json.membersDistinct, intJson, ids_distinct]
+
+private theorem keyed_distinct (k : KeyedView) (h : (k.keys.map Prod.fst).Nodup) :
+    k.result.keysDistinct = true := by
+  simp +decide [KeyedView.result, Json.keysDistinct_obj, ids_distinct, named_distinct h (fun _ _ => ids_distinct _)]
+
+private theorem slot_distinct {v : SlotValue} {s : Slot} (hv : v.FitsSlot s) :
+    v.result.keysDistinct = true := by
+  rcases s with ⟨name, ty, tests, grp⟩
+  cases grp <;> cases ty <;> cases v <;> simp_all only [SlotValue.FitsSlot] <;>
+    first | contradiction | skip
+  all_goals try (cases ‹Follow› <;> try contradiction)
+  all_goals simp_all +decide [SlotValue.result, Json.keysDistinct_obj, intJson, ids_distinct,
+    group_distinct, named_distinct, Function.comp_def]
+  all_goals intro _ _ k x hx _ he; subst_vars
+  all_goals first | exact group_distinct _ | exact keyed_distinct x (hv.2 _ x hx)
+
+theorem resultJson_distinct_of_slots (s : Spec) (values : Slot → SlotValue) (hf : s.Fits)
+    (hv : ∀ a ∈ s.slots, (values a).FitsSlot a) :
+    (resultJson (s.slots.map fun a => (a.name, values a))).keysDistinct = true := by
+  apply Json.keysDistinct_obj.2
+  refine ⟨by simpa [map_map, Function.comp_def] using hf.2.2.2.1, ?_⟩
+  intro kv hk
+  obtain ⟨_, hm, rfl⟩ := mem_map.1 hk
+  obtain ⟨a, ha, rfl⟩ := mem_map.1 hm
+  exact slot_distinct (hv a ha)
+
+private theorem payload_distinct (p : TickPayload) (H : Hash) (sp : p.spec.toJson.keysDistinct = true)
+    (res : (resultJson p.result).keysDistinct = true) : (p.toJson H).keysDistinct = true := by
+  have ids (xs) : (tickIds xs).keysDistinct = true := by simp [tickIds, Json.keysDistinct_arr]
+  cases e : p.withheld.isEmpty <;>
+    simp +decide [TickPayload.toJson, TickMembers.toJson, e, Json.keysDistinct_obj, sp, res, ids]
+
+theorem TickPayload.read_members (p : TickPayload) (H : Hash) (current : Rules)
+    (sp : p.spec.toJson.keysDistinct = true) (res : (resultJson p.result).keysDistinct = true)
     (hs : (H (specPreimageOf p.rules p.spec.toJson)).length = 32)
     (hr : (H (resultPreimage p.result)).length = 32) (hc : p.covers.Pairwise (· < ·))
     (hh : p.withheld.Pairwise (· < ·)) (hi : ∀ i ∈ p.withheld, i ∈ p.covers) :
-    readTickMembers H (p.toJson H) = .ok ⟨p.rules, p.spec.toJson, p.covers, p.withheld, resultJson p.result⟩ := by
+    readTickMembers H current (p.toJson H) = .ok ⟨p.rules, p.spec.toJson, p.covers, p.withheld, resultJson p.result⟩ := by
   have sub : p.withheld.all p.covers.contains = true := by simpa using hi
   have a := hash_written "spec-hash" "spec:" (H (specPreimageOf p.rules p.spec.toJson)) hs
   have b := hash_written "result-hash" "res:" (H (resultPreimage p.result)) hr
   change TickReader.hashText "spec-hash" "spec:" (.str (specHashOf H p.rules p.spec.toJson)) = .ok (specHashOf H p.rules p.spec.toJson) at a
   change TickReader.hashText "result-hash" "res:" (.str (resultHashOf H (resultJson p.result))) = .ok (resultHashOf H (resultJson p.result)) at b
   have empty (e : p.withheld.isEmpty = true) : p.withheld = [] := List.isEmpty_iff.1 e
+  have dup := payload_distinct p H sp res
+  unfold readTickMembers
   cases he : p.withheld.isEmpty
   all_goals
-    simp only [readTickMembers, TickPayload.toJson, TickMembers.toJson, he, Bool.false_eq_true, ↓reduceIte, List.cons_append,
-      List.nil_append, List.map_cons, List.map_nil]
-    simp +decide only [TickReader.requiredNames, TickReader.firstRepeated, TickReader.field, List.lookup, List.find?_cons,
+    simp only [TickPayload.toJson, TickMembers.toJson, he, Bool.false_eq_true, ↓reduceIte, List.cons_append,
+      List.nil_append] at dup
+    simp only [TickPayload.toJson, TickMembers.toJson, he, Bool.false_eq_true, ↓reduceIte, List.cons_append,
+      List.nil_append]
+    simp +decide only [TickReader.requiredNames, dup, TickReader.field, List.lookup, List.find?_cons,
       List.find?_nil, bind, Except.bind]
     simp [TickReader.values, TickReader.withheldIds, Rules.read_text, ids_written _ _ hc, ids_written _ _ hh, he, sub, a, b,
       bind, Except.bind, pure, Except.pure]
@@ -220,7 +276,7 @@ theorem TickPayload.read_written (H : Hash)
     readTickPayload H v (p.toJson H) = .ok {p with result := unshownResult r} := by
   dsimp only
   let p : TickPayload := ⟨v, s, covers, withheld, s.slots.map fun a => (a.name, values a)⟩
-  rw [readTickPayload, TickPayload.read_members p H hs hr hc hh hi]
+  rw [readTickPayload, TickPayload.read_members p H v (Spec.toJson_distinct hf) (resultJson_distinct_of_slots s values hf hv) hs hr hc hh hi]
   dsimp only [p]
   simp [Except.mapError, bind, Except.bind, TickMembers.readPayload, TickMembers.readSpec, TickMembers.readSlots, Spec.ofJson_toJson hf,
     readResult_written s values hf.2.2.2.1 hv, pure, Except.pure]

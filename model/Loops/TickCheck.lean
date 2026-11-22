@@ -120,7 +120,7 @@ def checkTick (H : Hash) (current : Rules) (subject : TickSubject) (forms : List
   if subject.kind != "tick" then { answer := .notTick ⟨"tick-kind", "kind"⟩ }
   else match subject.payload with
     | none => { answer := .payloadUnheld }
-    | some j => match readTickMembers H j with
+    | some j => match readTickMembers H current j with
       | .error f => { answer := .notTick f }
       | .ok m => checkMembers H current m forms
 

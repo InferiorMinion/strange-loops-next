@@ -8,8 +8,8 @@ open List
 
 abbrev Chars := List Char
 
-private def delimiter (c : Char) : Bool := c == ',' || c == ']' || c == '}'
-private def boundary (xs : Chars) : Prop := xs.head?.all delimiter = true
+def delimiter (c : Char) : Bool := c == ',' || c == ']' || c == '}'
+def boundary (xs : Chars) : Prop := xs.head?.all delimiter = true
 
 /-- One representation per member order; the scalar grammar used by parsed specs. -/
 inductive Ordered (key : String → List Nat) : Json → Prop
@@ -20,15 +20,15 @@ inductive Ordered (key : String → List Nat) : Json → Prop
   | obj {ms} : ms.Pairwise (fun a b => key a.1 < key b.1) →
       (∀ m ∈ ms, Ordered key m.2) → Ordered key (.obj ms)
 
-private def separated (f : α → Chars) (close : Char) (xs : List α) (rest : Chars) :=
+def separated (f : α → Chars) (close : Char) (xs : List α) (rest : Chars) :=
   [','].intercalate (xs.map f) ++ close :: rest
 
-private theorem splitElements {as bs : List α} {close : Char} (hc : delimiter close) (hnc : close ≠ ',')
+theorem splitElementsMap (g : α → β) {as bs : List α} {close : Char} (hc : delimiter close) (hnc : close ≠ ',')
     {f : α → Chars} (starts : ∀ a, ∃ c cs, f a = c :: cs ∧ c ≠ close)
     (read : ∀ a ∈ as, ∀ b ∈ bs, ∀ {X Y : Chars}, boundary X → boundary Y →
-      f a ++ X = f b ++ Y → a = b ∧ X = Y)
+      f a ++ X = f b ++ Y → g a = g b ∧ X = Y)
     {X Y : Chars} (eqn : separated f close as X = separated f close bs Y) :
-    as = bs ∧ X = Y := by
+    as.map g = bs.map g ∧ X = Y := by
   induction as generalizing bs with
   | nil =>
     cases bs with
@@ -51,13 +51,21 @@ private theorem splitElements {as bs : List α} {close : Char} (hc : delimiter c
         | nil => exact hc
         | cons x xs => rfl
       simp only [separated, map_cons, intercalate_comma, append_assoc] at eqn
-      obtain ⟨rfl, ht⟩ := read a mem_cons_self b mem_cons_self (bound as X) (bound bs Y) eqn
+      obtain ⟨eq, ht⟩ := read a mem_cons_self b mem_cons_self (bound as X) (bound bs Y) eqn
       have hrest : separated f close as X = separated f close bs Y := by
         cases as <;> cases bs <;> simp [tail, separated, intercalate_comma, hnc, Ne.symm hnc] at ht ⊢ <;> exact ht
-      obtain ⟨rfl, rfl⟩ := ih (fun a ha b hb => read a (mem_cons_of_mem _ ha) b (mem_cons_of_mem _ hb)) hrest
-      exact ⟨rfl, rfl⟩
+      obtain ⟨et, rfl⟩ := ih (fun a ha b hb => read a (mem_cons_of_mem _ ha) b (mem_cons_of_mem _ hb)) hrest
+      exact ⟨by simp only [map_cons, eq, et], rfl⟩
 
-private theorem primitive_boundary {a b X Y : Chars}
+private theorem splitElements {as bs : List α} {close : Char} (hc : delimiter close) (hnc : close ≠ ',')
+    {f : α → Chars} (starts : ∀ a, ∃ c cs, f a = c :: cs ∧ c ≠ close)
+    (read : ∀ a ∈ as, ∀ b ∈ bs, ∀ {X Y : Chars}, boundary X → boundary Y →
+      f a ++ X = f b ++ Y → a = b ∧ X = Y)
+    {X Y : Chars} (eqn : separated f close as X = separated f close bs Y) :
+    as = bs ∧ X = Y := by
+  simpa using splitElementsMap id hc hnc starts read eqn
+
+theorem primitive_boundary {a b X Y : Chars}
     (ha : ∀ c ∈ a, !delimiter c) (hb : ∀ c ∈ b, !delimiter c)
     (hx : boundary X) (hy : boundary Y) (h : a ++ X = b ++ Y) : a = b ∧ X = Y := by
   have stop {xs : Chars} (hb : boundary xs) : xs.takeWhile (fun c => !delimiter c) = [] := by
@@ -82,7 +90,7 @@ private theorem canon_neg (n : Nat) : (Json.int (.negSucc n)).canon.toList = '-'
 private theorem digit_ten {c : Char} {n : Nat} (h : c ∈ Nat.toDigits 10 n) : c.isDigit :=
   Nat.isDigit_of_mem_toDigits (by decide : 0 < 10) (by decide) h
 
-private theorem int_chars (i : Int) : ∀ c ∈ (Json.int i).canon.toList, !delimiter c := by
+theorem int_chars (i : Int) : ∀ c ∈ (Json.int i).canon.toList, !delimiter c := by
   cases i with
   | ofNat n => rw [canon_pos]; exact fun _ h => digit_safe (digit_ten h)
   | negSucc n =>
@@ -129,7 +137,7 @@ private theorem headKind_ordered {key j} (h : Ordered key j) (xs : Chars) :
   | arr ys => rw [canon_arr]; rfl
   | obj _ _ => simp only [Json.canon, String.toList_append]; rfl
 
-private theorem value_start (v : Json) (close : Char) (hc : delimiter close) :
+theorem value_start (v : Json) (close : Char) (hc : delimiter close) :
     ∃ c cs, v.canon.toList = c :: cs ∧ c ≠ close := by
   obtain ⟨c, cs, he, h⟩ := Json.canon_head v
   refine ⟨c, cs, he, ?_⟩
@@ -137,7 +145,7 @@ private theorem value_start (v : Json) (close : Char) (hc : delimiter close) :
   simp only [delimiter, Bool.or_eq_true, beq_iff_eq] at hc
   rcases hc with (rfl | rfl) | rfl <;> simp [jsonHead] at h
 
-private def sortedMembers (ms : List (String × Json)) := sortBy (fun kv : String × Json => utf16 kv.1) ms
+def sortedMembers (ms : List (String × Json)) := sortBy (fun kv : String × Json => utf16 kv.1) ms
 
 private theorem sortedMembers_perm {key : String → List Nat} {ms : List (String × Json)}
     (h : ms.Pairwise (fun a b => key a.1 < key b.1)) : sortedMembers ms ~ ms := by
@@ -153,7 +161,7 @@ private theorem object_text {key : String → List Nat} {ms : List (String × Js
   rw [canon_member_order hp.symm hn, canon_obj (show Sorted (fun kv => utf16 kv.1) (sortedMembers ms) from sortBy_sorted _ _)]
   simp [separated]
 
-private theorem quoted_prefix {s t : String} {X Y : Chars}
+theorem quoted_prefix {s t : String} {X Y : Chars}
     (h : (Json.str s).canon.toList ++ X = (Json.str t).canon.toList ++ Y) : s = t ∧ X = Y := by
   have e := Json.canon_prefix _ _ (show (Json.str s).Plain from trivial)
     (show (Json.str t).Plain from trivial) h

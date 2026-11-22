@@ -70,7 +70,24 @@ private def strip : Nat → Nat → Int → Nat × Int
   | fuel + 1, m, e =>
     if m != 0 && m % 10 == 0 then strip fuel (m / 10) (e + 1) else (m, e)
 
-private def zeros (n : Nat) : String := String.ofList (List.replicate n '0')
+def zeros (n : Nat) : String := String.ofList (List.replicate n '0')
+
+/-- ECMAScript decimal formatting of the shortest coefficient and exponent. -/
+def decimalText (negative : Bool) (m : Nat) (e : Int) : String := Id.run do
+  let ds := toString m
+  let pos : Int := ds.length + e
+  let sign := if negative then "-" else ""
+  if 0 < pos && pos ≤ 21 then
+    if pos ≥ ds.length then return sign ++ ds ++ zeros (pos - ds.length).toNat
+    else return sign ++ String.ofList (ds.toList.take pos.toNat) ++ "." ++
+      String.ofList (ds.toList.drop pos.toNat)
+  else if -6 < pos && pos ≤ 0 then
+    return sign ++ "0." ++ zeros (-pos).toNat ++ ds
+  else
+    let exp := pos - 1
+    let body := String.ofList (ds.toList.take 1) ++
+      (if ds.length == 1 then "" else "." ++ String.ofList (ds.toList.drop 1))
+    return sign ++ body ++ "e" ++ (if exp ≥ 0 then "+" else "-") ++ toString exp.natAbs
 
 /-- Canonical text uses the shortest roundtripping decimal and ECMAScript notation. -/
 def canon (n : Number) : String :=
@@ -83,20 +100,7 @@ def canon (n : Number) : String :=
     let k := if a < b then k₀ - 1 else k₀
     let (m, e) := shortest n p q k
     let (m, e) := strip 17 m e
-    let ds := toString m
-    let pos : Int := ds.length + e
-    let sign := if n.bits >>> 63 == 1 then "-" else ""
-    if 0 < pos && pos ≤ 21 then
-      if pos ≥ ds.length then return sign ++ ds ++ zeros (pos - ds.length).toNat
-      else return sign ++ String.ofList (ds.toList.take pos.toNat) ++ "." ++
-        String.ofList (ds.toList.drop pos.toNat)
-    else if -6 < pos && pos ≤ 0 then
-      return sign ++ "0." ++ zeros (-pos).toNat ++ ds
-    else
-      let exp := pos - 1
-      let body := String.ofList (ds.toList.take 1) ++
-        (if ds.length == 1 then "" else "." ++ String.ofList (ds.toList.drop 1))
-      return sign ++ body ++ "e" ++ (if exp ≥ 0 then "+" else "-") ++ toString exp.natAbs
+    return decimalText (n.bits >>> 63 == 1) m e
 
 end Number
 end Loops

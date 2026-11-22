@@ -1,7 +1,7 @@
 import Gen.Result
 import Gen.Payload
 import Gen.Tick
-import Loops.Tick
+import Loops.TickCheck
 
 namespace Gen.TickPayloadVectors
 open Loops
@@ -21,10 +21,6 @@ private def readBack (j : Json) : Except String J := do
     unless again.bytes sha256 == p.bytes sha256 do throw "second reading changed the bytes"
     return .obj [("payload", Records.ofJson (p.toJson sha256)), ("jcs", .str text)]
 
-private def fromRecords (s : Spec) (xs : List Record) : TickPayload :=
-  let ids (rs : List Record) := (rs.map Record.id).eraseDups.mergeSort
-  ⟨Rules.current, s, ids xs, ids (xs.filter (·.shown != .here)), s.run xs⟩
-
 private def parseSpec (j : Json) : Except String Spec :=
   (Spec.ofJson j).mapError fun f => s!"{f.code} at {f.path}"
 
@@ -40,7 +36,7 @@ def answer (input : Json) : Except String J := do
     let kvs ← Read.members? "input" ["op", "payload"] input
     let j ← Read.req "input" kvs "payload"
     if op == "payload" then return ← readBack j
-    match readTickMembers sha256 j with
+    match readTickMembers sha256 Rules.current j with
     | .error f => return fault f
     | .ok m => return .obj [("rules", .str m.rules.text), ("spec", Records.ofJson m.spec),
         ("result", Records.ofJson m.result), ("covers", Records.ofJson (tickIds m.covers)),
@@ -49,7 +45,7 @@ def answer (input : Json) : Except String J := do
     let kvs ← Read.members? "input" ["op", "spec", "records"] input
     let s ← parseSpec (← Read.req "input" kvs "spec")
     let records ← Read.records "input.records" (← Read.req "input" kvs "records")
-    let p := fromRecords s records
+    let p := makeTick s records
     let j := p.toJson sha256
     let .ok q := readTickPayload sha256 Rules.current j | throw "written payload refused"
     unless q.spec == s && q.covers == p.covers && q.withheld == p.withheld &&
@@ -117,12 +113,12 @@ private def tickRecord (id : RecordId) (p : TickPayload) : Except String Json :=
 
 private def cases (backupSpec : Json) : Except String (List (String × String × Json)) := do
   let s ← parseSpec backupSpec
-  let p := fromRecords s backups
+  let p := makeTick s backups
   let j := p.toJson sha256
-  let hidden := fromRecords s (backups.map fun rec => if rec.id == 1 then rec.withhold else rec)
-  let a := fromRecords s (backups.take 3)
-  let b := fromRecords s (backups.drop 3)
-  let jelly := fromRecords s (backups.filter fun r => r.get "svc" == some (.one (.str "jellyfin")))
+  let hidden := makeTick s (backups.map fun rec => if rec.id == 1 then rec.withhold else rec)
+  let a := makeTick s (backups.take 3)
+  let b := makeTick s (backups.drop 3)
+  let jelly := makeTick s (backups.filter fun r => r.get "svc" == some (.one (.str "jellyfin")))
   let two : Rules := ⟨2, by decide⟩
   let unreadable := change s.toJson "fold" (.obj [("next", .obj [("new-fold", .bool true)])])
   let empty := change s.toJson "fold" (.obj [])
@@ -147,13 +143,25 @@ private def cases (backupSpec : Json) : Except String (List (String × String ×
   let reverseMembers : Json → Json := fun j => match j with
     | .obj xs => .obj xs.reverse | x => x
   let groupSpec := change s.toJson "fold" (.obj [("small", .obj [("min", .str "mb"), ("by", .str "svc")])])
-  let groupPayload := (fromRecords (← parseSpec groupSpec) backups).toJson sha256
+  let groupPayload := (makeTick (← parseSpec groupSpec) backups).toJson sha256
   let groupResult := fun g m => Json.obj [("small", .obj [("groups", g), ("ungrouped", m), ("unread", .str "0")])]
   let keyedSpec := change s.toJson "fold" (.obj [("state", .obj [("latest-by", .str "of"), ("follow", .str "keys")])])
-  let keyedPayload := (fromRecords (← parseSpec keyedSpec) []).toJson sha256
+  let keyedPayload := (makeTick (← parseSpec keyedSpec) []).toJson sha256
   let badKeyed := Json.obj [("state", .obj [("unread", .str "0"), ("things", .obj [("task:1", .obj
     [("heads", .arr []), ("whole", .arr []), ("keys", .obj [("name", .null)])])])])]
+  let otherLabel := "res:" ++ base32 (sha256 (utf8 "loops/result-hash/v2:" ++ utf8 sampleResult.canon))
+  let newLabel := change (({p with rules := two}).toJson sha256) "result-hash" (.str otherLabel)
+  let repeatedSource := Json.obj [("store", .str "lab"), ("kind", .arr [.str "backup"]), ("store", .str "elsewhere")]
+  let repeatedSpec := change s.toJson "from" (.arr [repeatedSource])
+  let repeatedGroup := groupResult (.obj [("db.one", .obj [("unread", .str "0"), ("value", .null), ("value", .str "3")])]) (.str "0")
   let extra := [
+    ("write-nontaken", "tick.made", ← writeInput backupSpec (backups ++ [{backups.head! with id := 7, kind := "note"}])),
+    ("write-erased", "tick.withheld", ← writeInput backupSpec (backups.head!.erase :: backups.tail!)),
+    r "spec-repeated-source" (change j "spec" repeatedSpec),
+    r "result-repeated-group-value" (resultChange groupPayload repeatedGroup),
+    r "newer-result-label" newLabel,
+    ("newer-result-label-members", "tick.canonical", raw "members" newLabel),
+    r "current-wrong-result-label" (change j "result-hash" (.str otherLabel)),
     r "reordered-payload" (reverseMembers (change j "result" (reverseMembers sampleResult))),
     r "newer-rules-deferred" (resultChange newest (.arr [.str "future"])),
     ("shape-grouped-min", "tick.canonical", ← writeInput groupSpec backups),
@@ -163,7 +171,7 @@ private def cases (backupSpec : Json) : Except String (List (String × String ×
     r "result-repeated-slot" (resultChange j (add sampleResult "mb" (.obj [("unread", .str "0"), ("value", .str "1")])))]
   let faults := [
     r "kept-note" (specChange j p.rules (add s.toJson "note" (.str "kept"))),
-    r "omitted-fold" (specChange ((fromRecords (← parseSpec empty) []).toJson sha256) p.rules (drop empty "fold")),
+    r "omitted-fold" (specChange ((makeTick (← parseSpec empty) []).toJson sha256) p.rules (drop empty "fold")),
     r "unreadable-spec-fitting-hash" (specChange j p.rules unreadable),
     r "unreadable-spec-wrong-hash" (change j "spec" unreadable),
     r "rules-label-drift" (change j "rules" (.str "2")),
@@ -190,6 +198,7 @@ private def cases (backupSpec : Json) : Except String (List (String × String ×
     ("result-integer-number", slot "mb" (.obj [("value", .int 0), ("unread", .str "0")])),
     ("result-decimal-spelling", slot "mb" (.obj [("value", .str "-0"), ("unread", .str "0")])),
     ("result-negative-count", slot "runs" (.obj [("value", .str "-1"), ("unread", .str "0")])),
+    ("result-negative-zero-unread", slot "mb" (.obj [("value", .str "1027"), ("unread", .str "-0")])),
     ("result-negative-unread", slot "mb" (.obj [("value", .str "-1"), ("unread", .str "-1")])),
     ("result-disallowed-null", slot "mb" (.obj [("value", .null), ("unread", .str "0")])),
     ("result-id-spelling", slot "list" (.obj [("heads", .arr [.str "r:BAD"]), ("unread", .str "0")])),
