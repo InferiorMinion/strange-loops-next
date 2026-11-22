@@ -11,7 +11,7 @@ import Gen.Scenario
 import Gen.Rulings
 import Gen.ByteText
 import Gen.Result
-import Gen.Tick
+import Gen.TickPayload
 
 /-!
 # Gen: write the vectors
@@ -443,7 +443,7 @@ def main (args : List String) : IO UInt32 := do
   let results ← match Gen.ResultVectors.vectors with
     | .ok vs => pure vs
     | .error e => throw (IO.userError e)
-  let ticks ← IO.ofExcept Gen.Tick.vectors
+  let ticks ← IO.ofExcept Gen.TickPayloadVectors.vectors
   writeAll dir "tick" ticks
   writeAll dir "result" results
   IO.println s!"wrote {payloads.length + payloadRuns.length + count.length + latestBy.length + latest.length + sum.length + extrema.length + heads.length + views.length + selects.length + lens.length + records.length + specs.length + batches.length + realms.length + occurred.length + scenarios.length + rulingScenarios.length + Gen.ByteTextVectors.vectors.length + results.length + ticks.length} vectors to {dir}"

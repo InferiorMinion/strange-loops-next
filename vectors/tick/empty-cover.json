@@ -1,0 +1,73 @@
+{
+  "vector": "empty-cover",
+  "layer": "tick",
+  "laws": ["tick.canonical"],
+  "source": "model",
+  "input": {
+    "op": "write-payload",
+    "spec": {
+      "vertex": "backups",
+      "from": [
+        {
+          "store": "lab",
+          "kind": ["backup"]
+        }
+      ],
+      "fold": {
+        "runs": {
+          "count": true
+        },
+        "mb": {
+          "sum": "mb"
+        },
+        "list": {
+          "collect": true
+        }
+      }
+    },
+    "records": []
+  },
+  "expect": {
+    "payload": {
+      "rules": "1",
+      "spec": {
+        "vertex": "backups",
+        "from": [
+          {
+            "store": "lab",
+            "kind": ["backup"]
+          }
+        ],
+        "fold": {
+          "runs": {
+            "count": true
+          },
+          "mb": {
+            "sum": "mb"
+          },
+          "list": {
+            "collect": true
+          }
+        }
+      },
+      "spec-hash": "spec:gs9soetlnq1fqp17th66fedrl0oecag0uf101fm5ov2c46ss73ag",
+      "covers": [],
+      "result": {
+        "runs": {
+          "unread": "0",
+          "value": "0"
+        },
+        "mb": {
+          "unread": "0",
+          "value": "0"
+        },
+        "list": {
+          "heads": [],
+          "unread": "0"
+        }
+      },
+      "result-hash": "res:k6gok59g51hhjg6hc5km9lgqfb1h0um5llb09jck3rad74madmo0"
+    },
+    "jcs": "{\"covers\":[],\"result\":{\"list\":{\"heads\":[],\"unread\":\"0\"},\"mb\":{\"unread\":\"0\",\"value\":\"0\"},\"runs\":{\"unread\":\"0\",\"value\":\"0\"}},\"result-hash\":\"res:k6gok59g51hhjg6hc5km9lgqfb1h0um5llb09jck3rad74madmo0\",\"rules\":\"1\",\"spec\":{\"fold\":{\"list\":{\"collect\":true},\"mb\":{\"sum\":\"mb\"},\"runs\":{\"count\":true}},\"from\":[{\"kind\":[\"backup\"],\"store\":\"lab\"}],\"vertex\":\"backups\"},\"spec-hash\":\"spec:gs9soetlnq1fqp17th66fedrl0oecag0uf101fm5ov2c46ss73ag\"}"
+  }
+}

@@ -23,6 +23,80 @@ In brief:
 - The roadmap, the decisions, the changelog and the notes are published as a fifth design page, and the rethink and grammar pages are brought up to the rulings since 2026-11-13.
 - The full mutation catalogue ran over all 328 entries: 324 caught, two known survivors, and two new ones that are now caught. The full runner asks what the per-merge check asks.
 - `loops emit - --fill` fills each line of a changeset as a single emit would, so a collector can write anchored records.
+- Kyle ruled the tick record (TK1 to TK9; TK9 as a `rules` member bound into the spec's hash) and the order of work (W1 to W6), each for its recommendation. One new entry, TK10, comes from planning the build.
+- The tick record's first piece is in the model: the spec's hash under a rules version, and the window field `env.when` (!72). Rust is being built.
+- The tick record's second piece is in the model: a reader for a claimed result, and the tick's payload with its two readers.
+
+### The tick record, piece 2: the result reader and the payload, in the model
+
+The second of the seven pieces. Rust does not run its vectors yet.
+
+- **The payload** (TK1 to TK5, TK9). `model/Loops/Tick.lean`: the members `rules`, `spec`, `spec-hash`, `covers`, `result`, `result-hash`, and `withheld` only when not empty. The six-backups example is a vector with its full text: 6 runs, 1027 megabytes, `spec:gs9soetl…`.
+- **Two readers.** The first checks what no version of the rules changes: the members, the version's spelling, that `spec` is an object, the two id lists (sorted sets of record ids, `withheld` inside `covers` and never written empty), the spelling of both hashes, then that `spec-hash` fits the raw `spec` under the label `rules` names and `result-hash` fits the raw `result`. It parses no spec. The second is for the binary's own version: it parses the spec, requires its text to be that of its parsed form, and reads the result against the slots. For another version it answers which one; for a spec whose hash fits and that the parser refuses, it answers that it cannot read the spec.
+- **The result reader.** `readResult` in `model/Loops/Result.lean` reads a claimed result against a spec's slots: the shape of each fold type, integers as decimal text, ids as record ids. It does not ask whether the parts agree. A result that says 6 runs and lists 5 ids reads; the check of piece 3 will answer `differs` for it (TK10, row 4).
+- **Laws.** `tick.canonical`: what is written reads back, and whatever reads has one JCS text, reordered members included. `tick.record`: a spec reads a tick record by the payload reading and nothing more: `rules` and the hashes as text, `covers` and `withheld` as sets of ids, `spec` and `result` present with no value.
+- **Vectors.** 61 more in `vectors/tick/`, 72 in all: the example, an empty cover, an empty fold, each result shape, three ticks read by a spec (the TK6 example: count 3, 2 covering the first jellyfin backup, a sum of `result` that is 0 with 3 unread), a payload under rules 2, and one file for each single fault.
+
+**Implementer choices; they stand under Kyle's rulings of 2026-11-21 (TK7, W4, W7).**
+- **Seventeen refusal codes, each with the path of what broke:** `tick-not-object`, `tick-member-duplicate`, `tick-member-unknown`, `tick-member-missing`, `tick-rules-invalid`, `tick-spec-not-object`, `tick-ids-not-array`, `tick-id-invalid`, `tick-id-duplicate`, `tick-ids-unsorted`, `tick-withheld-empty`, `tick-withheld-outside`, `tick-hash-invalid`, `tick-spec-hash-mismatch`, `tick-result-hash-mismatch`, `tick-spec-noncanonical`, `tick-result-invalid`. One code serves both id lists and both hashes; the path says which. The plan had a code for each member; the worker built the shorter set and the coordinator kept it.
+- **The order for a payload with several faults** (inside this repository only, W4): not an object; a repeated member; an unknown member; the first missing member in the order `rules`, `spec`, `spec-hash`, `covers`, `result`, `result-hash`; the version; `spec` not an object; `covers`, then `withheld` (not an array, a bad id, a repeat, the order; then empty, then outside `covers`); the spelling of `spec-hash`, then of `result-hash`; the spec's hash; the result's hash. Then, for the binary's own version: the spec does not parse; its text is not its parsed form's; the result's shape, slot by slot in the spec's order.
+- **A result's ids read back as held.** The codec drops what a reader held of each listed id, so the reader gives each the same value and `tick.canonical` is stated up to that.
+- **The example's hashes are the vector's own.** The vector uses the model's fixed record ids, so its result hash (`res:7s24f6bt…`) is not the one in the proposal, which used the laptop's ids.
+- Rows 3 to 6 of TK10 are built as recommended and are Kyle's to rule.
+- No mutation-catalogue entry is added (W5).
+
+A Codex worker wrote it; the coordinator reviewed it, ran the gates and recomputed the example's two hashes.
+
+### The tick record, piece 1: the spec's hash and `env.when`, in the model
+
+The plan for the tick record has seven pieces: (1) the spec's hash and the window field, (2) the result reader and the tick's payload, (3) the claim and the check, (4) the protocol text, (5) the Rust codec, (6) the Rust check, (7) the CLI verbs and the two-machine exit test. This is the first, in the model (!72). Rust for it is being built.
+
+- **The spec's hash** (TK3, TK9). `model/Loops/SpecHash.lean`: a rules version, the label `loops/spec-hash/v<rules>:`, and `spec:` + base32hex of SHA-256 over the label and the JCS text. It is taken of a raw JSON member, so a check can verify it before parsing the spec, and of a parsed spec. The `backups` example hashes to `spec:gs9soetl…`, as the proposal computed by hand.
+- **The window field** (TK8). `env.when` in a `where`: a record's `occurred` when it states one, else the instant of its `emitted`. It is always present and is read from the envelope, so also on a record held without its payload.
+- **Laws.** `spec.hash`: two parsed specs have the same hash input exactly when the rules version is the same and they differ only in the order of their slots, of a `where`'s fields, or of a field's operators; such specs give the same result bytes. `spec.no-commit` and `spec.no-result`: a spec's hash input is never a record's commitment input or a result's. `window.span` and `window.heads`: what `env.when` reads, and that a window filters the heads, so a revision outside the window still replaces a record inside it.
+- **Vectors.** Eleven in `vectors/tick/`: the example hash; member order giving one hash; source order, kind order, a renamed vertex or store, and the rules version each giving another; a dropped `note`; the label's bytes; and two window cases. A backfilled store counts 0 by `env.occurred`, 8 by `env.emitted` and 1 by `env.when` for the same day.
+
+**Implementer choices; they stand under Kyle's ruling of 2026-11-21 (W7) unless noted.**
+- **A rules version is a positive whole number as decimal text**, compared as a number. This one is row 5 of TK10 and is his to rule.
+- **The vectors are published with the model**, before Rust runs them. The Rust vector test and the JavaScript check each name the one directory `tick`, pin its file count and print that they do not run it; every other unknown directory still fails. Rust's exemption goes when its piece merges. The plan would have held the vectors back until then; publishing them lets margins-claude's Python start from them.
+- **Reading a carried key later is not a change of rules.** A tick carries the parsed form, which drops carried keys, so earlier ticks keep their meaning. `protocol/spec.md` says so.
+- **`env.when` is a test field only.** `"by": "env.when"` is refused.
+- **The window's laws are named `window.span` and `window.heads`.**
+- **The fuzz does not generate `env.when`.** Its field names come from a fixed list. Given by hand to the frozen JavaScript, a spec with `env.when` is refused `where-invalid`, which is what W3 means: the three-way fuzz stays on the vocabulary all three share.
+- No mutation-catalogue entry is added (W5).
+
+A Codex worker planned the seven pieces and wrote this one; the coordinator reviewed it, ran the gates and recomputed the 17 hashes of the vectors in Python.
+
+### Ruled by Kyle, 2026-11-21: the tick record and the order of work
+
+Each was an entry in `DECISIONS.md`, with an example. Kyle ruled for the recommendation every time. The rulings reached the coordinator through Neon, which Kyle told in its own session to send them. Kyle confirmed them in the coordinator's session the same evening, by asking for this record to be merged.
+The entries as they were put are kept in [the tick record note](notes/2026-11-21-tick-record.md#10-the-questions-as-they-were-put) and [the order-of-work note](notes/2026-11-21-order-of-work.md).
+
+**The tick record, TK1 to TK9.** The exact form is in [the note](notes/2026-11-21-tick-record.md), sections 1 to 6. Not built yet.
+1. A tick is an ordinary record of kind `tick`. Its payload is the whole tick, and it has no id but its record id.
+2. It carries its result and the result's hash.
+3. It carries its spec as parsed, and the spec's hash. The store names in `from` select nothing in a tick.
+4. `covers` lists every record that was folded, each id once. A tick among them is one record and is never opened up.
+5. `withheld` lists the covered records read without a payload, and is left out when empty.
+6. A later spec reads a tick by the payload reading and nothing more. A total across ticks is not in step 4.
+7. A verb checks a tick and answers `same`, `differs` or `cannot check`. No store refuses a tick on import or sync.
+8. The window field is `env.when`.
+9. A member `rules` states the version of the rules, and the label of the spec's hash is made from it (option D). With it:
+   - The rules are everything between the covered records and the result's bytes: settling, admission, what a source takes, the tests, the folds and the payload reading.
+   - A new fold type or test does not raise the number. A binary that cannot parse a spec whose hash fits answers "cannot check: this binary cannot read the spec". A fault in one implementation is not a change of rules.
+   - For a tick made under older rules, the check also says what today's rules give, the same result or another.
+
+   Neon's addition for the build: the check verifies `spec-hash` over the spec's JCS text before parsing it; a spec that parses and is not in its parsed form is not a tick.
+
+**The order of work, W1 to W6.**
+- **W1.** An adoption step comes after ticks and before standing. Its pieces that touch only the CLI (`ls`, the prefix scan, the plain view, reads across stores, the shadow import) are built beside the tick work. The caching reader's law (issue #8) leaves step 4 and is stated when a caching reader is built; this amends the ruling of 2026-11-11 that it is step 4's first law. Reads across stores take the union of the named stores first.
+- **W2.** A cache of which segments were checked, in the adoption step.
+- **W3.** The JavaScript is frozen at what it has, as a trial for step 4: ticks are built in Lean and Rust. It keeps passing its vectors. Looked at again when ticks are done. The workbench page will use the Rust core compiled for the browser.
+- **W4.** One refusal for every input, in the order the model checks; the implementer picks the order and notes it here. The protocol text and the vectors of a new step pin one fault each. The orders already pinned for records and specs stay.
+- **W5.** The mutant check on every merge request stays. Step 4's mutants are added after its exit.
+- **W6.** `out/` stays committed.
+
+Open in `DECISIONS.md`: TK10, six details of the check that the plan for the build found.
 
 ### A changeset can ask for the filler: `loops emit - --fill`
 

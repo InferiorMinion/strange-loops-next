@@ -22,7 +22,9 @@ Every file has the same envelope:
 
 ## `tick`
 
-The 11 files cover spec identity and the window field. Under `input.op = "hash"` each sample supplies a spec and a rules version. Its answer gives the parsed JCS text, the hash of that text and the hash of the raw member under that version. The `domains` case exposes the label bytes and the bytes that distinguish the spec preimage from commitment and result preimages. The `window` cases run the supplied spec over reader records and return its canonical result object.
+The first 11 files cover spec identity and the window field. Under `input.op = "hash"` each sample supplies a spec and a rules version. Its answer gives the parsed JCS text, the hash of that text and the hash of the raw member under that version. The `domains` case exposes the label bytes and the bytes that distinguish the spec preimage from commitment and result preimages. The `window` cases run the supplied spec over reader records and return its canonical result object.
+
+The payload fixtures use `write-payload` to run the supplied spec on the supplied records, write the payload and read its JCS text back. The expected payload includes both hashes. With `payload`, the supplied member values are read directly, including single-fault examples and well-formed claims whose numbers and ids do not agree. The `payload-text` cases carry the original JSON text so that a fixture parser preserves duplicate names. With `members`, only the shared wire shape and hashes are checked, even for an unfamiliar rules version. The `fields` and `read-ticks` operations project held tick payloads and exercise a spec over three tick records.
 
 The model recomputes each answer with `lake exe run --check`. Rust runs all 11 fixtures, while JavaScript (W3) only checks their count.
 

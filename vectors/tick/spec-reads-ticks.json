@@ -1,0 +1,248 @@
+{
+  "vector": "spec-reads-ticks",
+  "layer": "tick",
+  "laws": ["tick.record"],
+  "source": "model",
+  "input": {
+    "op": "read-ticks",
+    "spec": {
+      "vertex": "ticks",
+      "from": [
+        {
+          "store": "lab",
+          "kind": ["tick"]
+        }
+      ],
+      "fold": {
+        "ticks": {
+          "count": true
+        },
+        "jellyfin": {
+          "count": true,
+          "where": {
+            "covers": {
+              "is": "r:000000000000000000000000000000000000000000000000000g"
+            }
+          }
+        },
+        "by-record": {
+          "count": true,
+          "by": "covers"
+        },
+        "by-spec": {
+          "count": true,
+          "by": "spec-hash"
+        },
+        "total": {
+          "sum": "result"
+        }
+      }
+    },
+    "ticks": [
+      {
+        "record": {
+          "id": "r:0000000000000000000000000000000000000000000000000080",
+          "kind": "tick",
+          "observer": "sl:laptop",
+          "about": [],
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z"
+        },
+        "payload": {
+          "rules": "1",
+          "spec": {
+            "vertex": "backups",
+            "from": [
+              {
+                "store": "lab",
+                "kind": ["backup"]
+              }
+            ],
+            "fold": {
+              "runs": {
+                "count": true
+              },
+              "mb": {
+                "sum": "mb"
+              },
+              "list": {
+                "collect": true
+              }
+            }
+          },
+          "spec-hash": "spec:gs9soetlnq1fqp17th66fedrl0oecag0uf101fm5ov2c46ss73ag",
+          "covers": ["r:000000000000000000000000000000000000000000000000000g", "r:0000000000000000000000000000000000000000000000000010", "r:000000000000000000000000000000000000000000000000001g"],
+          "result": {
+            "runs": {
+              "unread": "0",
+              "value": "3"
+            },
+            "mb": {
+              "unread": "0",
+              "value": "503"
+            },
+            "list": {
+              "heads": ["r:000000000000000000000000000000000000000000000000001g", "r:0000000000000000000000000000000000000000000000000010", "r:000000000000000000000000000000000000000000000000000g"],
+              "unread": "0"
+            }
+          },
+          "result-hash": "res:5fuur0vcja566g5suk173v5o2di64mrvkreg7oa1al8mej0l5n50"
+        }
+      },
+      {
+        "record": {
+          "id": "r:000000000000000000000000000000000000000000000000008g",
+          "kind": "tick",
+          "observer": "sl:laptop",
+          "about": [],
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z"
+        },
+        "payload": {
+          "rules": "1",
+          "spec": {
+            "vertex": "backups",
+            "from": [
+              {
+                "store": "lab",
+                "kind": ["backup"]
+              }
+            ],
+            "fold": {
+              "runs": {
+                "count": true
+              },
+              "mb": {
+                "sum": "mb"
+              },
+              "list": {
+                "collect": true
+              }
+            }
+          },
+          "spec-hash": "spec:gs9soetlnq1fqp17th66fedrl0oecag0uf101fm5ov2c46ss73ag",
+          "covers": ["r:0000000000000000000000000000000000000000000000000020", "r:000000000000000000000000000000000000000000000000002g", "r:0000000000000000000000000000000000000000000000000030"],
+          "result": {
+            "runs": {
+              "unread": "0",
+              "value": "3"
+            },
+            "mb": {
+              "unread": "0",
+              "value": "524"
+            },
+            "list": {
+              "heads": ["r:0000000000000000000000000000000000000000000000000030", "r:000000000000000000000000000000000000000000000000002g", "r:0000000000000000000000000000000000000000000000000020"],
+              "unread": "0"
+            }
+          },
+          "result-hash": "res:te94r9n9r9vl7j0onm1hs03ns0mlsvikp4puev2rlqv6lsj73nq0"
+        }
+      },
+      {
+        "record": {
+          "id": "r:0000000000000000000000000000000000000000000000000090",
+          "kind": "tick",
+          "observer": "sl:laptop",
+          "about": [],
+          "prev": [],
+          "emitted": "2026-10-01T00:00:00Z"
+        },
+        "payload": {
+          "rules": "1",
+          "spec": {
+            "vertex": "backups",
+            "from": [
+              {
+                "store": "lab",
+                "kind": ["backup"]
+              }
+            ],
+            "fold": {
+              "runs": {
+                "count": true
+              },
+              "mb": {
+                "sum": "mb"
+              },
+              "list": {
+                "collect": true
+              }
+            }
+          },
+          "spec-hash": "spec:gs9soetlnq1fqp17th66fedrl0oecag0uf101fm5ov2c46ss73ag",
+          "covers": ["r:000000000000000000000000000000000000000000000000000g", "r:0000000000000000000000000000000000000000000000000020"],
+          "result": {
+            "runs": {
+              "unread": "0",
+              "value": "2"
+            },
+            "mb": {
+              "unread": "0",
+              "value": "831"
+            },
+            "list": {
+              "heads": ["r:0000000000000000000000000000000000000000000000000020", "r:000000000000000000000000000000000000000000000000000g"],
+              "unread": "0"
+            }
+          },
+          "result-hash": "res:1p07e007t9ipjoqtkb2ch3sgq0pvopqtvlr1ecnj6cbr837r443g"
+        }
+      }
+    ]
+  },
+  "expect": {
+    "ticks": {
+      "unread": "0",
+      "value": "3"
+    },
+    "jellyfin": {
+      "unread": "0",
+      "value": "2"
+    },
+    "by-record": {
+      "groups": {
+        "r:000000000000000000000000000000000000000000000000000g": {
+          "unread": "0",
+          "value": "2"
+        },
+        "r:0000000000000000000000000000000000000000000000000010": {
+          "unread": "0",
+          "value": "1"
+        },
+        "r:000000000000000000000000000000000000000000000000001g": {
+          "unread": "0",
+          "value": "1"
+        },
+        "r:0000000000000000000000000000000000000000000000000020": {
+          "unread": "0",
+          "value": "2"
+        },
+        "r:000000000000000000000000000000000000000000000000002g": {
+          "unread": "0",
+          "value": "1"
+        },
+        "r:0000000000000000000000000000000000000000000000000030": {
+          "unread": "0",
+          "value": "1"
+        }
+      },
+      "ungrouped": "0",
+      "unread": "0"
+    },
+    "by-spec": {
+      "groups": {
+        "spec:gs9soetlnq1fqp17th66fedrl0oecag0uf101fm5ov2c46ss73ag": {
+          "unread": "0",
+          "value": "3"
+        }
+      },
+      "ungrouped": "0",
+      "unread": "0"
+    },
+    "total": {
+      "unread": "3",
+      "value": "0"
+    }
+  }
+}

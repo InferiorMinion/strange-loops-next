@@ -132,9 +132,11 @@ def resultLabel : String := "loops/result-hash/v1:"
 /-- What the result hash covers: the label, then the canonical bytes. -/
 def resultPreimage (r : List (String × SlotValue)) : List UInt8 := utf8 resultLabel ++ resultBytes r
 
-/-- The result hash as text: `res:` and base32hex of `H` over the preimage. The
-vectors use SHA-256. -/
-def resultHash (H : Hash) (r : List (String × SlotValue)) : String := "res:" ++ base32 (H (resultPreimage r))
+/-- Hash a supplied result member before interpreting its slot vocabulary. -/
+def resultHashOf (H : Hash) (j : Json) : String :=
+  "res:" ++ base32 (H (utf8 resultLabel ++ utf8 j.canon))
+
+def resultHash (H : Hash) (r : List (String × SlotValue)) : String := resultHashOf H (resultJson r)
 
 /-! ## What `shown` is -/
 
@@ -159,5 +161,106 @@ def SlotValue.unshown : SlotValue → SlotValue
 /-- A whole result with `shown` set aside in every slot. -/
 def unshownResult (r : List (String × SlotValue)) : List (String × SlotValue) :=
   r.map fun p => (p.1, p.2.unshown)
+
+/-! ## Reading the result for a spec -/
+
+/-- Decode exactly the canonical text of a 32-byte record id. -/
+def recordIdOf? (j : Json) : Option RecordId := do
+  let .str s := j | none
+  let 'r' :: ':' :: chars := s.toList | none
+  let bs ← unbase32 (String.ofList chars)
+  if h : bs.length = 32 then
+    some ⟨bs.foldl (fun n b => 256 * n + b.toNat) 0, bytes_bounded bs h⟩
+  else none
+
+namespace ResultReader
+
+/-- A failure identifies the position in the supplied result. -/
+abbrev Read := Except String
+
+def member (p k : String) := memberPath (some p) k
+
+def object (p : String) : Json → Read (List (String × Json))
+  | .obj kvs => if (kvs.map Prod.fst).Nodup then pure kvs else throw p
+  | _ => throw p
+
+def fixed (p : String) (names : List String) (j : Json) : Read (List (String × Json)) := do
+  let kvs ← object p j
+  if let some (k, _) := kvs.find? (fun kv => !names.contains kv.1) then throw (member p k)
+  if let some k := names.find? (fun k => (kvs.lookup k).isNone) then throw (member p k)
+  return kvs
+
+def get (p : String) (kvs : List (String × Json)) (k : String) (f : String → Json → Read α) : Read α := do
+  let path := member p k
+  let some j := kvs.lookup k | throw path
+  f path j
+
+def required (p : String) : Option α → Read α
+  | some x => .ok x
+  | none => .error p
+
+def nat (p : String) : Json → Read Nat
+  | .str s => required p (natOf? s.toList)
+  | _ => throw p
+
+def integer (p : String) : Json → Read Int
+  | .str s => required p (intOf? s)
+  | _ => throw p
+
+def optInt (p : String) : Json → Read (Option Int)
+  | .null => pure none
+  | j => some <$> integer p j
+
+def ids (p : String) : Json → Read (List (RecordId × Shown))
+  | .arr xs => xs.zipIdx.mapM fun (j, i) => do
+      let id ← required s!"{p}[{i}]" (recordIdOf? j)
+      return (id, .here)
+  | _ => throw p
+
+def named (f : String → Json → Read α) (p : String) (j : Json) : Read (List (String × α)) := do
+  let kvs ← object p j
+  kvs.mapM fun (k, v) => do return (k, ← f (member p k) v)
+
+def group (ty : FoldType) (p : String) (j : Json) : Read GroupValue := do
+  let name := match ty with | .collect .. => "heads" | _ => "value"
+  let kvs ← fixed p ["unread", name] j
+  let u ← get p kvs "unread" nat
+  match ty with
+  | .count _ => return .nat ⟨← get p kvs "value" nat, u⟩
+  | .sum .. => return .int ⟨← get p kvs "value" integer, u⟩
+  | .min .. | .max .. => return .opt ⟨← get p kvs "value" optInt, u⟩
+  | .collect .. => return .heads (← get p kvs "heads" ids) u
+  | .latestBy _ => throw p
+
+def keyed (p : String) (j : Json) : Read KeyedView := do
+  let kvs ← fixed p ["heads", "keys", "whole"] j
+  let heads ← get p kvs "heads" ids
+  let keys ← get p kvs "keys" (named ids)
+  let whole ← get p kvs "whole" ids
+  return ⟨keys, whole, heads⟩
+
+def slot (s : Slot) (p : String) (j : Json) : Read SlotValue := do
+  if s.group.isSome then
+    let kvs ← fixed p ["groups", "ungrouped", "unread"] j
+    let gs ← get p kvs "groups" (named (group s.type))
+    let m ← get p kvs "ungrouped" nat
+    return .groups gs (← get p kvs "unread" nat) m
+  if let .latestBy follow := s.type then
+    let kvs ← fixed p ["things", "unread"] j
+    let u ← get p kvs "unread" nat
+    match follow with
+    | .prev => return .things (← get p kvs "things" (named ids)) u
+    | .keys => return .keyed (← get p kvs "things" (named keyed)) u
+  return match ← group s.type p j with
+    | .nat r => .nat r | .int r => .int r | .opt r => .opt r | .heads hs u => .heads hs u
+
+end ResultReader
+
+/-- Reconstruct the result in spec slot order. Listed records have no wire
+visibility and are represented with `shown = here`. Array order is retained. -/
+def readResult (s : Spec) (j : Json) : Except String (List (String × SlotValue)) := do
+  let kvs ← ResultReader.fixed "result" (s.slots.map Slot.name) j
+  s.slots.mapM fun slot => do
+    return (slot.name, ← ResultReader.get "result" kvs slot.name (ResultReader.slot slot))
 
 end Loops

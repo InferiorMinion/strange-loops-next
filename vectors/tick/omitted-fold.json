@@ -1,0 +1,29 @@
+{
+  "vector": "omitted-fold",
+  "layer": "tick",
+  "laws": ["tick.canonical"],
+  "source": "model",
+  "input": {
+    "op": "payload",
+    "payload": {
+      "rules": "1",
+      "spec": {
+        "vertex": "backups",
+        "from": [
+          {
+            "store": "lab",
+            "kind": ["backup"]
+          }
+        ]
+      },
+      "spec-hash": "spec:upnipfvq13isrfa5kut8dg0qku8aa5ou64dul54iknm7jmkjb0o0",
+      "covers": [],
+      "result": {},
+      "result-hash": "res:hhnn0ccfr2ajppo8rt3l4vgiou407aaahe9o73nhclfecl5aet0g"
+    }
+  },
+  "expect": {
+    "refused": "tick-spec-noncanonical",
+    "path": "spec"
+  }
+}

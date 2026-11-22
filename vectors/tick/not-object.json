@@ -1,0 +1,14 @@
+{
+  "vector": "not-object",
+  "layer": "tick",
+  "laws": ["tick.canonical"],
+  "source": "model",
+  "input": {
+    "op": "payload",
+    "payload": []
+  },
+  "expect": {
+    "refused": "tick-not-object",
+    "path": ""
+  }
+}

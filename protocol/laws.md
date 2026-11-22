@@ -242,6 +242,15 @@ No law yet states the whole-view slot incrementally, and `admit.late` still boun
 | `spec.no-commit` | `specPreimage_ne_commit` | For every version and JSON member, byte 17 of the preimage is `v`. A record commitment has exactly 16 bytes of salt followed by JCS, which cannot start with `v`. | `tick/preimage-domains` |
 | `spec.no-result` | `specPreimage_ne_result` | Byte seven of every spec preimage is `s` and byte seven of every result preimage is `r`. The two inputs to the hash are disjoint. | `tick/preimage-domains` |
 
+## The tick payload (`model/Laws/Tick.lean`, `model/Laws/TickRead.lean`)
+
+| Law | Theorem | Says | Vectors |
+|---|---|---|---|
+| `tick.canonical` | `TickPayload.read_members`, `TickPayload.read_written`, `readTickMembers_text`, `readTickPayload_text`, `readResult_written`, `readResult_text` | With 32-byte digests for the two supplied preimages, strictly increasing id lists and every withheld id covered, the writer's raw members read back under any stated version. Under that version, a fitting parsed spec and one matching result per slot in spec order read back with every listed id's visibility set to `here`. The matching shapes have distinct map names. Conversely, a successful member or payload read re-encodes to the input's JCS text, for any hash function. A result read on its own has the same text property when slot names are distinct. | `tick/six-backups`, `tick/empty-cover`, `tick/empty-fold`, `tick/reordered-payload`, `tick/unreconciled-result`, `tick/newer-rules-members`, `tick/kept-note`, `tick/unreadable-spec-fitting-hash`, `tick/unreadable-spec-wrong-hash` |
+| `tick.record` | `TickPayload.record_fields` | Reading a held tick opening gives text for `rules` and the two hashes, the listed id texts for `covers` and a nonempty `withheld`, and a present field with no scalar value for `spec` and `result`. Empty `withheld` is absent. The projection holds for every envelope and salt. | `tick/tick-field-reading`, `tick/spec-reads-ticks` |
+
+The reference SHA-256 supplies both digest widths by `Gen.sha256_length`. No collision property is assumed.
+
 ## The canonical result (`model/Laws/Result.lean`)
 
 [`result.md`](result.md) is the codec: a vertex's whole result as JCS text with every integer a decimal string and every listed record its id alone, and the hash of that text framed by `loops/result-hash/v1:`. These are its laws.

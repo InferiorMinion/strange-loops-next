@@ -1,0 +1,48 @@
+{
+  "vector": "result-key-ids-not-array",
+  "layer": "tick",
+  "laws": ["tick.canonical"],
+  "source": "model",
+  "input": {
+    "op": "payload",
+    "payload": {
+      "rules": "1",
+      "spec": {
+        "vertex": "backups",
+        "from": [
+          {
+            "store": "lab",
+            "kind": ["backup"]
+          }
+        ],
+        "fold": {
+          "state": {
+            "latest-by": "of",
+            "follow": "keys"
+          }
+        }
+      },
+      "spec-hash": "spec:03e34d83dg86of5dqdvg3jgek2if0fg2ndgj2djbi87j4vagc020",
+      "covers": [],
+      "result": {
+        "state": {
+          "unread": "0",
+          "things": {
+            "task:1": {
+              "heads": [],
+              "whole": [],
+              "keys": {
+                "name": null
+              }
+            }
+          }
+        }
+      },
+      "result-hash": "res:ke41i6807j1qj659gmp79tq0l5qprfaujb4bc7d1p8k1c42v8gcg"
+    }
+  },
+  "expect": {
+    "refused": "tick-result-invalid",
+    "path": "result.state.things.task:1.keys.name"
+  }
+}
