@@ -18,7 +18,9 @@ loops emit <kind> [field=text | field:=json]... ["message"]
       [--of <thing>] [--about <thing>]... [--no-about] [--prev <id>]...
       [--erases <id>]... [--occurred <when> | --no-occurred] [--under <id>]
       [--sets <key>]... [--sets-nothing] [--whole]
-loops emit - [--fill]               read one JSONL changeset from stdin
+      [--base <tick-id>] [--base-id <id>]...
+loops emit - [--fill [--base <tick-id>] [--base-id <id>]...]
+                                    read one JSONL changeset from stdin
                                     --fill applies the single-emit filler to each line
 loops get <id>                      one record
 loops of <thing>                    a thing's values, its about, its heads, how many records are of it
@@ -26,7 +28,7 @@ loops read <vertex> [--values]      fold .loops/vertices/<vertex>.json
 loops fold <spec.json | -> [--values]
                                     fold a spec given as a file
 loops tick <vertex | spec-file | -> [emit envelope flags]
-                                    write a tick over everything held (no time cut, id cut or slice)
+                                    write a tick over everything held, with an optional base for its envelope
 loops tick --check <id>             check a tick against this store and print the verdict and reports
 loops erase <id>... ["why"]         emit an erasure, and drop the openings held here
 loops export [--kind <k>] [--of <thing>] [--about <thing>]
@@ -58,8 +60,10 @@ loops whoami
 * `--sets` names a key the emit sets; see choice 10. An emit of a thing the
   store holds a record of sets the fields it names, unless `--sets`,
   `--sets-nothing` or `--whole` states otherwise; see choice 15.
-* An emit of a thing names in `prev` every live record of that thing the
-  store holds, beside any `--prev`; see choice 11.
+* Without a base, the writer claims to have read everything held. With a base,
+  the filler starts from the tick cover, the literal ids and any stated
+  `--prev`. It follows held predecessors within the thing and adds that
+  view's live records to the stated `prev` (choices 11 and 23).
 * An emit of a thing carries the thing's whole `about`, copied from its heads
   unless `--about` or `--no-about` states it; see choices 12 and 13.
 * An emit copies `occurred` when every head states the same text, unless
@@ -421,6 +425,51 @@ Every verb that reads the store says when either happened (choice 18).
     id gives `{"answer":"same","closure":"yes","taken-not-covered":0}`.
     Emit a seventh backup and check that id again. The verdict is still
     `same` and `taken-not-covered` is now 1.
+
+23. **A writer can state what it read.** `--base T` selects the ids in
+    tick T's `covers`. Each `--base-id R` selects one record, including a
+    tick as an ordinary envelope. Both take a full id or unique held prefix.
+    The base is the union of one optional tick cover and all literal ids.
+    This implements option C of [TK11](../DECISIONS.md#tk11-a-write-against-a-base-that-does-not-hold-what-is-under-it),
+    pending the owner's ruling.
+
+    The marker must have kind `tick` and a locally accessible opening.
+    Read its common members under the checker’s current rules. A marker
+    from another version can supply its cover. Each listed envelope must be
+    held, even for records of another thing. A missing envelope gives
+    `id-unknown` with its id. An unavailable marker opening gives exit 1
+    with `the tick's payload is not held`. Covered openings can be absent.
+
+    For the thing being written, add any stated `prev` targets to the
+    selection, then follow `prev` through held envelopes of that thing.
+    A missing ancestor ends that path. A stated target stays in the
+    envelope even when another record in the effective base is above it.
+    Settle and admit inside the resulting set. The filler names its live
+    records, derives `sets` there, and copies mentions and agreed occurrence
+    from its heads. Explicit links and field overrides work as before. A
+    stated predecessor can supply `of` from the writer's full lookup. In
+    a filled changeset the same starting selection applies throughout. Add
+    earlier prepared forms before taking the closure for each line.
+    Tick writes use the base for their envelope and fold the whole holding.
+
+    Suppose a marker covers the original `status` setter of `task:42`. A
+    peer then changes that status. Writing `loops emit task --of task:42
+    status=done --base T` names the original setter and leaves the peer and
+    the new emit as heads. `loops of task:42` shows both status setters.
+
+    If X sets port and owner and Y changes port over X, `--base-id Y`
+    includes X under Y. An emit changing either key names both. After the
+    append stderr says `the base did not show 1 record that this emit names`.
+    If the tick covered neither X nor Y and the writer states `--prev Y`,
+    the emit names both and the count is 2. The count includes each distinct
+    id in the written `prev` outside the tick cover and literal ids, including
+    stated targets and earlier changeset lines. Dead ancestors that the emit
+    leaves unnamed cost no notice. When the effective base has no record of
+    the thing, stderr says `the base covers no record of <thing>`. If all its
+    records of the thing fail admission, stderr says `no record of <thing>
+    in the base is admitted`. Covered ticks contribute only their own
+    envelopes. These notices follow a successful write; conflict policy
+    remains open for step 3.
 
 ## Checked by
 

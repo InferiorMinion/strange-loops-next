@@ -15,7 +15,7 @@ use loops::{
     spec::Spec,
     spec_hash::Rules,
     things,
-    tick::make_tick,
+    tick::{make_tick, read_tick_members},
     tick_check::{TickAnswer, TickSubject, check_tick, tick_open},
 };
 use loops_place::{
@@ -42,17 +42,19 @@ usage: loops [-C <dir>] <verb> ...
        [--of <thing>] [--about <thing>]... [--no-about] [--prev <id>]...
        [--erases <id>]... [--occurred <when> | --no-occurred] [--under <id>]
        [--sets <key>]... [--sets-nothing] [--whole]
-                                a revision without --of is of what it replaces;
-                                an emit names every live record of its thing
-                                held here, and copies its heads' about unless
-                                --about or --no-about states it; it copies
-                                occurred when every head states the same text
-                                unless --occurred states another or
-                                --no-occurred states none; an emit of a thing
-                                held here sets the fields it names unless
-                                --sets, --sets-nothing or --whole states it
-  emit - [--fill]               read one JSONL changeset from stdin
-                                --fill applies the single-emit filler to each line
+       [--base <tick-id>] [--base-id <id>]...
+                                a revision without --of is of what it replaces
+                                by default the writer claims to have read everything held
+                                --base selects a tick's covers
+                                each --base-id adds a record to the selection
+                                include stated prev targets, then follow held prev within the thing
+                                add the thing's live records to prev and copy its heads' about
+                                copy occurred when every head states the same text
+                                the about and occurred flags override copying
+                                for a thing held in that view, set the payload keys unless stated
+  emit - [--fill [--base <tick-id>] [--base-id <id>]...]
+                                read one JSONL changeset from stdin
+                                --fill uses one base plus earlier prepared lines
   get <id>                      one record
   of <thing>                    a thing's values, each key's from its live
                                 setters; its about, its heads, and how many
@@ -64,7 +66,8 @@ usage: loops [-C <dir>] <verb> ...
                                 held payloads to collect and prev entries,
                                 and about and values to keyed things
   tick <vertex | spec-file | -> [emit envelope flags]
-                                write a tick over everything held (no time cut, id cut or slice)
+                                write a tick over everything held
+                                a base selects only the tick's envelope anchor
   tick --check <id>             check a tick against this store and print the verdict and reports
   erase <id>... [\"why\"]         emit an erasure, and drop the openings held here
   export [--kind <k>] [--of <thing>] [--about <thing>]   stored lines, oldest first
@@ -323,29 +326,98 @@ fn write_changeset(
     Ok(lines)
 }
 
+fn base_forms(held: &Held, selector: draft::BaseArgs) -> Result<Vec<Record>, Fail> {
+    let mut records = Vec::new();
+    let mut seen = std::collections::HashSet::new();
+    if let Some(given) = selector.tick {
+        let id = one_id(held, &given)?;
+        let line = held
+            .line(&id)
+            .ok_or_else(|| refused(format!("id-unknown: {id}")))?;
+        if line.env().kind != "tick" {
+            return Err(refused("tick-kind at kind"));
+        }
+        let payload = line
+            .payload()
+            .filter(|_| tick_open(&held_forms(held), &line.record().id))
+            .ok_or_else(|| refused("the tick's payload is not held"))?;
+        let members = read_tick_members(&hash, &Rules::current(), payload)
+            .map_err(|e| refused(format!("{} at {}", e.code(), e.path)))?;
+        for digest in members.covers() {
+            let covered = id_text(digest);
+            let line = held
+                .line(&covered)
+                .ok_or_else(|| refused(format!("id-unknown: {covered} covered by {id}")))?;
+            seen.insert(covered);
+            records.push(line.record());
+        }
+    }
+    for given in selector.ids {
+        let id = link(held, &given)?;
+        if !seen.contains(&id) {
+            let line = held
+                .line(&id)
+                .ok_or_else(|| refused(format!("id-unknown: {id}")))?;
+            seen.insert(id);
+            records.push(line.record());
+        }
+    }
+    Ok(records)
+}
+
+#[expect(
+    clippy::print_stderr,
+    reason = "Successful based writes explain their anchor on stderr."
+)]
+fn base_notices(notices: impl IntoIterator<Item = fill::BaseNotice>) {
+    use fill::BaseNotice;
+    let mut reported = std::collections::HashSet::new();
+    for notice in notices {
+        match notice {
+            BaseNotice::Named(n) => {
+                let noun = if n == 1 { "record" } else { "records" };
+                eprintln!("the base did not show {n} {noun} that this emit names");
+            }
+            BaseNotice::Empty(t) => {
+                if reported.insert((false, t.clone())) {
+                    eprintln!("the base covers no record of {t}");
+                }
+            }
+            BaseNotice::Unadmitted(t) => {
+                if reported.insert((true, t.clone())) {
+                    eprintln!("no record of {t} in the base is admitted");
+                }
+            }
+        }
+    }
+}
+
 fn emit(start: &Path, args: &[String]) -> Result<(), Fail> {
     let place = find_store(start)?;
     let held = place.read()?;
     warn_unclean(&held);
     let key = signing_key(Missing::Make)?;
     let now = clock::now().ok_or_else(|| Fail::System("the clock is outside 1970–9999".into()))?;
-    if args == ["-"] || args == ["-", "--fill"] {
+    if args.first().is_some_and(|a| a == "-")
+        && args
+            .get(1)
+            .is_none_or(|a| matches!(a.as_str(), "--fill" | "--base" | "--base-id"))
+    {
+        let (mode, selector) = draft::changeset_args(&args[1..])?;
         let mut input = String::new();
         io::stdin().read_to_string(&mut input)?;
-        let mode = if args.len() == 1 {
-            draft::JsonlMode::Plain
-        } else {
-            draft::JsonlMode::Fill
-        };
         let rows = draft::from_jsonl(&input, &key.public(), &now, mode)?;
         bound(&key, rows.iter().map(|s| &s.draft))?;
-        let drafts = match mode {
-            draft::JsonlMode::Plain => rows.into_iter().map(|s| s.draft).collect(),
+        let (drafts, notices) = match mode {
+            draft::JsonlMode::Plain => (rows.into_iter().map(|s| s.draft).collect(), Vec::new()),
             draft::JsonlMode::Fill => {
-                fill::changeset(&held, &rows).map_err(|e| refused(e.code()))?
+                let base = selector.map(|args| base_forms(&held, args)).transpose()?;
+                fill::changeset_with_base(&held, &rows, base.as_deref())
+                    .map_err(|e| refused(e.code()))?
             }
         };
         let lines = write_changeset(&place, &held, &key, &drafts)?;
+        base_notices(notices);
         let records = drafts
             .iter()
             .zip(&lines)
@@ -370,7 +442,7 @@ fn write_one(
     args: &[String],
     tick_payload: Option<Json>,
 ) -> Result<(), Fail> {
-    let statement = draft::from_args(
+    let (statement, selector) = draft::from_args(
         args,
         tick_payload,
         now,
@@ -378,10 +450,15 @@ fn write_one(
         |given| link(held, given),
         |given| thing_ref(held, given),
     )?;
-    let draft = fill::one(&|id| held.writer_view(id), &realm(held), statement)
-        .map_err(|e| refused(e.code()))?;
+    let (draft, notices) = if let Some(args) = selector {
+        fill::one_with_base(held, &base_forms(held, args)?, statement)
+    } else {
+        fill::one(&|id| held.writer_view(id), &realm(held), statement).map(|d| (d, Vec::new()))
+    }
+    .map_err(|e| refused(e.code()))?;
     bound(key, [&draft])?;
     let lines = write_changeset(place, held, key, &[draft])?;
+    base_notices(notices);
     say(lines.first().map_or("", Line::id))
 }
 
