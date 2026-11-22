@@ -31,6 +31,33 @@ In brief:
 - Rust has the tick's payload and the result reader, and runs 72 of the 113 tick vectors.
 - The tick has its protocol page, `protocol/tick.md`. margins-claude's Python ran every tick vector from the prose and found two gaps in the readers; both are closed in the model and in Rust.
 - Rust checks a tick: all 126 tick vectors run in Rust, none pending.
+- `loops tick <spec>` writes a tick. Two stores holding the same six backups, with different keys, wrote payloads equal byte for byte.
+
+### `loops tick <spec>` writes a tick
+
+The first half of piece 7. The verb reads a spec as `loops fold` does, takes every record the store holds, makes the tick with the core's `make_tick`, and writes one signed record of kind `tick`. It prints the record's id. The verb that checks a tick is the next piece.
+
+A real run, on the release binary built from this change. The laptop holds the proposal's six backups; the NAS imports them and has its own signing key. Each runs `loops tick backups.json` before it has the other's tick.
+
+| | Laptop | NAS |
+| --- | --- | --- |
+| Record id | `r:uqmk623s…` | `r:8vphpr9i…` |
+| Observer | `k:qunercaf…` | `k:8lbav2tp…` |
+| Payload | 1,109 bytes | the same 1,109 bytes |
+| In it | `rules` "1", six `covers`, no `withheld`, `runs` 6, `mb` 1027, `spec:gs9soetl…` | the same |
+
+Both hashes in the payload recompute from the payload in a few lines of Python. `spec:gs9soetl…` is the hash the proposal worked out by hand.
+
+**Implementer choices; they stand under Kyle's ruling of 2026-11-21 (W7).** The full list is choice 21 of `rust/PLACE.md`.
+- **The envelope is the writer's, as on any record.** The record is what `loops emit tick` would write with this payload and the same envelope flags: it goes through the same filler and writer, and a test shows the two give the same signed record for the same key, salt and time. So `loops tick <spec>` alone writes a root, and `--of`, `--prev`, `--about`, `--occurred` and the rest of `emit`'s envelope flags mean what they mean there. A second tick `--of tick:backups` names the first in `prev` through the anchor.
+- **Everything held, and only that.** No cut by time or by ids, and no slice. A second tick covers the first as one record.
+- **The tick is made before its own record is appended**, so it never covers itself.
+- **How the spec is named.** `-` is stdin. A path, or a name that is a file under the directory, is read as a file. Any other bare name is a vertex under `.loops/vertices/`.
+- **A payload erased here is withheld**, also when its bytes are still in a segment: the store's own reading decides (TK10, row 1).
+- A store whose lines do not all check is handled as `emit` handles it: it warns, and the tick covers the lines that check.
+- A spec that does not parse writes nothing and is refused with the spec's code. No new refusal code.
+
+A Codex worker wrote it; the coordinator reviewed it, ran the gate and made the run above.
 
 ### The tick record: Rust for the check
 
