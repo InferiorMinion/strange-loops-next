@@ -199,6 +199,7 @@ header.top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--g
 <details class="contents"><summary>On this page</summary>
 <ul><li><a href="#at-a-glance">At a glance</a></li>
 <li><a href="#the-tick-record-while-it-is-built">The tick record, while it is built</a></li>
+<li><a href="#the-adoption-step">The adoption step</a></li>
 <li><a href="#being-prepared">Being prepared</a></li>
 <li><a href="#deferred-by-you">Deferred by you</a></li>
 <li><a href="#ruled">Ruled</a></li></ul></details>
@@ -216,6 +217,7 @@ header.top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--g
 <tbody>
 <tr><td><a href="#tk10-seven-details-of-the-check">TK10</a></td><td>Seven details of <code>loops tick --check</code> that the rulings leave open</td><td>As in its table; the build follows them meanwhile</td><td>Nothing yet: the check is three merge requests away</td></tr>
 <tr><td><a href="#tk11-a-write-against-a-base-that-does-not-hold-what-is-under-it">TK11</a></td><td>What <code>loops emit --base</code> does when the base does not hold what is under its records</td><td>Name the live records of the base together with what is under it; say how many of those the base did not hold</td><td>The filler against a base</td></tr>
+<tr><td><a href="#ad1-how-a-spec-finds-the-stores-it-names">AD1</a></td><td>How a spec finds the stores it names, and what a missing one answers</td><td>A per-user list of names and directories; a name bound to nothing refuses the whole read</td><td>Reads across several stores (adoption)</td></tr>
 </tbody></table></div>
 <p>Every earlier entry is ruled (2026-11-21). TK11 is new on 2026-11-22.</p>
 <ul>
@@ -270,6 +272,37 @@ y   sets port 8097, over x
 </ul>
 <p><strong>Why C over A.</strong> A is the only option that stops the second problem. But the second problem is a question you have already set aside for step 3 in another form: what a strict store does with a write whose base is behind what the store holds. &quot;You replaced something you were not shown&quot; belongs with it, and a strict store can refuse both then. Until then C never refuses, never leaves a store that reads wrongly, and tells the writer what it did. margins-claude recommends C as the default too.</p>
 <p><strong>What it costs to change later.</strong> The choice is in the filler and one line of output. No record already written changes.</p>
+<h2 id="the-adoption-step">The adoption step</h2>
+<p>You ruled on 2026-11-21 (W1) that the adoption step's CLI pieces are built beside the tick work. A worker planned them on 2026-11-22. The pieces that are the CLI's alone are being built: <code>loops ls</code>, a scan by the start of a name, a plain-text view with relative times, a <code>--version</code>, and the cache of checked segments (W2). Two pieces need you first. AD1 is one. The other, the import of your old stores as a shadow, has about ten choices that decide the ids of every imported record; it comes as its own entry, with an example on a made-up copy of an old store's shape, once the first pieces have landed.</p>
+<h3 id="ad1-how-a-spec-finds-the-stores-it-names">AD1: how a spec finds the stores it names</h3>
+<p><strong>Question.</strong> A spec's <code>from</code> names a store for each source. Today the name is ignored. When a read may span several stores, how is a name turned into a directory, and what does a read answer when a name leads nowhere?</p>
+<p><strong>Example, run on today's binary.</strong> Two stores: <code>workshop</code> holds one task and one note, <code>yard</code> holds one task. One spec, <code>morning</code>:</p>
+<pre><code>from:  store workshop, kind task
+       store yard,     kind note
+fold:  items = count
+</code></pre>
+<div class="table-scroll" tabindex="0"><table><thead><tr><th scope="col">Run in</th><th scope="col">Today's answer</th><th scope="col">Why</th></tr></thead>
+<tbody>
+<tr><td><code>workshop</code></td><td>2</td><td>It counts the task and the note it holds. <code>yard</code> is never opened.</td></tr>
+<tr><td><code>yard</code></td><td>1</td><td>The same spec, another answer: it counts its own task.</td></tr>
+<tr><td><code>workshop</code>, with the one store name changed to <code>no-such-store</code></td><td>2</td><td>A name bound to nothing is answered from the directory all the same.</td></tr>
+</tbody></table></div>
+<p>What the answer should be is already ruled: a fold across stores takes the union of the named stores first and runs every source over it (<a href="note-2026-11-21-tick-record.html">the tick record note</a>, section 9, and <code>protocol/spec.md</code>). Here that is <strong>3</strong>: both tasks and the note, each record once. What is open is how the names resolve.</p>
+<p><strong>Options for finding a store.</strong></p>
+<div class="table-scroll" tabindex="0"><table><thead><tr><th scope="col"></th><th scope="col">A name means</th><th scope="col">Cost</th></tr></thead>
+<tbody>
+<tr><td><strong>A (recommended)</strong></td><td>An entry in a per-user list of names and directories (<code>~/.config/loops/stores.json</code>). The spec travels between machines unchanged; each machine says where its stores are.</td><td>You bind each name once per machine. Your existing specs name stores that are bound nowhere yet.</td></tr>
+<tr><td>B</td><td>A directory beside the current one with that name.</td><td>Renaming a directory changes what a spec reads. Stores that live apart cannot be named.</td></tr>
+<tr><td>C</td><td>A path written in the spec.</td><td>The path is part of the spec, so its hash, and every tick of it, differs between machines.</td></tr>
+</tbody></table></div>
+<p><strong>Options for a name that leads nowhere.</strong></p>
+<div class="table-scroll" tabindex="0"><table><thead><tr><th scope="col"></th><th scope="col">The read answers</th><th scope="col"></th></tr></thead>
+<tbody>
+<tr><td><strong>A (recommended)</strong></td><td>Nothing on standard output, and a refusal that names the store (<code>store-unknown</code>).</td><td>A missing store is never mistaken for an empty one. Needs the new refusal code.</td></tr>
+<tr><td>B</td><td>What the stores that were found give, with a note.</td><td>The same spec gives another answer on a machine that lacks a store, as it does today.</td></tr>
+</tbody></table></div>
+<p><strong>What changes for you.</strong> Under A and A, a spec that names one store today keeps its answer once that name is bound to its directory, and refuses until then. I would bind the names your existing vertices use before the strict rule is switched on, and list them for you first.</p>
+<p><strong>Not asked.</strong> <code>loops tick</code> and <code>loops tick --check</code> stay on the one store in the directory. A tick across stores would cover other records and is its own piece.</p>
 <h2 id="being-prepared">Being prepared</h2>
 <p>Nothing here needs you yet. It is listed so that you know what is coming.</p>
 <p><strong>Numbers stored as text</strong>, with the import (<a href="note-2026-11-21-order-of-work.html#w1-an-adoption-step-before-standing-and-sharing">W1</a>). <a href="note-2026-11-21-tick-record.html#tk6-what-a-spec-reads-of-a-tick">TK6</a> shows one use for it.</p>
