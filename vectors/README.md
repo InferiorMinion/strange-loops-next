@@ -5,7 +5,7 @@
 Run `lake exe gen ../vectors` from `model/`; never edit these fixtures by hand.
 CI regenerates them and fails on any difference.
 `standard/` holds external standards data; see its README.
-JS and the Rust workspace check the earlier fixture families and standards. Both check the file count of `tick/` separately.
+JS and the Rust workspace check the earlier fixture families and standards. Of `tick/`, Rust runs the operations it implements and pins how many files are pending; JS pins the file count.
 
 Every file has the same envelope:
 
@@ -30,7 +30,7 @@ With `make-and-check`, the writer makes a tick from the supplied spec and forms.
 
 With `check-tick`, the fixture supplies a subject kind, its payload when held, the checker's forms and the checker's rules version. The verdict includes both missing-input counts or both result hashes when applicable. The separate closure report is yes, no or unknown. The taken-not-covered count is null until the checker has a spec in parsed form. An older tick can report today's comparison or the reason it is unavailable.
 
-The model recomputes each answer with `lake exe run --check`. This family is not run by JavaScript (W3) and is not run by Rust yet.
+The model recomputes each answer with `lake exe run --check`. Rust runs the 11 fixtures of the first three operations (`hash`, `domains`, `window`) and counts the other 102 as pending. JavaScript (W3) only checks the family's file count.
 
 ## `payload`
 

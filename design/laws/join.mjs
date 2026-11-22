@@ -109,7 +109,10 @@ export function joinLaws(root) {
   }
   const runBy = (paths) => data.implementations.filter((impl) => paths.some((path) => {
     const family = path.split("/")[0];
-    return (impl.dirs === "*" || impl.dirs.includes(family)) && !impl.except?.includes(family);
+    if (!(impl.dirs === "*" || impl.dirs.includes(family)) || impl.except?.includes(family)) return false;
+    // An implementation may run only some operations of a family: `ops` names them, by `input.op`.
+    const ops = impl.ops?.[family];
+    return !ops || ops.includes(files.get(path)?.input?.op);
   }));
 
   // Law to law, from the proofs. The stack only rests downward: a proof of a law uses

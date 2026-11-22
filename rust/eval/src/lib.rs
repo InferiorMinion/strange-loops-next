@@ -17,10 +17,12 @@ mod record;
 mod result;
 mod scenario;
 mod spec;
+mod tick;
 
 pub use json::parse_json;
 use loops::json::Json;
 use std::fmt;
+pub use tick::supports_tick_op;
 
 /// A JSON syntax, fixture decoding, or arrival-order disagreement error.
 /// Writer refusals are successful answers containing `refused`, not errors.
@@ -57,7 +59,7 @@ pub fn slots_json(values: Vec<(String, loops::spec::SlotValue)>) -> Json {
 /// Compute every arrival-order (or realm rotation) answer.
 ///
 /// Accepts `record`, `fold/*`, `spec/{parse,run}`, `realm`, `scenario`,
-/// `lens/section`, `batch`, `byte-text` and `result`; other layers fail closed. No expected answer
+/// `lens/section`, `batch`, `byte-text`, `payload`, `result` and `tick`. No expected answer
 /// is supplied. Keeping all answers makes disagreement observable to callers.
 /// A record input gives one answer: its first envelope and first payload
 /// decide, and a later variant that disagrees once they are written is an error.
@@ -77,6 +79,7 @@ pub fn answers(layer: &str, input: &Json) -> Result<Vec<Json>, Error> {
         Some("batch") => batch::answers,
         Some("byte-text") => byte_text::answers,
         Some("result") => result::answers,
+        Some("tick") => tick::answers,
         _ => return Err(Error(format!("layer: unknown layer {layer}"))),
     };
     run(layer, input).map_err(Error::from)

@@ -6,12 +6,8 @@ use loops::{
     record::{Digest, Held, Record, Shown, id_text, payload_fields},
 };
 
-/// Gen.Read.members? (model/Gen/Read.lean), duplicates before unknown members.
-pub(super) fn members<'a>(
-    path: &str,
-    allowed: &[&str],
-    j: &'a Json,
-) -> Result<&'a [(String, Json)], String> {
+/// Gen.Read.object, a fixture object with distinct member names.
+pub(super) fn object<'a>(path: &str, j: &'a Json) -> Result<&'a [(String, Json)], String> {
     let Json::Obj(kvs) = j else {
         return Err(format!("{path}: expected object"));
     };
@@ -21,6 +17,15 @@ pub(super) fn members<'a>(
             return Err(format!("{path}: duplicate member {k}"));
         }
     }
+    Ok(kvs)
+}
+/// Gen.Read.members? (model/Gen/Read.lean), duplicates before unknown members.
+pub(super) fn members<'a>(
+    path: &str,
+    allowed: &[&str],
+    j: &'a Json,
+) -> Result<&'a [(String, Json)], String> {
+    let kvs = object(path, j)?;
     for (k, _) in kvs {
         if !allowed.contains(&k.as_str()) {
             return Err(format!("{path}: unknown member {k}"));

@@ -22,14 +22,13 @@ The payload values and the result hash's prefix, ruled by Kyle on 2026-11-21, ar
 
 | Order | Work | State | Waits on |
 | --- | --- | --- | --- |
-| 1 | **The tick record:** what a tick holds, how `covers` is stated and checked, and the input key. | Ruled 2026-11-21 ([the note](notes/2026-11-21-tick-record.md)). Being built in seven pieces (changelog, 2026-11-21). Pieces 1 and 2 are in the model (the spec's hash and `env.when`; the result reader and the payload). Rust for piece 1 and the model's piece 3, the claim and the check, are in work. | [TK10](DECISIONS.md#tk10-six-details-of-the-check) for the check's details |
+| 1 | **The tick record:** what a tick holds, how `covers` is stated and checked, and the input key. | Ruled 2026-11-21 ([the note](notes/2026-11-21-tick-record.md)). Being built in seven pieces (changelog, 2026-11-21). Pieces 1 and 2 are in the model (the spec's hash and `env.when`; the result reader and the payload). Rust has piece 1, so `loops fold` takes a window on `env.when`. The model's piece 3, the claim and the check, is in work. | [TK10](DECISIONS.md#tk10-seven-details-of-the-check) for the check's details |
 | 2 | **Step 4's ruled pieces** (list below). | Ruled 2026-11-20. Not built. | Some wait on the tick record |
 
 ### Step 4: ruled and not built
 
 Each is ruled in [the cut note](notes/2026-11-15-the-cut.md); the section is in brackets.
 
-- A window is a `where` on the span that content order already uses (5). The field is `env.when` (ruled 2026-11-21); it is in the model, and Rust is being built.
 - The filler takes a base, a tick or ids, and names that base's live records (8). margins-claude holds its base lemma until this piece is briefed.
 - A CLI verb that shows a result hash.
 

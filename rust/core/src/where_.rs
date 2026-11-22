@@ -30,11 +30,13 @@ pub enum EnvField {
     Emitted,
     /// The observer's claim about past time, if any.
     Occurred,
+    /// The occurrence span, falling back to the emission instant.
+    When,
 }
 impl EnvField {
     /// Lean: `Loops.EnvField.all`, model/Loops/Spec.lean.
     /// Lists every envelope field in declaration order.
-    pub const ALL: [Self; 9] = [
+    pub const ALL: [Self; 10] = [
         Self::Kind,
         Self::Observer,
         Self::About,
@@ -44,6 +46,7 @@ impl EnvField {
         Self::Erases,
         Self::Emitted,
         Self::Occurred,
+        Self::When,
     ];
 
     /// Lean: `Loops.EnvField.name`, model/Loops/Spec.lean.
@@ -59,6 +62,7 @@ impl EnvField {
             Self::Erases => "erases",
             Self::Emitted => "emitted",
             Self::Occurred => "occurred",
+            Self::When => "when",
         }
     }
     /// Lean: `Loops.EnvField.type`, model/Loops/Spec.lean.
@@ -68,7 +72,7 @@ impl EnvField {
             Self::Kind => FieldType::Text,
             Self::Observer | Self::About | Self::Of => FieldType::Refs,
             Self::Prev | Self::Under | Self::Erases => FieldType::Ids,
-            Self::Emitted | Self::Occurred => FieldType::Time,
+            Self::Emitted | Self::Occurred | Self::When => FieldType::Time,
         }
     }
 }
@@ -156,6 +160,7 @@ impl Field {
                 .iter()
                 .map(|c| Item::Time(c.span().clone()))
                 .collect(),
+            Self::Env(EnvField::When) => vec![Item::Time(r.span())],
             Self::Payload(f) => {
                 if r.shown != Shown::Here {
                     return None;
