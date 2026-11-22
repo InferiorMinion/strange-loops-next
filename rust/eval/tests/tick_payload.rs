@@ -1,11 +1,11 @@
 //! The public tick readers and their wire faults, independently of fixture dispatch.
 use loops::{
     json::Json,
-    record::Shown,
+    record::{Record, Shown, Val},
     result::{read_result, result_hash_of, result_json},
-    spec::SlotValue,
-    spec_hash::Rules,
-    tick::{TickReadError, read_tick_members, read_tick_payload},
+    spec::{SlotValue, Spec},
+    spec_hash::{Rules, spec_hash_of},
+    tick::{TickReadError, make_tick, read_tick_members, read_tick_payload},
 };
 use loops_eval::parse_json;
 use sha2::{Digest, Sha256};
@@ -61,11 +61,9 @@ fn six_backups() -> (Json, String) {
 #[test]
 fn six_backups_reads_and_reencodes_byte_for_byte() {
     let (raw, jcs) = six_backups();
-    let checked = read_tick_members(&sha256, &raw).expect("wire members");
+    let checked = read_tick_members(&sha256, &Rules::current(), &raw).expect("wire members");
     assert_eq!(checked.to_json(&sha256), raw);
-    let payload = checked
-        .read_payload(&Rules::current())
-        .expect("current spec");
+    let payload = checked.read_payload().expect("current spec");
     assert_eq!(payload.covers.len(), 6);
     assert_eq!(payload.withheld, []);
     let (_, SlotValue::Heads { heads, .. }) = payload
@@ -122,25 +120,69 @@ fn six_runs_can_list_five_ids() {
 }
 
 #[test]
-fn another_version_is_reported_after_both_hashes_check() {
+fn writer_settles_multiple_forms_and_withholds_a_covered_erasers_target() {
+    let raw = parse_json(
+        r#"{
+        "vertex": "size",
+        "from": [{"store": ".", "kind": ["backup"]}],
+        "fold": {"mb": {"sum": "mb"}}
+    }"#,
+    )
+    .expect("spec JSON");
+    let spec = Spec::of_json(&raw).expect("backup spec");
+    let backup = Record {
+        id: [1; 32].into(),
+        kind: "backup".into(),
+        fields: vec![("mb".into(), Val::Int(4_i64.into()).into())],
+        ..Record::default()
+    };
+    let target = Record {
+        id: [2; 32].into(),
+        ..backup.clone()
+    };
+    let eraser = Record {
+        id: [3; 32].into(),
+        kind: "erase".into(),
+        erases: vec![target.id],
+        ..Record::default()
+    };
+    let covers = [backup.id, target.id, eraser.id];
+    let withheld = [target.id];
+    let payload = make_tick(spec, &[backup.withhold(), target, eraser, backup]);
+    assert_eq!(payload.covers, covers);
+    assert_eq!(payload.withheld, withheld);
+    assert_eq!(
+        result_json(&payload.result).canon(),
+        r#"{"mb":{"unread":"1","value":"4"}}"#
+    );
+}
+
+#[test]
+fn another_result_label_is_deferred_only_for_newer_rules() {
     let mut raw = input_payload(include_str!(
-        "../../../vectors/tick/newer-rules-deferred.json"
+        "../../../vectors/tick/newer-result-label.json"
     ));
-    let checked = read_tick_members(&sha256, &raw).expect("opaque members");
-    assert_eq!(checked.rules().text(), "2");
+    let two = Rules::of_json(member(&raw, "rules")).expect("rules 2");
+    let checked = read_tick_members(&sha256, &Rules::current(), &raw).expect("opaque members");
+    assert_eq!(checked.rules(), &two);
     assert_eq!(
-        checked.read_payload(&Rules::current()),
-        Err(TickReadError::OtherRules(
-            Rules::of_json(&Json::Str("2".into())).expect("rules 2")
-        ))
+        checked.read_payload(),
+        Err(TickReadError::OtherRules(two.clone()))
     );
-    *member_mut(&mut raw, "result") = Json::Null;
-    assert_eq!(
-        read_tick_members(&sha256, &raw)
-            .expect_err("changed result")
-            .code(),
-        "tick-result-hash-mismatch"
-    );
+
+    let ten = Rules::of_json(&Json::Str("10".into())).expect("rules 10");
+    for reader in [&two, &ten] {
+        let fault = read_tick_members(&sha256, reader, &raw).expect_err("hash fit is required");
+        assert_eq!(
+            (fault.code(), fault.path.as_str()),
+            ("tick-result-hash-mismatch", "result-hash")
+        );
+    }
+
+    *member_mut(&mut raw, "spec") = Json::Obj(vec![]);
+    assert_eq!(wire_fault(&raw).code(), "tick-spec-hash-mismatch");
+    *member_mut(&mut raw, "result-hash") = Json::Str("res:BAD".into());
+    assert_eq!(wire_fault(&raw).code(), "tick-hash-invalid");
 }
 
 #[test]
@@ -149,9 +191,9 @@ fn a_hash_checked_spec_can_be_unreadable() {
         "../../../vectors/tick/unreadable-spec-fitting-hash.json"
     ));
     assert_eq!(
-        read_tick_members(&sha256, &raw)
+        read_tick_members(&sha256, &Rules::current(), &raw)
             .expect("hashes")
-            .read_payload(&Rules::current()),
+            .read_payload(),
         Err(TickReadError::UnreadableSpec)
     );
 }
@@ -169,19 +211,39 @@ fn both_hash_spellings_precede_raw_hash_comparisons() {
 }
 
 #[test]
-fn members_refuses_a_fixture_whose_answer_cannot_be_echoed_canonically() {
-    let mut raw = input_payload(include_str!(
-        "../../../vectors/tick/newer-rules-members.json"
+fn a_repeat_in_a_spec_source_precedes_hashing() {
+    let raw = input_payload(include_str!(
+        "../../../vectors/tick/spec-repeated-source.json"
     ));
-    let result = parse_json(r#"{"n":1,"n":2}"#).expect("repeated member");
-    *member_mut(&mut raw, "result-hash") = Json::Str(result_hash_of(&sha256, &result));
-    *member_mut(&mut raw, "result") = result;
-    assert!(read_tick_members(&sha256, &raw).is_ok());
-    let input = Json::Obj(vec![
-        ("op".into(), Json::Str("members".into())),
-        ("payload".into(), raw),
-    ]);
-    assert!(loops_eval::answers("tick", &input).is_err());
+    assert_eq!(
+        member(&raw, "spec-hash"),
+        &Json::Str(spec_hash_of(
+            &sha256,
+            &Rules::current(),
+            member(&raw, "spec")
+        ))
+    );
+    let fault = read_tick_members(&|_| panic!("hashed a duplicate"), &Rules::current(), &raw)
+        .expect_err("repeated source member");
+    assert_eq!(
+        (fault.code(), fault.path.as_str()),
+        ("tick-member-duplicate", "spec.from[0].store")
+    );
+}
+
+#[test]
+fn first_duplicate_follows_input_order_even_inside_unknown_members() {
+    for (text, path) in [
+        (r#"{"z":[[],[{},{"b":1,"b":2}]],"z":3}"#, "z[1][1].b"),
+        (r#"{"z":0,"z":{"a":1,"a":2}}"#, "z"),
+        (r#"{"":{"x":0,"x":1}}"#, ".x"),
+    ] {
+        let fault = wire_fault(&parse_json(text).expect("raw JSON"));
+        assert_eq!(
+            (fault.code(), fault.path.as_str()),
+            ("tick-member-duplicate", path)
+        );
+    }
 }
 
 #[test]
@@ -220,12 +282,12 @@ macro_rules! refusal_case {
 }
 
 fn wire_fault(raw: &Json) -> loops::where_::Refusal {
-    read_tick_members(&sha256, raw).expect_err("wire fault")
+    read_tick_members(&sha256, &Rules::current(), raw).expect_err("wire fault")
 }
 fn payload_fault(raw: &Json) -> loops::where_::Refusal {
-    let error = read_tick_members(&sha256, raw)
+    let error = read_tick_members(&sha256, &Rules::current(), raw)
         .expect("verified members")
-        .read_payload(&Rules::current())
+        .read_payload()
         .expect_err("payload fault");
     let TickReadError::Invalid(f) = error else {
         panic!("expected a refusal")
@@ -341,8 +403,8 @@ refusal_case!(
 );
 refusal_case!(
     result_invalid,
-    "result-repeated-slot",
+    "result-negative-zero-unread",
     "tick-result-invalid",
-    "result",
+    "result.mb.unread",
     payload_fault
 );

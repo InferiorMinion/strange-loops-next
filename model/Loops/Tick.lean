@@ -13,7 +13,7 @@ structure TickPayload where
 
 def tickIds (xs : List RecordId) := Json.arr (xs.map (.str ∘ idText))
 
-/-- Raw members with verified hashes. Their spec vocabulary and result shape are opaque here. -/
+/-- Raw members after the applicable hash checks. Their spec vocabulary and result shape are opaque here. -/
 structure TickMembers where
   rules : Rules
   spec : Json
@@ -22,7 +22,8 @@ structure TickMembers where
   result : Json
   deriving Repr
 
-/-- The two hashes cover the supplied members, including for an unfamiliar version. -/
+/-- Write the spec hash under the stated rules and the result hash under this
+codec's label. A newer reader's result hash need not be reconstructible here. -/
 def TickMembers.toJson (m : TickMembers) (H : Hash) : Json :=
   .obj ([("rules", .str m.rules.text), ("spec", m.spec), ("spec-hash", .str (specHashOf H m.rules m.spec)),
     ("covers", tickIds m.covers), ("result", m.result), ("result-hash", .str (resultHashOf H m.result))] ++
@@ -43,10 +44,25 @@ namespace TickReader
 
 def requiredNames := ["rules", "spec", "spec-hash", "covers", "result", "result-hash"]
 
-/-- A duplicate here belongs to the outer payload; the raw spec remains opaque. -/
-def firstRepeated (seen : List String) : List String → Option String
+mutual
+/-- The duplicate-name path for a tick includes array positions. Names are
+visited in input order, searching a member's value before the next member. -/
+def repeatAt (path : Option String) : Json → Option String
+  | .arr xs => repeatIn (path.getD "") 0 xs
+  | .obj xs => repeatMember path [] xs
+  | _ => none
+
+def repeatIn (path : String) (i : Nat) : List Json → Option String
   | [] => none
-  | k :: ks => if seen.contains k then some k else firstRepeated (k :: seen) ks
+  | x :: xs => (repeatAt (some s!"{path}[{i}]") x).orElse fun _ => repeatIn path (i+1) xs
+
+def repeatMember (path : Option String) (seen : List String) : List (String × Json) → Option String
+  | [] => none
+  | (k,v) :: xs =>
+    let child := memberPath path k
+    if seen.contains k then some child
+    else (repeatAt (some child) v).orElse fun _ => repeatMember path (k :: seen) xs
+end
 
 def field (kvs : List (String × Json)) (k : String) : Parse Json :=
   match kvs.lookup k with
@@ -78,7 +94,7 @@ def withheldIds (covers : List RecordId) : Option Json → Parse (List RecordId)
     if !xs.all covers.contains then refuse "tick-withheld-outside" "withheld"
     pure xs
 
-def values (H : Hash) (rawRules spec sh rawCovers result rh : Json) (rawWithheld : Option Json) : Parse TickMembers := do
+def values (H : Hash) (current : Rules) (rawRules spec sh rawCovers result rh : Json) (rawWithheld : Option Json) : Parse TickMembers := do
   let some rules := Rules.ofJson? rawRules | refuse "tick-rules-invalid" "rules"
   unless spec matches .obj _ do refuse "tick-spec-not-object" "spec"
   let covers ← TickReader.ids "covers" rawCovers
@@ -86,15 +102,16 @@ def values (H : Hash) (rawRules spec sh rawCovers result rh : Json) (rawWithheld
   let specHash ← TickReader.hashText "spec-hash" "spec:" sh
   let resHash ← TickReader.hashText "result-hash" "res:" rh
   if specHash != specHashOf H rules spec then refuse "tick-spec-hash-mismatch" "spec-hash"
-  if resHash != resultHashOf H result then refuse "tick-result-hash-mismatch" "result-hash"
+  if rules.number ≤ current.number && resHash != resultHashOf H result then refuse "tick-result-hash-mismatch" "result-hash"
   return ⟨rules, spec, covers, withheld, result⟩
 
 end TickReader
 
-/-- Check the parts shared by all versions, including both raw-member hashes. -/
-def readTickMembers (H : Hash) (payload : Json) : Parse TickMembers := do
+/-- Check the parts shared by all versions, including the result-hash fit for supported versions. -/
+def readTickMembers (H : Hash) (current : Rules) (payload : Json) : Parse TickMembers := do
   let .obj kvs := payload | refuse "tick-not-object" ""
-  if let some k := TickReader.firstRepeated [] (kvs.map Prod.fst) then refuse "tick-member-duplicate" k
+  if !(Json.obj kvs).keysDistinct then
+    refuse "tick-member-duplicate" ((TickReader.repeatAt none (.obj kvs)).getD "")
   if let some (name, _) := kvs.find? (fun kv => !(TickReader.requiredNames ++ ["withheld"]).contains kv.1) then
     refuse "tick-member-unknown" name
   let rawRules ← TickReader.field kvs "rules"
@@ -103,7 +120,7 @@ def readTickMembers (H : Hash) (payload : Json) : Parse TickMembers := do
   let rawCovers ← TickReader.field kvs "covers"
   let result ← TickReader.field kvs "result"
   let rh ← TickReader.field kvs "result-hash"
-  TickReader.values H rawRules spec sh rawCovers result rh (kvs.lookup "withheld")
+  TickReader.values H current rawRules spec sh rawCovers result rh (kvs.lookup "withheld")
 
 /-- Today's interpretation of the raw spec, also used for an older tick's diagnostic. -/
 def TickMembers.readSpec (m : TickMembers) : Except TickReadError Spec := do
@@ -122,7 +139,7 @@ def TickMembers.readPayload (m : TickMembers) (current : Rules) : Except TickRea
   (m.readSlots sp).mapError .invalid
 
 def readTickPayload (H : Hash) (current : Rules) (j : Json) : Except TickReadError TickPayload := do
-  let m ← (readTickMembers H j).mapError TickReadError.invalid
+  let m ← (readTickMembers H current j).mapError TickReadError.invalid
   m.readPayload current
 
 end Loops

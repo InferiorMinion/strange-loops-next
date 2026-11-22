@@ -130,10 +130,16 @@ private def cases : Except String (List (String × List String × J)) := do
   let drift := match p.toJson sha256 with
     | .obj kvs => Json.obj (kvs.map fun (k,v) => (k, if k == "rules" then .str two.text else v))
     | j => j
+  let alternateHash := "res:" ++ base32 (sha256 (utf8 "loops/result-hash/v2:" ++ resultBytes p.result))
+  let setResultHash := fun (v : Rules) (hash : String) => match ({p with rules := v}).toJson sha256 with
+    | .obj ms => Json.obj (ms.map fun (k,j) => (k, if k == "result-hash" then .str hash else j))
+    | j => j
   let unreadable := raw now future (resultJson p.result)
   let noncanonical := match sp.toJson with | .obj kvs => Json.obj (("note", .str "kept") :: kvs) | j => j
   return [
     made "six-made" ordinary sp xs none false,
+    made "make-nontaken" ordinary sp (xs ++ [{first with id := 7, kind := "note"}]) none false,
+    made "make-erased" hidden sp xsErased (some xs) false,
     made "six-reordered" (ordinary ++ inputs) sp xs (some (xs.reverse ++ [first])) true,
     made "late-backup" ordinary sp xs (some (xs ++ [seventh])) true,
     made "retired-successor" ordinary follow (xs ++ [retired]) none false,
@@ -169,6 +175,9 @@ private def cases : Except String (List (String × List String × J)) := do
     check "older-unreadable-today" old two unreadable xs,
     check "older-noncanonical-today" old two (raw now noncanonical (resultJson p.result)) xs,
     check "older-foreign-result" old two (raw now sp.toJson (.arr [])) xs,
+    check "check-newer-result-label" old now (setResultHash two alternateHash) xs,
+    check "check-older-result-mismatch" old two (setResultHash now alternateHash) xs,
+    check "check-newer-hash-spelling" old now (setResultHash two "res:A") xs,
     check "newer-rules" old now (raw two future (.arr [])) [],
     check "check-hash-before-version" inputs now drift xs,
     check "unreadable-spec" inputs now unreadable xs,

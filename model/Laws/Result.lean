@@ -1127,7 +1127,7 @@ theorem Number.canon_head (n : Number) : ∃ c cs, n.canon.toList = c :: cs ∧ 
   · exact ⟨'n', _, rfl, Or.inl rfl⟩
   split
   · exact ⟨'0', _, rfl, by simp [jsonHead]⟩
-  simp only [Id.run, pure]
+  simp only [Number.decimalText, Id.run, pure]
   repeat' split
   all_goals simp only [String.toList_append, String.toList_ofList, String.empty_append, List.append_assoc,
     minus_toList, zeroPoint_toList, List.cons_append, List.nil_append, String.toList_empty]

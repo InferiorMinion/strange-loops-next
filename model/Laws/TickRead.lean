@@ -1,4 +1,5 @@
 import Laws.Tick
+import Laws.JsonValue
 
 /-! A successful read re-encodes to the input's canonical text, including when
 its objects arrive in a different order from the writer's. -/
@@ -293,8 +294,8 @@ private theorem withheld_repr {covers : List RecordId} {raw xs}
     subst xs
     simp [optWithheld, he, tickIds_repr hi]
 
-private theorem values_repr {H rv sp sh cv r rh w m}
-    (h : TickReader.values H rv sp sh cv r rh w = .ok m) :
+private theorem values_repr {H current rv sp sh cv r rh w m}
+    (h : TickReader.values H current rv sp sh cv r rh w = .ok m) (known : m.rules.number ≤ current.number) :
     rv = .str m.rules.text ∧ sp = m.spec ∧ sh = .str (specHashOf H m.rules sp) ∧
     cv = tickIds m.covers ∧ r = m.result ∧ rh = .str (resultHashOf H r) ∧ w = optWithheld m.withheld := by
   unfold TickReader.values at h
@@ -308,42 +309,45 @@ private theorem values_repr {H rv sp sh cv r rh w m}
     obtain ⟨ws, hw, h⟩ := bound h
     obtain ⟨sHash, hs, h⟩ := bound h
     obtain ⟨rHash, hr, h⟩ := bound h
-    by_cases es : sHash = specHashOf H v (.obj fields) <;> by_cases er : rHash = resultHashOf H r <;>
-      simp [es, er, refuse, bind, Except.bind, pure, Except.pure] at h
-    subst m
+    by_cases vk : v.number ≤ current.number <;> by_cases es : sHash = specHashOf H v (.obj fields) <;> by_cases er : rHash = resultHashOf H r <;>
+      simp [vk, es, er, refuse, bind, Except.bind, pure, Except.pure] at h
+    all_goals subst m
+    all_goals try exact False.elim (vk known)
     exact ⟨Rules.ofJson?_eq_some_iff.1 ver, rfl, es ▸ hash_repr hs, tickIds_repr hc, rfl,
       er ▸ hash_repr hr, withheld_repr hw⟩
-
-private theorem noRepeats {ks seen : List String} (h : TickReader.firstRepeated seen ks = none) :
-    ks.Nodup ∧ ∀ k ∈ ks, k ∉ seen := by
-  induction ks generalizing seen with
-  | nil => simp
-  | cons k ks ih =>
-    unfold TickReader.firstRepeated at h
-    split at h <;> try contradiction
-    rename_i hn
-    obtain ⟨hd, fresh⟩ := ih h
-    simp at hn
-    exact ⟨nodup_cons.2 ⟨fun hk => fresh k hk mem_cons_self, hd⟩, fun a ha => by
-      rcases mem_cons.1 ha with rfl | h
-      · exact hn
-      · exact fun hm => fresh a h (mem_cons_of_mem _ hm)⟩
 
 private theorem atField {xs k v} (h : TickReader.field xs k = .ok v) : AtMember xs k v := by
   unfold TickReader.field at h
   split at h <;> try contradiction
   cases h; exact ⟨_, by assumption, rfl⟩
 
-/-- Re-encoding needs no knowledge of the version's spec or result language. -/
-theorem readTickMembers_text {H j m} (h : readTickMembers H j = .ok m) :
+/-- Successful raw reads exclude repeated member names throughout both hashed members. -/
+theorem readTickMembers_distinct {H current j m} (h : readTickMembers H current j = .ok m) :
+    j.keysDistinct = true := by
+  cases j <;> try contradiction
+  rename_i xs
+  by_cases d : (Json.obj xs).keysDistinct = true
+  · exact d
+  · simp [readTickMembers, d] at h; contradiction
+
+/-- On the finite JCS domain, one accepted text determines every member,
+array position and scalar, independently of object order and numeric storage. -/
+theorem readTickMembers_same_value {H current a b ma mb}
+    (ha : readTickMembers H current a = .ok ma) (hb : readTickMembers H current b = .ok mb)
+    (fa : a.Finite) (fb : b.Finite) (same : a.canon = b.canon) : a.wireValue = b.wireValue :=
+  Json.wireValue_of_canon fa fb (readTickMembers_distinct ha) (readTickMembers_distinct hb) same
+
+/-- A known result label lets the writer reconstruct the input hash. -/
+theorem readTickMembers_text {H current j m} (h : readTickMembers H current j = .ok m)
+    (known : m.rules.number ≤ current.number) :
     j.canon = (m.toJson H).canon := by
   cases j <;> try contradiction
   rename_i xs
   unfold readTickMembers at h
-  cases dup : TickReader.firstRepeated [] (xs.map Prod.fst) with
-  | some k => simp only [dup] at h; contradiction
-  | none =>
-    simp only [dup] at h
+  cases dup : (Json.obj xs).keysDistinct with
+  | false => simp only [dup, Bool.not_false, ↓reduceIte] at h; contradiction
+  | true =>
+    simp only [dup, Bool.not_true, Bool.false_eq_true, ↓reduceIte] at h
     cases extra : xs.find? (fun kv => !(TickReader.requiredNames ++ ["withheld"]).contains kv.1) with
     | some e => simp only [extra] at h; contradiction
     | none =>
@@ -354,7 +358,7 @@ theorem readTickMembers_text {H j m} (h : readTickMembers H j = .ok m) :
       obtain ⟨cv, hc, h⟩ := bound h
       obtain ⟨r, hr, h⟩ := bound h
       obtain ⟨rh, hrh, h⟩ := bound h
-      obtain ⟨rfl, rfl, rfl, rfl, rfl, rfl, hw⟩ := values_repr h
+      obtain ⟨rfl, rfl, rfl, rfl, rfl, rfl, hw⟩ := values_repr h known
       have keys : ∀ x ∈ xs, x.1 ∈ TickReader.requiredNames ++ ["withheld"] := by
         intro x hx
         have he := find?_eq_none.1 extra x hx
@@ -363,7 +367,7 @@ theorem readTickMembers_text {H j m} (h : readTickMembers H j = .ok m) :
       all_goals
         simp only [optWithheld, empty, Bool.false_eq_true, ↓reduceIte] at hw
         simp only [TickMembers.toJson, empty, Bool.false_eq_true, ↓reduceIte, cons_append, nil_append]
-        apply objectText (noRepeats dup).1 (by simp only [map_cons, map_nil]; decide)
+        apply objectText (Json.keysDistinct_obj.1 dup).1 (by simp only [map_cons, map_nil]; decide)
         · intro x hx
           have key := keys x hx
           simp only [TickReader.requiredNames, cons_append, nil_append, mem_cons, not_mem_nil, or_false] at key
@@ -386,11 +390,11 @@ on the digest, nor any consistency between lists and counts, is needed. -/
 theorem readTickPayload_text {H current j p} (h : readTickPayload H current j = .ok p) :
     j.canon = (p.toJson H).canon := by
   obtain ⟨m, hm, hp⟩ := bound h
-  have raw := readTickMembers_text (mapped hm)
   unfold TickMembers.readPayload at hp
   by_cases same : m.rules = current
   case neg => simp [same, bind, Except.bind, throw, throwThe, MonadExceptOf.throw] at hp
   simp only [show (m.rules != current) = false by simp [same], Bool.false_eq_true, ↓reduceIte] at hp
+  have raw := readTickMembers_text (mapped hm) (by simp [same])
   obtain ⟨s, hs, hp⟩ := bound hp
   obtain ⟨s', parse, hs⟩ := bound hs
   have parsed := Spec.ofJson_fits (mapped parse)

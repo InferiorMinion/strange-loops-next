@@ -400,7 +400,7 @@ pub enum RefusalCode {
     ByInvalid,
     /// The tick payload must be an object.
     TickNotObject,
-    /// An outer payload member name repeats.
+    /// A member name repeats in an object anywhere in the payload.
     TickMemberDuplicate,
     /// An outer payload member name is unknown.
     TickMemberUnknown,

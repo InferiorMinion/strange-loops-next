@@ -29,6 +29,27 @@ In brief:
 - Rust has the spec's hash and `env.when`: `loops fold` takes a window on `env.when`, and Rust runs the 11 tick vectors it implements.
 - The tick record's third piece is in the model: what a tick claims, how one is made, and the check with its answers.
 - Rust has the tick's payload and the result reader, and runs 72 of the 113 tick vectors.
+- The tick has its protocol page, `protocol/tick.md`. margins-claude's Python ran every tick vector from the prose and found two gaps in the readers; both are closed in the model and in Rust.
+
+### The tick record, piece 4: the protocol page, and two amendments from an outside reading
+
+**The outside reading.** margins-claude wrote the tick's payload and the result reader into its Python (`sl-py`, in another repository) from the prose alone, then ran the vectors: the 11 of piece 1 agreed on the first run, and of the 72 after piece 2, one answer differed. It listed ten things the prose had left it to guess. Two were gaps in the model.
+
+- **Amendment A: a repeated member name at any depth is refused before anything is hashed.** The model's canonical text keeps the first of two members with one name, so a `spec` or `result` with a repeat inside had a hash, and two different texts fitted one `spec-hash`. JCS does not define the text of such an object. The first reader now refuses a repeat anywhere in the payload, `tick-member-duplicate` at the repeated member's path. No stored tick could hold one, since a record's payload is refused for it already; the reader now says the same. One vector, `result-repeated-slot`, changes its answer to this code.
+- **Amendment B: the result's hash under newer rules** (TK10, row 7; Kyle's to rule, built as recommended). The label inside the result's hash has its own version, and a binary cannot know a later one. For a `rules` above its own, the first reader checks `result-hash` for spelling only. The reader takes the binary's version for this.
+- **`protocol/tick.md`.** The normative page: the record and its payload, the spec and the rules, what a tick claims, reading a payload, the check, reading a tick in a spec, erasure, and the vectors and laws. It says what the outside reading had to guess: `covers` is every record of the set folded, taken by the spec or not, and `withheld` every one of them not held open; the second reader's three answers as the vectors spell them; "not canonical" compares JCS texts, so member order is free; how a hash is spelled; that a path is for a person and is not to be parsed. Each refusal has one fault; the page pins no order for several.
+- **A law, under `tick.canonical`.** A payload the first reader accepts has no repeated name at any depth. Two accepted payloads with one canonical text are then equal as JSON up to member order, when their numbers are finite, as a stored record's always are. Without that premise it is false: `null` and a number past binary64's range have one canonical text in the model.
+- **Vectors.** 13 more, 126 in `vectors/tick/`: repeats inside `spec` and deep inside `result`; a rules 2 payload whose result hash is under another label; a supplied record the spec does not take (covered all the same); one shown erased (withheld); `"unread": "-0"` with a refitted hash.
+- **Rust** follows in the same merge request, since the amendments change answers Rust already gave: the reader's two changes, and `make_tick` in the core, which `write-payload` now uses. Rust runs 80 tick vectors and counts 46 as pending, those of the claim and the check.
+
+**The order for a payload with several faults, as now built** (inside this repository only, W4). The first reader: not an object; a repeated name anywhere, found by visiting members in input order, a name before what is inside its value, array elements by index; an unknown member; the first missing member; the version; `spec` not an object; `covers`, then `withheld`; the spelling of `spec-hash`, then of `result-hash`; the spec's hash; the result's hash when the rules are the reader's or older. The result reader: for an object of fixed members, repeats, then extra members in input order, then missing ones in the shape's order (at the root, the spec's slot order); values slot by slot in the spec's order. Inside a slot: `unread` before `value` or `heads`; a grouped slot reads `groups`, `ungrouped`, `unread`; latest-by reads `unread` before `things`; a keyed thing reads `heads`, `keys`, `whole`.
+
+**Implementer choices; they stand under Kyle's rulings of 2026-11-21 (TK7, W4, W7).**
+- Amendment A moves one refusal from `tick-result-invalid` to `tick-member-duplicate`. The alternative was to say the readers take a held payload, which can hold no repeat, and leave two vectors about input that cannot occur.
+- In Rust, the second reader uses the version given to the first, so a caller cannot change versions after the result hash's fit was left unjudged.
+- No mutation-catalogue entry is added (W5). `model/Loops/Number.lean` gains a name for its decimal formatting step so a proof can use it; no number's text changes.
+
+Codex workers wrote the model and the Rust; the coordinator reviewed both, ran the gates and joined the two branches.
 
 ### The tick record: Rust for the payload and the result reader
 
