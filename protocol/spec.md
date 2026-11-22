@@ -223,7 +223,7 @@ The safe input range does not limit the sum accumulator.
 ## `where`
 
 A `where` map is an object of at least one field, each naming an object of
-at least one test: an operator and its argument. An envelope field starts `env.` and names `kind`, `observer`, `about`, `of`, `prev`, `under`, `erases`, `emitted` or `occurred`.
+at least one test: an operator and its argument. An envelope field starts `env.` and names `kind`, `observer`, `about`, `of`, `prev`, `under`, `erases`, `emitted`, `occurred` or `when`.
 `sets` is not among them: no test reads it.
 A payload field has a nonempty name that does not start `env.`.
 
@@ -231,7 +231,7 @@ A payload field has a nonempty name that does not start `env.`.
 |---|---|
 | `is`, `not` | a value the field could hold, below |
 | `present`, `absent` | `true` |
-| `at-least`, `below` | a whole number on a payload field, a time on `env.emitted` or `env.occurred`; refused on any other field |
+| `at-least`, `below` | a whole number on a payload field, a time on `env.emitted`, `env.occurred` or `env.when`; refused on any other field |
 
 A value is what layer 0 would accept in the field, since nothing else can
 match:
@@ -241,14 +241,19 @@ match:
 | `env.kind` | text, not empty |
 | `env.observer`, `env.about`, `env.of` | a typed reference |
 | `env.prev`, `env.under`, `env.erases` | a record id |
-| `env.emitted`, `env.occurred` | a time in `occurred`'s grammar ([`record.md`](record.md)) |
+| `env.emitted`, `env.occurred`, `env.when` | a time in `occurred`'s grammar ([`record.md`](record.md)) |
 | a payload field | text, a whole number, or a boolean |
 
 [`laws.md`](laws.md) defines test meaning.
 A map holds when every test holds.
 A set field holds a value when a member equals that value.
 `env.of` and `env.under` hold at most one value; on a root, `env.of` holds none.
-Time tests read spans, not spellings.
+Time tests read spans. Equality compares the whole span. Bounds compare its start.
+`env.when` reads the span used by content order. A record stating `occurred` supplies that span.
+Otherwise it supplies the point at `emitted`. The field is always present, including on an envelope read without its payload.
+A window such as `{"env.when":{"at-least":"2026-11-21","below":"2026-11-22"}}` includes its lower bound and excludes its upper bound.
+A slot following `prev` finds the heads first, then applies the window. A successor outside the window can therefore supersede a record inside it.
+Use `env.when` as a test field in `where`. Grouping has its own vocabulary in the `by` section.
 
 On a held payload, `present` means the object has the named member and `absent` means it lacks it. A member holding `null`, `{}`, `[]` or `""` is present.
 An envelope with `about: []` is the same record as one omitting `about` and tests absent, while a written empty payload list tests present.
@@ -335,3 +340,17 @@ Times keep their spelling. Carried keys and `note` are dropped. An accepted spec
 The parser gives exactly the specs that fit (`spec.parse` in [`laws.md`](laws.md)). That is a law
 about what the parser gives; which JSON it accepts is this page, pinned by
 the vectors.
+
+## The spec's hash
+
+The current rules version is `"1"`. A version is a JSON string of ASCII decimal digits matching `[1-9][0-9]*`, of arbitrary length. Versions compare as positive integers.
+
+1. Parse the spec and write its parsed form as described above. Even an empty `fold` is written.
+2. Encode that form as UTF-8 JCS. Prefix those bytes with the UTF-8 bytes of `loops/spec-hash/v`, the rules version text and a colon. The complete label under rules 1 is `loops/spec-hash/v1:`. The first byte of the JSON follows the colon immediately.
+3. Hash the resulting bytes with SHA-256. Write `spec:` followed by the digest in lowercase base32hex without padding.
+
+When verifying the identity of a supplied spec member, hash the JCS of that member under the supplied version before parsing it. This operation can check the bytes of a spec written in a language the reader cannot yet parse.
+
+JCS orders object names by UTF-16 code units. The parsed form has three lists of object members whose written order can vary: the slots in `fold`, the fields in a slot's `where`, and the operators on each field. Two parsed specs have equal preimages exactly when their versions match and their members agree up to those three orders. Reordering any of them preserves the canonical result. Arrays keep their order, including `from` and each source's `kind` list. Vertex names, store names and time spellings are part of the preimage. A `note` or other carried key is dropped when the spec is parsed.
+
+The version covers settling, admission, source selection, tests, folds, payload reading and the encoding of their result. A change to what an existing parsed spec answers requires a new version for every spec. A new test or fold that leaves existing answers intact can use the same version. When a carried key comes into use, new parsed forms can include it. Earlier ticks carry the parsed form with the key absent, so their meaning is preserved. An implementation correction does not change the version.

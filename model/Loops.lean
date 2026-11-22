@@ -11,6 +11,7 @@ import Loops.Things
 import Loops.Live
 import Loops.Spec
 import Loops.Result
+import Loops.SpecHash
 import Loops.Batch
 import Loops.Read
 import Loops.Lens

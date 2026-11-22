@@ -86,9 +86,10 @@ inductive EnvField where
   | erases
   | emitted
   | occurred
+  | when
   deriving Repr, DecidableEq
 
-def EnvField.all : List EnvField := [.kind, .observer, .about, .of, .prev, .under, .erases, .emitted, .occurred]
+def EnvField.all : List EnvField := [.kind, .observer, .about, .of, .prev, .under, .erases, .emitted, .occurred, .when]
 
 def EnvField.name : EnvField → String
   | .kind => "kind"
@@ -100,6 +101,7 @@ def EnvField.name : EnvField → String
   | .erases => "erases"
   | .emitted => "emitted"
   | .occurred => "occurred"
+  | .when => "when"
 
 /-- What a field holds, which decides what a test on it may compare against:
 only what layer 0 would accept in that field, since nothing else can match. -/
@@ -120,7 +122,7 @@ def EnvField.type : EnvField → FieldType
   | .kind => .text
   | .observer | .about | .of => .refs
   | .prev | .under | .erases => .ids
-  | .emitted | .occurred => .time
+  | .emitted | .occurred | .when => .time
 
 /-- Where a field lives: on the envelope, or in the payload. -/
 inductive Field where
@@ -197,6 +199,7 @@ def Field.read : Field → Record → Option (List Item)
   | .env .erases, r => some (r.erases.map (.val ∘ .str ∘ idText))
   | .env .emitted, r => some [.time (Span.point r.emitted.moment)]
   | .env .occurred, r => some (r.occurred.toList.map (.time ∘ (·.span)))
+  | .env .when, r => some [.time r.span]
   | .payload f, r => if r.shown = .here then some ((r.get f).toList.map HeldField.item) else none
 
 /-- Whether an item is what the argument names: the same value, or the same span. -/

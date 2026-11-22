@@ -24,3 +24,4 @@ import Laws.KeyedSpecSlice
 import Laws.Cut
 import Laws.Result
 import Laws.Payload
+import Laws.SpecHash

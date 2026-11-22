@@ -1,0 +1,69 @@
+{
+  "vector": "renamed-store",
+  "layer": "tick",
+  "laws": ["spec.hash"],
+  "source": "model",
+  "input": {
+    "op": "hash",
+    "samples": [
+      {
+        "rules": "1",
+        "spec": {
+          "vertex": "backups",
+          "from": [
+            {
+              "store": "lab",
+              "kind": ["backup"]
+            }
+          ],
+          "fold": {
+            "runs": {
+              "count": true
+            },
+            "mb": {
+              "sum": "mb"
+            },
+            "list": {
+              "collect": true
+            }
+          }
+        }
+      },
+      {
+        "rules": "1",
+        "spec": {
+          "vertex": "backups",
+          "from": [
+            {
+              "store": "nas",
+              "kind": ["backup"]
+            }
+          ],
+          "fold": {
+            "runs": {
+              "count": true
+            },
+            "mb": {
+              "sum": "mb"
+            },
+            "list": {
+              "collect": true
+            }
+          }
+        }
+      }
+    ]
+  },
+  "expect": [
+    {
+      "parsed-jcs": "{\"fold\":{\"list\":{\"collect\":true},\"mb\":{\"sum\":\"mb\"},\"runs\":{\"count\":true}},\"from\":[{\"kind\":[\"backup\"],\"store\":\"lab\"}],\"vertex\":\"backups\"}",
+      "spec-hash": "spec:gs9soetlnq1fqp17th66fedrl0oecag0uf101fm5ov2c46ss73ag",
+      "raw-member-hash": "spec:gs9soetlnq1fqp17th66fedrl0oecag0uf101fm5ov2c46ss73ag"
+    },
+    {
+      "parsed-jcs": "{\"fold\":{\"list\":{\"collect\":true},\"mb\":{\"sum\":\"mb\"},\"runs\":{\"count\":true}},\"from\":[{\"kind\":[\"backup\"],\"store\":\"nas\"}],\"vertex\":\"backups\"}",
+      "spec-hash": "spec:3hpqq8aektdb9jp1l20qcu9oip01tqddspava0tcli2k78ph30ug",
+      "raw-member-hash": "spec:3hpqq8aektdb9jp1l20qcu9oip01tqddspava0tcli2k78ph30ug"
+    }
+  ]
+}

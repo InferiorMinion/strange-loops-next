@@ -189,6 +189,17 @@ theorem Cond.time_meaning {f : EnvField} (hf : f.type = .time) (op : Op) {r r' :
   · have : (r.occurred.toList.map (Item.time ∘ (·.span))) = (r'.occurred.toList.map (Item.time ∘ (·.span))) := by
       cases h1 : r.occurred <;> cases h2 : r'.occurred <;> simp_all
     simp only [Cond.eval, Field.read, this]
+  · have hs : r.span = r'.span := by
+      cases h : r.occurred <;> cases h' : r'.occurred <;> simp_all [Record.span]
+    simp only [Cond.eval, Field.read, hs]
+
+/-- The window uses the same span as content order, even for a withheld record. -/
+theorem Field.when_occurred {r : Record} {c : Claim} (h : r.occurred = some c) :
+    Field.read (.env .when) r = some [.time c.span] := by simp [Field.read, Record.span, h]
+
+theorem Field.when_emitted {r : Record} (h : r.occurred = none) :
+    Field.read (.env .when) r = some [.time (Span.point r.emitted.moment)] := by
+  simp [Field.read, Record.span, h]
 
 /-- A time argument reads as what it says: arguments spelled differently that
 read as the same span answer alike. -/
@@ -258,7 +269,7 @@ theorem Cond.eval_view {f : Record → Record} (hf : View f) (c : Cond) (r : Rec
   | env f =>
     exact Or.inr (by
       cases f <;> simp [Cond.eval, Field.read, he.kind, he.observer, he.about, he.of, he.prev, he.under,
-        he.erases, he.emitted, he.occurred])
+        Record.span, he.erases, he.emitted, he.occurred])
   | payload n =>
     rcases hf.hides r with e | e
     · exact Or.inr (by rw [e])
@@ -645,6 +656,28 @@ theorem latestOf_heads (sel : Record → Bool) (cs : List Cond) {xs : List Recor
     obtain ⟨hk0, hch⟩ := mem_filter.1 hk1
     obtain ⟨hsel, hcond⟩ := chosen_payTest_yes.1 ⟨hch, hpay⟩
     exact ⟨k, stateIn_heads hx (mem_perThing hs' ▸ hk0), hsel, hcond, rfl⟩
+
+/-- Adding a window to the envelope tests filters the already determined heads
+of the thing. All of its records, including those outside the window, still
+participate in supersession. -/
+theorem window_filter_heads (t : String) (xs : List Record) (sel : Record → Bool)
+    (op : Op) (cs : List Cond) :
+    (stateIn t xs).heads.filter (chosen sel (⟨.env .when, op⟩ :: cs)) =
+      (stateIn t xs).heads.filter (fun r => op.test [.time r.span] && chosen sel cs r) := by
+  apply List.filter_congr
+  intro r _
+  let rest := Cond.all (cs.filter (·.field.onEnvelope)) r
+  change (sel r && ((Tri.ofBool (op.test [.time r.span])).and rest == .yes)) =
+    (op.test [.time r.span] && (sel r && (rest == .yes)))
+  cases op.test [.time r.span] <;> cases sel r <;> cases rest <;> rfl
+
+/-- All the window bounds (and any other conditions) in a followed count
+are evaluated on the heads found over the entire supplied pool. -/
+theorem window_count_heads (name : String) (ops : List Op) (other : Tests)
+    (sel : Record → Bool) (xs : List Record) :
+    (Slot.mk name (.count (some .prev)) ((.env .when, ops) :: other) none).run sel xs =
+      .nat (Count.acc.select (fun r => if sel r then
+        Cond.all (Tests.conds ((.env .when, ops) :: other)) r else .no) (wholeHeads xs)) := rfl
 
 /-- Latest-by counts each unknown chosen head once by id, even across things. -/
 theorem latestOf_unread (sel : Record → Bool) (cs : List Cond) (xs : List Record)

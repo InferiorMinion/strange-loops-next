@@ -9,6 +9,7 @@ import Gen.Realm
 import Gen.Scenario
 import Gen.Read
 import Gen.Result
+import Gen.Tick
 
 /-!
 # Run: the model's answer for an input
@@ -261,7 +262,7 @@ def byteTextRun (input : Json) : Dec J := do
 /-! ## Dispatch -/
 
 /-- The layers `run` reads, and the directories under a vectors dir that hold them. -/
-def layerDirs : List String := ["fold", "lens", "spec", "record", "batch", "realm", "scenario", "byte-text", "result", "payload"]
+def layerDirs : List String := ["fold", "lens", "spec", "record", "batch", "realm", "scenario", "byte-text", "result", "payload", "tick"]
 
 def answer (layer : String) (input : Json) : Dec J :=
   match foldAnswer layer with
@@ -273,6 +274,7 @@ def answer (layer : String) (input : Json) : Dec J :=
     | "spec/run" => specRunRun input
     | "result" => resultRun input
     | "record" => recordRun input
+    | "tick" => Tick.answer input
     | "payload" => Payload.answer input
     | "byte-text" => byteTextRun input
     | "batch" => batchRun input

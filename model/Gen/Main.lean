@@ -11,6 +11,7 @@ import Gen.Scenario
 import Gen.Rulings
 import Gen.ByteText
 import Gen.Result
+import Gen.Tick
 
 /-!
 # Gen: write the vectors
@@ -375,7 +376,7 @@ def orFail : Except String J → IO J
 
 def main (args : List String) : IO UInt32 := do
   let dir : System.FilePath := args.headD "../vectors"
-  for sub in ["fold", "lens", "record", "spec", "batch", "realm", "occurred", "scenario", "byte-text", "result", "payload"] do
+  for sub in ["fold", "lens", "record", "spec", "batch", "realm", "occurred", "scenario", "byte-text", "result", "payload", "tick"] do
     if ← (dir / sub).pathExists then IO.FS.removeDirAll (dir / sub)
   let count ← countCases.mapM fun c => do
     pure (c.name, ← orFail (foldVector "fold/count" c fun o => .num (Count.fold 0 o)))
@@ -442,6 +443,8 @@ def main (args : List String) : IO UInt32 := do
   let results ← match Gen.ResultVectors.vectors with
     | .ok vs => pure vs
     | .error e => throw (IO.userError e)
+  let ticks ← IO.ofExcept Gen.Tick.vectors
+  writeAll dir "tick" ticks
   writeAll dir "result" results
-  IO.println s!"wrote {payloads.length + payloadRuns.length + count.length + latestBy.length + latest.length + sum.length + extrema.length + heads.length + views.length + selects.length + lens.length + records.length + specs.length + batches.length + realms.length + occurred.length + scenarios.length + rulingScenarios.length + Gen.ByteTextVectors.vectors.length + results.length} vectors to {dir}"
+  IO.println s!"wrote {payloads.length + payloadRuns.length + count.length + latestBy.length + latest.length + sum.length + extrema.length + heads.length + views.length + selects.length + lens.length + records.length + specs.length + batches.length + realms.length + occurred.length + scenarios.length + rulingScenarios.length + Gen.ByteTextVectors.vectors.length + results.length + ticks.length} vectors to {dir}"
   return 0

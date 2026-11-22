@@ -194,8 +194,14 @@ for (const [name, check] of [...FAMILIES, [STANDARD, checkStandard]]) {
   failures.push(...t.failures);
 }
 
-// Every directory of vectors has a family.
-const known = new Set([...FAMILIES.map(([name]) => name), STANDARD]);
+// Step 4 is model-only in the frozen JavaScript witness. Count these files
+// separately so they cannot inflate the number of checks that passed.
+const tickCount = countJson(join(dir, "tick"));
+if (tickCount !== 11) failures.push(`tick: expected 11 vectors, found ${tickCount}`);
+console.log(`tick      ${tickCount} files not run by JavaScript (W3)`);
+
+// Every other directory of vectors has a family.
+const known = new Set([...FAMILIES.map(([name]) => name), STANDARD, "tick"]);
 for (const d of readdirSync(dir).sort()) {
   if (statSync(join(dir, d)).isDirectory() && !known.has(d)) failures.push(`${d}: no checker reads vectors/${d}`);
 }

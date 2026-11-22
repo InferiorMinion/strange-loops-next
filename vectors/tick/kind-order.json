@@ -1,0 +1,69 @@
+{
+  "vector": "kind-order",
+  "layer": "tick",
+  "laws": ["spec.hash"],
+  "source": "model",
+  "input": {
+    "op": "hash",
+    "samples": [
+      {
+        "rules": "1",
+        "spec": {
+          "vertex": "backups",
+          "from": [
+            {
+              "store": "lab",
+              "kind": ["backup", "retry"]
+            }
+          ],
+          "fold": {
+            "runs": {
+              "count": true
+            },
+            "mb": {
+              "sum": "mb"
+            },
+            "list": {
+              "collect": true
+            }
+          }
+        }
+      },
+      {
+        "rules": "1",
+        "spec": {
+          "vertex": "backups",
+          "from": [
+            {
+              "store": "lab",
+              "kind": ["retry", "backup"]
+            }
+          ],
+          "fold": {
+            "runs": {
+              "count": true
+            },
+            "mb": {
+              "sum": "mb"
+            },
+            "list": {
+              "collect": true
+            }
+          }
+        }
+      }
+    ]
+  },
+  "expect": [
+    {
+      "parsed-jcs": "{\"fold\":{\"list\":{\"collect\":true},\"mb\":{\"sum\":\"mb\"},\"runs\":{\"count\":true}},\"from\":[{\"kind\":[\"backup\",\"retry\"],\"store\":\"lab\"}],\"vertex\":\"backups\"}",
+      "spec-hash": "spec:cerggjraptqm4tc037a6uiokdlef7fnji3418p49530u1hsh5vm0",
+      "raw-member-hash": "spec:cerggjraptqm4tc037a6uiokdlef7fnji3418p49530u1hsh5vm0"
+    },
+    {
+      "parsed-jcs": "{\"fold\":{\"list\":{\"collect\":true},\"mb\":{\"sum\":\"mb\"},\"runs\":{\"count\":true}},\"from\":[{\"kind\":[\"retry\",\"backup\"],\"store\":\"lab\"}],\"vertex\":\"backups\"}",
+      "spec-hash": "spec:elvs6qh2dehj4hnv3p72qkpg40pt45da07g82ta0osgn1aajmbsg",
+      "raw-member-hash": "spec:elvs6qh2dehj4hnv3p72qkpg40pt45da07g82ta0osgn1aajmbsg"
+    }
+  ]
+}

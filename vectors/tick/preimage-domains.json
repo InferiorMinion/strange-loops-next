@@ -1,0 +1,38 @@
+{
+  "vector": "preimage-domains",
+  "layer": "tick",
+  "laws": ["spec.no-commit", "spec.no-result"],
+  "source": "model",
+  "input": {
+    "op": "domains",
+    "rules": "1",
+    "spec": {
+      "vertex": "backups",
+      "from": [
+        {
+          "store": "lab",
+          "kind": ["backup"]
+        }
+      ],
+      "fold": {
+        "runs": {
+          "count": true
+        },
+        "mb": {
+          "sum": "mb"
+        },
+        "list": {
+          "collect": true
+        }
+      }
+    }
+  },
+  "expect": {
+    "label": "loops/spec-hash/v1:",
+    "label-bytes": [108, 111, 111, 112, 115, 47, 115, 112, 101, 99, 45, 104, 97, 115, 104, 47, 118, 49, 58],
+    "after-salt": "v1:{\"fold\":{\"list\":{\"collect\":true},\"mb\":{\"sum\":\"mb\"},\"runs\":{\"count\":true}},\"from\":[{\"kind\":[\"backup\"],\"store\":\"lab\"}],\"vertex\":\"backups\"}",
+    "after-salt-is-json": false,
+    "spec-byte-7": 115,
+    "result-byte-7": 114
+  }
+}

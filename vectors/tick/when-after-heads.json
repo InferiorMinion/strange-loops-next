@@ -1,0 +1,70 @@
+{
+  "vector": "when-after-heads",
+  "layer": "tick",
+  "laws": ["window.heads"],
+  "source": "model",
+  "input": {
+    "op": "window",
+    "spec": {
+      "vertex": "backups",
+      "from": [
+        {
+          "store": "lab",
+          "kind": ["backup"]
+        }
+      ],
+      "fold": {
+        "all": {
+          "count": true,
+          "where": {
+            "env.when": {
+              "at-least": "2026-11-21",
+              "below": "2026-11-22"
+            }
+          }
+        },
+        "heads": {
+          "count": true,
+          "where": {
+            "env.when": {
+              "at-least": "2026-11-21",
+              "below": "2026-11-22"
+            }
+          },
+          "follow": "prev"
+        }
+      }
+    },
+    "records": [
+      {
+        "id": "r:000000000000000000000000000000000000000000000000000g",
+        "kind": "backup",
+        "observer": "sl:laptop",
+        "about": [],
+        "prev": [],
+        "emitted": "2026-11-21T20:00:00Z",
+        "occurred": "2026-11-21"
+      },
+      {
+        "id": "r:0000000000000000000000000000000000000000000000000010",
+        "kind": "backup",
+        "observer": "sl:laptop",
+        "about": [],
+        "of": "r:000000000000000000000000000000000000000000000000000g",
+        "prev": ["r:000000000000000000000000000000000000000000000000000g"],
+        "emitted": "2026-11-21T20:00:00Z",
+        "occurred": "2026-11-22"
+      }
+    ]
+  },
+  "expect": {
+    "all": {
+      "unread": "0",
+      "value": "1"
+    },
+    "heads": {
+      "unread": "0",
+      "value": "0"
+    }
+  }
+}

@@ -1,11 +1,11 @@
 # Vectors
 
 `model/` writes the protocol fixture families:
-`fold/`, `lens/`, `record/`, `payload/`, `byte-text/`, `spec/`, `batch/`, `realm/`, `occurred/`, `scenario/` and `result/`.
+`fold/`, `lens/`, `record/`, `payload/`, `byte-text/`, `spec/`, `batch/`, `realm/`, `occurred/`, `scenario/`, `result/` and `tick/`.
 Run `lake exe gen ../vectors` from `model/`; never edit these fixtures by hand.
 CI regenerates them and fails on any difference.
 `standard/` holds external standards data; see its README.
-JS and the Rust workspace check all fixture families and standards.
+JS and the Rust workspace check the earlier fixture families and standards. Both check the file count of `tick/` separately.
 
 Every file has the same envelope:
 
@@ -19,6 +19,12 @@ Every file has the same envelope:
   "expect": { }
 }
 ```
+
+## `tick`
+
+The 11 files cover spec identity and the window field. Under `input.op = "hash"` each sample supplies a spec and a rules version. Its answer gives the parsed JCS text, the hash of that text and the hash of the raw member under that version. The `domains` case exposes the label bytes and the bytes that distinguish the spec preimage from commitment and result preimages. The `window` cases run the supplied spec over reader records and return its canonical result object.
+
+The model recomputes each answer with `lake exe run --check`. This family is not run by JavaScript (W3) and is not run by Rust yet.
 
 ## `payload`
 

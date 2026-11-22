@@ -227,6 +227,21 @@ A followed max is not a scalar accumulator that a late record steps: each answer
 Its law is `heads.set`'s. An incremental reader caches each thing's LatestBy state, onto which `heads.late` folds a late record per thing; a cached maximum alone would not do.
 No law yet states the whole-view slot incrementally, and `admit.late` still bounds what a caching reader may drop.
 
+## The window field (`model/Laws/Spec.lean`)
+
+| Law | Theorem | Says | Vectors |
+|---|---|---|---|
+| `window.span` | `Field.when_occurred`, `Field.when_emitted` | On any record, `env.when` reads the stated occurrence span or, if absent, a point at the emitted instant. | `tick/when-backfill` |
+| `window.heads` | `window_filter_heads`, `window_count_heads` | An envelope window filters each thing’s heads computed over the full input. For a count following `prev`, with a window and any additional tests, the count applies the selection and tests to the heads of the entire supplied pool. A successor outside the window still displaces its predecessor. | `tick/when-after-heads` |
+
+## The spec's hash (`model/Laws/SpecHash.lean`)
+
+| Law | Theorem | Says | Vectors |
+|---|---|---|---|
+| `spec.hash` | `Rules.ofJson?_eq_some_iff`, `specPreimageOf_eq_iff`, `Spec.preimage_eq_iff`, `Spec.memberEq_preimage`, `Spec.memberEq_hash`, `Spec.memberEq_resultBytes` | The version reader accepts precisely each positive version’s decimal text. For an arbitrary member, equal preimages are exactly equal versions and equal JCS texts. For fitting parsed specs, preimages agree exactly when the versions agree and the specs differ only in slot order, field order within a `where`, or operator order within a field. Such specs give the same hash for any hash function. With unique slot names, member-equivalent specs give equal result bytes on every input and admission rule. | `tick/backups-hash`, `tick/member-order`, `tick/source-order`, `tick/kind-order`, `tick/carried-note`, `tick/renamed-vertex`, `tick/renamed-store`, `tick/rules-version` |
+| `spec.no-commit` | `specPreimage_ne_commit` | For every version and JSON member, byte 17 of the preimage is `v`. A record commitment has exactly 16 bytes of salt followed by JCS, which cannot start with `v`. | `tick/preimage-domains` |
+| `spec.no-result` | `specPreimage_ne_result` | Byte seven of every spec preimage is `s` and byte seven of every result preimage is `r`. The two inputs to the hash are disjoint. | `tick/preimage-domains` |
+
 ## The canonical result (`model/Laws/Result.lean`)
 
 [`result.md`](result.md) is the codec: a vertex's whole result as JCS text with every integer a decimal string and every listed record its id alone, and the hash of that text framed by `loops/result-hash/v1:`. These are its laws.
@@ -238,7 +253,7 @@ No law yet states the whole-view slot incrementally, and `admit.late` still boun
 | `result.canonical` | `Spec.resultText_run_iff`, `Spec.resultBytes_run_iff`, `Spec.resultPreimage_run_iff`, `Spec.resultPreimage_parsed_iff`, `resultText_eq_iff`, `SlotValue.result_inj`, `Slot.run_ordered`, `Slot.run_like`, `Json.canon_injective`, `Json.canon_prefix`, `utf8_injective` | Two runs of one spec, over any records and under any rule for who may replace whom, have the same canonical text, the same bytes and the same preimage of the hash exactly when their results agree once what is shown is set aside. So the bytes lose `shown` and nothing else: a list's order, every count, every id and every key are in them. It holds for every spec that names each slot once, and every spec the parser accepts does. | `result/*` |
 | `result.no-commit` | `resultPreimage_ne_commit`, `Json.canon_head`, `Number.canon_head` | A result hash's preimage is never a 16-byte salt followed by the canonical bytes of a JSON value, which is what a record's commitment hashes. Its label is 21 bytes, so its 17th byte is `h`, and no canonical JSON text starts with `h`. So no record commits to the preimage of a result hash, whatever its salt and payload. | `result/*` |
 
-The text is injective on the JSON the codec writes, and only that is proved of `Json.canon`: `null`, text, arrays, and objects whose members are in UTF-16 order, each named once (`Json.Plain`). No canonical text of such JSON is a proper prefix of another, so a reader can tell where each value ends.
+The result proof applies to the JSON the result codec writes: `null`, text, arrays, and objects whose members are in UTF-16 order, each named once (`Json.Plain`). No canonical text of such JSON is a proper prefix of another, so a reader can tell where each value ends.
 Every slot writes its maps in that order (`Slot.run_ordered`), and two runs of one slot are of one fold (`Slot.run_like`): a count and a sum that hold the same number write the same JSON, so the bytes say which fold only together with the spec.
 `resultText_eq_iff` states what holds of any two results whose slots are named once and whose maps are in UTF-16 order: their texts are equal exactly when they write the same slots with the same canonical values.
 The hash is a parameter. These laws say the preimage determines the result with `shown` set aside; that two different preimages hash apart is SHA-256's to give.

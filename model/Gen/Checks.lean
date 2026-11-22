@@ -2,6 +2,7 @@ import Gen.Read
 import Gen.Encode
 import Gen.ByteText
 import Gen.Records
+import Gen.Tick
 
 open Loops Gen
 
@@ -315,7 +316,33 @@ def payloadChecks : IO Unit := do
   let c : Cond := ⟨.payload "x", .is (.val (.int 3))⟩
   ensure (c.onThing [r,q] == .unknown) "setter agreement"
 
+def specIdentityChecks : IO Unit := do
+  let hash := "spec:gs9soetlnq1fqp17th66fedrl0oecag0uf101fm5ov2c46ss73ag"
+  let .ok sp := Spec.ofJson Tick.backups | throw (IO.userError "backups did not parse")
+  ensure (sp.hash sha256 Rules.current == hash) "backups spec hash"
+  for j in [Json.int 1, .str "", .str "0", .str "01", .str "+1", .str " 1", .str "١"] do
+    ensure (Rules.ofJson? j).isNone "invalid rules version"
+  let big := "123456789012345678901234567890123456789012345678901234567890"
+  ensure (((Rules.ofJson? (.str big)).map Rules.text) == some big) "arbitrary-width rules version"
+  let some ten := Rules.ofJson? (.str "10") | throw (IO.userError "version 10")
+  let some two := Rules.ofJson? (.str "2") | throw (IO.userError "version 2")
+  ensure (compare two ten == .lt && sp.hash sha256 two != hash) "numeric rules order and binding"
+  -- Exercise the parser as well as the span projection on an unavailable payload.
+  ensure (Field.ofName "env.when" == some (.env .when)) "window field name"
+  ensure ((By.ofName "env.when").isNone) "window admitted as a by field"
+  let day := claim "2026-11-21"
+  let later := claim "2026-11-22"
+  let record : Record :=
+    { id := fixtureId 1, kind := "backup", observer := "sl:laptop", prev := [],
+      emitted := stamp "2026-11-22T00:00:00Z", occurred := some day, shown := .withheld }
+  for (op, expected) in [(Op.is (.time day), Tri.yes), (.not (.time day), .no),
+      (.present, .yes), (.absent, .no), (.atLeast (.time day), .yes), (.below (.time later), .yes)] do
+    ensure ((Cond.mk (.env .when) op).eval record == expected) "window operators on the occurrence span"
+  ensure ((Cond.mk (.env .when) (.below (.time later))).eval {record with occurred := none} == .no)
+    "window fallback at the excluded upper bound"
+
 def main (args : List String) : IO Unit := do
+  specIdentityChecks
   payloadChecks
   canonicalTextChecks
   rulingChecks
