@@ -10,7 +10,19 @@ The record starts where the old roadmap's did. For anything earlier, and for eve
 ## 2026-11-22
 
 In brief:
+- The base lemma is in the model as `keyed.base`, with a correction: an emit against a base keeps the store's names anchored only when the base is closed downward. A witness shows what breaks when it is not.
 - A fuzz run compares the model and Rust on ticks, with pairs of faults generated on purpose. Its first version agreed on 20,160 cases and missed a fault planted in Rust; the rebuilt one catches every planted swap tried. margins-claude's Python agrees with Rust on 80,000 more cases.
+
+### The base lemma: an emit against a base
+
+The filler against a base (the cut note, section 8, ruled 2026-11-20) names the base's live records of the thing. This is the law for it, in `model/Laws/LiveSlice.lean`, indexed as `keyed.base`. Model only: no vector, no Rust, no protocol rule.
+
+- **What is proved.** A base is a part of what the store holds. An emit that names only records of the base, and every record of the base live in it, is the emit a holder of exactly the base would have written. When the base holds what the writers of its records held, the store with the emit is still a closed holding whose writers followed the rule (`Anchoring.emit`, `ClosedOver.emit`), so its names are anchored (`anchored_emit`) and `keyed.anchored` applies: its live records, read alone, read every key as it does. A base closed downward is such a part (`anchored_emit_down`, from `closedOver_of_down`). So is a part of one that holds every record live in it (`anchored_emit_live`): a thing's live records at a cut, alone, are a sound base though they are not closed downward.
+- **A correction to what was claimed.** The tick record note, sections 4 and 7, said the lemma holds for any set, closed or not. margins-claude wrote that and it was wrong. Of the rule's three parts, two are the emit's and the third, that a writer holds what the writers of its records held, is about the base. The note is corrected in place, marked with the date.
+- **The witness** (`base_closed_needed`). `x` sets `a` and `b`; `y` sets `a` over it and names it. The store is anchored and closed. A writer takes `y` alone as its base and writes `w`, setting `a` and naming `y`. `x` is still live, for `b`, and is under `w` unnamed. The live records are `x` and `w`; read alone they show `x` as a live setter of `a` beside `w`. The whole reads `w` alone.
+- **What follows for the filler**, not built here: naming the live records of the base's downward closure in the store, and not of the bare base, is always sound by `anchored_emit_down`; it names only records already under the emit. What the filler does with a base that is not closed is not decided.
+
+margins-claude wrote it.
 
 ### The tick fuzz: holding Rust to the model's order
 
