@@ -1311,7 +1311,7 @@
   "Loops.prefix_reads_wrongly":
   {"uses": ["Loops.Down.names"],
    "states":
-   "Loops.upTo Loops.sk.all [1] = [Loops.sk.a, Loops.sk.c] ∧ ¬Loops.Down (Loops.upTo Loops.sk.all [1]) Loops.sk.all ∧ Loops.liveFor (Loops.upTo Loops.sk.all [1]) \"status\" Loops.sk.a = true ∧ Loops.liveFor Loops.sk.all \"status\" Loops.sk.a = false ∧ Loops.downOf Loops.sk.all (Loops.upTo Loops.sk.all [1]) = Loops.sk.all",
+   "Loops.upTo Loops.sk.all [2] = [Loops.sk.a, Loops.sk.c] ∧ ¬Loops.Down (Loops.upTo Loops.sk.all [2]) Loops.sk.all ∧ Loops.liveFor (Loops.upTo Loops.sk.all [2]) \"status\" Loops.sk.a = true ∧ Loops.liveFor Loops.sk.all \"status\" Loops.sk.a = false ∧ Loops.downOf Loops.sk.all (Loops.upTo Loops.sk.all [2]) = Loops.sk.all",
    "module": "Laws.Cut"},
   "Loops.prefix_down_iff":
   {"uses": ["Loops.Down.names", "Loops.mem_upTo"],
@@ -1799,7 +1799,7 @@
   "Loops.mem_upTo":
   {"uses": [],
    "states":
-   "∀ {W : List Loops.Record} {T : Loops.Moment} {a : Loops.Record}, a ∈ Loops.upTo W T ↔ a ∈ W ∧ a.emitted.moment ≤ T",
+   "∀ {W : List Loops.Record} {T : Loops.Moment} {a : Loops.Record}, a ∈ Loops.upTo W T ↔ a ∈ W ∧ a.emitted.moment < T",
    "module": "Laws.Cut"},
   "Loops.mem_thingsOf":
   {"uses": ["Loops.isOf_iff", "Loops.mem_canonSet"],
@@ -2664,7 +2664,7 @@
   "Loops.heldOf_prefix":
   {"uses": ["Loops.mem_heldOf", "Loops.mem_upTo"],
    "states":
-   "∀ {W : List Loops.Record} {T : Loops.Moment} {a : Loops.Record}, a ∈ Loops.heldOf W (Loops.upTo W T) ↔ a ∈ W ∧ a.emitted.moment ≤ T ∧ ∀ (c : Loops.Record), c ∈ W → a ∈ Loops.above W c → c.emitted.moment ≤ T",
+   "∀ {W : List Loops.Record} {T : Loops.Moment} {a : Loops.Record}, a ∈ Loops.heldOf W (Loops.upTo W T) ↔ a ∈ W ∧ a.emitted.moment < T ∧ ∀ (c : Loops.Record), c ∈ W → a ∈ Loops.above W c → c.emitted.moment < T",
    "module": "Laws.Cut"},
   "Loops.heldOf_greatest":
   {"uses": ["Loops.Down.below", "Loops.mem_heldOf"],

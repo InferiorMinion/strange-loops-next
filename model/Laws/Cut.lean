@@ -4,7 +4,7 @@ import Laws.LiveSlice
 # Which parts closed downward a time names
 
 A cut is a part closed downward (`Down`, in `Laws.LiveSlice`). A time names a
-*prefix*, the records emitted by then, and a prefix need not be closed
+*prefix*, the records emitted before it, and a prefix need not be closed
 downward: a record can name one with a later `emitted`. Two parts closed
 downward stand beside every part.
 
@@ -17,7 +17,7 @@ downward stand beside every part.
   when no record names a record with a later `emitted`.
 * **Held back is the prefix of another clock** (`heldOf_prefix`): a record is
   held back at a time exactly when it and everything held under it were
-  emitted by then.
+  emitted before it.
 * **A prefix that is not closed downward reads wrongly**
   (`prefix_reads_wrongly`): it can hold the record that replaced another and
   read the other as live.
@@ -81,11 +81,12 @@ theorem heldOf_greatest (hU : Down U W) (hUP : ∀ r ∈ U, r ∈ P) : ∀ r ∈
 
 /-! ## Prefixes -/
 
-/-- The prefix at `T`: the records emitted by `T`. -/
+/-- The prefix at `T`: the records emitted before `T`. The bound reads as
+`below` does in a spec: a record emitted at `T` itself is not in it. -/
 def upTo (W : List Record) (T : Moment) : List Record :=
-  W.filter fun a => decide (a.emitted.moment ≤ T)
+  W.filter fun a => decide (a.emitted.moment < T)
 
-theorem mem_upTo {T : Moment} {a : Record} : a ∈ upTo W T ↔ a ∈ W ∧ a.emitted.moment ≤ T := by
+theorem mem_upTo {T : Moment} {a : Record} : a ∈ upTo W T ↔ a ∈ W ∧ a.emitted.moment < T := by
   simp [upTo]
 
 /-- No record names a record with a later `emitted`. -/
@@ -96,24 +97,27 @@ def NamesEarlier (W : List Record) : Prop :=
 theorem prefix_down_iff : (∀ T, Down (upTo W T) W) ↔ NamesEarlier W := by
   constructor
   · intro h y hy x hx hxy
-    exact (mem_upTo.1 ((h y.emitted.moment).names y (mem_upTo.2 ⟨hy, List.le_refl _⟩) x hx hxy)).2
+    -- were `x` later than `y`, the prefix at `x`'s time would hold `y` and so `x`
+    refine Decidable.byContradiction fun hlt => ?_
+    have hyx : y.emitted.moment < x.emitted.moment := List.not_le.1 hlt
+    exact List.lt_irrefl _ (mem_upTo.1 ((h x.emitted.moment).names y (mem_upTo.2 ⟨hy, hyx⟩) x hx hxy)).2
   · intro h T
     exact ⟨fun _ hr => (mem_upTo.1 hr).1, fun y hy x hx hxy =>
-      mem_upTo.2 ⟨hx, List.le_trans (h y (mem_upTo.1 hy).1 x hx hxy) (mem_upTo.1 hy).2⟩⟩
+      mem_upTo.2 ⟨hx, List.lt_of_le_of_lt (h y (mem_upTo.1 hy).1 x hx hxy) (mem_upTo.1 hy).2⟩⟩
 
 /-- **Held back is the prefix of another clock**: a record's own `emitted` or
 the latest under it, whichever is later. It is what a writer that never emits
 earlier than what it names would have written. -/
 theorem heldOf_prefix {T : Moment} {a : Record} :
     a ∈ heldOf W (upTo W T) ↔
-      a ∈ W ∧ a.emitted.moment ≤ T ∧ ∀ c ∈ W, a ∈ above W c → c.emitted.moment ≤ T := by
+      a ∈ W ∧ a.emitted.moment < T ∧ ∀ c ∈ W, a ∈ above W c → c.emitted.moment < T := by
   rw [mem_heldOf, mem_upTo, and_assoc]
   exact and_congr_right fun _ => and_congr_right fun _ =>
     ⟨fun h c hc hac => (mem_upTo.1 (h c hc hac)).2, fun h c hc hac => mem_upTo.2 ⟨hc, h c hc hac⟩⟩
 
 /-! **A prefix that is not closed downward reads wrongly.** `a ← b ← c`, where
 `a` and `c` set `status` and the writer of `b` had a clock five seconds fast.
-The prefix at one second is `a` and `c`. It holds `c`, which replaced `a`, and
+The prefix at two seconds is `a` and `c`. It holds `c`, which replaced `a`, and
 reads `a` as live for `status`: the path from `c` down to `a` goes through `b`.
 Down at that time is all three, and reads as the whole does. -/
 
@@ -129,9 +133,9 @@ def sk.c : Record :=
 def sk.all : List Record := [sk.a, sk.b, sk.c]
 
 theorem prefix_reads_wrongly :
-    upTo sk.all [1] = [sk.a, sk.c] ∧ ¬Down (upTo sk.all [1]) sk.all ∧
-      liveFor (upTo sk.all [1]) "status" sk.a = true ∧ liveFor sk.all "status" sk.a = false ∧
-      downOf sk.all (upTo sk.all [1]) = sk.all := by
+    upTo sk.all [2] = [sk.a, sk.c] ∧ ¬Down (upTo sk.all [2]) sk.all ∧
+      liveFor (upTo sk.all [2]) "status" sk.a = true ∧ liveFor sk.all "status" sk.a = false ∧
+      downOf sk.all (upTo sk.all [2]) = sk.all := by
   refine ⟨by decide +kernel, fun h => ?_, by decide +kernel, by decide +kernel, by decide +kernel⟩
   exact absurd (h.names sk.c (by decide +kernel) sk.b (by decide +kernel) (by decide +kernel)) (by decide +kernel)
 
