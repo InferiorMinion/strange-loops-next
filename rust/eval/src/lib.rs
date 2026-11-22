@@ -22,7 +22,7 @@ mod tick;
 pub use json::parse_json;
 use loops::json::Json;
 use std::fmt;
-pub use tick::supports_tick_op;
+pub use tick::{check::check_json as tick_check_json, supports_tick_op};
 
 /// A JSON syntax, fixture decoding, or arrival-order disagreement error.
 /// Writer refusals are successful answers containing `refused`, not errors.
