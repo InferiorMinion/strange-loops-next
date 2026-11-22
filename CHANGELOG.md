@@ -30,6 +30,21 @@ In brief:
 - The tick record's third piece is in the model: what a tick claims, how one is made, and the check with its answers.
 - Rust has the tick's payload and the result reader, and runs 72 of the 113 tick vectors.
 - The tick has its protocol page, `protocol/tick.md`. margins-claude's Python ran every tick vector from the prose and found two gaps in the readers; both are closed in the model and in Rust.
+- Rust checks a tick: all 126 tick vectors run in Rust, none pending.
+
+### The tick record: Rust for the check
+
+Piece 6 of the seven. `rust/core/src/tick_check.rs` has the claim's run, what a checker holds open, the missing counts, the covered eraser a tick ignores, closure, the count of records taken and not covered, and `check_tick` with the model's answers in the model's order.
+
+- **Rust runs all 126 tick vectors, none pending.** With margins-claude's Python, the claim and the check now have three implementations that agree: the model, Rust, and one written from the prose.
+- **`differs` is decided on bytes** and carries both hashes, as in the model: a test uses a hash that collides on purpose.
+
+**Implementer choices; they stand under Kyle's ruling of 2026-11-21 (W7).**
+- The checker is its own module in the core, and the fixture's JSON spelling of an answer stays in the vector evaluator.
+- `rust/GAPS.md`: the one boundary is the evaluator's, as before. A number past binary64's range in a fixture's subject payload or openings is refused as malformed fixture input where the model answers; no stored record can hold one.
+- No CLI change here: the verbs are their own piece.
+
+A Codex worker wrote it; the coordinator reviewed it and ran the gates.
 
 ### The tick record, piece 4: the protocol page, and two amendments from an outside reading
 
