@@ -35,9 +35,9 @@ impl ThingRow {
         }
     }
 
-    fn cells(&self) -> Vec<String> {
+    fn cells(&self, ids: &plain::Prefixes<'_>) -> Vec<String> {
         let mut cells = vec![
-            plain::label(&self.thing),
+            plain::label(ids.short(&self.thing)),
             self.kinds
                 .iter()
                 .map(|k| plain::label(k))
@@ -47,10 +47,7 @@ impl ThingRow {
             self.heads.to_string(),
         ];
         if self.fields.is_empty() {
-            cells.push(match &self.headline {
-                Field::Value(v) if !matches!(v, Json::Str(_)) => "—".into(),
-                field => plain::field(field),
-            });
+            cells.push(plain::headline(&self.headline));
         } else {
             cells.extend(self.fields.iter().map(plain::field));
         }
@@ -159,7 +156,8 @@ pub(crate) fn run(start: &Path, args: &[String], format: plain::Format) -> Resul
             } else {
                 header.extend(names.iter().map(|k| plain::label(k)));
             }
-            plain::table(header, rows.iter().map(ThingRow::cells))
+            let ids = plain::Prefixes::new(&held);
+            plain::table(header, rows.iter().map(|row| row.cells(&ids)))
         } else {
             object(vec![(
                 "things",

@@ -19,6 +19,7 @@ loops emit <kind> [field=text | field:=json]... ["message"]
       [--erases <id>]... [--occurred <when> | --no-occurred] [--under <id>]
       [--sets <key>]... [--sets-nothing] [--whole]
       [--base <tick-id>] [--base-id <id>]...
+                                    -- ends options for a single emit
 loops emit - [--fill [--base <tick-id>] [--base-id <id>]...]
                                     read one JSONL changeset from stdin
                                     --fill applies the single-emit filler to each line
@@ -39,7 +40,8 @@ loops erase <id>... ["why"]         emit an erasure, and drop the openings held 
 loops export [--kind <k>] [--of <thing>] [--about <thing>]
 loops import [<file> | -]
 loops check                         verify every segment and line
-loops whoami
+loops whoami                            show the current key and observer
+loops whoami --init                     ensure the signing key exists and print its ID
 ```
 
 * The verbs, payload syntax, labels, discovery and exit codes follow the
@@ -531,11 +533,21 @@ Every verb that reads the store says when either happened (choice 18).
       with surrounding whitespace, a literal display marker (`—`, `unknown`,
       `null`, `true`, `false`, `conflict (N)`), and text spelling a JSON
       number, array or object. Other values use compact JSON. Unset reads
-      as `—`, unavailable as `unknown` and competing setters as `conflict (N)`.
+      as `—`, unavailable as `unknown` and competing setters in setter order,
+      for example `conflict (2): 9001 | 9000`. An open setter missing the
+      field shows `—`. Quote text that looks like a conflict or contains the
+      side separator in a preview. Limit each side to 40 Unicode scalars
+      after escaping controls and before padding the column. The final
+      ellipsis counts toward that limit. Read the full
+      values and setter IDs with `loops of <thing>`.
       Show `about` mentions space-separated with the same quoting, or `—`
       when there are none. Escape controls throughout. Padded cells escape
-      non-ASCII characters other than the marker dash to keep columns aligned.
+      non-ASCII characters other than the marker dash and preview ellipsis to keep columns aligned.
       Detail lines and the last column retain printable Unicode.
+    - `ls --plain` shows a root by its shortest locally unique record ID
+      prefix, with at least eight digits after `r:`. Count distinct IDs
+      in all checked lines, including records outside the listing. Use
+      that prefix with `loops of` or `loops get`. Payload text stays literal.
     - `of --plain` labels the times of each head by its full ID, in the same
       head order as JSON. Read the clock once. Show `emitted` in whole
       seconds, minutes, hours or days, and `now` within one second. Keep
@@ -624,11 +636,15 @@ Every verb that reads the store says when either happened (choice 18).
       and sums keep all their digits. An empty minimum or maximum reads
       `nothing read`. An empty record or thing list reads `—`.
     - Indent the members of each group or thing under its name. Keep the
-      result's order within each list and print full record IDs. Every grouped
+      result's order within each list. Use choice 25's unique prefixes for held
+      record references, including roots and envelope links. Keep unheld
+      references in full. Every grouped
       slot shows both its ungrouped count and its top-level unread count.
       A nonzero unread count can mean a needed opening, field, numeric value
       or test result was unavailable. A group's own unread count appears
       inside that group.
+    - A keyed thing without `--values` shows its name and its live `name`
+      headline, with the same absent, unknown and conflict marks as `ls`.
     - `--values` shows the listed head's kind, envelope and, for collect or
       latest-by following `prev`, its held payload. Escape text and show times
       as in choice 25. Read the display clock once, at the first detailed head.
@@ -636,7 +652,7 @@ Every verb that reads the store says when either happened (choice 18).
       records, then the same field states and mentions as `of --plain`.
       Mark erased and withheld entries when showing values.
 
-    For example, a workshop stores one task with `area=shop` and `hours:=3`.
+    For example, a workshop stores one task named “Repair kiln” with `area=shop` and `hours:=3`.
     Its saved morning spec counts jobs, sums hours by area and follows the
     tasks' keys. The task was emitted with `--whole`.
 
@@ -654,12 +670,33 @@ Every verb that reads the store says when either happened (choice 18).
       0 ungrouped
       0 not read
     items
-      thing  task:kiln
+      thing  task:kiln  Repair kiln
         heads
-          r:atco26o6tms597g8safo3gm3v50g30qnck50vq6e1rmpdna94c1g
+          r:atco26o6
         whole
-          r:atco26o6tms597g8safo3gm3v50g30qnck50vq6e1rmpdna94c1g
+          r:atco26o6
     ```
+
+28. **End emit options and learn a new writer's identity.** Issue 11
+    asks for dash-leading message text and the signing identity before
+    writing the first record.
+
+    Implementer's choices
+
+    - A standalone `--` ends options on a single emit. Positional syntax
+      still takes the kind, the fields, then at most one final message.
+      After the marker even `--json` is literal. A tick writer already has
+      its payload, so a final `--` is harmless and a following token is a
+      usage error. JSONL changesets keep their own syntax.
+    - `loops whoami --init` extends the existing identity lookup. It needs
+      no store and uses the first emit's key lookup, private-file creation
+      and creation notice. It prints the public `k:` ID on stdout. Repeating
+      the command reuses the key silently. Bare `whoami` keeps its JSON
+      answer and requires an existing key.
+
+    For example, an agent sets `LOOPS_KEY_FILE` and runs `loops whoami --init`
+    to learn its public identity. Once it has a store, `loops emit message --
+    --leading-dashes` writes a record whose `text` is `--leading-dashes`.
 
 ## Checked by
 

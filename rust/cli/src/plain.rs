@@ -5,7 +5,7 @@ pub(crate) use fold::fold;
 
 use crate::{
     Fail, usage,
-    values::{Field, Fields, thing_about},
+    values::{Field, Fields, member, thing_about},
 };
 use loops::{
     json::{Json, quote},
@@ -14,7 +14,7 @@ use loops::{
     time::{Moment, instant},
 };
 use loops_place::{clock, dir::Held};
-use std::{env, fmt::Write};
+use std::{cell::OnceCell, env, fmt::Write};
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub(crate) enum Format {
@@ -53,7 +53,11 @@ pub(crate) fn label(s: &str) -> String {
 fn text(s: &str) -> String {
     let conflict = s
         .strip_prefix("conflict (")
-        .and_then(|n| n.strip_suffix(')'))
+        .and_then(|tail| {
+            tail.split_once("): ")
+                .map(|(n, _)| n)
+                .or_else(|| tail.strip_suffix(')'))
+        })
         .is_some_and(|n| {
             !n.is_empty()
                 && (n == "0" || !n.starts_with('0'))
@@ -78,12 +82,39 @@ fn value(v: &Json) -> String {
     }
 }
 
+/// Only text supplies a headline. Missing openings and competing setters
+/// retain their field states in all the plain thing views.
+pub(crate) fn headline(f: &Field) -> String {
+    match f {
+        Field::Value(v) if !matches!(v, Json::Str(_)) => "—".into(),
+        _ => field(f),
+    }
+}
+
+fn preview(setter: &Json) -> String {
+    const LIMIT: usize = 40;
+    let rendered = match member(setter, "value") {
+        Some(Json::Str(s)) if s.contains(" | ") => visible(&quote(s)),
+        Some(v) => value(v),
+        None if matches!(member(setter, "shown"), Some(Json::Str(s)) if s == "here") => "—".into(),
+        None => "unknown".into(),
+    };
+    match rendered.char_indices().nth(LIMIT - 1) {
+        Some((end, c)) if end + c.len_utf8() < rendered.len() => format!("{}…", &rendered[..end]),
+        _ => rendered,
+    }
+}
+
 pub(crate) fn field(f: &Field) -> String {
     match f {
         Field::Value(v) => value(v),
         Field::Unset => "—".into(),
         Field::Unknown(_) => "unknown".into(),
-        Field::Conflict(rs) => format!("conflict ({})", rs.len()),
+        Field::Conflict(rs) => format!(
+            "conflict ({}): {}",
+            rs.len(),
+            rs.iter().map(preview).collect::<Vec<_>>().join(" | ")
+        ),
     }
 }
 
@@ -97,7 +128,7 @@ pub(crate) fn table(header: Vec<String>, rows: impl Iterator<Item = Vec<String>>
             if !cell.is_ascii() && cell != "—" {
                 let mut escaped = String::new();
                 for c in cell.chars() {
-                    if c.is_ascii() || c == '—' {
+                    if c.is_ascii() || matches!(c, '—' | '…') {
                         escaped.push(c);
                     } else {
                         unicode_escape(&mut escaped, c);
@@ -171,7 +202,12 @@ pub(crate) fn thing(
         heads.len()
     );
     keyed_fields(&mut out, held, state, "");
-    write!(out, "\nabout  {}", mentions(&thing_about(heads))).expect("write string");
+    write!(
+        out,
+        "\nabout  {}",
+        mentions(thing_about(heads).iter().map(String::as_str))
+    )
+    .expect("write string");
     for head in heads {
         write!(
             out,
@@ -196,10 +232,55 @@ fn keyed_fields(out: &mut String, held: &Held, state: &LiveState<'_>, indent: &s
     }
 }
 
-fn mentions(names: &[String]) -> String {
+fn mentions<'a>(names: impl IntoIterator<Item = &'a str>) -> String {
+    let names: Vec<_> = names.into_iter().map(text).collect();
     if names.is_empty() {
         "—".into()
     } else {
-        names.iter().map(|s| text(s)).collect::<Vec<_>>().join(" ")
+        names.join(" ")
+    }
+}
+
+/// The same sorted, distinct IDs that get and of resolve, including
+/// records outside a listing or a spec's sources.
+pub(crate) struct Prefixes<'a> {
+    held: &'a Held,
+    sorted: OnceCell<Vec<&'a str>>,
+}
+
+impl<'a> Prefixes<'a> {
+    pub(crate) fn new(held: &'a Held) -> Self {
+        Self {
+            held,
+            sorted: OnceCell::new(),
+        }
+    }
+
+    fn mentions(&self, ids: &[String]) -> String {
+        mentions(ids.iter().map(|id| self.short(id)))
+    }
+
+    pub(crate) fn short<'s>(&self, id: &'s str) -> &'s str {
+        if !id.starts_with("r:") {
+            return id;
+        }
+        let ids = self.sorted.get_or_init(|| self.held.ids_from(""));
+        let Ok(i) = ids.binary_search(&id) else {
+            return id;
+        };
+        // In sorted order, only the two neighbours can force a longer prefix.
+        let mut len = "r:".len() + 8;
+        for neighbour in [i.checked_sub(1).and_then(|n| ids.get(n)), ids.get(i + 1)]
+            .into_iter()
+            .flatten()
+        {
+            let common = id
+                .bytes()
+                .zip(neighbour.bytes())
+                .take_while(|(a, b)| a == b)
+                .count();
+            len = len.max(common + 1);
+        }
+        &id[..len]
     }
 }

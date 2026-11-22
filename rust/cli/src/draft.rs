@@ -16,12 +16,17 @@ fn new_salt() -> Result<Vec<u8>, Fail> {
     key::salt().map_err(|e| Fail::System(e.to_string()))
 }
 
-/// Read an emit's next payload field or its final positional message.
+/// Read one positional argument: kind, payload field, or final message.
 fn emit_argument(
     arg: &str,
+    kind: &mut Option<String>,
     fields: &mut Vec<(String, Json)>,
     message: &mut Option<String>,
 ) -> Result<(), Fail> {
+    if kind.is_none() {
+        *kind = Some(arg.to_owned());
+        return Ok(());
+    }
     if message.is_some() {
         return Err(usage("the message comes last, after every field"));
     }
@@ -124,13 +129,26 @@ pub(crate) fn from_args(
     let mut no_about = false;
     let mut no_occurred = false;
     let mut rest = args.iter();
+    let verb = if kind.is_some() { "tick" } else { "emit" };
+    let mut options = true;
     while let Some(arg) = rest.next() {
+        if !options || !arg.starts_with("--") {
+            if tick_payload.is_some() {
+                return Err(usage("tick takes only envelope flags after the spec"));
+            }
+            emit_argument(arg, &mut kind, &mut fields, &mut message)?;
+            continue;
+        }
+        // A preceding flag may have consumed "--" as its value. Global
+        // --json still has its usual meaning until the actual terminator.
         let mut value = || {
-            rest.next()
+            rest.find(|v| v.as_str() != "--json")
                 .cloned()
                 .ok_or_else(|| usage(format!("{arg} takes a value")))
         };
         match arg.as_str() {
+            "--" => options = false,
+            "--json" => {}
             "--about" => env.about.push(value()?),
             "--base" | "--base-id" => add_base(&mut base, arg, value()?)?,
             "--no-about" => no_about = true,
@@ -155,19 +173,7 @@ pub(crate) fn from_args(
             "--salt" => {
                 salt = Some(base32::decode(&value()?).ok_or_else(|| refused("salt-not-16-bytes"))?);
             }
-            flag if flag.starts_with("--") => {
-                let verb = if tick_payload.is_some() {
-                    "tick"
-                } else {
-                    "emit"
-                };
-                return Err(usage(format!("{verb} does not take {flag}")));
-            }
-            _ if tick_payload.is_some() => {
-                return Err(usage("tick takes only envelope flags after the spec"));
-            }
-            _ if kind.is_none() => kind = Some(arg.clone()),
-            field => emit_argument(field, &mut fields, &mut message)?,
+            flag => return Err(usage(format!("{verb} does not take {flag}"))),
         }
     }
     if nothing && env.sets.as_ref().is_some_and(|keys| !keys.is_empty()) {

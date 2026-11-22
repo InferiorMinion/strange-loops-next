@@ -39,8 +39,8 @@ fn payload<'a>(held: &'a Held, record: &Record) -> Option<&'a Json> {
     held.line(&id_text(&record.id))?.payload()
 }
 
-/// A payload's top-level member: none when the payload lacks it or is not an object.
-fn member<'a>(payload: &'a Json, key: &str) -> Option<&'a Json> {
+/// A top-level member of a payload or setter object.
+pub(crate) fn member<'a>(payload: &'a Json, key: &str) -> Option<&'a Json> {
     match payload {
         Json::Obj(members) => members.iter().find(|(k, _)| k == key).map(|(_, v)| v),
         _ => None,

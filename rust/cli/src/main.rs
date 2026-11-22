@@ -46,6 +46,7 @@ usage: loops [-C <dir>] <verb> ...
        [--erases <id>]... [--occurred <when> | --no-occurred] [--under <id>]
        [--sets <key>]... [--sets-nothing] [--whole]
        [--base <tick-id>] [--base-id <id>]...
+                                -- ends options; fields and the final message may start with -
                                 a revision without --of is of what it replaces
                                 by default the writer claims to have read everything held
                                 --base selects a tick's covers
@@ -66,24 +67,29 @@ usage: loops [-C <dir>] <verb> ...
   of <thing> [--plain]          a thing's values, each key's from its live
                                 setters; its about, its heads, and how many
                                 records are of it
+                                conflict previews shorten long values; loops of without --plain shows them whole
                                 --plain is for reading and may change; scripts use the JSON
   read <vertex> [--values] [--plain]
                                 fold .loops/vertices/<vertex>.json
   fold <spec.json | -> [--values] [--plain]
                                 fold a spec from a file or stdin
                                 --plain shows slots in the spec's written order
+                                plain listings and folds use unique record ID prefixes (8 or more digits)
+                                keyed things show their headline without --values
                                 --values adds stored envelopes to listed heads,
                                 held payloads to collect and prev entries,
                                 and about and values to keyed things
   tick <vertex | spec-file | -> [emit envelope flags]
                                 write a tick over everything held
                                 a base selects only the tick's envelope anchor
+                                a final -- is allowed; no arguments may follow it
   tick --check <id>             check a tick against this store and print the verdict and reports
   erase <id>... [\"why\"]         emit an erasure, and drop the openings held here
   export [--kind <k>] [--of <thing>] [--about <thing>]   stored lines, oldest first
   import [<file> | -]           add stored lines; a store is the union
   check                         verify every segment and line
-  whoami                        the key and observer this machine writes as";
+  whoami                        the key and observer this machine writes as
+  whoami --init                 make the signing key if needed and print its ID";
 
 /// A non-success verdict, a failure, or a closed output stream.
 enum Fail {
@@ -833,6 +839,14 @@ fn run(args: &[String]) -> Result<(), Fail> {
                     .ok_or_else(|| usage("-C takes a directory"))?
                     .into();
             }
+            "--" if rest
+                .first()
+                .is_some_and(|v: &String| matches!(v.as_str(), "emit" | "tick")) =>
+            {
+                rest.push(arg.clone());
+                rest.extend(args.cloned());
+                break;
+            }
             "--json" => json = true,
             _ => rest.push(arg.clone()),
         }
@@ -872,6 +886,10 @@ fn run(args: &[String]) -> Result<(), Fail> {
         "export" => export(&start, rest),
         "import" => import(&start, rest),
         "check" => check(&start),
+        "whoami" if rest == ["--init"] => say(&signing_key(Missing::Make)?.public()),
+        "whoami" if rest.iter().any(|arg| arg == "--init") => {
+            Err(usage("whoami --init takes no other arguments"))
+        }
         "whoami" => {
             let key = signing_key(Missing::Refuse)?;
             say(&object(vec![
