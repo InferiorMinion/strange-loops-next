@@ -10,6 +10,7 @@ The record starts where the old roadmap's did. For anything earlier, and for eve
 ## 2026-11-22
 
 In brief:
+- The model's prefix at a time is strict, as `loops tick --as-of` is: a record emitted at the time itself is not in it.
 - The base lemma is in the model as `keyed.base`, with a correction: an emit against a base keeps the store's names anchored only when the base is closed downward. A witness shows what breaks when it is not.
 - A fuzz run compares the model and Rust on ticks, with pairs of faults generated on purpose. Its first version agreed on 20,160 cases and missed a fault planted in Rust; the rebuilt one catches every planted swap tried. margins-claude's Python agrees with Rust on 80,000 more cases.
 - The tick has its mutation catalogue: 91 deliberate faults, each caught by something that runs. Five were not caught at first; four vectors and a check were added for them.
@@ -17,6 +18,37 @@ In brief:
 - `loops emit --base` fills against what the writer read, a tick or named records, so a stale write shows as a conflict and does not silently replace a setter the writer never saw.
 - `loops ls --fields name,status --plain` is the Monday-morning read without a spec: a plain-text view, asked for explicitly, on `ls` and `of`.
 - A read remembers which segments it has checked: on a 9,000-record store a fold goes from 0.53 s to 0.24 s. `loops check` still checks everything.
+- `loops read` and `loops fold` take `--plain` too: a spec's result as text, for every result shape.
+
+### The adoption step: the plain view on `read` and `fold`
+
+The third piece of the adoption plan. `loops read <vertex> --plain` and `loops fold <spec> --plain` print a spec's result as text for a person, for every shape a result has: a count, a sum, a smallest and a largest (with "nothing read" told from zero), a collect, their grouped forms, and latest-by following `prev` or `keys`. A saved vertex and a spec file print alike.
+
+A real run, on the made-up import store of [AD2](DECISIONS.md#ad2-how-an-old-store-becomes-records): a spec with a count of open threads, a count by status and a keyed latest-by prints
+
+```
+open  0
+by status
+  group  done  1
+  1 ungrouped
+  0 not read
+threads
+  thing  r:6m708qdm…
+  thing  thread:kiln
+```
+
+with each thing's heads under it; with `--values` each thing shows its fields, its heads' times and its `about`, by the same rules as `loops of --plain`.
+
+- **Slots print in the spec's written order,** not the result's sorted one.
+- **The same rules as the plain view of `ls` and `of`:** asked for with `--plain` only; `--plain` with `--json` is a usage error; text bare unless ambiguous; nothing relative in any JSON. The JSON answers of every verb are byte for byte what they were: 1,907 commands over 121 stores were compared.
+- **A flaky test, found and fixed.** One new test failed about one run in ten: it piped a spec into a `loops` that refuses its arguments and exits before reading, and the shared test helper failed on the write. The helper now accepts that a child may exit without reading its input. Forty runs since were clean.
+
+**Implementer choices; they stand under Kyle's ruling of 2026-11-21 (W7).** The full list is choice 27 of `rust/PLACE.md`.
+- Every listed id is printed whole. A grouped slot always shows its `ungrouped` and `not read` counts; elsewhere a zero is left out.
+- "Not read" says "needed payload or field unavailable": the result alone cannot tell a payload that is not held from a field that is missing or in conflict.
+- Left for later, seen in use: without `--values` a keyed latest-by prints ids only, which tells a person little.
+
+A Codex worker wrote it; the coordinator reviewed it, found the flaky test, joined the branch with main and tried it on a store.
 
 ### The adoption step: the cache of checked segments
 
@@ -165,6 +197,16 @@ So `vectors/tick/` has 131 files. Rust passed the four new ones unchanged.
 - The evidence keeps the five first verdicts beside the final ones, so the gaps stay on record.
 
 A Codex worker wrote the entries, ran them and added the vectors; the coordinator reviewed the run, joined it with main and ran the gate.
+
+### The prefix at a time is strict
+
+`upTo W T` in `model/Laws/Cut.lean` is now the records emitted before `T`; it took a record emitted at `T` itself in. The cut note's section 2 says the bound reads as `below` does, and `loops tick --as-of <time>` is built that way, so the model's name and the CLI now mean the same set at the boundary too. The coordinator's worker found the difference in the model's own witness: at one second the old prefix held `c`, emitted at one second, and the strict one does not.
+
+- The laws of `cut.prefix` hold as before with the bound changed: `prefix_down_iff` (every prefix is closed downward exactly when no record names a later one), `heldOf_prefix`. The first's proof no longer uses the prefix at a record's own time; it uses the prefix at the time of a record named later, which would hold the namer.
+- The witness `prefix_reads_wrongly` is at two seconds, where the prefix is again `a` and `c`.
+- No vector, no Rust and no protocol rule depends on `upTo`.
+
+margins-claude wrote it.
 
 ### The base lemma: an emit against a base
 

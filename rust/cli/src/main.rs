@@ -68,9 +68,11 @@ usage: loops [-C <dir>] <verb> ...
                                 setters; its about, its heads, and how many
                                 records are of it
                                 --plain is for reading and may change; scripts use the JSON
-  read <vertex> [--values]      fold .loops/vertices/<vertex>.json
-  fold <spec.json | -> [--values]
+  read <vertex> [--values] [--plain]
+                                fold .loops/vertices/<vertex>.json
+  fold <spec.json | -> [--values] [--plain]
                                 fold a spec from a file or stdin
+                                --plain shows slots in the spec's written order
                                 --values adds stored envelopes to listed heads,
                                 held payloads to collect and prev entries,
                                 and about and values to keyed things
@@ -603,25 +605,29 @@ fn parse_spec(spec: &str) -> Result<Spec, Fail> {
     let json = loops_eval::parse_json(spec).map_err(|e| refused(format!("spec-not-json: {e}")))?;
     Spec::of_json(&json).map_err(|e| refused(format!("{} at {}", e.code(), e.path)))
 }
-fn fold_text(start: &Path, spec: &str, view: View) -> Result<(), Fail> {
+fn fold_text(start: &Path, spec: &str, view: View, format: Format) -> Result<(), Fail> {
     let spec = parse_spec(spec)?;
     let held = find_store(start)?.read()?;
     let admitted = realm(&held);
-    let slots = loops_eval::slots_json(spec.run_admitted(&admitted));
+    let result = spec.run_admitted(&admitted);
+    if format == Format::Plain {
+        return answered(&held, say(&plain::fold(&held, &admitted, result, view)?));
+    }
+    let slots = loops_eval::slots_json(result);
     let answer = match view {
         View::Ids => say(&slots.canon()),
         View::Values => say(&values::fold(&held, &admitted, &spec, slots).canon()),
     };
     answered(&held, answer)
 }
-fn fold(start: &Path, args: &[String]) -> Result<(), Fail> {
+fn fold(start: &Path, args: &[String], format: Format) -> Result<(), Fail> {
     let (view, args) = view(args);
     let [file] = args.as_slice() else {
         return Err(usage(
             "fold takes one spec file, or - for stdin, and may take --values",
         ));
     };
-    fold_text(start, &spec_file(start, file)?, view)
+    fold_text(start, &spec_file(start, file)?, view, format)
 }
 fn spec_file(start: &Path, file: &str) -> Result<String, Fail> {
     if file == "-" {
@@ -635,7 +641,7 @@ fn spec_file(start: &Path, file: &str) -> Result<String, Fail> {
 fn vertex_name(name: &str) -> bool {
     !name.contains(['/', '\\']) && !name.starts_with('.')
 }
-fn read(start: &Path, args: &[String]) -> Result<(), Fail> {
+fn read(start: &Path, args: &[String], format: Format) -> Result<(), Fail> {
     let (view, args) = view(args);
     let [vertex] = args.as_slice() else {
         return Err(usage("read takes one vertex name, and may take --values"));
@@ -644,7 +650,7 @@ fn read(start: &Path, args: &[String]) -> Result<(), Fail> {
         return Err(usage("a vertex name is a file name without its .json"));
     }
     let place = find_store(start)?;
-    fold_text(start, &vertex_text(&place.dir, vertex)?, view)
+    fold_text(start, &vertex_text(&place.dir, vertex)?, view, format)
 }
 fn vertex_text(place: &Dir, vertex: &str) -> Result<String, Fail> {
     let path = place.root().join("vertices").join(format!("{vertex}.json"));
@@ -828,7 +834,7 @@ fn run(args: &[String]) -> Result<(), Fail> {
     }
     let format = if rest
         .first()
-        .is_some_and(|v| matches!(v.as_str(), "ls" | "of"))
+        .is_some_and(|v| matches!(v.as_str(), "ls" | "of" | "read" | "fold"))
         && rest.iter().any(|a| a == "--plain")
     {
         if json {
@@ -856,8 +862,8 @@ fn run(args: &[String]) -> Result<(), Fail> {
         "ls" => ls::run(&start, rest, format),
         "of" => of(&start, rest, format),
         "get" => get(&start, rest),
-        "read" => read(&start, rest),
-        "fold" => fold(&start, rest),
+        "read" => read(&start, rest, format),
+        "fold" => fold(&start, rest, format),
         "export" => export(&start, rest),
         "import" => import(&start, rest),
         "check" => check(&start),

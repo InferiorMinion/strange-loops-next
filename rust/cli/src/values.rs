@@ -23,7 +23,7 @@ pub(crate) enum View {
     Values,
 }
 
-fn shown_name(shown: Shown) -> &'static str {
+pub(crate) fn shown_name(shown: Shown) -> &'static str {
     match shown {
         Shown::Here => "here",
         Shown::Withheld => "withheld",
@@ -294,12 +294,17 @@ fn slot(held: &Held, by_thing: &HashMap<String, Vec<&Record>>, slot: &Slot, valu
     }
 }
 
-/// A fold's answer, `slots`, with the values joined in, slot by slot.
-pub(crate) fn fold(held: &Held, realm: &[Record], spec: &Spec, slots: Json) -> Json {
+pub(crate) fn records_by_thing(realm: &[Record]) -> HashMap<String, Vec<&Record>> {
     let mut things = HashMap::<String, Vec<&Record>>::new();
     for r in realm {
         things.entry(r.thing()).or_default().push(r);
     }
+    things
+}
+
+/// A fold's answer, `slots`, with the values joined in, slot by slot.
+pub(crate) fn fold(held: &Held, realm: &[Record], spec: &Spec, slots: Json) -> Json {
+    let things = records_by_thing(realm);
     each_member(slots, |name, value| {
         match spec.slots.iter().find(|s| s.name == name) {
             Some(s) => slot(held, &things, s, value),

@@ -66,8 +66,7 @@ impl Cut {
 }
 
 fn as_of(records: Vec<Record>, bound: &Moment) -> Vec<Record> {
-    // Cut note §2 uses the strict end of a window. Lean's upTo differs
-    // only at the boundary (<= T); downOf is the same for either seed.
+    // Cut note §2 uses the strict end of a window, and so does Lean's upTo.
     let seeds = records
         .iter()
         .filter(|r| r.emitted.moment() < bound)
