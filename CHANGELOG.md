@@ -30,6 +30,21 @@ In brief:
 - The tick record's third piece is in the model: what a tick claims, how one is made, and the check with its answers.
 - Rust has the tick's payload and the result reader, and runs 72 of the 113 tick vectors.
 - The tick has its protocol page, `protocol/tick.md`. margins-claude's Python ran every tick vector from the prose and found two gaps in the readers; both are closed in the model and in Rust.
+- Rust checks a tick: all 126 tick vectors run in Rust, none pending.
+
+### The tick record: Rust for the check
+
+Piece 6 of the seven. `rust/core/src/tick_check.rs` has the claim's run, what a checker holds open, the missing counts, the covered eraser a tick ignores, closure, the count of records taken and not covered, and `check_tick` with the model's answers in the model's order.
+
+- **Rust runs all 126 tick vectors, none pending.** With margins-claude's Python, the claim and the check now have three implementations that agree: the model, Rust, and one written from the prose.
+- **`differs` is decided on bytes** and carries both hashes, as in the model: a test uses a hash that collides on purpose.
+
+**Implementer choices; they stand under Kyle's ruling of 2026-11-21 (W7).**
+- The checker is its own module in the core, and the fixture's JSON spelling of an answer stays in the vector evaluator.
+- `rust/GAPS.md`: the one boundary is the evaluator's, as before. A number past binary64's range in a fixture's subject payload or openings is refused as malformed fixture input where the model answers; no stored record can hold one.
+- No CLI change here: the verbs are their own piece.
+
+A Codex worker wrote it; the coordinator reviewed it and ran the gates.
 
 ### The tick record, piece 4: the protocol page, and two amendments from an outside reading
 
@@ -41,6 +56,8 @@ In brief:
 - **A law, under `tick.canonical`.** A payload the first reader accepts has no repeated name at any depth. Two accepted payloads with one canonical text are then equal as JSON up to member order, when their numbers are finite, as a stored record's always are. Without that premise it is false: `null` and a number past binary64's range have one canonical text in the model.
 - **Vectors.** 13 more, 126 in `vectors/tick/`: repeats inside `spec` and deep inside `result`; a rules 2 payload whose result hash is under another label; a supplied record the spec does not take (covered all the same); one shown erased (withheld); `"unread": "-0"` with a refitted hash.
 - **Rust** follows in the same merge request, since the amendments change answers Rust already gave: the reader's two changes, and `make_tick` in the core, which `write-payload` now uses. Rust runs 80 tick vectors and counts 46 as pending, those of the claim and the check.
+
+- **A second outside reading, of the page itself.** With the amended readers and the check, margins-claude's Python passed all 126 vectors on its first run. It then listed what `protocol/tick.md` had still left it to take from this changelog or from a vector, and the page now says each: an older tick is spared everything past the first reader; how today's comparison is spelled, with its four reasons; that the answers about the version are given only for a payload the first reader accepts; that an ignored covered eraser does not wait for missing records; when closure is unknown; what the count of records taken and not covered counts; and that outside the stored record's domain of finite numbers and well-formed text no answer is defined, the model's included. One vector it asked for is still to add: an outside record that is erased and that the spec takes, which counts.
 
 **The order for a payload with several faults, as now built** (inside this repository only, W4). The first reader: not an object; a repeated name anywhere, found by visiting members in input order, a name before what is inside its value, array elements by index; an unknown member; the first missing member; the version; `spec` not an object; `covers`, then `withheld`; the spelling of `spec-hash`, then of `result-hash`; the spec's hash; the result's hash when the rules are the reader's or older. The result reader: for an object of fixed members, repeats, then extra members in input order, then missing ones in the shape's order (at the root, the spec's slot order); values slot by slot in the spec's order. Inside a slot: `unread` before `value` or `heads`; a grouped slot reads `groups`, `ungrouped`, `unread`; latest-by reads `unread` before `things`; a keyed thing reads `heads`, `keys`, `whole`.
 

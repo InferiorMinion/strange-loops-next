@@ -432,6 +432,10 @@ pub enum RefusalCode {
     TickSpecNoncanonical,
     /// The claimed result has an invalid shape or value.
     TickResultInvalid,
+    /// The checked subject is of another kind.
+    TickKind,
+    /// A covered eraser names a covered target omitted from withheld.
+    TickWithheldErased,
 }
 impl RefusalCode {
     /// Lean: `Loops.Refusal.code`, model/Loops/Spec.lean.
@@ -469,6 +473,8 @@ impl RefusalCode {
             Self::TickSpecHashMismatch => "tick-spec-hash-mismatch",
             Self::TickResultHashMismatch => "tick-result-hash-mismatch",
             Self::TickSpecNoncanonical => "tick-spec-noncanonical",
+            Self::TickKind => "tick-kind",
+            Self::TickWithheldErased => "tick-withheld-erased",
             Self::TickResultInvalid => "tick-result-invalid",
         }
     }
