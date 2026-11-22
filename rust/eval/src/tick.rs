@@ -1,4 +1,5 @@
-//! Input-only answers for model/Gen/Tick.lean and model/Gen/TickPayload.lean.
+//! Input-only answers for the tick vector family.
+mod check;
 use crate::reader::{list, members, object, record, required, text};
 use loops::{
     json::Json,
@@ -172,6 +173,14 @@ fn fields(input: &Json) -> Result<Json, String> {
     crate::payload::fields(payload_member(input)?)
 }
 
+fn opened_form(path: &str, j: &Json, key: &str) -> Result<Record, String> {
+    let pair = members(path, &["record", key], j)?;
+    let mut r = record(&format!("{path}.record"), required(path, pair, "record")?)?;
+    r.fields = payload_fields(required(path, pair, key)?);
+    r.shown = Shown::Here;
+    Ok(r)
+}
+
 fn read_ticks(input: &Json) -> Result<Json, String> {
     let kvs = members("input", &["op", "spec", "ticks"], input)?;
     let spec = crate::spec::parsed(required("input", kvs, "spec")?)?;
@@ -181,11 +190,7 @@ fn read_ticks(input: &Json) -> Result<Json, String> {
         .enumerate()
     {
         let path = format!("input.ticks[{i}]");
-        let pair = members(&path, &["record", "payload"], j)?;
-        let mut r = record(&format!("{path}.record"), required(&path, pair, "record")?)?;
-        r.fields = payload_fields(required(&path, pair, "payload")?);
-        r.shown = Shown::Here;
-        records.push(r);
+        records.push(opened_form(&path, j, "payload")?);
     }
     Ok(result_json(&spec.run(&records)))
 }
@@ -201,6 +206,8 @@ fn operation(name: &str) -> Option<Operation> {
         "payload" => Some(payload),
         "payload-text" => Some(payload_text),
         "members" => Some(raw_members),
+        "make-and-check" => Some(check::make_and_check),
+        "check-tick" => Some(check::check_subject),
         "fields" => Some(fields),
         "read-ticks" => Some(read_ticks),
         _ => None,

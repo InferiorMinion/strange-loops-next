@@ -3,11 +3,12 @@ use crate::{
     base32,
     json::Json,
     read::optional,
-    record::{Digest, Record, Shown, id_text, withholding},
+    record::{Digest, Record, id_text},
     result::{read_result, record_id_of, result_hash_of, result_json},
     spec::{SlotValue, Spec, member_path},
     spec_hash::{Rules, spec_hash_of},
-    things::{ids_of, settle},
+    things::ids_of,
+    tick_check::{open_ids, tick_run},
     where_::{Refusal, RefusalCode},
 };
 use std::{collections::HashSet, fmt};
@@ -115,33 +116,23 @@ impl TickPayload {
 /// Lean: `Loops.makeTick`. Cover every supplied id and fold the settled, masked forms.
 pub fn make_tick(spec: Spec, forms: &[Record]) -> TickPayload {
     let covers = ids_of(forms);
-    let mut open: HashSet<_> = forms
-        .iter()
-        .filter(|r| r.shown == Shown::Here)
-        .map(|r| r.id)
-        .collect();
-    for id in forms.iter().flat_map(|r| &r.erases) {
-        open.remove(id);
-    }
-    let withheld = covers
+    let open = open_ids(forms);
+    let withheld: Vec<_> = covers
         .iter()
         .copied()
         .filter(|id| !open.contains(id))
         .collect();
-    let masked: Vec<_> = forms
-        .iter()
-        .map(|r| withholding(|r| !open.contains(&r.id), r))
-        .collect();
+    let result = tick_run(&spec, &covers, &withheld, forms);
     TickPayload {
         rules: Rules::current(),
         covers,
         withheld,
-        result: spec.run(&settle(&masked)),
+        result,
         spec,
     }
 }
 
-fn fault(code: RefusalCode, path: impl Into<String>) -> Refusal {
+pub(crate) fn fault(code: RefusalCode, path: impl Into<String>) -> Refusal {
     Refusal {
         code,
         path: path.into(),
@@ -320,6 +311,21 @@ impl TickMembers<'_> {
         )
     }
 
+    pub(crate) fn read_spec(&self) -> Result<Spec, TickReadError> {
+        let spec = Spec::of_json(self.spec).map_err(|_| TickReadError::UnreadableSpec)?;
+        if self.spec.canon() != spec.to_json().canon() {
+            return Err(TickReadError::Invalid(fault(
+                RefusalCode::TickSpecNoncanonical,
+                "spec",
+            )));
+        }
+        Ok(spec)
+    }
+
+    pub(crate) fn read_slots(&self, spec: &Spec) -> Result<Vec<(String, SlotValue)>, Refusal> {
+        read_result(spec, self.result).map_err(|path| fault(RefusalCode::TickResultInvalid, path))
+    }
+
     /// Interpret the claim under the rules passed to [`read_tick_members`].
     ///
     /// # Errors
@@ -328,15 +334,8 @@ impl TickMembers<'_> {
         if !self.own_rules {
             return Err(TickReadError::OtherRules(self.rules));
         }
-        let spec = Spec::of_json(self.spec).map_err(|_| TickReadError::UnreadableSpec)?;
-        if self.spec.canon() != spec.to_json().canon() {
-            return Err(TickReadError::Invalid(fault(
-                RefusalCode::TickSpecNoncanonical,
-                "spec",
-            )));
-        }
-        let result = read_result(&spec, self.result)
-            .map_err(|path| TickReadError::Invalid(fault(RefusalCode::TickResultInvalid, path)))?;
+        let spec = self.read_spec()?;
+        let result = self.read_slots(&spec).map_err(TickReadError::Invalid)?;
         Ok(TickPayload {
             rules: self.rules,
             spec,
