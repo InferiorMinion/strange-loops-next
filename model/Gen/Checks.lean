@@ -362,9 +362,29 @@ def tickPayloadChecks : IO Unit := do
   ensure (refused (readResult s wrong)) "negative natural in result"
   IO.println "tick payload and result reader checks pass"
 
+def tickCheckChecks : IO Unit := do
+  let .ok sp := Spec.ofJson Tick.backups | throw (IO.userError "backups spec")
+  let r : Record := { id := 1, kind := "backup", observer := "o:test", prev := [], emitted := stampAt 0 }
+  let e := { r with id := 2, erases := [1] }
+  let p := makeTick sp [r]
+  let subject := fun (p : TickPayload) => TickSubject.mk "tick" (some (p.toJson sha256))
+  ensure ((checkTick sha256 Rules.current (subject p) [r, e]).answer == .missing ⟨0, 1⟩)
+    "a local eraser hides even an opening still in a form"
+  let erased := makeTick sp [r, e]
+  ensure (erased.withheld == [1]) "the writer missed a covered erasure"
+  ensure ((checkTick sha256 Rules.current (subject {erased with withheld := []}) [e]).answer ==
+    .notTick ⟨"tick-withheld-erased", "withheld"⟩) "missing records hid an eraser's evidence"
+  let flat : Hash := fun _ => List.replicate 32 0
+  let wrong := {p with result := sp.run []}
+  let sameHash := resultHash flat p.result
+  ensure ((checkTick flat Rules.current ⟨"tick", some (wrong.toJson flat)⟩ [r]).answer ==
+    .differs sameHash sameHash) "the verdict compared digests instead of bytes"
+  IO.println "tick claim and check runtime checks pass"
+
 def main (args : List String) : IO Unit := do
   specIdentityChecks
   tickPayloadChecks
+  tickCheckChecks
   payloadChecks
   canonicalTextChecks
   rulingChecks

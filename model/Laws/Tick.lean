@@ -222,7 +222,7 @@ theorem TickPayload.read_written (H : Hash)
   let p : TickPayload := ⟨v, s, covers, withheld, s.slots.map fun a => (a.name, values a)⟩
   rw [readTickPayload, TickPayload.read_members p H hs hr hc hh hi]
   dsimp only [p]
-  simp [Except.mapError, bind, Except.bind, TickMembers.readPayload, Spec.ofJson_toJson hf,
+  simp [Except.mapError, bind, Except.bind, TickMembers.readPayload, TickMembers.readSpec, TickMembers.readSlots, Spec.ofJson_toJson hf,
     readResult_written s values hf.2.2.2.1 hv, pure, Except.pure]
 
 end Loops

@@ -356,6 +356,61 @@
    "states":
    "∀ (e : Loops.Env) (s : Option (List String)), { kind := e.kind, observer := e.observer, emitted := e.emitted, occurred := e.occurred, about := e.about, of := e.of, prev := e.prev, under := e.under, erases := e.erases, sets := s }.toJson = Loops.Json.obj (e.baseJson ++ Loops.Env.setsJson s)",
    "module": "Laws.Record"},
+  "Loops.tick_withheld_copy":
+  {"uses":
+   ["Loops.Record.mk.injEq",
+    "Loops.SameEnvelope.id",
+    "Loops.SameEnvelope.refl",
+    "Loops.SameEnvelope.symm",
+    "Loops.SameEnvelope.trans",
+    "Loops.settle_eq",
+    "Loops.withhold_congr",
+    "Loops.withhold_envelope"],
+   "states":
+   "∀ (sp : Loops.Spec) (C W : List Loops.RecordId) (xs : List Loops.Record) (a b : Loops.Record), Loops.Forms xs → a ∈ xs → Loops.SameEnvelope a b → a.id ∈ W → Loops.tickRun sp C W xs = Loops.tickRun sp C W (b :: xs)",
+   "module": "Laws.TickCheck"},
+  "Loops.tick_withheld":
+  {"uses": ["Loops.SameEnvelope.id", "Loops.withhold_congr"],
+   "states":
+   "∀ (sp : Loops.Spec) (C W : List Loops.RecordId) (before after : List Loops.Record) {a b : Loops.Record}, Loops.SameEnvelope a b → a.id ∈ W → Loops.tickRun sp C W (before ++ a :: after) = Loops.tickRun sp C W (before ++ b :: after)",
+   "module": "Laws.TickCheck"},
+  "Loops.tick_level_append":
+  {"uses": ["Loops.tick_level"],
+   "states":
+   "∀ (sp : Loops.Spec) (C W : List Loops.RecordId) (xs extra : List Loops.Record), (∀ (r : Loops.Record), r ∈ extra → ¬r.id ∈ C) → Loops.tickRun sp C W (xs ++ extra) = Loops.tickRun sp C W xs",
+   "module": "Laws.TickCheck"},
+  "Loops.tick_level":
+  {"uses": [],
+   "states":
+   "∀ (sp : Loops.Spec) (C W : List Loops.RecordId) (xs ys : List Loops.Record), Loops.coveredForms C xs = Loops.coveredForms C ys → Loops.tickRun sp C W xs = Loops.tickRun sp C W ys",
+   "module": "Laws.TickCheck"},
+  "Loops.tick_inputs":
+  {"uses":
+   ["Loops.Record.mk.injEq",
+    "Loops.SameEnvelope.erases",
+    "Loops.SameEnvelope.id",
+    "Loops.SameEnvelope.refl",
+    "Loops.SameEnvelope.symm",
+    "Loops.SameEnvelope.trans",
+    "Loops.baseForm_eq",
+    "Loops.idsOf_ext",
+    "Loops.mem_idsOf",
+    "Loops.tickMissing_zero",
+    "Loops.withhold_congr",
+    "Loops.withhold_envelope"],
+   "states":
+   "∀ (sp : Loops.Spec) (C W : List Loops.RecordId) (xs ys : List Loops.Record), Loops.Forms (xs ++ ys) → Loops.tickMissing C W xs = { records := 0, openings := 0 } → Loops.tickMissing C W ys = { records := 0, openings := 0 } → Loops.resultBytes (Loops.tickRun sp C W xs) = Loops.resultBytes (Loops.tickRun sp C W ys)",
+   "module": "Laws.TickCheck"},
+  "Loops.tickOpen_settled":
+  {"uses": ["Loops.pick_id", "Loops.settle_erased", "Loops.settle_keeps"],
+   "states":
+   "∀ {xs : List Loops.Record} {i : Loops.RecordId}, Loops.tickOpen xs i = true ↔ ∃ r, r ∈ Loops.settle xs ∧ r.id = i ∧ r.shown = Loops.Shown.here",
+   "module": "Laws.TickCheck"},
+  "Loops.tickMissing_zero":
+  {"uses": ["Loops.MissingInputs.mk.injEq"],
+   "states":
+   "∀ {C W : List Loops.RecordId} {xs : List Loops.Record}, Loops.tickMissing C W xs = { records := 0, openings := 0 } ↔ ∀ (i : Loops.RecordId), i ∈ C → i ∈ Loops.idsOf xs ∧ (¬i ∈ W → Loops.tickOpen xs i = true)",
+   "module": "Laws.TickCheck"},
   "Loops.things_filter":
   {"uses": ["Loops.Covers.sub", "Loops.canon_ext", "Loops.mem_thingsOf"],
    "states":
@@ -3120,6 +3175,29 @@
    "states":
    "∀ {sp : Loops.Spec} {S W : List Loops.Record} {may : Loops.Record → Loops.Record → Bool}, Loops.EnvOnly may → Loops.Forms W → Loops.SpecSlice sp S W → ∀ {sel : Loops.Record → Bool}, (∀ (r : Loops.Record), sel r = true → sp.takes r = true) → ∀ (cs : List Loops.Cond) (t : String), List.filter (Loops.chosen sel cs) (Loops.stateIn t (Loops.realm may S)).heads = List.filter (Loops.chosen sel cs) (Loops.stateIn t (Loops.realm may W)).heads",
    "module": "Laws.SpecSlice"},
+  "Loops.checkTick_made_of_width":
+  {"uses":
+   ["Loops.Slot.run_fitsSlot",
+    "Loops.Spec.ofJson_toJson",
+    "Loops.TickPayload.read_members",
+    "Loops.idsOf_sorted",
+    "Loops.mem_idsOf",
+    "Loops.readResult_written",
+    "Loops.tickMissing_zero",
+    "Loops.tick_level_append"],
+   "states":
+   "∀ (H : Loops.Hash) (sp : Loops.Spec), sp.Fits → ∀ (xs extra : List Loops.Record), (H (Loops.specPreimageOf Loops.Rules.current sp.toJson)).length = 32 → (H (Loops.resultPreimage (Loops.makeTick sp xs).result)).length = 32 → (∀ (r : Loops.Record), r ∈ extra → ¬r.id ∈ Loops.idsOf xs) → (∀ (r : Loops.Record), r ∈ extra → ∀ (i : Loops.RecordId), i ∈ Loops.idsOf xs → ¬i ∈ r.erases) → (Loops.checkTick H Loops.Rules.current { kind := \"tick\", payload := some ((Loops.makeTick sp xs).toJson H) } (xs ++ extra)).answer = Loops.TickAnswer.same",
+   "module": "Laws.TickCheck"},
+  "Loops.checkTick_made_late":
+  {"uses": ["Gen.sha256_length", "Loops.checkTick_made_of_width"],
+   "states":
+   "∀ (sp : Loops.Spec), sp.Fits → ∀ (xs extra : List Loops.Record), (∀ (r : Loops.Record), r ∈ extra → ¬r.id ∈ Loops.idsOf xs) → (∀ (r : Loops.Record), r ∈ extra → ∀ (i : Loops.RecordId), i ∈ Loops.idsOf xs → ¬i ∈ r.erases) → (Loops.checkTick Gen.sha256 Loops.Rules.current { kind := \"tick\", payload := some ((Loops.makeTick sp xs).toJson Gen.sha256) } (xs ++ extra)).answer = Loops.TickAnswer.same",
+   "module": "Laws.TickCheck"},
+  "Loops.checkTick_made":
+  {"uses": ["Loops.checkTick_made_late"],
+   "states":
+   "∀ (sp : Loops.Spec), sp.Fits → ∀ (xs : List Loops.Record), (Loops.checkTick Gen.sha256 Loops.Rules.current { kind := \"tick\", payload := some ((Loops.makeTick sp xs).toJson Gen.sha256) } xs).answer = Loops.TickAnswer.same",
+   "module": "Laws.TickCheck"},
   "Loops.char_valid":
   {"uses": [],
    "states":
@@ -3657,6 +3735,52 @@
    "states":
    "∀ {ts ts' : List Loops.Tri}, (∀ (a : Loops.Tri), a ∈ ts ↔ a ∈ ts') → ∀ (n : Loops.Tri), Loops.Tri.agree ts n = Loops.Tri.agree ts' n",
    "module": "Laws.Live"},
+  "Loops.TodayReport.unreadableSpec.sizeOf_spec":
+  {"uses": [],
+   "states": "sizeOf Loops.TodayReport.unreadableSpec = 1",
+   "module": "Loops.TickCheck"},
+  "Loops.TodayReport.unavailable.sizeOf_spec":
+  {"uses": [],
+   "states":
+   "∀ (why : Loops.ReplayIssue), sizeOf (Loops.TodayReport.unavailable why) = 1 + sizeOf why",
+   "module": "Loops.TickCheck"},
+  "Loops.TodayReport.unavailable.injEq":
+  {"uses": ["Loops.TodayReport.unavailable.inj"],
+   "states":
+   "∀ (why why_1 : Loops.ReplayIssue), (Loops.TodayReport.unavailable why = Loops.TodayReport.unavailable why_1) = (why = why_1)",
+   "module": "Loops.TickCheck"},
+  "Loops.TodayReport.unavailable.inj":
+  {"uses": [],
+   "states":
+   "∀ {why why_1 : Loops.ReplayIssue}, Loops.TodayReport.unavailable why = Loops.TodayReport.unavailable why_1 → why = why_1",
+   "module": "Loops.TickCheck"},
+  "Loops.TodayReport.same.sizeOf_spec":
+  {"uses": [],
+   "states": "sizeOf Loops.TodayReport.same = 1",
+   "module": "Loops.TickCheck"},
+  "Loops.TodayReport.noncanonicalSpec.sizeOf_spec":
+  {"uses": [],
+   "states": "sizeOf Loops.TodayReport.noncanonicalSpec = 1",
+   "module": "Loops.TickCheck"},
+  "Loops.TodayReport.another.sizeOf_spec":
+  {"uses": [],
+   "states": "sizeOf Loops.TodayReport.another = 1",
+   "module": "Loops.TickCheck"},
+  "Loops.TickSubject.mk.sizeOf_spec":
+  {"uses": [],
+   "states":
+   "∀ (kind : String) (payload : Option Loops.Json), sizeOf { kind := kind, payload := payload } = 1 + sizeOf kind + sizeOf payload",
+   "module": "Loops.TickCheck"},
+  "Loops.TickSubject.mk.injEq":
+  {"uses": ["Loops.TickSubject.mk.inj"],
+   "states":
+   "∀ (kind : String) (payload : Option Loops.Json) (kind_1 : String) (payload_1 : Option Loops.Json), ({ kind := kind, payload := payload } = { kind := kind_1, payload := payload_1 }) = (kind = kind_1 ∧ payload = payload_1)",
+   "module": "Loops.TickCheck"},
+  "Loops.TickSubject.mk.inj":
+  {"uses": [],
+   "states":
+   "∀ {kind : String} {payload : Option Loops.Json} {kind_1 : String} {payload_1 : Option Loops.Json}, { kind := kind, payload := payload } = { kind := kind_1, payload := payload_1 } → kind = kind_1 ∧ payload = payload_1",
+   "module": "Loops.TickCheck"},
   "Loops.TickReader.firstRepeated.eq_def":
   {"uses": [],
    "states":
@@ -3748,6 +3872,116 @@
    "states":
    "∀ {rules : Loops.Rules} {spec : Loops.Json} {covers withheld : List Loops.RecordId} {result : Loops.Json} {rules_1 : Loops.Rules} {spec_1 : Loops.Json} {covers_1 withheld_1 : List Loops.RecordId} {result_1 : Loops.Json}, { rules := rules, spec := spec, covers := covers, withheld := withheld, result := result } = { rules := rules_1, spec := spec_1, covers := covers_1, withheld := withheld_1, result := result_1 } → rules = rules_1 ∧ spec = spec_1 ∧ covers = covers_1 ∧ withheld = withheld_1 ∧ result = result_1",
    "module": "Loops.Tick"},
+  "Loops.TickComparison.same.sizeOf_spec":
+  {"uses": [],
+   "states": "sizeOf Loops.TickComparison.same = 1",
+   "module": "Loops.TickCheck"},
+  "Loops.TickComparison.differs.sizeOf_spec":
+  {"uses": [],
+   "states":
+   "∀ (claimed computed : String), sizeOf (Loops.TickComparison.differs claimed computed) = 1 + sizeOf claimed + sizeOf computed",
+   "module": "Loops.TickCheck"},
+  "Loops.TickComparison.differs.injEq":
+  {"uses": ["Loops.TickComparison.differs.inj"],
+   "states":
+   "∀ (claimed computed claimed_1 computed_1 : String), (Loops.TickComparison.differs claimed computed = Loops.TickComparison.differs claimed_1 computed_1) = (claimed = claimed_1 ∧ computed = computed_1)",
+   "module": "Loops.TickCheck"},
+  "Loops.TickComparison.differs.inj":
+  {"uses": [],
+   "states":
+   "∀ {claimed computed claimed_1 computed_1 : String}, Loops.TickComparison.differs claimed computed = Loops.TickComparison.differs claimed_1 computed_1 → claimed = claimed_1 ∧ computed = computed_1",
+   "module": "Loops.TickCheck"},
+  "Loops.TickCheck.mk.sizeOf_spec":
+  {"uses": [],
+   "states":
+   "∀ (answer : Loops.TickAnswer) (closure : Loops.CoverClosure) (takenOutside : Option Nat), sizeOf { answer := answer, closure := closure, takenOutside := takenOutside } = 1 + sizeOf answer + sizeOf closure + sizeOf takenOutside",
+   "module": "Loops.TickCheck"},
+  "Loops.TickCheck.mk.injEq":
+  {"uses": ["Loops.TickCheck.mk.inj"],
+   "states":
+   "∀ (answer : Loops.TickAnswer) (closure : Loops.CoverClosure) (takenOutside : Option Nat) (answer_1 : Loops.TickAnswer) (closure_1 : Loops.CoverClosure) (takenOutside_1 : Option Nat), ({ answer := answer, closure := closure, takenOutside := takenOutside } = { answer := answer_1, closure := closure_1, takenOutside := takenOutside_1 }) = (answer = answer_1 ∧ closure = closure_1 ∧ takenOutside = takenOutside_1)",
+   "module": "Loops.TickCheck"},
+  "Loops.TickCheck.mk.inj":
+  {"uses": [],
+   "states":
+   "∀ {answer : Loops.TickAnswer} {closure : Loops.CoverClosure} {takenOutside : Option Nat} {answer_1 : Loops.TickAnswer} {closure_1 : Loops.CoverClosure} {takenOutside_1 : Option Nat}, { answer := answer, closure := closure, takenOutside := takenOutside } = { answer := answer_1, closure := closure_1, takenOutside := takenOutside_1 } → answer = answer_1 ∧ closure = closure_1 ∧ takenOutside = takenOutside_1",
+   "module": "Loops.TickCheck"},
+  "Loops.TickAnswer.unreadableSpec.sizeOf_spec":
+  {"uses": [],
+   "states": "sizeOf Loops.TickAnswer.unreadableSpec = 1",
+   "module": "Loops.TickCheck"},
+  "Loops.TickAnswer.same.sizeOf_spec":
+  {"uses": [],
+   "states": "sizeOf Loops.TickAnswer.same = 1",
+   "module": "Loops.TickCheck"},
+  "Loops.TickAnswer.payloadUnheld.sizeOf_spec":
+  {"uses": [],
+   "states": "sizeOf Loops.TickAnswer.payloadUnheld = 1",
+   "module": "Loops.TickCheck"},
+  "Loops.TickAnswer.older.sizeOf_spec":
+  {"uses": [],
+   "states":
+   "∀ (today : Loops.TodayReport), sizeOf (Loops.TickAnswer.older today) = 1 + sizeOf today",
+   "module": "Loops.TickCheck"},
+  "Loops.TickAnswer.older.injEq":
+  {"uses": ["Loops.TickAnswer.older.inj"],
+   "states":
+   "∀ (today today_1 : Loops.TodayReport), (Loops.TickAnswer.older today = Loops.TickAnswer.older today_1) = (today = today_1)",
+   "module": "Loops.TickCheck"},
+  "Loops.TickAnswer.older.inj":
+  {"uses": [],
+   "states":
+   "∀ {today today_1 : Loops.TodayReport}, Loops.TickAnswer.older today = Loops.TickAnswer.older today_1 → today = today_1",
+   "module": "Loops.TickCheck"},
+  "Loops.TickAnswer.notTick.sizeOf_spec":
+  {"uses": [],
+   "states":
+   "∀ (fault : Loops.Refusal), sizeOf (Loops.TickAnswer.notTick fault) = 1 + sizeOf fault",
+   "module": "Loops.TickCheck"},
+  "Loops.TickAnswer.notTick.injEq":
+  {"uses": ["Loops.TickAnswer.notTick.inj"],
+   "states":
+   "∀ (fault fault_1 : Loops.Refusal), (Loops.TickAnswer.notTick fault = Loops.TickAnswer.notTick fault_1) = (fault = fault_1)",
+   "module": "Loops.TickCheck"},
+  "Loops.TickAnswer.notTick.inj":
+  {"uses": [],
+   "states":
+   "∀ {fault fault_1 : Loops.Refusal}, Loops.TickAnswer.notTick fault = Loops.TickAnswer.notTick fault_1 → fault = fault_1",
+   "module": "Loops.TickCheck"},
+  "Loops.TickAnswer.newer.sizeOf_spec":
+  {"uses": [],
+   "states": "sizeOf Loops.TickAnswer.newer = 1",
+   "module": "Loops.TickCheck"},
+  "Loops.TickAnswer.missing.sizeOf_spec":
+  {"uses": [],
+   "states":
+   "∀ (counts : Loops.MissingInputs), sizeOf (Loops.TickAnswer.missing counts) = 1 + sizeOf counts",
+   "module": "Loops.TickCheck"},
+  "Loops.TickAnswer.missing.injEq":
+  {"uses": ["Loops.TickAnswer.missing.inj"],
+   "states":
+   "∀ (counts counts_1 : Loops.MissingInputs), (Loops.TickAnswer.missing counts = Loops.TickAnswer.missing counts_1) = (counts = counts_1)",
+   "module": "Loops.TickCheck"},
+  "Loops.TickAnswer.missing.inj":
+  {"uses": [],
+   "states":
+   "∀ {counts counts_1 : Loops.MissingInputs}, Loops.TickAnswer.missing counts = Loops.TickAnswer.missing counts_1 → counts = counts_1",
+   "module": "Loops.TickCheck"},
+  "Loops.TickAnswer.differs.sizeOf_spec":
+  {"uses": [],
+   "states":
+   "∀ (claimed computed : String), sizeOf (Loops.TickAnswer.differs claimed computed) = 1 + sizeOf claimed + sizeOf computed",
+   "module": "Loops.TickCheck"},
+  "Loops.TickAnswer.differs.injEq":
+  {"uses": ["Loops.TickAnswer.differs.inj"],
+   "states":
+   "∀ (claimed computed claimed_1 computed_1 : String), (Loops.TickAnswer.differs claimed computed = Loops.TickAnswer.differs claimed_1 computed_1) = (claimed = claimed_1 ∧ computed = computed_1)",
+   "module": "Loops.TickCheck"},
+  "Loops.TickAnswer.differs.inj":
+  {"uses": [],
+   "states":
+   "∀ {claimed computed claimed_1 computed_1 : String}, Loops.TickAnswer.differs claimed computed = Loops.TickAnswer.differs claimed_1 computed_1 → claimed = claimed_1 ∧ computed = computed_1",
+   "module": "Loops.TickCheck"},
   "Loops.Tests.toJson_distinct":
   {"uses": ["Loops.Json.keysDistinct_obj", "Loops.Op.toJson_distinct"],
    "states": "∀ {ts : Loops.Tests}, ts.Fits → ts.toJson.keysDistinct = true",
@@ -4342,6 +4576,16 @@
    "states":
    "∀ (s : Loops.Slot) (sel sel' : Loops.Record → Bool) (xs ys : List Loops.Record), (s.run sel xs).Like (s.run sel' ys)",
    "module": "Laws.Result"},
+  "Loops.Slot.run_fitsSlot":
+  {"uses":
+   ["Loops.Slot.plain_ordered",
+    "Loops.Slot.plain_tag",
+    "Loops.Slot.run_ordered",
+    "Loops.keyedValue_tag",
+    "Loops.lexLt_irrefl"],
+   "states":
+   "∀ (s : Loops.Slot), s.Fits → ∀ (sel : Loops.Record → Bool) (xs : List Loops.Record), (s.run sel xs).FitsSlot s",
+   "module": "Laws.TickCheck"},
   "Loops.Slot.pool_slice":
   {"uses": ["Loops.realm_taken", "Loops.wholeHeads_taken_slice"],
    "states":
@@ -4723,6 +4967,25 @@
    "states":
    "∀ {σ : Type} {value : σ} {unread : Nat} {value_1 : σ} {unread_1 : Nat}, { value := value, unread := unread } = { value := value_1, unread := unread_1 } → value = value_1 ∧ unread = unread_1",
    "module": "Loops.Families"},
+  "Loops.ReplayIssue.missing.sizeOf_spec":
+  {"uses": [],
+   "states":
+   "∀ (counts : Loops.MissingInputs), sizeOf (Loops.ReplayIssue.missing counts) = 1 + sizeOf counts",
+   "module": "Loops.TickCheck"},
+  "Loops.ReplayIssue.missing.injEq":
+  {"uses": ["Loops.ReplayIssue.missing.inj"],
+   "states":
+   "∀ (counts counts_1 : Loops.MissingInputs), (Loops.ReplayIssue.missing counts = Loops.ReplayIssue.missing counts_1) = (counts = counts_1)",
+   "module": "Loops.TickCheck"},
+  "Loops.ReplayIssue.missing.inj":
+  {"uses": [],
+   "states":
+   "∀ {counts counts_1 : Loops.MissingInputs}, Loops.ReplayIssue.missing counts = Loops.ReplayIssue.missing counts_1 → counts = counts_1",
+   "module": "Loops.TickCheck"},
+  "Loops.ReplayIssue.ignoredErasure.sizeOf_spec":
+  {"uses": [],
+   "states": "sizeOf Loops.ReplayIssue.ignoredErasure = 1",
+   "module": "Loops.TickCheck"},
   "Loops.Refusal.mk.sizeOf_spec":
   {"uses": [],
    "states":
@@ -5006,6 +5269,21 @@
   {"uses": ["Loops.Newer.irrefl", "Loops.Newer.trans"],
    "states": "∀ {a b : Loops.Record}, Loops.Newer a b → ¬Loops.Newer b a",
    "module": "Laws.Order"},
+  "Loops.MissingInputs.mk.sizeOf_spec":
+  {"uses": [],
+   "states":
+   "∀ (records openings : Nat), sizeOf { records := records, openings := openings } = 1 + sizeOf records + sizeOf openings",
+   "module": "Loops.TickCheck"},
+  "Loops.MissingInputs.mk.injEq":
+  {"uses": ["Loops.MissingInputs.mk.inj"],
+   "states":
+   "∀ (records openings records_1 openings_1 : Nat), ({ records := records, openings := openings } = { records := records_1, openings := openings_1 }) = (records = records_1 ∧ openings = openings_1)",
+   "module": "Loops.TickCheck"},
+  "Loops.MissingInputs.mk.inj":
+  {"uses": [],
+   "states":
+   "∀ {records openings records_1 openings_1 : Nat}, { records := records, openings := openings } = { records := records_1, openings := openings_1 } → records = records_1 ∧ openings = openings_1",
+   "module": "Loops.TickCheck"},
   "Loops.Min.set_decides":
   {"uses": ["Loops.Max.set_decides", "Loops.Min.neg_max"],
    "states":
@@ -6573,6 +6851,23 @@
    "states":
    "∀ {t : String} {ys xs : List Loops.Record}, Loops.Covers t ys xs → Loops.Addressed xs → Loops.Addressed ys → (Loops.stateIn t ys).heads = (Loops.stateIn t xs).heads",
    "module": "Laws.KeyedSpecSlice"},
+  "Loops.CoverClosure.yes.sizeOf_spec":
+  {"uses": [],
+   "states": "sizeOf Loops.CoverClosure.yes = 1",
+   "module": "Loops.TickCheck"},
+  "Loops.CoverClosure.unknown.sizeOf_spec":
+  {"uses": [],
+   "states": "sizeOf Loops.CoverClosure.unknown = 1",
+   "module": "Loops.TickCheck"},
+  "Loops.CoverClosure.ofNat_ctorIdx":
+  {"uses": [],
+   "states":
+   "∀ (x : Loops.CoverClosure), Loops.CoverClosure.ofNat x.ctorIdx = x",
+   "module": "Loops.TickCheck"},
+  "Loops.CoverClosure.no.sizeOf_spec":
+  {"uses": [],
+   "states": "sizeOf Loops.CoverClosure.no = 1",
+   "module": "Loops.TickCheck"},
   "Loops.Count.select_value":
   {"uses": ["Loops.Count.fold_eq"],
    "states":

@@ -1,0 +1,120 @@
+{
+  "vector": "taken-after-admit",
+  "layer": "tick",
+  "laws": ["tick.made"],
+  "source": "model",
+  "input": {
+    "op": "make-and-check",
+    "spec": {
+      "vertex": "backups",
+      "from": [
+        {
+          "store": "lab",
+          "kind": ["backup"]
+        }
+      ],
+      "fold": {
+        "runs": {
+          "count": true
+        },
+        "mb": {
+          "sum": "mb"
+        },
+        "list": {
+          "collect": true
+        }
+      }
+    },
+    "writer": [
+      {
+        "id": "r:000000000000000000000000000000000000000000000000000g",
+        "kind": "backup",
+        "observer": "sl:laptop",
+        "about": ["svc:jellyfin"],
+        "prev": [],
+        "emitted": "2026-11-21T20:00:00Z",
+        "occurred": "2026-11-16",
+        "fields": {
+          "svc": "jellyfin",
+          "mb": 412
+        }
+      }
+    ],
+    "checker": [
+      {
+        "id": "r:000000000000000000000000000000000000000000000000000g",
+        "kind": "backup",
+        "observer": "sl:laptop",
+        "about": ["svc:jellyfin"],
+        "prev": [],
+        "emitted": "2026-11-21T20:00:00Z",
+        "occurred": "2026-11-16",
+        "fields": {
+          "svc": "jellyfin",
+          "mb": 412
+        }
+      },
+      {
+        "id": "r:000000000000000000000000000000000000000000000000003g",
+        "kind": "backup",
+        "observer": "sl:laptop",
+        "about": ["svc:pihole"],
+        "of": "svc:other",
+        "prev": ["r:000000000000000000000000000000000000000000000000000g"],
+        "emitted": "2026-11-21T20:00:00Z",
+        "occurred": "2026-11-17",
+        "fields": {
+          "mb": 4,
+          "svc": "pihole"
+        }
+      }
+    ]
+  },
+  "expect": {
+    "payload": {
+      "rules": "1",
+      "spec": {
+        "vertex": "backups",
+        "from": [
+          {
+            "store": "lab",
+            "kind": ["backup"]
+          }
+        ],
+        "fold": {
+          "runs": {
+            "count": true
+          },
+          "mb": {
+            "sum": "mb"
+          },
+          "list": {
+            "collect": true
+          }
+        }
+      },
+      "spec-hash": "spec:gs9soetlnq1fqp17th66fedrl0oecag0uf101fm5ov2c46ss73ag",
+      "covers": ["r:000000000000000000000000000000000000000000000000000g"],
+      "result": {
+        "runs": {
+          "unread": "0",
+          "value": "1"
+        },
+        "mb": {
+          "unread": "0",
+          "value": "412"
+        },
+        "list": {
+          "heads": ["r:000000000000000000000000000000000000000000000000000g"],
+          "unread": "0"
+        }
+      },
+      "result-hash": "res:liodismrae7s3acrd7l462aeo3qosl48qv5hco75chtu8eqr1qtg"
+    },
+    "check": {
+      "answer": "same",
+      "closure": "yes",
+      "taken-not-covered": 0
+    }
+  }
+}

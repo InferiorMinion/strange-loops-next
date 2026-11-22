@@ -1,0 +1,81 @@
+{
+  "vector": "older-different-today",
+  "layer": "tick",
+  "laws": ["tick.inputs"],
+  "source": "model",
+  "input": {
+    "op": "check-tick",
+    "current": "2",
+    "subject": {
+      "kind": "tick",
+      "payload": {
+        "rules": "1",
+        "spec": {
+          "vertex": "backups",
+          "from": [
+            {
+              "store": "lab",
+              "kind": ["backup"]
+            }
+          ],
+          "fold": {
+            "minimum": {
+              "min": "n"
+            }
+          }
+        },
+        "spec-hash": "spec:de0ak5qv7hsg73ts1l8o59hv8pq97kvvu8ia1vqtk28mgv7ihbbg",
+        "covers": ["r:000000000000000000000000000000000000000000000000000g", "r:000000000000000000000000000000000000000000000000003g", "r:0000000000000000000000000000000000000000000000000040"],
+        "result": {
+          "minimum": {
+            "unread": "0",
+            "value": "0"
+          }
+        },
+        "result-hash": "res:fqvpeavpeqqntc1enl86rbp3ppl6tir8fj533fe3hco3rju6ela0"
+      }
+    },
+    "checker": [
+      {
+        "id": "r:000000000000000000000000000000000000000000000000000g",
+        "kind": "backup",
+        "observer": "sl:laptop",
+        "about": ["svc:jellyfin"],
+        "prev": [],
+        "emitted": "2026-11-21T20:00:00Z",
+        "occurred": "2026-11-16",
+        "fields": {
+          "n": 9
+        }
+      },
+      {
+        "id": "r:000000000000000000000000000000000000000000000000003g",
+        "kind": "backup",
+        "observer": "sl:laptop",
+        "about": ["svc:pihole"],
+        "prev": [],
+        "emitted": "2026-11-21T20:00:00Z",
+        "occurred": "2026-11-17"
+      },
+      {
+        "id": "r:0000000000000000000000000000000000000000000000000040",
+        "kind": "backup",
+        "observer": "sl:laptop",
+        "about": ["svc:pihole"],
+        "prev": [],
+        "emitted": "2026-11-21T20:00:00Z",
+        "occurred": "2026-11-17",
+        "fields": {
+          "n": "absent"
+        }
+      }
+    ]
+  },
+  "expect": {
+    "answer": "cannot check",
+    "reason": "made under older rules",
+    "today": "another result",
+    "closure": "yes",
+    "taken-not-covered": 0
+  }
+}

@@ -75,7 +75,7 @@ private def backup (id : RecordId) (service : String) (mb : Int) (night : Claim)
     emitted := stamp "2026-11-21T20:00:00Z", occurred := some night,
     fields := [("svc", .one (.str service)), ("mb", .one (.int mb))] }
 
-private def backups : List Record := [
+def backups : List Record := [
   backup 1 "jellyfin" 412 (claim "2026-11-16"), backup 2 "pihole" 3 (claim "2026-11-16"),
   backup 3 "gitea" 88 (claim "2026-11-16"), backup 4 "jellyfin" 419 (claim "2026-11-17"),
   backup 5 "pihole" 10 (claim "2026-11-17"), backup 6 "gitea" 95 (claim "2026-11-17")]

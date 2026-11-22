@@ -392,16 +392,18 @@ theorem readTickPayload_text {H current j p} (h : readTickPayload H current j = 
   case neg => simp [same, bind, Except.bind, throw, throwThe, MonadExceptOf.throw] at hp
   simp only [show (m.rules != current) = false by simp [same], Bool.false_eq_true, ↓reduceIte] at hp
   obtain ⟨s, hs, hp⟩ := bound hp
-  have parsed := Spec.ofJson_fits (mapped hs)
-  by_cases sc : m.spec.canon = s.toJson.canon
-  · simp only [show (m.spec.canon != s.toJson.canon) = false by simp [sc], Bool.false_eq_true, ↓reduceIte] at hp
-    obtain ⟨r, hr, done⟩ := bound hp
+  obtain ⟨s', parse, hs⟩ := bound hs
+  have parsed := Spec.ofJson_fits (mapped parse)
+  by_cases sc : m.spec.canon = s'.toJson.canon
+  · simp only [show (m.spec.canon != s'.toJson.canon) = false by simp [sc], Bool.false_eq_true, ↓reduceIte] at hs
+    cases hs
+    obtain ⟨r, hr, done⟩ := bound (mapped hp)
     cases done
     have rc := readResult_text parsed.2.2.2.1 (mapped hr)
     rw [raw]
     change m.result.canon = (resultJson r).canon at rc
     simp only [TickPayload.toJson, TickMembers.toJson, Json.canon, canonMembers_eq, map_append, map_cons, map_nil,
       specHashOf, specPreimageOf, resultHashOf, sc, rc]
-  · simp [sc, bind, Except.bind, throw, throwThe, MonadExceptOf.throw] at hp
+  · simp [sc, bind, Except.bind, throw, throwThe, MonadExceptOf.throw] at hs
 
 end Loops

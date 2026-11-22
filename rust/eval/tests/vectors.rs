@@ -18,7 +18,7 @@ const FAMILIES: &[(&str, usize)] = &[
     ("batch", 83),
     ("standard", 12),
     ("result", 23),
-    ("tick", 72),
+    ("tick", 113),
 ];
 
 fn member<'a>(j: &'a Json, key: &str) -> &'a Json {
