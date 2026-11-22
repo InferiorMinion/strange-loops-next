@@ -6,7 +6,7 @@
 //! their envelopes and held payloads are joined in, from what the store holds. Liveness
 //! is the core's (`loops::live`), and nothing here compares two values.
 use loops::{
-    json::{Json, canon_set},
+    json::{Json, canon_set, str_cmp},
     live,
     record::{Record, Shown, id_text},
     spec::{FoldType, Follow, Slot, Spec},
@@ -63,48 +63,103 @@ fn setter(held: &Held, record: &Record, key: &str) -> Json {
     Json::Obj(members)
 }
 
-/// A thing's about and values over the records held as a reader sees
-/// them (settled, then admitted), as members to write beside its keyed state.
-///
-/// The about is the union of the mentions on its heads.
-/// The keys are those some live record declares and the top-level keys of
-/// each held live record read whole; a record with `sets` gives only the
-/// keys it declares. Each key is read from its live setters (`live::setters`):
-/// - `values` holds a key whose one live setter is held and holds the key;
-///   a key whose one held setter lacks it is unset and not written;
-/// - `setters` holds every other key: two or more live setters, or one whose
-///   payload is not held, each with its id, its `shown` and, when held, its
-///   value. Nothing picks one of two, and nothing merges them;
-/// - `unheld` lists the live records read whole whose payload is not held:
-///   whatever keys they set beside those written here are unknown.
-///
-/// `setters` and `unheld` are written only when they hold something.
-pub(crate) fn thing(held: &Held, state: &live::LiveState<'_>) -> Vec<(&'static str, Json)> {
-    let whole = state.whole();
-    let mut names = state.keys();
-    for record in &whole {
-        if let Some(Json::Obj(members)) = payload(held, record) {
-            names.extend(members.iter().map(|(k, _)| k.clone()));
+/// The result of asking for one key, including the evidence when it is not a value.
+pub(crate) enum Field {
+    Value(Json),
+    Unset,
+    Unknown(Vec<Json>),
+    Conflict(Vec<Json>),
+}
+
+impl Field {
+    pub(crate) fn projection(&self) -> Json {
+        use crate::{object, text};
+        match self {
+            Self::Value(v) => object(vec![("state", text("value")), ("value", v.clone())]),
+            Self::Unset => object(vec![("state", text("unset"))]),
+            Self::Unknown(rs) | Self::Conflict(rs) => {
+                let tag = if matches!(self, Self::Unknown(_)) {
+                    "unknown"
+                } else {
+                    "conflict"
+                };
+                object(vec![
+                    ("state", text(tag)),
+                    ("setters", Json::Arr(rs.clone())),
+                ])
+            }
         }
     }
+}
+
+pub(crate) struct Fields<'a, 'r> {
+    held: &'a Held,
+    state: &'a live::LiveState<'r>,
+    pub(crate) names: Vec<String>,
+}
+
+impl<'a, 'r> Fields<'a, 'r> {
+    pub(crate) fn new(held: &'a Held, state: &'a live::LiveState<'r>) -> Self {
+        let mut names = state.keys();
+        for r in state.whole() {
+            if let Some(Json::Obj(members)) = payload(held, r) {
+                names.extend(members.iter().map(|(k, _)| k.clone()));
+            }
+        }
+        Self {
+            held,
+            state,
+            names: canon_set(&names),
+        }
+    }
+
+    pub(crate) fn read(&self, key: &str) -> Field {
+        let live = self.state.setters(key);
+        if self.names.binary_search_by(|k| str_cmp(k, key)).is_err() {
+            // A whole record implicitly sets every key. Only an unavailable
+            // live opening can supply an otherwise unmentioned key.
+            let hidden: Vec<_> = live
+                .iter()
+                .filter(|r| r.shown != Shown::Here)
+                .map(|r| setter(self.held, r, key))
+                .collect();
+            return if hidden.is_empty() {
+                Field::Unset
+            } else {
+                Field::Unknown(hidden)
+            };
+        }
+        match live.as_slice() {
+            [] => Field::Unset,
+            [one] if one.shown == Shown::Here => payload(self.held, one)
+                .and_then(|p| member(p, key))
+                .cloned()
+                .map_or(Field::Unset, Field::Value),
+            [one] => Field::Unknown(vec![setter(self.held, one, key)]),
+            several => Field::Conflict(several.iter().map(|r| setter(self.held, r, key)).collect()),
+        }
+    }
+}
+
+pub(crate) fn thing_about(heads: &[Record]) -> Vec<String> {
+    let mentions: Vec<_> = heads.iter().flat_map(|r| r.about.iter().cloned()).collect();
+    canon_set(&mentions)
+}
+
+/// Preserve the existing values/setters/unheld view on of, read and fold.
+pub(crate) fn thing(held: &Held, state: &live::LiveState<'_>) -> Vec<(&'static str, Json)> {
+    let fields = Fields::new(held, state);
     let mut values = Vec::new();
     let mut several = Vec::new();
-    for key in canon_set(&names) {
-        let live = state.setters(&key);
-        match live.as_slice() {
-            [] => {}
-            [one] if one.shown == Shown::Here => {
-                if let Some(value) = payload(held, one).and_then(|p| member(p, &key)) {
-                    values.push((key, value.clone()));
-                }
-            }
-            _ => {
-                let each = live.iter().map(|r| setter(held, r, &key)).collect();
-                several.push((key, Json::Arr(each)));
-            }
+    for key in &fields.names {
+        match fields.read(key) {
+            Field::Value(v) => values.push((key.clone(), v)),
+            Field::Unknown(rs) | Field::Conflict(rs) => several.push((key.clone(), Json::Arr(rs))),
+            Field::Unset => {}
         }
     }
-    let unheld: Vec<Json> = whole
+    let unheld: Vec<Json> = state
+        .whole()
         .iter()
         .filter(|r| r.shown != Shown::Here)
         .map(|r| {
@@ -114,13 +169,18 @@ pub(crate) fn thing(held: &Held, state: &live::LiveState<'_>) -> Vec<(&'static s
             ])
         })
         .collect();
-    let mentions: Vec<_> = state
-        .heads()
-        .iter()
-        .flat_map(|r| r.about.iter().cloned())
-        .collect();
-    let about = Json::Arr(canon_set(&mentions).into_iter().map(Json::Str).collect());
-    let mut out = vec![("about", about), ("values", Json::Obj(values))];
+    let mut out = vec![
+        (
+            "about",
+            Json::Arr(
+                thing_about(&state.heads())
+                    .into_iter()
+                    .map(Json::Str)
+                    .collect(),
+            ),
+        ),
+        ("values", Json::Obj(values)),
+    ];
     if !several.is_empty() {
         out.push(("setters", Json::Obj(several)));
     }

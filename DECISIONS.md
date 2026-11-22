@@ -13,6 +13,7 @@ Everything that waits on Kyle, in one place. Each entry has the question, an exa
 | [TK10](#tk10-seven-details-of-the-check) | Seven details of `loops tick --check` that the rulings leave open | As in its table; the build follows them meanwhile | Nothing yet: the check is three merge requests away |
 | [TK11](#tk11-a-write-against-a-base-that-does-not-hold-what-is-under-it) | What `loops emit --base` does when the base does not hold what is under its records | Name the live records of the base together with what is under it; say how many of those the base did not hold | The filler against a base |
 | [AD1](#ad1-how-a-spec-finds-the-stores-it-names) | How a spec finds the stores it names, and what a missing one answers | A per-user list of names and directories; a name bound to nothing refuses the whole read | Reads across several stores (adoption) |
+| [AD2](#ad2-how-an-old-store-becomes-records) | How a fact of an old store becomes a record: its thing, its order, its times, who signs, where its origin is kept | As in its table: a keyed fact is a revision of `<kind>:<key>`; the old time is `occurred`; an import key signs | The shadow import (adoption) |
 
 Every earlier entry is ruled (2026-11-21). TK11 is new on 2026-11-22.
 
@@ -88,7 +89,7 @@ The base is `y` alone. Two things go wrong, and they are different.
 
 ## The adoption step
 
-You ruled on 2026-11-21 (W1) that the adoption step's CLI pieces are built beside the tick work. A worker planned them on 2026-11-22. The pieces that are the CLI's alone are being built: `loops ls`, a scan by the start of a name, a plain-text view with relative times, a `--version`, and the cache of checked segments (W2). Two pieces need you first. AD1 is one. The other, the import of your old stores as a shadow, has about ten choices that decide the ids of every imported record; it comes as its own entry, with an example on a made-up copy of an old store's shape, once the first pieces have landed.
+You ruled on 2026-11-21 (W1) that the adoption step's CLI pieces are built beside the tick work. A worker planned them on 2026-11-22. The pieces that are the CLI's alone are being built: `loops ls`, a scan by the start of a name, a plain-text view with relative times, a `--version`, and the cache of checked segments (W2). Two pieces need you first. AD1 is one. The other is AD2, the import of your old stores as a shadow.
 
 ### AD1: how a spec finds the stores it names
 
@@ -128,6 +129,52 @@ What the answer should be is already ruled: a fold across stores takes the union
 **What changes for you.** Under A and A, a spec that names one store today keeps its answer once that name is bound to its directory, and refuses until then. I would bind the names your existing vertices use before the strict rule is switched on, and list them for you first.
 
 **Not asked.** `loops tick` and `loops tick --check` stay on the one store in the directory. A tick across stores would cover other records and is its own piece.
+
+### AD2: how an old store becomes records
+
+**Question.** The shadow import copies an old store into a new one, to be read beside the old tool. Each old fact becomes one signed record. Which record? The answers decide the id of every imported record, so they are yours, and they are cheap to change only before the first real import.
+
+**What an old store holds** (the shape of yours; the values below are made up). A table of facts, each with an id, a kind, a time, an observer written as text, and a JSON payload. A vertex file says how each kind is read: `thread` by `name`, `log` collected. So three facts:
+
+```
+01ab  thread  2026-10-01 09:00  relay  {"name":"kiln","status":"open","message":"Repair kiln"}
+01ac  thread  2026-10-03 16:30  relay  {"name":"kiln","status":"done"}
+01ad  log     2026-10-03 16:31  relay  {"message":"fired the kiln"}
+```
+
+The old tool reads thread `kiln` as status `done`, message `Repair kiln`: a later fact of the same name overlays the fields it carries.
+
+**Example, run on the binary with the plain view** (2026-11-22). The three facts written by hand as the recommended column below would write them (`loops emit - --fill`, with a key made for the import):
+
+```
+$ loops ls --plain
+KIND    RECORDS
+log     1
+thread  2
+
+$ loops ls thread: --fields name,status,message --plain
+THING        HEAD KINDS  RECORDS  HEADS  name  status  message
+thread:kiln  thread      2        1      kiln  done    Repair kiln
+```
+
+The second record names the first in `prev` and sets only `status`, so `message` still reads from the first. That is the old tool's answer.
+
+**The choices.**
+
+| | Choice | Recommended | The other way |
+| --- | --- | --- | --- |
+| 1 | **What a keyed fact is of.** A kind the vertex reads "by" a field. | The thing `<kind>:<value of that field>`, here `thread:kiln`. A later fact of the same name is a revision: it names what is live in `prev` and sets the fields it carries. | Every fact a root of its own. Then nothing overlays, and each read needs a spec that groups by the field. |
+| 2 | **A kind the vertex collects, or does not name.** | A root, as `log` above. | A thing per kind. |
+| 3 | **The order of revisions.** | The order in which the old store took the facts in (it keeps one). That is what the old tool's reading saw. | The facts' own times. Two facts with one time need a tie-break, and a backfilled fact would land in the past. |
+| 4 | **The times.** | The old time becomes `occurred`. `emitted` is the time of the import. A window on `env.when` then reads the old time. | The old time as `emitted`: the record would claim to have been written then, by a key that did not exist. |
+| 5 | **Who signs.** | A key made for the import. Every imported record says so in its observer, and can be told from what you write afterwards. | Your own key. Imported and new records look alike. |
+| 6 | **Where the old observer and the old id are kept.** | The old observer as a mention, `observer:relay`. The old id in a file beside the import, which also makes a second run write nothing. The payload is the old payload, untouched. | The old id as a mention on each record, or both as extra payload fields. Extra fields change what a spec reads. |
+| 7 | **The old ticks.** | Left out and counted. They are the old tool's own, and as kind `tick` the new check would call each "not a tick". | Imported under another kind, for the record. |
+| 8 | **A fact held by two old stores.** | Imported into each new store it was in, with the same salt and time for the same old id, from the import's file. Where the fact has the same history in both stores, the two copies are then one record, and a read across the stores counts it once. Where the histories differ they are two records; I will count how often that happens in your stores before the import. | Imported once, into one store. |
+
+**What I am not sure of, and will check before anything is built:** whether your old stores hold kinds the vertex does not name, facts whose key field is missing, and payloads the new writer refuses (a number out of range, a repeated name). The import will count each and stop on the last kind; it will not guess.
+
+**Not asked.** The import's verb and flags, its batches, and how the copy is compared with the old tool's reading are the implementer's. The old store is never written.
 
 ## Being prepared
 

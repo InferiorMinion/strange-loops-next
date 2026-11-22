@@ -3984,3 +3984,274 @@ fn ordinary_walk_populates_only_its_own_verification_cache() {
     );
     assert!(!store.scratch.join("home/.cache").exists());
 }
+
+/// Put the test clock on this child only; other walks can run concurrently.
+fn monday(s: &Store, args: &[&str]) -> String {
+    let out = s
+        .command(args)
+        .env("LOOPS_TEST_PLAIN_NOW", "2026-11-20T12:00:00Z")
+        .output()
+        .expect("plain view");
+    assert!(
+        out.status.success(),
+        "{}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+    String::from_utf8(out.stdout).expect("text")
+}
+
+#[test]
+fn a_monday_projection_keeps_typed_values_and_the_prior_name() {
+    let s = Store::new("monday-types");
+    s.changeset(r#"{"kind":"task","of":"task:kiln","about":["site:shop"],"occurred":"2026-11-18/2026-11-19","emitted":"2026-11-20T08:00:00Z","payload":{"name":"Repair kiln","note":"hot\n\u001b[31m","wait":null,"cost":3,"crew":["Jo",2],"status":"open"}}"#);
+    let head = s.ok(&[
+        "emit",
+        "task",
+        "--of",
+        "task:kiln",
+        "--emitted",
+        "2026-11-20T09:00:00Z",
+        "--sets",
+        "status",
+        "--sets",
+        "gone",
+        "status=done",
+    ]);
+    s.ok(&["emit", "task", "--of", "task:lamp", "name=Fit lamp"]);
+    let names = "name,status,gone,wait,cost,crew,note";
+    let all = s.json(&["ls", "--fields", names]);
+    assert_eq!(all, s.json(&["ls", "--things", "--fields", names]));
+    assert_eq!(all, s.json(&["ls", "--fields", names, "task:"]));
+    let Json::Arr(rows) = at(&all, &["things"]) else {
+        panic!("things")
+    };
+    let expected = r#"{"cost":{"state":"value","value":3},"crew":{"state":"value","value":["Jo",2]},"gone":{"state":"unset"},"name":{"state":"value","value":"Repair kiln"},"note":{"state":"value","value":"hot\n\u001b[31m"},"status":{"state":"value","value":"done"},"wait":{"state":"value","value":null}}"#;
+    assert_eq!(at(&rows[0], &["fields"]).canon(), expected);
+    assert_eq!(text(&rows[1], &["fields", "status", "state"]), "unset");
+    assert_eq!(monday(&s, &["ls", "--plain"]), "KIND  RECORDS\ntask  3\n");
+    assert_eq!(
+        monday(&s, &["ls", "task:", "--fields", "name,status", "--plain"]),
+        "THING      HEAD KINDS  RECORDS  HEADS  name         status\ntask:kiln  task        2        1      Repair kiln  done\ntask:lamp  task        1        1      Fit lamp     —\n"
+    );
+    assert_eq!(
+        monday(
+            &s,
+            &[
+                "ls",
+                "task:kiln",
+                "--fields",
+                "gone,wait,cost,crew,note",
+                "--plain"
+            ]
+        ),
+        concat!(
+            "THING      HEAD KINDS  RECORDS  HEADS  gone  wait  cost  crew      note\n",
+            "task:kiln  task        2        1      —     null  3     [\"Jo\",2]  hot\\n\\u001b[31m\n"
+        )
+    );
+    assert_eq!(
+        monday(&s, &["of", "task:kiln", "--plain"]),
+        format!(
+            "thing  task:kiln\nrecords  2\nheads  1\n  cost  3\n  crew  [\"Jo\",2]\n  gone  —\n  name  Repair kiln\n  note  hot\\n\\u001b[31m\n  status  done\n  wait  null\nabout  site:shop\nhead  {head}\n  emitted  3 hours ago\n  occurred  2026-11-18/2026-11-19\n"
+        )
+    );
+}
+
+#[test]
+fn listings_and_of_share_name_evidence_on_every_thing() {
+    let s = Store::new("monday-setters");
+    let fork=s.changeset(r#"{"kind":"task","of":"task:fork","emitted":"2026-11-20T09:00:00Z","occurred":"2026-11-19?","sets":["name"],"payload":{"name":"Left"}}
+{"kind":"task","of":"task:fork","emitted":"2026-11-20T12:02:00Z","sets":["name"],"payload":{"name":"Right"}}"#);
+    s.changeset(
+        r#"{"kind":"task","of":"task:unset","sets":["name"],"payload":{}}
+{"kind":"task","of":"task:whole","payload":{"name":"Whole"}}"#,
+    );
+    let erased = s.ok(&[
+        "emit",
+        "task",
+        "--of",
+        "task:erased",
+        "--sets",
+        "name",
+        "--emitted",
+        "2026-11-20T09:00:00Z",
+        "name=Erased",
+    ]);
+    s.ok(&["erase", &erased]);
+    let source = Store::new("monday-withhold-source");
+    let withheld = source.ok(&[
+        "emit",
+        "task",
+        "--of",
+        "task:withheld",
+        "--emitted",
+        "2026-11-20T09:00:00Z",
+        "name=Withheld",
+    ]);
+    source.ok(&["erase", &withheld]);
+    s.ok_with(&["import"], &source.ok(&["get", &withheld]));
+
+    let listed = s.json(&["ls", "--things", "--fields", "name"]);
+    let Json::Arr(rows) = at(&listed, &["things"]) else {
+        panic!("things")
+    };
+    let inventory = s.json(&["ls", "--things"]);
+    let Json::Arr(unprojected) = at(&inventory, &["things"]) else {
+        panic!("things")
+    };
+    assert_eq!(unprojected.len(), rows.len());
+    for (row, original) in rows.iter().zip(unprojected) {
+        let thing = text(row, &["thing"]);
+        assert_eq!(thing, text(original, &["thing"]));
+        assert_eq!(at(original, &["headline"]), at(row, &["headline"]));
+        let detail = s.json(&["of", thing]);
+        let field = at(row, &["fields", "name"]);
+        let headline = at(row, &["headline"]);
+        let (state, title) = if has(&detail, &["values"], "name") {
+            assert_eq!(at(&detail, &["values", "name"]), at(field, &["value"]));
+            assert_eq!(at(headline, &["value"]), at(field, &["value"]));
+            ("value", "text")
+        } else if has(&detail, &[], "setters") {
+            let setters = at(&detail, &["setters", "name"]);
+            assert_eq!(at(field, &["setters"]), setters);
+            if len(field, &["setters"]) > 1 {
+                ("conflict", "conflict")
+            } else {
+                ("unknown", "unknown")
+            }
+        } else if has(&detail, &[], "unheld") {
+            assert_eq!(at(&detail, &["unheld"]), at(field, &["setters"]));
+            ("unknown", "unknown")
+        } else {
+            ("unset", "absent")
+        };
+        assert_eq!(text(field, &["state"]), state, "{thing}");
+        assert_eq!(text(headline, &["state"]), title, "{thing}");
+    }
+    assert_eq!(
+        monday(&s, &["ls", "task:", "--plain"]),
+        "THING          HEAD KINDS  RECORDS  HEADS  HEADLINE\ntask:erased    task        1        1      unknown\ntask:fork      task        2        2      conflict (2)\ntask:unset     task        1        1      —\ntask:whole     task        1        1      Whole\ntask:withheld  task        1        1      unknown\n"
+    );
+    for (thing, head, additional) in [
+        ("task:erased", erased, "  name  unknown"),
+        ("task:withheld", withheld, "other fields  unknown"),
+    ] {
+        assert_eq!(
+            monday(&s, &["of", thing, "--plain"]),
+            format!(
+                "thing  {thing}\nrecords  1\nheads  1\n{additional}\nabout  —\nhead  {head}\n  emitted  3 hours ago\n  occurred  —\n"
+            )
+        );
+    }
+    assert_eq!(
+        monday(&s, &["of", "task:fork", "--plain"]),
+        format!(
+            "thing  task:fork\nrecords  2\nheads  2\n  name  conflict (2)\nabout  —\nhead  {}\n  emitted  in 2 minutes\n  occurred  —\nhead  {}\n  emitted  3 hours ago\n  occurred  2026-11-19?\n",
+            fork[1], fork[0]
+        )
+    );
+}
+
+#[test]
+fn plain_and_json_are_exclusive_on_both_views() {
+    let s = Store::new("monday-usage");
+    for args in [
+        &["--json", "ls", "--plain"][..],
+        &["of", "task:kiln", "--plain", "--json"],
+    ] {
+        let (status, stdout, stderr) = answer(&s, args, "");
+        assert_eq!(status, 2);
+        assert_eq!(stdout, "");
+        assert!(stderr.contains("--plain and --json"));
+    }
+}
+
+#[test]
+fn json_without_plain_keeps_its_original_bytes() {
+    let s = fixed_store("monday-json");
+    let id = fixed_emit(&s, &["task", "--of", "task:kiln", "name=Kiln"]);
+    let spec = r#"{"vertex":"items","from":[{"store":"."}],"fold":{"all":{"collect":true}}}"#;
+    fs::create_dir_all(s.dir.join(".loops/vertices")).expect("vertices");
+    fs::write(s.dir.join(".loops/vertices/items.json"), spec).expect("spec");
+    // Captured from the parent binary with this key, salt, draft and spec.
+    let line = r#"{"env":{"emitted":"2026-11-20T00:00:00Z","kind":"task","observer":"k:7dl2ff6emqi2qol3l382krodedij45bn3nh479hqo14a32qpr8kg","of":"task:kiln"},"id":"r:fhdhrbkcj8hsc21u9lt8rm3kgaunmefpto2trjmiolcr701m9nj0","payload":{"name":"Kiln"},"salt":"00000000000000000000000000","sig":{"ed25519":"66mo4pqisosjh1u0bf8j4vaaqdr94pv4949ik18942qv3f75tl9lmpb3qhict4rrpgi4rct0393nq3924klcmk6ub4sfs4fcvkn5c0o","key":"k:7dl2ff6emqi2qol3l382krodedij45bn3nh479hqo14a32qpr8kg"}}"#;
+    let of = format!(
+        r#"{{"about":[],"heads":[{line}],"records":1,"thing":"task:kiln","values":{{"name":"Kiln"}}}}"#
+    );
+    let ls = r#"{"things":[{"headline":{"state":"text","value":"Kiln"},"heads":1,"kinds":["task"],"records":1,"thing":"task:kiln"}]}"#;
+    let slots = r#"{"all":{"heads":[{"id":"r:fhdhrbkcj8hsc21u9lt8rm3kgaunmefpto2trjmiolcr701m9nj0","shown":"here"}],"unread":0}}"#;
+    for (args, stdin, want) in [
+        (&["get", id.as_str()][..], "", line),
+        (&["of", "task:kiln"], "", of.as_str()),
+        (&["ls", "--things"], "", ls),
+        (&["read", "items"], "", slots),
+        (&["fold", "-"], spec, slots),
+    ] {
+        assert_eq!(
+            answer(&s, args, stdin),
+            (0, format!("{want}\n"), String::new())
+        );
+    }
+}
+
+#[test]
+fn plain_text_quotes_only_ambiguous_values() {
+    let s = Store::new("plain-text");
+    let cases = [
+        ("empty", "", r#""""#),
+        ("absent", "—", r#""—""#),
+        ("unknown", "unknown", r#""unknown""#),
+        ("null", "null", r#""null""#),
+        ("true", "true", r#""true""#),
+        ("false", "false", r#""false""#),
+        ("conflict", "conflict (12)", r#""conflict (12)""#),
+        ("integer", "42", r#""42""#),
+        ("exponent", "-3.5e+400", r#""-3.5e+400""#),
+        ("array", "[1]", r#""[1]""#),
+        ("object", r#"{"x":[true,{}]}"#, r#""{\"x\":[true,{}]}""#),
+        ("left", " left", r#"" left""#),
+        ("right", "right ", r#""right ""#),
+        ("whitespace", "\u{85}edge", r#""\u0085edge""#),
+        ("ordinary", "two words", "two words"),
+        ("newline", "line\nbreak", r"line\nbreak"),
+        ("escape", "a\u{1b}b", r"a\u001bb"),
+        ("digits", "01", "01"),
+        ("brackets", "[1,]", "[1,]"),
+        ("braces", "{x}", "{x}"),
+        ("status", "conflict (many)", "conflict (many)"),
+    ];
+    let mut payload: Vec<_> = cases
+        .iter()
+        .map(|(k, v, _)| ((*k).to_owned(), Json::Str((*v).to_owned())))
+        .collect();
+    payload.push(("name".into(), Json::Str("unknown".into())));
+    payload.push((
+        "nested".into(),
+        parse_json(r#"{"labels":["Repair kiln"],"ok":true}"#).expect("object"),
+    ));
+    let ids = s.changeset(&format!(
+        r#"{{"kind":"task","of":"task:quotes","emitted":"2026-11-20T12:00:00Z","about":["site:kiln","area:yard"],"payload":{}}}"#,
+        Json::Obj(payload).canon()
+    ));
+    let detail = monday(&s, &["of", "task:quotes", "--plain"]);
+    let lines: Vec<_> = detail.lines().collect();
+    for (key, _, expected) in cases {
+        assert!(
+            lines.contains(&format!("  {key}  {expected}").as_str()),
+            "{detail}"
+        );
+    }
+    assert!(lines.contains(&r#"  nested  {"labels":["Repair kiln"],"ok":true}"#));
+    assert!(detail.ends_with(&format!(
+        "about  area:yard site:kiln\nhead  {}\n  emitted  now\n  occurred  —\n",
+        ids[0]
+    )));
+    assert_eq!(
+        monday(&s, &["ls", "task:", "--plain"]),
+        "THING        HEAD KINDS  RECORDS  HEADS  HEADLINE\ntask:quotes  task        1        1      \"unknown\"\n"
+    );
+    assert_eq!(
+        monday(&s, &["ls", "--fields", "absent,name", "--plain"]),
+        "THING        HEAD KINDS  RECORDS  HEADS  absent  name\ntask:quotes  task        1        1      \"—\"     \"unknown\"\n"
+    );
+}
