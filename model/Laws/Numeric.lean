@@ -40,6 +40,10 @@ theorem Record.num_number {r : Record} {field : String} {n : Number}
     (h : r.get field = some (.one (.number n))) : r.num field = none := by
   simp [Record.num, h]
 
+/-- A hidden record gives no numeric value, even when it retains the field. -/
+theorem Record.num_hidden {r : Record} (field : String) (h : r.shown ≠ .here) : r.num field = none := by
+  simp [Record.num, h]
+
 /-! ## Sum -/
 
 theorem Sum.batch (p : Record → Option Int) (s : Int) (xs ys : List Record) :

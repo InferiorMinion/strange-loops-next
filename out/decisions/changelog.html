@@ -225,7 +225,25 @@ The record starts where the old roadmap's did. For anything earlier, and for eve
 <li><p>The tick record is proposed as TK1 to TK9 in <code>DECISIONS.md</code>, with <a href="note-2026-11-21-tick-record.html">a note</a> (!65). Not ruled.</p></li>
 <li><p><code>loops emit</code> copies <code>occurred</code> from the heads when they agree; <code>--no-occurred</code> states none.</p></li>
 <li><p>The roadmap, the decisions, the changelog and the notes are published as a fifth design page, and the rethink and grammar pages are brought up to the rulings since 2026-11-13.</p></li>
+<li><p>The full mutation catalogue ran over all 328 entries: 324 caught, two known survivors, and two new ones that are now caught. The full runner asks what the per-merge check asks.</p></li>
 </ul>
+<h3 id="the-full-mutation-run-after-the-payload-change">The full mutation run after the payload change</h3>
+<p>GitLab pipeline 2190 ran the whole catalogue on main at <code>48037ce</code>. The record is in <a href="https://github.com/kgruel/strange-loops-next/blob/main/model/mutate/REPORT.md">the mutation report</a>. No vector and no protocol rule changed.</p>
+<div class="table-scroll" tabindex="0"><table><thead><tr><th scope="col">Outcome</th><th scope="col" class="align-right">Count</th></tr></thead>
+<tbody>
+<tr><td>Rejected by the build</td><td class="align-right">282</td></tr>
+<tr><td>Caught by a changed vector</td><td class="align-right">20</td></tr>
+<tr><td>Caught by an assertion in the generator</td><td class="align-right">22</td></tr>
+<tr><td>Survived</td><td class="align-right">4</td></tr>
+</tbody></table></div>
+<p>Two survivors are the known equivalent ones (<code>finish-json-hexdigit</code>, <code>last-spec-tests-conds</code>). The other two were new, and each showed a gap:</p>
+<ul>
+<li><p><strong><code>record-num-hidden</code>: a check lost with <code>value</code> and <code>n</code> becoming ordinary fields.</strong> The fault lets a numeric fold read a number from a record whose payload the reader does not hold. A vector caught it on 2026-11-15, through the zero <code>n</code> a withheld record then kept. Since !63 a withheld or erased record has no fields, so nothing the model builds reached the guard. No answer was wrong. The guard is now a theorem, <code>Record.num_hidden</code>, under the law <code>numeric.safe-whole</code>, and a runtime check over a record that keeps a written zero and is marked withheld.</p></li>
+<li><p><strong><code>payload-whole-as-number</code>: a gap in the full runner.</strong> For a mutant that built, the full runner compared the generated vectors and stopped. It never ran <code>lake exe run --check</code> or <code>lake exe checks</code>, which the per-merge runner does and which catch this fault. It now runs both, and a mutant survives only when all three pass. The new statuses are <code>killed-by-run-check</code> and <code>killed-by-checks</code>.</p></li>
+</ul>
+<p>Twelve build rejections stood on proofs alone, with nothing that runs objecting. Ten were known. The two new ones (<code>result-unshown-keeps-shown</code>, <code>result-unshown-groups-kept</code>) change a helper that only the result laws called; a runtime check on a grouped withheld head now catches both.</p>
+<p>Run again through the new runner, the six entries give: the two known survivors survive, <code>payload-whole-as-number</code> is killed by the checks, and the other three are rejected by the build and by the runtime checks as well.</p>
+<p>A Codex worker wrote the change and the coordinator reviewed it. Its choices: the two status names; <code>numeric.safe-whole</code> as the law that indexes the new theorem, since it already says when a numeric slot reads a field; and an evidence summary made from the joined file of the shards, which holds no shard baselines or generator logs.</p>
 <h3 id="the-decisions-page-and-the-rethink-and-grammar-pages-brought-up-to-date">The decisions page, and the rethink and grammar pages brought up to date</h3>
 <p>Kyle asked for both on 2026-11-21, for a colleague who reads the site and not the repository.</p>
 <ul>

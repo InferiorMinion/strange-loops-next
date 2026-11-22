@@ -21,6 +21,29 @@ In brief:
 - The tick record is proposed as TK1 to TK9 in `DECISIONS.md`, with [a note](notes/2026-11-21-tick-record.md) (!65). Not ruled.
 - `loops emit` copies `occurred` from the heads when they agree; `--no-occurred` states none.
 - The roadmap, the decisions, the changelog and the notes are published as a fifth design page, and the rethink and grammar pages are brought up to the rulings since 2026-11-13.
+- The full mutation catalogue ran over all 328 entries: 324 caught, two known survivors, and two new ones that are now caught. The full runner asks what the per-merge check asks.
+
+### The full mutation run after the payload change
+
+GitLab pipeline 2190 ran the whole catalogue on main at `48037ce`. The record is in [the mutation report](model/mutate/REPORT.md). No vector and no protocol rule changed.
+
+| Outcome | Count |
+| --- | ---: |
+| Rejected by the build | 282 |
+| Caught by a changed vector | 20 |
+| Caught by an assertion in the generator | 22 |
+| Survived | 4 |
+
+Two survivors are the known equivalent ones (`finish-json-hexdigit`, `last-spec-tests-conds`). The other two were new, and each showed a gap:
+
+- **`record-num-hidden`: a check lost with `value` and `n` becoming ordinary fields.** The fault lets a numeric fold read a number from a record whose payload the reader does not hold. A vector caught it on 2026-11-15, through the zero `n` a withheld record then kept. Since !63 a withheld or erased record has no fields, so nothing the model builds reached the guard. No answer was wrong. The guard is now a theorem, `Record.num_hidden`, under the law `numeric.safe-whole`, and a runtime check over a record that keeps a written zero and is marked withheld.
+- **`payload-whole-as-number`: a gap in the full runner.** For a mutant that built, the full runner compared the generated vectors and stopped. It never ran `lake exe run --check` or `lake exe checks`, which the per-merge runner does and which catch this fault. It now runs both, and a mutant survives only when all three pass. The new statuses are `killed-by-run-check` and `killed-by-checks`.
+
+Twelve build rejections stood on proofs alone, with nothing that runs objecting. Ten were known. The two new ones (`result-unshown-keeps-shown`, `result-unshown-groups-kept`) change a helper that only the result laws called; a runtime check on a grouped withheld head now catches both.
+
+Run again through the new runner, the six entries give: the two known survivors survive, `payload-whole-as-number` is killed by the checks, and the other three are rejected by the build and by the runtime checks as well.
+
+A Codex worker wrote the change and the coordinator reviewed it. Its choices: the two status names; `numeric.safe-whole` as the law that indexes the new theorem, since it already says when a numeric slot reads a field; and an evidence summary made from the joined file of the shards, which holds no shard baselines or generator logs.
 
 ### The decisions page, and the rethink and grammar pages brought up to date
 

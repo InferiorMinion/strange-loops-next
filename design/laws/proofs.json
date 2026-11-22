@@ -4462,6 +4462,11 @@
    "states":
    "∀ (r : Loops.Record) (f : String) (vs : List Loops.Val), r.get f = some (Loops.HeldField.many vs) → r.num f = none",
    "module": "Laws.Payload"},
+  "Loops.Record.num_hidden":
+  {"uses": [],
+   "states":
+   "∀ {r : Loops.Record} (field : String), r.shown ≠ Loops.Shown.here → r.num field = none",
+   "module": "Laws.Numeric"},
   "Loops.Record.mk.sizeOf_spec":
   {"uses": [],
    "states":

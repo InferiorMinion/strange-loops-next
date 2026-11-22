@@ -288,6 +288,8 @@ def resultCodecChecks : IO Unit := do
   ensure (intText (-18014398509481984) == "-18014398509481984" && intText 0 == "0")
     "result integer text"
   ensure (resultLabel == "loops/result-hash/v1:" && resultLabel.utf8ByteSize == 21) "result label"
+  let grouped (s : Shown) := SlotValue.groups [("g", .heads [(fixtureId 1, s)] 0)] 0 0
+  ensure ((grouped .withheld).unshown == grouped .here) "unshown keeps a grouped head's visibility"
 
 /-- Probe each projection boundary directly, including paths which a JSON
 parser or the downstream grouping buckets could otherwise normalize first. -/
@@ -420,6 +422,7 @@ def main (args : List String) : IO Unit := do
   let .ok control := Read.record "record" (changed "fields" (.obj [("value", .str ""), ("n", .int 0)]))
     | throw (IO.userError "decoder refuses written empty text or zero")
   ensure (control.get "value" == some (.one (.str "")) && control.num "n" == some 0) "written empty text or zero lost"
+  ensure (({ control with shown := .withheld } : Record).num "n" == none) "numeric field read from withheld record"
   ensure (empty.get "value" == none && empty.num "n" == none) "missing field reads as a default"
   let .ok fractional := Read.record "record" (changed "fields" (.obj [("n", fraction)]))
     | throw (IO.userError "decoder refuses nonwhole n")

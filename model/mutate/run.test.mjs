@@ -52,10 +52,13 @@ test('shards are disjoint, cover the selection in catalogue order, and refuse a 
 test('merging shard results needs every entry once, no error and a restored baseline', () => {
   const ok = { status: 'ok' };
   const shard = (name, entries, more = {}) => ({ name, result: { mutants: entries.map(([id, status]) => ({ id, status })), finalBaseline: ok, ...more } });
-  const whole = merge(['a', 'b', 'c'], [shard('1', [['c', 'survived'], ['a', 'killed-by-vector']]), shard('2', [['b', 'rejected-by-build']])]);
+  const whole = merge(['a', 'b', 'c', 'd', 'e'], [
+    shard('1', [['c', 'survived'], ['a', 'killed-by-vector'], ['e', 'killed-by-checks']]),
+    shard('2', [['d', 'killed-by-run-check'], ['b', 'rejected-by-build']]),
+  ]);
   assert.deepEqual(whole.problems, []);
-  assert.deepEqual(whole.merged.mutants.map(m => m.id), ['a', 'b', 'c']);
-  assert.deepEqual(whole.merged.counts, { 'killed-by-vector': 1, 'rejected-by-build': 1, survived: 1 });
+  assert.deepEqual(whole.merged.mutants.map(m => m.id), ['a', 'b', 'c', 'd', 'e']);
+  assert.deepEqual(whole.merged.counts, { 'killed-by-vector': 1, 'rejected-by-build': 1, survived: 1, 'killed-by-run-check': 1, 'killed-by-checks': 1 });
   assert.equal(Object.hasOwn(whole.merged, 'runtime'), false);
   const judged = (id, verdict) => ({ id, status: 'rejected-by-build', runtime: { verdict } });
   const second = merge(['a', 'b', 'c'], [{ name: '1', result: { mutants: [judged('a', 'vector'), judged('b', 'none'), { id: 'c', status: 'rejected-by-build' }], finalBaseline: ok } }]);
@@ -138,7 +141,7 @@ async function fixture() {
   for (const sub of ['model/mutate', 'model/Loops', 'vectors', 'bin']) await mkdir(path.join(dir, sub), { recursive: true });
   await copyFile(path.join(here, 'run.mjs'), path.join(dir, 'model/mutate/run.mjs'));
   await copyFile(path.join(here, 'mutants.json'), path.join(dir, 'model/mutate/mutants.json'));
-  const mutants = ['syntax', 'type', 'vector', 'survive', 'genfail', 'timeout', 'signal', 'pvector', 'pgen', 'prun', 'pchecks'].map(id => ({ id, file: 'Test.lean', before: 'ORIGINAL', after: id, reason: id }));
+  const mutants = ['syntax', 'type', 'vector', 'survive', 'genfail', 'timeout', 'signal', 'pvector', 'pgen', 'prun', 'pchecks', 'runfail', 'checkfail'].map(id => ({ id, file: 'Test.lean', before: 'ORIGINAL', after: id, reason: id }));
   await writeFile(path.join(dir, 'model/mutate/mutants.json'), JSON.stringify(mutants));
   await writeFile(path.join(dir, 'model/Loops/Test.lean'), 'ORIGINAL\n');
   await writeFile(path.join(dir, 'vectors/data'), 'baseline');
@@ -146,7 +149,30 @@ async function fixture() {
   // A proof fails for `type` and the `p…` mutants: `lake build --wfail` exits 1 and the generator still builds.
   // `syntax` breaks every build. Then `pvector` changes a vector, `pgen` fails the generator, `prun` fails `run --check`,
   // `pchecks` fails `checks`, and `type` passes them all.
-  await writeFile(lake, `#!${process.execPath}\nconst fs=require('fs'); const s=fs.readFileSync('Loops/Test.lean','utf8').trim(); const args=process.argv.slice(2); const proof=['type','pvector','pgen','prun','pchecks'].includes(s); if(args[0]==='build') { if(s==='syntax'||(proof&&args.includes('--wfail'))) { console.error(s+' error'); process.exit(1); } if(s==='timeout'||s==='signal') { fs.writeFileSync(${JSON.stringify(path.join(dir, 'ready'))},s); setInterval(()=>{},1000); } } else if(args[1]==='gen') { if(s==='genfail'||s==='pgen') process.exit(2); fs.writeFileSync(args[2]+'/data',s==='vector'||s==='pvector'?'changed':'baseline'); } else if(args[1]==='run') { if(s==='prun') process.exit(3); } else if(args[1]==='checks') { if(s==='pchecks') process.exit(4); } else process.exit(9);\n`);
+  await writeFile(lake, `#!${process.execPath}
+const fs = require('fs');
+const mutant = fs.readFileSync('Loops/Test.lean', 'utf8').trim();
+const args = process.argv.slice(2);
+if (args[0] === 'build') {
+  const proof = ['type', 'pvector', 'pgen', 'prun', 'pchecks'].includes(mutant);
+  if (mutant === 'syntax' || (proof && args.includes('--wfail'))) {
+    console.error(mutant + ' error');
+    process.exit(1);
+  }
+  if (mutant === 'timeout' || mutant === 'signal') {
+    fs.writeFileSync(${JSON.stringify(path.join(dir, 'ready'))}, mutant);
+    setInterval(() => {}, 1000);
+  }
+} else if (args[1] === 'gen') {
+  if (mutant === 'genfail' || mutant === 'pgen') process.exit(2);
+  const changed = mutant === 'vector' || mutant === 'pvector';
+  fs.writeFileSync(args[2] + '/data', changed ? 'changed' : 'baseline');
+} else if (args[1] === 'run') {
+  if (mutant === 'prun' || mutant === 'runfail') process.exit(3);
+} else if (args[1] === 'checks') {
+  if (mutant === 'pchecks' || mutant === 'checkfail') process.exit(4);
+} else process.exit(9);
+`);
   await chmod(lake, 0o755);
   for (const args of [['init', '-q'], ['config', 'user.email', 'test@example.com'], ['config', 'user.name', 'Test'], ['add', '.'], ['commit', '-qm', 'fixture']]) {
     const r = spawnSync('git', args, { cwd: dir, encoding: 'utf8' }); assert.equal(r.status, 0, r.stderr);
@@ -185,6 +211,24 @@ test('synthetic repository exercises mutation outcomes and restoration', async (
   } finally { await rm(dir, { recursive: true, force: true }); }
 });
 
+test('matching vectors are replayed and checked until the first objection', async () => {
+  const dir = await fixture();
+  try {
+    const result = await runFixture(dir, ['--only', 'vector,survive,runfail,checkfail', '--no-second-verdict']).done;
+    assert.equal(result.code, 0, result.output);
+    const { mutants } = JSON.parse(await readFile(path.join(dir, 'result.json')));
+    assert.deepEqual(mutants.map(m => m.status), ['killed-by-vector', 'survived', 'killed-by-run-check', 'killed-by-checks']);
+    const steps = ['build --wfail', 'exe gen', 'exe run', 'exe checks'];
+    assert.deepEqual(mutants.map(m => m.commands.map(c => c.command.slice(1, 3).join(' '))),
+      [steps.slice(0, 2), steps, steps.slice(0, 3), steps]);
+    assert.deepEqual(mutants[1].commands[2].command, ['lake', 'exe', 'run', '--check', path.join(dir, 'vectors')]);
+    assert.deepEqual(mutants[1].commands[3].command, ['lake', 'exe', 'checks', dir]);
+    assert.equal(mutants[2].commands.at(-1).code, 3);
+    assert.equal(mutants[3].commands.at(-1).code, 4);
+    assert.ok(mutants.every(m => !m.runtime));
+  } finally { await rm(dir, { recursive: true, force: true }); }
+});
+
 test('a build rejection gets a second verdict from what runs, and its status stays', async () => {
   const dir = await fixture();
   try {
@@ -203,18 +247,20 @@ test('a build rejection gets a second verdict from what runs, and its status sta
   } finally { await rm(dir, { recursive: true, force: true }); }
 });
 
-test('a second verdict whose step times out is unknown, and the entry is still a build rejection', async () => {
+test('a replay timeout is an error after a successful build and unknown after a rejection', async () => {
   const dir = await fixture();
   try {
-    // `prun` passes the generator; a `run` that hangs is made by turning the fake `run` step into the build's hang.
+    // Hang the replay for the build-rejected and build-passing mutants.
     const lake = path.join(dir, 'bin/lake');
-    await writeFile(lake, (await readFile(lake, 'utf8')).replace("if(s==='prun') process.exit(3);", "if(s==='prun') setInterval(()=>{},1000);"));
-    const result = await runFixture(dir, ['--only', 'prun', '--timeout', '0.6']).done;
+    await writeFile(lake, (await readFile(lake, 'utf8')).replace("process.exit(3)", "setInterval(()=>{},1000)"));
+    const result = await runFixture(dir, ['--only', 'prun,runfail', '--timeout', '0.6']).done;
     const report = JSON.parse(await readFile(path.join(dir, 'result.json')));
     assert.equal(report.mutants[0].status, 'rejected-by-build');
     assert.equal(report.mutants[0].runtime.verdict, 'unknown');
     assert.equal(report.mutants[0].runtime.commands.at(-1).status, 'timeout');
-    assert.equal(result.code, 0, result.output);
+    assert.equal(report.mutants[1].status, 'error');
+    assert.equal(report.mutants[1].commands.at(-1).status, 'timeout');
+    assert.equal(result.code, 1, result.output);
   } finally { await rm(dir, { recursive: true, force: true }); }
 });
 

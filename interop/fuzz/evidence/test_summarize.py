@@ -98,7 +98,13 @@ class EvidenceTest(unittest.TestCase):
         self.assertEqual(campaign['totals']['cases'], 5600)
         self.assertEqual(campaign['totals']['mismatch'], 42)
         self.assertEqual(campaign['families']['lens']['mismatch'], 42)
-        self.assertEqual(list(result['mutations']), ['mutations-d1-d6', 'mutations-d8ab', 'mutations-d8c', 'mutations-fixes2'])
+        self.assertEqual(list(result['mutations']), ['mutations-d1-d6', 'mutations-d8ab', 'mutations-d8c', 'mutations-fixes2', 'mutations-payload'])
+        payload = result['mutations']['mutations-payload']
+        self.assertEqual(payload['total'], 328)
+        self.assertEqual(payload['outcomes'], {'error': 22, 'killed-by-vector': 20, 'rejected-by-build': 282, 'survived': 4})
+        self.assertEqual(payload['survivors'], ['finish-json-hexdigit', 'last-spec-tests-conds', 'payload-whole-as-number', 'record-num-hidden'])
+        self.assertEqual(payload['runtime'], {'vector': 139, 'generator': 112, 'checks': 12, 'unbuilt': 7, 'none': 12})
+        self.assertEqual(len(payload['proofsAlone']), 12)
         current = result['mutations']['mutations-d8c']
         self.assertEqual(current['total'], 291)
         self.assertEqual(current['outcomes'], {'error': 22, 'killed-by-vector': 24, 'rejected-by-build': 243, 'survived': 2})
