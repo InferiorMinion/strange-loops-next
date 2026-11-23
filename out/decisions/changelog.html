@@ -194,7 +194,7 @@ header.top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--g
 <a href="note-2026-11-21-order-of-work.html">The order of work, and how we work: W1 to W6</a>
 <a href="note-2026-11-21-payload-values.html">Payload values, design note</a>
 <a href="note-2026-11-21-tick-record.html">Step 4: the tick record, design note</a>
-<a href="note-2026-11-22-adoption.html">The adoption step: AD1 and AD2</a>
+<a href="note-2026-11-22-adoption.html">The adoption step: AD1, AD2 and AD3</a>
 <a href="note-retained-boundaries.html">Retained boundaries</a></nav>
 <p class="source">Rendered from <code>CHANGELOG.md</code> in the repository.</p>
 <details class="contents"><summary>On this page</summary>
@@ -218,6 +218,7 @@ The record starts where the old roadmap's did. For anything earlier, and for eve
 <h2 id="2026-11-23">2026-11-23</h2>
 <p>In brief:</p>
 <ul>
+<li><p>Kyle ruled AD3 for its recommendation in both rows: a fact of a kind the vertex does not name, brought in with <code>--include-unnamed</code>, is a root, and the old time is kept to the microsecond. The build already did both. Nothing waits on a ruling.</p></li>
 <li><p>Kyle ruled AD1 (how a spec finds the stores it names) and AD2 (how an old store becomes records), each for its recommendation with additions. Both pieces are being built.</p></li>
 <li><p><code>loops read</code> and <code>loops fold</code> find the stores a spec names and fold their union. A name bound to nothing refuses the read (<code>store-unknown</code>). The name <code>.</code> is the store the read starts from.</p></li>
 <li><p>The import is whole: a comparison tool says, in counts, whether a shadow store reads as its old store did.</p></li>
@@ -225,6 +226,13 @@ The record starts where the old roadmap's did. For anything earlier, and for eve
 <li><p>The import's first two pieces are built: a script that exports an old store and its vertex to two text files, and the mapping of each old fact to a record, equal byte for byte to what <code>loops emit - --fill</code> writes. No verb yet.</p></li>
 <li><p>The import has its plan. Two of its choices decide record ids and are put to Kyle as AD3: how a kind the vertex does not name is written when asked for, and how fine the old time is.</p></li>
 </ul>
+<h3 id="ruled-by-kyle-2026-11-23-ad3">Ruled by Kyle, 2026-11-23: AD3</h3>
+<p>Both rows for the recommended column. The entry as put is in <a href="note-2026-11-22-adoption.html#ad3-two-details-of-the-import">the adoption note</a>.</p>
+<ol>
+<li><p><strong>A kind the vertex does not name, brought in with <code>--include-unnamed</code>:</strong> each such fact is a root. Nothing overlays, and no thing <code>&lt;kind&gt;:&lt;name&gt;</code> is made for it. Left out by default, as AD2's addition (d) says.</p></li>
+<li><p><strong>The old time:</strong> the stored number of seconds is rounded once to the nearest microsecond, ties to even, and written as <code>occurred</code> with trailing zeros trimmed.</p></li>
+</ol>
+<p>The build followed both since the import's first piece, so no code, no record and no expected output changed. What the first real import still waits on is in <a href="roadmap.html">ROADMAP.md</a>.</p>
 <h3 id="the-shadow-import-the-comparison-tool">The shadow import: the comparison tool</h3>
 <p>The last of the import's four pieces (AD2). <code>tools/shadow/compare.py</code>, Python standard library only. It changes no store and no Rust.</p>
 <pre><code>python3 tools/shadow/compare.py exports/workshop.facts.jsonl exports/workshop.map.json shadows/workshop
@@ -255,7 +263,7 @@ The record starts where the old roadmap's did. For anything earlier, and for eve
 </ul>
 <p>A Codex worker wrote it; the coordinator reviewed it, ran the gates and made the runs above.</p>
 <h3 id="loops-shadow-import-the-verb-and-its-journal"><code>loops shadow-import</code>: the verb and its journal</h3>
-<p>The third of the import's four pieces (AD2). Rust only, in the CLI. No protocol rule, no record's bytes for a given draft and no vector changed; <code>emit</code>, <code>emit -</code>, <code>tick</code> and <code>erase</code> write what they wrote. It follows the recommended column of <a href="index.html#ad3-two-details-of-the-import">AD3</a> until Kyle rules it, and nothing real has been imported outside scratch.</p>
+<p>The third of the import's four pieces (AD2). Rust only, in the CLI. No protocol rule, no record's bytes for a given draft and no vector changed; <code>emit</code>, <code>emit -</code>, <code>tick</code> and <code>erase</code> write what they wrote. It follows the recommended column of <a href="note-2026-11-22-adoption.html#ad3-two-details-of-the-import">AD3</a> until Kyle rules it, and nothing real has been imported outside scratch.</p>
 <pre><code>python3 tools/shadow/export.py old/workshop.vertex --output-dir exports
 loops shadow-import group.json --check-only     # the counts, nothing written
 loops shadow-import group.json                  # the import
@@ -299,7 +307,7 @@ loops shadow-import group.json                  # the import
 <p>A fault planted by the coordinator (a changed earlier fact no longer noticed by its fingerprint) was caught by two walk tests.</p>
 <p>A Codex worker wrote it; the coordinator reviewed it, ran the gates and made the runs above.</p>
 <h3 id="the-shadow-import-the-exporter-and-the-mapping">The shadow import: the exporter and the mapping</h3>
-<p>The first two of the import's four pieces (AD2, ruled 2026-11-23, in <a href="note-2026-11-22-adoption.html">the adoption note</a>). Nothing here writes a store yet: the verb, its journal and the comparison tool follow. The mapping follows the recommended column of <a href="index.html#ad3-two-details-of-the-import">AD3</a> until Kyle rules it.</p>
+<p>The first two of the import's four pieces (AD2, ruled 2026-11-23, in <a href="note-2026-11-22-adoption.html">the adoption note</a>). Nothing here writes a store yet: the verb, its journal and the comparison tool follow. The mapping follows the recommended column of <a href="note-2026-11-22-adoption.html#ad3-two-details-of-the-import">AD3</a> until Kyle rules it.</p>
 <p><strong>The exporter</strong> (<code>tools/shadow/export.py</code>, Python standard library only). Given an old <code>.vertex</code> file it writes two files into a directory of its own: <code>&lt;name&gt;.facts.jsonl</code>, every fact of the old store in the order the store took them in, and <code>&lt;name&gt;.map.json</code>, which kinds the vertex reads by a field and which it collects. The Rust import reads those two files and never the old store. The formats are in <code>tools/shadow/FORMAT.md</code>.</p>
 <ul>
 <li><p>The old store is opened read-only in one read transaction, and its bytes are the same afterwards (tested).</p></li>

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
-<title>The adoption step: AD1 and AD2 · Strange Loops</title>
+<title>The adoption step: AD1, AD2 and AD3 · Strange Loops</title>
 <style>
 /* The register: a warm grey table, white sheets resting on it, height shown by shadow and
    hairline. One colour only, for what is erased or in conflict. */
@@ -194,16 +194,18 @@ header.top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--g
 <a href="note-2026-11-21-order-of-work.html">The order of work, and how we work: W1 to W6</a>
 <a href="note-2026-11-21-payload-values.html">Payload values, design note</a>
 <a href="note-2026-11-21-tick-record.html">Step 4: the tick record, design note</a>
-<a href="note-2026-11-22-adoption.html" aria-current="page">The adoption step: AD1 and AD2</a>
+<a href="note-2026-11-22-adoption.html" aria-current="page">The adoption step: AD1, AD2 and AD3</a>
 <a href="note-retained-boundaries.html">Retained boundaries</a></nav>
 <p class="source">Rendered from <code>notes/2026-11-22-adoption.md</code> in the repository.</p>
 <details class="contents"><summary>On this page</summary>
 <ul><li><a href="#a-trial-before-the-ruling">A trial before the ruling</a></li>
 <li><a href="#ad1-how-a-spec-finds-the-stores-it-names">AD1: how a spec finds the stores it names</a></li>
-<li><a href="#ad2-how-an-old-store-becomes-records">AD2: how an old store becomes records</a></li></ul></details>
+<li><a href="#ad2-how-an-old-store-becomes-records">AD2: how an old store becomes records</a></li>
+<li><a href="#ad3-two-details-of-the-import">AD3: two details of the import</a></li></ul></details>
 <article>
-<h1 id="the-adoption-step-ad1-and-ad2">The adoption step: AD1 and AD2</h1>
+<h1 id="the-adoption-step-ad1-ad2-and-ad3">The adoption step: AD1, AD2 and AD3</h1>
 <p><strong>Put to Kyle in <code>DECISIONS.md</code> on 2026-11-22 and ruled on 2026-11-23, each for its recommendation with additions.</strong> The entries are kept here as they were put, with the ruling at the head of each. &quot;Recommended&quot;, &quot;today&quot; and &quot;not built&quot; in the text are as written then.
+AD3, two details that the import's plan found open, was put on 2026-11-23 and ruled the same day for its recommendation; it is the last section.
 The ruling is recorded in <a href="changelog.html">the changelog</a> under 2026-11-23. The step itself was ruled on 2026-11-21 (<a href="note-2026-11-21-order-of-work.html#w1-an-adoption-step-before-standing-and-sharing">W1</a>).</p>
 <p><strong>What the entries said of the step.</strong> You ruled on 2026-11-21 (W1) that the adoption step's CLI pieces are built beside the tick work. A worker planned them on 2026-11-22. The pieces that are the CLI's alone are being built: <code>loops ls</code>, a scan by the start of a name, a plain-text view with relative times, a <code>--version</code>, and the cache of checked segments (W2). Two pieces need you first. AD1 is one. The other is AD2, the import of your old stores as a shadow.</p>
 <h2 id="a-trial-before-the-ruling">A trial before the ruling</h2>
@@ -291,6 +293,31 @@ thread:kiln  thread      2        1      kiln  done    Repair kiln
 </tbody></table></div>
 <p><strong>What I am not sure of, and will check before anything is built:</strong> whether your old stores hold kinds the vertex does not name, facts whose key field is missing, and payloads the new writer refuses (a number out of range, a repeated name). The import will count each and stop on the last kind; it will not guess.</p>
 <p><strong>Not asked.</strong> The import's verb and flags, its batches, and how the copy is compared with the old tool's reading are the implementer's. The old store is never written.</p>
+<h2 id="ad3-two-details-of-the-import">AD3: two details of the import</h2>
+<p><strong>Ruled by Kyle, 2026-11-23:</strong> the recommended column in both rows. A fact of a kind the vertex does not name, brought in with <code>--include-unnamed</code>, is a root. The old time is kept to the microsecond. The build already followed both, so no code changed. Put on 2026-11-23 after the import's plan, and ruled the same day.</p>
+<p><strong>Question.</strong> A worker planned the import on 2026-11-23, and its plan found two places where AD2 does not say which record is written. Both decide record ids, so they are cheap to change only before the first real import. What should each be?</p>
+<p>The build follows the recommended column until you rule otherwise. Nothing real is imported before you do.</p>
+<div class="table-scroll" tabindex="0"><table><thead><tr><th scope="col"></th><th scope="col">The case</th><th scope="col">Example</th><th scope="col">Recommended</th><th scope="col">The other choice</th></tr></thead>
+<tbody>
+<tr><td>1</td><td><strong>A kind the vertex does not name, brought in with the flag.</strong> Your addition (d) leaves such facts out unless asked for. When you ask, what is each one?</td><td>The workshop's vertex no longer names <code>repair</code>. The old store still holds two <code>repair</code> facts, both with <code>name</code> kiln: status open, then status done.</td><td><strong>Two roots</strong>, as row 2 of AD2 says for a kind the vertex does not read by a field. Nothing overlays: both facts can be read, and there is no thing <code>repair:kiln</code>.</td><td>Keyed by <code>name</code>, as the store's other kinds are: one thing <code>repair:kiln</code> that reads <code>done</code>. In a read across stores this is a second history of the thing beside the store that now holds the kind: the case (d) was added to prevent.</td></tr>
+<tr><td>2</td><td><strong>How fine the old time is.</strong> The old store keeps a time as a number of seconds with a fraction. It becomes the text of <code>occurred</code> (row 4).</td><td>The stored number <code>1793610000.1234567</code>. A number of this size can only step by about 0.24 millionths of a second.</td><td><strong>To the microsecond:</strong> <code>2026-11-02T09:00:00.123457Z</code>. That is as fine as the number is, and it is what the old tool shows.</td><td>To the nanosecond: <code>2026-11-02T09:00:00.123456717Z</code>. The last three digits are an effect of how the number is stored, not a time anyone wrote.</td></tr>
+</tbody></table></div>
+<p><strong>Row 1, run on today's binary</strong> (written by hand both ways, with a scratch key):</p>
+<pre><code>as roots                              keyed by name
+$ loops ls --plain                    $ loops ls repair: --fields name,status --plain
+KIND    RECORDS                       THING        RECORDS  HEADS  name  status
+repair  2                             repair:kiln  2        1      kiln  done
+$ loops ls repair: --plain
+(nothing: no thing is named repair:…)
+</code></pre>
+<p><strong>What it costs to change later.</strong> Either row changes the id of every record it touches. After a real import, changing one means a fresh shadow store.</p>
+<p><strong>Not asked; the plan settled these under your rulings, and they go in the changelog when built.</strong></p>
+<ul>
+<li><p><strong>The import stops and does not guess</strong> when a fact it would bring in has a key field that is empty, <code>null</code> or not text; a kind that is literally <code>tick</code>; a payload that is not an object; a repeated member name; or a number out of range. It checks the whole of every store first and writes nothing if any such fact is found. None of these occurs in the four stores of the trial.</p></li>
+<li><p><strong>A revision sets every field its payload carries</strong>, the key field too. The example in AD2 said the second <code>kiln</code> record &quot;sets only <code>status</code>&quot;; it carries <code>name</code> as well and sets both. The reading is the same.</p></li>
+<li><p><strong>A shadow store is the import's alone until you cut over.</strong> A later run brings in what the old store has gained since. It refuses a shadow that holds records it did not write, and it refuses an old store whose earlier facts have changed. So during the shadow period you write with the old tool and read with either; when you start writing with the new one, importing into that store ends.</p></li>
+<li><p><strong>How the old store is read:</strong> a small Python script in the repository exports the facts and the vertex's kinds to two text files, and the Rust import reads those. No SQLite library is added to the binary.</p></li>
+</ul>
 </article>
 </main>
 <script>
