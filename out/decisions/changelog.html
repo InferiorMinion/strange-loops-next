@@ -218,6 +218,7 @@ The record starts where the old roadmap's did. For anything earlier, and for eve
 <h2 id="2026-11-23">2026-11-23</h2>
 <p>In brief:</p>
 <ul>
+<li><p>The first real import: Kyle's six homelab stores, into shadows outside every repository. Each reads as the old tool does in every field but one, a list of references in a field <code>ref</code>. How the old stores' references are carried is put to Kyle as AD4.</p></li>
 <li><p>Kyle ruled TK13, yes to all three rows, and <code>loops tick</code> now does it: a tick made with no cut named covers only the records its answer depends on, with what is under them; <code>--all</code> covers everything. In a store of six backups and 40 notes the tick lists 6 ids, not 46.</p></li>
 <li><p>The Rust can work out which records a spec's answer depends on (<code>loops::slice::spec_slice</code>). Nothing uses it yet: no verb, flag or default changed, and what <code>loops tick</code> does with it waits on TK13. On 488 generated stores and specs the answer over the selected records equals the answer over everything, and a tick over them checks <code>same</code>.</p></li>
 <li><p>TK13 is put to Kyle: whether <code>loops tick &lt;spec&gt;</code> should cover only the records its answer depends on once the binary can work that set out. John's pilot asks for it. A worker planned the build the same day; the plan corrected the entry's second row and added a third, for specs that read things by key.</p></li>
@@ -230,6 +231,24 @@ The record starts where the old roadmap's did. For anything earlier, and for eve
 <li><p>The import's first two pieces are built: a script that exports an old store and its vertex to two text files, and the mapping of each old fact to a record, equal byte for byte to what <code>loops emit - --fill</code> writes. No verb yet.</p></li>
 <li><p>The import has its plan. Two of its choices decide record ids and are put to Kyle as AD3: how a kind the vertex does not name is written when asked for, and how fine the old time is.</p></li>
 </ul>
+<h3 id="the-first-real-import-the-homelab-stores">The first real import: the homelab stores</h3>
+<p>At Kyle's word (2026-11-23): his six homelab stores first, into shadows on the workbench outside every repository, and the old tool's callers moved to <code>sl</code> before <code>loops</code> changes on <code>PATH</code>.</p>
+<p><strong>Where it lives.</strong> <code>~/.local/share/loops/shadow/&lt;group&gt;/</code> (mode 0700): <code>old/</code> holds the copies the import read (the vertex files and the six stores, each checked equal to its original before and after copying and by SQLite's integrity check), <code>exports/</code> the two files per store, <code>private/</code> the import's key and journal (0600; the journal holds salts), <code>shadows/&lt;name&gt;/</code> the six stores, and <code>stores.json</code> binding each name, so that <code>loops fold</code> across them works from that directory. The binary was built from main at <code>2c1b14c</code> into <code>~/.local/share/loops/build</code>, leaving the one rex-chat uses alone.</p>
+<div class="table-scroll" tabindex="0"><table><thead><tr><th scope="col">Step</th><th scope="col">Result</th></tr></thead>
+<tbody>
+<tr><td>The old stores</td><td>in step with their remote, last changed 2026-11-22, write-ahead logs empty</td></tr>
+<tr><td><code>loops shadow-import --check-only</code></td><td>11,072 facts read, 11,047 to write, none refused; 25 of kinds the vertex does not name and 14 old ticks left out; 37 without their key, written as roots</td></tr>
+<tr><td>The import</td><td>11,047 records in 2.6 s; every shadow passes <code>loops check</code></td></tr>
+<tr><td><code>compare.py</code>, against the export</td><td>every thing equal in every field, in all six: 5,021, 1,021, 35, 122, 10 and 272 things</td></tr>
+<tr><td><code>compare.py --old-json</code>, against the old tool's own <code>sl read --json --all</code></td><td>equal in two stores; in four, two kinds of difference, below</td></tr>
+</tbody></table></div>
+<p><strong>What the old tool reads differently.</strong></p>
+<ul>
+<li><p><strong>The payload field <code>ref</code>.</strong> The old tool takes it out of the payload, splits it at commas and gathers the parts across all of a thing's revisions. The import keeps it as text, so the new reading shows only the latest. 894 facts carry it; 53 things read fewer references than the old tool shows.</p></li>
+<li><p>Not a difference in the reading, but found with it: <strong>fields <code>&lt;name&gt;_ref</code> hold old fact ids</strong> (14,685 of them in 8,363 facts), which name nothing in the shadow. How both kinds of reference are carried is AD4.</p></li>
+<li><p><strong>Facts without their key field.</strong> The old tool does not show them; the import writes them as roots, as AD2's addition (c) says. 37 here.</p></li>
+</ul>
+<p>Nothing else differed. The platform stores have no <code>ref</code> field, which is why their comparison against the old tool was clean.</p>
 <h3 id="loops-tick-covers-what-the-answer-depends-on"><code>loops tick</code> covers what the answer depends on</h3>
 <p>The last piece of smaller ticks (TK13, ruled 2026-11-23). Rust only, in the CLI. No protocol rule, no vector's answer, no refusal code and nothing in <code>rust/core</code>, <code>rust/eval</code> or <code>rust/place</code> changed. <code>loops tick --check</code>, <code>loops emit --base</code>, <code>read</code> and <code>fold</code> are untouched.</p>
 <div class="table-scroll" tabindex="0"><table><thead><tr><th scope="col">The command</th><th scope="col">Covers</th></tr></thead>
