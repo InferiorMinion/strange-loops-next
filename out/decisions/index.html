@@ -199,6 +199,7 @@ header.top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--g
 <p class="source">Rendered from <code>DECISIONS.md</code> in the repository.</p>
 <details class="contents"><summary>On this page</summary>
 <ul><li><a href="#at-a-glance">At a glance</a></li>
+<li><a href="#the-adoption-step">The adoption step</a></li>
 <li><a href="#being-prepared">Being prepared</a></li>
 <li><a href="#deferred-by-you">Deferred by you</a></li>
 <li><a href="#ruled">Ruled</a></li></ul></details>
@@ -212,14 +213,42 @@ header.top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--g
 <li><p>&quot;Today&quot; in an example means the <code>loops</code> binary built from main on 2026-11-21. Every &quot;today&quot; answer below was run, not predicted.</p></li>
 </ul>
 <h2 id="at-a-glance">At a glance</h2>
-<p><strong>Nothing waits on you</strong> (2026-11-23). Every entry put so far is ruled, and what is ruled is built or being built.</p>
+<div class="table-scroll" tabindex="0"><table><thead><tr><th scope="col">Id</th><th scope="col">Question</th><th scope="col">Recommended</th><th scope="col">What waits on it</th></tr></thead>
+<tbody>
+<tr><td><a href="#ad3-two-details-of-the-import">AD3</a></td><td>Two details of the import that AD2 leaves open: how a kind the vertex does not name is written when you ask for it, and how fine the old time is</td><td>Such a fact is a root; the time is kept to the microsecond</td><td>The first real import. The build follows the recommended column meanwhile</td></tr>
+</tbody></table></div>
+<p>Every earlier entry is ruled.</p>
 <ul>
 <li><p>The tick record, TK1 to TK12: ruled and built. Step 4 is closed. The questions as they were put are in <a href="note-2026-11-21-tick-record.html#10-the-questions-as-they-were-put">the tick record note</a>, sections 10 and 11.</p></li>
 <li><p>The order of work, W1 to W6: ruled. The entries as put are in <a href="note-2026-11-21-order-of-work.html">the order-of-work note</a>.</p></li>
 <li><p>The adoption step, AD1 and AD2: ruled on 2026-11-23, each for its recommendation with additions. The entries as put, and the additions, are in <a href="note-2026-11-22-adoption.html">the adoption note</a>.</p></li>
 </ul>
-<p>The next entries are likely to come from the import's plan: any choice there that changes a record's id or what a read answers, and that AD2 does not settle.</p>
 <p>After this: <a href="#being-prepared">what is being prepared</a>, <a href="#deferred-by-you">what you deferred</a> and <a href="#ruled">what is ruled</a>. Nothing waits to be confirmed: under your ruling of 2026-11-21 an implementer choice comes here only when it changes bytes or answers.</p>
+<h2 id="the-adoption-step">The adoption step</h2>
+<h3 id="ad3-two-details-of-the-import">AD3: two details of the import</h3>
+<p><strong>Question.</strong> A worker planned the import on 2026-11-23, and its plan found two places where AD2 does not say which record is written. Both decide record ids, so they are cheap to change only before the first real import. What should each be?</p>
+<p>The build follows the recommended column until you rule otherwise. Nothing real is imported before you do.</p>
+<div class="table-scroll" tabindex="0"><table><thead><tr><th scope="col"></th><th scope="col">The case</th><th scope="col">Example</th><th scope="col">Recommended</th><th scope="col">The other choice</th></tr></thead>
+<tbody>
+<tr><td>1</td><td><strong>A kind the vertex does not name, brought in with the flag.</strong> Your addition (d) leaves such facts out unless asked for. When you ask, what is each one?</td><td>The workshop's vertex no longer names <code>repair</code>. The old store still holds two <code>repair</code> facts, both with <code>name</code> kiln: status open, then status done.</td><td><strong>Two roots</strong>, as row 2 of AD2 says for a kind the vertex does not read by a field. Nothing overlays: both facts can be read, and there is no thing <code>repair:kiln</code>.</td><td>Keyed by <code>name</code>, as the store's other kinds are: one thing <code>repair:kiln</code> that reads <code>done</code>. In a read across stores this is a second history of the thing beside the store that now holds the kind: the case (d) was added to prevent.</td></tr>
+<tr><td>2</td><td><strong>How fine the old time is.</strong> The old store keeps a time as a number of seconds with a fraction. It becomes the text of <code>occurred</code> (row 4).</td><td>The stored number <code>1793610000.1234567</code>. A number of this size can only step by about 0.24 millionths of a second.</td><td><strong>To the microsecond:</strong> <code>2026-11-02T09:00:00.123457Z</code>. That is as fine as the number is, and it is what the old tool shows.</td><td>To the nanosecond: <code>2026-11-02T09:00:00.123456717Z</code>. The last three digits are an effect of how the number is stored, not a time anyone wrote.</td></tr>
+</tbody></table></div>
+<p><strong>Row 1, run on today's binary</strong> (written by hand both ways, with a scratch key):</p>
+<pre><code>as roots                              keyed by name
+$ loops ls --plain                    $ loops ls repair: --fields name,status --plain
+KIND    RECORDS                       THING        RECORDS  HEADS  name  status
+repair  2                             repair:kiln  2        1      kiln  done
+$ loops ls repair: --plain
+(nothing: no thing is named repair:…)
+</code></pre>
+<p><strong>What it costs to change later.</strong> Either row changes the id of every record it touches. After a real import, changing one means a fresh shadow store.</p>
+<p><strong>Not asked; the plan settled these under your rulings, and they go in the changelog when built.</strong></p>
+<ul>
+<li><p><strong>The import stops and does not guess</strong> when a fact it would bring in has a key field that is empty, <code>null</code> or not text; a kind that is literally <code>tick</code>; a payload that is not an object; a repeated member name; or a number out of range. It checks the whole of every store first and writes nothing if any such fact is found. None of these occurs in the four stores of the trial.</p></li>
+<li><p><strong>A revision sets every field its payload carries</strong>, the key field too. The example in AD2 said the second <code>kiln</code> record &quot;sets only <code>status</code>&quot;; it carries <code>name</code> as well and sets both. The reading is the same.</p></li>
+<li><p><strong>A shadow store is the import's alone until you cut over.</strong> A later run brings in what the old store has gained since. It refuses a shadow that holds records it did not write, and it refuses an old store whose earlier facts have changed. So during the shadow period you write with the old tool and read with either; when you start writing with the new one, importing into that store ends.</p></li>
+<li><p><strong>How the old store is read:</strong> a small Python script in the repository exports the facts and the vertex's kinds to two text files, and the Rust import reads those. No SQLite library is added to the binary.</p></li>
+</ul>
 <h2 id="being-prepared">Being prepared</h2>
 <p>Nothing here needs you yet. It is listed so that you know what is coming.</p>
 <p><strong>What a store says about its kinds, without enforcing it.</strong> The old <code>.vertex</code> files of real stores hold one fold, by name, which a record's <code>of</code> now carries. The rest of what they hold describes kinds: which fields refer to which kinds, a lifecycle field and its active values, the format of a key, and what to show first. The roadmap lists declarations under standing, with admission and grants. The question being prepared is whether the descriptive half comes forward, so that a viewer and <code>loops ls</code> can use it before any store is strict.</p>

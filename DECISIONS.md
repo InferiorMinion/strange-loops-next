@@ -8,15 +8,49 @@ Everything that waits on Kyle, in one place. Each entry has the question, an exa
 - "Today" in an example means the `loops` binary built from main on 2026-11-21. Every "today" answer below was run, not predicted.
 ## At a glance
 
-**Nothing waits on you** (2026-11-23). Every entry put so far is ruled, and what is ruled is built or being built.
+| Id | Question | Recommended | What waits on it |
+| --- | --- | --- | --- |
+| [AD3](#ad3-two-details-of-the-import) | Two details of the import that AD2 leaves open: how a kind the vertex does not name is written when you ask for it, and how fine the old time is | Such a fact is a root; the time is kept to the microsecond | The first real import. The build follows the recommended column meanwhile |
+
+Every earlier entry is ruled.
 
 - The tick record, TK1 to TK12: ruled and built. Step 4 is closed. The questions as they were put are in [the tick record note](notes/2026-11-21-tick-record.md#10-the-questions-as-they-were-put), sections 10 and 11.
 - The order of work, W1 to W6: ruled. The entries as put are in [the order-of-work note](notes/2026-11-21-order-of-work.md).
 - The adoption step, AD1 and AD2: ruled on 2026-11-23, each for its recommendation with additions. The entries as put, and the additions, are in [the adoption note](notes/2026-11-22-adoption.md).
 
-The next entries are likely to come from the import's plan: any choice there that changes a record's id or what a read answers, and that AD2 does not settle.
-
 After this: [what is being prepared](#being-prepared), [what you deferred](#deferred-by-you) and [what is ruled](#ruled). Nothing waits to be confirmed: under your ruling of 2026-11-21 an implementer choice comes here only when it changes bytes or answers.
+
+## The adoption step
+
+### AD3: two details of the import
+
+**Question.** A worker planned the import on 2026-11-23, and its plan found two places where AD2 does not say which record is written. Both decide record ids, so they are cheap to change only before the first real import. What should each be?
+
+The build follows the recommended column until you rule otherwise. Nothing real is imported before you do.
+
+| | The case | Example | Recommended | The other choice |
+| --- | --- | --- | --- | --- |
+| 1 | **A kind the vertex does not name, brought in with the flag.** Your addition (d) leaves such facts out unless asked for. When you ask, what is each one? | The workshop's vertex no longer names `repair`. The old store still holds two `repair` facts, both with `name` kiln: status open, then status done. | **Two roots**, as row 2 of AD2 says for a kind the vertex does not read by a field. Nothing overlays: both facts can be read, and there is no thing `repair:kiln`. | Keyed by `name`, as the store's other kinds are: one thing `repair:kiln` that reads `done`. In a read across stores this is a second history of the thing beside the store that now holds the kind: the case (d) was added to prevent. |
+| 2 | **How fine the old time is.** The old store keeps a time as a number of seconds with a fraction. It becomes the text of `occurred` (row 4). | The stored number `1793610000.1234567`. A number of this size can only step by about 0.24 millionths of a second. | **To the microsecond:** `2026-11-02T09:00:00.123457Z`. That is as fine as the number is, and it is what the old tool shows. | To the nanosecond: `2026-11-02T09:00:00.123456717Z`. The last three digits are an effect of how the number is stored, not a time anyone wrote. |
+
+**Row 1, run on today's binary** (written by hand both ways, with a scratch key):
+
+```
+as roots                              keyed by name
+$ loops ls --plain                    $ loops ls repair: --fields name,status --plain
+KIND    RECORDS                       THING        RECORDS  HEADS  name  status
+repair  2                             repair:kiln  2        1      kiln  done
+$ loops ls repair: --plain
+(nothing: no thing is named repair:…)
+```
+
+**What it costs to change later.** Either row changes the id of every record it touches. After a real import, changing one means a fresh shadow store.
+
+**Not asked; the plan settled these under your rulings, and they go in the changelog when built.**
+- **The import stops and does not guess** when a fact it would bring in has a key field that is empty, `null` or not text; a kind that is literally `tick`; a payload that is not an object; a repeated member name; or a number out of range. It checks the whole of every store first and writes nothing if any such fact is found. None of these occurs in the four stores of the trial.
+- **A revision sets every field its payload carries**, the key field too. The example in AD2 said the second `kiln` record "sets only `status`"; it carries `name` as well and sets both. The reading is the same.
+- **A shadow store is the import's alone until you cut over.** A later run brings in what the old store has gained since. It refuses a shadow that holds records it did not write, and it refuses an old store whose earlier facts have changed. So during the shadow period you write with the old tool and read with either; when you start writing with the new one, importing into that store ends.
+- **How the old store is read:** a small Python script in the repository exports the facts and the vertex's kinds to two text files, and the Rust import reads those. No SQLite library is added to the binary.
 
 ## Being prepared
 

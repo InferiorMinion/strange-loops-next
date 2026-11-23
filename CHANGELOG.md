@@ -10,7 +10,8 @@ The record starts where the old roadmap's did. For anything earlier, and for eve
 ## 2026-11-23
 
 In brief:
-- Kyle ruled AD1 (how a spec finds the stores it names) and AD2 (how an old store becomes records), each for its recommendation with additions. Nothing waits on him now. Both pieces are being planned.
+- Kyle ruled AD1 (how a spec finds the stores it names) and AD2 (how an old store becomes records), each for its recommendation with additions. Both pieces are being built.
+- The import has its plan. Two of its choices decide record ids and are put to Kyle as AD3: how a kind the vertex does not name is written when asked for, and how fine the old time is.
 
 ### Ruled by Kyle, 2026-11-23: AD1 and AD2
 
