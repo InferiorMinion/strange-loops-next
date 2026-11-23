@@ -17,6 +17,8 @@ import subprocess
 import sys
 import tempfile
 
+from old_id import valid_old_id
+
 
 class Invalid(ValueError):
     """Messages are public. Keep source text and child diagnostics out of them."""
@@ -116,7 +118,7 @@ def read_cut(facts, map_file, unnamed, keep_history):
         digest = hashlib.sha256(line).digest()
         ids = set()
         previous = ()
-        for line in stream:
+        for number, line in enumerate(stream, 2):
             row = decode(line)
             if "count" in row:
                 require(row == {"count": str(len(ids)), "digest": digest.hex()}
@@ -126,13 +128,16 @@ def read_cut(facts, map_file, unnamed, keep_history):
             require(set(row) == {"coordinate", "id", "kind", "ts_bits", "observer", "origin",
                                  "payload", "signature"} and isinstance(row["coordinate"], list)
                     and all(isinstance(row[k], str) for k in
-                            ("id", "kind", "observer", "origin", "payload"))
+                            ("kind", "observer", "origin", "payload"))
                     and (row["signature"] is None or isinstance(row["signature"], str))
-                    and len(row["id"]) == 26 and re.fullmatch("[0-9a-f]{16}", row["ts_bits"]),
+                    and re.fullmatch("[0-9a-f]{16}", row["ts_bits"]),
                     "invalid export row")
+            old_id = row["id"]
+            require(valid_old_id(old_id) and old_id not in ids,
+                    f"shadow-source-invalid at line {number}: invalid or duplicate old id")
             coord = tuple(decimal(s, -2**63, 2**63) for s in row["coordinate"])
-            old_id, kind = row["id"], row["kind"]
-            require(len(coord) == axes and coord > previous and old_id not in ids,
+            kind = row["kind"]
+            require(len(coord) == axes and coord > previous,
                     "invalid export coordinate or old id")
             previous = coord
             ids.add(old_id)

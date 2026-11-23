@@ -254,6 +254,16 @@ class CompareTests(unittest.TestCase):
         out = self.run_compare(code=1)
         self.assertNotIn("secret", out.stderr)
 
+    def test_invalid_and_duplicate_old_ids(self):
+        facts = self.args[0]
+        header, first, second, *tail = facts.read_bytes().splitlines(keepends=True)
+        row = json.loads(second)
+        for old_id in ("", "x" * 129, "kiln yard", "kiln\n", "café", json.loads(first)["id"]):
+            with self.subTest(old_id=old_id):
+                row["id"] = old_id
+                facts.write_bytes(header + first + json.dumps(row).encode() + b"\n" + b"".join(tail))
+                self.assertIn("shadow-source-invalid at line 3:", self.run_compare(code=1).stderr)
+
     def test_damaged_cut_and_usage(self):
         path = self.args[0]
         path.write_bytes(path.read_bytes().replace(b"secret-open", b"secret-shut"))

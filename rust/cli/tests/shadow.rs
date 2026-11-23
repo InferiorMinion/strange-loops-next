@@ -519,3 +519,29 @@ fn legacy_cut_retains_rowid_gaps_in_its_arrival_order() {
     assert_eq!(rows, [vec![4], vec![11], vec![30]]);
     assert_eq!(summary, Summary { facts: 3, ticks: 1 });
 }
+
+#[test]
+fn invalid_and_duplicate_old_ids_name_the_fact_line() {
+    let map = Map::read(MAP).expect("map");
+    let long = "x".repeat(129);
+    for (id, line) in [
+        ("", 2),
+        (long.as_str(), 2),
+        ("kiln yard", 2),
+        ("kiln\n", 2),
+        ("kiln\x7f", 2),
+        ("café", 2),
+        ("00000000000000000000000011", 3),
+    ] {
+        let cut = FACTS.replace("\"00000000000000000000000030\"", &loops::json::quote(id));
+        let source::ScanError::Invalid(why) =
+            scan(cut.as_bytes(), &map, |_| {}).expect_err("bad id")
+        else {
+            panic!("unexpected I/O error");
+        };
+        assert!(
+            why.starts_with(&format!("shadow-source-invalid at line {line}:")),
+            "{why}"
+        );
+    }
+}

@@ -145,8 +145,10 @@ impl Fact {
             ],
         )?;
         let id = string(data["id"])?;
-        if id.chars().count() != 26 {
-            return Err("expected a 26-character old id".into());
+        if !(1..=128).contains(&id.len()) || !id.bytes().all(|b| b.is_ascii_graphic()) {
+            return Err(
+                "expected 1 to 128 printable ASCII characters other than space in old id".into(),
+            );
         }
         let Json::Arr(numbers) = data["coordinate"] else {
             return Err("expected a coordinate array".into());

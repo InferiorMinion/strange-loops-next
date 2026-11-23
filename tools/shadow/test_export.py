@@ -167,6 +167,30 @@ class VertexTests(unittest.TestCase):
                 with self.assertRaisesRegex(InvalidVertex, f"at line {line}:"):
                     parse_vertex(VERTEX.replace(old, new))
 
+    def test_skipped_top_level_blocks(self):
+        blocks = '''observers {
+  // kiln observers
+  potter { key "Igb1hJSbRKsi+K3JKrPyV/KgV35L6fwl70eZ9XTCKWc=" }
+  clerk { }
+  kiln-watch {
+    key "rXOSSayvfhpLnsxagMu/w7tFZJFKamt/9ef/7XG9rus="
+  }
+}
+sources {
+  path "./yard/roster.loop"
+  path "./yard/tools.loop"
+}
+observers {}
+sources {}
+'''
+        self.assertEqual(parse_vertex(blocks + VERTEX)["kinds"], parse_vertex(VERTEX)["kinds"])
+
+    def test_malformed_skipped_blocks(self):
+        for declaration in ('observers "x"', 'sources "x" {}', 'sources', 'observers {',
+                            'sources { path "unterminated }'):
+            with self.subTest(declaration=declaration), self.assertRaisesRegex(InvalidVertex, "at line 1:"):
+                parse_vertex(declaration + "\n" + VERTEX)
+
     def test_missing_or_unbalanced_blocks(self):
         for vertex in ('name "yard"', VERTEX.replace('loops {', 'loops;'),
                        VERTEX.rstrip()[:-1], VERTEX + '}', VERTEX.replace('  thread {', '  thread;\n  {'),
@@ -186,3 +210,20 @@ class VertexTests(unittest.TestCase):
         ]:
             with self.subTest(replacement=replacement), self.assertRaisesRegex(InvalidVertex, "at line"):
                 parse_vertex(VERTEX.replace(old, replacement))
+
+
+class LegacyIdTests(unittest.TestCase):
+    def test_invalid_and_duplicate_ids_name_the_fact_line(self):
+        for old_id in ("", "x" * 129, "kiln yard", "kiln\n", "kiln\x7f", "café", f"{4:026}"):
+            with self.subTest(old_id=old_id), tempfile.TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                vertex, db = make_cut(root, False)
+                with sqlite3.connect(db) as conn:
+                    # A legacy schema need not constrain the id column.
+                    conn.execute("ALTER TABLE facts RENAME TO original")
+                    conn.execute("CREATE TABLE facts AS SELECT rowid AS coord, * FROM original ORDER BY rowid")
+                    conn.execute("UPDATE facts SET id=? WHERE coord=11", (old_id,))
+                conn.close()
+                with self.assertRaisesRegex(ValueError, "shadow-source-invalid at line 3:"):
+                    export(vertex, root / "shadow")
+                self.assertEqual(list((root / "shadow").iterdir()), [])

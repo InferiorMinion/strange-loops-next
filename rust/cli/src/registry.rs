@@ -45,7 +45,7 @@ fn list(dir: &Path) -> Result<Option<Bindings>, Fail> {
     Ok(Some(bindings))
 }
 
-fn bindings(current: Option<&Path>, overrides: Bindings) -> Result<Bindings, Fail> {
+fn bindings(start: &Path, current: Option<&Path>, overrides: Bindings) -> Result<Bindings, Fail> {
     let config = env::var_os("XDG_CONFIG_HOME")
         .map(PathBuf::from)
         .filter(|dir| dir.is_absolute())
@@ -64,6 +64,8 @@ fn bindings(current: Option<&Path>, overrides: Bindings) -> Result<Bindings, Fai
                 break;
             }
         }
+    } else if let Some(local) = list(start)? {
+        names.extend(local);
     }
     names.extend(overrides);
     Ok(names)
@@ -103,10 +105,11 @@ fn stores<'a>(
 /// Names of unclean stores accompany the union so the caller can answer first.
 pub(crate) fn read<'a>(
     spec: &'a Spec,
+    start: &Path,
     current: Option<&Path>,
     overrides: Bindings,
 ) -> Result<(Held, Vec<&'a str>), Fail> {
-    let names = bindings(current, overrides)?;
+    let names = bindings(start, current, overrides)?;
     let mut union = Held::default();
     let mut dirty = Vec::new();
     for (store, aliases) in stores(spec, &names)?.into_values() {

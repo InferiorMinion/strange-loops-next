@@ -10,6 +10,7 @@ The record starts where the old roadmap's did. For anything earlier, and for eve
 ## 2026-11-23
 
 In brief:
+- Three faults found before the first real import are fixed: an old id need not be 26 characters, the vertex reader skips the `observers` and `sources` blocks, and a fold started in a group's directory reads the `stores.json` there. On copies of six older stores the import then took every fact and each shadow read as its old store did.
 - Kyle ruled AD3 for its recommendation in both rows: a fact of a kind the vertex does not name, brought in with `--include-unnamed`, is a root, and the old time is kept to the microsecond. The build already did both. Nothing waits on a ruling.
 - Kyle ruled AD1 (how a spec finds the stores it names) and AD2 (how an old store becomes records), each for its recommendation with additions. Both pieces are being built.
 - `loops read` and `loops fold` find the stores a spec names and fold their union. A name bound to nothing refuses the read (`store-unknown`). The name `.` is the store the read starts from.
@@ -17,6 +18,35 @@ In brief:
 - `loops shadow-import` is built: it copies exported old stores into shadow stores, one signed record for each old fact, checks everything before it writes anything, and writes nothing on a second run. On a copy of four real stores it gave the old tool's reading for every thing held by one store.
 - The import's first two pieces are built: a script that exports an old store and its vertex to two text files, and the mapping of each old fact to a record, equal byte for byte to what `loops emit - --fill` writes. No verb yet.
 - The import has its plan. Two of its choices decide record ids and are put to Kyle as AD3: how a kind the vertex does not name is written when asked for, and how fine the old time is.
+
+### Three fixes before the first real import
+
+The import and the store list were tested on Kyle's newer stores only. Neon checked them against an older group of his stores and found three faults; Kyle passed them on, and the coordinator confirmed each on copies. No protocol rule, no record's bytes for a given draft, no refusal code and no vector changed.
+
+- **An old fact id is no longer required to be 26 characters.** Older stores hold ids of 36 characters beside them: 99 facts in three of the stores looked at, which stopped the export at once. An old id is now text of 1 to 128 printable ASCII characters without a space, and unique within its store. The same rule is in the exporter, the Rust reader and the comparison tool; anything else is `shadow-source-invalid`, naming the line. The old id finds a fact's reservation in the journal and is never part of a record's bytes, salt or id, so no existing expected line changed.
+- **The vertex reader skips two more blocks.** A top-level `observers` block (who may write, and their keys) and a top-level `sources` block (the files that feed the store) are recognized and skipped, as `edge` and `lifecycle` are inside a kind. Neither changes which record a fact becomes. Seven of the eight single-store vertex files looked at carry one. `combine`, `discover` and anything unknown are still refused, naming the line.
+- **A fold started in a group's directory reads the list there.** AD1's list kept with a group of stores was found only from inside a store: beside its `.loops/`, or one directory up. In the layout the list was ruled for, the group's own directory is inside no store, so `loops fold combined.json` run there was refused `store-unknown`. Now, when a read starts in a directory that is inside no store, `stores.json` in that directory is the group's list. Only that directory is looked in, never one further up. Its place in the order is unchanged: above the per-user list, below `--store`. Inside a store nothing changes. This adds a third place to the two in the ruling as recorded; Kyle passed the finding on, and it is his to overrule.
+
+**Run by the coordinator on copies of six older stores** (counts only), with the fixed exporter and an optimised build.
+
+| Step | Result |
+| --- | --- |
+| Export | all six exported; before the fix three stopped on their ids and five on their vertex |
+| `loops shadow-import --check-only` | 11,072 facts read, 11,047 would be written, none refused; 25 of kinds the vertex does not name left out; 37 without their key, written as roots; 14 old ticks left out |
+| The import | 11,047 records in 14 s; every shadow passes `loops check` |
+| A second run | nothing written; 1.4 s |
+| `compare.py`, each store | 35, 10, 272, 122, 1,021 and 5,021 things, every one equal in every field; exit 0 each; 18 s for the largest |
+
+Two things seen and left as they are:
+- A build without optimisation is far slower here: the second run took 72 s and the largest comparison over ten minutes. Use `cargo build --release -p loops-cli`.
+- One vertex file of that group names a keyed kind that starts with an underscore. Such a kind cannot name a thing, so the import would stop on that store. The store is not on this machine and was not tried.
+
+**Implementer choices; they stand under Kyle's ruling of 2026-11-21 (W7).**
+- More than one `observers` or `sources` block is not refused. Each must be a block without arguments, and its inside must be well formed.
+- A refusal of an old id names the line of the export and not the id.
+- The import still pins the hash of the whole vertex file, so an edit to an old `.vertex`, even to a comment, refuses the next run (`shadow-state-mismatch`). Whether it should pin only the kinds is asked of Kyle.
+
+A Codex worker wrote the fixes; the coordinator reviewed them, ran the gates and made the runs above.
 
 ### Ruled by Kyle, 2026-11-23: AD3
 

@@ -12,6 +12,7 @@ import struct
 import sys
 from tempfile import TemporaryDirectory
 
+from old_id import valid_old_id
 from vertex import InvalidVertex, parse_vertex
 
 
@@ -39,6 +40,7 @@ def export_rows(db, output, mapping):
                               "ticks": str(ticks)})
         digest = hashlib.sha256(header).digest()
         output.write(header)
+        ids = set()
         previous = None
         count = 0
         query = f"SELECT id, kind, ts, observer, origin, payload, signature, {axis} FROM facts ORDER BY {axis}"
@@ -46,8 +48,11 @@ def export_rows(db, output, mapping):
             if not all(type(n) is int for n in coord) or (previous is not None and coord <= previous):
                 raise ValueError(f"shadow-source-invalid: invalid arrival coordinate at row {count + 1}")
             previous = coord
-            if (not all(isinstance(s, str) for s in (fact_id, kind, observer, origin, payload))
-                    or len(fact_id) != 26 or not isinstance(ts, (int, float))
+            if not valid_old_id(fact_id) or fact_id in ids:
+                raise ValueError(f"shadow-source-invalid at line {count + 2}: invalid or duplicate old id")
+            ids.add(fact_id)
+            if (not all(isinstance(s, str) for s in (kind, observer, origin, payload))
+                    or not isinstance(ts, (int, float))
                     or (signature is not None and not isinstance(signature, str))):
                 raise ValueError(f"shadow-source-invalid: invalid fact columns at row {count + 1}")
             row = encode_line({"id": fact_id, "kind": kind, "ts_bits": struct.pack(">d", ts).hex(),

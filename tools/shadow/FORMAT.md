@@ -53,7 +53,9 @@ unnamed. Review this list before import. The vertex digest binds the source
 cut to a vertex revision. Pinning the reviewed **map itself** on subsequent
 imports belongs to the journal.
 
-The exporter requires one each of `name`, `store` and `loops`. A kind has
+The exporter requires one each of `name`, `store` and `loops`. Top-level
+`observers` and `sources` blocks may repeat. Each takes no arguments, and
+the reader checks its syntax and skips its contents. A kind has
 one `fold` with one `items "by" "<field>"` or `items "collect" N`. Under
 a kind, `edge`, `lifecycle`, `search`, `preview` and `boundary` are skipped,
 including their child blocks. A `boundary` beside the kinds is skipped too.
@@ -85,7 +87,8 @@ are absent, rowid coordinates are `[rowid]`. Compare these numerically and
 lexicographically. Gaps are valid. Partial schemas, nulls and repeated
 coordinates are errors.
 
-The old ID is unique per stream and has 26 characters. The other scalar
+The old ID is unique per stream and contains 1 to 128 ASCII characters
+in the inclusive range U+0021 to U+007E. The other scalar
 members are text except that `signature` may also be JSON null. Preserve
 the entire payload JSON text as a string, including its original spaces,
 escapes, duplicate names and number spellings. For instance, the outer
