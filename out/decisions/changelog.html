@@ -238,6 +238,14 @@ The record starts where the old roadmap's did. For anything earlier, and for eve
 <li><p><strong>A spec with a slot that reads things by key</strong> covers every record of each thing a source touches, with what erases them and what they name in <code>prev</code>.</p></li>
 </ol>
 <p>The part that works the set out is on main and already follows rows 2 and 3. The verb does not yet: until the next piece merges, a bare <code>loops tick</code> still covers everything. <code>--as-of</code> and <code>--cover</code> keep their meaning.</p>
+<h3 id="the-slice-familys-fold-reads-the-records-as-held">The slice family's fold reads the records as held</h3>
+<p>A correction to the comparison below, from margins-claude after running the selector on sl-py's own stores. <code>rust/eval/src/slice.rs</code> only: no verb, no record's bytes, no vector's answer and no case of the fixed seed changed.</p>
+<p>The Rust evaluator took the selected records from the settled whole, where an erased record has already lost its payload. So its fold over the selection could not differ from the whole by an eraser left out. Now the fold reads the selected forms as they were given, and settles only those. The tick is still made from the settled records, as <code>loops tick</code> makes one: a record held only as a target can be erased by a record the selection rightly leaves out, and a tick that listed it as open could not be checked.</p>
+<ul>
+<li><p>With a fault planted in the selector (no eraser of a keyed thing's other records), the evaluator answered all 1,440 of sl-py's pairs without an error before this change, and refuses 70 of them after it. The fuzz run itself did stop on that fault before, through its comparison of ids with the JavaScript, never through a fold.</p></li>
+<li><p>The fixed seed is unchanged: 488 cases, 1,628 arrival orders, none differs.</p></li>
+<li><p>On the selector as built, nothing differs. <code>sl-py/slice_rust.py</code> in margins puts 10,800 pairs of a spec and a store through it (things written by two replicas that sync, plain and anchored writers, refused records that a later record names): the ids equal the ones sl-py works out from the law in every pair, and sl-py's own fold over them equals its fold over everything. The same holds on 1,548 inputs bent into shapes the generator does not make (a record naming itself, a cycle, a <code>prev</code> to an id not held).</p></li>
+</ul>
 <h3 id="the-selector-compared-on-generated-stores">The selector, compared on generated stores</h3>
 <p>The second piece of smaller ticks. A new family of the fuzz runner, <code>slice</code>, and an input kind of <code>loops-eval</code> for it. <code>rust/core/src/slice.rs</code> did not change; no verb, no record's bytes and no vector's answer changed. The existing fuzz seeds give the same corpus as before, file for file.</p>
 <pre><code>node interop/fuzz/run.mjs --family slice --seed slice-ci-1 --n 384 --out &lt;dir&gt;
