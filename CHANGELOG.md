@@ -7,6 +7,41 @@ Each date starts with a short list. Under it is the record as it was written at 
 Since Kyle's ruling of 2026-11-21 (W7), only a choice that changes a record's bytes or id, a result's bytes or hash, a refusal code, or what a spec answers comes to him, through [DECISIONS.md](DECISIONS.md). Every other implementer choice is written here and stands unless he objects.
 The record starts where the old roadmap's did. For anything earlier, and for every merge, see `git log`.
 
+## 2026-11-23
+
+In brief:
+- Kyle ruled AD1 (how a spec finds the stores it names) and AD2 (how an old store becomes records), each for its recommendation with additions. Nothing waits on him now. Both pieces are being planned.
+
+### Ruled by Kyle, 2026-11-23: AD1 and AD2
+
+Each was an entry in `DECISIONS.md`, with an example. Kyle ruled both in the coordinator's session, after a trial import of a copy of four of his old stores. The entries as put, the additions and the trial's counts are in [the adoption note](notes/2026-11-22-adoption.md).
+
+**AD1: how a spec finds the stores it names.** Option A for both halves, with two additions.
+- A store name in a spec's `from` is bound to a directory in a per-user list (`~/.config/loops/stores.json`). The spec travels unchanged; each machine says where its stores are.
+- A name bound to nothing refuses the whole read: nothing on standard output, and a refusal that names the store, with the new code `store-unknown`. A missing store is never read as an empty one.
+- **Added: `--store <name>=<dir>` on the command** binds a name for that run and overrides the lists.
+- **Added: an optional `stores.json` kept with a group of stores.** It binds names for a hub store and the stores beside it, so a directory of stores that refer to each other reads the same wherever it is copied.
+- Unchanged: a read across stores takes the union of the named stores first (W1). `loops tick` and `loops tick --check` stay on the one store in the directory.
+- Left to the implementer, and to be written here when built: where the list kept with the stores is looked for, and which binding wins when two sources bind one name. The coordinator's brief says the nearest wins: the command, then the list with the stores, then the per-user list.
+
+**AD2: how an old store becomes records.** The recommended column in all eight rows.
+1. A fact of a kind the vertex reads by a field is of the thing `<kind>:<value of that field>`. A later fact of the same key is a revision: it names what is live in `prev` and sets the fields it carries.
+2. A kind the vertex collects is a root.
+3. Revisions follow the order in which the old store took the facts in.
+4. The old time becomes `occurred`. `emitted` is the time of the import.
+5. A key made for the import signs.
+6. The old observer is a mention, `observer:<name>`. The old id is kept in a file beside the import, which also makes a second run write nothing. The payload is the old payload, untouched.
+7. The old tool's ticks are left out and counted.
+8. A fact held by two old stores is imported into each, with the same salt and time for the same old id. Where the histories differ they are two records, counted.
+
+With four additions:
+- **(a)** An old fact with an empty observer is imported with no observer mention.
+- **(b)** The order of row 3 is the old store's arrival number where it keeps one, and its row order where it does not.
+- **(c)** A fact of a keyed kind that lacks its key field is a root, and is counted.
+- **(d)** A kind the vertex does not name is left out by default and counted; a flag brings such kinds in. This amends row 2 for them. A store can still hold the facts of kinds that were moved to another store, and importing them would bring a stale second history of each thing into every read across the two.
+
+**What the trial showed** (counts only; the stores are private). 2,912 facts were imported with none refused. For each of the 1,881 things held by one store, the new reading equals the old tool's in every field. For 226 things held by two stores the old tool gives the later value and the new one reads two heads; (d) removes 209 of them, and the 17 that remain are of a kind both stores name.
+
 ## 2026-11-22
 
 In brief:
@@ -37,7 +72,7 @@ Ruled by Kyle on 2026-11-22, in the coordinator's session, after TK10 and TK11 (
 
 **TK12: the exit status of `loops tick --check`.** 0 only for `same`. `differs`, `cannot check` and "not a tick" exit 1, with the answer on standard output and nothing on standard error, so `loops tick --check <id> && …` is safe in a script. This is what was built (choice 22 of `rust/PLACE.md`). The entry as put is in [the tick record note](notes/2026-11-21-tick-record.md#tk12-the-exit-status-of-the-check), section 11.
 
-Open in `DECISIONS.md` after this: AD1 and AD2. Kyle is still weighing both; nothing else that is ruled is unbuilt.
+Open in `DECISIONS.md` after this: AD1 and AD2. Kyle is still weighing both; nothing else that is ruled is unbuilt. He ruled both on 2026-11-23.
 
 ### Ruled by Kyle, 2026-11-22: TK10 and TK11
 
@@ -129,7 +164,7 @@ A Codex worker wrote it; the coordinator reviewed it, joined it with main and ma
 
 The third piece of the adoption plan. `loops read <vertex> --plain` and `loops fold <spec> --plain` print a spec's result as text for a person, for every shape a result has: a count, a sum, a smallest and a largest (with "nothing read" told from zero), a collect, their grouped forms, and latest-by following `prev` or `keys`. A saved vertex and a spec file print alike.
 
-A real run, on the made-up import store of [AD2](DECISIONS.md#ad2-how-an-old-store-becomes-records): a spec with a count of open threads, a count by status and a keyed latest-by prints
+A real run, on the made-up import store of [AD2](notes/2026-11-22-adoption.md#ad2-how-an-old-store-becomes-records): a spec with a count of open threads, a count by status and a keyed latest-by prints
 
 ```
 open  0
@@ -255,7 +290,7 @@ A Codex worker planned and wrote it; margins-claude checked the plan against the
 
 Kyle ruled on 2026-11-21 (W1) that the adoption step's CLI pieces are built beside the tick work. Its exit is `loops` first on `PATH` for his daily work.
 
-**The plan** (a Codex worker's, 2026-11-22), as eight pieces: (1) `loops ls`, with things and a scan by the start of a name; (2) a plain-text view with relative times, and `--fields`, on `ls` and `of`; (3) the plain view on `read` and `fold`; (4) reads across several stores; (5, 6) the import of the old stores as a shadow; (7) the cache of checked segments (W2); (8) `--version`, and the walk that puts `loops` first on `PATH`. Pieces 4 to 6 need Kyle first: [AD1](DECISIONS.md#ad1-how-a-spec-finds-the-stores-it-names) is written, and the import's choices, which decide the id of every imported record, are owed as an entry. The others are the CLI's alone.
+**The plan** (a Codex worker's, 2026-11-22), as eight pieces: (1) `loops ls`, with things and a scan by the start of a name; (2) a plain-text view with relative times, and `--fields`, on `ls` and `of`; (3) the plain view on `read` and `fold`; (4) reads across several stores; (5, 6) the import of the old stores as a shadow; (7) the cache of checked segments (W2); (8) `--version`, and the walk that puts `loops` first on `PATH`. Pieces 4 to 6 need Kyle first: [AD1](notes/2026-11-22-adoption.md#ad1-how-a-spec-finds-the-stores-it-names) is written, and the import's choices, which decide the id of every imported record, are owed as an entry. The others are the CLI's alone.
 
 **Built: `loops ls` and `loops --version`.**
 

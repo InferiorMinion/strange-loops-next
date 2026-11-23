@@ -2,116 +2,27 @@
 
 Everything that waits on Kyle, in one place. Each entry has the question, an example, the options and a recommendation.
 
-- An entry leaves this file when it is ruled. The entries ruled on 2026-11-21 have left it: PV1 to PV7, RC1, W7, E1 and I10, then TK1 to TK9 and W1 to W6. TK10 to TK12 and S4 left it on 2026-11-22.
+- An entry leaves this file when it is ruled. The entries ruled on 2026-11-21 have left it: PV1 to PV7, RC1, W7, E1 and I10, then TK1 to TK9 and W1 to W6. TK10 to TK12 and S4 left it on 2026-11-22, AD1 and AD2 on 2026-11-23.
 - The ruling is written in [CHANGELOG.md](CHANGELOG.md) under its date, and one line is added to [Ruled](#ruled) at the end of this file.
 - What is next once these are ruled is in [ROADMAP.md](ROADMAP.md).
 - "Today" in an example means the `loops` binary built from main on 2026-11-21. Every "today" answer below was run, not predicted.
 ## At a glance
 
-| Id | Question | Recommended | What waits on it |
-| --- | --- | --- | --- |
-| [AD1](#ad1-how-a-spec-finds-the-stores-it-names) | How a spec finds the stores it names, and what a missing one answers | A per-user list of names and directories; a name bound to nothing refuses the whole read | Reads across several stores (adoption) |
-| [AD2](#ad2-how-an-old-store-becomes-records) | How a fact of an old store becomes a record: its thing, its order, its times, who signs, where its origin is kept | As in its table: a keyed fact is a revision of `<kind>:<key>`; the old time is `occurred`; an import key signs | The shadow import (adoption) |
+**Nothing waits on you** (2026-11-23). Every entry put so far is ruled, and what is ruled is built or being built.
 
-Every earlier entry is ruled: the last were TK10 to TK12 and the closing of step 4, on 2026-11-22. AD1 and AD2 block the rest of the adoption step. Neither is pressing: everything else that is ruled is built.
-
-- The tick record, TK1 to TK12: ruled and built. Step 4 is closed. The questions as they were put, with their examples, are in [the tick record note](notes/2026-11-21-tick-record.md#10-the-questions-as-they-were-put), sections 10 and 11.
+- The tick record, TK1 to TK12: ruled and built. Step 4 is closed. The questions as they were put are in [the tick record note](notes/2026-11-21-tick-record.md#10-the-questions-as-they-were-put), sections 10 and 11.
 - The order of work, W1 to W6: ruled. The entries as put are in [the order-of-work note](notes/2026-11-21-order-of-work.md).
+- The adoption step, AD1 and AD2: ruled on 2026-11-23, each for its recommendation with additions. The entries as put, and the additions, are in [the adoption note](notes/2026-11-22-adoption.md).
+
+The next entries are likely to come from the import's plan: any choice there that changes a record's id or what a read answers, and that AD2 does not settle.
 
 After this: [what is being prepared](#being-prepared), [what you deferred](#deferred-by-you) and [what is ruled](#ruled). Nothing waits to be confirmed: under your ruling of 2026-11-21 an implementer choice comes here only when it changes bytes or answers.
-
-## The adoption step
-
-You ruled on 2026-11-21 (W1) that the adoption step's CLI pieces are built beside the tick work. A worker planned them on 2026-11-22. The pieces that are the CLI's alone are being built: `loops ls`, a scan by the start of a name, a plain-text view with relative times, a `--version`, and the cache of checked segments (W2). Two pieces need you first. AD1 is one. The other is AD2, the import of your old stores as a shadow.
-
-### AD1: how a spec finds the stores it names
-
-**Question.** A spec's `from` names a store for each source. Today the name is ignored. When a read may span several stores, how is a name turned into a directory, and what does a read answer when a name leads nowhere?
-
-**Example, run on today's binary.** Two stores: `workshop` holds one task and one note, `yard` holds one task. One spec, `morning`:
-
-```
-from:  store workshop, kind task
-       store yard,     kind note
-fold:  items = count
-```
-
-| Run in | Today's answer | Why |
-| --- | --- | --- |
-| `workshop` | 2 | It counts the task and the note it holds. `yard` is never opened. |
-| `yard` | 1 | The same spec, another answer: it counts its own task. |
-| `workshop`, with the one store name changed to `no-such-store` | 2 | A name bound to nothing is answered from the directory all the same. |
-
-What the answer should be is already ruled: a fold across stores takes the union of the named stores first and runs every source over it ([the tick record note](notes/2026-11-21-tick-record.md), section 9, and `protocol/spec.md`). Here that is **3**: both tasks and the note, each record once. What is open is how the names resolve.
-
-**Options for finding a store.**
-
-| | A name means | Cost |
-| --- | --- | --- |
-| **A (recommended)** | An entry in a per-user list of names and directories (`~/.config/loops/stores.json`). The spec travels between machines unchanged; each machine says where its stores are. | You bind each name once per machine. Your existing specs name stores that are bound nowhere yet. |
-| B | A directory beside the current one with that name. | Renaming a directory changes what a spec reads. Stores that live apart cannot be named. |
-| C | A path written in the spec. | The path is part of the spec, so its hash, and every tick of it, differs between machines. |
-
-**Options for a name that leads nowhere.**
-
-| | The read answers | |
-| --- | --- | --- |
-| **A (recommended)** | Nothing on standard output, and a refusal that names the store (`store-unknown`). | A missing store is never mistaken for an empty one. Needs the new refusal code. |
-| B | What the stores that were found give, with a note. | The same spec gives another answer on a machine that lacks a store, as it does today. |
-
-**What changes for you.** Under A and A, a spec that names one store today keeps its answer once that name is bound to its directory, and refuses until then. I would bind the names your existing vertices use before the strict rule is switched on, and list them for you first.
-
-**Not asked.** `loops tick` and `loops tick --check` stay on the one store in the directory. A tick across stores would cover other records and is its own piece.
-
-### AD2: how an old store becomes records
-
-**Question.** The shadow import copies an old store into a new one, to be read beside the old tool. Each old fact becomes one signed record. Which record? The answers decide the id of every imported record, so they are yours, and they are cheap to change only before the first real import.
-
-**What an old store holds** (the shape of yours; the values below are made up). A table of facts, each with an id, a kind, a time, an observer written as text, and a JSON payload. A vertex file says how each kind is read: `thread` by `name`, `log` collected. So three facts:
-
-```
-01ab  thread  2026-10-01 09:00  relay  {"name":"kiln","status":"open","message":"Repair kiln"}
-01ac  thread  2026-10-03 16:30  relay  {"name":"kiln","status":"done"}
-01ad  log     2026-10-03 16:31  relay  {"message":"fired the kiln"}
-```
-
-The old tool reads thread `kiln` as status `done`, message `Repair kiln`: a later fact of the same name overlays the fields it carries.
-
-**Example, run on the binary with the plain view** (2026-11-22). The three facts written by hand as the recommended column below would write them (`loops emit - --fill`, with a key made for the import):
-
-```
-$ loops ls --plain
-KIND    RECORDS
-log     1
-thread  2
-
-$ loops ls thread: --fields name,status,message --plain
-THING        HEAD KINDS  RECORDS  HEADS  name  status  message
-thread:kiln  thread      2        1      kiln  done    Repair kiln
-```
-
-The second record names the first in `prev` and sets only `status`, so `message` still reads from the first. That is the old tool's answer.
-
-**The choices.**
-
-| | Choice | Recommended | The other way |
-| --- | --- | --- | --- |
-| 1 | **What a keyed fact is of.** A kind the vertex reads "by" a field. | The thing `<kind>:<value of that field>`, here `thread:kiln`. A later fact of the same name is a revision: it names what is live in `prev` and sets the fields it carries. | Every fact a root of its own. Then nothing overlays, and each read needs a spec that groups by the field. |
-| 2 | **A kind the vertex collects, or does not name.** | A root, as `log` above. | A thing per kind. |
-| 3 | **The order of revisions.** | The order in which the old store took the facts in (it keeps one). That is what the old tool's reading saw. | The facts' own times. Two facts with one time need a tie-break, and a backfilled fact would land in the past. |
-| 4 | **The times.** | The old time becomes `occurred`. `emitted` is the time of the import. A window on `env.when` then reads the old time. | The old time as `emitted`: the record would claim to have been written then, by a key that did not exist. |
-| 5 | **Who signs.** | A key made for the import. Every imported record says so in its observer, and can be told from what you write afterwards. | Your own key. Imported and new records look alike. |
-| 6 | **Where the old observer and the old id are kept.** | The old observer as a mention, `observer:relay`. The old id in a file beside the import, which also makes a second run write nothing. The payload is the old payload, untouched. | The old id as a mention on each record, or both as extra payload fields. Extra fields change what a spec reads. |
-| 7 | **The old ticks.** | Left out and counted. They are the old tool's own, and as kind `tick` the new check would call each "not a tick". | Imported under another kind, for the record. |
-| 8 | **A fact held by two old stores.** | Imported into each new store it was in, with the same salt and time for the same old id, from the import's file. Where the fact has the same history in both stores, the two copies are then one record, and a read across the stores counts it once. Where the histories differ they are two records; I will count how often that happens in your stores before the import. | Imported once, into one store. |
-
-**What I am not sure of, and will check before anything is built:** whether your old stores hold kinds the vertex does not name, facts whose key field is missing, and payloads the new writer refuses (a number out of range, a repeated name). The import will count each and stop on the last kind; it will not guess.
-
-**Not asked.** The import's verb and flags, its batches, and how the copy is compared with the old tool's reading are the implementer's. The old store is never written.
 
 ## Being prepared
 
 Nothing here needs you yet. It is listed so that you know what is coming.
+
+**What a store says about its kinds, without enforcing it.** The old `.vertex` files of real stores hold one fold, by name, which a record's `of` now carries. The rest of what they hold describes kinds: which fields refer to which kinds, a lifecycle field and its active values, the format of a key, and what to show first. The roadmap lists declarations under standing, with admission and grants. The question being prepared is whether the descriptive half comes forward, so that a viewer and `loops ls` can use it before any store is strict.
 
 **Numbers stored as text**, with the import ([W1](notes/2026-11-21-order-of-work.md#w1-an-adoption-step-before-standing-and-sharing)). [TK6](notes/2026-11-21-tick-record.md#tk6-what-a-spec-reads-of-a-tick) shows one use for it.
 
@@ -131,6 +42,8 @@ One line for each ruling, newest first. The full text is in [CHANGELOG.md](CHANG
 
 | Date | Ruling | Where |
 | --- | --- | --- |
+| 2026-11-23 | AD1: a store name is bound in a per-user list, in an optional list kept with a group of stores, or by `--store <name>=<dir>` on the command; a name bound to nothing refuses the whole read (`store-unknown`) | Changelog; [the adoption note](notes/2026-11-22-adoption.md) |
+| 2026-11-23 | AD2: the import's eight choices as recommended, and four more: no observer mention for an empty observer; the old store's row order where it keeps no arrival number; a fact without its key is a root; a kind the vertex does not name is left out unless asked for | Changelog; the adoption note |
 | 2026-11-22 | Step 4 (ticks) meets its exit criterion and is closed | Changelog |
 | 2026-11-22 | TK12: `loops tick --check` exits 0 only for `same` | Changelog; the tick record note, section 11 |
 | 2026-11-22 | TK10, seven details of `loops tick --check`, each as recommended: an erased payload is not read from old bytes; a covered eraser the tick ignores is not a tick at once; under newer rules the check tests only what no version changes, and a result's hash only for its spelling; a result no fold could give is `differs`; `rules` is a positive whole number as text; a spec this binary cannot read is `cannot check` | Changelog; [the tick record note](notes/2026-11-21-tick-record.md#11-the-later-questions-as-they-were-put), section 11 |
