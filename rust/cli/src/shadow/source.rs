@@ -124,8 +124,8 @@ pub(super) struct Fact {
     pub observer: String,
     pub origin: String,
     pub signature: Option<String>,
-    // Keep the original text for source-prefix verification. Parse only in the
-    // row preflight so a bad payload in an omitted kind can be counted.
+    // Classification needs the original text for the identity of a malformed
+    // payload. Such a defect can be counted on an omitted fact.
     pub payload: String,
 }
 
@@ -218,8 +218,8 @@ fn line(reader: &mut impl BufRead, buf: &mut String) -> Result<Json, ScanError> 
     loops_eval::parse_json(buf).map_err(|e| e.to_string().into())
 }
 
-/// The callback is for preflight only. Its plans are publishable only after
-/// this returns success for every source and no included row was refused.
+/// Collect fact lines in arrival order. The cut is complete only after its
+/// trailer verifies, including when every fact was omitted.
 pub(super) fn scan(
     mut reader: impl BufRead,
     map: &Map,

@@ -14,7 +14,7 @@ use loops_place::{
     line::{Line, hash},
 };
 use mapping::Unnamed::{Omit, Roots};
-use mapping::{History, Prepared, Row, occurred};
+use mapping::{Fate, History, Prepared, Refusal, Unnamed, occurred};
 use source::{Fact, Map, Summary, scan};
 use std::{
     collections::HashMap,
@@ -44,6 +44,40 @@ fn fact(kind: &str, payload: &str) -> Fact {
         origin: String::new(),
         signature: None,
         payload: payload.into(),
+    }
+}
+
+// Exercise the same classification and preparation as the group import with
+// this test's single in-memory fact in place of a verified export slice.
+#[derive(Debug)]
+enum Row {
+    Included(Box<Prepared>),
+    Omitted { defect: Option<Refusal> },
+}
+
+impl History {
+    fn prepare(
+        &mut self,
+        map: &Map,
+        unnamed: Unnamed,
+        fact: &Fact,
+        key: &Key,
+        salt: &[u8],
+        emitted: &str,
+    ) -> Result<Row, Refusal> {
+        let payload = fact.parsed_payload();
+        match mapping::classify(map, unnamed, fact, payload.as_ref()) {
+            Fate::Omitted { defect } => Ok(Row::Omitted { defect }),
+            Fate::Included(row) => self
+                .prepare_included(
+                    &row?,
+                    payload.expect("classified payload"),
+                    key,
+                    salt,
+                    emitted,
+                )
+                .map(|p| Row::Included(Box::new(p))),
+        }
     }
 }
 

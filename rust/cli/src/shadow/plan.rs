@@ -3,7 +3,7 @@
 use super::{
     Input, Point, Runtime, digest, event,
     journal::{Journal, Seed},
-    mapping::{History, Row, Unnamed},
+    mapping::{self, Fate, History, Unnamed},
     mismatch,
     report::{Counts, Report},
     source::{self, Fact},
@@ -25,8 +25,8 @@ use std::{
 const MAX_ROWS: usize = 1000;
 const MAX_BYTES: usize = 4 * 1024 * 1024;
 
-fn fingerprint(f: &Fact) -> String {
-    let payload = match f.parsed_payload() {
+fn fingerprint(f: &Fact, parsed: Result<Json, loops_eval::Error>) -> String {
+    let payload = match parsed {
         Ok(j) if j.keys_distinct() && j.in_range() => Json::Arr(vec![text("json"), j]),
         _ => Json::Arr(vec![text("raw"), text(&f.payload)]),
     };
@@ -75,6 +75,11 @@ impl Identities {
         };
         Ok((&seed.salt, &seed.emitted))
     }
+    fn conflicts(&self, old: &str, fingerprint: &str) -> bool {
+        self.fingerprint(old)
+            .is_some_and(|known| known != fingerprint)
+    }
+
     fn fingerprint(&self, old: &str) -> Option<&String> {
         self.seeds
             .get(old)
@@ -82,12 +87,119 @@ impl Identities {
             .or_else(|| self.omitted.get(old))
     }
 }
+/// A source index also identifies its unique destination in the group.
+pub(super) struct Occurrence {
+    source: usize,
+    coordinate: Vec<i64>,
+    line: FactLine,
+    fingerprint: String,
+    empty_observer: bool,
+    pub fate: Fate,
+}
+
+#[derive(Default)]
+pub(super) struct Index {
+    copies: HashMap<String, Vec<Occurrence>>,
+}
+
+pub(super) struct Cut {
+    file: File,
+    arrivals: Vec<String>,
+    // Report complete fact lines before a scan error, as in the v1 streaming preflight.
+    summary: Result<source::Summary, Fail>,
+    prefix: String,
+    prefix_changed: bool,
+}
+
+impl Index {
+    pub(super) fn collect(
+        inputs: &[Input],
+        unnamed: Unnamed,
+        journal: &Journal,
+    ) -> (Self, Vec<Result<Cut, Fail>>) {
+        let mut index = Self::default();
+        let cuts = inputs
+            .iter()
+            .enumerate()
+            .map(|(source, input)| {
+                index.collect_cut(source, input, unnamed, journal.cuts.get(&input.name))
+            })
+            .collect();
+        (index, cuts)
+    }
+
+    fn collect_cut(
+        &mut self,
+        i: usize,
+        input: &Input,
+        unnamed: Unnamed,
+        checkpoint: Option<&(usize, String)>,
+    ) -> Result<Cut, Fail> {
+        let map = input.map.as_ref().map_err(refused)?;
+        let file = File::open(&input.facts)?;
+        let mut arrivals = Vec::new();
+        let mut prefix = Vec::new();
+        let mut prefix_changed = false;
+        let summary = source::scan(BufReader::new(&file), map, |f| {
+            prefix.extend_from_slice(&f.raw_digest);
+            prefix = hash(&prefix);
+            if checkpoint
+                .is_some_and(|(n, sum)| *n == arrivals.len() + 1 && *sum != base32::base32(&prefix))
+            {
+                prefix_changed = true;
+            }
+            let payload = f.parsed_payload();
+            let fate = mapping::classify(map, unnamed, &f, payload.as_ref());
+            let occurrence = Occurrence {
+                source: i,
+                fingerprint: fingerprint(&f, payload),
+                empty_observer: f.observer.is_empty(),
+                fate,
+                coordinate: f.coordinate,
+                line: FactLine {
+                    span: f.span,
+                    sum: f.raw_digest,
+                },
+            };
+            self.copies
+                .entry(f.id.clone())
+                .or_default()
+                .push(occurrence);
+            arrivals.push(f.id);
+        })
+        .map_err(|e| match e {
+            source::ScanError::Invalid(why) => refused(format!("{}: {why}", input.name)),
+            source::ScanError::Io(e) => Fail::System(format!("{}: {e}", input.facts.display())),
+        });
+        Ok(Cut {
+            file,
+            arrivals,
+            summary,
+            prefix: base32::base32(&prefix),
+            prefix_changed,
+        })
+    }
+
+    pub(super) fn occurrence(&self, old: &str, source: usize) -> &Occurrence {
+        let copies = &self.copies[old];
+        let at = copies
+            .binary_search_by_key(&source, |row| row.source)
+            .expect("each cut indexes its unique ids in group source order");
+        &copies[at]
+    }
+}
+
+#[derive(Clone)]
+struct FactLine {
+    span: Range<u64>,
+    sum: Vec<u8>,
+}
+
 struct Item {
     old: String,
     id: String,
     draft: batch::Draft,
-    span: Range<u64>,
-    sum: Vec<u8>,
+    line: FactLine,
     prior: Option<usize>,
 }
 struct Chunk {
@@ -109,17 +221,28 @@ impl Plan {
         }
         Ok(())
     }
-    fn enqueue(&mut self, p: super::mapping::Prepared, f: Fact, prior: Option<usize>) {
+    fn schedule(
+        &mut self,
+        p: super::mapping::Prepared,
+        old: String,
+        line: &FactLine,
+        prior: Option<usize>,
+        counts: &mut Counts,
+    ) {
+        if prior.is_some() && self.held.line(&p.id).is_some() {
+            counts.add("already_imported", 1);
+            return;
+        }
+        counts.add("would_write", 1);
         let mut draft = p.draft;
         let size = draft.payload.canon().len() + draft.env.to_json().canon().len() + 512;
         draft.payload = Json::Null;
         self.push(
             Item {
-                old: f.id,
+                old,
                 id: p.id,
                 draft,
-                span: f.span,
-                sum: f.raw_digest,
+                line: line.clone(),
                 prior,
             },
             size,
@@ -142,25 +265,16 @@ impl Plan {
     }
 }
 
-// Use the held envelopes and the batches prepared earlier in this pass.
-// Only raw payload text is reread; the verified span must still match exactly.
-fn prepare(
-    file: &mut File,
-    chunk: &Chunk,
-    key: &Key,
-    held: &Held,
-    staged: &mut HashMap<String, batch::Held>,
-) -> Result<Vec<Line>, Fail> {
-    let mut drafts = Vec::with_capacity(chunk.items.len());
-    for item in &chunk.items {
-        file.seek(SeekFrom::Start(item.span.start))?;
+impl FactLine {
+    fn payload(&self, file: &mut File) -> Result<Json, Fail> {
+        file.seek(SeekFrom::Start(self.span.start))?;
         let mut bytes = vec![
             0;
-            usize::try_from(item.span.end - item.span.start)
+            usize::try_from(self.span.end - self.span.start)
                 .expect("span came from a String")
         ];
         file.read_exact(&mut bytes)?;
-        if hash(&bytes) != item.sum {
+        if hash(&bytes) != self.sum {
             return Err(mismatch("export changed after preflight"));
         }
         let json = loops_eval::parse_json(std::str::from_utf8(&bytes).expect("verified UTF-8"))
@@ -172,10 +286,24 @@ fn prepare(
             .iter()
             .find(|(k, _)| k == "payload")
             .ok_or_else(|| mismatch("export lost payload"))?;
+        loops_eval::parse_writer_payload(source::string(&raw.1).map_err(super::invalid)?)
+            .map_err(super::invalid)
+    }
+}
+
+// Use the held envelopes and the batches prepared earlier in this pass.
+// Only raw payload text is reread; the verified span must still match exactly.
+fn prepare(
+    file: &mut File,
+    chunk: &Chunk,
+    key: &Key,
+    held: &Held,
+    staged: &mut HashMap<String, batch::Held>,
+) -> Result<Vec<Line>, Fail> {
+    let mut drafts = Vec::with_capacity(chunk.items.len());
+    for item in &chunk.items {
         let mut d = item.draft.clone();
-        d.payload =
-            loops_eval::parse_writer_payload(source::string(&raw.1).map_err(super::invalid)?)
-                .map_err(super::invalid)?;
+        d.payload = item.line.payload(file)?;
         drafts.push(d);
     }
     let view = |id: &str| staged.get(id).cloned().or_else(|| held.writer_view(id));
@@ -195,7 +323,12 @@ fn prepare(
     Ok(lines)
 }
 
-fn open(input: &Input, key: &Key, j: &Journal, counts: &mut Counts) -> Result<Plan, Fail> {
+fn read_destination(
+    input: &Input,
+    key: &Key,
+    j: &Journal,
+    counts: &mut Counts,
+) -> Result<Held, Fail> {
     let held = input.dest.read()?;
     counts.add("destination_reads", 1);
     if let Some(problem) = unclean(&held) {
@@ -216,14 +349,7 @@ fn open(input: &Input, key: &Key, j: &Journal, counts: &mut Counts) -> Result<Pl
             input.name
         )));
     }
-    let file = File::open(&input.facts)?;
-    Ok(Plan {
-        held,
-        file,
-        chunks: Vec::new(),
-        omitted: Vec::new(),
-        cut: (0, base32::base32(&[])),
-    })
+    Ok(held)
 }
 
 #[expect(
@@ -233,7 +359,8 @@ fn open(input: &Input, key: &Key, j: &Journal, counts: &mut Counts) -> Result<Pl
 pub(super) fn preflight(
     input: &Input,
     i: usize,
-    unnamed: Unnamed,
+    index: &Index,
+    cut: Result<Cut, Fail>,
     key: &Key,
     j: &Journal,
     identities: &mut Identities,
@@ -241,86 +368,86 @@ pub(super) fn preflight(
     report: &mut Report,
 ) -> Result<Plan, Fail> {
     let map = input.map.as_ref().map_err(refused)?;
-    let mut plan = open(input, key, j, &mut report.sources[i].1)?;
-    let reader = BufReader::new(plan.file.try_clone()?);
+    let held = read_destination(input, key, j, &mut report.sources[i].1)?;
+    let cut = cut?;
+    let mut plan = Plan {
+        held,
+        file: cut.file,
+        chunks: Vec::new(),
+        omitted: Vec::new(),
+        cut: (cut.arrivals.len(), cut.prefix),
+    };
     let prior = j.records.get(&input.name);
-    let mut h = History::default();
-    let mut prefix = Vec::new();
+    let mut history = History::default();
     let mut matched = 0;
     let checkpoint = j.cuts.get(&input.name);
-    let mut drift = false;
+    let mut drift = cut.prefix_changed;
     let mut system = None;
-    let summary = source::scan(reader, map, |f| {
+    for old in cut.arrivals {
+        let row = index.occurrence(&old, i);
         report.sources[i].1.add("facts_read", 1);
-        if f.observer.is_empty() {
+        if row.empty_observer {
             report.sources[i].1.add("empty_observer", 1);
         }
-        plan.cut.0 += 1;
-        prefix.extend_from_slice(&f.raw_digest);
-        prefix = hash(&prefix);
-        if checkpoint.is_some_and(|(n, sum)| *n == plan.cut.0 && *sum != base32::base32(&prefix)) {
-            drift = true;
-        }
-        let omitted = !map.kinds.contains_key(&f.kind) && unnamed == Unnamed::Omit;
-        let fp = fingerprint(&f);
-        let local = prior.and_then(|p| p.get(&f.id));
+        let local = prior.and_then(|p| p.get(&old));
         if local.is_some() {
             matched += 1;
         }
-        let context = |why: &str| format!("{} {:?} {}: {why}", input.name, f.coordinate, f.id);
-        if identities
-            .fingerprint(&f.id)
-            .is_some_and(|known| known != &fp)
-        {
+        let context = |why: &str| format!("{} {:?} {old}: {why}", input.name, row.coordinate);
+        if identities.conflicts(&old, &row.fingerprint) {
             let code = if local.is_some() {
                 "shadow-state-mismatch"
             } else {
                 "shadow-id-conflict"
             };
             report.problem(i, code, context(code));
-            return;
+            continue;
         }
-        let (salt, time) = if omitted {
-            identities.omit(&f.id, fp, &mut plan.omitted);
-            (&[][..], "")
-        } else {
-            match identities.parameters(&f.id, fp, runtime) {
-                Ok(pair) => pair,
-                Err(error) => {
-                    system = Some(error);
-                    return;
-                }
+        let classification = match &row.fate {
+            Fate::Omitted { defect } => {
+                identities.omit(&old, row.fingerprint.clone(), &mut plan.omitted);
+                report.omitted(i, &old, defect.as_ref());
+                continue;
+            }
+            Fate::Included(result) => result,
+        };
+        let (salt, time) = match identities.parameters(&old, row.fingerprint.clone(), runtime) {
+            Ok(pair) => pair,
+            Err(error) => {
+                system = Some(error);
+                continue;
             }
         };
-        match h.prepare(map, unnamed, &f, key, salt, time) {
-            Err(e) => report.problem(i, e.code(), context(&e.to_string())),
-            Ok(Row::Omitted { defect }) => {
-                report.omitted(i, &f.id, defect.as_ref());
+        let included = match classification {
+            Ok(included) => included,
+            Err(e) => {
+                report.problem(i, e.code(), context(&e.to_string()));
+                continue;
             }
-            Ok(Row::Included(p)) => {
+        };
+        let payload = row.line.payload(&mut plan.file)?;
+        match history.prepare_included(included, payload, key, salt, time) {
+            Err(e) => report.problem(i, e.code(), context(&e.to_string())),
+            Ok(p) => {
                 if local.is_some_and(|(expected, _)| *expected != p.id) {
                     drift = true;
-                    return;
+                    continue;
                 }
-                report.included(i, &f.id, &p, map.kinds.get(&f.kind));
-                let counts = &mut report.sources[i].1;
-                if local.is_some() && plan.held.line(&p.id).is_some() {
-                    counts.add("already_imported", 1);
-                    return;
-                }
-                counts.add("would_write", 1);
-                plan.enqueue(*p, f, local.map(|(_, b)| *b));
+                report.included(i, &old, &p, map.kinds.get(&included.kind));
+                plan.schedule(
+                    p,
+                    old,
+                    &row.line,
+                    local.map(|(_, b)| *b),
+                    &mut report.sources[i].1,
+                );
             }
         }
-    })
-    .map_err(|e| match e {
-        source::ScanError::Invalid(why) => refused(format!("{}: {why}", input.name)),
-        source::ScanError::Io(e) => Fail::System(format!("{}: {e}", input.facts.display())),
-    })?;
+    }
+    let summary = cut.summary?;
     if let Some(fail) = system {
         return Err(fail);
     }
-    plan.cut.1 = base32::base32(&prefix);
     report.sources[i].1.add(
         "old_ticks_left_out",
         usize::try_from(summary.ticks).map_err(super::invalid)?,
