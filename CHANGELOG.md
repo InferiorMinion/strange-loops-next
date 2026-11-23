@@ -10,6 +10,7 @@ The record starts where the old roadmap's did. For anything earlier, and for eve
 ## 2026-11-23
 
 In brief:
+- TK13 is put to Kyle: whether `loops tick <spec>` should cover only the records its answer depends on once the binary can work that set out. John's pilot asks for it.
 - Three faults found before the first real import are fixed: an old id need not be 26 characters, the vertex reader skips the `observers` and `sources` blocks, and a fold started in a group's directory reads the `stores.json` there. On copies of six older stores the import then took every fact and each shadow read as its old store did.
 - Kyle ruled AD3 for its recommendation in both rows: a fact of a kind the vertex does not name, brought in with `--include-unnamed`, is a root, and the old time is kept to the microsecond. The build already did both. Nothing waits on a ruling.
 - Kyle ruled AD1 (how a spec finds the stores it names) and AD2 (how an old store becomes records), each for its recommendation with additions. Both pieces are being built.

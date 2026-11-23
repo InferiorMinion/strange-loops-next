@@ -8,7 +8,11 @@ Everything that waits on Kyle, in one place. Each entry has the question, an exa
 - "Today" in an example means the `loops` binary built from main on 2026-11-21. Every "today" answer below was run, not predicted.
 ## At a glance
 
-Nothing waits on a ruling today. Two questions are [being prepared](#being-prepared).
+| Id | Question | Recommended | What waits on it |
+| --- | --- | --- | --- |
+| [TK13](#tk13-what-a-tick-covers-when-you-name-no-cut) | What `loops tick <spec>` covers when you name no cut: everything the store holds, as today, or only the records the answer depends on | The records the answer depends on, with what is under them; `--all` for everything | Nothing yet. The binary cannot work the set out today; building that is next, and this says what it is for |
+
+Two more questions are [being prepared](#being-prepared).
 
 Every earlier entry is ruled.
 
@@ -17,6 +21,56 @@ Every earlier entry is ruled.
 - The adoption step, AD1 to AD3: ruled on 2026-11-23. AD1 and AD2 each for its recommendation with additions, AD3 for its recommendation in both rows. The entries as put, and the additions, are in [the adoption note](notes/2026-11-22-adoption.md).
 
 After this: [what is being prepared](#being-prepared), [what you deferred](#deferred-by-you) and [what is ruled](#ruled). Nothing waits to be confirmed: under your ruling of 2026-11-21 an implementer choice comes here only when it changes bytes or answers.
+
+## The tick record
+
+### TK13: what a tick covers when you name no cut
+
+**Question.** `loops tick <spec>` with no `--as-of` and no `--cover` covers every record the store holds ([TK4](notes/2026-11-21-tick-record.md#tk4-covers-lists-every-record-that-was-folded)). When the binary can work out which records a spec's answer depends on, should that smaller set be what it covers?
+
+**Why now.** TK4 said the list's cost is size, and that the Rust would learn to cover only what an answer depends on after step 4. Step 4 is closed. John's store makes a tick at every session, and his pilot asks for this. A tick made in a store of 9,051 records lists every id, 516 KB, also for a spec that takes ten.
+
+**Not built.** The binary cannot work the set out. The law that says which records it holds is on main (`spec.slice`, and `keyed.spec-slice` for a slot that reads things by key). In the runs below the set is named by hand with `--cover`.
+
+**Example, run on today's binary.** The laptop's store holds the six backups of the tick record's examples and 40 shopping notes. The spec `backups` counts the runs and sums `mb`.
+
+| The tick | `covers` | The record | Result | `loops tick --check` |
+| --- | --- | --- | --- | --- |
+| `loops tick backups.json`, as today | 46 ids | 3,414 bytes | `runs` 6, `mb` 1027 | `same` |
+| The six backups named with `--cover` | 6 ids | 1,134 bytes | `runs` 6, `mb` 1027, the same result hash | `same` |
+
+A tick is itself a record, so today each tick also covers every tick before it. The third tick made in this store covered 49 ids.
+
+**The set is not only the records the spec takes.** You void jellyfin's first backup with a record of another kind: `loops emit retired "this backup is void" --prev r:saav…`. The spec `current` counts the backups that nothing has replaced. `loops fold current.json` answers `current` 5, `mb` 615.
+
+| The tick | `covers` | Result | `loops tick --check` |
+| --- | --- | --- | --- |
+| The six backups named | 6 ids | `current` 6, `mb` 1027 | `same` |
+| The six and the `retired` record | 7 ids | `current` 5, `mb` 615 | `same` |
+
+The first tick is a true claim about its six records, and it is not what `loops fold` shows. The set the law names holds the `retired` record, and what erases a taken record, so a tick over it answers as the fold does. Working that set out is what the binary would learn; naming ids by hand does not give it.
+
+| | The case | Recommended | The other choice |
+| --- | --- | --- | --- |
+| 1 | **What `loops tick <spec>` covers when you name no cut.** | **The records the spec's answer depends on.** `--all` covers everything the store holds. The tick is small, it says which records the answer came from, and its result is what `loops fold` shows at that moment. | Everything held, as today, and a flag asks for the small set. Nothing changes for a tick made without the flag. A tick stays as large as its store unless you remember the flag. |
+| 2 | **Whether the set also holds everything under it.** The law needs one step down `prev` from a taken record. `--as-of` and `--cover` today add every held record that the covered ones build on, all the way down. | **Everything under it, as the two cuts do.** The check then reports `closure` `yes` for every tick the binary writes. It adds ids only where a taken record builds on a history of another kind. | The law's set and nothing more. The smallest tick. The check can then report `closure` `no` for a tick the binary wrote itself. |
+
+**What a smaller tick means for a write against it.** `loops emit --base <tick>` names what is live among the tick's covered records. Run today against the tick over the six backups, for a thing the spec does not take:
+
+```
+$ loops emit plant --of plant:fern water=daily --base r:…
+the base covers no record of plant:fern
+$ loops of plant:fern --plain
+records  2
+heads  2
+  water  conflict (2): daily | weekly
+```
+
+The write says it had read nothing of the fern, which is true of that tick, and the fern then has two heads. With today's default the same tick covers the fern and the write is a revision. So under row 1's recommendation a tick is a base for the things its spec takes, and `--all` makes the wider one.
+
+**What it costs to change later.** Little. A tick lists its ids outright, so every tick already written means what it meant, whichever way the default goes. Only ticks written afterwards differ.
+
+**Not asked.** How the set is worked out, and the flag's name. A worker plans the build first. A slot that reads things by key needs more than the set above (each thing's live records); if the plan finds a choice there that changes what a tick answers, it comes back to you.
 
 ## Being prepared
 
