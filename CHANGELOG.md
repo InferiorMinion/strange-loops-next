@@ -10,7 +10,7 @@ The record starts where the old roadmap's did. For anything earlier, and for eve
 ## 2026-11-23
 
 In brief:
-- The first real import: Kyle's six homelab stores, into shadows outside every repository. Each reads as the old tool does in every field but one: a payload field `ref`, which the old tool reads as a list of references. That is put to Kyle as AD4.
+- The first real import: Kyle's six homelab stores, into shadows outside every repository. Each reads as the old tool does in every field but one, a list of references in a field `ref`. How the old stores' references are carried is put to Kyle as AD4.
 - Kyle ruled TK13, yes to all three rows, and `loops tick` now does it: a tick made with no cut named covers only the records its answer depends on, with what is under them; `--all` covers everything. In a store of six backups and 40 notes the tick lists 6 ids, not 46.
 - The Rust can work out which records a spec's answer depends on (`loops::slice::spec_slice`). Nothing uses it yet: no verb, flag or default changed, and what `loops tick` does with it waits on TK13. On 488 generated stores and specs the answer over the selected records equals the answer over everything, and a tick over them checks `same`.
 - TK13 is put to Kyle: whether `loops tick <spec>` should cover only the records its answer depends on once the binary can work that set out. John's pilot asks for it. A worker planned the build the same day; the plan corrected the entry's second row and added a third, for specs that read things by key.
@@ -38,10 +38,11 @@ At Kyle's word (2026-11-23): his six homelab stores first, into shadows on the w
 | `compare.py --old-json`, against the old tool's own `sl read --json --all` | equal in two stores; in four, two kinds of difference, below |
 
 **What the old tool reads differently.**
-- **The payload field `ref`.** The old tool takes it out of the payload, splits it at commas and gathers the parts across all of a thing's revisions. The import keeps it as text, so the new reading shows only the latest. 894 facts carry it; 53 things read fewer references than the old tool shows. Whether its references become mentions is AD4.
+- **The payload field `ref`.** The old tool takes it out of the payload, splits it at commas and gathers the parts across all of a thing's revisions. The import keeps it as text, so the new reading shows only the latest. 894 facts carry it; 53 things read fewer references than the old tool shows.
+- Not a difference in the reading, but found with it: **fields `<name>_ref` hold old fact ids** (14,685 of them in 8,363 facts), which name nothing in the shadow. How both kinds of reference are carried is AD4.
 - **Facts without their key field.** The old tool does not show them; the import writes them as roots, as AD2's addition (c) says. 37 here.
 
-Nothing else differed. The platform stores have no `ref` field, which is why their comparison was clean.
+Nothing else differed. The platform stores have no `ref` field, which is why their comparison against the old tool was clean.
 
 ### `loops tick` covers what the answer depends on
 

@@ -218,7 +218,7 @@ The record starts where the old roadmap's did. For anything earlier, and for eve
 <h2 id="2026-11-23">2026-11-23</h2>
 <p>In brief:</p>
 <ul>
-<li><p>The first real import: Kyle's six homelab stores, into shadows outside every repository. Each reads as the old tool does in every field but one: a payload field <code>ref</code>, which the old tool reads as a list of references. That is put to Kyle as AD4.</p></li>
+<li><p>The first real import: Kyle's six homelab stores, into shadows outside every repository. Each reads as the old tool does in every field but one, a list of references in a field <code>ref</code>. How the old stores' references are carried is put to Kyle as AD4.</p></li>
 <li><p>Kyle ruled TK13, yes to all three rows, and <code>loops tick</code> now does it: a tick made with no cut named covers only the records its answer depends on, with what is under them; <code>--all</code> covers everything. In a store of six backups and 40 notes the tick lists 6 ids, not 46.</p></li>
 <li><p>The Rust can work out which records a spec's answer depends on (<code>loops::slice::spec_slice</code>). Nothing uses it yet: no verb, flag or default changed, and what <code>loops tick</code> does with it waits on TK13. On 488 generated stores and specs the answer over the selected records equals the answer over everything, and a tick over them checks <code>same</code>.</p></li>
 <li><p>TK13 is put to Kyle: whether <code>loops tick &lt;spec&gt;</code> should cover only the records its answer depends on once the binary can work that set out. John's pilot asks for it. A worker planned the build the same day; the plan corrected the entry's second row and added a third, for specs that read things by key.</p></li>
@@ -244,10 +244,11 @@ The record starts where the old roadmap's did. For anything earlier, and for eve
 </tbody></table></div>
 <p><strong>What the old tool reads differently.</strong></p>
 <ul>
-<li><p><strong>The payload field <code>ref</code>.</strong> The old tool takes it out of the payload, splits it at commas and gathers the parts across all of a thing's revisions. The import keeps it as text, so the new reading shows only the latest. 894 facts carry it; 53 things read fewer references than the old tool shows. Whether its references become mentions is AD4.</p></li>
+<li><p><strong>The payload field <code>ref</code>.</strong> The old tool takes it out of the payload, splits it at commas and gathers the parts across all of a thing's revisions. The import keeps it as text, so the new reading shows only the latest. 894 facts carry it; 53 things read fewer references than the old tool shows.</p></li>
+<li><p>Not a difference in the reading, but found with it: <strong>fields <code>&lt;name&gt;_ref</code> hold old fact ids</strong> (14,685 of them in 8,363 facts), which name nothing in the shadow. How both kinds of reference are carried is AD4.</p></li>
 <li><p><strong>Facts without their key field.</strong> The old tool does not show them; the import writes them as roots, as AD2's addition (c) says. 37 here.</p></li>
 </ul>
-<p>Nothing else differed. The platform stores have no <code>ref</code> field, which is why their comparison was clean.</p>
+<p>Nothing else differed. The platform stores have no <code>ref</code> field, which is why their comparison against the old tool was clean.</p>
 <h3 id="loops-tick-covers-what-the-answer-depends-on"><code>loops tick</code> covers what the answer depends on</h3>
 <p>The last piece of smaller ticks (TK13, ruled 2026-11-23). Rust only, in the CLI. No protocol rule, no vector's answer, no refusal code and nothing in <code>rust/core</code>, <code>rust/eval</code> or <code>rust/place</code> changed. <code>loops tick --check</code>, <code>loops emit --base</code>, <code>read</code> and <code>fold</code> are untouched.</p>
 <div class="table-scroll" tabindex="0"><table><thead><tr><th scope="col">The command</th><th scope="col">Covers</th></tr></thead>
