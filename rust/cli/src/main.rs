@@ -9,6 +9,7 @@ mod cut;
 mod draft;
 mod ls;
 mod plain;
+mod registry;
 mod values;
 
 use loops::{
@@ -70,10 +71,17 @@ usage: loops [-C <dir>] <verb> ...
                                 records are of it
                                 conflict previews shorten long values; loops of without --plain shows them whole
                                 --plain is for reading and may change; scripts use the JSON
-  read <vertex> [--values] [--plain]
+  read <vertex> [--store <name>=<dir>]... [--values] [--plain]
                                 fold .loops/vertices/<vertex>.json
-  fold <spec.json | -> [--values] [--plain]
+  fold <spec.json | -> [--store <name>=<dir>]... [--values] [--plain]
                                 fold a spec from a file or stdin
+                                read and fold run every source over the union of all stores named in the spec
+                                bind names with --store (paths relative to -C or the working directory),
+                                then stores.json at the current store root or its parent,
+                                then $XDG_CONFIG_HOME/loops/stores.json or ~/.config/loops/stores.json
+                                only . defaults to the current store, when there is one
+                                --store and either list can override that default
+                                list paths are relative to the list; an unknown name refuses the read
                                 --plain shows slots in the spec's written order
                                 plain listings and folds use unique record ID prefixes (8 or more digits)
                                 keyed things show their headline without --values
@@ -156,8 +164,12 @@ fn unclean(held: &Held) -> Option<String> {
 /// check. The verb's own refusal or failure stands, and a reader that left
 /// does not hide an unclean store.
 fn answered(held: &Held, answer: Result<(), Fail>) -> Result<(), Fail> {
+    finish_answer(answer, unclean(held))
+}
+
+fn finish_answer(answer: Result<(), Fail>, why: Option<String>) -> Result<(), Fail> {
     match answer {
-        Ok(()) | Err(Fail::Closed) => unclean(held).map_or(answer, |why| Err(refused(why))),
+        Ok(()) | Err(Fail::Closed) => why.map_or(answer, |why| Err(refused(why))),
         Err(fail) => Err(fail),
     }
 }
@@ -198,19 +210,23 @@ impl Store {
 }
 
 /// Finds the nearest `.loops/` at or above `start`, as git finds `.git`.
-fn find_store(start: &Path) -> Result<Store, Fail> {
-    let start = fs::canonicalize(start)?;
-    let mut at = Some(start.as_path());
-    while let Some(dir) = at {
-        if let Ok(place) = Dir::open(&dir.join(".loops")) {
-            return Ok(Store { dir: place });
-        }
-        at = dir.parent();
-    }
-    Err(usage(format!(
+fn current_root(start: &Path) -> Option<&Path> {
+    start
+        .ancestors()
+        .find(|dir| dir.join(".loops/segments").is_dir())
+}
+fn no_store(start: &Path) -> Fail {
+    usage(format!(
         "no .loops/ at or above {}; run `loops init`",
         start.display()
-    )))
+    ))
+}
+fn find_store(start: &Path) -> Result<Store, Fail> {
+    let start = fs::canonicalize(start)?;
+    let root = current_root(&start).ok_or_else(|| no_store(&start))?;
+    Ok(Store {
+        dir: Dir::open(&root.join(".loops"))?,
+    })
 }
 
 fn key_file() -> Result<PathBuf, Fail> {
@@ -598,42 +614,62 @@ fn of(start: &Path, args: &[String], format: Format) -> Result<(), Fail> {
     answered(&held, say(&object(members).canon()))
 }
 
-/// `--values` among a verb's arguments, and the arguments without it.
-fn view(args: &[String]) -> (View, Vec<&String>) {
-    let rest: Vec<&String> = args.iter().filter(|a| *a != "--values").collect();
-    if rest.len() == args.len() {
-        (View::Ids, rest)
-    } else {
-        (View::Values, rest)
-    }
-}
 fn parse_spec(spec: &str) -> Result<Spec, Fail> {
     let json = loops_eval::parse_json(spec).map_err(|e| refused(format!("spec-not-json: {e}")))?;
     Spec::of_json(&json).map_err(|e| refused(format!("{} at {}", e.code(), e.path)))
 }
-fn fold_text(start: &Path, spec: &str, view: View, format: Format) -> Result<(), Fail> {
-    let spec = parse_spec(spec)?;
-    let held = find_store(start)?.read()?;
-    let admitted = realm(&held);
+fn fold_answer(held: &Held, spec: &Spec, view: View, format: Format) -> Result<(), Fail> {
+    let admitted = realm(held);
     let result = spec.run_admitted(&admitted);
     if format == Format::Plain {
-        return answered(&held, say(&plain::fold(&held, &admitted, result, view)?));
+        return say(&plain::fold(held, &admitted, result, view)?);
     }
     let slots = loops_eval::slots_json(result);
-    let answer = match view {
+    match view {
         View::Ids => say(&slots.canon()),
-        View::Values => say(&values::fold(&held, &admitted, &spec, slots).canon()),
-    };
-    answered(&held, answer)
+        View::Values => say(&values::fold(held, &admitted, spec, slots).canon()),
+    }
 }
-fn fold(start: &Path, args: &[String], format: Format) -> Result<(), Fail> {
-    let (view, args) = view(args);
-    let [file] = args.as_slice() else {
-        return Err(usage(
-            "fold takes one spec file, or - for stdin, and may take --values",
-        ));
+
+enum SpecInput {
+    Vertex,
+    File,
+}
+
+fn fold(
+    start: &Path,
+    args: &[String],
+    format: Format,
+    input: SpecInput,
+    overrides: registry::Bindings,
+) -> Result<(), Fail> {
+    let start = start.canonicalize()?;
+    let operands: Vec<_> = args.iter().filter(|arg| *arg != "--values").collect();
+    let view = if operands.len() == args.len() {
+        View::Ids
+    } else {
+        View::Values
     };
-    fold_text(start, &spec_file(start, file)?, view, format)
+    let current = current_root(&start);
+    let raw = match (input, operands.as_slice()) {
+        (SpecInput::File, [file]) => spec_file(&start, file)?,
+        (SpecInput::Vertex, [vertex]) => {
+            if !vertex_name(vertex) {
+                return Err(usage("a vertex name is a file name without its .json"));
+            }
+            let root = current.ok_or_else(|| no_store(&start))?;
+            vertex_text(&root.join(".loops"), vertex)?
+        }
+        (SpecInput::File, _) => return Err(usage("fold takes one spec file, or - for stdin")),
+        (SpecInput::Vertex, _) => return Err(usage("read takes one vertex name")),
+    };
+    let spec = parse_spec(&raw)?;
+    let (held, dirty) = registry::read(&spec, current, overrides)?;
+    let answer = fold_answer(&held, &spec, view, format);
+    finish_answer(
+        answer,
+        unclean(&held).map(|why| format!("{why} (stores: {})", dirty.join(", "))),
+    )
 }
 fn spec_file(start: &Path, file: &str) -> Result<String, Fail> {
     if file == "-" {
@@ -647,19 +683,8 @@ fn spec_file(start: &Path, file: &str) -> Result<String, Fail> {
 fn vertex_name(name: &str) -> bool {
     !name.contains(['/', '\\']) && !name.starts_with('.')
 }
-fn read(start: &Path, args: &[String], format: Format) -> Result<(), Fail> {
-    let (view, args) = view(args);
-    let [vertex] = args.as_slice() else {
-        return Err(usage("read takes one vertex name, and may take --values"));
-    };
-    if !vertex_name(vertex) {
-        return Err(usage("a vertex name is a file name without its .json"));
-    }
-    let place = find_store(start)?;
-    fold_text(start, &vertex_text(&place.dir, vertex)?, view, format)
-}
-fn vertex_text(place: &Dir, vertex: &str) -> Result<String, Fail> {
-    let path = place.root().join("vertices").join(format!("{vertex}.json"));
+fn vertex_text(root: &Path, vertex: &str) -> Result<String, Fail> {
+    let path = root.join("vertices").join(format!("{vertex}.json"));
     fs::read_to_string(&path).map_err(|e| {
         if e.kind() == io::ErrorKind::NotFound {
             refused(format!("vertex-unknown: {}", path.display()))
@@ -706,7 +731,7 @@ fn tick(start: &Path, args: &[String]) -> Result<(), Fail> {
     let input = if source == "-" || !vertex_name(source) || start.join(source).is_file() {
         spec_file(start, source)?
     } else {
-        vertex_text(&place.dir, source)?
+        vertex_text(place.dir.root(), source)?
     };
     let spec = parse_spec(&input)?;
     let held = place.read()?;
@@ -825,6 +850,7 @@ fn run(args: &[String]) -> Result<(), Fail> {
     let mut start = PathBuf::from(".");
     let mut rest = Vec::new();
     let mut json = false;
+    let mut overrides = registry::Bindings::new();
     let mut args = args.iter();
     while let Some(arg) = args.next() {
         match arg.as_str() {
@@ -842,6 +868,24 @@ fn run(args: &[String]) -> Result<(), Fail> {
                 rest.extend(args.cloned());
                 break;
             }
+            "--store" => match rest.first().map(String::as_str) {
+                Some("read" | "fold") => {
+                    let operand = args
+                        .next()
+                        .ok_or_else(|| usage("--store takes <name>=<dir>"))?;
+                    registry::bind(&mut overrides, &start, operand)?;
+                }
+                // A preceding option can take this text literally, e.g.
+                // `emit --sets --store`. Let the verb's parser decide.
+                Some("emit" | "ls" | "export" | "tick")
+                    if rest
+                        .last()
+                        .is_some_and(|v| v.starts_with("--") && v != "--check") =>
+                {
+                    rest.push(arg.clone());
+                }
+                _ => return Err(usage("--store is an option of read and fold")),
+            },
             "--json" => json = true,
             _ => rest.push(arg.clone()),
         }
@@ -876,8 +920,8 @@ fn run(args: &[String]) -> Result<(), Fail> {
         "ls" => ls::run(&start, rest, format),
         "of" => of(&start, rest, format),
         "get" => get(&start, rest),
-        "read" => read(&start, rest, format),
-        "fold" => fold(&start, rest, format),
+        "read" => fold(&start, rest, format, SpecInput::Vertex, overrides),
+        "fold" => fold(&start, rest, format, SpecInput::File, overrides),
         "export" => export(&start, rest),
         "import" => import(&start, rest),
         "check" => check(&start),

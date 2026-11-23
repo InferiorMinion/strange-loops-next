@@ -29,9 +29,9 @@ loops ls [--things | <prefix>] [--fields a,b,c] [--plain]
                                     list things or project their live fields
 loops get <id>                      one record
 loops of <thing> [--plain]          a thing's values, its about, its heads, how many records are of it
-loops read <vertex> [--values] [--plain]
+loops read <vertex> [--store <name>=<dir>]... [--values] [--plain]
                                     fold .loops/vertices/<vertex>.json
-loops fold <spec.json | -> [--values] [--plain]
+loops fold <spec.json | -> [--store <name>=<dir>]... [--values] [--plain]
                                     fold a spec from a file or stdin
 loops tick <vertex | spec-file | -> [--as-of <time> | --cover <id> ...] [emit envelope flags]
                                     fold everything held by default, or a cut (choice 28)
@@ -89,7 +89,8 @@ loops whoami --init                     ensure the signing key exists and print 
 * `read`, `fold`, `of`, `get`, `export` and `tick --check` answer from the lines that check,
   and are then refused `store-not-clean` when a line was refused or a
   segment is altered, as `check` is; `emit`, writing a tick, and `erase` warn and go on. See
-  choice 18.
+  choice 18. For `read` and `fold`, an unresolved name refuses the whole read
+  with `store-unknown` before any answer. See choice 30.
 
 ## On disk
 
@@ -130,8 +131,8 @@ Every verb that reads the store says when either happened (choice 18).
    lines, which a reader holds but cannot attribute. Lineages, anchors and key
    bindings (step 3) replace this rule.
 4. **No anchor file and no store identity.** A store is a lineage with
-   declarations; that is step 3. `from.store` in a spec is carried and not
-   read: a fold reads the one store it is run in.
+   declarations; that is step 3. Choice 30 binds a spec's store names to
+   local directories for `read` and `fold`.
 5. **Admission permits every replacement** of a held, related record
    (`may = true`), as `Spec.run` does. Who may replace whom is standing's rule.
 6. **How a payload becomes what a fold reads.** `Line::record` calls
@@ -144,7 +145,7 @@ Every verb that reads the store says when either happened (choice 18).
    `line-not-json`, `line-shape`, `commit-invalid`, `id-mismatch`,
    `key-invalid`, `signature-invalid`, `line-not-canonical`; for the CLI,
    `observer-unbound`, `id-unknown`, `id-ambiguous`, `vertex-unknown`, `draft-shape`,
-   `draft-field-unknown`, `spec-not-json`, `store-not-clean`.
+   `draft-field-unknown`, `spec-not-json`, `store-not-clean`, `store-unknown`.
    In an `emit -` changeset these cover only a line's own shape: `draft-shape`
    for a line that is not a JSON object or a label that is not text,
    `draft-field-unknown` for an unknown member, and `member-duplicate` for a
@@ -295,6 +296,7 @@ Every verb that reads the store says when either happened (choice 18).
     refused: store-not-clean: 1 line refused, 1 segment altered; `loops check` lists them
     ```
 
+    On `read` and `fold` the refusal also names the unclean stores (choice 30).
     `check` writes its report and ends with the same refusal, from the same
     function. A clean store adds nothing. A refusal of the verb's own, such
     as `id-unknown` for the id of a refused line, is said instead, and a
@@ -724,6 +726,63 @@ Every verb that reads the store says when either happened (choice 18).
     For example, an agent sets `LOOPS_KEY_FILE` and runs `loops whoami --init`
     to learn its public identity. Once it has a store, `loops emit message --
     --leading-dashes` writes a record whose `text` is `--leading-dashes`.
+
+30. **A spec finds the stores it names.** Kyle ruled on 2026-11-23 that
+    `read` and `fold` bind each name on the command, in a list kept with
+    the stores, or in the user's list, in that order. [AD1](../notes/2026-11-22-adoption.md#ad1-how-a-spec-finds-the-stores-it-names)
+
+    Implementer's choices
+
+    - Give `--store <name>=<dir>` after the verb. Split at the first `=`
+      and require both parts. The last command binding for a name wins.
+      A relative directory starts at the working directory selected by `-C`,
+      just as a relative spec file does, or at the process's working directory
+      when the command omits `-C`.
+    - Find the current store from that same starting directory. Look for
+      `stores.json` beside its `.loops/`, then in its immediate parent.
+      Use the first file found, including an empty object. The per-user file
+      is `$XDG_CONFIG_HOME/loops/stores.json` when that config home is
+      absolute, otherwise `$HOME/.config/loops/stores.json` when HOME is set.
+      Each name falls through independently to the next binding source.
+    - Each list is a UTF-8 JSON object mapping distinct names to directory
+      strings. Resolve relative strings against the list's own directory
+      (an empty string resolves to that directory). A missing list supplies
+      no bindings. Validate the selected group file and the user file even
+      when the command supplies all the names. Invalid JSON, a wrong shape
+      or a duplicate name is a usage error naming the file (exit 2).
+      Other file I/O failures name the path and exit 3.
+    - Resolve the distinct names in the spec's written source order. A binding
+      must lead directly to a store with a `.loops/segments/` directory.
+      An unusable binding takes precedence over more distant bindings.
+      The first missing store ends the read with empty stdout,
+      `refused: store-unknown: <name>` on stderr and exit 1. For a binding
+      whose directory holds no store, append `: <directory>`.
+      Only `.` defaults to the current store, when there is one.
+      An explicit binding from the command or either list overrides that default.
+    - `read` still takes its spec from the current store's
+      `.loops/vertices/<vertex>.json`. Read segments only for stores the spec
+      names. `fold <file | ->` works outside a store because it gets its spec
+      from the file or stdin and can use command and user bindings directly.
+    - Canonicalize each bound `.loops/` and read each distinct directory once
+      with choice 26's content-keyed segment cache. Combine its checked lines
+      with the others before the single settlement, admission and spec run.
+      Each source tests the whole union. A duplicated id counts once, an
+      eraser can hide another store's opening, and a revision can follow a
+      predecessor held elsewhere. Both output formats use this holding for
+      `--values`. Binding every name to the current store preserves its answer
+      byte for byte.
+    - After the answer, choice 18's `store-not-clean` reports the total
+      refused lines and altered segments across distinct directories and
+      exits 1. Append `(stores: ...)` with all source names for the unclean
+      directories, including aliases, sorted by name.
+    - Only `read` and `fold` accept the option. Other verbs keep their
+      existing store selection. In particular `tick` and `tick --check` use
+      the current store and ignore bindings, leaving tick bytes unchanged.
+
+    For example, a group file beside two stores can read
+    `{"workshop":"workshop","yard":"yard"}`. With one task and one note in
+    workshop and one task in yard, a spec asking for workshop tasks and yard
+    notes counts **3** from either directory.
 
 ## Checked by
 
