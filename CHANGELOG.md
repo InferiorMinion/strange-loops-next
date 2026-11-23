@@ -10,6 +10,7 @@ The record starts where the old roadmap's did. For anything earlier, and for eve
 ## 2026-11-23
 
 In brief:
+- The first real import: Kyle's six homelab stores, into shadows outside every repository. Each reads as the old tool does in every field but one: a payload field `ref`, which the old tool reads as a list of references. That is put to Kyle as AD4.
 - Kyle ruled TK13, yes to all three rows, and `loops tick` now does it: a tick made with no cut named covers only the records its answer depends on, with what is under them; `--all` covers everything. In a store of six backups and 40 notes the tick lists 6 ids, not 46.
 - The Rust can work out which records a spec's answer depends on (`loops::slice::spec_slice`). Nothing uses it yet: no verb, flag or default changed, and what `loops tick` does with it waits on TK13. On 488 generated stores and specs the answer over the selected records equals the answer over everything, and a tick over them checks `same`.
 - TK13 is put to Kyle: whether `loops tick <spec>` should cover only the records its answer depends on once the binary can work that set out. John's pilot asks for it. A worker planned the build the same day; the plan corrected the entry's second row and added a third, for specs that read things by key.
@@ -21,6 +22,26 @@ In brief:
 - `loops shadow-import` is built: it copies exported old stores into shadow stores, one signed record for each old fact, checks everything before it writes anything, and writes nothing on a second run. On a copy of four real stores it gave the old tool's reading for every thing held by one store.
 - The import's first two pieces are built: a script that exports an old store and its vertex to two text files, and the mapping of each old fact to a record, equal byte for byte to what `loops emit - --fill` writes. No verb yet.
 - The import has its plan. Two of its choices decide record ids and are put to Kyle as AD3: how a kind the vertex does not name is written when asked for, and how fine the old time is.
+
+### The first real import: the homelab stores
+
+At Kyle's word (2026-11-23): his six homelab stores first, into shadows on the workbench outside every repository, and the old tool's callers moved to `sl` before `loops` changes on `PATH`.
+
+**Where it lives.** `~/.local/share/loops/shadow/<group>/` (mode 0700): `old/` holds the copies the import read (the vertex files and the six stores, each checked equal to its original before and after copying and by SQLite's integrity check), `exports/` the two files per store, `private/` the import's key and journal (0600; the journal holds salts), `shadows/<name>/` the six stores, and `stores.json` binding each name, so that `loops fold` across them works from that directory. The binary was built from main at `2c1b14c` into `~/.local/share/loops/build`, leaving the one rex-chat uses alone.
+
+| Step | Result |
+| --- | --- |
+| The old stores | in step with their remote, last changed 2026-11-22, write-ahead logs empty |
+| `loops shadow-import --check-only` | 11,072 facts read, 11,047 to write, none refused; 25 of kinds the vertex does not name and 14 old ticks left out; 37 without their key, written as roots |
+| The import | 11,047 records in 2.6 s; every shadow passes `loops check` |
+| `compare.py`, against the export | every thing equal in every field, in all six: 5,021, 1,021, 35, 122, 10 and 272 things |
+| `compare.py --old-json`, against the old tool's own `sl read --json --all` | equal in two stores; in four, two kinds of difference, below |
+
+**What the old tool reads differently.**
+- **The payload field `ref`.** The old tool takes it out of the payload, splits it at commas and gathers the parts across all of a thing's revisions. The import keeps it as text, so the new reading shows only the latest. 894 facts carry it; 53 things read fewer references than the old tool shows. Whether its references become mentions is AD4.
+- **Facts without their key field.** The old tool does not show them; the import writes them as roots, as AD2's addition (c) says. 37 here.
+
+Nothing else differed. The platform stores have no `ref` field, which is why their comparison was clean.
 
 ### `loops tick` covers what the answer depends on
 

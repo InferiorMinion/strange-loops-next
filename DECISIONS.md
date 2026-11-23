@@ -8,15 +8,55 @@ Everything that waits on Kyle, in one place. Each entry has the question, an exa
 - "Today" in an example means the `loops` binary built from main on 2026-11-21. Every "today" answer below was run, not predicted.
 ## At a glance
 
-Nothing waits on a ruling today. Two questions are [being prepared](#being-prepared).
+| Id | Question | Recommended | What waits on it |
+| --- | --- | --- | --- |
+| [AD4](#ad4-the-old-ref-field) | The old tool reads a payload field `ref` as a list of references and gathers them across a thing's revisions; the import keeps it as plain text. Should its references become mentions? | Typed references become mentions on their record, and a revision carries its thing's earlier ones forward; paths and old ids stay in the payload | Using the homelab shadows for anything that follows references. The shadows exist and read as the old tool does in every other field |
 
-Every earlier entry is ruled.
+Two more questions are [being prepared](#being-prepared).
 
-- The tick record, TK1 to TK13: ruled. TK1 to TK12 are built and step 4 is closed; TK13 (smaller ticks) is being built. The questions as they were put are in [the tick record note](notes/2026-11-21-tick-record.md#10-the-questions-as-they-were-put), sections 10 and 11.
+Every other entry is ruled.
+
+- The tick record, TK1 to TK13: ruled and built. Step 4 is closed. The questions as they were put are in [the tick record note](notes/2026-11-21-tick-record.md#10-the-questions-as-they-were-put), sections 10 and 11.
 - The order of work, W1 to W6: ruled. The entries as put are in [the order-of-work note](notes/2026-11-21-order-of-work.md).
 - The adoption step, AD1 to AD3: ruled on 2026-11-23. AD1 and AD2 each for its recommendation with additions, AD3 for its recommendation in both rows. The entries as put, and the additions, are in [the adoption note](notes/2026-11-22-adoption.md).
 
 After this: [what is being prepared](#being-prepared), [what you deferred](#deferred-by-you) and [what is ruled](#ruled). Nothing waits to be confirmed: under your ruling of 2026-11-21 an implementer choice comes here only when it changes bytes or answers.
+
+## The adoption step
+
+### AD4: the old `ref` field
+
+**Question.** The first real import, of the six homelab stores on 2026-11-23, read as the old tool does in every field but one. The old tool treats a payload field named `ref` as reserved: a comma-separated list of references, taken out of the payload and gathered across all of a thing's revisions. The import keeps the payload untouched, as AD2 says, so `ref` stays plain text and only the latest one is read. Should the references in `ref` become mentions (`about`)?
+
+**How much it touches.** In the six stores, 894 of 11,072 facts carry `ref`, with 933 references. 464 are typed references such as `thread:<name>` or `decision:<topic>`: the same form the import gives a thing's name, so each names a thing in the shadow. 457 are file paths such as `docs/<file>.md`, and 12 are old fact ids. 478 things have references; for 53 of them the old tool shows more than the latest `ref`. The platform stores have no `ref` at all.
+
+**Example, run on both tools today.** An invented old store with one task, written with the old tool twice: first `name=kiln status=open ref=thread:firing` by potter, then `name=kiln status=done ref=decision:glaze,docs/kiln.md` by clerk.
+
+```
+$ sl read workshop.vertex --json --all          (the old tool; one row, shortened)
+payload  {"name": "kiln", "status": "done"}
+refs     ["decision:glaze", "docs/kiln.md", "thread:firing"]
+
+$ loops of task:kiln --plain                      (exported and imported with today's tools)
+  name    kiln
+  ref     decision:glaze,docs/kiln.md
+  status  done
+about     observer:clerk
+
+$ loops fold mentions.json --plain                (records that mention thread:firing)
+records  0
+```
+
+| | The case | Recommended | The other choice |
+| --- | --- | --- | --- |
+| 1 | **A typed reference in `ref`** (`thread:firing`). | **It also becomes a mention on its record.** `about` gets `thread:firing` beside `observer:potter`. A spec with `"about": "thread:firing"` finds every record that referred to the thread, which the old tool counted as the thread's inbound references. | Payload only, as imported today. Finding what refers to the thread needs a payload test on the whole text of `ref`, which cannot match one reference out of several. |
+| 2 | **References of a thing's earlier revisions.** | **A revision carries them forward:** its `about` holds its own references and those of the records it replaces, but not their observers. Written by hand that way today, `loops of task:kiln` shows `about decision:glaze observer:clerk thread:firing`, as the old tool's `refs` did, and both records count as mentioning the thread. It is what `loops emit` does for a revision today: run without `--about`, it copied the head's `thread:firing`. | Each record mentions only its own references. The thing shows the latest fact's references; all of them are a read over its records. |
+| 3 | **A file path or an old fact id in `ref`** (`docs/kiln.md`). | **It stays in the payload only.** A mention must be `prefix:value`, and the old stores never gave paths a prefix. | Paths become mentions under a new prefix such as `path:docs/kiln.md`, and old ids become the new record's id through the import's journal. Every reader would then have to know that prefix. |
+| 4 | **The `ref` field itself.** | **It stays in the payload**, untouched, as AD2 ruled. The mentions are added beside it. | Take it out of the payload once its references are mentions, as the old tool did. The payload is then no longer the old payload. |
+
+**What it costs to change later.** Rows 1, 2 and 4 change the bytes and id of every record they touch: 894 facts and the revisions after them. The six shadows written today follow the other column. Importing them again into fresh shadows takes about 3 seconds; nothing reads them yet.
+
+**Not asked.** The comparison tool learns to compare the old tool's `refs` with a thing's mentions once this is ruled. The facts without their key field (37 here) are roots under AD2 (c); the old tool does not show them at all, and the comparison counts them apart.
 
 ## Being prepared
 
