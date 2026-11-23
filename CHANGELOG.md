@@ -10,6 +10,7 @@ The record starts where the old roadmap's did. For anything earlier, and for eve
 ## 2026-11-23
 
 In brief:
+- The Rust can work out which records a spec's answer depends on (`loops::slice::spec_slice`). Nothing uses it yet: no verb, flag or default changed, and what `loops tick` does with it waits on TK13.
 - TK13 is put to Kyle: whether `loops tick <spec>` should cover only the records its answer depends on once the binary can work that set out. John's pilot asks for it. A worker planned the build the same day; the plan corrected the entry's second row and added a third, for specs that read things by key.
 - Three faults found before the first real import are fixed: an old id need not be 26 characters, the vertex reader skips the `observers` and `sources` blocks, and a fold started in a group's directory reads the `stores.json` there. On copies of six older stores the import then took every fact and each shadow read as its old store did.
 - Kyle ruled AD3 for its recommendation in both rows: a fact of a kind the vertex does not name, brought in with `--include-unnamed`, is a root, and the old time is kept to the microsecond. The build already did both. Nothing waits on a ruling.
@@ -19,6 +20,34 @@ In brief:
 - `loops shadow-import` is built: it copies exported old stores into shadow stores, one signed record for each old fact, checks everything before it writes anything, and writes nothing on a second run. On a copy of four real stores it gave the old tool's reading for every thing held by one store.
 - The import's first two pieces are built: a script that exports an old store and its vertex to two text files, and the mapping of each old fact to a record, equal byte for byte to what `loops emit - --fill` writes. No verb yet.
 - The import has its plan. Two of its choices decide record ids and are put to Kyle as AD3: how a kind the vertex does not name is written when asked for, and how fine the old time is.
+
+### The records a spec's answer depends on: the selector
+
+The first piece of smaller ticks ([TK13](DECISIONS.md#tk13-what-a-tick-covers-when-you-name-no-cut)). Rust only, in `rust/core`: a new module `slice` with one public function, and its tests. Nothing calls it yet, so no verb, no record's bytes and no vector's answer changed.
+
+```rust
+pub fn spec_slice(spec: &Spec, settled: &[Record], closure: Closure) -> Vec<Digest>
+```
+
+Given a spec and the records held (or a cut of them), it returns the ids a reader needs to get the spec's whole answer, by the laws `spec.slice` and `keyed.spec-slice`:
+
+- every record a source takes, by `kind`, `about` and `of`, before any slot's test;
+- every record that erases one of them;
+- every record one of them names in `prev`;
+- every record that names one of them in `prev`, and what such a record names in `prev`;
+- for a spec with a slot that reads things by key: every record of each thing a source touches, with what erases them and what they name in `prev` (TK13 row 3, recommended column);
+- with `Closure::Downward`: also every held record under those, through `prev` and `under`, all the way down (TK13 row 2, recommended column). `Closure::Exact` leaves that out.
+
+**Tested on invented fixtures.** Each asserts the exact ids under both policies, and that the fold over the selected records gives the same canonical result bytes and the same result hash as the fold over everything. The voided backup of TK13 is one: the six taken records alone answer 6 and 1,027, the seven selected and the whole store both answer 5 and 615. For each class of record above, one test fails when that class is dropped; the worker dropped each in turn, and the coordinator dropped one more (a successor's other target) and saw its test fail.
+
+**Not yet:** a comparison over generated stores and specs, and the flag that asks `loops tick` for this set. Both follow.
+
+**Implementer choices; they stand under Kyle's ruling of 2026-11-21 (W7).**
+- A named record that is not held selects nothing and is not an error.
+- A tick among the taken records is one record; the ids in its payload select nothing.
+- The ids come back in the order of the input.
+
+A Codex worker planned and wrote it; the coordinator reviewed it and ran the gates.
 
 ### Three fixes before the first real import
 
