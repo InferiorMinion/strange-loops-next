@@ -23,7 +23,7 @@ export function parseArgs(args) {
     const arg = args[i];
     if (arg === '--no-shrink') { options.noShrink = true; continue; }
     if (arg === '--rust') { options.rust = true; continue; }
-    if (!['--seed', '--n', '--family', '--out', '--replay', '--chunk-size', '--timeout-ms', '--shrink-trials'].includes(arg)) {
+    if (!['--seed', '--n', '--family', '--out', '--replay', '--chunk-size', '--timeout-ms', '--shrink-trials', '--case'].includes(arg)) {
       throw new Error(`unknown option: ${arg}`);
     }
     if (i + 1 === args.length || args[i + 1].startsWith('--')) throw new Error(`missing value: ${arg}`);
@@ -32,12 +32,21 @@ export function parseArgs(args) {
     if (arg === '--family') options.family = value;
     if (arg === '--out') options.out = resolve(value);
     if (arg === '--replay') options.replay = resolve(value);
+    if (arg === '--case') options.sliceCase = value;
     if (arg === '--n') options.n = number(value, arg);
     if (arg === '--chunk-size') options.chunkSize = number(value, arg);
     if (arg === '--timeout-ms') options.timeoutMs = number(value, arg);
     if (arg === '--shrink-trials') options.maxTrials = number(value, arg, 0);
   }
-  if (options.family && options.family !== 'tick' && !FAMILIES.includes(options.family)) throw new Error(`unknown family: ${options.family}`);
+  if (options.family && !['tick', 'slice'].includes(options.family) && !FAMILIES.includes(options.family)) throw new Error(`unknown family: ${options.family}`);
+  if (options.sliceCase && (options.family !== 'slice' || options.replay || !/^\d+:\d+$/.test(options.sliceCase))) {
+    throw new Error('--case takes draw:step with --family slice, separately from --replay');
+  }
+  // The slice campaign also requires positive coverage of rare graph relations.
+  if (options.family === 'slice') {
+    if (!args.includes('--n')) options.n = 384;
+    if (!args.includes('--seed')) options.seed = 'slice-ci-1';
+  }
   if (options.chunkSize > 256) throw new Error('--chunk-size must be <= 256');
   if (options.rust && options.noShrink) throw new Error('--rust requires shrinking; --no-shrink is two-way only');
   options.implementations = engines(options);
@@ -45,6 +54,7 @@ export function parseArgs(args) {
 }
 
 function engines(options) {
+  if (options.family === 'slice') return ['rust', 'js-witness'];
   if (options.family === 'tick') {
     if (options.rust) throw new Error('--family tick already selects Lean and Rust; omit --rust');
     return ['lean', 'rust'];
@@ -109,6 +119,10 @@ export async function campaign(options, {
   js, warm = true, batch = batchVectors, buildLean = warmLean, buildRust = warmRust,
 } = {}) {
   if (options.rust && options.noShrink) throw new Error('--rust requires shrinking; --no-shrink is two-way only');
+  if (options.family === 'slice') {
+    const { sliceCampaign } = await import('./slice-run.mjs');
+    return sliceCampaign(options);
+  }
   const implementations = engines(options), tick = options.family === 'tick';
   const rust = implementations.includes('rust');
   const out = options.out ?? await mkdtemp(join(tmpdir(), 'loops-fuzz-run-'));

@@ -219,6 +219,7 @@ model:
     - timeout 120 node interop/fuzz/run.mjs --rust --seed ci-1 --n 28 --out "$CI_PROJECT_DIR/loops-fuzz"
     # The tick corpus agrees in Lean and Rust
     - timeout 120 node interop/fuzz/run.mjs --family tick --seed tick-ci-1 --n 288 --chunk-size 144 --out "$CI_PROJECT_DIR/loops-fuzz/tick"
+    - timeout 120 node interop/fuzz/run.mjs --family slice --seed slice-ci-1 --n 384 --out rust/target/fuzz-slice
     # The proof graph is a pure render of the proofs
     - (cd model && lake exe proofs ../design/laws/proofs.json)
     - git diff --exit-code -- design/laws/proofs.json
