@@ -14,6 +14,7 @@ pub mod occurred;
 pub mod read;
 pub mod record;
 pub mod result;
+pub mod slice;
 pub mod spec;
 pub mod spec_hash;
 pub mod stored;

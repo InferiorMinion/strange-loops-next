@@ -218,6 +218,7 @@ The record starts where the old roadmap's did. For anything earlier, and for eve
 <h2 id="2026-11-23">2026-11-23</h2>
 <p>In brief:</p>
 <ul>
+<li><p>The Rust can work out which records a spec's answer depends on (<code>loops::slice::spec_slice</code>). Nothing uses it yet: no verb, flag or default changed, and what <code>loops tick</code> does with it waits on TK13.</p></li>
 <li><p>TK13 is put to Kyle: whether <code>loops tick &lt;spec&gt;</code> should cover only the records its answer depends on once the binary can work that set out. John's pilot asks for it. A worker planned the build the same day; the plan corrected the entry's second row and added a third, for specs that read things by key.</p></li>
 <li><p>Three faults found before the first real import are fixed: an old id need not be 26 characters, the vertex reader skips the <code>observers</code> and <code>sources</code> blocks, and a fold started in a group's directory reads the <code>stores.json</code> there. On copies of six older stores the import then took every fact and each shadow read as its old store did.</p></li>
 <li><p>Kyle ruled AD3 for its recommendation in both rows: a fact of a kind the vertex does not name, brought in with <code>--include-unnamed</code>, is a root, and the old time is kept to the microsecond. The build already did both. Nothing waits on a ruling.</p></li>
@@ -228,6 +229,28 @@ The record starts where the old roadmap's did. For anything earlier, and for eve
 <li><p>The import's first two pieces are built: a script that exports an old store and its vertex to two text files, and the mapping of each old fact to a record, equal byte for byte to what <code>loops emit - --fill</code> writes. No verb yet.</p></li>
 <li><p>The import has its plan. Two of its choices decide record ids and are put to Kyle as AD3: how a kind the vertex does not name is written when asked for, and how fine the old time is.</p></li>
 </ul>
+<h3 id="the-records-a-specs-answer-depends-on-the-selector">The records a spec's answer depends on: the selector</h3>
+<p>The first piece of smaller ticks (<a href="index.html#tk13-what-a-tick-covers-when-you-name-no-cut">TK13</a>). Rust only, in <code>rust/core</code>: a new module <code>slice</code> with one public function, and its tests. Nothing calls it yet, so no verb, no record's bytes and no vector's answer changed.</p>
+<pre><code class="language-rust">pub fn spec_slice(spec: &amp;Spec, settled: &amp;[Record], closure: Closure) -&gt; Vec&lt;Digest&gt;
+</code></pre>
+<p>Given a spec and the records held (or a cut of them), it returns the ids a reader needs to get the spec's whole answer, by the laws <code>spec.slice</code> and <code>keyed.spec-slice</code>:</p>
+<ul>
+<li><p>every record a source takes, by <code>kind</code>, <code>about</code> and <code>of</code>, before any slot's test;</p></li>
+<li><p>every record that erases one of them;</p></li>
+<li><p>every record one of them names in <code>prev</code>;</p></li>
+<li><p>every record that names one of them in <code>prev</code>, and what such a record names in <code>prev</code>;</p></li>
+<li><p>for a spec with a slot that reads things by key: every record of each thing a source touches, with what erases them and what they name in <code>prev</code> (TK13 row 3, recommended column);</p></li>
+<li><p>with <code>Closure::Downward</code>: also every held record under those, through <code>prev</code> and <code>under</code>, all the way down (TK13 row 2, recommended column). <code>Closure::Exact</code> leaves that out.</p></li>
+</ul>
+<p><strong>Tested on invented fixtures.</strong> Each asserts the exact ids under both policies, and that the fold over the selected records gives the same canonical result bytes and the same result hash as the fold over everything. The voided backup of TK13 is one: the six taken records alone answer 6 and 1,027, the seven selected and the whole store both answer 5 and 615. For each class of record above, one test fails when that class is dropped; the worker dropped each in turn, and the coordinator dropped one more (a successor's other target) and saw its test fail.</p>
+<p><strong>Not yet:</strong> a comparison over generated stores and specs, and the flag that asks <code>loops tick</code> for this set. Both follow.</p>
+<p><strong>Implementer choices; they stand under Kyle's ruling of 2026-11-21 (W7).</strong></p>
+<ul>
+<li><p>A named record that is not held selects nothing and is not an error.</p></li>
+<li><p>A tick among the taken records is one record; the ids in its payload select nothing.</p></li>
+<li><p>The ids come back in the order of the input.</p></li>
+</ul>
+<p>A Codex worker planned and wrote it; the coordinator reviewed it and ran the gates.</p>
 <h3 id="three-fixes-before-the-first-real-import">Three fixes before the first real import</h3>
 <p>The import and the store list were tested on Kyle's newer stores only. Neon checked them against an older group of his stores and found three faults; Kyle passed them on, and the coordinator confirmed each on copies. No protocol rule, no record's bytes for a given draft, no refusal code and no vector changed.</p>
 <ul>
