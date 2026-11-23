@@ -29,7 +29,16 @@ fn compare(spec: &Spec, forms: &[Record]) -> Result<Json, String> {
             .filter(|r| ids.contains(&r.id))
             .cloned()
             .collect();
-        let result = spec.run(&settle(&part));
+        // The fold reads the selected forms as they were held, before settling:
+        // a record settled in the whole has already lost an erased payload, so
+        // a part built from those would hide a selection that left out an eraser.
+        // The tick below is made as `loops tick` makes one, from the settled whole.
+        let sent: Vec<_> = forms
+            .iter()
+            .filter(|r| ids.contains(&r.id))
+            .cloned()
+            .collect();
+        let result = spec.run(&settle(&sent));
         let selected = result_text(&result);
         let selected_hash = result_hash(&sha256, &result);
         if selected != canonical || selected_hash != hash {
