@@ -9,8 +9,11 @@ fn success<T>(r: Result<T, Fail>) -> T {
         Err(Fail::TickNotSame | Fail::Closed) => panic!("unexpected CLI exit"),
     }
 }
+fn fixture_root(label: &str) -> PathBuf {
+    std::env::temp_dir().join(format!("shadow-recovery-{label}-{}", std::process::id()))
+}
 fn fixture(label: &str) -> PathBuf {
-    let root = std::env::temp_dir().join(format!("shadow-recovery-{label}-{}", std::process::id()));
+    let root = fixture_root(label);
     let _ = fs::remove_dir_all(&root);
     fs::create_dir_all(root.join("workshop/.loops/segments")).unwrap();
     fs::write(root.join("group.json"),r#"{"state":"private","sources":[{"name":"workshop","facts":"cut","map":"map","destination":"workshop"}]}"#).unwrap();
@@ -138,5 +141,161 @@ fn importer_lock_and_reservation_survive_separate_invocations() {
         .write_all(b"bad")
         .unwrap();
     assert!(matches!(invoke(&root, &fixed()), Err(Fail::Refused(_))));
+    fs::remove_dir_all(root).unwrap();
+}
+
+fn group_fixture(label: &str, order: [&str; 2]) -> PathBuf {
+    use loops::json::quote;
+    use std::fmt::Write as _;
+
+    let root = fixture(label);
+    let mut entries = Vec::new();
+    for name in order {
+        fs::create_dir_all(root.join(name).join(".loops/segments")).unwrap();
+        let map =
+            include_str!("../../tests/fixtures/shadow/workshop.map.json").replace("workshop", name);
+        fs::write(root.join(format!("{name}.map")), map).unwrap();
+        let header = include_str!("../../tests/fixtures/shadow/workshop.facts.jsonl")
+            .lines()
+            .next()
+            .unwrap()
+            .replace("workshop", name)
+            .replace("arrival", "rowid");
+        let mut bytes = format!("{header}\n");
+        let mut digest = hash(bytes.as_bytes());
+        for (i, (id, kind, payload)) in [
+            ("potter", "thread", r#"{"name":"potter"}"#),
+            ("fire", "change", "{}"),
+            ("no-key", "thread", "{}"),
+            ("note", "moved", "{}"),
+            ("defect", "moved", "[]"),
+            ("later", "thread", r#"{"name":"potter","heat":"hot"}"#),
+        ]
+        .iter()
+        .enumerate()
+        {
+            // The same "later" fact has different predecessors in the two stores.
+            if name == "yard" && *id == "potter" {
+                continue;
+            }
+            let start = bytes.len();
+            writeln!(bytes, r#"{{"id":"{id}","kind":"{kind}","ts_bits":"3ff8000000000000","observer":"potter","origin":"","payload":{},"signature":null,"coordinate":["{i}"]}}"#, quote(payload)).unwrap();
+            digest.extend_from_slice(&bytes.as_bytes()[start..]);
+            digest = hash(&digest);
+        }
+        let sum = digest.iter().fold(String::new(), |mut hex, byte| {
+            write!(hex, "{byte:02x}").unwrap();
+            hex
+        });
+        let count = bytes.lines().count() - 1;
+        writeln!(bytes, r#"{{"count":"{count}","digest":"{sum}"}}"#).unwrap();
+        fs::write(root.join(format!("{name}.facts")), bytes).unwrap();
+        entries.push(format!(r#"{{"name":"{name}","map":"{name}.map","facts":"{name}.facts","destination":"{name}"}}"#));
+    }
+    fs::write(
+        root.join("group.json"),
+        format!(r#"{{"state":"private","sources":[{}]}}"#, entries.join(",")),
+    )
+    .unwrap();
+    root
+}
+
+#[test]
+fn collected_occurrences_classify_each_destination_before_preparation() {
+    use mapping::{Fate, Target};
+
+    let root = group_fixture("fates", ["workshop", "yard"]);
+    for unnamed in [Unnamed::Omit, Unnamed::Roots] {
+        let group = success(Group::read(&root.join("group.json"), unnamed));
+        let (index, _) = plan::Index::collect(&group.inputs, unnamed, &Journal::default());
+        for source in 0..2 {
+            let fate = |id| &index.occurrence(id, source).fate;
+            for (id, target) in [
+                ("later", Target::Keyed("thread:potter".into())),
+                ("fire", Target::Collected),
+                ("no-key", Target::MissingKey),
+            ] {
+                assert!(matches!(fate(id), Fate::Included(Ok(row)) if row.target == target));
+            }
+            if unnamed == Unnamed::Omit {
+                assert!(matches!(fate("note"), Fate::Omitted { defect: None }));
+                assert!(
+                    matches!(fate("defect"), Fate::Omitted { defect: Some(e) } if e.code() == "shadow-source-invalid")
+                );
+            } else {
+                assert!(
+                    matches!(fate("note"), Fate::Included(Ok(row)) if row.target == Target::Unnamed)
+                );
+                assert!(
+                    matches!(fate("defect"), Fate::Included(Err(e)) if e.code() == "shadow-source-invalid")
+                );
+            }
+        }
+    }
+    fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn source_order_preserves_segment_bytes_and_each_destination_is_read_once() {
+    use crate::{count, values::member};
+    use std::collections::BTreeMap;
+
+    let run = |label, order| {
+        let root = group_fixture(label, order);
+        for mode in [Mode::Check, Mode::Write, Mode::Write] {
+            let mut report = Report::default();
+            success(import(
+                &root.join("group.json"),
+                Unnamed::Omit,
+                mode,
+                &fixed(),
+                &mut report,
+            ));
+            let json = report.json();
+            let sources = member(&json, "sources").unwrap();
+            for name in order {
+                let source = member(sources, name).unwrap();
+                assert_eq!(member(source, "destination_reads"), Some(&count(1)));
+            }
+        }
+        let mut segments = BTreeMap::new();
+        for name in order {
+            for signer in fs::read_dir(root.join(name).join(".loops/segments")).unwrap() {
+                for file in fs::read_dir(signer.unwrap().path()).unwrap() {
+                    let path = file.unwrap().path();
+                    segments.insert(
+                        path.strip_prefix(&root).unwrap().to_owned(),
+                        fs::read(path).unwrap(),
+                    );
+                }
+            }
+        }
+        assert_eq!(segments.len(), 2);
+        fs::remove_dir_all(root).unwrap();
+        segments
+    };
+    assert_eq!(
+        run("forward", ["workshop", "yard"]),
+        run("reverse", ["yard", "workshop"])
+    );
+}
+
+#[test]
+fn preparation_rereads_the_previously_indexed_remote_cut() {
+    let root = group_fixture("reread", ["workshop", "yard"]);
+    let mut runtime = fixed();
+    runtime.seed = |old, fp| {
+        // The first workshop reservation runs after both cuts were collected.
+        if old == "potter" {
+            let path = fixture_root("reread").join("yard.facts");
+            let cut = fs::read_to_string(&path).unwrap();
+            fs::write(path, cut.replace("hot", "wet")).unwrap();
+        }
+        (fixed().seed)(old, fp)
+    };
+    assert!(
+        matches!(invoke(&root, &runtime), Err(Fail::Refused(s)) if s.contains("export changed after preflight"))
+    );
+    assert!(!root.join("private").exists());
     fs::remove_dir_all(root).unwrap();
 }

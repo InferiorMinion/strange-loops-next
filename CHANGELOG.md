@@ -25,6 +25,16 @@ In brief:
 - The import's first two pieces are built: a script that exports an old store and its vertex to two text files, and the mapping of each old fact to a record, equal byte for byte to what `loops emit - --fill` writes. No verb yet.
 - The import has its plan. Two of its choices decide record ids and are put to Kyle as AD3: how a kind the vertex does not name is written when asked for, and how fine the old time is.
 
+### AD4, first piece: the import reads the whole group before it writes
+
+The first of three pieces of AD4. Rust only, in `rust/cli/src/shadow/`. Nothing observable changed: the same journal, signed lines, refusals and counts as before, byte for byte.
+
+AD4 needs every old id's fate known before any record that mentions it is prepared, because a record's id depends on what it mentions. So the import now reads every export of the group into one index first (each fact's source, place, line hash and what it becomes: a keyed thing, a collected root, a root without its key, an unnamed root, or left out), and only then prepares records. A payload is read again from its place in the export, and its hash must still match.
+
+**Checked by the coordinator on the real homelab import**: the binary built from main and the one from this piece gave identical check-only reports (11,072 facts read, all 11,047 records already written), and no file in the group's directory changed. The worker showed the same on an invented group with fixed seeds: identical segments, journal and reports; and that listing the sources in the other order writes the same segments.
+
+A Codex worker wrote it; the coordinator reviewed it and ran the gates and the check above.
+
 ### Ruled by Kyle, 2026-11-23: W3b and AD4
 
 **W3b: option B, as the rule.** The JavaScript stays frozen at what it has: its layers, its 649 vectors and the slice comparison. New steps are built in Lean and Rust. It is fixed when a fault turns up in what it has, and looked at again only if keeping it becomes costly or something needs a third tick answer. The entry as put is in [the order-of-work note](notes/2026-11-21-order-of-work.md#w3b-the-frozen-javascript-after-ticks).

@@ -251,7 +251,8 @@ fn import(
     for input in &group.inputs {
         report.sources.push((input.name.clone(), Counts::default()));
     }
-    for (i, input) in group.inputs.iter().enumerate() {
+    let (index, cuts) = plan::Index::collect(&group.inputs, unnamed, &j);
+    for (i, (input, cut)) in group.inputs.iter().zip(cuts).enumerate() {
         if let Some(pin) = j.pins.get(&input.name) {
             if pin != &input.pin {
                 return Err(mismatch(&format!(
@@ -271,7 +272,8 @@ fn import(
         plans.push(plan::preflight(
             input,
             i,
-            unnamed,
+            &index,
+            cut,
             &key,
             &j,
             &mut identities,
@@ -279,6 +281,7 @@ fn import(
             report,
         )?);
     }
+    drop(index);
     if !report.errors.is_empty() {
         return Err(refused(report.errors.join("\nrefused: ")));
     }

@@ -79,9 +79,25 @@ impl fmt::Display for Refusal {
 }
 
 #[derive(Debug)]
-pub(super) enum Row {
-    Included(Box<Prepared>),
+pub(super) enum Fate {
+    Included(Result<Included, Refusal>),
     Omitted { defect: Option<Refusal> },
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub(super) enum Target {
+    Keyed(String),
+    Collected,
+    MissingKey,
+    Unnamed,
+}
+
+#[derive(Debug)]
+pub(super) struct Included {
+    pub target: Target,
+    pub kind: String,
+    observer: String,
+    occurred: String,
 }
 
 /// Every ordinary keyed revision in an importer-owned history names all live
@@ -106,18 +122,37 @@ pub(super) struct History {
     things: HashMap<String, Live>,
 }
 
-fn contents(fact: &Fact) -> Result<(Json, String), Refusal> {
+pub(super) fn classify(
+    map: &Map,
+    unnamed: Unnamed,
+    fact: &Fact,
+    payload: Result<&Json, &loops_eval::Error>,
+) -> Fate {
+    let fold = map.kinds.get(&fact.kind);
+    let result = classify_target(fold, fact, payload);
+    if fold.is_none() && unnamed == Unnamed::Omit {
+        Fate::Omitted {
+            defect: result.err(),
+        }
+    } else {
+        Fate::Included(result)
+    }
+}
+
+fn classify_target(
+    fold: Option<&Fold>,
+    fact: &Fact,
+    payload: Result<&Json, &loops_eval::Error>,
+) -> Result<Included, Refusal> {
     match fact.kind.as_str() {
         "" => return Err(Refusal::Writer(stored::Error::KindEmpty)),
         "tick" => return Err(Refusal::Source("legacy fact kind tick is reserved".into())),
         _ => {}
     }
-    let payload = fact
-        .parsed_payload()
-        .map_err(|e| Refusal::Source(e.to_string()))?;
-    if !matches!(payload, Json::Obj(_)) {
+    let payload = payload.map_err(|e| Refusal::Source(e.to_string()))?;
+    let Json::Obj(members) = payload else {
         return Err(Refusal::Source("payload must be an object".into()));
-    }
+    };
     if !payload.keys_distinct() {
         return Err(Refusal::Writer(stored::Error::MemberDuplicate));
     }
@@ -125,68 +160,67 @@ fn contents(fact: &Fact) -> Result<(Json, String), Refusal> {
         return Err(Refusal::Writer(stored::Error::NumberOutOfRange));
     }
     let time = occurred(fact.ts_bits).ok_or(Refusal::Writer(stored::Error::OccurredNotSpan))?;
-    Ok((payload, time))
+    let target = if let Some(Fold::By(field)) = fold {
+        if fact.kind == "r" || fact.kind.contains(':') {
+            return Err(Refusal::Map(
+                "keyed kind must be a single reference prefix other than r",
+            ));
+        }
+        if !envelope::typed_ref(&format!("{}:x", fact.kind)) {
+            return Err(Refusal::Writer(stored::Error::OfNotTyped));
+        }
+        match members.iter().find(|(name, _)| name == field) {
+            Some((_, Json::Str(value))) if value.is_empty() => {
+                return Err(Refusal::Writer(stored::Error::OfNotTyped));
+            }
+            Some((_, Json::Str(value))) => Target::Keyed(format!("{}:{value}", fact.kind)),
+            Some(_) => {
+                return Err(Refusal::Source(format!(
+                    "key field {field:?} must hold text"
+                )));
+            }
+            None => Target::MissingKey,
+        }
+    } else if fold.is_some() {
+        Target::Collected
+    } else {
+        Target::Unnamed
+    };
+    Ok(Included {
+        target,
+        kind: fact.kind.clone(),
+        observer: fact.observer.clone(),
+        occurred: time,
+    })
 }
 
 impl History {
-    // C supplies the group reservation for this old id. Neither clock nor
-    // randomness is consulted while preparing the draft or replaying it.
-    pub(super) fn prepare(
+    pub(super) fn prepare_included(
         &mut self,
-        map: &Map,
-        unnamed: Unnamed,
-        fact: &Fact,
+        row: &Included,
+        payload: Json,
         key: &Key,
         salt: &[u8],
         emitted: &str,
-    ) -> Result<Row, Refusal> {
-        let fold = map.kinds.get(&fact.kind);
-        let contents = contents(fact);
-        if fold.is_none() && unnamed == Unnamed::Omit {
-            return Ok(Row::Omitted {
-                defect: contents.err(),
-            });
-        }
-        let (payload, time) = contents?;
+    ) -> Result<Prepared, Refusal> {
         let Json::Obj(members) = &payload else {
-            unreachable!("validated object")
+            unreachable!("classified payload was a verified object")
         };
-        let of = if let Some(Fold::By(field)) = fold {
-            if fact.kind == "r" || fact.kind.contains(':') {
-                return Err(Refusal::Map(
-                    "keyed kind must be a single reference prefix other than r",
-                ));
-            }
-            if !envelope::typed_ref(&format!("{}:x", fact.kind)) {
-                return Err(Refusal::Writer(stored::Error::OfNotTyped));
-            }
-            match members.iter().find(|(name, _)| name == field) {
-                Some((_, Json::Str(value))) if value.is_empty() => {
-                    return Err(Refusal::Writer(stored::Error::OfNotTyped));
-                }
-                Some((_, Json::Str(value))) => Some(format!("{}:{value}", fact.kind)),
-                Some(_) => {
-                    return Err(Refusal::Source(format!(
-                        "key field {field:?} must hold text"
-                    )));
-                }
-                None => None,
-            }
-        } else {
-            None
+        let of = match &row.target {
+            Target::Keyed(thing) => Some(thing.clone()),
+            _ => None,
         };
-        let missing_key = matches!(fold, Some(Fold::By(_))) && of.is_none();
         let live = of.as_ref().and_then(|thing| self.things.get(thing));
         let env = Env {
-            kind: fact.kind.clone(),
+            kind: row.kind.clone(),
             observer: key.public(),
             of,
-            occurred: Some(time),
+            occurred: Some(row.occurred.clone()),
             emitted: emitted.into(),
-            about: if fact.observer.is_empty() {
+            about: if row.observer.is_empty() {
                 Vec::new()
             } else {
-                vec![format!("observer:{}", fact.observer)]
+                vec![format!("observer:{}", row.observer)]
             },
             sets: live
                 .map(|_| canon_set(&members.iter().map(|(k, _)| k.clone()).collect::<Vec<_>>())),
@@ -214,10 +248,10 @@ impl History {
                 state.setters.insert(field.clone(), id.clone());
             }
         }
-        Ok(Row::Included(Box::new(Prepared {
+        Ok(Prepared {
             id,
             draft,
-            missing_key,
-        })))
+            missing_key: row.target == Target::MissingKey,
+        })
     }
 }
