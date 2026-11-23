@@ -10,7 +10,7 @@ The record starts where the old roadmap's did. For anything earlier, and for eve
 ## 2026-11-23
 
 In brief:
-- The Rust can work out which records a spec's answer depends on (`loops::slice::spec_slice`). Nothing uses it yet: no verb, flag or default changed, and what `loops tick` does with it waits on TK13.
+- The Rust can work out which records a spec's answer depends on (`loops::slice::spec_slice`). Nothing uses it yet: no verb, flag or default changed, and what `loops tick` does with it waits on TK13. On 488 generated stores and specs the answer over the selected records equals the answer over everything, and a tick over them checks `same`.
 - TK13 is put to Kyle: whether `loops tick <spec>` should cover only the records its answer depends on once the binary can work that set out. John's pilot asks for it. A worker planned the build the same day; the plan corrected the entry's second row and added a third, for specs that read things by key.
 - Three faults found before the first real import are fixed: an old id need not be 26 characters, the vertex reader skips the `observers` and `sources` blocks, and a fold started in a group's directory reads the `stores.json` there. On copies of six older stores the import then took every fact and each shadow read as its old store did.
 - Kyle ruled AD3 for its recommendation in both rows: a fact of a kind the vertex does not name, brought in with `--include-unnamed`, is a root, and the old time is kept to the microsecond. The build already did both. Nothing waits on a ruling.
@@ -20,6 +20,40 @@ In brief:
 - `loops shadow-import` is built: it copies exported old stores into shadow stores, one signed record for each old fact, checks everything before it writes anything, and writes nothing on a second run. On a copy of four real stores it gave the old tool's reading for every thing held by one store.
 - The import's first two pieces are built: a script that exports an old store and its vertex to two text files, and the mapping of each old fact to a record, equal byte for byte to what `loops emit - --fill` writes. No verb yet.
 - The import has its plan. Two of its choices decide record ids and are put to Kyle as AD3: how a kind the vertex does not name is written when asked for, and how fine the old time is.
+
+### The selector, compared on generated stores
+
+The second piece of smaller ticks. A new family of the fuzz runner, `slice`, and an input kind of `loops-eval` for it. `rust/core/src/slice.rs` did not change; no verb, no record's bytes and no vector's answer changed. The existing fuzz seeds give the same corpus as before, file for file.
+
+```
+node interop/fuzz/run.mjs --family slice --seed slice-ci-1 --n 384 --out <dir>
+```
+
+For each generated spec and store, in every arrival order, and for both closure policies, the Rust:
+- folds everything, and folds only the records the selector returns, and compares the canonical result bytes and the result hash;
+- makes a tick over the selected records and checks it against the whole input: it must answer `same`.
+
+**The fixed seed, run in CI** (19 s on a debug build):
+
+| | |
+| --- | --- |
+| Cases, arrival orders | 488, 1,628; none differs |
+| Specs with no keyed slot, mixed, only keyed slots | 165, 158, 165 |
+| The selection is smaller than the store | 90 cases without the downward closure, 81 with it |
+| The frozen JavaScript's own set of ids | equal to the Rust's in 486 cases; in 2 it is smaller and contained in it, as the keyed rule here allows |
+
+**It cannot pass by selecting everything.** For each class of record the selector returns, the run counts the cases where leaving that class out loses a record, and asserts each count is above zero: a taken record 99, its eraser 4, its target 7, a successor 28, a successor's target 3, a keyed thing's other record 14, that record's eraser 4, its target 1, the downward closure through `prev` 6 and through `under` 11.
+
+The coordinator planted one fault (the selector ignoring successors): the run stopped at its fifth case with a mismatch and the file to replay it.
+
+**Implementer choices; they stand under Kyle's ruling of 2026-11-21 (W7).**
+- The comparison is a family of the existing runner, so CI uses the same `loops-eval` binary as the other families, and one case can be rerun with `--case <draw>:<step>`.
+- Draws the generator marks as deliberately malformed are skipped (53 of them).
+- The JavaScript's set is asked for through its test file's own functions without changing any file under `interop/js`.
+
+GitHub's CI was switched off the same day at Kyle's word (the workflow is disabled, not removed); the step mirrored into its file does not run there.
+
+A Codex worker wrote it; the coordinator reviewed it, ran the gates and the planted fault.
 
 ### The records a spec's answer depends on: the selector
 

@@ -49,7 +49,7 @@ Each step extends the model's laws, computes protocol vectors, then implements R
 
 ## After adoption's import, for ticks made often
 
-**The binary works out which records a spec's answer depends on**, so that a tick can cover those and not the whole store. The laws are on main (`spec.slice`, `keyed.spec-slice`). The part that works the set out is built in `rust/core` (changelog, 2026-11-23); a comparison over generated stores and the flag that asks for the set follow. What `loops tick` does with it by default waits on Kyle: [TK13](DECISIONS.md#tk13-what-a-tick-covers-when-you-name-no-cut).
+**The binary works out which records a spec's answer depends on**, so that a tick can cover those and not the whole store. The laws are on main (`spec.slice`, `keyed.spec-slice`). The part that works the set out is built in `rust/core` (changelog, 2026-11-23); it is compared on generated stores in CI. The flag that asks `loops tick` for the set follows the ruling. What `loops tick` does with it by default waits on Kyle: [TK13](DECISIONS.md#tk13-what-a-tick-covers-when-you-name-no-cut).
 
 ## Small pieces, any time
 

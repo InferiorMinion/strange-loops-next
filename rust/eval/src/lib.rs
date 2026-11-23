@@ -16,6 +16,7 @@ mod realm;
 mod record;
 mod result;
 mod scenario;
+mod slice;
 mod spec;
 mod tick;
 
@@ -59,7 +60,7 @@ pub fn slots_json(values: Vec<(String, loops::spec::SlotValue)>) -> Json {
 /// Compute every arrival-order (or realm rotation) answer.
 ///
 /// Accepts `record`, `fold/*`, `spec/{parse,run}`, `realm`, `scenario`,
-/// `lens/section`, `batch`, `byte-text`, `payload`, `result` and `tick`. No expected answer
+/// `lens/section`, `batch`, `byte-text`, `payload`, `result` and `tick`, plus the Rust-only `slice` comparison. No expected answer
 /// is supplied. Keeping all answers makes disagreement observable to callers.
 /// A record input gives one answer: its first envelope and first payload
 /// decide, and a later variant that disagrees once they are written is an error.
@@ -74,6 +75,7 @@ pub fn answers(layer: &str, input: &Json) -> Result<Vec<Json>, Error> {
         Some("fold") => fold::answers,
         Some("spec") => spec::answers,
         Some("realm") => realm::answers,
+        Some("slice") => slice::answers,
         Some("scenario") => scenario::answers,
         Some("lens") => lens::answers,
         Some("batch") => batch::answers,
