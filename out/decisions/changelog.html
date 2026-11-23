@@ -218,8 +218,46 @@ The record starts where the old roadmap's did. For anything earlier, and for eve
 <h2 id="2026-11-23">2026-11-23</h2>
 <p>In brief:</p>
 <ul>
-<li><p>Kyle ruled AD1 (how a spec finds the stores it names) and AD2 (how an old store becomes records), each for its recommendation with additions. Nothing waits on him now. Both pieces are being planned.</p></li>
+<li><p>Kyle ruled AD1 (how a spec finds the stores it names) and AD2 (how an old store becomes records), each for its recommendation with additions. Both pieces are being built.</p></li>
+<li><p><code>loops read</code> and <code>loops fold</code> find the stores a spec names and fold their union. A name bound to nothing refuses the read (<code>store-unknown</code>). The name <code>.</code> is the store the read starts from.</p></li>
+<li><p>The import has its plan. Two of its choices decide record ids and are put to Kyle as AD3: how a kind the vertex does not name is written when asked for, and how fine the old time is.</p></li>
 </ul>
+<h3 id="reads-across-stores-a-spec-finds-the-stores-it-names">Reads across stores: a spec finds the stores it names</h3>
+<p>Ruled on 2026-11-23 (AD1, in <a href="note-2026-11-22-adoption.html">the adoption note</a>) and built the same day. Rust only: the CLI, and one function in <code>rust/place</code>. No protocol rule, no record's bytes and no vector changed. <code>loops tick</code> and <code>loops tick --check</code> stay on the one store in the directory and ignore store names, as before.</p>
+<p><code>loops read &lt;vertex&gt;</code> and <code>loops fold &lt;file | -&gt;</code> now open every store the spec's sources name, put their checked lines together, and then settle, admit and run the spec once over that union. A record held by two stores counts once; an opening in one store and its eraser in another read as they would in one store.</p>
+<p>A real run on the built binary, the example of AD1. <code>workshop</code> holds one task and one note, <code>yard</code> one task; the spec <code>morning</code> has the sources (<code>workshop</code>, kind task) and (<code>yard</code>, kind note) and counts.</p>
+<div class="table-scroll" tabindex="0"><table><thead><tr><th scope="col">Run</th><th scope="col">Answer</th></tr></thead>
+<tbody>
+<tr><td>In <code>workshop</code>, nothing bound</td><td><code>refused: store-unknown: workshop</code>, nothing on standard output, exit 1</td></tr>
+<tr><td>With <code>--store workshop=. --store yard=../yard</code></td><td>3</td></tr>
+<tr><td>With a <code>stores.json</code> in the directory that holds both stores, from <code>workshop</code></td><td>3</td></tr>
+<tr><td>The same, from <code>yard</code></td><td>3</td></tr>
+<tr><td><code>yard</code> bound to a directory that holds no store</td><td><code>refused: store-unknown: yard: &lt;directory&gt;</code></td></tr>
+<tr><td>A spec naming <code>.</code>, nothing bound, in <code>workshop</code> and then in <code>yard</code></td><td>2, then 1</td></tr>
+</tbody></table></div>
+<p>Before this, the same spec answered 2 in <code>workshop</code> and 1 in <code>yard</code>, and a name bound to nothing was read from the current directory.</p>
+<p><strong>How a name is bound.</strong> Name by name, the nearest wins:</p>
+<ol>
+<li><p><code>--store &lt;name&gt;=&lt;dir&gt;</code> on <code>read</code> or <code>fold</code>, repeatable. A relative directory is taken from the directory <code>-C</code> gives.</p></li>
+<li><p>A <code>stores.json</code> in the directory that holds the current store's <code>.loops/</code>, or else in that directory's parent. Nowhere further up, so a stray file higher in the tree cannot redirect a read.</p></li>
+<li><p>The per-user list, <code>$XDG_CONFIG_HOME/loops/stores.json</code>, else <code>~/.config/loops/stores.json</code>.</p></li>
+<li><p>The name <code>.</code> is the store the read starts from, when nothing above binds it.</p></li>
+</ol>
+<p>A list is one JSON object of names and directories; a relative directory is taken from the list's own directory.</p>
+<p><strong>Implementer choices. One of them changes what a read answers and is Kyle's to overrule; the rest stand under his ruling of 2026-11-21 (W7).</strong> The full list is choice 30 of <code>rust/PLACE.md</code>.</p>
+<ul>
+<li><p><strong>The name <code>.</code> means the current store, at the lowest precedence.</strong> The coordinator's first brief had no implicit name, as AD1 was put. Building it showed the cost: after <code>loops init</code> and an emit, <code>loops read &lt;vertex&gt;</code> was refused until a list was written, and every existing test spec names <code>.</code>. The design page already says a vertex kept in <code>.loops/vertices/</code> defaults to <code>from &quot;.&quot;</code>. No other name is implicit: <code>lab</code> bound nowhere is refused also inside a store. Outside any store, an unbound <code>.</code> is refused like any other name.</p></li>
+<li><p><strong>The list kept with the stores is looked for in two places only</strong>, the store's directory and its parent.</p></li>
+<li><p><strong>A bound directory must itself hold <code>.loops/</code>.</strong> There is no upward walk from it, and a directory that holds no store is refused <code>store-unknown</code>, with the directory in the message.</p></li>
+<li><p><strong>Several unbound names:</strong> the first in the spec's source order is named.</p></li>
+<li><p><strong>Two names bound to one directory</strong> open it once.</p></li>
+<li><p><strong>A malformed list is a usage failure that names the file</strong> (exit 2), not <code>store-unknown</code>. Both lists are read even when <code>--store</code> covers every name.</p></li>
+<li><p><strong>A store that does not check:</strong> the read answers from the lines that checked and is then refused <code>store-not-clean</code>, as before; the message now ends with the names of the stores concerned, <code>(stores: yard)</code>. On a single store this adds <code>(stores: .)</code> to a message that had no such ending.</p></li>
+<li><p><code>--store</code> on any other verb is a usage error.</p></li>
+</ul>
+<p>Checked beyond the tree's tests: on a copy of two real stores, a fold across both with <code>--store</code> gave byte for byte the answer of a fold over one store made by importing both; a fold across three stores of about 2,900 records took 0.28 s. A fault planted in the precedence (the per-user list winning over the list kept with the stores) was caught by a walk test.</p>
+<p><strong>What breaks, and is held back for it.</strong> A spec that names a store other than <code>.</code> is now refused until the name is bound. rex-tools names its store <code>rex-chat</code> and uses the release binary built from main, so that binary is not rebuilt until rex-tools passes <code>--store</code>.</p>
+<p>A Codex worker wrote it in two rounds; the coordinator reviewed both, ran the gate and made the runs above.</p>
 <h3 id="ruled-by-kyle-2026-11-23-ad1-and-ad2">Ruled by Kyle, 2026-11-23: AD1 and AD2</h3>
 <p>Each was an entry in <code>DECISIONS.md</code>, with an example. Kyle ruled both in the coordinator's session, after a trial import of a copy of four of his old stores. The entries as put, the additions and the trial's counts are in <a href="note-2026-11-22-adoption.html">the adoption note</a>.</p>
 <p><strong>AD1: how a spec finds the stores it names.</strong> Option A for both halves, with two additions.</p>
@@ -229,7 +267,7 @@ The record starts where the old roadmap's did. For anything earlier, and for eve
 <li><p><strong>Added: <code>--store &lt;name&gt;=&lt;dir&gt;</code> on the command</strong> binds a name for that run and overrides the lists.</p></li>
 <li><p><strong>Added: an optional <code>stores.json</code> kept with a group of stores.</strong> It binds names for a hub store and the stores beside it, so a directory of stores that refer to each other reads the same wherever it is copied.</p></li>
 <li><p>Unchanged: a read across stores takes the union of the named stores first (W1). <code>loops tick</code> and <code>loops tick --check</code> stay on the one store in the directory.</p></li>
-<li><p>Left to the implementer, and to be written here when built: where the list kept with the stores is looked for, and which binding wins when two sources bind one name. The coordinator's brief says the nearest wins: the command, then the list with the stores, then the per-user list.</p></li>
+<li><p>Left to the implementer: where the list kept with the stores is looked for, and which binding wins when two sources bind one name. Both are in the entry above.</p></li>
 </ul>
 <p><strong>AD2: how an old store becomes records.</strong> The recommended column in all eight rows.</p>
 <ol>
