@@ -199,7 +199,6 @@ header.top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--g
 <p class="source">Rendered from <code>DECISIONS.md</code> in the repository.</p>
 <details class="contents"><summary>On this page</summary>
 <ul><li><a href="#at-a-glance">At a glance</a></li>
-<li><a href="#the-tick-record">The tick record</a></li>
 <li><a href="#being-prepared">Being prepared</a></li>
 <li><a href="#deferred-by-you">Deferred by you</a></li>
 <li><a href="#ruled">Ruled</a></li></ul></details>
@@ -207,73 +206,20 @@ header.top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--g
 <h1 id="decisions">Decisions</h1>
 <p>Everything that waits on Kyle, in one place. Each entry has the question, an example, the options and a recommendation.</p>
 <ul>
-<li><p>An entry leaves this file when it is ruled. The entries ruled on 2026-11-21 have left it: PV1 to PV7, RC1, W7, E1 and I10, then TK1 to TK9 and W1 to W6. TK10 to TK12 and S4 left it on 2026-11-22, AD1, AD2 and AD3 on 2026-11-23.</p></li>
+<li><p>An entry leaves this file when it is ruled. The entries ruled on 2026-11-21 have left it: PV1 to PV7, RC1, W7, E1 and I10, then TK1 to TK9 and W1 to W6. TK10 to TK12 and S4 left it on 2026-11-22, AD1, AD2, AD3 and TK13 on 2026-11-23.</p></li>
 <li><p>The ruling is written in <a href="changelog.html">CHANGELOG.md</a> under its date, and one line is added to <a href="#ruled">Ruled</a> at the end of this file.</p></li>
 <li><p>What is next once these are ruled is in <a href="roadmap.html">ROADMAP.md</a>.</p></li>
 <li><p>&quot;Today&quot; in an example means the <code>loops</code> binary built from main on 2026-11-21. Every &quot;today&quot; answer below was run, not predicted.</p></li>
 </ul>
 <h2 id="at-a-glance">At a glance</h2>
-<div class="table-scroll" tabindex="0"><table><thead><tr><th scope="col">Id</th><th scope="col">Question</th><th scope="col">Recommended</th><th scope="col">What waits on it</th></tr></thead>
-<tbody>
-<tr><td><a href="#tk13-what-a-tick-covers-when-you-name-no-cut">TK13</a></td><td>What <code>loops tick &lt;spec&gt;</code> covers when you name no cut: everything the store holds, as today, or only the records the answer depends on</td><td>The records the answer depends on, with what is under them, and for a spec that reads things by key every record of those things; <code>--all</code> for everything</td><td>Nothing yet. A worker has planned the build and is writing the part that works the set out; no verb changes until you rule</td></tr>
-</tbody></table></div>
-<p>Two more questions are <a href="#being-prepared">being prepared</a>.</p>
+<p>Nothing waits on a ruling today. Two questions are <a href="#being-prepared">being prepared</a>.</p>
 <p>Every earlier entry is ruled.</p>
 <ul>
-<li><p>The tick record, TK1 to TK12: ruled and built. Step 4 is closed. The questions as they were put are in <a href="note-2026-11-21-tick-record.html#10-the-questions-as-they-were-put">the tick record note</a>, sections 10 and 11.</p></li>
+<li><p>The tick record, TK1 to TK13: ruled. TK1 to TK12 are built and step 4 is closed; TK13 (smaller ticks) is being built. The questions as they were put are in <a href="note-2026-11-21-tick-record.html#10-the-questions-as-they-were-put">the tick record note</a>, sections 10 and 11.</p></li>
 <li><p>The order of work, W1 to W6: ruled. The entries as put are in <a href="note-2026-11-21-order-of-work.html">the order-of-work note</a>.</p></li>
 <li><p>The adoption step, AD1 to AD3: ruled on 2026-11-23. AD1 and AD2 each for its recommendation with additions, AD3 for its recommendation in both rows. The entries as put, and the additions, are in <a href="note-2026-11-22-adoption.html">the adoption note</a>.</p></li>
 </ul>
 <p>After this: <a href="#being-prepared">what is being prepared</a>, <a href="#deferred-by-you">what you deferred</a> and <a href="#ruled">what is ruled</a>. Nothing waits to be confirmed: under your ruling of 2026-11-21 an implementer choice comes here only when it changes bytes or answers.</p>
-<h2 id="the-tick-record">The tick record</h2>
-<h3 id="tk13-what-a-tick-covers-when-you-name-no-cut">TK13: what a tick covers when you name no cut</h3>
-<p><strong>Question.</strong> <code>loops tick &lt;spec&gt;</code> with no <code>--as-of</code> and no <code>--cover</code> covers every record the store holds (<a href="note-2026-11-21-tick-record.html#tk4-covers-lists-every-record-that-was-folded">TK4</a>). When the binary can work out which records a spec's answer depends on, should that smaller set be what it covers?</p>
-<p><strong>Why now.</strong> TK4 said the list's cost is size, and that the Rust would learn to cover only what an answer depends on after step 4. Step 4 is closed. John's store makes a tick at every session, and his pilot asks for this. A tick made in a store of 9,051 records lists every id, 516 KB, also for a spec that takes ten.</p>
-<p><strong>Not built.</strong> The binary cannot work the set out. The law that says which records it holds is on main (<code>spec.slice</code>, and <code>keyed.spec-slice</code> for a slot that reads things by key). In the runs below the set is named by hand with <code>--cover</code>.</p>
-<p><strong>Example, run on today's binary.</strong> The laptop's store holds the six backups of the tick record's examples and 40 shopping notes. The spec <code>backups</code> counts the runs and sums <code>mb</code>.</p>
-<div class="table-scroll" tabindex="0"><table><thead><tr><th scope="col">The tick</th><th scope="col"><code>covers</code></th><th scope="col">The record</th><th scope="col">Result</th><th scope="col"><code>loops tick --check</code></th></tr></thead>
-<tbody>
-<tr><td><code>loops tick backups.json</code>, as today</td><td>46 ids</td><td>3,414 bytes</td><td><code>runs</code> 6, <code>mb</code> 1027</td><td><code>same</code></td></tr>
-<tr><td>The six backups named with <code>--cover</code></td><td>6 ids</td><td>1,134 bytes</td><td><code>runs</code> 6, <code>mb</code> 1027, the same result hash</td><td><code>same</code></td></tr>
-</tbody></table></div>
-<p>A tick is itself a record, so today each tick also covers every tick before it. The third tick made in this store covered 49 ids.</p>
-<p><strong>The set is not only the records the spec takes.</strong> You void jellyfin's first backup with a record of another kind: <code>loops emit retired &quot;this backup is void&quot; --prev r:saav…</code>. The spec <code>current</code> counts the backups that nothing has replaced. <code>loops fold current.json</code> answers <code>current</code> 5, <code>mb</code> 615.</p>
-<div class="table-scroll" tabindex="0"><table><thead><tr><th scope="col">The tick</th><th scope="col"><code>covers</code></th><th scope="col">Result</th><th scope="col"><code>loops tick --check</code></th></tr></thead>
-<tbody>
-<tr><td>The six backups named</td><td>6 ids</td><td><code>current</code> 6, <code>mb</code> 1027</td><td><code>same</code></td></tr>
-<tr><td>The six and the <code>retired</code> record</td><td>7 ids</td><td><code>current</code> 5, <code>mb</code> 615</td><td><code>same</code></td></tr>
-</tbody></table></div>
-<p>The first tick is a true claim about its six records, and it is not what <code>loops fold</code> shows. The set the law names holds the <code>retired</code> record, and what erases a taken record, so a tick over it answers as the fold does. Working that set out is what the binary would learn; naming ids by hand does not give it.</p>
-<div class="table-scroll" tabindex="0"><table><thead><tr><th scope="col"></th><th scope="col">The case</th><th scope="col">Recommended</th><th scope="col">The other choice</th></tr></thead>
-<tbody>
-<tr><td>1</td><td><strong>What <code>loops tick &lt;spec&gt;</code> covers when you name no cut.</strong></td><td><strong>The records the spec's answer depends on.</strong> <code>--all</code> covers everything the store holds. The tick is small, it says which records the answer came from, and its result is what <code>loops fold</code> shows at that moment.</td><td>Everything held, as today, and a flag asks for the small set. Nothing changes for a tick made without the flag. A tick stays as large as its store unless you remember the flag.</td></tr>
-<tr><td>2</td><td><strong>Whether the set also holds everything under it.</strong> The law needs one step down <code>prev</code> from a taken record.</td><td><strong>Yes: every held record the set's records build on, through <code>prev</code> and <code>under</code>, all the way down.</strong> The check then reports <code>closure</code> <code>yes</code> whenever those records are held. It adds no id for records that stand alone, as the backups do. Where only the last record of a chain of 20 is taken, it adds 18.</td><td>The law's set and nothing more. The smallest tick. The check reports <code>closure</code> <code>no</code> whenever a covered record builds on one that is not covered.</td></tr>
-<tr><td>3</td><td><strong>A spec with a slot that reads things by key</strong> (<code>follow: keys</code>). Such a slot reads a thing's live values, also those set by records the spec does not take. The laws say which records are enough and do not name one smallest list.</td><td><strong>Every record of each thing a source touches</strong>, with what erases them and what they name in <code>prev</code>. Simple, and proved enough as it stands. A kiln with 200 old settings lists all 200.</td><td>The live records and one path of records that shows each older value replaced. Fewer ids. The path has to be chosen by a rule every writer shares, and a wrong choice gives a tick that answers differently from the fold.</td></tr>
-</tbody></table></div>
-<p><strong>What a smaller tick means for a write against it.</strong> <code>loops emit --base &lt;tick&gt;</code> names what is live among the tick's covered records. Run today against the tick over the six backups, for a thing the spec does not take:</p>
-<pre><code>$ loops emit plant --of plant:fern water=daily --base r:…
-the base covers no record of plant:fern
-$ loops of plant:fern --plain
-records  2
-heads  2
-  water  conflict (2): daily | weekly
-</code></pre>
-<p>The write says it had read nothing of the fern, which is true of that tick, and the fern then has two heads. With today's default the same tick covers the fern and the write is a revision. So under row 1's recommendation a tick is a base for the things its spec takes, and <code>--all</code> makes the wider one.</p>
-<p><strong>What it costs to change later.</strong> Little. A tick lists its ids outright, so every tick already written means what it meant, whichever way the default goes. Only ticks written afterwards differ.</p>
-<p><strong>Three corrections from the worker's plan (2026-11-23), made above.</strong></p>
-<ul>
-<li><p>Row 2 first said that <code>--as-of</code> and <code>--cover</code> already add everything under their records. They follow <code>prev</code> only, not <code>under</code>, and a tick the binary writes today can check <code>same</code> with <code>closure</code> <code>no</code>. Row 2 as it stands follows both. <code>--as-of</code> and <code>--cover</code> stay as they are.</p></li>
-<li><p>&quot;What <code>loops fold</code> shows&quot; means the fold over the same store. <code>loops tick</code> reads the one store it writes to; <code>loops fold</code> can read several by name. A tick across stores is not designed.</p></li>
-<li><p>Row 3 is new.</p></li>
-</ul>
-<p><strong>Not asked; the plan settles these under your rulings, and they go in the changelog when built.</strong></p>
-<ul>
-<li><p><strong>Which records count as taken:</strong> every record a source takes by <code>kind</code>, <code>about</code> and <code>of</code>, before any slot's <code>where</code>. A slot's test can only make the answer smaller, not the set.</p></li>
-<li><p><strong>Payloads:</strong> a covered record is read with its payload when the store holds it, as the two cuts do today (<a href="note-2026-11-21-tick-record.html#tk5-which-covered-records-were-read-without-a-payload">TK5</a>).</p></li>
-<li><p><strong>With <code>--as-of</code>:</strong> the small set can be taken inside the cut, and it stays inside it. A record written after the time cannot change that tick.</p></li>
-<li><p><strong>A record that is not held</strong> is left out, and the check then says <code>closure</code> <code>no</code>. The tick is still written.</p></li>
-<li><p><strong>Until you rule,</strong> the small set is asked for with a flag, and <code>loops tick &lt;spec&gt;</code> covers everything as today. Row 1 decides whether that flips.</p></li>
-</ul>
 <h2 id="being-prepared">Being prepared</h2>
 <p>Nothing here needs you yet. It is listed so that you know what is coming.</p>
 <p><strong>What a store says about its kinds, without enforcing it.</strong> The old <code>.vertex</code> files of real stores hold one fold, by name, which a record's <code>of</code> now carries. The rest of what they hold describes kinds: which fields refer to which kinds, a lifecycle field and its active values, the format of a key, and what to show first. The roadmap lists declarations under standing, with admission and grants. The question being prepared is whether the descriptive half comes forward, so that a viewer and <code>loops ls</code> can use it before any store is strict.</p>
@@ -291,6 +237,7 @@ heads  2
 <p>One line for each ruling, newest first. The full text is in <a href="changelog.html">CHANGELOG.md</a> under the date, or in the note named.</p>
 <div class="table-scroll" tabindex="0"><table><thead><tr><th scope="col">Date</th><th scope="col">Ruling</th><th scope="col">Where</th></tr></thead>
 <tbody>
+<tr><td>2026-11-23</td><td>TK13: <code>loops tick &lt;spec&gt;</code> with no cut named covers the records the answer depends on, with everything held under them through <code>prev</code> and <code>under</code>; for a spec that reads things by key, every record of the things it touches; <code>--all</code> covers everything</td><td>Changelog; <a href="note-2026-11-21-tick-record.html#tk13-what-a-tick-covers-when-you-name-no-cut">the tick record note</a></td></tr>
 <tr><td>2026-11-23</td><td>AD3: a fact of a kind the vertex does not name, brought in with <code>--include-unnamed</code>, is a root; the old time is kept to the microsecond</td><td>Changelog; <a href="note-2026-11-22-adoption.html#ad3-two-details-of-the-import">the adoption note</a></td></tr>
 <tr><td>2026-11-23</td><td>AD1: a store name is bound in a per-user list, in an optional list kept with a group of stores, or by <code>--store &lt;name&gt;=&lt;dir&gt;</code> on the command; a name bound to nothing refuses the whole read (<code>store-unknown</code>)</td><td>Changelog; <a href="note-2026-11-22-adoption.html">the adoption note</a></td></tr>
 <tr><td>2026-11-23</td><td>AD2: the import's eight choices as recommended, and four more: no observer mention for an empty observer; the old store's row order where it keeps no arrival number; a fact without its key is a root; a kind the vertex does not name is left out unless asked for</td><td>Changelog; the adoption note</td></tr>
