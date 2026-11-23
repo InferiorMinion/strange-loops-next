@@ -3,7 +3,7 @@
 The tables name theorems in `model/Laws/` or mark guarantees supplied by construction.
 Lean checks the listed proofs under their premises.
 The model computes protocol-vector answers; external standards supply separate fixtures.
-JS and Rust check all fixture families, including those standards.
+Rust checks every fixture family, including those standards. JS checks every family but the tick vectors, which it does not run (W3).
 
 ## Id digests (`model/Laws/Id.lean`, `model/Laws/IdText.lean`, `model/Laws/IdSource.lean`)
 

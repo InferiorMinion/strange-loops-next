@@ -11,6 +11,7 @@ Everything that waits on Kyle, in one place. Each entry has the question, an exa
 | Id | Question | Recommended | What waits on it |
 | --- | --- | --- | --- |
 | [AD4](#ad4-references-in-the-old-payloads) | The old stores refer from fact to fact in two ways (a `ref` list, and `<name>_ref` fields holding old ids); the import keeps both as plain text. Should they become mentions? | Both become mentions of the thing referred to; a record mentions what its thing refers to after it, as the old tool reads it; the payload stays untouched | Using the homelab shadows for anything that follows references. The shadows exist and read as the old tool does in every other field |
+| [W3b](#w3b-the-frozen-javascript-after-ticks) | The JavaScript was frozen for step 4 as a trial. Keep it frozen, bring it up to ticks, or retire it? | Keep it frozen as the rule: new steps are built in Lean and Rust | Nothing. The JavaScript keeps running as it does now |
 
 Two more questions are [being prepared](#being-prepared).
 
@@ -60,6 +61,46 @@ records  0
 **What it costs to change later.** Rows 1 to 3 change the bytes and id of almost every record: 8,400 facts or more carry a reference. The six shadows written today follow the other column. Importing them again into fresh shadows takes about 3 seconds; nothing reads them yet.
 
 **Not asked.** The comparison tool learns to compare the old tool's `refs` with a thing's mentions once this is ruled. A reference whose kind no vertex declares (4 of them) is still a valid mention and is treated as row 1 says. Facts without their key field (37 here) are roots under AD2 (c); the old tool does not show them, and the comparison counts them apart.
+
+## The order of work
+
+### W3b: the frozen JavaScript, after ticks
+
+**Question.** You ruled W3 on 2026-11-21 as a trial: the JavaScript keeps what it has and passes its vectors, ticks are built in Lean and Rust only, and it is looked at again when ticks are done. Ticks are done. Keep it frozen, bring it up to ticks, or retire it?
+
+**Run today.** The JavaScript checks every vector from before ticks and none of the tick vectors:
+
+```
+$ node interop/js/check.mjs vectors
+result      23 files read   23 on disk    194 passed    0 failed
+standard     8 files read    - on disk   4134 passed    0 failed
+tick      131 files not run by JavaScript (W3)
+7363 checks passed
+$ node --test interop/js/*.test.mjs          50 tests, 50 pass
+```
+
+Both take about 11 seconds. A worker went through the whole history for this entry; the coordinator checked the numbers above.
+
+**What the JavaScript has caught, from the start of the project.**
+- **No fault in Lean or Rust that only the JavaScript would have found.**
+- One Rust fault was first seen in a three-way fuzz run: 54 scenario answers where Rust took heads over the whole view. Lean and the JavaScript agreed; a Lean and Rust run of the same inputs shows it too.
+- One question it raised alone: for a repeated base it kept the last entry where Lean and Rust kept the first. You settled it in D1 with a refusal none of the three gave.
+- One gap in a law's premise was first met by its slice sweep (a refused record brought into a part without what makes it refused). margins-claude's Python reached it independently.
+- Its own faults: at least 11 over the project, one of them during the trial (a sum limit that contradicted the law index).
+
+**What the trial cost.** Ten commits touched `interop/js` since 2026-11-21. Three were the payload-values update W3 included; six only recounted the tick files it skips as tick vectors arrived; one removed the sum limit. No CI run failed because of the JavaScript.
+
+**What it still does that nothing else does in CI.** It is the second computation of which records a spec's answer depends on, beside the Rust (TK13): it agreed on 486 of 488 generated cases, and in the other two its set was smaller and inside the Rust's, as the keyed rule allows. With a dropped eraser planted in the Rust, that comparison caught it. margins-claude's Python does the same from outside, but not in CI.
+
+| | Option | Cost | What the evidence becomes |
+| --- | --- | --- | --- |
+| **B** | **Keep it frozen, as the rule (recommended).** New steps are built in Lean and Rust; the JavaScript keeps its layers, its vectors and the slice comparison. | About 11 seconds of CI, and a recount when tick vectors are added. A fault in its existing layers is fixed. | As now: 649 vectors three ways, 131 tick vectors two ways, the selector checked twice. |
+| A | Bring it up to ticks. | Three or four modules (spec hashing, the tick reader and writer, the check), 131 vectors to pass, and a third port of every later rule. | A third tick answer in CI. The trial found no fault one would have caught. |
+| C | Retire it. | Remove the CI job; replace the generator's use of it, the slice comparison and the evidence pages' JavaScript column. | The eight older fuzz families compare Lean and Rust. The selector loses its second computation unless margins-claude's Python joins CI. |
+
+**What it costs to change later.** Little either way. B keeps every option open: retiring later costs what it costs now, and nothing new would be built on the JavaScript.
+
+**Not asked.** The browser page planned on the JavaScript uses the Rust compiled for the browser, as W3 said; that is the same under every option. The roadmap and the laws page said all three implementations check every vector; since ticks that is not so, and both now say what is checked by which.
 
 ## Being prepared
 

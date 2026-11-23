@@ -10,7 +10,7 @@ What is next, in order. This file holds no history and no open questions.
 
 - **Steps 0, 1 and 2 are done.** Kyle closed step 2 on 2026-11-20: `loops` emits, reads and folds for one person, signed, over `.loops/`.
 - **Step 4 (ticks) is done.** Kyle closed it on 2026-11-22: `loops tick <spec>` writes a tick, `loops tick --check <id>` checks one, and a tick written on one machine checks `same` on a second. A tick can cover a cut, by time or by ids, and a write can state a tick as its base. Boundaries, markers and the runner were never part of the step and are not built.
-- **Three implementations agree on every vector:** Lean (the model), JavaScript and Rust. From ticks on, a piece is built in Lean and Rust; the JavaScript is frozen at what it has, as a trial for step 4 (ruled 2026-11-21). The ruling said to look at it again when ticks are done, and that is now.
+- **Lean (the model) and Rust agree on every vector; the JavaScript on every vector from before ticks** (649 files). From ticks on, a piece is built in Lean and Rust; the JavaScript is frozen at what it has, as a trial for step 4 (ruled 2026-11-21). The look at it again is done and put to Kyle as [W3b](DECISIONS.md#w3b-the-frozen-javascript-after-ticks).
 - **One outside user:** rex-tools, a chat room over the `loops` CLI. It found a slow read path (fixed 2026-11-21) and a gap in `--values` (fixed the same day).
 - **The old Python `loops` is still first on `PATH`** on Kyle's machine, and his day-to-day stores are still the old ones.
 
@@ -52,7 +52,6 @@ Each step extends the model's laws, computes protocol vectors, then implements R
 None needs a ruling. Each is built when it is the cheapest useful thing to do.
 
 - A verb that shows a result's hash without writing a tick. Today the hash is read from a tick, which carries it.
-- Look at the frozen JavaScript again, now that ticks are done (W3): keep it frozen, bring it up to ticks, or retire it. The finding goes to Kyle as an entry.
 
 ## All steps
 
