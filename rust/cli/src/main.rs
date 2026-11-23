@@ -9,6 +9,7 @@ mod cut;
 mod draft;
 mod ls;
 mod plain;
+mod shadow;
 mod values;
 
 use loops::{

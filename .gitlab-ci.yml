@@ -125,6 +125,23 @@ ci-image:
       --snapshot-mode=redo
       --compressed-caching=false
 
+shadow-export:
+  stage: check
+  image: python:3.10-slim
+  needs: []
+  rules:
+    - *not-merged
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes:
+        - tools/shadow/**/*
+        - rust/cli/tests/fixtures/shadow/**/*
+        - .gitlab-ci.yml
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      when: never
+    - when: on_success
+  script:
+    - python3 -m unittest discover -s tools/shadow -p 'test_*.py'
+
 .rust:
   stage: check
   # The release rust/rust-toolchain.toml names.
