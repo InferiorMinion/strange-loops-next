@@ -10,6 +10,7 @@ The record starts where the old roadmap's did. For anything earlier, and for eve
 ## 2026-11-23
 
 In brief:
+- The look at the frozen JavaScript that W3 asked for is done and put to Kyle as W3b: it has caught no fault in Lean or Rust alone; it still checks 649 vectors and is the second computation of a spec's slice. Recommended: keep it frozen as the rule.
 - The first real import: Kyle's six homelab stores, into shadows outside every repository. Each reads as the old tool does in every field but one, a list of references in a field `ref`. How the old stores' references are carried is put to Kyle as AD4.
 - Kyle ruled TK13, yes to all three rows, and `loops tick` now does it: a tick made with no cut named covers only the records its answer depends on, with what is under them; `--all` covers everything. In a store of six backups and 40 notes the tick lists 6 ids, not 46.
 - The Rust can work out which records a spec's answer depends on (`loops::slice::spec_slice`). Nothing uses it yet: no verb, flag or default changed, and what `loops tick` does with it waits on TK13. On 488 generated stores and specs the answer over the selected records equals the answer over everything, and a tick over them checks `same`.
