@@ -18,7 +18,7 @@ impl Store {
         let _ = fs::remove_dir_all(&scratch);
         let dir = scratch.join("store");
         fs::create_dir_all(&dir).expect("store scratch directory");
-        fs::create_dir(scratch.join("home")).expect("child home");
+        fs::create_dir_all(scratch.join("home/xdg-config/loops")).expect("child config directory");
         Self { dir, scratch }
     }
     fn new(name: &str) -> Self {
@@ -32,6 +32,7 @@ impl Store {
             .arg(&self.dir)
             .args(args)
             .env("HOME", self.scratch.join("home"))
+            .env("XDG_CONFIG_HOME", self.scratch.join("home/xdg-config"))
             .env_remove("XDG_CACHE_HOME")
             .env("LOOPS_CACHE_DIR", self.scratch.join("cache"))
             .env_remove("LOOPS_KEY")
@@ -1135,9 +1136,14 @@ fn answers_then_refuses(s: &Store, clean: &Store, verbs: &[(&[&str], &str)], why
     for (args, stdin) in verbs {
         let (code, out, err) = answer(clean, args, stdin);
         assert_eq!((code, err.as_str()), (0, ""), "{args:?} on the clean store");
+        let stores = if matches!(args[0], "read" | "fold") {
+            " (stores: .)"
+        } else {
+            ""
+        };
         assert_eq!(
             answer(s, args, stdin),
-            (1, out, format!("refused: {why}")),
+            (1, out, format!("refused: {why}{stores}")),
             "{args:?}"
         );
     }
@@ -4815,3 +4821,6 @@ fn plain_conflicts_preview_each_live_setter_in_order() {
     assert!(monday(&s, &["ls", "task:kiln", "--plain"]).contains("conflict (2): Oven | unknown"));
     assert!(monday(&s, &["of", "task:kiln", "--plain"]).contains("conflict (2): 9001 | unknown"));
 }
+
+#[path = "walk/registry.rs"]
+mod registry;

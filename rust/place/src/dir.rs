@@ -273,6 +273,16 @@ impl Dir {
 }
 
 impl Held {
+    /// Add another place's checked lines and diagnostics, before settlement.
+    /// Segment paths in diagnostics remain relative to their original place.
+    pub fn append(&mut self, mut other: Self) {
+        self.preferred.take();
+        self.lines.append(&mut other.lines);
+        self.refused.append(&mut other.refused);
+        self.altered.append(&mut other.altered);
+        self.segments += other.segments;
+    }
+
     /// Every checked line, in segment order. An id can appear more than once,
     /// with or without its opening.
     pub fn lines(&self) -> &[Line] {
