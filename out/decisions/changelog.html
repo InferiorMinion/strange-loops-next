@@ -194,7 +194,7 @@ header.top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--g
 <a href="note-2026-11-21-order-of-work.html">The order of work, and how we work: W1 to W6</a>
 <a href="note-2026-11-21-payload-values.html">Payload values, design note</a>
 <a href="note-2026-11-21-tick-record.html">Step 4: the tick record, design note</a>
-<a href="note-2026-11-22-adoption.html">The adoption step: AD1, AD2 and AD3</a>
+<a href="note-2026-11-22-adoption.html">The adoption step: AD1 to AD4</a>
 <a href="note-retained-boundaries.html">Retained boundaries</a></nav>
 <p class="source">Rendered from <code>CHANGELOG.md</code> in the repository.</p>
 <details class="contents"><summary>On this page</summary>
@@ -218,6 +218,7 @@ The record starts where the old roadmap's did. For anything earlier, and for eve
 <h2 id="2026-11-23">2026-11-23</h2>
 <p>In brief:</p>
 <ul>
+<li><p>Kyle ruled W3b (the JavaScript stays frozen, as the rule) and AD4 (references in the old payloads become mentions, by one rule for old ids, and the payload is cleaned of the fields they came from). AD4 is being built, with the import's pin on the vertex's kinds only.</p></li>
 <li><p>The look at the frozen JavaScript that W3 asked for is done and put to Kyle as W3b: it has caught no fault in Lean or Rust alone; it still checks 649 vectors and is the second computation of a spec's slice. Recommended: keep it frozen as the rule.</p></li>
 <li><p>The first real import: Kyle's six homelab stores, into shadows outside every repository. Each reads as the old tool does in every field but one, a list of references in a field <code>ref</code>. How the old stores' references are carried is put to Kyle as AD4.</p></li>
 <li><p>Kyle ruled TK13, yes to all three rows, and <code>loops tick</code> now does it: a tick made with no cut named covers only the records its answer depends on, with what is under them; <code>--all</code> covers everything. In a store of six backups and 40 notes the tick lists 6 ids, not 46.</p></li>
@@ -232,6 +233,31 @@ The record starts where the old roadmap's did. For anything earlier, and for eve
 <li><p>The import's first two pieces are built: a script that exports an old store and its vertex to two text files, and the mapping of each old fact to a record, equal byte for byte to what <code>loops emit - --fill</code> writes. No verb yet.</p></li>
 <li><p>The import has its plan. Two of its choices decide record ids and are put to Kyle as AD3: how a kind the vertex does not name is written when asked for, and how fine the old time is.</p></li>
 </ul>
+<h3 id="ruled-by-kyle-2026-11-23-w3b-and-ad4">Ruled by Kyle, 2026-11-23: W3b and AD4</h3>
+<p><strong>W3b: option B, as the rule.</strong> The JavaScript stays frozen at what it has: its layers, its 649 vectors and the slice comparison. New steps are built in Lean and Rust. It is fixed when a fault turns up in what it has, and looked at again only if keeping it becomes costly or something needs a third tick answer. The entry as put is in <a href="note-2026-11-21-order-of-work.html#w3b-the-frozen-javascript-after-ticks">the order-of-work note</a>.</p>
+<p><strong>AD4: rows 1 to 3 as recommended; row 4 the other way; one rule for old ids.</strong> Ruled with Neon, who audited the homelab stores, the platform stores and John's store for it. The entry as put is in <a href="note-2026-11-22-adoption.html#ad4-references-in-the-old-payloads">the adoption note</a>.</p>
+<ol>
+<li><p>A reference in <code>ref</code>, <code>kind:key</code> or <code>kind/key</code>, becomes a mention <code>kind:key</code> on its record.</p></li>
+<li><p>An old id becomes a mention of what that fact became: its thing, <code>kind:key</code>, or for a fact with no key the new record, <code>r:&lt;id&gt;</code>.</p></li>
+<li><p>Each record mentions what its thing refers to after it, as the old tool reads it: every <code>ref</code> so far, the current value of each <code>&lt;name&gt;_ref</code> field (an empty value clears that field's mention), and only its own observer.</p></li>
+<li><p><strong>The payload is cleaned, not kept</strong>, because after the cut-over nothing goes back, and dead old ids, or a <code>ref</code> that disagrees with the mentions, should not live on in the new stores. The archived old stores keep everything as it was.</p>
+<ul>
+<li><p><code>ref</code> is taken out once all its parts are mentions. The old tool took it out too.</p></li>
+<li><p>A field <code>&lt;name&gt;_ref</code> is taken out only when the payload also holds <code>&lt;name&gt;</code> and every part of its value was an old id that became a mention, or its value is empty. That removes almost every field the old tool generated, and leaves alone fields such as a Docker <code>image_ref</code>, a <code>&lt;name&gt;_ref</code> with no <code>&lt;name&gt;</code> beside it, and any whose target was not imported. Nothing is lost silently.</p></li>
+</ul></li>
+</ol>
+<p><strong>The one rule for old ids</strong>, the same wherever they stand:</p>
+<ul>
+<li><p>Values are split at commas, in <code>&lt;name&gt;_ref</code> fields as in <code>ref</code>.</p></li>
+<li><p>In a <code>&lt;name&gt;_ref</code> field, a part counts only if it is the id of a fact in the group. Anything else is never refused and never read as <code>kind/key</code>: it simply stays.</p></li>
+<li><p>An id of a fact the import leaves out, or one it cannot resolve, is not refused: it gets no mention, its field stays as written, and it is counted.</p></li>
+<li><p>A record never mentions its own thing.</p></li>
+<li><p>The whole group is read before anything is mapped, also on a later run that adds to a shadow, because references cross between stores in both directions.</p></li>
+</ul>
+<p><strong>For fields that hold ids under other names</strong> (John's store keeps lists of old ids in fields such as <code>covers</code>): the map file may name such fields per source (<code>ref_fields</code>). Their old ids become mentions by the same rule; the fields themselves stay untouched.</p>
+<p><strong>Beside the private journal</strong>, the import writes a map from old ids to records and things that holds no salts, so that a script or lens can follow an old id without reading the journal.</p>
+<p><strong>And, while the import is open:</strong> its journal pins the vertex's kinds, not the whole vertex file, so that editing a comment in an old <code>.vertex</code> no longer refuses the next run.</p>
+<p>The six homelab shadows written earlier the same day follow the other column; they are imported again when this is built.</p>
 <h3 id="the-first-real-import-the-homelab-stores">The first real import: the homelab stores</h3>
 <p>At Kyle's word (2026-11-23): his six homelab stores first, into shadows on the workbench outside every repository, and the old tool's callers moved to <code>sl</code> before <code>loops</code> changes on <code>PATH</code>.</p>
 <p><strong>Where it lives.</strong> <code>~/.local/share/loops/shadow/&lt;group&gt;/</code> (mode 0700): <code>old/</code> holds the copies the import read (the vertex files and the six stores, each checked equal to its original before and after copying and by SQLite's integrity check), <code>exports/</code> the two files per store, <code>private/</code> the import's key and journal (0600; the journal holds salts), <code>shadows/&lt;name&gt;/</code> the six stores, and <code>stores.json</code> binding each name, so that <code>loops fold</code> across them works from that directory. The binary was built from main at <code>2c1b14c</code> into <code>~/.local/share/loops/build</code>, leaving the one rex-chat uses alone.</p>

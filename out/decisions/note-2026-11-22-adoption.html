@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
-<title>The adoption step: AD1, AD2 and AD3 · Strange Loops</title>
+<title>The adoption step: AD1 to AD4 · Strange Loops</title>
 <style>
 /* The register: a warm grey table, white sheets resting on it, height shown by shadow and
    hairline. One colour only, for what is erased or in conflict. */
@@ -194,18 +194,19 @@ header.top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--g
 <a href="note-2026-11-21-order-of-work.html">The order of work, and how we work: W1 to W6</a>
 <a href="note-2026-11-21-payload-values.html">Payload values, design note</a>
 <a href="note-2026-11-21-tick-record.html">Step 4: the tick record, design note</a>
-<a href="note-2026-11-22-adoption.html" aria-current="page">The adoption step: AD1, AD2 and AD3</a>
+<a href="note-2026-11-22-adoption.html" aria-current="page">The adoption step: AD1 to AD4</a>
 <a href="note-retained-boundaries.html">Retained boundaries</a></nav>
 <p class="source">Rendered from <code>notes/2026-11-22-adoption.md</code> in the repository.</p>
 <details class="contents"><summary>On this page</summary>
 <ul><li><a href="#a-trial-before-the-ruling">A trial before the ruling</a></li>
 <li><a href="#ad1-how-a-spec-finds-the-stores-it-names">AD1: how a spec finds the stores it names</a></li>
 <li><a href="#ad2-how-an-old-store-becomes-records">AD2: how an old store becomes records</a></li>
-<li><a href="#ad3-two-details-of-the-import">AD3: two details of the import</a></li></ul></details>
+<li><a href="#ad3-two-details-of-the-import">AD3: two details of the import</a></li>
+<li><a href="#ad4-references-in-the-old-payloads">AD4: references in the old payloads</a></li></ul></details>
 <article>
-<h1 id="the-adoption-step-ad1-ad2-and-ad3">The adoption step: AD1, AD2 and AD3</h1>
+<h1 id="the-adoption-step-ad1-to-ad4">The adoption step: AD1 to AD4</h1>
 <p><strong>Put to Kyle in <code>DECISIONS.md</code> on 2026-11-22 and ruled on 2026-11-23, each for its recommendation with additions.</strong> The entries are kept here as they were put, with the ruling at the head of each. &quot;Recommended&quot;, &quot;today&quot; and &quot;not built&quot; in the text are as written then.
-AD3, two details that the import's plan found open, was put on 2026-11-23 and ruled the same day for its recommendation; it is the last section.
+AD3, two details that the import's plan found open, was put on 2026-11-23 and ruled the same day for its recommendation. AD4, found by the first real import, was put and ruled on 2026-11-23; it is the last section.
 The ruling is recorded in <a href="changelog.html">the changelog</a> under 2026-11-23. The step itself was ruled on 2026-11-21 (<a href="note-2026-11-21-order-of-work.html#w1-an-adoption-step-before-standing-and-sharing">W1</a>).</p>
 <p><strong>What the entries said of the step.</strong> You ruled on 2026-11-21 (W1) that the adoption step's CLI pieces are built beside the tick work. A worker planned them on 2026-11-22. The pieces that are the CLI's alone are being built: <code>loops ls</code>, a scan by the start of a name, a plain-text view with relative times, a <code>--version</code>, and the cache of checked segments (W2). Two pieces need you first. AD1 is one. The other is AD2, the import of your old stores as a shadow.</p>
 <h2 id="a-trial-before-the-ruling">A trial before the ruling</h2>
@@ -318,6 +319,38 @@ $ loops ls repair: --plain
 <li><p><strong>A shadow store is the import's alone until you cut over.</strong> A later run brings in what the old store has gained since. It refuses a shadow that holds records it did not write, and it refuses an old store whose earlier facts have changed. So during the shadow period you write with the old tool and read with either; when you start writing with the new one, importing into that store ends.</p></li>
 <li><p><strong>How the old store is read:</strong> a small Python script in the repository exports the facts and the vertex's kinds to two text files, and the Rust import reads those. No SQLite library is added to the binary.</p></li>
 </ul>
+<h2 id="ad4-references-in-the-old-payloads">AD4: references in the old payloads</h2>
+<p><strong>Ruled by Kyle (with Neon), 2026-11-23:</strong> rows 1 to 3 as recommended; row 4 the other way, a clean payload; and one rule for old ids. The full ruling is in <a href="changelog.html">the changelog</a> under 2026-11-23. &quot;Today&quot; and &quot;recommended&quot; in the text are as written then.</p>
+<p><strong>Question.</strong> The first real import, of the six homelab stores on 2026-11-23, reads as the old tool does in every field but one. But the old stores refer from one fact to another in two ways that the import, which keeps every payload untouched as AD2 says, carries only as text. Should those references also become mentions (<code>about</code>)?</p>
+<p><strong>The two forms, counted in the six stores (11,072 facts).</strong></p>
+<ul>
+<li><p><strong>A field <code>ref</code>:</strong> a comma-separated list, such as <code>ref=thread:firing,decision/glaze</code>. The old tool takes it out of the payload and gathers its parts across all of a thing's revisions. 894 facts carry it, with 933 references: 921 written <code>kind:key</code> or <code>kind/key</code> (906 of them name a thing the stores hold), and 12 old fact ids. 53 things read fewer references in the shadow than the old tool shows, because only the latest <code>ref</code> is read.</p></li>
+<li><p><strong>A field <code>&lt;name&gt;_ref</code>:</strong> written by the old tool when an emit says <code>owner=person/potter</code>; it keeps <code>owner: person/potter</code> and adds <code>owner_ref</code> holding the old id of potter's fact. 8,363 facts carry such fields, with 14,685 old ids. Every one names a fact of a keyed thing the stores hold; 28 name a fact in another of the six stores. The old tool reads these as plain fields too, so both readings show the same text, but in the shadow an old id names nothing: the only map from old ids to records is the import's private journal.</p></li>
+</ul>
+<p><strong>Example, run on both tools today.</strong> An invented old store, written with the old tool: a person <code>potter</code>, then a task <code>kiln</code> twice, first <code>status=open owner=person/potter ref=thread:firing</code>, then <code>status=done ref=decision/glaze</code>.</p>
+<pre><code>$ sl read workshop.vertex --json --all              (the old tool; the task's row, shortened)
+payload  {&quot;name&quot;: &quot;kiln&quot;, &quot;status&quot;: &quot;done&quot;, &quot;owner&quot;: &quot;person/potter&quot;, &quot;owner_ref&quot;: &quot;01M858Z8H3HM…&quot;}
+refs     [&quot;decision/glaze&quot;, &quot;thread:firing&quot;]
+
+$ loops of task:kiln --plain                          (exported and imported with today's tools)
+  owner      person/potter
+  owner_ref  01M858Z8H3HM…
+  ref        decision/glaze
+  status     done
+about        observer:clerk
+
+$ loops fold mentions.json --plain                    (records that mention thread:firing)
+records  0
+</code></pre>
+<div class="table-scroll" tabindex="0"><table><thead><tr><th scope="col"></th><th scope="col">The case</th><th scope="col">Recommended</th><th scope="col">The other choice</th></tr></thead>
+<tbody>
+<tr><td>1</td><td><strong>A reference in <code>ref</code></strong>, <code>kind:key</code> or <code>kind/key</code>.</td><td><strong>It also becomes a mention, <code>kind:key</code>, on its record.</strong> A spec with <code>&quot;about&quot;: &quot;thread:firing&quot;</code> then finds every record that referred to the thread, which the old tool counted as the thread's inbound references.</td><td>Payload only, as imported today. Finding what refers to the thread needs a test on the whole text of <code>ref</code>, which cannot pick one reference out of several.</td></tr>
+<tr><td>2</td><td><strong>An old id in a <code>&lt;name&gt;_ref</code> field, or in <code>ref</code>.</strong></td><td><strong>It becomes a mention of the thing that fact belongs to</strong>, through the journal: <code>owner_ref</code> naming potter's fact gives <code>person:potter</code>. Every one of the 14,697 names a keyed thing.</td><td>Payload only. The id names nothing in the new store.</td></tr>
+<tr><td>3</td><td><strong>What a revision mentions.</strong> The old tool gathers <code>ref</code> across revisions and keeps the latest value of each <code>&lt;name&gt;_ref</code> field.</td><td><strong>Each record mentions what its thing refers to after it, read as the old tool would:</strong> every <code>ref</code> so far, and the current value of each <code>&lt;name&gt;_ref</code> field, but only its own observer. Then <code>loops of task:kiln</code> shows <code>decision:glaze observer:clerk person:potter thread:firing</code>. Written by hand that way today, both records count as mentioning the thread. It is also what <code>loops emit</code> does for a revision: run without <code>--about</code>, it copies the head's mentions.</td><td>Each record mentions only the references its own fact wrote. The thing shows the latest fact's; all of them are a read over its records.</td></tr>
+<tr><td>4</td><td><strong>The payload.</strong></td><td><strong>Untouched</strong>, as AD2 ruled: <code>ref</code>, <code>owner</code> and <code>owner_ref</code> stay as written. The mentions are added beside them.</td><td>Take <code>ref</code> out once its references are mentions, as the old tool did, and rewrite old ids to record ids. The payload is then no longer the old payload.</td></tr>
+</tbody></table></div>
+<p><strong>What it costs to change later.</strong> Rows 1 to 3 change the bytes and id of almost every record: 8,400 facts or more carry a reference. The six shadows written today follow the other column. Importing them again into fresh shadows takes about 3 seconds; nothing reads them yet.</p>
+<p><strong>Not asked.</strong> The comparison tool learns to compare the old tool's <code>refs</code> with a thing's mentions once this is ruled. A reference whose kind no vertex declares (4 of them) is still a valid mention and is treated as row 1 says. Facts without their key field (37 here) are roots under AD2 (c); the old tool does not show them, and the comparison counts them apart.</p>
 </article>
 </main>
 <script>
