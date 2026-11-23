@@ -90,8 +90,10 @@ usage: loops [-C <dir>] <verb> ...
                                 --values adds stored envelopes to listed heads,
                                 held payloads to collect and prev entries,
                                 and about and values to keyed things
-  tick <vertex | spec-file | -> [--as-of <time> | --cover <id> ...] [emit envelope flags]
-                                default to everything held
+  tick <vertex | spec-file | -> [--all | --slice [--as-of <time>] | --as-of <time> | --cover <id> ...] [emit envelope flags]
+                                cover the records the answer depends on and their held prev and under ancestors
+                                --all covers everything held
+                                --slice requests the default explicitly or slices inside an --as-of cut
                                 --as-of selects records emitted strictly before the instant or date’s start
                                 repeat --cover to select records by id or unique prefix
                                 both cuts include all held prev ancestors

@@ -47,10 +47,6 @@ Retiring still follows ticks, as the Trust walk found.
 Left out of step 4 and wanted by nothing yet: boundaries and markers, the runner, and what verifying a deep tick tree costs.
 Each step extends the model's laws, computes protocol vectors, then implements Rust.
 
-## After adoption's import, for ticks made often
-
-**The binary works out which records a spec's answer depends on**, so that a tick can cover those and not the whole store. The laws are on main (`spec.slice`, `keyed.spec-slice`). The part that works the set out is built in `rust/core` (changelog, 2026-11-23); it is compared on generated stores in CI. Kyle ruled on 2026-11-23 ([TK13](notes/2026-11-21-tick-record.md#tk13-what-a-tick-covers-when-you-name-no-cut)) that a tick made with no cut named covers that set, and `--all` covers everything. The change to the verb is being built.
-
 ## Small pieces, any time
 
 None needs a ruling. Each is built when it is the cheapest useful thing to do.

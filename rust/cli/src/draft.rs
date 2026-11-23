@@ -7,13 +7,11 @@ use loops::{
     envelope::{self, Env},
     json::Json,
     spec::Spec,
-    tick::make_tick,
 };
 use loops_place::{
     dir::Held,
     fill::{About, Occurred, Sets, Statement},
     key,
-    line::hash,
 };
 
 fn new_salt() -> Result<Vec<u8>, Fail> {
@@ -130,7 +128,7 @@ pub(crate) fn from_args(
     held: &Held,
 ) -> Result<(Statement, Option<BaseArgs>), Fail> {
     let mut base = None;
-    let mut cut = Cut::All;
+    let mut cut = Cut::default();
     let mut env = Env {
         emitted: now.to_owned(),
         observer: observer.to_owned(),
@@ -160,6 +158,7 @@ pub(crate) fn from_args(
             "--" => options = false,
             "--json" => {}
             "--as-of" | "--cover" if tick_spec.is_some() => cut.select(arg, value()?)?,
+            "--all" | "--slice" if tick_spec.is_some() => cut.mode(arg)?,
             "--about" => env.about.push(value()?),
             "--base" | "--base-id" => add_base(&mut base, arg, value()?)?,
             "--no-about" => no_about = true,
@@ -220,19 +219,17 @@ pub(crate) fn from_args(
         env,
         salt: salt.map_or_else(new_salt, Ok)?,
         payload: match tick_spec {
-            Some(spec) => make_tick(spec, &cut.forms(held)?).to_json(&hash),
+            Some(spec) => cut.payload(held, spec)?,
             None => Json::Obj(fields),
         },
     };
-    Ok((
-        Statement {
-            draft,
-            about,
-            occurred,
-            sets,
-        },
-        base,
-    ))
+    let statement = Statement {
+        draft,
+        about,
+        occurred,
+        sets,
+    };
+    Ok((statement, base))
 }
 
 fn shape(line: usize, what: &str) -> Fail {
