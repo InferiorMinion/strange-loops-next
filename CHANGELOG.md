@@ -12,8 +12,61 @@ The record starts where the old roadmap's did. For anything earlier, and for eve
 In brief:
 - Kyle ruled AD1 (how a spec finds the stores it names) and AD2 (how an old store becomes records), each for its recommendation with additions. Both pieces are being built.
 - `loops read` and `loops fold` find the stores a spec names and fold their union. A name bound to nothing refuses the read (`store-unknown`). The name `.` is the store the read starts from.
+- `loops shadow-import` is built: it copies exported old stores into shadow stores, one signed record for each old fact, checks everything before it writes anything, and writes nothing on a second run. On a copy of four real stores it gave the old tool's reading for every thing held by one store.
 - The import's first two pieces are built: a script that exports an old store and its vertex to two text files, and the mapping of each old fact to a record, equal byte for byte to what `loops emit - --fill` writes. No verb yet.
 - The import has its plan. Two of its choices decide record ids and are put to Kyle as AD3: how a kind the vertex does not name is written when asked for, and how fine the old time is.
+
+### `loops shadow-import`: the verb and its journal
+
+The third of the import's four pieces (AD2). Rust only, in the CLI. No protocol rule, no record's bytes for a given draft and no vector changed; `emit`, `emit -`, `tick` and `erase` write what they wrote. It follows the recommended column of [AD3](DECISIONS.md#ad3-two-details-of-the-import) until Kyle rules it, and nothing real has been imported outside scratch.
+
+```
+python3 tools/shadow/export.py old/workshop.vertex --output-dir exports
+loops shadow-import group.json --check-only     # the counts, nothing written
+loops shadow-import group.json                  # the import
+```
+
+A group file names each source (its exported facts, its map, the new store it goes to) and one private directory for the import's own state. Each destination must already be a store (`loops init`).
+
+- **It checks the whole group before it writes.** One refused fact in any source means nothing is written to any store; the refusal names the source, the fact's place in the old order, the old id and the reason.
+- **It answers with counts:** facts read, written, already imported, left out because the vertex does not name their kind, without their key, with an empty observer, things held by more than one store and things that read with more than one head across the stores.
+- **A second run writes nothing**, byte for byte. A later run on an old store that has gained facts writes exactly those.
+- **A changed, removed or reordered earlier fact, a changed map or a changed flag is refused** (`shadow-state-mismatch`). So is a destination that holds a record the import did not write: a shadow store is the import's alone until cut-over.
+- **The same old id in two sources** gets one salt and one `emitted`, so equal histories give one record (AD2, row 8); the same old id with different contents is refused (`shadow-id-conflict`).
+- **Its state is private:** a journal, a lock and the import's own signing key, in the directory the group names, readable by the owner only. The journal reserves each record's salt, time and expected id before a batch is written, and marks the batch done after. An interrupted run is finished by the next one with exactly the records an uninterrupted run would have written (tested at three points).
+- **It does not call the filler.** Each destination is read once; `prev` and `sets` come from one pass over the facts, in batches of at most 1,000 records or 4 MiB.
+
+**Run by the coordinator on a copy of four real stores** (counts only; the stores are private).
+
+| | |
+| --- | --- |
+| Facts read | 2,912 |
+| Left out, of kinds a vertex no longer names (addition d) | 425 |
+| Written | 2,487, each store passing `loops check` |
+| With an empty observer, imported without a mention (addition a) | 188 |
+| Second run | 0 written, 2,487 already imported, every segment and state file byte-identical, 0.31 s |
+| Things read across the hub store and one other, against the old tool's combined reading | 1,034 of 1,051 the same in every field |
+| The other 17 | held by both stores under different old ids, of a kind both vertices name: two heads, as row 8 says, where the old tool gave the later value |
+| Things read across the hub store and a second other | 985 the same in every field; 71 that the old tool showed are not there |
+| An old store that gained three facts | 3 written |
+| An earlier fact changed in the old store | refused, nothing written |
+| A record written by hand into a shadow store | the next import is refused |
+
+The 71 are a consequence of addition (d) worth knowing. The hub store holds old facts of a kind its own vertex no longer names. The old tool showed them all the same in a combined read, because the other store's vertex names that kind. The import leaves them out, as ruled.
+
+The worker's scale run: 20,000 invented facts over 2,000 things in 3.3 s, 72 MiB at peak, 20 segments, one read of the destination.
+
+**Implementer choices; they stand under Kyle's ruling of 2026-11-21 (W7).** The full list is choice 31 of `rust/PLACE.md`.
+- The verb is `shadow-import`; `loops import` already means taking in signed lines.
+- New refusal codes of the CLI: `shadow-source-invalid`, `shadow-map-invalid`, `shadow-id-conflict`, `shadow-state-mismatch`. The writer's own codes are used where the writer has one.
+- `emitted` is taken from the clock when an old id is first reserved, not once for the run.
+- `--check-only` creates no key, journal, lock or segment.
+- A record whose payload was erased from a shadow store still counts as imported; a rerun does not bring the payload back.
+- Recovery promises what the store writer promises today and no more: nothing is said about power loss.
+
+A fault planted by the coordinator (a changed earlier fact no longer noticed by its fingerprint) was caught by two walk tests.
+
+A Codex worker wrote it; the coordinator reviewed it, ran the gates and made the runs above.
 
 ### The shadow import: the exporter and the mapping
 

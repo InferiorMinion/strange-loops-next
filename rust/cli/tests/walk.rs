@@ -4824,3 +4824,6 @@ fn plain_conflicts_preview_each_live_setter_in_order() {
 
 #[path = "walk/registry.rs"]
 mod registry;
+
+#[path = "walk/shadow_import.rs"]
+mod shadow_import;

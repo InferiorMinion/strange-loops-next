@@ -39,6 +39,8 @@ loops tick --check <id>             check a tick against this store and print th
 loops erase <id>... ["why"]         emit an erasure, and drop the openings held here
 loops export [--kind <k>] [--of <thing>] [--about <thing>]
 loops import [<file> | -]
+loops shadow-import <group.json> [--include-unnamed] [--check-only]
+                                    import a reviewed cut into each named destination
 loops check                         verify every segment and line
 loops whoami                            show the current key and observer
 loops whoami --init                     ensure the signing key exists and print its ID
@@ -783,6 +785,110 @@ Every verb that reads the store says when either happened (choice 18).
     `{"workshop":"workshop","yard":"yard"}`. With one task and one note in
     workshop and one task in yard, a spec asking for workshop tasks and yard
     notes counts **3** from either directory.
+
+31. **A private group imports frozen old-store cuts.** Under AD2 each
+    included old fact becomes one signed record in its own destination.
+    Run `loops shadow-import group.json --check-only` to check the whole
+    group. Use the same command without `--check-only` to publish it.
+    A one-source group can read
+
+    ```json
+    {"state":"private","sources":[{"name":"workshop","facts":"workshop.facts.jsonl","map":"workshop.map.json","destination":"workshop"}]}
+    ```
+
+    - All four paths are relative to the group file. Each distinct destination
+      must already contain its own `.loops/segments/`. Source names must be
+      distinct and agree with the reviewed maps. The verb accepts exactly the
+      fields shown. Store bindings for subsequent reads use choice 30.
+    - Prepare each cut with the Python standard-library exporter. It reads
+      a frozen SQLite snapshot in one read-only transaction, counts the old
+      ticks, and writes a versioned JSONL stream and a reviewable JSON map.
+      A WAL requires `--quiescent-copy` and private scratch. The strict vertex
+      subset recognizes the keyed and collected folds, skips the named
+      presentation and boundary declarations, and refuses unsupported syntax
+      with its line. The map and cut carry the same vertex SHA-256. See
+      [the export format](../tools/shadow/FORMAT.md) for the grammar,
+      exact digest framing and SQLite snapshot requirements.
+    - Replay strictly increasing numeric `(arrival_ordinal, arrival_seq)` or,
+      when both are absent, `rowid`. Gaps are valid. A partial schema, null
+      or repeated coordinate, duplicate old id in one source, bad framing,
+      wrong count or failed digest invalidates the cut. The old binary64
+      epoch seconds become UTC `occurred`, rounded once to the nearest
+      microsecond, ties to even, with trailing fractional zeros removed.
+    - For a kind keyed by `name`, the first `{"name":"kiln","heat":"hot"}`
+      of kind `thread` is a whole record of `thread:kiln`. Each revision's
+      `prev` is the canonical set of the first whole record, current head
+      and last setter of each field. Its `sets` is every top-level member
+      name of its own payload, including `name`. Each record states its
+      own occurrence time and its own `observer:<old observer>` mention.
+      An empty observer gives empty `about`. The new envelope observer is
+      the group's signing key. Payload values and the key field are kept.
+      Old origin and signature participate in identity checking.
+    - A missing key field, a collected kind and an unnamed kind included
+      by `--include-unnamed` each produce an independent root. A collect
+      limit affects the old view only. The default omits unnamed kinds.
+      Roots and first whole records omit `sets`. A present key must be
+      nonempty text and its kind a valid single reference prefix other
+      than `r`. A fact named `tick`, an invalid occurrence time, a payload
+      outside the writer's JSON object domain (including repeated member
+      names or out-of-range numbers), or an invalid envelope refuses the
+      included row. A key that cannot appear in a revision's `sets` gets
+      the writer's refusal. An omitted row's mapping defect is counted.
+    - The group shares one new key, one random 16-byte salt and one
+      millisecond-clock `emitted` per included old id. Identity comparison
+      uses SHA-256 of canonical JSON containing kind, exact binary64 bits,
+      observer, origin, signature and tagged payload. A payload that fails parsing, member uniqueness or numeric range
+      uses its tagged original text. Coordinates belong to individual
+      sources. Different fingerprints for one old id give `shadow-id-conflict`.
+      Equal mapped histories give the same signed bytes across stores.
+      Different predecessors give different ids for the same old fact.
+    - Preflight reads every selected destination once, fully verifies its
+      segments, and rejects foreign records. It reconstructs the history of
+      each thing in source order. It keeps offsets and hashes into the frozen
+      input and checks prospective ids against the common changeset writer.
+      All included rows must pass before publication starts. Prepare at most
+      1,000 rows per segment with a 4 MiB budget (canonical envelope and
+      payload lengths plus 512 bytes per row). A larger individual record
+      occupies one segment. Fetch and verify the input slices again to sign
+      each publishing batch. The dry run uses temporary in-memory key material
+      when needed and leaves the filesystem untouched.
+    - The POSIX private state directory is 0700. Its `key`, `lock` and
+      `journal.jsonl` are 0600. Keep the journal private because it holds
+      salts. Nonblocking advisory locks on the state lock file and selected
+      segment directories serialize importers. Ordinary writers should use
+      their own stores. The journal header pins the public key and each
+      source name, canonical destination, exact map digest and inclusion flag.
+      Additional sources get a new binding frame. A per-source count and
+      rolling hash pin the exact prefix of fact lines, including their coordinates
+      and whitespace. Tick counts can grow independently. A cut also records
+      previously unseen omitted ids and fingerprints for later identity checks.
+    - The journal uses LF-terminated JSON arrays `[checksum,event]`. The
+      checksum is the base32hex SHA-256 of the previous binary digest
+      followed by the exact JSON bytes of the event. The initial digest is
+      empty. A reservation frame names its destination through the pinned source
+      and takes its batch number from its zero-based position among reservations.
+      It records each old id, fingerprint, salt, emitted time and expected id.
+      Sync the frame before `Dir::append`, then sync the completion mark.
+      On retry a held reserved id is done, including a commitment whose opening
+      was purged. A missing id is reconstructed and checked against its reservation.
+      A complete rerun leaves both segments and journal byte-identical.
+      Ignore an unterminated tail while reading and truncate it on a successful
+      writable preflight. A damaged complete frame, changed prefix, map, flag,
+      signer or foreign destination record gives `shadow-state-mismatch`.
+      Process interruption can leave completed batches in place. Power-loss
+      behavior follows the existing segment writer.
+    - Standard output is one JSON object with `sources` keyed by name and a
+      `group` total. Row counts cover read, written, already held, planned
+      writes, empty observers, missing keys, omitted ticks, included and
+      omitted unnamed rows, omitted defects and refusals by reason. Overlap
+      counts distinguish shared old ids yielding one id, differing ids or
+      filtered copies, things in multiple stores, things with multiple union
+      heads and keyed things whose old id sets differ. The group counts each
+      shared identity or thing once. A row refusal gives its source, coordinate,
+      old id and reason on stderr. Source and map framing errors use
+      `shadow-source-invalid` and `shadow-map-invalid`. Writer refusals keep
+      their existing codes. Exit statuses are 0 for success, 1 for data,
+      2 for usage and 3 for system errors.
 
 ## Checked by
 
