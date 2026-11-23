@@ -220,8 +220,34 @@ The record starts where the old roadmap's did. For anything earlier, and for eve
 <ul>
 <li><p>Kyle ruled AD1 (how a spec finds the stores it names) and AD2 (how an old store becomes records), each for its recommendation with additions. Both pieces are being built.</p></li>
 <li><p><code>loops read</code> and <code>loops fold</code> find the stores a spec names and fold their union. A name bound to nothing refuses the read (<code>store-unknown</code>). The name <code>.</code> is the store the read starts from.</p></li>
+<li><p>The import's first two pieces are built: a script that exports an old store and its vertex to two text files, and the mapping of each old fact to a record, equal byte for byte to what <code>loops emit - --fill</code> writes. No verb yet.</p></li>
 <li><p>The import has its plan. Two of its choices decide record ids and are put to Kyle as AD3: how a kind the vertex does not name is written when asked for, and how fine the old time is.</p></li>
 </ul>
+<h3 id="the-shadow-import-the-exporter-and-the-mapping">The shadow import: the exporter and the mapping</h3>
+<p>The first two of the import's four pieces (AD2, ruled 2026-11-23, in <a href="note-2026-11-22-adoption.html">the adoption note</a>). Nothing here writes a store yet: the verb, its journal and the comparison tool follow. The mapping follows the recommended column of <a href="index.html#ad3-two-details-of-the-import">AD3</a> until Kyle rules it.</p>
+<p><strong>The exporter</strong> (<code>tools/shadow/export.py</code>, Python standard library only). Given an old <code>.vertex</code> file it writes two files into a directory of its own: <code>&lt;name&gt;.facts.jsonl</code>, every fact of the old store in the order the store took them in, and <code>&lt;name&gt;.map.json</code>, which kinds the vertex reads by a field and which it collects. The Rust import reads those two files and never the old store. The formats are in <code>tools/shadow/FORMAT.md</code>.</p>
+<ul>
+<li><p>The old store is opened read-only in one read transaction, and its bytes are the same afterwards (tested).</p></li>
+<li><p>Order is <code>(arrival_ordinal, arrival_seq)</code> where the store has both columns and <code>rowid</code> where it has neither (AD2, addition b).</p></li>
+<li><p>A payload travels as the old store's own JSON text, byte for byte. The time travels as the 64 bits of the stored number.</p></li>
+<li><p>The file ends with a count and a running digest, so a cut-off export is refused.</p></li>
+<li><p>The vertex reader is strict: it knows <code>name</code>, <code>store</code>, a kind's <code>fold { items &quot;by&quot; &quot;&lt;field&gt;&quot; }</code> and <code>items &quot;collect&quot; &lt;n&gt;</code>, and it skips <code>edge</code>, <code>lifecycle</code>, <code>search</code>, <code>preview</code>, <code>boundary</code> and comments. Anything else, a <code>combine</code> vertex among them, is refused with its line. The map is written for a person to read before an import.</p></li>
+</ul>
+<p><strong>The mapping</strong> (<code>rust/cli/src/shadow/</code>). One old fact becomes one draft: <code>of</code> is <code>&lt;kind&gt;:&lt;key&gt;</code> for a keyed kind, <code>occurred</code> is the old time to the microsecond, <code>about</code> is <code>observer:&lt;name&gt;</code> unless the observer is empty, the payload is untouched. For a revision, <code>sets</code> is every field the payload carries and <code>prev</code> is the thing's first record, its last record and the last record to set each field, worked out in one pass over the facts. The filler is not called.</p>
+<ul>
+<li><p><strong>Checked against the filler:</strong> for generated histories the prepared lines equal, byte for byte, what <code>loops emit - --fill</code> writes one line at a time with the same key, salts and times (48 runs of the real command, across batch boundaries).</p></li>
+<li><p><strong>It stops and does not guess</strong> on a key field that is empty, <code>null</code> or not text; a keyed kind that is not a single reference prefix, or is <code>r</code>; a fact whose kind is <code>tick</code>; a payload that is not an object; a repeated member name; a number out of range; a time outside years 0000 to 9999. A defect in a fact that is left out anyway (a kind the vertex does not name) is counted and does not block.</p></li>
+</ul>
+<p><strong>Run by the coordinator on a copy of four real stores</strong> (counts only): the exporter read all four vertex files and refused the two <code>combine</code> vertices; it exported 2,912 facts, found the 425 facts of four kinds one vertex no longer names, and left every source file's bytes unchanged; two exports of one store were identical. Two faults planted in the mapping (the first record dropped from <code>prev</code>; the key field left out of <code>sets</code>) were each caught by three tests.</p>
+<p><strong>Implementer choices; they stand under Kyle's ruling of 2026-11-21 (W7) and will be choice 31 of <code>rust/PLACE.md</code> when the verb lands.</strong></p>
+<ul>
+<li><p>The exporter refuses a store with a write-ahead file beside it unless told the copy is quiescent (<code>--quiescent-copy</code>); it never overwrites an earlier export.</p></li>
+<li><p>The export and the map are bound by the vertex file's SHA-256.</p></li>
+<li><p>An old fact id is 26 characters and unique in its store; nothing more is asked of its spelling.</p></li>
+<li><p><code>loops_eval::parse_writer_payload</code> is now public (the existing reader that carries an out-of-range number to the writer's own refusal). No decoder behaviour changed.</p></li>
+<li><p>A new CI job runs the exporter's tests.</p></li>
+</ul>
+<p>A Codex worker planned and wrote it; the coordinator reviewed it, ran the gates and made the runs above.</p>
 <h3 id="reads-across-stores-a-spec-finds-the-stores-it-names">Reads across stores: a spec finds the stores it names</h3>
 <p>Ruled on 2026-11-23 (AD1, in <a href="note-2026-11-22-adoption.html">the adoption note</a>) and built the same day. Rust only: the CLI, and one function in <code>rust/place</code>. No protocol rule, no record's bytes and no vector changed. <code>loops tick</code> and <code>loops tick --check</code> stay on the one store in the directory and ignore store names, as before.</p>
 <p><code>loops read &lt;vertex&gt;</code> and <code>loops fold &lt;file | -&gt;</code> now open every store the spec's sources name, put their checked lines together, and then settle, admit and run the spec once over that union. A record held by two stores counts once; an opening in one store and its eraser in another read as they would in one store.</p>

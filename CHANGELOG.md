@@ -12,7 +12,34 @@ The record starts where the old roadmap's did. For anything earlier, and for eve
 In brief:
 - Kyle ruled AD1 (how a spec finds the stores it names) and AD2 (how an old store becomes records), each for its recommendation with additions. Both pieces are being built.
 - `loops read` and `loops fold` find the stores a spec names and fold their union. A name bound to nothing refuses the read (`store-unknown`). The name `.` is the store the read starts from.
+- The import's first two pieces are built: a script that exports an old store and its vertex to two text files, and the mapping of each old fact to a record, equal byte for byte to what `loops emit - --fill` writes. No verb yet.
 - The import has its plan. Two of its choices decide record ids and are put to Kyle as AD3: how a kind the vertex does not name is written when asked for, and how fine the old time is.
+
+### The shadow import: the exporter and the mapping
+
+The first two of the import's four pieces (AD2, ruled 2026-11-23, in [the adoption note](notes/2026-11-22-adoption.md)). Nothing here writes a store yet: the verb, its journal and the comparison tool follow. The mapping follows the recommended column of [AD3](DECISIONS.md#ad3-two-details-of-the-import) until Kyle rules it.
+
+**The exporter** (`tools/shadow/export.py`, Python standard library only). Given an old `.vertex` file it writes two files into a directory of its own: `<name>.facts.jsonl`, every fact of the old store in the order the store took them in, and `<name>.map.json`, which kinds the vertex reads by a field and which it collects. The Rust import reads those two files and never the old store. The formats are in `tools/shadow/FORMAT.md`.
+- The old store is opened read-only in one read transaction, and its bytes are the same afterwards (tested).
+- Order is `(arrival_ordinal, arrival_seq)` where the store has both columns and `rowid` where it has neither (AD2, addition b).
+- A payload travels as the old store's own JSON text, byte for byte. The time travels as the 64 bits of the stored number.
+- The file ends with a count and a running digest, so a cut-off export is refused.
+- The vertex reader is strict: it knows `name`, `store`, a kind's `fold { items "by" "<field>" }` and `items "collect" <n>`, and it skips `edge`, `lifecycle`, `search`, `preview`, `boundary` and comments. Anything else, a `combine` vertex among them, is refused with its line. The map is written for a person to read before an import.
+
+**The mapping** (`rust/cli/src/shadow/`). One old fact becomes one draft: `of` is `<kind>:<key>` for a keyed kind, `occurred` is the old time to the microsecond, `about` is `observer:<name>` unless the observer is empty, the payload is untouched. For a revision, `sets` is every field the payload carries and `prev` is the thing's first record, its last record and the last record to set each field, worked out in one pass over the facts. The filler is not called.
+- **Checked against the filler:** for generated histories the prepared lines equal, byte for byte, what `loops emit - --fill` writes one line at a time with the same key, salts and times (48 runs of the real command, across batch boundaries).
+- **It stops and does not guess** on a key field that is empty, `null` or not text; a keyed kind that is not a single reference prefix, or is `r`; a fact whose kind is `tick`; a payload that is not an object; a repeated member name; a number out of range; a time outside years 0000 to 9999. A defect in a fact that is left out anyway (a kind the vertex does not name) is counted and does not block.
+
+**Run by the coordinator on a copy of four real stores** (counts only): the exporter read all four vertex files and refused the two `combine` vertices; it exported 2,912 facts, found the 425 facts of four kinds one vertex no longer names, and left every source file's bytes unchanged; two exports of one store were identical. Two faults planted in the mapping (the first record dropped from `prev`; the key field left out of `sets`) were each caught by three tests.
+
+**Implementer choices; they stand under Kyle's ruling of 2026-11-21 (W7) and will be choice 31 of `rust/PLACE.md` when the verb lands.**
+- The exporter refuses a store with a write-ahead file beside it unless told the copy is quiescent (`--quiescent-copy`); it never overwrites an earlier export.
+- The export and the map are bound by the vertex file's SHA-256.
+- An old fact id is 26 characters and unique in its store; nothing more is asked of its spelling.
+- `loops_eval::parse_writer_payload` is now public (the existing reader that carries an out-of-range number to the writer's own refusal). No decoder behaviour changed.
+- A new CI job runs the exporter's tests.
+
+A Codex worker planned and wrote it; the coordinator reviewed it, ran the gates and made the runs above.
 
 ### Reads across stores: a spec finds the stores it names
 
