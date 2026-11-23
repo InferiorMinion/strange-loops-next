@@ -10,7 +10,7 @@ Everything that waits on Kyle, in one place. Each entry has the question, an exa
 
 | Id | Question | Recommended | What waits on it |
 | --- | --- | --- | --- |
-| [TK13](#tk13-what-a-tick-covers-when-you-name-no-cut) | What `loops tick <spec>` covers when you name no cut: everything the store holds, as today, or only the records the answer depends on | The records the answer depends on, with what is under them; `--all` for everything | Nothing yet. The binary cannot work the set out today; building that is next, and this says what it is for |
+| [TK13](#tk13-what-a-tick-covers-when-you-name-no-cut) | What `loops tick <spec>` covers when you name no cut: everything the store holds, as today, or only the records the answer depends on | The records the answer depends on, with what is under them, and for a spec that reads things by key every record of those things; `--all` for everything | Nothing yet. A worker has planned the build and is writing the part that works the set out; no verb changes until you rule |
 
 Two more questions are [being prepared](#being-prepared).
 
@@ -53,7 +53,8 @@ The first tick is a true claim about its six records, and it is not what `loops 
 | | The case | Recommended | The other choice |
 | --- | --- | --- | --- |
 | 1 | **What `loops tick <spec>` covers when you name no cut.** | **The records the spec's answer depends on.** `--all` covers everything the store holds. The tick is small, it says which records the answer came from, and its result is what `loops fold` shows at that moment. | Everything held, as today, and a flag asks for the small set. Nothing changes for a tick made without the flag. A tick stays as large as its store unless you remember the flag. |
-| 2 | **Whether the set also holds everything under it.** The law needs one step down `prev` from a taken record. `--as-of` and `--cover` today add every held record that the covered ones build on, all the way down. | **Everything under it, as the two cuts do.** The check then reports `closure` `yes` for every tick the binary writes. It adds ids only where a taken record builds on a history of another kind. | The law's set and nothing more. The smallest tick. The check can then report `closure` `no` for a tick the binary wrote itself. |
+| 2 | **Whether the set also holds everything under it.** The law needs one step down `prev` from a taken record. | **Yes: every held record the set's records build on, through `prev` and `under`, all the way down.** The check then reports `closure` `yes` whenever those records are held. It adds no id for records that stand alone, as the backups do. Where only the last record of a chain of 20 is taken, it adds 18. | The law's set and nothing more. The smallest tick. The check reports `closure` `no` whenever a covered record builds on one that is not covered. |
+| 3 | **A spec with a slot that reads things by key** (`follow: keys`). Such a slot reads a thing's live values, also those set by records the spec does not take. The laws say which records are enough and do not name one smallest list. | **Every record of each thing a source touches**, with what erases them and what they name in `prev`. Simple, and proved enough as it stands. A kiln with 200 old settings lists all 200. | The live records and one path of records that shows each older value replaced. Fewer ids. The path has to be chosen by a rule every writer shares, and a wrong choice gives a tick that answers differently from the fold. |
 
 **What a smaller tick means for a write against it.** `loops emit --base <tick>` names what is live among the tick's covered records. Run today against the tick over the six backups, for a thing the spec does not take:
 
@@ -70,7 +71,17 @@ The write says it had read nothing of the fern, which is true of that tick, and 
 
 **What it costs to change later.** Little. A tick lists its ids outright, so every tick already written means what it meant, whichever way the default goes. Only ticks written afterwards differ.
 
-**Not asked.** How the set is worked out, and the flag's name. A worker plans the build first. A slot that reads things by key needs more than the set above (each thing's live records); if the plan finds a choice there that changes what a tick answers, it comes back to you.
+**Three corrections from the worker's plan (2026-11-23), made above.**
+- Row 2 first said that `--as-of` and `--cover` already add everything under their records. They follow `prev` only, not `under`, and a tick the binary writes today can check `same` with `closure` `no`. Row 2 as it stands follows both. `--as-of` and `--cover` stay as they are.
+- "What `loops fold` shows" means the fold over the same store. `loops tick` reads the one store it writes to; `loops fold` can read several by name. A tick across stores is not designed.
+- Row 3 is new.
+
+**Not asked; the plan settles these under your rulings, and they go in the changelog when built.**
+- **Which records count as taken:** every record a source takes by `kind`, `about` and `of`, before any slot's `where`. A slot's test can only make the answer smaller, not the set.
+- **Payloads:** a covered record is read with its payload when the store holds it, as the two cuts do today ([TK5](notes/2026-11-21-tick-record.md#tk5-which-covered-records-were-read-without-a-payload)).
+- **With `--as-of`:** the small set can be taken inside the cut, and it stays inside it. A record written after the time cannot change that tick.
+- **A record that is not held** is left out, and the check then says `closure` `no`. The tick is still written.
+- **Until you rule,** the small set is asked for with a flag, and `loops tick <spec>` covers everything as today. Row 1 decides whether that flips.
 
 ## Being prepared
 
