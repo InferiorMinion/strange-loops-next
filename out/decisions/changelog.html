@@ -220,10 +220,40 @@ The record starts where the old roadmap's did. For anything earlier, and for eve
 <ul>
 <li><p>Kyle ruled AD1 (how a spec finds the stores it names) and AD2 (how an old store becomes records), each for its recommendation with additions. Both pieces are being built.</p></li>
 <li><p><code>loops read</code> and <code>loops fold</code> find the stores a spec names and fold their union. A name bound to nothing refuses the read (<code>store-unknown</code>). The name <code>.</code> is the store the read starts from.</p></li>
+<li><p>The import is whole: a comparison tool says, in counts, whether a shadow store reads as its old store did.</p></li>
 <li><p><code>loops shadow-import</code> is built: it copies exported old stores into shadow stores, one signed record for each old fact, checks everything before it writes anything, and writes nothing on a second run. On a copy of four real stores it gave the old tool's reading for every thing held by one store.</p></li>
 <li><p>The import's first two pieces are built: a script that exports an old store and its vertex to two text files, and the mapping of each old fact to a record, equal byte for byte to what <code>loops emit - --fill</code> writes. No verb yet.</p></li>
 <li><p>The import has its plan. Two of its choices decide record ids and are put to Kyle as AD3: how a kind the vertex does not name is written when asked for, and how fine the old time is.</p></li>
 </ul>
+<h3 id="the-shadow-import-the-comparison-tool">The shadow import: the comparison tool</h3>
+<p>The last of the import's four pieces (AD2). <code>tools/shadow/compare.py</code>, Python standard library only. It changes no store and no Rust.</p>
+<pre><code>python3 tools/shadow/compare.py exports/workshop.facts.jsonl exports/workshop.map.json shadows/workshop
+</code></pre>
+<ul>
+<li><p><strong>The old reading is worked out from the export alone:</strong> the facts of a keyed kind grouped by their key, in the old store's order, a later fact setting the fields it carries. The old tool is not needed. With <code>--old-json</code>, the old tool's own answer (<code>sl read &lt;vertex&gt; --json --all</code>) is compared too, so a difference between the two old readings is seen.</p></li>
+<li><p><strong>The new reading</strong> is <code>loops check</code>, then <code>loops ls &lt;kind&gt;: --fields …</code> on the shadow store.</p></li>
+<li><p><strong>It prints counts only</strong>, for the store and for each kind: things old and new, equal in every field, differing, only old, only new, fields in conflict, things with more than one head, records against facts. No payload, name or id is printed unless <code>--show &lt;n&gt;</code> asks for field names of up to n differing things. Exit 0 when nothing differs, 1 when something does.</p></li>
+<li><p><strong>Several stores:</strong> with <code>--also</code>, it also counts the things held by more than one source and how many of them read with more than one head across the shadows.</p></li>
+</ul>
+<p><strong>Run by the coordinator on the scratch import of four real stores</strong> (counts only).</p>
+<div class="table-scroll" tabindex="0"><table><thead><tr><th scope="col">Compared</th><th scope="col">Result</th></tr></thead>
+<tbody>
+<tr><td>The hub store</td><td>825 things, all equal in every field; exit 0</td></tr>
+<tr><td>A second store</td><td>243 things, all equal; exit 0</td></tr>
+<tr><td>A third store</td><td>160 things, all equal; exit 0</td></tr>
+<tr><td>A shadow that had since gained three imported facts and one record written by hand, against its first export</td><td>4 things only new; exit 1</td></tr>
+<tr><td>The hub store with the second store</td><td>17 things held by both, 17 with more than one head; exit 1</td></tr>
+</tbody></table></div>
+<p>Each line is what the earlier hand comparison found.</p>
+<p><strong>Implementer choices; they stand under Kyle's ruling of 2026-11-21 (W7).</strong></p>
+<ul>
+<li><p>Fields the old tool adds to its own answers (counts and times with a leading underscore) are not compared.</p></li>
+<li><p>A conflict counts as a differing field also when its setters carry one value.</p></li>
+<li><p>Roots are matched by kind and whole payload, since an export and a shadow share no id for them.</p></li>
+<li><p>Across stores, the old reading merges every source's facts of a thing by their time, then their place in the old order.</p></li>
+<li><p>The output is one JSON object.</p></li>
+</ul>
+<p>A Codex worker wrote it; the coordinator reviewed it, ran the gates and made the runs above.</p>
 <h3 id="loops-shadow-import-the-verb-and-its-journal"><code>loops shadow-import</code>: the verb and its journal</h3>
 <p>The third of the import's four pieces (AD2). Rust only, in the CLI. No protocol rule, no record's bytes for a given draft and no vector changed; <code>emit</code>, <code>emit -</code>, <code>tick</code> and <code>erase</code> write what they wrote. It follows the recommended column of <a href="index.html#ad3-two-details-of-the-import">AD3</a> until Kyle rules it, and nothing real has been imported outside scratch.</p>
 <pre><code>python3 tools/shadow/export.py old/workshop.vertex --output-dir exports
