@@ -170,10 +170,10 @@ class VertexTests(unittest.TestCase):
     def test_skipped_top_level_blocks(self):
         blocks = '''observers {
   // kiln observers
-  potter { key "Igb1hJSbRKsi+K3JKrPyV/KgV35L6fwl70eZ9XTCKWc=" }
+  potter { key "SThoCVBUAUdVa/8UADmaeijjA+JeQcrazvHiRXVjx54=" }
   clerk { }
   kiln-watch {
-    key "rXOSSayvfhpLnsxagMu/w7tFZJFKamt/9ef/7XG9rus="
+    key "gIQDNkxhjeIzuRdv3FIvkkxp+oEJT0fzzsN/x6Ecn/I="
   }
 }
 sources {
