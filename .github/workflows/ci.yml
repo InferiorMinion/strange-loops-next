@@ -4,6 +4,27 @@ on:
   pull_request:
 
 jobs:
+  shadow-export:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          persist-credentials: false
+          fetch-depth: 2
+      - name: Shadow exporter and format fixtures
+        env:
+          SHADOW_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          # Keep the other jobs' triggers intact. On a new branch or a push
+          # beyond the shallow checkout, run the tests as well.
+          if git cat-file -e "$SHADOW_BASE^{commit}" 2>/dev/null &&
+             git diff --quiet "$SHADOW_BASE" HEAD -- tools/shadow rust/cli/tests/fixtures/shadow .github/workflows/ci.yml; then
+            exit 0
+          fi
+          python3 -m unittest discover -s tools/shadow -p 'test_*.py'
+
   rust:
     runs-on: ubuntu-latest
     permissions:

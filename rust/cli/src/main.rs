@@ -10,6 +10,7 @@ mod draft;
 mod ls;
 mod plain;
 mod registry;
+mod shadow;
 mod values;
 
 use loops::{

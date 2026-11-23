@@ -19,7 +19,7 @@ mod scenario;
 mod spec;
 mod tick;
 
-pub use json::parse_json;
+pub use json::{parse_json, parse_overflowing as parse_writer_payload};
 use loops::json::Json;
 use std::fmt;
 pub use tick::{check::check_json as tick_check_json, supports_tick_op};

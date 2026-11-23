@@ -104,9 +104,13 @@ fn decode(text: &str, overflow: Overflow) -> Result<Json, Error> {
 }
 
 /// [`parse_json`], except that a lexeme past binary64's range is carried to
-/// its reader as an out-of-range number instead of failing here. See
-/// [`out_of_range`] for where that is sound.
-pub(crate) fn parse_overflowing(text: &str) -> Result<Json, Error> {
+/// its reader as an out-of-range number instead of failing here. This lets
+/// the writer report numeric range in its usual refusal order.
+///
+/// # Errors
+/// Returns a decoding error for malformed JSON or a lone surrogate. Pass the
+/// result through the writer checks before canonicalizing it.
+pub fn parse_overflowing(text: &str) -> Result<Json, Error> {
     decode(text, Overflow::OutOfRange)
 }
 

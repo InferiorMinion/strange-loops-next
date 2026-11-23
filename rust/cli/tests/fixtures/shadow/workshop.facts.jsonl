@@ -1,0 +1,5 @@
+{"format":"shadow-facts-v1","source":"workshop","vertex_sha256":"60e73dd971000e1e5e8cd919b6459053bc8eb239901cc813f4bf899b6edc6c89","order":"arrival","ticks":"1"}
+{"id":"00000000000000000000000030","kind":"thread","ts_bits":"3ff8000000000000","observer":"","origin":"","payload":" { \"message\" : \"café\" ,  \"name\" : \"kiln\" } ","signature":null,"coordinate":["5","0"]}
+{"id":"00000000000000000000000011","kind":"thread","ts_bits":"3ff8000000000000","observer":"","origin":"","payload":" { \"message\" : \"café\" ,  \"name\" : \"kiln\" } ","signature":null,"coordinate":["5","1"]}
+{"id":"00000000000000000000000004","kind":"thread","ts_bits":"3ff8000000000000","observer":"","origin":"","payload":" { \"message\" : \"café\" ,  \"name\" : \"kiln\" } ","signature":null,"coordinate":["9","2"]}
+{"count":"3","digest":"31be6128e370f12b326e6744e8efdcb368d7a369824e2d3c9b5047b880d59f77"}
