@@ -10,6 +10,7 @@ The record starts where the old roadmap's did. For anything earlier, and for eve
 ## 2026-11-23
 
 In brief:
+- Kyle ruled TK13, yes to all three rows: a tick made with no cut named covers only the records its answer depends on, with what is under them; `--all` covers everything. The verb is being changed to match.
 - The Rust can work out which records a spec's answer depends on (`loops::slice::spec_slice`). Nothing uses it yet: no verb, flag or default changed, and what `loops tick` does with it waits on TK13. On 488 generated stores and specs the answer over the selected records equals the answer over everything, and a tick over them checks `same`.
 - TK13 is put to Kyle: whether `loops tick <spec>` should cover only the records its answer depends on once the binary can work that set out. John's pilot asks for it. A worker planned the build the same day; the plan corrected the entry's second row and added a third, for specs that read things by key.
 - Three faults found before the first real import are fixed: an old id need not be 26 characters, the vertex reader skips the `observers` and `sources` blocks, and a fold started in a group's directory reads the `stores.json` there. On copies of six older stores the import then took every fact and each shadow read as its old store did.
@@ -20,6 +21,16 @@ In brief:
 - `loops shadow-import` is built: it copies exported old stores into shadow stores, one signed record for each old fact, checks everything before it writes anything, and writes nothing on a second run. On a copy of four real stores it gave the old tool's reading for every thing held by one store.
 - The import's first two pieces are built: a script that exports an old store and its vertex to two text files, and the mapping of each old fact to a record, equal byte for byte to what `loops emit - --fill` writes. No verb yet.
 - The import has its plan. Two of its choices decide record ids and are put to Kyle as AD3: how a kind the vertex does not name is written when asked for, and how fine the old time is.
+
+### Ruled by Kyle, 2026-11-23: TK13
+
+Yes to all three rows as recommended. The entry as put is in [the tick record note](notes/2026-11-21-tick-record.md#tk13-what-a-tick-covers-when-you-name-no-cut).
+
+1. **`loops tick <spec>` with no cut named** covers the records the spec's answer depends on. `--all` covers everything the store holds, as the bare command did until now.
+2. **The set also holds everything under it:** every held record its records build on, through `prev` and `under`, all the way down.
+3. **A spec with a slot that reads things by key** covers every record of each thing a source touches, with what erases them and what they name in `prev`.
+
+The part that works the set out is on main and already follows rows 2 and 3. The verb does not yet: until the next piece merges, a bare `loops tick` still covers everything. `--as-of` and `--cover` keep their meaning.
 
 ### The selector, compared on generated stores
 
@@ -57,7 +68,7 @@ A Codex worker wrote it; the coordinator reviewed it, ran the gates and the plan
 
 ### The records a spec's answer depends on: the selector
 
-The first piece of smaller ticks ([TK13](DECISIONS.md#tk13-what-a-tick-covers-when-you-name-no-cut)). Rust only, in `rust/core`: a new module `slice` with one public function, and its tests. Nothing calls it yet, so no verb, no record's bytes and no vector's answer changed.
+The first piece of smaller ticks ([TK13](notes/2026-11-21-tick-record.md#tk13-what-a-tick-covers-when-you-name-no-cut)). Rust only, in `rust/core`: a new module `slice` with one public function, and its tests. Nothing calls it yet, so no verb, no record's bytes and no vector's answer changed.
 
 ```rust
 pub fn spec_slice(spec: &Spec, settled: &[Record], closure: Closure) -> Vec<Digest>

@@ -218,6 +218,7 @@ The record starts where the old roadmap's did. For anything earlier, and for eve
 <h2 id="2026-11-23">2026-11-23</h2>
 <p>In brief:</p>
 <ul>
+<li><p>Kyle ruled TK13, yes to all three rows: a tick made with no cut named covers only the records its answer depends on, with what is under them; <code>--all</code> covers everything. The verb is being changed to match.</p></li>
 <li><p>The Rust can work out which records a spec's answer depends on (<code>loops::slice::spec_slice</code>). Nothing uses it yet: no verb, flag or default changed, and what <code>loops tick</code> does with it waits on TK13. On 488 generated stores and specs the answer over the selected records equals the answer over everything, and a tick over them checks <code>same</code>.</p></li>
 <li><p>TK13 is put to Kyle: whether <code>loops tick &lt;spec&gt;</code> should cover only the records its answer depends on once the binary can work that set out. John's pilot asks for it. A worker planned the build the same day; the plan corrected the entry's second row and added a third, for specs that read things by key.</p></li>
 <li><p>Three faults found before the first real import are fixed: an old id need not be 26 characters, the vertex reader skips the <code>observers</code> and <code>sources</code> blocks, and a fold started in a group's directory reads the <code>stores.json</code> there. On copies of six older stores the import then took every fact and each shadow read as its old store did.</p></li>
@@ -229,6 +230,14 @@ The record starts where the old roadmap's did. For anything earlier, and for eve
 <li><p>The import's first two pieces are built: a script that exports an old store and its vertex to two text files, and the mapping of each old fact to a record, equal byte for byte to what <code>loops emit - --fill</code> writes. No verb yet.</p></li>
 <li><p>The import has its plan. Two of its choices decide record ids and are put to Kyle as AD3: how a kind the vertex does not name is written when asked for, and how fine the old time is.</p></li>
 </ul>
+<h3 id="ruled-by-kyle-2026-11-23-tk13">Ruled by Kyle, 2026-11-23: TK13</h3>
+<p>Yes to all three rows as recommended. The entry as put is in <a href="note-2026-11-21-tick-record.html#tk13-what-a-tick-covers-when-you-name-no-cut">the tick record note</a>.</p>
+<ol>
+<li><p><strong><code>loops tick &lt;spec&gt;</code> with no cut named</strong> covers the records the spec's answer depends on. <code>--all</code> covers everything the store holds, as the bare command did until now.</p></li>
+<li><p><strong>The set also holds everything under it:</strong> every held record its records build on, through <code>prev</code> and <code>under</code>, all the way down.</p></li>
+<li><p><strong>A spec with a slot that reads things by key</strong> covers every record of each thing a source touches, with what erases them and what they name in <code>prev</code>.</p></li>
+</ol>
+<p>The part that works the set out is on main and already follows rows 2 and 3. The verb does not yet: until the next piece merges, a bare <code>loops tick</code> still covers everything. <code>--as-of</code> and <code>--cover</code> keep their meaning.</p>
 <h3 id="the-selector-compared-on-generated-stores">The selector, compared on generated stores</h3>
 <p>The second piece of smaller ticks. A new family of the fuzz runner, <code>slice</code>, and an input kind of <code>loops-eval</code> for it. <code>rust/core/src/slice.rs</code> did not change; no verb, no record's bytes and no vector's answer changed. The existing fuzz seeds give the same corpus as before, file for file.</p>
 <pre><code>node interop/fuzz/run.mjs --family slice --seed slice-ci-1 --n 384 --out &lt;dir&gt;
@@ -257,7 +266,7 @@ The record starts where the old roadmap's did. For anything earlier, and for eve
 <p>GitHub's CI was switched off the same day at Kyle's word (the workflow is disabled, not removed); the step mirrored into its file does not run there.</p>
 <p>A Codex worker wrote it; the coordinator reviewed it, ran the gates and the planted fault.</p>
 <h3 id="the-records-a-specs-answer-depends-on-the-selector">The records a spec's answer depends on: the selector</h3>
-<p>The first piece of smaller ticks (<a href="index.html#tk13-what-a-tick-covers-when-you-name-no-cut">TK13</a>). Rust only, in <code>rust/core</code>: a new module <code>slice</code> with one public function, and its tests. Nothing calls it yet, so no verb, no record's bytes and no vector's answer changed.</p>
+<p>The first piece of smaller ticks (<a href="note-2026-11-21-tick-record.html#tk13-what-a-tick-covers-when-you-name-no-cut">TK13</a>). Rust only, in <code>rust/core</code>: a new module <code>slice</code> with one public function, and its tests. Nothing calls it yet, so no verb, no record's bytes and no vector's answer changed.</p>
 <pre><code class="language-rust">pub fn spec_slice(spec: &amp;Spec, settled: &amp;[Record], closure: Closure) -&gt; Vec&lt;Digest&gt;
 </code></pre>
 <p>Given a spec and the records held (or a cut of them), it returns the ids a reader needs to get the spec's whole answer, by the laws <code>spec.slice</code> and <code>keyed.spec-slice</code>:</p>

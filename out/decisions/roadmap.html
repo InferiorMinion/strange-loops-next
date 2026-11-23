@@ -249,7 +249,7 @@ Retiring still follows ticks, as the Trust walk found.
 Left out of step 4 and wanted by nothing yet: boundaries and markers, the runner, and what verifying a deep tick tree costs.
 Each step extends the model's laws, computes protocol vectors, then implements Rust.</p>
 <h2 id="after-adoptions-import-for-ticks-made-often">After adoption's import, for ticks made often</h2>
-<p><strong>The binary works out which records a spec's answer depends on</strong>, so that a tick can cover those and not the whole store. The laws are on main (<code>spec.slice</code>, <code>keyed.spec-slice</code>). The part that works the set out is built in <code>rust/core</code> (changelog, 2026-11-23); it is compared on generated stores in CI. The flag that asks <code>loops tick</code> for the set follows the ruling. What <code>loops tick</code> does with it by default waits on Kyle: <a href="index.html#tk13-what-a-tick-covers-when-you-name-no-cut">TK13</a>.</p>
+<p><strong>The binary works out which records a spec's answer depends on</strong>, so that a tick can cover those and not the whole store. The laws are on main (<code>spec.slice</code>, <code>keyed.spec-slice</code>). The part that works the set out is built in <code>rust/core</code> (changelog, 2026-11-23); it is compared on generated stores in CI. Kyle ruled on 2026-11-23 (<a href="note-2026-11-21-tick-record.html#tk13-what-a-tick-covers-when-you-name-no-cut">TK13</a>) that a tick made with no cut named covers that set, and <code>--all</code> covers everything. The change to the verb is being built.</p>
 <h2 id="small-pieces-any-time">Small pieces, any time</h2>
 <p>None needs a ruling. Each is built when it is the cheapest useful thing to do.</p>
 <ul>

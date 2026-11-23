@@ -459,6 +459,7 @@ The spec did not change by one byte. Had a tick been written this morning, a che
 
 These are the three entries of `DECISIONS.md` that came from building step 4, as Kyle read them. He ruled all three on 2026-11-22: TK10 for the recommended column in all seven rows, TK11 for option C, TK12 for option A.
 "Recommended", "nothing here is built" and "not built" in the text are as written then. Each was built to its recommendation before the ruling, so the ruling changed no code: the check is in the changelog under 2026-11-21, and `loops emit --base` under 2026-11-22.
+TK13 came later, from John's wish for small ticks: put on 2026-11-23, amended the same day after a worker's plan, and ruled that day for the recommended column in all three rows. It is the last entry of this section.
 
 ### TK10: seven details of the check
 
@@ -540,3 +541,64 @@ The base is `y` alone. Two things go wrong, and they are different.
 | B | 0 whenever the check completes, whatever it answers. | The status then says only "the verb ran". A script that forgets to read the answer goes on after `differs`. |
 
 **What it costs to change later.** One line in the CLI and its walk tests. No record or answer changes.
+
+### TK13: what a tick covers when you name no cut
+
+**Ruled by Kyle, 2026-11-23:** yes to all three rows as recommended. "Not built", "today" and "until you rule" in the text are as written then.
+
+**Question.** `loops tick <spec>` with no `--as-of` and no `--cover` covers every record the store holds ([TK4](#tk4-covers-lists-every-record-that-was-folded)). When the binary can work out which records a spec's answer depends on, should that smaller set be what it covers?
+
+**Why now.** TK4 said the list's cost is size, and that the Rust would learn to cover only what an answer depends on after step 4. Step 4 is closed. John's store makes a tick at every session, and his pilot asks for this. A tick made in a store of 9,051 records lists every id, 516 KB, also for a spec that takes ten.
+
+**Not built.** The binary cannot work the set out. The law that says which records it holds is on main (`spec.slice`, and `keyed.spec-slice` for a slot that reads things by key). In the runs below the set is named by hand with `--cover`.
+
+**Example, run on today's binary.** The laptop's store holds the six backups of the tick record's examples and 40 shopping notes. The spec `backups` counts the runs and sums `mb`.
+
+| The tick | `covers` | The record | Result | `loops tick --check` |
+| --- | --- | --- | --- | --- |
+| `loops tick backups.json`, as today | 46 ids | 3,414 bytes | `runs` 6, `mb` 1027 | `same` |
+| The six backups named with `--cover` | 6 ids | 1,134 bytes | `runs` 6, `mb` 1027, the same result hash | `same` |
+
+A tick is itself a record, so today each tick also covers every tick before it. The third tick made in this store covered 49 ids.
+
+**The set is not only the records the spec takes.** You void jellyfin's first backup with a record of another kind: `loops emit retired "this backup is void" --prev r:saav…`. The spec `current` counts the backups that nothing has replaced. `loops fold current.json` answers `current` 5, `mb` 615.
+
+| The tick | `covers` | Result | `loops tick --check` |
+| --- | --- | --- | --- |
+| The six backups named | 6 ids | `current` 6, `mb` 1027 | `same` |
+| The six and the `retired` record | 7 ids | `current` 5, `mb` 615 | `same` |
+
+The first tick is a true claim about its six records, and it is not what `loops fold` shows. The set the law names holds the `retired` record, and what erases a taken record, so a tick over it answers as the fold does. Working that set out is what the binary would learn; naming ids by hand does not give it.
+
+| | The case | Recommended | The other choice |
+| --- | --- | --- | --- |
+| 1 | **What `loops tick <spec>` covers when you name no cut.** | **The records the spec's answer depends on.** `--all` covers everything the store holds. The tick is small, it says which records the answer came from, and its result is what `loops fold` shows at that moment. | Everything held, as today, and a flag asks for the small set. Nothing changes for a tick made without the flag. A tick stays as large as its store unless you remember the flag. |
+| 2 | **Whether the set also holds everything under it.** The law needs one step down `prev` from a taken record. | **Yes: every held record the set's records build on, through `prev` and `under`, all the way down.** The check then reports `closure` `yes` whenever those records are held. It adds no id for records that stand alone, as the backups do. Where only the last record of a chain of 20 is taken, it adds 18. | The law's set and nothing more. The smallest tick. The check reports `closure` `no` whenever a covered record builds on one that is not covered. |
+| 3 | **A spec with a slot that reads things by key** (`follow: keys`). Such a slot reads a thing's live values, also those set by records the spec does not take. The laws say which records are enough and do not name one smallest list. | **Every record of each thing a source touches**, with what erases them and what they name in `prev`. Simple, and proved enough as it stands. A kiln with 200 old settings lists all 200. | The live records and one path of records that shows each older value replaced. Fewer ids. The path has to be chosen by a rule every writer shares, and a wrong choice gives a tick that answers differently from the fold. |
+
+**What a smaller tick means for a write against it.** `loops emit --base <tick>` names what is live among the tick's covered records. Run today against the tick over the six backups, for a thing the spec does not take:
+
+```
+$ loops emit plant --of plant:fern water=daily --base r:…
+the base covers no record of plant:fern
+$ loops of plant:fern --plain
+records  2
+heads  2
+  water  conflict (2): daily | weekly
+```
+
+The write says it had read nothing of the fern, which is true of that tick, and the fern then has two heads. With today's default the same tick covers the fern and the write is a revision. So under row 1's recommendation a tick is a base for the things its spec takes, and `--all` makes the wider one.
+
+**What it costs to change later.** Little. A tick lists its ids outright, so every tick already written means what it meant, whichever way the default goes. Only ticks written afterwards differ.
+
+**Three corrections from the worker's plan (2026-11-23), made above.**
+- Row 2 first said that `--as-of` and `--cover` already add everything under their records. They follow `prev` only, not `under`, and a tick the binary writes today can check `same` with `closure` `no`. Row 2 as it stands follows both. `--as-of` and `--cover` stay as they are.
+- "What `loops fold` shows" means the fold over the same store. `loops tick` reads the one store it writes to; `loops fold` can read several by name. A tick across stores is not designed.
+- Row 3 is new.
+
+**Not asked; the plan settles these under your rulings, and they go in the changelog when built.**
+- **Which records count as taken:** every record a source takes by `kind`, `about` and `of`, before any slot's `where`. A slot's test can only make the answer smaller, not the set.
+- **Payloads:** a covered record is read with its payload when the store holds it, as the two cuts do today ([TK5](#tk5-which-covered-records-were-read-without-a-payload)).
+- **With `--as-of`:** the small set can be taken inside the cut, and it stays inside it. A record written after the time cannot change that tick.
+- **A record that is not held** is left out, and the check then says `closure` `no`. The tick is still written.
+- **Until you rule,** the small set is asked for with a flag, and `loops tick <spec>` covers everything as today. Row 1 decides whether that flips.
