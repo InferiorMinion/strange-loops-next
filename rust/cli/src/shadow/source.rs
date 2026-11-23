@@ -4,7 +4,7 @@ use loops_place::line::hash;
 use std::{
     collections::{HashMap, HashSet},
     fmt::Write as _,
-    io::BufRead,
+    io::{self, BufRead},
     str::FromStr,
 };
 
@@ -30,7 +30,10 @@ fn object(value: &Json) -> Result<&[(String, Json)], String> {
     }
 }
 
-fn fields<'a>(value: &'a Json, names: &[&str]) -> Result<HashMap<&'a str, &'a Json>, String> {
+pub(super) fn fields<'a>(
+    value: &'a Json,
+    names: &[&str],
+) -> Result<HashMap<&'a str, &'a Json>, String> {
     let members = object(value)?;
     let found: HashMap<_, _> = members.iter().map(|(k, v)| (k.as_str(), v)).collect();
     if members.len() != names.len() || !names.iter().all(|name| found.contains_key(name)) {
@@ -39,7 +42,7 @@ fn fields<'a>(value: &'a Json, names: &[&str]) -> Result<HashMap<&'a str, &'a Js
     Ok(found)
 }
 
-fn string(value: &Json) -> Result<&str, String> {
+pub(super) fn string(value: &Json) -> Result<&str, String> {
     match value {
         Json::Str(s) => Ok(s),
         _ => Err("expected text".into()),
@@ -114,6 +117,8 @@ impl Map {
 pub(super) struct Fact {
     pub id: String,
     pub coordinate: Vec<i64>,
+    pub span: std::ops::Range<u64>,
+    pub raw_digest: Vec<u8>,
     pub kind: String,
     pub ts_bits: u64,
     pub observer: String,
@@ -151,6 +156,8 @@ impl Fact {
         }
         Ok(Self {
             id: id.into(),
+            span: 0..0,
+            raw_digest: Vec::new(),
             coordinate: numbers.iter().map(decimal).collect::<Result<_, _>>()?,
             kind: string(data["kind"])?.into(),
             ts_bits: u64::from_str_radix(hex(data["ts_bits"], 16)?, 16).expect("16 hex digits"),
@@ -175,14 +182,38 @@ pub(super) struct Summary {
     pub ticks: u64,
 }
 
+#[derive(Debug)]
+pub(super) enum ScanError {
+    Invalid(String),
+    Io(io::Error),
+}
+impl From<String> for ScanError {
+    fn from(message: String) -> Self {
+        Self::Invalid(message)
+    }
+}
+impl From<&str> for ScanError {
+    fn from(message: &str) -> Self {
+        Self::Invalid(message.into())
+    }
+}
+impl From<io::Error> for ScanError {
+    fn from(error: io::Error) -> Self {
+        if error.kind() == io::ErrorKind::InvalidData {
+            Self::Invalid(error.to_string())
+        } else {
+            Self::Io(error)
+        }
+    }
+}
 // The digest covers exact UTF-8 bytes, including the terminating LF.
-fn line(reader: &mut impl BufRead, buf: &mut String) -> Result<Json, String> {
+fn line(reader: &mut impl BufRead, buf: &mut String) -> Result<Json, ScanError> {
     buf.clear();
-    reader.read_line(buf).map_err(|e| e.to_string())?;
+    reader.read_line(buf)?;
     if !buf.ends_with('\n') || buf.ends_with("\r\n") {
         return Err("missing or invalid line ending".into());
     }
-    loops_eval::parse_json(buf).map_err(|e| e.to_string())
+    loops_eval::parse_json(buf).map_err(|e| e.to_string().into())
 }
 
 /// The callback is for preflight only. Its plans are publishable only after
@@ -191,7 +222,7 @@ pub(super) fn scan(
     mut reader: impl BufRead,
     map: &Map,
     mut inspect: impl FnMut(Fact),
-) -> Result<Summary, String> {
+) -> Result<Summary, ScanError> {
     let mut number = 1usize;
     let mut run = || {
         let mut buf = String::new();
@@ -213,6 +244,7 @@ pub(super) fn scan(
             _ => return Err("unknown arrival order".into()),
         };
         let mut digest = hash(buf.as_bytes());
+        let mut offset = u64::try_from(buf.len()).expect("line length fits");
         let mut ids = HashSet::new();
         let mut last = Vec::new();
         loop {
@@ -230,12 +262,15 @@ pub(super) fn scan(
                 {
                     return Err("trailer count or digest differs".into());
                 }
-                if !reader.fill_buf().map_err(|e| e.to_string())?.is_empty() {
+                if !reader.fill_buf()?.is_empty() {
                     return Err("bytes after trailer".into());
                 }
                 return Ok(Summary { facts, ticks });
             }
-            let fact = Fact::decode(&record, axes)?;
+            let mut fact = Fact::decode(&record, axes)?;
+            fact.span = offset..offset + u64::try_from(buf.len()).expect("line length fits");
+            offset = fact.span.end;
+            fact.raw_digest = hash(buf.as_bytes());
             if fact.coordinate <= last || !ids.insert(fact.id.clone()) {
                 return Err("non-increasing coordinate or duplicate old id".into());
             }
@@ -245,5 +280,10 @@ pub(super) fn scan(
             inspect(fact);
         }
     };
-    run().map_err(|error: String| format!("shadow-source-invalid at line {number}: {error}"))
+    run().map_err(|error| match error {
+        ScanError::Invalid(why) => {
+            ScanError::Invalid(format!("shadow-source-invalid at line {number}: {why}"))
+        }
+        e @ ScanError::Io(_) => e,
+    })
 }

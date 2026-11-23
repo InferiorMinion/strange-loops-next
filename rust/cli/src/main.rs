@@ -100,6 +100,10 @@ usage: loops [-C <dir>] <verb> ...
   erase <id>... [\"why\"]         emit an erasure, and drop the openings held here
   export [--kind <k>] [--of <thing>] [--about <thing>]   stored lines, oldest first
   import [<file> | -]           add stored lines; a store is the union
+  shadow-import <group.json> [--include-unnamed] [--check-only]
+                                copy legacy exports into dedicated shadow stores
+                                include-unnamed imports unmapped kinds as roots
+                                check-only preflights the group without writing
   check                         verify every segment and line
   whoami                        the key and observer this machine writes as
   whoami --init                 make the signing key if needed and print its ID";
@@ -380,11 +384,18 @@ fn write_changeset(
     key: &Key,
     drafts: &[batch::Draft],
 ) -> Result<Vec<Line>, Fail> {
-    let written = batch::resolve_batch(&hash, &|id: &str| held.writer_view(id), drafts)
-        .map_err(|e| refused(e.code()))?;
-    let lines: Vec<Line> = written.iter().map(|w| Line::sign(w, key)).collect();
+    let lines = prepare_changeset(&|id| held.writer_view(id), key, drafts)?;
     place.append(&lines)?;
     Ok(lines)
+}
+
+fn prepare_changeset(
+    view: &impl Fn(&str) -> Option<batch::Held>,
+    key: &Key,
+    drafts: &[batch::Draft],
+) -> Result<Vec<Line>, Fail> {
+    let written = batch::resolve_batch(&hash, view, drafts).map_err(|e| refused(e.code()))?;
+    Ok(written.iter().map(|w| Line::sign(w, key)).collect())
 }
 
 fn base_forms(held: &Held, selector: draft::BaseArgs) -> Result<Vec<Record>, Fail> {
@@ -925,6 +936,7 @@ fn run(args: &[String]) -> Result<(), Fail> {
         "fold" => fold(&start, rest, format, SpecInput::File, overrides),
         "export" => export(&start, rest),
         "import" => import(&start, rest),
+        "shadow-import" => shadow::run(&start, rest),
         "check" => check(&start),
         "whoami" if rest == ["--init"] => say(&signing_key(Missing::Make)?.public()),
         "whoami" if rest.iter().any(|arg| arg == "--init") => {

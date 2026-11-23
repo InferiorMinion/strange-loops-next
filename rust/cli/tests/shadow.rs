@@ -1,4 +1,4 @@
-//! Exercise the preflight modules directly until the publishing verb is wired in.
+//! Check the mapping against fixed signed lines and the changeset filler.
 #[path = "../../place/tests/common/mod.rs"]
 mod common;
 #[path = "../src/shadow/mapping.rs"]
@@ -36,6 +36,8 @@ fn fact(kind: &str, payload: &str) -> Fact {
     Fact {
         id: "0".repeat(26),
         coordinate: vec![1],
+        span: 0..0,
+        raw_digest: vec![],
         kind: kind.into(),
         ts_bits: 1.5_f64.to_bits(),
         observer: "yard:west".into(),
@@ -125,11 +127,10 @@ fn framing_binding_and_coordinates_are_checked() {
             "\"signature\":null,\"signature\":null",
         ),
     ] {
-        assert!(
-            scan(broken.as_bytes(), &map, |_| {})
-                .expect_err("bad cut")
-                .starts_with("shadow-source-invalid")
-        );
+        match scan(broken.as_bytes(), &map, |_| {}).expect_err("bad cut") {
+            source::ScanError::Invalid(why) => assert!(why.starts_with("shadow-source-invalid")),
+            source::ScanError::Io(e) => panic!("unexpected I/O error: {e}"),
+        }
     }
     for broken in [
         MAP.replace("shadow-map-v1", "v2"),
@@ -337,8 +338,13 @@ fn emit_reference(dir: &Path, input: &Json) -> String {
         .arg("-C")
         .arg(dir)
         .args(["emit", "-", "--fill"])
-        .env("LOOPS_KEY", "0".repeat(52))
-        .env("LOOPS_CACHE_DIR", "")
+        .env("HOME", dir.join("home"))
+        .env("XDG_CONFIG_HOME", dir.join("home/xdg-config"))
+        .env_remove("XDG_CACHE_HOME")
+        .env("LOOPS_CACHE_DIR", dir.join("cache"))
+        .env_remove("LOOPS_KEY")
+        .env_remove("LOOPS_OBSERVER")
+        .env("LOOPS_KEY_FILE", dir.join("device-key"))
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
@@ -374,6 +380,7 @@ fn prepared_lines_equal_successive_cli_fills() {
     let root = Path::new(env!("CARGO_TARGET_TMPDIR")).join("shadow-differential");
     let _ = fs::remove_dir_all(&root);
     let dir = Dir::init(&root.join(".loops")).expect("empty reference store");
+    fs::write(root.join("device-key"), "0".repeat(52)).expect("oracle signer");
     let map = Map::read(MAP).expect("map");
     let mut history = History::default();
     let key = signer();
