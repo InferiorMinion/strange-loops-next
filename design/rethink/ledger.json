@@ -480,7 +480,21 @@
     "group": "Building",
     "status": "settled",
     "claim": "Step 4 is closed: a tick written on one machine checks the same on a second.",
-    "why": "<code>loops tick</code> writes a tick and <code>loops tick --check</code> answers same, differs or cannot check, and exits 0 only for same. A tick can cover a cut, by time or by ids, and a write can state a tick as its base. Kyle closed the step on 2026-11-22. Boundaries, markers and the runner were never in its exit and are not built. Adoption comes next: the old stores imported as a shadow, and reads across several stores. Version 36."
+    "why": "<code>loops tick</code> writes a tick and <code>loops tick --check</code> answers same, differs or cannot check, and exits 0 only for same. A tick can cover a cut, by time or by ids, and a write can state a tick as its base. Kyle closed the step on 2026-11-22. Boundaries, markers and the runner were never in its exit and are not built. Adoption comes next: the old stores imported as a shadow, and reads across several stores. Version 37."
+  },
+  {
+    "kind": "decision",
+    "group": "Meaning · vertices and stores",
+    "status": "settled",
+    "claim": "A spec names its stores, and each machine binds the names.",
+    "why": "A name in a spec's <code>from</code> is bound to a directory by a per-user list, by an optional list kept with a group of stores, or by <code>--store name=dir</code> on the command. The spec and its hash are the same on every machine. A name bound to nothing refuses the whole read (<code>store-unknown</code>), so a missing store is never read as an empty one. A read across stores takes their union first. Ruled on 2026-11-23 (<a href=\"../decisions/note-2026-11-22-adoption.html\">the adoption note</a>); being built. Version 37."
+  },
+  {
+    "kind": "decision",
+    "group": "Building",
+    "status": "settled",
+    "claim": "An old store is imported as a shadow: one signed record for each old fact.",
+    "why": "A fact of a kind read by a field is a revision of the thing <code>kind:key</code>, in the order the old store took it in. The old time is <code>occurred</code>, a key made for the import signs, the old observer is a mention and the payload is untouched. A kind the old vertex no longer names is left out unless asked for. A trial on four real stores, 2,912 facts, gave the old tool's reading in every field for every thing held by one store. Ruled on 2026-11-23 (<a href=\"../decisions/note-2026-11-22-adoption.html\">the adoption note</a>); being planned. Version 37."
   },
   {
     "kind": "decision",
