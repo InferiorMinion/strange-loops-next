@@ -420,3 +420,64 @@ fn group_discovery_starts_at_the_store_root_and_stops_at_its_parent() {
     .expect("root registry");
     assert_eq!(below.ok(&["read", "morning", "--plain"]), "items  1");
 }
+
+#[test]
+fn fold_from_the_group_uses_its_list_with_or_without_c() {
+    let group = Store::scratch("registry-group-start");
+    let shop = sibling(&group, "store/workshop");
+    let yard = sibling(&group, "store/yard");
+    for store in [&shop, &yard] {
+        store.ok(&["init"]);
+    }
+    shop.changeset("{\"kind\":\"task\"}\n{\"kind\":\"note\"}");
+    yard.ok(&["emit", "task"]);
+    fs::write(group.dir.join("combined.json"), MORNING).expect("spec");
+    fs::write(
+        group.dir.join("stores.json"),
+        r#"{"workshop":"workshop","yard":"yard"}"#,
+    )
+    .expect("group list");
+    let expected = r#"{"items":{"unread":0,"value":3}}"#;
+    assert_eq!(shop.ok(&["fold", "../combined.json"]), expected);
+    assert_eq!(group.ok(&["fold", "combined.json"]), expected);
+    let cwd = group
+        .hermetic_command(env!("CARGO_BIN_EXE_loops"))
+        .current_dir(&group.dir)
+        .args(["fold", "combined.json"])
+        .output()
+        .expect("fold from group");
+    assert!(
+        cwd.status.success(),
+        "{}",
+        String::from_utf8_lossy(&cwd.stderr)
+    );
+    assert_eq!(cwd.stdout, format!("{expected}\n").as_bytes());
+
+    fs::write(user_list(&group), r#"{"workshop":"../../../store/yard"}"#).expect("user list");
+    assert_eq!(group.ok(&["fold", "combined.json"]), expected);
+    assert_eq!(
+        group.ok(&[
+            "fold",
+            "combined.json",
+            "--store",
+            "workshop=yard",
+            "--plain"
+        ]),
+        "items  1"
+    );
+}
+
+#[test]
+fn outside_a_store_only_the_starting_directory_supplies_a_group_list() {
+    let group = Store::scratch("registry-group-depth");
+    let file = group.dir.join("stores.json");
+    fs::write(&file, "{").expect("malformed group list");
+    let (code, out, err) = answer(&group, &["fold", "-"], MORNING);
+    assert_eq!((code, out.as_str()), (2, ""));
+    assert!(err.contains(file.to_str().expect("path")), "{err}");
+    let child = sibling(&group, "store/child");
+    assert_eq!(
+        answer(&child, &["fold", "-"], MORNING),
+        (1, String::new(), "refused: store-unknown: workshop".into())
+    );
+}

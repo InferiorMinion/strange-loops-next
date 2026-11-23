@@ -153,9 +153,12 @@ def block(node):
     return node.children
 
 
-def unique(nodes, allowed, ignored=()):
+def unique(nodes, allowed, ignored=(), ignored_blocks=()):
     result = {}
     for node in nodes:
+        if node.name in ignored_blocks:
+            block(node)
+            continue
         if node.name in ignored:
             continue
         if node.name not in allowed:
@@ -180,7 +183,8 @@ def string_arg(node):
 
 
 def parse_vertex(text):
-    top = unique(Parser(text).nodes(), {"name", "store", "loops"})
+    top = unique(Parser(text).nodes(), {"name", "store", "loops"},
+                 ignored_blocks={"observers", "sources"})
     name = string_arg(required(top, "name", 1))
     if name in (".", "..") or any(c in name for c in "/\\\x00"):
         raise InvalidVertex(top["name"].line, "name must be one filename component")

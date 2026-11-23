@@ -78,7 +78,8 @@ usage: loops [-C <dir>] <verb> ...
                                 fold a spec from a file or stdin
                                 read and fold run every source over the union of all stores named in the spec
                                 bind names with --store (paths relative to -C or the working directory),
-                                then stores.json at the current store root or its parent,
+                                then stores.json at the current store root or its parent
+                                (outside a store, in the starting directory only),
                                 then $XDG_CONFIG_HOME/loops/stores.json or ~/.config/loops/stores.json
                                 only . defaults to the current store, when there is one
                                 --store and either list can override that default
@@ -676,7 +677,7 @@ fn fold(
         (SpecInput::Vertex, _) => return Err(usage("read takes one vertex name")),
     };
     let spec = parse_spec(&raw)?;
-    let (held, dirty) = registry::read(&spec, current, overrides)?;
+    let (held, dirty) = registry::read(&spec, &start, current, overrides)?;
     let answer = fold_answer(&held, &spec, view, format);
     finish_answer(
         answer,

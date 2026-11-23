@@ -27,11 +27,13 @@ impl Store {
         store
     }
     fn command(&self, args: &[&str]) -> Command {
-        let mut cmd = Command::new(env!("CARGO_BIN_EXE_loops"));
-        cmd.arg("-C")
-            .arg(&self.dir)
-            .args(args)
-            .env("HOME", self.scratch.join("home"))
+        let mut cmd = self.hermetic_command(env!("CARGO_BIN_EXE_loops"));
+        cmd.arg("-C").arg(&self.dir).args(args);
+        cmd
+    }
+    fn hermetic_command(&self, program: &str) -> Command {
+        let mut cmd = Command::new(program);
+        cmd.env("HOME", self.scratch.join("home"))
             .env("XDG_CONFIG_HOME", self.scratch.join("home/xdg-config"))
             .env_remove("XDG_CACHE_HOME")
             .env("LOOPS_CACHE_DIR", self.scratch.join("cache"))

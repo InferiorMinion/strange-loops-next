@@ -218,6 +218,7 @@ The record starts where the old roadmap's did. For anything earlier, and for eve
 <h2 id="2026-11-23">2026-11-23</h2>
 <p>In brief:</p>
 <ul>
+<li><p>Three faults found before the first real import are fixed: an old id need not be 26 characters, the vertex reader skips the <code>observers</code> and <code>sources</code> blocks, and a fold started in a group's directory reads the <code>stores.json</code> there. On copies of six older stores the import then took every fact and each shadow read as its old store did.</p></li>
 <li><p>Kyle ruled AD3 for its recommendation in both rows: a fact of a kind the vertex does not name, brought in with <code>--include-unnamed</code>, is a root, and the old time is kept to the microsecond. The build already did both. Nothing waits on a ruling.</p></li>
 <li><p>Kyle ruled AD1 (how a spec finds the stores it names) and AD2 (how an old store becomes records), each for its recommendation with additions. Both pieces are being built.</p></li>
 <li><p><code>loops read</code> and <code>loops fold</code> find the stores a spec names and fold their union. A name bound to nothing refuses the read (<code>store-unknown</code>). The name <code>.</code> is the store the read starts from.</p></li>
@@ -226,6 +227,34 @@ The record starts where the old roadmap's did. For anything earlier, and for eve
 <li><p>The import's first two pieces are built: a script that exports an old store and its vertex to two text files, and the mapping of each old fact to a record, equal byte for byte to what <code>loops emit - --fill</code> writes. No verb yet.</p></li>
 <li><p>The import has its plan. Two of its choices decide record ids and are put to Kyle as AD3: how a kind the vertex does not name is written when asked for, and how fine the old time is.</p></li>
 </ul>
+<h3 id="three-fixes-before-the-first-real-import">Three fixes before the first real import</h3>
+<p>The import and the store list were tested on Kyle's newer stores only. Neon checked them against an older group of his stores and found three faults; Kyle passed them on, and the coordinator confirmed each on copies. No protocol rule, no record's bytes for a given draft, no refusal code and no vector changed.</p>
+<ul>
+<li><p><strong>An old fact id is no longer required to be 26 characters.</strong> Older stores hold ids of 36 characters beside them: 99 facts in three of the stores looked at, which stopped the export at once. An old id is now text of 1 to 128 printable ASCII characters without a space, and unique within its store. The same rule is in the exporter, the Rust reader and the comparison tool; anything else is <code>shadow-source-invalid</code>, naming the line. The old id finds a fact's reservation in the journal and is never part of a record's bytes, salt or id, so no existing expected line changed.</p></li>
+<li><p><strong>The vertex reader skips two more blocks.</strong> A top-level <code>observers</code> block (who may write, and their keys) and a top-level <code>sources</code> block (the files that feed the store) are recognized and skipped, as <code>edge</code> and <code>lifecycle</code> are inside a kind. Neither changes which record a fact becomes. Seven of the eight single-store vertex files looked at carry one. <code>combine</code>, <code>discover</code> and anything unknown are still refused, naming the line.</p></li>
+<li><p><strong>A fold started in a group's directory reads the list there.</strong> AD1's list kept with a group of stores was found only from inside a store: beside its <code>.loops/</code>, or one directory up. In the layout the list was ruled for, the group's own directory is inside no store, so <code>loops fold combined.json</code> run there was refused <code>store-unknown</code>. Now, when a read starts in a directory that is inside no store, <code>stores.json</code> in that directory is the group's list. Only that directory is looked in, never one further up. Its place in the order is unchanged: above the per-user list, below <code>--store</code>. Inside a store nothing changes. This adds a third place to the two in the ruling as recorded; Kyle passed the finding on, and it is his to overrule.</p></li>
+</ul>
+<p><strong>Run by the coordinator on copies of six older stores</strong> (counts only), with the fixed exporter and an optimised build.</p>
+<div class="table-scroll" tabindex="0"><table><thead><tr><th scope="col">Step</th><th scope="col">Result</th></tr></thead>
+<tbody>
+<tr><td>Export</td><td>all six exported; before the fix three stopped on their ids and five on their vertex</td></tr>
+<tr><td><code>loops shadow-import --check-only</code></td><td>11,072 facts read, 11,047 would be written, none refused; 25 of kinds the vertex does not name left out; 37 without their key, written as roots; 14 old ticks left out</td></tr>
+<tr><td>The import</td><td>11,047 records in 14 s; every shadow passes <code>loops check</code></td></tr>
+<tr><td>A second run</td><td>nothing written; 1.4 s</td></tr>
+<tr><td><code>compare.py</code>, each store</td><td>35, 10, 272, 122, 1,021 and 5,021 things, every one equal in every field; exit 0 each; 18 s for the largest</td></tr>
+</tbody></table></div>
+<p>Two things seen and left as they are:</p>
+<ul>
+<li><p>A build without optimisation is far slower here: the second run took 72 s and the largest comparison over ten minutes. Use <code>cargo build --release -p loops-cli</code>.</p></li>
+<li><p>One vertex file of that group names a keyed kind that starts with an underscore. Such a kind cannot name a thing, so the import would stop on that store. The store is not on this machine and was not tried.</p></li>
+</ul>
+<p><strong>Implementer choices; they stand under Kyle's ruling of 2026-11-21 (W7).</strong></p>
+<ul>
+<li><p>More than one <code>observers</code> or <code>sources</code> block is not refused. Each must be a block without arguments, and its inside must be well formed.</p></li>
+<li><p>A refusal of an old id names the line of the export and not the id.</p></li>
+<li><p>The import still pins the hash of the whole vertex file, so an edit to an old <code>.vertex</code>, even to a comment, refuses the next run (<code>shadow-state-mismatch</code>). Whether it should pin only the kinds is asked of Kyle.</p></li>
+</ul>
+<p>A Codex worker wrote the fixes; the coordinator reviewed them, ran the gates and made the runs above.</p>
 <h3 id="ruled-by-kyle-2026-11-23-ad3">Ruled by Kyle, 2026-11-23: AD3</h3>
 <p>Both rows for the recommended column. The entry as put is in <a href="note-2026-11-22-adoption.html#ad3-two-details-of-the-import">the adoption note</a>.</p>
 <ol>

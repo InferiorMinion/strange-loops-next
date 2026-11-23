@@ -742,7 +742,8 @@ Every verb that reads the store says when either happened (choice 18).
       when the command omits `-C`.
     - Find the current store from that same starting directory. Look for
       `stores.json` beside its `.loops/`, then in its immediate parent.
-      Use the first file found, including an empty object. The per-user file
+      Use the first file found, including an empty object. Outside a store,
+      look for the group list only in the starting directory. The per-user file
       is `$XDG_CONFIG_HOME/loops/stores.json` when that config home is
       absolute, otherwise `$HOME/.config/loops/stores.json` when HOME is set.
       Each name falls through independently to the next binding source.
@@ -764,7 +765,7 @@ Every verb that reads the store says when either happened (choice 18).
     - `read` still takes its spec from the current store's
       `.loops/vertices/<vertex>.json`. Read segments only for stores the spec
       names. `fold <file | ->` works outside a store because it gets its spec
-      from the file or stdin and can use command and user bindings directly.
+      from the file or stdin and can use command, group and user bindings.
     - Canonicalize each bound `.loops/` and read each distinct directory once
       with choice 26's content-keyed segment cache. Combine its checked lines
       with the others before the single settlement, admission and spec run.

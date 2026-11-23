@@ -464,3 +464,25 @@ fn compare_export_to_the_real_shadow_reading() {
     assert_eq!(at(&sources[0], &["things", "only_new"]).canon(), "1");
     assert!(compare(&all, &["--unnamed"]).unwrap().status.success());
 }
+
+#[test]
+fn mixed_legacy_ids_export_import_and_compare() {
+    let s = Store::scratch("shadow-mixed-ids");
+    for name in ["workshop", "yard"] {
+        fs::create_dir(s.dir.join(name)).expect("destination");
+    }
+    let cli = Path::new(env!("CARGO_MANIFEST_DIR"));
+    let output = s
+        .hermetic_command("python3")
+        .current_dir(&s.dir)
+        .arg(cli.join("tests/fixtures/shadow/mixed_ids.py"))
+        .arg(env!("CARGO_BIN_EXE_loops"))
+        .arg(cli.join("../../tools/shadow"))
+        .output()
+        .expect("python3 runs");
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+}
