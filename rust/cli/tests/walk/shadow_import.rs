@@ -404,3 +404,63 @@ fn large_facts_split_segments_and_nested_state_stays_private() {
         );
     }
 }
+
+#[test]
+fn compare_export_to_the_real_shadow_reading() {
+    use std::process::Command;
+    let script = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../tools/shadow/compare.py");
+    let compare = |s: &Store, extra: &[&str]| {
+        let mut python = Command::new("python3");
+        for (k, v) in s.command(&[]).get_envs() {
+            if let Some(v) = v {
+                python.env(k, v);
+            } else {
+                python.env_remove(k);
+            }
+        }
+        python
+            .current_dir(&s.dir)
+            .arg(&script)
+            .args([
+                "workshop.facts",
+                "workshop.map",
+                "workshop",
+                "--loops",
+                env!("CARGO_BIN_EXE_loops"),
+            ])
+            .args(extra)
+            .output()
+    };
+
+    let s = setup("shadow-compare");
+    s.ok(VERB);
+    let equal = match compare(&s, &[]) {
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
+            eprintln!("skipping shadow comparison walk: python3 is unavailable");
+            return;
+        }
+        result => result.expect("compare runs"),
+    };
+    assert!(
+        equal.status.success(),
+        "{}",
+        String::from_utf8_lossy(&equal.stderr)
+    );
+    let union = compare(&s, &["--also", "yard.facts", "yard.map", "yard"]).unwrap();
+    assert_eq!(union.status.code(), Some(1));
+    let summary = loops_eval::parse_json(std::str::from_utf8(&union.stdout).unwrap()).unwrap();
+    for key in ["shared", "differing", "multiple_heads"] {
+        assert_eq!(at(&summary, &["union", key]).canon(), "1");
+    }
+
+    let all = setup("shadow-compare-unnamed");
+    all.ok(&["shadow-import", "group.json", "--include-unnamed"]);
+    let mismatch = compare(&all, &[]).unwrap();
+    assert_eq!(mismatch.status.code(), Some(1));
+    let counts = loops_eval::parse_json(std::str::from_utf8(&mismatch.stdout).unwrap()).unwrap();
+    let Json::Arr(sources) = at(&counts, &["sources"]) else {
+        panic!("missing source counts")
+    };
+    assert_eq!(at(&sources[0], &["things", "only_new"]).canon(), "1");
+    assert!(compare(&all, &["--unnamed"]).unwrap().status.success());
+}

@@ -108,3 +108,46 @@ The Python suite builds SQLite snapshots in test scratch and checks the
 export against the invented workshop files in `rust/cli/tests/fixtures/shadow/`.
 The Rust suite reads the same bytes and checks signed lines against the
 existing writer.
+
+## Compare a shadow with its source
+
+Start with an initialized shadow store at `workshop/` and a `group.json`
+beside it. For this example the group contains
+
+```json
+{"state":"private","sources":[{"name":"workshop","facts":"cut/workshop.facts.jsonl","map":"cut/workshop.map.json","destination":"workshop"}]}
+```
+
+Review the exported map before the import. Run all three commands from the
+directory containing the group, with the Rust `loops` on PATH.
+
+```sh
+python3 tools/shadow/export.py workshop.vertex --output-dir cut
+loops shadow-import group.json
+python3 tools/shadow/compare.py cut/workshop.facts.jsonl cut/workshop.map.json workshop
+```
+
+Use `--loops PATH` to select a binary, and `--unnamed` when the import used
+`--include-unnamed`. Compare a stationary shadow. The tool checks each shadow
+first, then reads record counts and keyed field projections with `ls`. A
+values fold supplies root payloads, shadow-only field names and fields that
+the comma-separated option cannot express or pass within the OS argument limit.
+
+The JSON report lists sources in argument order and kinds in sorted name
+order, with counts only. Keyed things match by kind and key. Roots match by
+kind and full payload, including multiplicity. Unmatched roots count on their
+respective sides because the two sets of root IDs have no common identity.
+Field differences count matched things. Conflict and multiple-head counts
+cover the new reading. Exit 0 means the compared readings and record counts
+agree, 1 means a difference or a failed comparison, and 2 means bad usage.
+A failed read prints a diagnostic on stderr. `--show N` adds at most N
+examples across the report, with kind, key and field names.
+
+Supply `--old-json FILE` for an independent comparison with the first
+source's `sl read <vertex> --json --all` rows. Its generated metadata is
+excluded and rows of unnamed kinds are counted separately. Repeat
+`--also FACTS MAP SHADOW` to compare more sources and their union. For each
+shared keyed thing, the old-side merge orders all copies by original binary64
+time, numeric arrival coordinate, then argument order for exact ties. The
+union reports shared things, differing readings and multiple heads. Multiple
+heads alone do not change the field-equality verdict.
