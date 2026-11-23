@@ -2,105 +2,21 @@
 
 Everything that waits on Kyle, in one place. Each entry has the question, an example, the options and a recommendation.
 
-- An entry leaves this file when it is ruled. The entries ruled on 2026-11-21 have left it: PV1 to PV7, RC1, W7, E1 and I10, then TK1 to TK9 and W1 to W6. TK10 to TK12 and S4 left it on 2026-11-22, AD1, AD2, AD3 and TK13 on 2026-11-23.
+- An entry leaves this file when it is ruled. The entries ruled on 2026-11-21 have left it: PV1 to PV7, RC1, W7, E1 and I10, then TK1 to TK9 and W1 to W6. TK10 to TK12 and S4 left it on 2026-11-22, AD1 to AD4, TK13 and W3b on 2026-11-23.
 - The ruling is written in [CHANGELOG.md](CHANGELOG.md) under its date, and one line is added to [Ruled](#ruled) at the end of this file.
 - What is next once these are ruled is in [ROADMAP.md](ROADMAP.md).
 - "Today" in an example means the `loops` binary built from main on 2026-11-21. Every "today" answer below was run, not predicted.
 ## At a glance
 
-| Id | Question | Recommended | What waits on it |
-| --- | --- | --- | --- |
-| [AD4](#ad4-references-in-the-old-payloads) | The old stores refer from fact to fact in two ways (a `ref` list, and `<name>_ref` fields holding old ids); the import keeps both as plain text. Should they become mentions? | Both become mentions of the thing referred to; a record mentions what its thing refers to after it, as the old tool reads it; the payload stays untouched | Using the homelab shadows for anything that follows references. The shadows exist and read as the old tool does in every other field |
-| [W3b](#w3b-the-frozen-javascript-after-ticks) | The JavaScript was frozen for step 4 as a trial. Keep it frozen, bring it up to ticks, or retire it? | Keep it frozen as the rule: new steps are built in Lean and Rust | Nothing. The JavaScript keeps running as it does now |
+Nothing waits on a ruling today. Two questions are [being prepared](#being-prepared).
 
-Two more questions are [being prepared](#being-prepared).
-
-Every other entry is ruled.
+Every earlier entry is ruled.
 
 - The tick record, TK1 to TK13: ruled and built. Step 4 is closed. The questions as they were put are in [the tick record note](notes/2026-11-21-tick-record.md#10-the-questions-as-they-were-put), sections 10 and 11.
-- The order of work, W1 to W6: ruled. The entries as put are in [the order-of-work note](notes/2026-11-21-order-of-work.md).
-- The adoption step, AD1 to AD3: ruled on 2026-11-23. AD1 and AD2 each for its recommendation with additions, AD3 for its recommendation in both rows. The entries as put, and the additions, are in [the adoption note](notes/2026-11-22-adoption.md).
+- The order of work, W1 to W6, and W3b, the look at the JavaScript after ticks: ruled. The entries as put are in [the order-of-work note](notes/2026-11-21-order-of-work.md).
+- The adoption step, AD1 to AD4: ruled on 2026-11-23. AD1 and AD2 each for its recommendation with additions, AD3 for its recommendation in both rows, AD4 for rows 1 to 3 with row 4 the other way and a rule for old ids. The entries as put, and the additions, are in [the adoption note](notes/2026-11-22-adoption.md).
 
 After this: [what is being prepared](#being-prepared), [what you deferred](#deferred-by-you) and [what is ruled](#ruled). Nothing waits to be confirmed: under your ruling of 2026-11-21 an implementer choice comes here only when it changes bytes or answers.
-
-## The adoption step
-
-### AD4: references in the old payloads
-
-**Question.** The first real import, of the six homelab stores on 2026-11-23, reads as the old tool does in every field but one. But the old stores refer from one fact to another in two ways that the import, which keeps every payload untouched as AD2 says, carries only as text. Should those references also become mentions (`about`)?
-
-**The two forms, counted in the six stores (11,072 facts).**
-- **A field `ref`:** a comma-separated list, such as `ref=thread:firing,decision/glaze`. The old tool takes it out of the payload and gathers its parts across all of a thing's revisions. 894 facts carry it, with 933 references: 921 written `kind:key` or `kind/key` (906 of them name a thing the stores hold), and 12 old fact ids. 53 things read fewer references in the shadow than the old tool shows, because only the latest `ref` is read.
-- **A field `<name>_ref`:** written by the old tool when an emit says `owner=person/potter`; it keeps `owner: person/potter` and adds `owner_ref` holding the old id of potter's fact. 8,363 facts carry such fields, with 14,685 old ids. Every one names a fact of a keyed thing the stores hold; 28 name a fact in another of the six stores. The old tool reads these as plain fields too, so both readings show the same text, but in the shadow an old id names nothing: the only map from old ids to records is the import's private journal.
-
-**Example, run on both tools today.** An invented old store, written with the old tool: a person `potter`, then a task `kiln` twice, first `status=open owner=person/potter ref=thread:firing`, then `status=done ref=decision/glaze`.
-
-```
-$ sl read workshop.vertex --json --all              (the old tool; the task's row, shortened)
-payload  {"name": "kiln", "status": "done", "owner": "person/potter", "owner_ref": "01M858Z8H3HM…"}
-refs     ["decision/glaze", "thread:firing"]
-
-$ loops of task:kiln --plain                          (exported and imported with today's tools)
-  owner      person/potter
-  owner_ref  01M858Z8H3HM…
-  ref        decision/glaze
-  status     done
-about        observer:clerk
-
-$ loops fold mentions.json --plain                    (records that mention thread:firing)
-records  0
-```
-
-| | The case | Recommended | The other choice |
-| --- | --- | --- | --- |
-| 1 | **A reference in `ref`**, `kind:key` or `kind/key`. | **It also becomes a mention, `kind:key`, on its record.** A spec with `"about": "thread:firing"` then finds every record that referred to the thread, which the old tool counted as the thread's inbound references. | Payload only, as imported today. Finding what refers to the thread needs a test on the whole text of `ref`, which cannot pick one reference out of several. |
-| 2 | **An old id in a `<name>_ref` field, or in `ref`.** | **It becomes a mention of the thing that fact belongs to**, through the journal: `owner_ref` naming potter's fact gives `person:potter`. Every one of the 14,697 names a keyed thing. | Payload only. The id names nothing in the new store. |
-| 3 | **What a revision mentions.** The old tool gathers `ref` across revisions and keeps the latest value of each `<name>_ref` field. | **Each record mentions what its thing refers to after it, read as the old tool would:** every `ref` so far, and the current value of each `<name>_ref` field, but only its own observer. Then `loops of task:kiln` shows `decision:glaze observer:clerk person:potter thread:firing`. Written by hand that way today, both records count as mentioning the thread. It is also what `loops emit` does for a revision: run without `--about`, it copies the head's mentions. | Each record mentions only the references its own fact wrote. The thing shows the latest fact's; all of them are a read over its records. |
-| 4 | **The payload.** | **Untouched**, as AD2 ruled: `ref`, `owner` and `owner_ref` stay as written. The mentions are added beside them. | Take `ref` out once its references are mentions, as the old tool did, and rewrite old ids to record ids. The payload is then no longer the old payload. |
-
-**What it costs to change later.** Rows 1 to 3 change the bytes and id of almost every record: 8,400 facts or more carry a reference. The six shadows written today follow the other column. Importing them again into fresh shadows takes about 3 seconds; nothing reads them yet.
-
-**Not asked.** The comparison tool learns to compare the old tool's `refs` with a thing's mentions once this is ruled. A reference whose kind no vertex declares (4 of them) is still a valid mention and is treated as row 1 says. Facts without their key field (37 here) are roots under AD2 (c); the old tool does not show them, and the comparison counts them apart.
-
-## The order of work
-
-### W3b: the frozen JavaScript, after ticks
-
-**Question.** You ruled W3 on 2026-11-21 as a trial: the JavaScript keeps what it has and passes its vectors, ticks are built in Lean and Rust only, and it is looked at again when ticks are done. Ticks are done. Keep it frozen, bring it up to ticks, or retire it?
-
-**Run today.** The JavaScript checks every vector from before ticks and none of the tick vectors:
-
-```
-$ node interop/js/check.mjs vectors
-result      23 files read   23 on disk    194 passed    0 failed
-standard     8 files read    - on disk   4134 passed    0 failed
-tick      131 files not run by JavaScript (W3)
-7363 checks passed
-$ node --test interop/js/*.test.mjs          50 tests, 50 pass
-```
-
-Both take about 11 seconds. A worker went through the whole history for this entry; the coordinator checked the numbers above.
-
-**What the JavaScript has caught, from the start of the project.**
-- **No fault in Lean or Rust that only the JavaScript would have found.**
-- One Rust fault was first seen in a three-way fuzz run: 54 scenario answers where Rust took heads over the whole view. Lean and the JavaScript agreed; a Lean and Rust run of the same inputs shows it too.
-- One question it raised alone: for a repeated base it kept the last entry where Lean and Rust kept the first. You settled it in D1 with a refusal none of the three gave.
-- One gap in a law's premise was first met by its slice sweep (a refused record brought into a part without what makes it refused). margins-claude's Python reached it independently.
-- Its own faults: at least 11 over the project, one of them during the trial (a sum limit that contradicted the law index).
-
-**What the trial cost.** Ten commits touched `interop/js` since 2026-11-21. Three were the payload-values update W3 included; six only recounted the tick files it skips as tick vectors arrived; one removed the sum limit. No CI run failed because of the JavaScript.
-
-**What it still does that nothing else does in CI.** It is the second computation of which records a spec's answer depends on, beside the Rust (TK13): it agreed on 486 of 488 generated cases, and in the other two its set was smaller and inside the Rust's, as the keyed rule allows. With a dropped eraser planted in the Rust, that comparison caught it. margins-claude's Python does the same from outside, but not in CI.
-
-| | Option | Cost | What the evidence becomes |
-| --- | --- | --- | --- |
-| **B** | **Keep it frozen, as the rule (recommended).** New steps are built in Lean and Rust; the JavaScript keeps its layers, its vectors and the slice comparison. | About 11 seconds of CI, and a recount when tick vectors are added. A fault in its existing layers is fixed. | As now: 649 vectors three ways, 131 tick vectors two ways, the selector checked twice. |
-| A | Bring it up to ticks. | Three or four modules (spec hashing, the tick reader and writer, the check), 131 vectors to pass, and a third port of every later rule. | A third tick answer in CI. The trial found no fault one would have caught. |
-| C | Retire it. | Remove the CI job; replace the generator's use of it, the slice comparison and the evidence pages' JavaScript column. | The eight older fuzz families compare Lean and Rust. The selector loses its second computation unless margins-claude's Python joins CI. |
-
-**What it costs to change later.** Little either way. B keeps every option open: retiring later costs what it costs now, and nothing new would be built on the JavaScript.
-
-**Not asked.** The browser page planned on the JavaScript uses the Rust compiled for the browser, as W3 said; that is the same under every option. The roadmap and the laws page said all three implementations check every vector; since ticks that is not so, and both now say what is checked by which.
 
 ## Being prepared
 
@@ -126,6 +42,8 @@ One line for each ruling, newest first. The full text is in [CHANGELOG.md](CHANG
 
 | Date | Ruling | Where |
 | --- | --- | --- |
+| 2026-11-23 | W3b: the JavaScript stays frozen, as the rule; new steps are built in Lean and Rust | Changelog; [the order-of-work note](notes/2026-11-21-order-of-work.md#w3b-the-frozen-javascript-after-ticks) |
+| 2026-11-23 | AD4: references in the old payloads become mentions of what they name, through one rule for old ids; the payload is cleaned of the fields they came from | Changelog; [the adoption note](notes/2026-11-22-adoption.md#ad4-references-in-the-old-payloads) |
 | 2026-11-23 | TK13: `loops tick <spec>` with no cut named covers the records the answer depends on, with everything held under them through `prev` and `under`; for a spec that reads things by key, every record of the things it touches; `--all` covers everything | Changelog; [the tick record note](notes/2026-11-21-tick-record.md#tk13-what-a-tick-covers-when-you-name-no-cut) |
 | 2026-11-23 | AD3: a fact of a kind the vertex does not name, brought in with `--include-unnamed`, is a root; the old time is kept to the microsecond | Changelog; [the adoption note](notes/2026-11-22-adoption.md#ad3-two-details-of-the-import) |
 | 2026-11-23 | AD1: a store name is bound in a per-user list, in an optional list kept with a group of stores, or by `--store <name>=<dir>` on the command; a name bound to nothing refuses the whole read (`store-unknown`) | Changelog; [the adoption note](notes/2026-11-22-adoption.md) |

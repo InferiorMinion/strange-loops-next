@@ -159,3 +159,43 @@ The cost: two readers written from the prose may name different codes for an inp
 
 **Neon's comment.** Keep, and mark `out/` as generated in `.gitattributes` so that a merge request folds those files away. That costs nothing and suits either ruling, so it is done (2026-11-21).
 The other half of Neon's point, counts kept by hand in the roadmap, is done: the roadmap no longer holds them.
+
+## W3b: the frozen JavaScript, after ticks
+
+**Ruled by Kyle, 2026-11-23:** option B, as the rule. The JavaScript keeps its layers and vectors and the slice comparison; new steps are built in Lean and Rust. "Today" in the text is as written then.
+
+**Question.** You ruled W3 on 2026-11-21 as a trial: the JavaScript keeps what it has and passes its vectors, ticks are built in Lean and Rust only, and it is looked at again when ticks are done. Ticks are done. Keep it frozen, bring it up to ticks, or retire it?
+
+**Run today.** The JavaScript checks every vector from before ticks and none of the tick vectors:
+
+```
+$ node interop/js/check.mjs vectors
+result      23 files read   23 on disk    194 passed    0 failed
+standard     8 files read    - on disk   4134 passed    0 failed
+tick      131 files not run by JavaScript (W3)
+7363 checks passed
+$ node --test interop/js/*.test.mjs          50 tests, 50 pass
+```
+
+Both take about 11 seconds. A worker went through the whole history for this entry; the coordinator checked the numbers above.
+
+**What the JavaScript has caught, from the start of the project.**
+- **No fault in Lean or Rust that only the JavaScript would have found.**
+- One Rust fault was first seen in a three-way fuzz run: 54 scenario answers where Rust took heads over the whole view. Lean and the JavaScript agreed; a Lean and Rust run of the same inputs shows it too.
+- One question it raised alone: for a repeated base it kept the last entry where Lean and Rust kept the first. You settled it in D1 with a refusal none of the three gave.
+- One gap in a law's premise was first met by its slice sweep (a refused record brought into a part without what makes it refused). margins-claude's Python reached it independently.
+- Its own faults: at least 11 over the project, one of them during the trial (a sum limit that contradicted the law index).
+
+**What the trial cost.** Ten commits touched `interop/js` since 2026-11-21. Three were the payload-values update W3 included; six only recounted the tick files it skips as tick vectors arrived; one removed the sum limit. No CI run failed because of the JavaScript.
+
+**What it still does that nothing else does in CI.** It is the second computation of which records a spec's answer depends on, beside the Rust (TK13): it agreed on 486 of 488 generated cases, and in the other two its set was smaller and inside the Rust's, as the keyed rule allows. With a dropped eraser planted in the Rust, that comparison caught it. margins-claude's Python does the same from outside, but not in CI.
+
+| | Option | Cost | What the evidence becomes |
+| --- | --- | --- | --- |
+| **B** | **Keep it frozen, as the rule (recommended).** New steps are built in Lean and Rust; the JavaScript keeps its layers, its vectors and the slice comparison. | About 11 seconds of CI, and a recount when tick vectors are added. A fault in its existing layers is fixed. | As now: 649 vectors three ways, 131 tick vectors two ways, the selector checked twice. |
+| A | Bring it up to ticks. | Three or four modules (spec hashing, the tick reader and writer, the check), 131 vectors to pass, and a third port of every later rule. | A third tick answer in CI. The trial found no fault one would have caught. |
+| C | Retire it. | Remove the CI job; replace the generator's use of it, the slice comparison and the evidence pages' JavaScript column. | The eight older fuzz families compare Lean and Rust. The selector loses its second computation unless margins-claude's Python joins CI. |
+
+**What it costs to change later.** Little either way. B keeps every option open: retiring later costs what it costs now, and nothing new would be built on the JavaScript.
+
+**Not asked.** The browser page planned on the JavaScript uses the Rust compiled for the browser, as W3 said; that is the same under every option. The roadmap and the laws page said all three implementations check every vector; since ticks that is not so, and both now say what is checked by which.
