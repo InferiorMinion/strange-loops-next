@@ -5,30 +5,53 @@ use loops::{
     occurred::occurred_span,
     record::{Digest, Record},
     result::record_id_of,
+    slice::{Closure, spec_slice},
+    spec::Spec,
+    tick::make_tick,
     time::Moment,
 };
-use loops_place::dir::Held;
+use loops_place::{dir::Held, line::hash};
 use std::collections::{HashMap, HashSet};
 
 #[derive(Default)]
 pub(crate) enum Cut {
     #[default]
+    Unspecified,
     All,
+    Slice(Option<Moment>),
     AsOf(Moment),
     Cover(Vec<String>),
 }
 
 impl Cut {
+    pub(crate) fn mode(&mut self, flag: &str) -> Result<(), Fail> {
+        match (flag, &*self) {
+            ("--all", Self::Unspecified) => *self = Self::All,
+            ("--slice", Self::Unspecified) => *self = Self::Slice(None),
+            ("--slice", Self::AsOf(bound)) => *self = Self::Slice(Some(bound.clone())),
+            ("--slice", Self::Cover(_)) => return Err(usage("use either --slice or --cover")),
+            ("--slice", Self::Slice(_)) => return Err(usage("use --slice once")),
+            _ => return Err(usage("--all must be the only selector")),
+        }
+        Ok(())
+    }
+
     pub(crate) fn select(&mut self, flag: &str, value: String) -> Result<(), Fail> {
         match (flag, &mut *self) {
-            ("--as-of", Self::All) => {
+            ("--as-of", Self::Unspecified | Self::Slice(None)) => {
                 let span = occurred_span(&value)
                     .filter(|_| !value.contains('/'))
                     .ok_or_else(|| usage("--as-of takes an instant or a date"))?;
-                *self = Self::AsOf(span.start().clone());
+                let bound = span.start().clone();
+                *self = match self {
+                    Self::Slice(_) => Self::Slice(Some(bound)),
+                    _ => Self::AsOf(bound),
+                };
             }
-            ("--as-of", Self::AsOf(_)) => return Err(usage("use --as-of once")),
-            ("--cover", Self::Cover(_) | Self::All) => {
+            ("--as-of", Self::AsOf(_) | Self::Slice(Some(_))) => {
+                return Err(usage("use --as-of once"));
+            }
+            ("--cover", Self::Cover(_) | Self::Unspecified) => {
                 if value.is_empty() || value == "r:" || value.starts_with("--") {
                     return Err(usage("--cover takes a record id or prefix"));
                 }
@@ -38,13 +61,24 @@ impl Cut {
                     *self = Self::Cover(vec![value]);
                 }
             }
+            (_, Self::All) => return Err(usage("--all must be the only selector")),
+            ("--cover", Self::Slice(_)) => {
+                return Err(usage("use either --slice or --cover"));
+            }
             _ => return Err(usage("use either --as-of or --cover")),
         }
         Ok(())
     }
 
-    pub(crate) fn forms(self, held: &Held) -> Result<Vec<Record>, Fail> {
+    pub(crate) fn payload(self, held: &Held, spec: Spec) -> Result<Json, Fail> {
+        let forms = self.forms(held, &spec)?;
+        Ok(make_tick(spec, &forms).to_json(&hash))
+    }
+
+    fn forms(self, held: &Held, spec: &Spec) -> Result<Vec<Record>, Fail> {
         let seeds = match self {
+            Self::Unspecified | Self::Slice(None) => return Ok(slice(held.settled(), spec)),
+            Self::Slice(Some(bound)) => return Ok(slice(as_of(held.settled(), &bound), spec)),
             Self::All => return Ok(held_forms(held)),
             Self::AsOf(bound) => {
                 let records = held.settled();
@@ -63,6 +97,16 @@ impl Cut {
         // claim's own settlement happen inside make_tick over just these ids.
         Ok(down_of(held.settled(), seeds))
     }
+}
+
+fn slice(mut records: Vec<Record>, spec: &Spec) -> Vec<Record> {
+    // spec_slice returns a subsequence in settled order. Keep those snapshot
+    // forms, including commitments whose eraser is outside this selection.
+    let mut ids = spec_slice(spec, &records, Closure::Downward)
+        .into_iter()
+        .peekable();
+    records.retain(|r| ids.next_if_eq(&r.id).is_some());
+    records
 }
 
 fn as_of(records: Vec<Record>, bound: &Moment) -> Vec<Record> {

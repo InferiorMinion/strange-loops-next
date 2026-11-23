@@ -218,7 +218,7 @@ The record starts where the old roadmap's did. For anything earlier, and for eve
 <h2 id="2026-11-23">2026-11-23</h2>
 <p>In brief:</p>
 <ul>
-<li><p>Kyle ruled TK13, yes to all three rows: a tick made with no cut named covers only the records its answer depends on, with what is under them; <code>--all</code> covers everything. The verb is being changed to match.</p></li>
+<li><p>Kyle ruled TK13, yes to all three rows, and <code>loops tick</code> now does it: a tick made with no cut named covers only the records its answer depends on, with what is under them; <code>--all</code> covers everything. In a store of six backups and 40 notes the tick lists 6 ids, not 46.</p></li>
 <li><p>The Rust can work out which records a spec's answer depends on (<code>loops::slice::spec_slice</code>). Nothing uses it yet: no verb, flag or default changed, and what <code>loops tick</code> does with it waits on TK13. On 488 generated stores and specs the answer over the selected records equals the answer over everything, and a tick over them checks <code>same</code>.</p></li>
 <li><p>TK13 is put to Kyle: whether <code>loops tick &lt;spec&gt;</code> should cover only the records its answer depends on once the binary can work that set out. John's pilot asks for it. A worker planned the build the same day; the plan corrected the entry's second row and added a third, for specs that read things by key.</p></li>
 <li><p>Three faults found before the first real import are fixed: an old id need not be 26 characters, the vertex reader skips the <code>observers</code> and <code>sources</code> blocks, and a fold started in a group's directory reads the <code>stores.json</code> there. On copies of six older stores the import then took every fact and each shadow read as its old store did.</p></li>
@@ -230,6 +230,41 @@ The record starts where the old roadmap's did. For anything earlier, and for eve
 <li><p>The import's first two pieces are built: a script that exports an old store and its vertex to two text files, and the mapping of each old fact to a record, equal byte for byte to what <code>loops emit - --fill</code> writes. No verb yet.</p></li>
 <li><p>The import has its plan. Two of its choices decide record ids and are put to Kyle as AD3: how a kind the vertex does not name is written when asked for, and how fine the old time is.</p></li>
 </ul>
+<h3 id="loops-tick-covers-what-the-answer-depends-on"><code>loops tick</code> covers what the answer depends on</h3>
+<p>The last piece of smaller ticks (TK13, ruled 2026-11-23). Rust only, in the CLI. No protocol rule, no vector's answer, no refusal code and nothing in <code>rust/core</code>, <code>rust/eval</code> or <code>rust/place</code> changed. <code>loops tick --check</code>, <code>loops emit --base</code>, <code>read</code> and <code>fold</code> are untouched.</p>
+<div class="table-scroll" tabindex="0"><table><thead><tr><th scope="col">The command</th><th scope="col">Covers</th></tr></thead>
+<tbody>
+<tr><td><code>loops tick &lt;spec&gt;</code></td><td>the records the spec's answer depends on, and every held record under them through <code>prev</code> and <code>under</code> <strong>(new)</strong></td></tr>
+<tr><td><code>loops tick &lt;spec&gt; --all</code></td><td>everything the store holds: byte for byte what the bare command wrote before</td></tr>
+<tr><td><code>loops tick &lt;spec&gt; --as-of &lt;time&gt;</code></td><td>unchanged, byte for byte</td></tr>
+<tr><td><code>loops tick &lt;spec&gt; --cover &lt;id&gt;...</code></td><td>unchanged, byte for byte</td></tr>
+<tr><td><code>loops tick &lt;spec&gt; --as-of &lt;time&gt; --slice</code></td><td>the small set, taken inside the time cut and staying inside it <strong>(new)</strong></td></tr>
+</tbody></table></div>
+<p><code>--slice</code> alone is the bare command said out loud. <code>--all</code> with any other selector, and <code>--slice</code> with <code>--cover</code>, are usage errors.</p>
+<p><strong>Run by the coordinator on the changed binary</strong>, the two examples of the TK13 entry:</p>
+<ul>
+<li><p>Six backups and 40 notes: the bare tick lists 6 ids in 1,134 bytes; <code>--all</code> lists 47 in 3,471; the result hash is the same; a second bare tick does not cover the first.</p></li>
+<li><p>After the first backup is voided by a record of another kind, the bare tick over <code>current</code> lists 7 ids and answers 5 and 615, as <code>loops fold</code> does. Each tick checks <code>same</code>.</p></li>
+</ul>
+<p><strong>A tick can list a record as read without its payload when the record that erased it is not covered.</strong> margins-claude raised this. It happens to a record the tick holds only because another record builds on it or replaces it: the answer needs its envelope and not its payload. Tried with two stores: the laptop erased the voiding record's payload and made the tick (7 covered, 1 withheld); the NAS held that record with its payload and never received the eraser. <code>loops tick --check</code> on the NAS: <code>same</code>.</p>
+<p><strong>Measured by the worker on invented stores of 10,000 records</strong> (release build, median of five).</p>
+<div class="table-scroll" tabindex="0"><table><thead><tr><th scope="col">Store</th><th scope="col">The spec takes</th><th scope="col">Bare tick</th><th scope="col"><code>--all</code></th><th scope="col">Time, bare and <code>--all</code></th></tr></thead>
+<tbody>
+<tr><td>Records that stand alone</td><td>10</td><td>10 ids, 1,309 bytes</td><td>10,000 ids, 570,739 bytes</td><td>203 ms, 222 ms</td></tr>
+<tr><td>One chain of 10,000, only its last record taken</td><td>1</td><td>10,000 ids, 570,738 bytes</td><td>the same</td><td>287 ms, 276 ms</td></tr>
+<tr><td>One keyed thing with a forked history of 2,500, among others</td><td>that thing</td><td>2,502 ids, 143,368 bytes</td><td>10,000 ids, 570,754 bytes</td><td>226 ms, 252 ms</td></tr>
+</tbody></table></div>
+<p>The second row is what TK13's second row costs at its worst: a record that sits on a long history brings all of it. The third is the third row's cost: a thing read by key brings its whole history.</p>
+<p><strong>Existing tests.</strong> Nine walk tests named what a bare tick covers. Seven of them are about something else (the base of a write, a store that does not check, a nested tick) and now say <code>--all</code>; one is about the default and now expects the small set; one gained the new usage errors. No other expected output changed. The line <code>--all</code> writes is pinned against the line the binary built from main wrote before the change, for the same signer, clock and salt; so are <code>--as-of</code> and <code>--cover</code>.</p>
+<p><strong>Implementer choices; they stand under Kyle's ruling of 2026-11-21 (W7).</strong> Recorded as choice 32 in <code>rust/PLACE.md</code>.</p>
+<ul>
+<li><p><code>--slice</code> is kept as a flag so that the small set can be taken inside <code>--as-of</code>. <code>--as-of</code> alone still covers the whole cut.</p></li>
+<li><p>Which covered records are read without a payload is decided from everything the writer holds, as the two cuts do.</p></li>
+<li><p>An empty selection writes a tick that covers nothing.</p></li>
+<li><p>A tick that itself erases a record it covers can check <code>cannot check</code> at once. That was so before, for every kind of tick.</p></li>
+<li><p>&quot;What <code>loops fold</code> shows&quot; means the fold over the same store; a tick reads only the store it is written to.</p></li>
+</ul>
+<p>A Codex worker wrote it; the coordinator reviewed it, ran the gates and the runs above, and planted one fault (the writer leaving out what is under the set), which a walk test caught.</p>
 <h3 id="ruled-by-kyle-2026-11-23-tk13">Ruled by Kyle, 2026-11-23: TK13</h3>
 <p>Yes to all three rows as recommended. The entry as put is in <a href="note-2026-11-21-tick-record.html#tk13-what-a-tick-covers-when-you-name-no-cut">the tick record note</a>.</p>
 <ol>
@@ -237,7 +272,7 @@ The record starts where the old roadmap's did. For anything earlier, and for eve
 <li><p><strong>The set also holds everything under it:</strong> every held record its records build on, through <code>prev</code> and <code>under</code>, all the way down.</p></li>
 <li><p><strong>A spec with a slot that reads things by key</strong> covers every record of each thing a source touches, with what erases them and what they name in <code>prev</code>.</p></li>
 </ol>
-<p>The part that works the set out is on main and already follows rows 2 and 3. The verb does not yet: until the next piece merges, a bare <code>loops tick</code> still covers everything. <code>--as-of</code> and <code>--cover</code> keep their meaning.</p>
+<p>The part that works the set out was on main and already followed rows 2 and 3. The verb follows since the entry above. <code>--as-of</code> and <code>--cover</code> keep their meaning.</p>
 <h3 id="the-slice-familys-fold-reads-the-records-as-held">The slice family's fold reads the records as held</h3>
 <p>A correction to the comparison below, from margins-claude after running the selector on sl-py's own stores. <code>rust/eval/src/slice.rs</code> only: no verb, no record's bytes, no vector's answer and no case of the fixed seed changed.</p>
 <p>The Rust evaluator took the selected records from the settled whole, where an erased record has already lost its payload. So its fold over the selection could not differ from the whole by an eraser left out. Now the fold reads the selected forms as they were given, and settles only those. The tick is still made from the settled records, as <code>loops tick</code> makes one: a record held only as a target can be erased by a record the selection rightly leaves out, and a tick that listed it as open could not be checked.</p>

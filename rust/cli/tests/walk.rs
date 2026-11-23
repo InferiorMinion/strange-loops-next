@@ -1227,7 +1227,7 @@ fn a_verb_that_answers_from_a_store_that_does_not_check_answers_then_refuses() {
     assert_eq!((code, err), (0, format!("warning: {why}")));
     assert!(id.starts_with("r:"));
 
-    let (code, tick, err) = answer(&s, &["tick", "decisions"], "");
+    let (code, tick, err) = answer(&s, &["tick", "decisions", "--all"], "");
     assert_eq!((code, err), (0, format!("warning: {why}")));
     let (_, line, _) = answer(&s, &["get", tick.trim_end()], "");
     let mut covered = [kept, id.trim_end().to_owned()];
@@ -2803,8 +2803,9 @@ fn tick_writers_agree_on_the_payload_across_stores() {
         strings(&next, &["env", "prev"]),
         std::slice::from_ref(&id_b)
     );
-    backups.push(id_b);
-    backups.sort_unstable();
+    assert_cut_report(&a, &id_a, "yes", 0);
+    assert_cut_report(&b, &id_b, "yes", 0);
+    assert_cut_report(&b, &next_id, "yes", 0);
     assert_eq!(strings(&next, &["payload", "covers"]), backups);
     assert_eq!(text(&next, &["payload", "result", "runs", "value"]), "6");
 }
@@ -3193,7 +3194,7 @@ fn stated_predecessor_outside_the_cover_brings_its_live_ancestors() {
 fn tick_cover_and_literal_ids_form_one_base_on_both_paths() {
     let s = fixed_store("base-union");
     let left = fixed_emit(&s, &["service", "--of", BASE_THING, "owner=kyle"]);
-    let marker = s.ok_with(&["tick", "-"], SPEC);
+    let marker = s.ok_with(&["tick", "-", "--all"], SPEC);
     let row = r#"{"kind":"service","of":"svc:jellyfin","payload":{"port":"8096"}}"#;
     let right = ids(
         &parse_json(&s.ok_with(&["emit", "-"], row)).expect("batch"),
@@ -3293,7 +3294,7 @@ fn a_tick_base_forks_the_older_read_and_preserves_explicit_predecessors() {
         "2009",
         "status=open",
     ]);
-    let marker = s.ok_with(&["tick", "-", "--of", "tick:series"], SPEC);
+    let marker = s.ok_with(&["tick", "-", "--all", "--of", "tick:series"], SPEC);
     let peer = s.ok(&[
         "emit",
         "task",
@@ -3360,10 +3361,10 @@ fn a_tick_base_forks_the_older_read_and_preserves_explicit_predecessors() {
 fn an_empty_task_base_does_not_open_a_nested_tick() {
     let s = fixed_store("base-daily");
     let a = fixed_emit(&s, &["task", "--of", "task:42", "status=open"]);
-    let daily = s.ok_with(&["tick", "-", "--of", "tick:daily"], SPEC);
+    let daily = s.ok_with(&["tick", "-", "--all", "--of", "tick:daily"], SPEC);
     let other = fixed_store("base-weekly");
     import_ids(&s, &other, std::slice::from_ref(&daily));
-    let weekly = other.ok_with(&["tick", "-"], SPEC);
+    let weekly = other.ok_with(&["tick", "-", "--all"], SPEC);
     import_ids(&other, &s, std::slice::from_ref(&weekly));
     let empty = "the base covers no record of task:42";
     let new = fixed_write(
@@ -3385,7 +3386,15 @@ fn an_empty_task_base_does_not_open_a_nested_tick() {
     let before = s.ok(&["export"]).lines().count();
     let (status, out, err) = answer(
         &s,
-        &["tick", "-", "--of", "tick:daily", "--base-id", &daily],
+        &[
+            "tick",
+            "-",
+            "--all",
+            "--of",
+            "tick:daily",
+            "--base-id",
+            &daily,
+        ],
         SPEC,
     );
     assert_eq!((status, err), (0, String::new()));
@@ -3451,7 +3460,7 @@ fn base_resolution_checks_every_covered_envelope_and_only_the_markers_opening() 
         "2009",
     ]);
     let irrelevant = a.ok(&["emit", "other"]);
-    let tick = a.ok_with(&["tick", "-"], SPEC);
+    let tick = a.ok_with(&["tick", "-", "--all"], SPEC);
     let b = fixed_store("base-resolution-b");
     import_ids(&a, &b, &[x.clone(), tick.clone()]);
     refuses_base(
@@ -4507,7 +4516,7 @@ fn tick_cut_after_local_erasure_withholds_the_opening() {
 fn tick_cut_and_base_choose_payload_and_anchor_independently() {
     let s = Store::new("tick-cut-base");
     let anchor = s.ok(&["emit", "note", "--of", "tick:series", "--emitted", WHEN]);
-    let base = s.ok_with(&["tick", "-", "--emitted", WHEN], BACKUPS);
+    let base = s.ok_with(&["tick", "-", "--all", "--emitted", WHEN], BACKUPS);
     s.ok(&["emit", "note", "--of", "tick:series", "--emitted", WHEN]);
     let backup = s.ok(&["emit", "backup", "--emitted", "2000-01-01T00:00:00Z"]);
     for (flag, value) in [("--cover", backup.as_str()), ("--as-of", "2000-01-02")] {
@@ -4548,6 +4557,16 @@ fn tick_cut_usage_and_id_refusals_leave_store_intact() {
         vec!["--as-of", "2000", "--as-of", "2001"],
         vec!["--as-of", "2000/2001"],
         vec!["--as-of", "2000-02-30"],
+        vec!["--all", "--as-of", "2000"],
+        vec!["--as-of", "2000", "--all"],
+        vec!["--all", "--cover", &ids[0]],
+        vec!["--cover", &ids[0], "--all"],
+        vec!["--slice", "--all"],
+        vec!["--all", "--slice"],
+        vec!["--cover", &ids[0], "--slice"],
+        vec!["--slice", "--cover", &ids[0]],
+        vec!["--all", "--all"],
+        vec!["--slice", "--slice"],
         vec!["--cover"],
         vec!["--as-of"],
     ] {
@@ -4572,17 +4591,18 @@ fn tick_cut_usage_and_id_refusals_leave_store_intact() {
 }
 
 #[test]
-fn tick_cut_full_cover_matches_default_signed_tick() {
+fn tick_cut_full_cover_matches_all_signed_tick() {
     let s = Store::new("tick-cut-default");
     let first = s.ok(&["emit", "backup"]);
     let second = s.ok(&["emit", "note", "--erases", &first]);
     let fixed = ["tick", "-", "--emitted", WHEN, "--salt", SALT];
-    let default = s.ok_with(&fixed, BACKUPS);
+    let all = s.ok_with(&[&fixed[..], &["--all"]].concat(), BACKUPS);
     let explicit = s.ok_with(
         &[&fixed[..], &["--cover", &second, "--cover", &first]].concat(),
         BACKUPS,
     );
-    assert_eq!(default, explicit);
+    assert_eq!(all, explicit);
+    assert_cut_report(&s, &all, "yes", 0);
 }
 
 #[test]
@@ -4829,3 +4849,6 @@ mod registry;
 
 #[path = "walk/shadow_import.rs"]
 mod shadow_import;
+
+#[path = "walk/tick_slice.rs"]
+mod tick_slice;

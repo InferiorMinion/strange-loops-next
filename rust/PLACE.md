@@ -33,8 +33,8 @@ loops read <vertex> [--store <name>=<dir>]... [--values] [--plain]
                                     fold .loops/vertices/<vertex>.json
 loops fold <spec.json | -> [--store <name>=<dir>]... [--values] [--plain]
                                     fold a spec from a file or stdin
-loops tick <vertex | spec-file | -> [--as-of <time> | --cover <id> ...] [emit envelope flags]
-                                    fold everything held by default, or a cut (choice 28)
+loops tick <vertex | spec-file | -> [--all | --slice [--as-of <time>] | --as-of <time> | --cover <id> ...] [emit envelope flags]
+                                    cover the spec’s slice by default (choice 32), or a named cut (choice 28)
 loops tick --check <id>             check a tick against this store and print the verdict and reports
 loops erase <id>... ["why"]         emit an erasure, and drop the openings held here
 loops export [--kind <k>] [--of <thing>] [--about <thing>]
@@ -396,7 +396,7 @@ Every verb that reads the store says when either happened (choice 18).
     {"of":"task:1","prev":["H","A"],"about":["project:q"],"occurred":"2010","sets":["y"]}
     ```
 
-21. **By default `loops tick` covers the whole holding.** The owner ruled on 2026-11-21
+21. **Write the tick as an ordinary record.** The owner ruled on 2026-11-21
     (TK1–TK5) that a tick is an ordinary record whose payload is the whole
     tick, covering every record folded. [The tick record](../protocol/tick.md)
 
@@ -417,8 +417,9 @@ Every verb that reads the store says when either happened (choice 18).
 
     For example, with just six backups held, run
     `loops tick backups --of tick:backups` twice. The first tick covers
-    the six backups. The second covers those six and the first tick, and
-    names the first tick in `prev`. A slot counting backups still gives six.
+    the six backups. The second covers the same six and names the first tick
+    in its envelope’s `prev`. With `--all` on the second command it also
+    covers the first tick (choice 32). A slot counting backups gives six.
 
 22. **Check a tick on request.** The owner ruled on 2026-11-21 (TK7) that
     a verb checks a tick and a store accepts it under ordinary record
@@ -692,14 +693,15 @@ Every verb that reads the store says when either happened (choice 18).
       a predecessor whose clock reads T or later.
     - Repeat `--cover` for the union of the named records and their held
       predecessors. Each operand resolves like `get`, by full id or unique
-      prefix. Choose one selector per tick. Without either, choice 21 applies.
+      prefix. Choose either named cut. Choice 32 also allows slicing inside
+      the time cut.
     - Follow held `prev` links across the entire store. The check reports
       closure independently, over both `prev` and `under`. A tick with an
       outside `under` target can check `same` with closure `no`. The cut
       note leaves `under` for standing. An `erases` link does not extend a cut.
-    - The ordinary payload names every id in the cut. A covered backup whose
-      opening the store has lost to an outside eraser is withheld in the
-      claim. Its envelope can be counted and its size is unread. A writer’s
+    - With either cut alone the payload names every id in the cut. A covered
+      backup whose opening the store has lost to an outside eraser is withheld
+      in the claim. Its envelope can be counted and its size is unread. A writer’s
       `--base` selects the tick envelope’s anchor independently of the cut.
 
     For example, six backups were emitted at midnight on November 16 and 17.
@@ -890,6 +892,44 @@ Every verb that reads the store says when either happened (choice 18).
       `shadow-source-invalid` and `shadow-map-invalid`. Writer refusals keep
       their existing codes. Exit statuses are 0 for success, 1 for data,
       2 for usage and 3 for system errors.
+
+32. **Cover the records the spec’s answer depends on.** The owner ruled on
+    2026-11-23 (TK13) that `loops tick <spec>` writes the downward-closed
+    slice. `--slice` asks for the same cover explicitly. `--all` alone
+    writes the former whole-holding tick. [TK13 and its two runs](../notes/2026-11-21-tick-record.md#tk13-what-a-tick-covers-when-you-name-no-cut)
+
+    - Start with the settled local holding before the append. A source takes
+      a record by its envelope tests on `kind`, `about` and `of`, before
+      admission and before any slot’s `where`. Cover those records, their
+      erasers, their direct `prev` targets, their direct successors through
+      `prev` (of any kind), and those successors’ direct `prev` targets.
+      If any slot follows `keys`, also cover every record of each thing a
+      source touches. For each such record include anything that erases it
+      and every held target it names in `prev`.
+      A tick participates by its envelope. Its payload’s `covers` adds no
+      records to the slice.
+    - Follow `prev` and `under` recursively from that set, including each
+      held target. If no source matches, write `covers: []`. With both
+      `--as-of T` and `--slice`, first compute choice 28’s time cut, then
+      select and follow links entirely within it. A covered envelope naming
+      a missing target, including an `under` outside that cut, gives
+      `closure: no` even on a tick that checks `same`. The two named cuts
+      on their own still follow only `prev`. Combining `--cover` with
+      `--slice` is a usage error.
+    - Read openings as held in the whole writer snapshot. List a covered
+      record in `withheld` if the writer lacked its opening, including when
+      its eraser is outside the cover. The tick answers as `loops fold`
+      does over the same local holding (or the chosen time cut with those
+      openings). A fold across named stores can have a different holding.
+    - An appended tick can itself erase a covered record the writer read
+      open. Its claim uses the pre-append opening. Checking after the append
+      then reports `cannot check` with a missing opening. For a later
+      `emit --base`, the tick shows exactly its listed records. A write of
+      an uncovered thing can therefore start a new head.
+
+    For six backups and forty unrelated notes, the default covers six ids.
+    If a `retired` record replaces the 412 MB backup, a tick counting
+    current backups covers seven ids and answers 5 runs and 615 MB.
 
 ## Checked by
 
