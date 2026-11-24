@@ -77,7 +77,7 @@ fn text(s: &str) -> String {
     }
 }
 
-fn value(v: &Json) -> String {
+pub(crate) fn value(v: &Json) -> String {
     match v {
         Json::Str(s) => text(s),
         _ => visible(&v.canon()),

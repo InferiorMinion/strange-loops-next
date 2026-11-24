@@ -1,5 +1,5 @@
 //! Inventory of the settled, admitted records in a store.
-use crate::description::Description;
+use crate::description::{Description, Lifecycle, prefix_kind};
 use crate::values::{Field, Fields};
 use crate::{Context, Fail, answered, count, object, plain, realm, say, text, usage};
 use loops::{
@@ -20,26 +20,33 @@ struct ThingRow {
 }
 
 impl ThingRow {
-    fn new(
+    fn from_records(
         held: &Held,
         thing: String,
         records: Vec<&Record>,
         names: &[&str],
         desc: Option<&Description>,
-    ) -> Self {
+        lifecycle: Option<&Lifecycle>,
+    ) -> Option<Self> {
         let n = records.len();
         let state = LiveState::new(records);
+        let reader = Fields::new(held, &state);
+        if let Some(rule) = lifecycle {
+            if matches!(reader.read(&rule.field), Field::Value(Json::Str(s)) if rule.closed().contains(&s))
+            {
+                return None;
+            }
+        }
         let heads = state.heads();
         let kinds = heads.iter().map(|r| r.kind.clone()).collect::<Vec<_>>();
-        let reader = Fields::new(held, &state);
-        Self {
+        Some(Self {
             thing,
             kinds: canon_set(&kinds),
             records: n,
             heads: heads.len(),
             headline: reader.read(desc.and_then(|d| d.headline(&heads)).unwrap_or("name")),
             fields: names.iter().map(|k| reader.read(k)).collect(),
-        }
+        })
     }
 
     fn cells(&self, ids: &plain::Prefixes<'_>) -> Vec<String> {
@@ -115,6 +122,7 @@ fn thing_rows(
     prefix: &str,
     names: &[&str],
     desc: Option<&Description>,
+    lifecycle: Option<&Lifecycle>,
 ) -> Vec<ThingRow> {
     let mut groups = HashMap::<_, Vec<_>>::new();
     for record in records {
@@ -125,48 +133,125 @@ fn thing_rows(
     }
     sorted(groups)
         .into_iter()
-        .map(|(name, rs)| ThingRow::new(held, name, rs, names, desc))
+        .filter_map(|(name, rs)| ThingRow::from_records(held, name, rs, names, desc, lifecycle))
         .collect()
 }
 
-pub(crate) fn run(ctx: &Context<'_>, args: &[String], format: plain::Format) -> Result<(), Fail> {
-    let mut prefix = None;
+const LS_OPERANDS: &str = "ls takes --things, one name prefix, or no arguments";
+const ACTIVE_PREFIX: &str = "--active needs a <kind>: prefix whose kind declares lifecycle";
+
+struct Listing<'a> {
+    prefix: Option<&'a str>,
+    names: Vec<&'a str>,
+    active_kind: Option<&'a str>,
+}
+
+fn listing(args: &[String]) -> Result<Listing<'_>, Fail> {
+    let mut active = false;
+    let mut selectors = Vec::new();
     let mut names = Vec::new();
     let mut args = args.iter();
     while let Some(arg) = args.next() {
         match arg.as_str() {
+            "--active" if active => return Err(usage("use --active once")),
+            "--active" => active = true,
             "--fields" if names.is_empty() => {
+                // Keep an earlier extra-operand error ahead of a malformed field list.
+                let invalid = |message| {
+                    usage(if selectors.len() > 1 {
+                        LS_OPERANDS
+                    } else {
+                        message
+                    })
+                };
                 let list = args
                     .next()
-                    .ok_or_else(|| usage("--fields takes comma-separated field names"))?;
+                    .ok_or_else(|| invalid("--fields takes comma-separated field names"))?;
                 for key in list.split(',') {
                     if key.is_empty() || names.contains(&key) {
-                        return Err(usage("--fields needs distinct, nonempty field names"));
+                        return Err(invalid("--fields needs distinct, nonempty field names"));
                     }
                     names.push(key);
                 }
             }
-            "--things" if prefix.is_none() => prefix = Some(""),
-            p if !p.starts_with("--") && prefix.is_none() => prefix = Some(p),
-            _ => {
-                return Err(usage("ls takes --things, one name prefix, or no arguments"));
-            }
+            "--things" => selectors.push(""),
+            p if !p.starts_with("--") => selectors.push(p),
+            _ => return Err(usage(LS_OPERANDS)),
         }
     }
-    let store = ctx.store()?;
-    let desc = match format {
-        plain::Format::Plain => Description::load(store.dir.root())?,
-        plain::Format::Json => None,
+    let prefix = match selectors.as_slice() {
+        [] => None,
+        &[p] => Some(p),
+        _ if active => return Err(usage(ACTIVE_PREFIX)),
+        _ => return Err(usage(LS_OPERANDS)),
     };
+    let active_kind = if active {
+        Some(
+            prefix
+                .and_then(prefix_kind)
+                .ok_or_else(|| usage(ACTIVE_PREFIX))?,
+        )
+    } else {
+        None
+    };
+    Ok(Listing {
+        prefix,
+        names,
+        active_kind,
+    })
+}
+
+pub(crate) fn run(ctx: &Context<'_>, args: &[String], format: plain::Format) -> Result<(), Fail> {
+    let Listing {
+        prefix,
+        mut names,
+        active_kind,
+    } = listing(args)?;
+    let store = ctx.store()?;
+    let desc = if format == plain::Format::Plain || active_kind.is_some() {
+        Description::load(store.dir.root())?
+    } else {
+        None
+    };
+    let active = if let Some(kind) = active_kind {
+        let rule = desc
+            .as_ref()
+            .and_then(|d| d.lifecycle(kind))
+            .ok_or_else(|| usage(ACTIVE_PREFIX))?;
+        Some((kind, rule))
+    } else {
+        None
+    };
+    // Headline and preview defaults belong only to the plain rendering.
+    let plain_desc = desc.as_ref().filter(|_| format == plain::Format::Plain);
     let held = store.read()?;
     let records = realm(&held);
     let output = if let Some(p) = prefix.or_else(|| (!names.is_empty()).then_some("")) {
         if names.is_empty() {
-            if let Some(preview) = desc.as_ref().and_then(|d| d.preview(p)) {
+            if let Some(preview) = plain_desc.and_then(|d| d.preview(p)) {
                 names.extend(preview.iter().map(String::as_str));
             }
         }
-        let rows = thing_rows(&held, &records, p, &names, desc.as_ref());
+        let rows = thing_rows(
+            &held,
+            &records,
+            p,
+            &names,
+            plain_desc,
+            active
+                .map(|(_, rule)| rule)
+                .filter(|rule| !rule.closed().is_empty()),
+        );
+        let applied = active.map(|(kind, rule)| {
+            object(vec![
+                ("kind", text(kind)),
+                ("field", text(&rule.field)),
+                (
+                    "closed",
+                    Json::Arr(rule.closed().iter().map(text).collect()),
+                ),
+            ])
+        });
         if format == plain::Format::Plain {
             let mut header = vec![
                 "THING".into(),
@@ -180,13 +265,20 @@ pub(crate) fn run(ctx: &Context<'_>, args: &[String], format: plain::Format) -> 
                 header.extend(names.iter().map(|k| plain::label(k)));
             }
             let ids = plain::Prefixes::new(&held);
-            plain::table(header, rows.iter().map(|row| row.cells(&ids)))
+            let table = plain::table(header, rows.iter().map(|row| row.cells(&ids)));
+            match applied {
+                Some(rule) => format!("active  {}\n{table}", plain::value(&rule)),
+                None => table,
+            }
         } else {
-            object(vec![(
+            let mut members = vec![(
                 "things",
                 Json::Arr(rows.into_iter().map(|row| row.into_json(&names)).collect()),
-            )])
-            .canon()
+            )];
+            if let Some(rule) = applied {
+                members.push(("active", rule));
+            }
+            object(members).canon()
         }
     } else {
         let rows = kind_counts(&records);
