@@ -231,7 +231,7 @@ The import mentions every reference that the old tool recorded with an id: in th
 - **Across a kind's fields: any yes lists the thing.** Otherwise any unknown counts it once as not read. Otherwise it is not listed.
 - **The value is matched as written:** the whole text equal to `kind:key`, or an immediate member of a list. No comma text is split, and no kind is guessed for a bare key. A thing that names itself is found like any other.
 - **Across stores, the records are put together first,** and read after. Read store by store, a thing whose later record is in another store would keep its old target.
-- **Three counts go with the list:** things not read; values in the fields read that are not written `kind:key`; and the fields read. A "no" is only as good as these. In the audit store 434 live values in reference fields are a bare key and would answer no.
+- **Three counts go with the list:** things not read; values in the fields read that are not written `kind:key`; and the fields read. A "no" is only as good as these. In the homelab 491 live values in the five fields of AD5's row 2 are a bare key that names an imported thing, and all of them would answer no.
 
 **What A does not change.** No record, fold, tick or law. `about` stays what writers state. The two then have separate jobs: a reference field is live, has a role, and can be erased; a mention is permanent and has no role.
 
