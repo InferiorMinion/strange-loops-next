@@ -10,6 +10,7 @@ The record starts where the old roadmap's did. For anything earlier, and for eve
 ## 2026-11-23
 
 In brief:
+- `loops` is first on `PATH` on the workbench, and the six homelab stores are cut over: their shadows are the live stores and the old stores are the archive. Converting the homelab repository's writers and readers to the new tool is next. rex-chat names its store `.`, so the release binary on main is built again.
 - The six homelab stores are imported again under AD4, into fresh shadows: every thing reads as its export says, and every thing the old tool shows reads as the old tool shows it, references included. Next for adoption: the old tool's remaining callers, then `loops` first on `PATH`.
 - AD4 is built in the import: the old stores' references become mentions, the payload is cleaned of the fields they came from, and the journal pins only the vertex's kinds. On copies of the six homelab stores, 14,727 `*_ref` fields and 889 `ref` fields became mentions, and an independent reading of the rule agrees on every keyed thing. The comparison tool checks it against the exports and the old tool's own reading: on the six, every thing the old tool shows is equal, references included.
 - Kyle ruled W3b (the JavaScript stays frozen, as the rule) and AD4 (references in the old payloads become mentions, by one rule for old ids, and the payload is cleaned of the fields they came from). AD4 is being built, with the import's pin on the vertex's kinds only.
@@ -26,6 +27,17 @@ In brief:
 - `loops shadow-import` is built: it copies exported old stores into shadow stores, one signed record for each old fact, checks everything before it writes anything, and writes nothing on a second run. On a copy of four real stores it gave the old tool's reading for every thing held by one store.
 - The import's first two pieces are built: a script that exports an old store and its vertex to two text files, and the mapping of each old fact to a record, equal byte for byte to what `loops emit - --fill` writes. No verb yet.
 - The import has its plan. Two of its choices decide record ids and are put to Kyle as AD3: how a kind the vertex does not name is written when asked for, and how fine the old time is.
+
+### `loops` first on `PATH` on the workbench; the homelab stores cut over
+
+At Kyle's word (2026-11-23). He works from the workbench alone for now, so his Mac is left as it is.
+
+- **rex-chat names its store `.`** ([rex-tools !1](https://git.gruel.network/kaygee/rex-tools/-/merge_requests/1), closing its issue 12). Since AD1, a read that names a store nothing binds is refused, and rex-chat's specs named `rex-chat`. With the fix its seven tests pass against main's binary; without it every read is refused `store-unknown`. The release binary on main is built again (from `d5ee505`).
+- **The old tool's callers use `sl` first.** The homelab repository's hook, scripts, skill and agent instructions moved from `loops` to `sl` (gruel.network !8). painted and siftd already used `sl`.
+- **`loops` is the new binary on the workbench.** `~/.local/bin/loops` points at a build installed from main with `cargo install --path rust/cli --root ~/.local/share/loops`; `sl` still points at the old tool. Nothing else on the workbench called `loops` by that name: the SRE agent reads the old SQLite files directly, and margins-claude calls `loops-eval` by path. A reinstall of the old tool through uv would take the name back.
+- **The six homelab stores are cut over.** The shadows of the second import are the live stores, under `~/.local/share/loops/shadow/<group>/shadows/`; a `CUTOVER.md` there says so. Importing into them has ended. The old SQLite stores, unchanged since 2026-11-22 and byte for byte what the import read, are the archive, and on the workbench they are read-only, so a stray `sl emit` fails rather than splitting a history. A revision written with the new tool names its thing (`loops -C <store> emit observation --of observation:<topic> …`): the new store has no vertex saying which field is a kind's key. Tried on a scratch copy of one store: two records, one head, and the store checks clean.
+
+**What is not converted yet**, and is next: in the homelab repository, the agent instructions and the skills that emit (they still say `sl emit`, which now fails on the workbench), and the readers that read the archive and so see nothing new: the changelog generator and its CI check, two scripts, the session-start hook, and the SRE agent's history search.
 
 ### The homelab stores, imported again under AD4
 

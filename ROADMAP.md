@@ -18,14 +18,15 @@ The evidence and its counts are kept where they are made: [the law index](design
 
 ## Now
 
-Adoption is the step in hand. It is done when `loops` is first on `PATH` for daily work.
+Adoption is the step in hand. It is done when `loops` is first on `PATH` for daily work, and the homelab repository, the first daily user, reads and writes through it.
 
 | Order | Work | State | Waits on |
 | --- | --- | --- | --- |
 | 1 | **The CLI's own pieces:** `loops ls`, a scan by the start of a name, `--fields`, the plain view with relative times, `--version`, the cache of checked segments. | Built (changelog, 2026-11-22). | Nothing |
 | 2 | **Reads across several stores:** a spec's `from` names stores; the read takes their union first. | Ruled 2026-11-23 ([AD1](notes/2026-11-22-adoption.md#ad1-how-a-spec-finds-the-stores-it-names)): a per-user list, an optional list kept with a group of stores, and `--store <name>=<dir>`. Built 2026-11-23 for `read` and `fold` (changelog). | Nothing. The release binary on main waits for rex-tools to pass `--store` |
 | 3 | **The shadow import:** the old stores copied into new ones, read beside the old tool. | Ruled (AD2 to AD4) and built. **The six homelab stores are imported** (2026-11-23, changelog): each thing reads as the old tool shows it, references included. | Nothing |
-| 4 | **`loops` first on `PATH`.** The old tool's callers move from `loops` to `sl` first (Kyle, 2026-11-23): done in the homelab repository; painted and siftd still tell their agents to run `loops emit`. Then the Rust binary takes the name `loops`, on the machine where the daily work is. | Next | rex-tools, for the release binary on main |
+| 4 | **`loops` first on `PATH`.** | Done on the workbench (2026-11-23); the six homelab stores are cut over to the new tool. Kyle's Mac is left for later. | Nothing |
+| 5 | **The homelab repository converted.** Its agent instructions and skills emit with the new tool into the live stores; its readers (the changelog generator and its CI check, `estate.py`, `atlas_materialize.py`, the session-start hook, the SRE agent's history search) read the live stores. | Next | Nothing |
 
 Beside these: the old `.vertex` files of real stores describe kinds (reference fields, lifecycle, key formats) and hold one fold, by name. What a store says about its kinds is listed under standing; whether its descriptive half comes forward is a question being prepared.
 
