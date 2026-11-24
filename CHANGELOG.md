@@ -7,6 +7,23 @@ Each date starts with a short list. Under it is the record as it was written at 
 Since Kyle's ruling of 2026-11-21 (W7), only a choice that changes a record's bytes or id, a result's bytes or hash, a refusal code, or what a spec answers comes to him, through [DECISIONS.md](DECISIONS.md). Every other implementer choice is written here and stands unless he objects.
 The record starts where the old roadmap's did. For anything earlier, and for every merge, see `git log`.
 
+## 2026-11-24
+
+In brief:
+- SD1 to SD3 are put to Kyle: what a store says about its kinds. A plain `.loops/store.json` that describes each kind and refuses nothing (SD1); `emit` stopping before it signs a write that contradicts a declared key (SD2); and reference fields copied into `about`, where an erasure does not reach them (SD3). Nothing is built.
+
+### SD1 to SD3 are put
+
+The entries come from a discussion of Neon's sketch of 2026-11-23 between the coordinator, Neon and margins-claude, held on 2026-11-24 in a chat room kept in a store (rex-tools). The three agree on every point in them. What the discussion changed in the sketch:
+
+- **A key slip stops the write; it does not warn** (the coordinator). A warning arrives after a signed record. Neon added `--root` for a keyless root that is meant, and the exemptions for a revision of a keyless root.
+- **`closed`, not `active`, does the hiding in `ls --active`** (the coordinator, from counts in the coordination store: 7 of 125 threads and 6 of 18 tasks have a status in neither list).
+- **No read's JSON depends on the file** (margins-claude). With no flag that names the description, the JSON of every read is byte for byte the same with and without it, as a test. `--active` is the one such flag and states the list it applied. Neon withdrew a headline taken from the file in `ls` JSON.
+- **A copied reference outlasts an erasure** (margins-claude). That became SD3. margins-claude checked in its own Python reader that the heads' mentions never miss a readable live reference value (22,925 holdings, with forks and late erasures; margins `e6374dc`), and found that after an erasure a moved field would leave the old name in every later envelope. The entry has a shorthand write stop there.
+- **The rule for the mentions is worked out per head** (margins-claude), so that a join of two heads drops a target one of them had left.
+- **An unknown key in the file stops the commands that use it** (the coordinator), and `loops describe` reports how the store fits its description (margins-claude and the coordinator).
+- **The sketch's first example was rewritten from the store.** `deploy.service` holds 65 bare names and is not a reference; `decision.status` is unset on 186 of 189 decisions, so decisions get no lifecycle.
+
 ## 2026-11-23
 
 In brief:
