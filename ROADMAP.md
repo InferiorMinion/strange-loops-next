@@ -28,7 +28,7 @@ Adoption is the step in hand. It is done when `loops` is first on `PATH` for dai
 | 4 | **`loops` first on `PATH`.** | Done on the workbench (2026-11-23); the six homelab stores are cut over to the new tool. Kyle's Mac is left for later. | Nothing |
 | 5 | **The homelab repository converted.** Its agent instructions and skills emit with the new tool into the live stores; its readers (the changelog generator, the session-start hook, the SRE agent's history search) read the live stores. | Built 2026-11-23 (changelog): gruel.network !9 to !11, in that order, and the SRE agent's history search in the bench. `estate.py` and `atlas_materialize.py` stay on the archive until an audit next writes the audit store. | Kyle: the three merges. The live stores have no backup: the workbench has none, and they are no longer in git |
 
-Beside these: the old `.vertex` files of real stores describe kinds (reference fields, lifecycle, key formats) and hold one fold, by name. What a store says about its kinds is listed under standing; whether its descriptive half comes forward is a question being prepared.
+Beside these: the old `.vertex` files of real stores describe kinds (reference fields, lifecycle, key formats) and hold one fold, by name. What a store says about its kinds is listed under standing; whether its descriptive half comes forward is a question being prepared. Its opening input is [the store descriptions note](notes/2026-11-23-store-descriptions.md).
 
 ## Next
 
