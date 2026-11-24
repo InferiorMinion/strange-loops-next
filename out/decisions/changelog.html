@@ -218,6 +218,7 @@ The record starts where the old roadmap's did. For anything earlier, and for eve
 <h2 id="2026-11-23">2026-11-23</h2>
 <p>In brief:</p>
 <ul>
+<li><p>The six homelab stores are imported again under AD4, into fresh shadows: every thing reads as its export says, and every thing the old tool shows reads as the old tool shows it, references included. Next for adoption: the old tool's remaining callers, then <code>loops</code> first on <code>PATH</code>.</p></li>
 <li><p>AD4 is built in the import: the old stores' references become mentions, the payload is cleaned of the fields they came from, and the journal pins only the vertex's kinds. On copies of the six homelab stores, 14,727 <code>*_ref</code> fields and 889 <code>ref</code> fields became mentions, and an independent reading of the rule agrees on every keyed thing. The comparison tool checks it against the exports and the old tool's own reading: on the six, every thing the old tool shows is equal, references included.</p></li>
 <li><p>Kyle ruled W3b (the JavaScript stays frozen, as the rule) and AD4 (references in the old payloads become mentions, by one rule for old ids, and the payload is cleaned of the fields they came from). AD4 is being built, with the import's pin on the vertex's kinds only.</p></li>
 <li><p>The look at the frozen JavaScript that W3 asked for is done and put to Kyle as W3b: it has caught no fault in Lean or Rust alone; it still checks 649 vectors and is the second computation of a spec's slice. Recommended: keep it frozen as the rule.</p></li>
@@ -234,6 +235,15 @@ The record starts where the old roadmap's did. For anything earlier, and for eve
 <li><p>The import's first two pieces are built: a script that exports an old store and its vertex to two text files, and the mapping of each old fact to a record, equal byte for byte to what <code>loops emit - --fill</code> writes. No verb yet.</p></li>
 <li><p>The import has its plan. Two of its choices decide record ids and are put to Kyle as AD3: how a kind the vertex does not name is written when asked for, and how fine the old time is.</p></li>
 </ul>
+<h3 id="the-homelab-stores-imported-again-under-ad4">The homelab stores, imported again under AD4</h3>
+<p>The shadows of the first real import (earlier the same day) were written before AD4, and the import now refuses their journal by design. They are kept aside, unread, as <code>~/.local/share/loops/shadow/&lt;group&gt;.first-import-v1/</code>. The same copies of the six stores were imported again with the binary built from main at <code>ecb4fab</code>, into fresh shadows in the group's usual place.</p>
+<div class="table-scroll" tabindex="0"><table><thead><tr><th scope="col">Step</th><th scope="col">Result</th></tr></thead>
+<tbody>
+<tr><td>The import</td><td>11,047 records, none refused; a second run writes nothing; every shadow passes <code>loops check</code>; the id map holds 11,072 old ids</td></tr>
+<tr><td>Against the exports, as one group</td><td>every thing equal in fields and mentions in all six</td></tr>
+<tr><td>Against the old tool's own reading</td><td>every thing the old tool shows is equal, references included; the shadows also hold the 37 facts without their key, as roots</td></tr>
+<tr><td>Across the six</td><td>the 10 things two stores hold under different old ids read with two heads, as before</td></tr>
+</tbody></table></div>
 <h3 id="ad4-third-piece-the-comparison-checks-references">AD4, third piece: the comparison checks references</h3>
 <p>The last of three pieces of AD4. Python only, in <code>tools/shadow/</code>; it changes no store and no Rust.</p>
 <pre><code>python3 tools/shadow/compare.py --group group.json                      (every source, against its export)
