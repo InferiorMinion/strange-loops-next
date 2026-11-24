@@ -14,7 +14,7 @@ Three questions wait on a ruling: SD1 to SD3, on what a store says about its kin
 | --- | --- | --- |
 | [SD1](#sd1-a-store-describes-its-kinds-in-a-file-and-enforces-nothing) | Does a store describe its kinds in a plain file that the CLI uses and no read depends on? | A: `.loops/store.json` now, records at step 3 |
 | [SD2](#sd2-a-write-that-contradicts-the-declared-key) | What does `emit` do when a write contradicts a kind's declared key? | A: stop before signing, and name the ways out |
-| [SD3](#sd3-reference-fields-copied-into-about-and-erasure) | Does `emit` copy a declared reference field's value into `about`, where erasure cannot reach it? | A: copy, and have `describe` say so |
+| [SD3](#sd3-reference-fields-copied-into-about-and-erasure) | Does `emit` copy a declared reference field's value into `about`, where erasure cannot reach it? | C: describe reference fields, copy nothing in v1 |
 
 Every earlier entry is ruled.
 
@@ -26,9 +26,9 @@ After the three entries: [what is being prepared](#being-prepared), [what you de
 
 ## What a store says about its kinds
 
-**Where these come from.** [The store descriptions note](notes/2026-11-23-store-descriptions.md) gathered what the homelab conversion and a collector prototype asked for. Neon sketched a file from it on 2026-11-23. On 2026-11-24 the coordinator, Neon and margins-claude went through the sketch in a chat room kept in a store, and checked it against the six live homelab stores (6,482 things) and the prototype's store (1,994 items). They agree on the shape. Three points in it are yours: the form (SD1), the one place the CLI would decline a write (SD2), and a consequence for erasure (SD3).
+**Where these come from.** [The store descriptions note](notes/2026-11-23-store-descriptions.md) gathered what the homelab conversion and a collector prototype asked for. Neon sketched a file from it on 2026-11-23. On 2026-11-24 the coordinator, Neon and margins-claude went through the sketch in a chat room kept in a store, and checked it against the six live homelab stores (6,482 things) and the prototype's store (1,994 items). Astra then reviewed the entries from outside, as put, and found a fault in each of SD2 and SD3; SD3's recommendation changed from A to C on it. The four now agree on every point below. Three points are yours: the form (SD1), the one place the CLI would decline a write (SD2), and a consequence for erasure (SD3).
 
-None of the three changes a record's bytes, an id, a law or a vector, so W7 does not send them here. They are here because standing (step 3) will grow from whatever is chosen now, and because SD3 amends a sentence you ruled on 2026-11-14: what `--about` states.
+None of the three changes the record format, rewrites an existing record, or changes a law, a vector, or what a fold or a tick answers, so W7 does not send them here. One thing does change: the same shorthand command writes a different `of`, and so a record with another id, depending on the file. They are here because standing (step 3) will grow from whatever is chosen now.
 
 "Today" below is the `loops` binary built from main on 2026-11-24. Every "today" answer was run.
 
@@ -84,20 +84,20 @@ A kind may state eight keys. What each one does:
 
 **Why `closed` does the hiding, and not `active`.** If `--active` showed only the statuses listed in `active`, 7 of the 125 threads would vanish from it (4 with no status, 2 `parked`, 1 `closed-bedrock-deferred`), and 6 of the 18 tasks (5 `built`, 1 `complete`). With `closed`, a thing with a missing, conflicting or undeclared status stays in view. `active` is kept as documentation. `--active` takes a prefix that names one kind, and that kind must declare a lifecycle; otherwise it is a usage error.
 
-**The boundary.** All three agree on these.
+**The boundary.** All four agree on these. The tests they name are for the build to pass; today's binary cannot show them.
 
 1. A reader of records never needs the file. `of` and `about` are written in full in every record.
 2. With no flag that names the description, the JSON of every read is byte for byte the same with and without the file. That is a test in the suite, not a sentence. `--active` is the one such flag, and its output states the field and the list it applied, so two copies of a store that answer differently say why.
 3. `headline` and `preview` change `--plain` output only.
 4. With no file, every command behaves as it does today. A file that does not parse, or that holds a key this version does not know, stops the commands that would have used it and names the file: shorthand `emit`, the plain views, `--active` and `describe`. Reads in JSON go on working, so a broken file never locks a store.
 5. `emit -`, `emit - --fill` and `tick` never read the file. A collector's or an import's records cannot change because the file was edited. If shorthand ever reaches a batch, that batch pins the file's hash, as the import's journal pins its flags.
-6. `loops describe` prints the description, then how the store fits it. For each kind: things whose key field differs from their key, keyless roots of a keyed kind, lifecycle values in neither list, and things whose reference fields are not all mentioned. It changes nothing. It is where drift shows.
+6. `loops describe` prints the description, then how the store fits it. For each kind: things whose key field differs from their key, keyless roots of a keyed kind, lifecycle values in neither list, and reference values that no mention carries. It changes nothing. It is where drift shows. The last count is not a fault to repair: a reference may be left out of `about` on purpose.
 
 **Options.**
 
 | | The description is | Cost |
 | --- | --- | --- |
-| **A (recommended)** | A plain file, `.loops/store.json`, beside `.loops/vertices/`. At step 3, `loops apply` compares the file with the store's declarations and emits one record, as the rethink has it. The keys keep their names, and `fields`, `writers` and the rest come in beside them. | The file is not signed, has no history, and does not travel with `export`. Two copies of a store can describe themselves differently until step 3. Point 2 is what makes that bearable: nothing a spec answers depends on it. |
+| **A (recommended)** | A plain file, `.loops/store.json`, beside `.loops/vertices/`. At step 3, `loops apply` compares the file with the store's declarations and emits one record, as the rethink has it. The expectation is that these keys carry over and `fields`, `writers` and the rest come in beside them. That is step 3's to settle, not promised here. | The file is not signed, has no history, and does not travel with `export`. Two copies of a store can describe themselves differently until step 3. Point 2 is what makes that bearable: nothing a spec answers depends on it. |
 | B | Records from the first day, of a reserved kind. Signed, with a history, and they travel with the store. | A reserved kind and its rules, before standing has ruled on any. Step 3 keeps or converts whatever is written now. |
 | C | Nothing until step 3. | The key table in CLAUDE.md, the status lists in jq and the doubled key all stay, and the next real import happens without a description. |
 
@@ -134,7 +134,9 @@ The live homelab stores hold 37 keyless roots of keyed kinds, each a slip of the
 
 **Why A keeps "nothing is refused".** The store refuses nothing. A keyless root can still be written with `--root`, and a record whose key field is meant to differ from its key through `emit -`. A is the shorthand declining to guess. It is spelled as a usage error, with no new refusal code.
 
-**What A leaves alone.** A revision of an existing keyless root (`--of r:<id>`). A revision that states `--prev` and no `--of`, which is of what it replaces. `emit -` and `--fill`. A kind with no declared key, or with `"key": null`.
+**What A leaves alone.** A revision of an existing keyless root (`--of r:<id>`). `emit -` and `--fill`. A kind with no declared key, or with `"key": null`.
+
+**A revision by `--prev`.** A revision that states `--prev` and no `--of` is of what it replaces, so it is not a missing key. A key field stated on it is still compared with that thing's key. Today it is not: after `emit deploy --of deploy:prev-case name=prev-case`, the command `emit deploy --prev <id> name=different` leaves `deploy:prev-case` with the name `different` (found by Astra, run again by the coordinator).
 
 ## SD3: reference fields copied into `about`, and erasure
 
@@ -154,28 +156,37 @@ $ loops export --about person:dana-whitfield
 (the record's envelope, with "about":["person:dana-whitfield"])
 ```
 
-The payload is gone and the name is not. A stated `--about` and an `of` already behave this way. What is new is that a file moves a payload value into the envelope, and the writer never typed `--about`. You ruled on 2026-11-10 that erasure is the emergency stop for something that should not have been emitted.
+The payload is gone and the name is not. A stated `--about` and an `of` already behave this way. What copying would add is that a file moves a payload value into the envelope, and the writer never typed `--about`. You ruled on 2026-11-10 that erasure is the emergency stop for something that should not have been emitted.
 
-**The rule, if values are copied.** After a shorthand write, `about` holds every `kind:key` value of the thing's live reference fields, of the thing as the writer holds it. The field is the answer. The mention is an index, and it may hold more.
+**Why the recommendation is C.** The entry was first put with A recommended, and a rule for dropping an old copy when a field moves. Astra found a history where that rule fails. One asset, with `runs_on` declared a reference:
 
-margins-claude checked the first sentence in its own Python reader: three writers on their own holdings, forks, erasures that arrive late or never, 22,925 holdings read. The mentions miss a readable live value in none of them. A planted fault misses in 8,568, so the check can fail.
+```
+R    sets runs_on=asset:vm/a                        about: asset:vm/a
+H1   revises R, moves runs_on to asset:vm/b         about: asset:vm/b
+H2   revises R beside H1, sets only status          about: asset:vm/a
+     R is erased
+J    joins H1 and H2, moves runs_on to asset:vm/c   about: ?
+```
 
-- **It amends a built and ruled sentence.** Today ([the changelog](CHANGELOG.md), 2026-11-14, the writer): `--about` states the whole `about`, and with no `--about` an emit copies the union of its heads' mentions. Under A, for a kind with `refs`, `--about` and `--no-about` state the writer's own mentions, and the copied ones are added to them. With neither, each head's mentions are carried over without the ones that head's own reference fields account for, and the live values are added. A kind with no `refs` writes as it does today.
-- **A move drops the old mention.** A revision that moves `runs_on` from one asset to another drops the old target and adds the new one. So does a join of two heads, one of which had moved the field. To drop a copied mention, unset the field.
-- **Except after an erasure, where the write stops.** Once the record that set `owner` is erased, its value cannot be read, so no later write can tell that `person:dana-whitfield` was a copy and drop it. Moving or unsetting the field would leave the name in every later envelope, in exactly the case where someone erased to remove it. So a shorthand write that sets a reference field, moving or unsetting it, stops, as in SD2, when that field's live setter is erased or withheld and the heads hold a mention of the field's declared kinds that no readable field accounts for. A write that leaves the field alone carries the mention on, and `loops describe` counts it. After the stopped write is restated, the field's setter is readable again, so the stop comes once for each erasure. The message names the mention and the ways out: `--drop-about person:dana-whitfield`, or `--about` stating what to keep.
-- **A value that is not `kind:key` gets a warning and no mention.** Every reference value in the live stores is still in the imported `kind/key` form: in the four kinds sampled, 566 `runs_on` records in the audit store, 121 `source` records on tasks and 92 `rel` records on observations. Declaring a field copies nothing for them until a value is rewritten.
-- **The rule has no memory.** A thing gets its mentions on its next write after the field is declared, and `describe` counts the things not yet caught up (SD1, point 6). No verb backfills.
-- **Across a fork the mentions hold more until the heads are joined.** A fold by mention of the old target still finds the thing, while the field reads the new one. None of the 6,482 things has two heads today; forks come with sharing (step 5).
+The field reads `asset:vm/c`. H2 still carries `asset:vm/a`. Whether that mention was copied from the field or stated by hand was recorded only in R's payload, and R is erased. A rule that keeps it leaves an old target in J and in every later envelope. A rule that drops it also drops mentions a writer stated by hand. Astra ran the history on today's binary, stating by hand the mentions the rule would have written.
+
+This is the general case and not one missed corner. Nothing but the payload records where a mention came from, and an erasure removes the payload. The rule was rewritten four times on 2026-11-24, each time after another reader found a history it failed. What was shown: a copy never misses a readable live value (margins-claude's Python reader, 22,925 holdings with forks and late erasures). What was not: that a move removes the old copy. margins-claude then checked that too. Without an erasure it does: the rule worked out per head left no old copy in 425 things at one head. After an erasure it does not: Astra's history fails, and with the stop taken at its best an old copy stays in 48 of 388 things at one head. So the trouble is in erasure, not in forks.
 
 **Options.**
 
 | | `emit` | Cost |
 | --- | --- | --- |
-| **A (recommended)** | Copies, by the rule above. `describe` says of each `refs` field that its values are written into the envelope and outlast an erasure. | A name in a declared field cannot be erased from then on. Only `kind:key` values are copied, never free text. A field that may hold a name someone will want erased, such as `owner`, is left out of `refs`. |
-| B | Copies, unless the field says not to. Such a field is still described as a reference. | One more key in the file, and a choice to make for every reference field. It needs knowing in advance which value will need erasing. |
-| C | Copies nothing in v1. `refs` only describes, and `--about` is stated by hand as today. | A fold by mention finds only what a writer remembered to state. |
+| A | Copies every `kind:key` value of a declared reference field into `about`, and drops the old copy on a move where it can tell. | A name in a declared field cannot be erased. After an erasure or across a fork an old target can stay in every later envelope. It amends a sentence you ruled on 2026-11-14 ([the changelog](CHANGELOG.md), the writer): `--about` would state only the writer's own mentions, no longer the whole `about`. |
+| B | As A, but only for a field that asks for it. Every other reference field is only described. | A's costs for the fields that ask. If copying is ever taken, all four prefer this to A: a field such as `owner` is then described as a reference and stays erasable. |
+| **C (recommended)** | Copies nothing in v1. `refs` describes: `loops describe` prints it, a reader that cares about roles finds a kind's reference fields from it, and `describe` counts the `kind:key` values that no mention carries. `--about` is stated by hand, as today. | The write keeps its doubled reference: `rel=relationship:<agent> --about relationship:<agent>`. A fold by mention finds only what a writer stated. |
 
-**What comes with A.** `--add-about` and `--drop-about` ([the note](notes/2026-11-23-store-descriptions.md#4-who-wrote-it-and-the---about-hazard), section 4), which are CLI only.
+**What C does not lose today.** The question "what runs on this VM" is already answered by the field. Run on today's binary, with three services of which two run on `asset:vm/media`: a fold with `"where": {"runs_on": {"is": "asset:vm/media"}}` under `"follow": "keys"` lists the two. After the record of one is erased it lists the other and says "1 not read: needed payload or field unavailable", which is what an erasure should do. What a mention adds is one fold of everything that mentions a thing, across kinds and fields.
+
+And every reference value in the live stores is still in the imported `kind/key` form: in the four kinds sampled, 566 `runs_on` records in the audit store, 121 `source` records on tasks and 92 `rel` records on observations. Copying would have done nothing for them until a value was rewritten.
+
+**What comes with C.** `--add-about` and `--drop-about` ([the note](notes/2026-11-23-store-descriptions.md#4-who-wrote-it-and-the---about-hazard), section 4), which are CLI only and need no ruling. They keep a hand mention through later revisions.
+
+**When copying comes back.** As its own entry, once a reader needs what the field cannot give: one fold of everything that mentions a thing, across kinds. It would be for each field that asks (B), and it would come with a check that a move removes the old copy, not only that a copy never misses.
 
 ## Being prepared
 
