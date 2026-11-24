@@ -40,7 +40,8 @@ never reads KDL. For example, a workshop map could contain
   "source": "workshop",
   "store": "data/workshop.sqlite",
   "vertex_sha256": "0aed6432deddba7c63c0222700bccb677bb2422589e65260b1aa86b919dd3e59",
-  "kinds": {"thread": {"by": "name"}, "change": {"collect": "20"}}
+  "kinds": {"thread": {"by": "name"}, "change": {"collect": "20"}},
+  "ref_fields": ["links", "members"]
 }
 ```
 
@@ -50,8 +51,18 @@ path. Each nonempty kind occurs once and has exactly one entry, either a
 nonempty key field or a canonical unsigned 64-bit collect limit. The limit
 describes an old read; the importer considers every fact. Missing kinds are
 unnamed. Review this list before import. The vertex digest binds the source
-cut to a vertex revision. Pinning the reviewed **map itself** on subsequent
-imports belongs to the journal.
+cut to its own vertex revision. The optional `ref_fields` lists distinct,
+nonempty top-level payload field names. The names `ref` and anything ending
+in `_ref` are reserved. An invalid declaration gives `shadow-map-invalid`.
+A reviewer adds this member by hand. The exporter writes no `ref_fields`.
+Carry the reviewed list forward by hand on re-export or its pin changes.
+
+Journal v2 pins base32hex SHA-256 of the canonical UTF-8 JSON object
+`{"kinds": K, "ref_fields": F}`. K is the entire validated kinds object,
+including collect limits. F is the list in canonical UTF-16 order, defaulting
+to `[]`. Reordering either declaration or editing a vertex comment leaves
+this pin equal. A changed kind, fold or configured field membership gives
+`shadow-state-mismatch`. Each new map and export header must still agree.
 
 The exporter requires one each of `name`, `store` and `loops`. Top-level
 `observers` and `sources` blocks may repeat. Each takes no arguments, and
@@ -111,6 +122,56 @@ The Python suite builds SQLite snapshots in test scratch and checks the
 export against the invented workshop files in `rust/cli/tests/fixtures/shadow/`.
 The Rust suite reads the same bytes and checks signed lines against the
 existing writer.
+
+## Imported references and old IDs
+
+The importer indexes the complete group, including omitted facts. In `ref`,
+a group ID takes precedence over an address. Otherwise the first colon or
+slash separates a lowercase prefix matching `[a-z][a-z0-9-]*` from its
+nonempty value. The prefix `r` is reserved. For example, `decision/design/fold`
+becomes `decision:design/fold`, even if the group has no such thing.
+
+A field with a nonempty name before `_ref` and each configured `ref_fields`
+field can refer to exact group IDs. Split text at commas, trim each part and
+ignore empty parts. A configured field also accepts an array of text, with
+the same splitting for each element. An unsupported value, including a mixed
+array, stays in the payload and contributes no mentions. Configured fields
+always stay. For an old ID, prefer its included local copy. Otherwise use
+the single distinct effective target among included copies. A keyed target
+gives its thing name and a root gives its full `r:` record ID.
+
+On each keyed revision, `about` carries the accumulated resolved `ref`
+mentions and the current mentions of each suffix or configured field.
+Supplying a field replaces its previous mentions, including with an empty
+set. A root starts from empty state. Add the fact's own nonempty observer as
+`observer:<old observer>` and suppress self mentions. A self part counts as
+resolved for cleaning. Remove a text `ref` when all its parts are accounted
+for. Remove a suffix field only when its base member is on this original
+fact and all its nonempty text parts resolve, or its value is exactly `""`.
+Delimiter-only suffix text stays. For example, `"owner_ref":"potter-id,?"`
+stays intact when only the first part resolves. A later paired
+`"owner_ref":""` clears the mention and unsets the previously visible field.
+Unknown, omitted, ambiguous and cyclic references leave the original field
+intact. Independently resolved parts still contribute mentions.
+
+After a complete writable import, `group.json` has a sibling `group.ids.json`.
+Its top-level keys are old IDs. Each value lists included occurrences in
+source-name order, with exactly these string members:
+
+| Member | Meaning |
+|---|---|
+| `source` | Reviewed source name |
+| `destination` | Store directory relative to the group file |
+| `record` | Full new record ID, including `r:` |
+| `thing` | Keyed thing name, or the same record ID for a root |
+
+An old ID seen only on omitted rows maps to `[]`. Identical copies in two
+destinations have two entries. This 0600 lookup file contains no salts.
+The importer atomically publishes it under the group lock, skips an identical
+file, and regenerates a missing one on a writable rerun. Check-only never
+creates or repairs it. A v1 journal requires fresh shadows. The comparison command below still uses
+the earlier payload projection and map schema. See
+[choice 31](../../rust/PLACE.md) for recovery, cycle handling and counts.
 
 ## Compare a shadow with its source
 

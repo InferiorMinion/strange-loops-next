@@ -23,6 +23,28 @@ const FIELDS: &[&str] = &[
     "things_with_multiple_union_heads",
     "shared_keyed_things_different_old_ids",
     "destination_reads",
+    "ref_parts",
+    "suffix_parts",
+    "reviewed_parts",
+    "suffix_id_hits",
+    "reviewed_id_hits",
+    "thing_mentions",
+    "record_mentions",
+    "self_dropped",
+    "self_observer_dropped",
+    "left_out_unnamed",
+    "left_out_defect",
+    "ambiguous_target",
+    "invalid_ref_part",
+    "cycle",
+    "nonmember_id_part",
+    "ref_not_text",
+    "reviewed_unsupported",
+    "ref_removed",
+    "suffix_removed",
+    "suffix_kept_no_companion",
+    "suffix_kept_unresolved",
+    "suffix_kept_not_text",
 ];
 
 #[derive(Default)]
@@ -66,6 +88,16 @@ pub(super) struct Report {
     superseded: HashSet<String>,
 }
 impl Report {
+    pub(super) fn for_inputs(inputs: &[super::Input]) -> Self {
+        Self {
+            sources: inputs
+                .iter()
+                .map(|input| (input.name.clone(), Counts::default()))
+                .collect(),
+            ..Self::default()
+        }
+    }
+
     pub(super) fn omitted(
         &mut self,
         source: usize,
@@ -91,6 +123,9 @@ impl Report {
         p: &super::mapping::Prepared,
         named: Option<&super::source::Fold>,
     ) {
+        for (&name, &n) in &p.stats {
+            self.sources[source].1.add(name, n);
+        }
         self.row(source, old, Some(&p.id));
         self.thing(
             source,

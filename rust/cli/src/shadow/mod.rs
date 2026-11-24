@@ -1,7 +1,9 @@
 //! Shadow-import orchestration over a frozen group of exports.
+mod id_map;
 mod journal;
 mod mapping;
 mod plan;
+mod refs;
 mod report;
 mod source;
 
@@ -15,7 +17,7 @@ use loops_place::{
     line::hash,
 };
 use mapping::Unnamed;
-use report::{Counts, Report};
+use report::Report;
 use std::{
     collections::HashSet,
     fs::{self, File},
@@ -39,6 +41,9 @@ enum Mode {
 }
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 enum Point {
+    BeforeSeeds,
+    SeedsSynced,
+    BeforeMapRename,
     BeforeReserve,
     Reserved,
     Appended,
@@ -70,11 +75,13 @@ struct Input {
     facts: PathBuf,
     map: Result<source::Map, String>,
     dest: Dir,
+    relative_destination: String,
     pin: Pin,
     _guard: File,
 }
 struct Group {
     state: PathBuf,
+    ids_path: PathBuf,
     inputs: Vec<Input>,
 }
 fn relative(parent: &Path, value: &Json) -> Result<PathBuf, Fail> {
@@ -101,6 +108,32 @@ fn resolve_parent(path: &Path) -> Result<PathBuf, Fail> {
         Err(e) => Err(e.into()),
     }
 }
+fn reviewed_map(bytes: &[u8], name: &str) -> Result<source::Map, String> {
+    let map = source::Map::read(
+        std::str::from_utf8(bytes).map_err(|_| "shadow-map-invalid: expected UTF-8")?,
+    )?;
+    if name != map.source {
+        return Err(format!(
+            "shadow-map-invalid: {name:?} disagrees with map for {:?}",
+            map.store
+        ));
+    }
+    Ok(map)
+}
+
+fn state_directory(state: &Path) -> Result<PathBuf, Fail> {
+    let state_name = state
+        .file_name()
+        .ok_or_else(|| invalid("state must name a private directory"))?;
+    let state = resolve_parent(
+        state
+            .parent()
+            .ok_or_else(|| invalid("missing state parent"))?,
+    )?
+    .join(state_name);
+    Ok(state)
+}
+
 impl Group {
     fn read(path: &Path, unnamed: Unnamed) -> Result<Self, Fail> {
         let bytes = fs::read(path)?;
@@ -108,16 +141,20 @@ impl Group {
             .map_err(invalid)?;
         let group = source::fields(&json, &["state", "sources"]).map_err(invalid)?;
         let parent = path.parent().unwrap_or(Path::new("."));
+        let ids_path = path.with_extension("ids.json");
+        if fs::symlink_metadata(&ids_path).is_ok_and(|m| !m.is_file()) {
+            return Err(invalid("id map must be a regular file"));
+        }
+        let output = resolve_parent(&ids_path)?;
+        let parent_dir = parent.canonicalize()?;
         let state = relative(parent, group["state"])?;
-        let state_name = state
-            .file_name()
-            .ok_or_else(|| invalid("state must name a private directory"))?;
-        let state = resolve_parent(
-            state
-                .parent()
-                .ok_or_else(|| invalid("missing state parent"))?,
-        )?
-        .join(state_name);
+        let state = state_directory(&state)?;
+        if output.starts_with(&state)
+            || state.starts_with(&output)
+            || output == path.canonicalize()?
+        {
+            return Err(invalid("id map overlaps group or state"));
+        }
         let Json::Arr(entries) = group["sources"] else {
             return Err(invalid("expected sources array"));
         };
@@ -131,21 +168,15 @@ impl Group {
             let e =
                 source::fields(entry, &["name", "facts", "map", "destination"]).map_err(invalid)?;
             let name = source::string(e["name"]).map_err(invalid)?.to_owned();
-            let map_bytes = fs::read(relative(parent, e["map"])?)?;
-            let map = std::str::from_utf8(&map_bytes)
-                .map_err(|_| "shadow-map-invalid: expected UTF-8".to_owned())
-                .and_then(source::Map::read)
-                .and_then(|map| {
-                    if name == map.source {
-                        Ok(map)
-                    } else {
-                        Err(format!(
-                            "shadow-map-invalid: {name:?} disagrees with map for {:?}",
-                            map.store
-                        ))
-                    }
-                });
-            let path = relative(parent, e["destination"])?.join(".loops");
+            let map_path = relative(parent, e["map"])?;
+            let facts = relative(parent, e["facts"])?;
+            if output == resolve_parent(&map_path)? || output == resolve_parent(&facts)? {
+                return Err(invalid("id map overlaps export"));
+            }
+            let map_bytes = fs::read(map_path)?;
+            let map = reviewed_map(&map_bytes, &name);
+            let directory = relative(parent, e["destination"])?;
+            let path = directory.join(".loops");
             let destination_error = |err: io::Error| {
                 if err.kind() == io::ErrorKind::NotFound {
                     mismatch(&format!("{name}: destination has no .loops/segments"))
@@ -156,6 +187,9 @@ impl Group {
             let root = path.canonicalize().map_err(destination_error)?;
             let dest = Dir::open(&root).map_err(destination_error)?;
             let segments = root.join("segments").canonicalize()?;
+            if output.starts_with(&root) || output.starts_with(&segments) {
+                return Err(invalid("id map overlaps destination"));
+            }
             if state.starts_with(&segments)
                 || segments.starts_with(&state)
                 || state.starts_with(&root)
@@ -174,19 +208,30 @@ impl Group {
                     .to_str()
                     .ok_or_else(|| invalid("destination path is not UTF-8"))?
                     .into(),
-                map: digest(&map_bytes),
+                map: map
+                    .as_ref()
+                    .map(|m| m.semantic_pin.clone())
+                    .unwrap_or_default(),
                 unnamed: unnamed == Unnamed::Roots,
             };
             inputs.push(Input {
                 name,
-                facts: relative(parent, e["facts"])?,
+                facts,
+                relative_destination: id_map::relative_destination(
+                    &parent_dir,
+                    &directory.canonicalize()?,
+                )?,
                 map,
                 dest,
                 pin,
                 _guard: guard,
             });
         }
-        Ok(Self { state, inputs })
+        Ok(Self {
+            state,
+            ids_path,
+            inputs,
+        })
     }
 }
 fn event(op: &str, args: impl IntoIterator<Item = Json>) -> Json {
@@ -219,6 +264,60 @@ fn execute(path: &Path, unnamed: Unnamed, mode: Mode, runtime: &Runtime) -> Resu
     say(&report.json().canon())?;
     result
 }
+fn check_bindings(group: &Group, j: &Journal) -> Result<Vec<Json>, Fail> {
+    let mut new_pins = Vec::new();
+    if j.pins
+        .keys()
+        .any(|name| !group.inputs.iter().any(|i| &i.name == name))
+    {
+        return Err(mismatch("group lost a pinned source"));
+    }
+    for input in &group.inputs {
+        input.map.as_ref().map_err(refused)?;
+        if let Some(pin) = j.pins.get(&input.name) {
+            if pin != &input.pin {
+                return Err(mismatch(&format!(
+                    "{}: map, inclusion flag or destination changed",
+                    input.name
+                )));
+            }
+        } else {
+            if j.pins
+                .values()
+                .any(|p| p.destination == input.pin.destination)
+            {
+                return Err(mismatch("destination already belongs to another source"));
+            }
+            new_pins.push(input.pin.json(&input.name));
+        }
+    }
+    Ok(new_pins)
+}
+
+fn save_seeds(
+    identities: &plan::Identities,
+    j: &mut Journal,
+    file: &mut File,
+    runtime: &Runtime,
+) -> Result<(), Fail> {
+    let mut fresh: Vec<_> = identities
+        .seeds
+        .keys()
+        .filter(|id| !j.seeds.contains_key(*id))
+        .collect();
+    fresh.sort_unstable();
+    for chunk in fresh.chunks(1000) {
+        (runtime.at)(Point::BeforeSeeds)?;
+        let entries = chunk
+            .iter()
+            .map(|id| identities.seeds[*id].entry(id))
+            .collect();
+        j.append(file, &event("seeds", [Json::Arr(entries)]))?;
+        (runtime.at)(Point::SeedsSynced)?;
+    }
+    Ok(())
+}
+
 fn import(
     path: &Path,
     unnamed: Unnamed,
@@ -245,39 +344,25 @@ fn import(
     if j.public.as_ref().is_some_and(|p| p != &key.public()) {
         return Err(mismatch("import key changed"));
     }
-    let mut new_pins = Vec::new();
+    *report = Report::for_inputs(&group.inputs);
+    let new_pins = check_bindings(&group, &j)?;
     let mut plans = Vec::new();
     let mut identities = plan::Identities::from(&j);
-    for input in &group.inputs {
-        report.sources.push((input.name.clone(), Counts::default()));
-    }
-    let (index, cuts) = plan::Index::collect(&group.inputs, unnamed, &j);
+    let mut ids = id_map::IdMap::default();
+    let (index, mut cuts) = plan::Index::collect(&group.inputs, unnamed, &j, report)?;
+    index.seed(&cuts, &mut identities, runtime)?;
+    let roots = plan::roots::Roots::build(&index, &mut cuts, &identities, &key)?;
     for (i, (input, cut)) in group.inputs.iter().zip(cuts).enumerate() {
-        if let Some(pin) = j.pins.get(&input.name) {
-            if pin != &input.pin {
-                return Err(mismatch(&format!(
-                    "{}: map, inclusion flag or destination changed",
-                    input.name
-                )));
-            }
-        } else {
-            if j.pins
-                .values()
-                .any(|p| p.destination == input.pin.destination)
-            {
-                return Err(mismatch("destination already belongs to another source"));
-            }
-            new_pins.push(input.pin.json(&input.name));
-        }
         plans.push(plan::preflight(
             input,
             i,
             &index,
             cut,
+            &roots,
+            &mut ids,
             &key,
             &j,
             &mut identities,
-            runtime,
             report,
         )?);
     }
@@ -305,23 +390,20 @@ fn import(
     if j.public.is_none() {
         j.append(
             &mut file,
-            &event("v1", [text(key.public()), Json::Arr(new_pins)]),
+            &event("v2", [text(key.public()), Json::Arr(new_pins)]),
         )?;
     } else if !new_pins.is_empty() {
         j.append(&mut file, &event("sources", [Json::Arr(new_pins)]))?;
     }
+    for (input, plan) in group.inputs.iter().zip(&mut plans) {
+        plan.pin_cut(input, &mut j, &mut file)?;
+    }
+    save_seeds(&identities, &mut j, &mut file, runtime)?;
     for ((input, plan), (_, counts)) in group.inputs.iter().zip(&mut plans).zip(&mut report.sources)
     {
-        plan.publish(
-            input,
-            &key,
-            &mut j,
-            &mut file,
-            &identities.seeds,
-            runtime,
-            counts,
-        )?;
+        plan.publish(input, &key, &mut j, &mut file, runtime, counts)?;
     }
+    ids.publish(&group.ids_path, runtime)?;
     drop(lock);
     Ok(())
 }

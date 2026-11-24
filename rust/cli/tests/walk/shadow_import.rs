@@ -96,6 +96,10 @@ fn setup(name: &str) -> Store {
 fn snapshot(s: &Store) -> BTreeMap<PathBuf, Vec<u8>> {
     let mut paths = destination(s, "workshop").segments();
     paths.extend(destination(s, "yard").segments());
+    let ids = s.dir.join("group.ids.json");
+    if ids.exists() {
+        paths.push(ids);
+    }
     let state = s.dir.join("private");
     if state.exists() {
         paths.extend(
@@ -256,10 +260,10 @@ fn shadow_append_and_drift() {
             .1
             .contains("shadow-state-mismatch")
     );
-    for changed_map in [format!("{MAP}\n"), "{".to_owned()] {
-        fs::write(s.dir.join("workshop.map"), changed_map).unwrap();
-        assert!(s.fails(VERB, "").1.contains("shadow-state-mismatch"));
-    }
+    fs::write(s.dir.join("workshop.map"), format!("{MAP}\n")).unwrap();
+    s.ok(VERB);
+    fs::write(s.dir.join("workshop.map"), "{").unwrap();
+    assert!(s.fails(VERB, "").1.contains("shadow-map-invalid"));
     assert_eq!(baseline, snapshot(&s));
     cut(&s.dir, "workshop", &more);
     destination(&s, "yard").ok(&["emit", "change", "unreserved"]);
@@ -342,6 +346,8 @@ fn filtered_identity_conflicts_and_direct_destination_binding() {
     s.ok(VERB);
     let before = snapshot(&s);
     manifest(&s, &["yard"]);
+    assert!(s.fails(VERB, "").1.contains("lost a pinned source"));
+    manifest(&s, &["workshop", "yard"]);
     cut(&s.dir, "yard", &[(9, "moved", "yard", "{}")]);
     let (code, _, why) = answer(&s, VERB, "");
     assert_eq!(code, 1);
@@ -483,6 +489,26 @@ fn mixed_legacy_ids_export_import_and_compare() {
     assert!(
         output.status.success(),
         "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+}
+
+#[test]
+fn ad4_export_import_and_incremental_replay() {
+    let s = Store::scratch("shadow-ad4");
+    let cli = Path::new(env!("CARGO_MANIFEST_DIR"));
+    let output = s
+        .hermetic_command("python3")
+        .current_dir(&s.dir)
+        .arg(cli.join("tests/fixtures/shadow/ad4.py"))
+        .arg(env!("CARGO_BIN_EXE_loops"))
+        .arg(cli.join("../../tools/shadow"))
+        .output()
+        .expect("python3 runs");
+    assert!(
+        output.status.success(),
+        "{}\n{}",
+        String::from_utf8_lossy(&output.stdout),
         String::from_utf8_lossy(&output.stderr)
     );
 }

@@ -19,6 +19,8 @@ pub(super) struct Map {
     pub source: String,
     pub vertex_sha256: String,
     pub store: String,
+    pub ref_fields: HashSet<String>,
+    pub semantic_pin: String,
     pub kinds: HashMap<String, Fold>,
 }
 
@@ -76,10 +78,35 @@ impl Map {
 
     fn decode(input: &str) -> Result<Self, String> {
         let json = loops_eval::parse_json(input).map_err(|e| e.to_string())?;
-        let data = fields(
-            &json,
-            &["format", "source", "store", "vertex_sha256", "kinds"],
-        )?;
+        let mut names = vec!["format", "source", "store", "vertex_sha256", "kinds"];
+        if object(&json)?.iter().any(|(name, _)| name == "ref_fields") {
+            names.push("ref_fields");
+        }
+        let data = fields(&json, &names)?;
+        let mut ref_fields = HashSet::new();
+        if let Some(value) = data.get("ref_fields") {
+            let Json::Arr(items) = value else {
+                return Err("ref_fields must be a list".into());
+            };
+            for item in items {
+                let name = string(item)?;
+                if name.is_empty()
+                    || name == "ref"
+                    || name.ends_with("_ref")
+                    || !ref_fields.insert(name.to_owned())
+                {
+                    return Err("invalid or duplicate ref_fields name".into());
+                }
+            }
+        }
+        let sorted = loops::json::canon_set(&ref_fields.iter().cloned().collect::<Vec<_>>());
+        let semantic = Json::Obj(vec![
+            ("kinds".into(), data["kinds"].clone()),
+            (
+                "ref_fields".into(),
+                Json::Arr(sorted.into_iter().map(Json::Str).collect()),
+            ),
+        ]);
         if string(data["format"])? != "shadow-map-v1" {
             return Err("unknown map version".into());
         }
@@ -109,6 +136,8 @@ impl Map {
             store: store.into(),
             vertex_sha256: hex(data["vertex_sha256"], 64)?.into(),
             kinds,
+            ref_fields,
+            semantic_pin: loops::base32::base32(&hash(semantic.canon().as_bytes())),
         })
     }
 }

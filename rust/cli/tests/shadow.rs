@@ -3,6 +3,8 @@
 mod common;
 #[path = "../src/shadow/mapping.rs"]
 mod mapping;
+#[path = "../src/shadow/refs.rs"]
+mod refs;
 #[path = "../src/shadow/source.rs"]
 mod source;
 
@@ -68,15 +70,22 @@ impl History {
         let payload = fact.parsed_payload();
         match mapping::classify(map, unnamed, fact, payload.as_ref()) {
             Fate::Omitted { defect } => Ok(Row::Omitted { defect }),
-            Fate::Included(row) => self
-                .prepare_included(
-                    &row?,
-                    payload.expect("classified payload"),
-                    key,
-                    salt,
-                    emitted,
-                )
-                .map(|p| Row::Included(Box::new(p))),
+            Fate::Included(row) => {
+                let row = row?;
+                let own = match &row.target {
+                    mapping::Target::Keyed(t) => Some(t.as_str()),
+                    _ => None,
+                };
+                let payload = payload.expect("classified payload");
+                let changes =
+                    refs::Changes::resolve(&refs::Field::read(&payload, map), own, |id| match id {
+                        "same-root" => refs::Lookup::SelfReference,
+                        "potter-id" => refs::Lookup::Target("person:potter".into()),
+                        _ => refs::Lookup::Nonmember,
+                    });
+                self.prepare_included(&row, payload, changes, key, salt, emitted)
+                    .map(|p| Row::Included(Box::new(p)))
+            }
         }
     }
 }
@@ -100,6 +109,7 @@ fn sign(prepared: &Prepared) -> Line {
 #[test]
 fn exporter_cut_produces_known_signed_lines() {
     let map = Map::read(MAP).expect("reviewed map");
+    assert_ne!(map.semantic_pin, "");
     assert_eq!(map.store, "workshop.sqlite");
     let mut history = History::default();
     let mut lines = Vec::new();
@@ -120,6 +130,7 @@ fn exporter_cut_produces_known_signed_lines() {
             )
             .expect("accepted");
         let prepared = included(row);
+        assert!(prepared.stats.is_empty() && prepared.removed.is_empty());
         assert!(!prepared.missing_key);
         lines.push(sign(&prepared).render());
         coords.push(fact.coordinate);
@@ -409,6 +420,35 @@ fn emit_reference(dir: &Path, input: &Json) -> String {
     id.clone()
 }
 
+fn reference_inputs(step: usize, payload: &mut Vec<(String, Json)>) -> (Json, Option<Json>) {
+    let mut original = payload.clone();
+    if step == 0 {
+        let kept = ("ref".into(), Json::Str("?".into()));
+        original.push(kept.clone());
+        payload.push(kept);
+    } else if step == 3 {
+        original.push(("ref".into(), Json::Str("thread/yard".into())));
+    }
+    if step == 5 {
+        original.push(("ref".into(), Json::Str("same-root".into())));
+    }
+    if step == 1 || step == 4 {
+        let owner = ("owner".into(), Json::Str("person/potter".into()));
+        original.push(owner.clone());
+        payload.push(owner);
+        original.push((
+            "owner_ref".into(),
+            Json::Str(if step == 1 { "potter-id" } else { "" }.into()),
+        ));
+    }
+    let clearing = (step == 3).then(|| {
+        let mut keys: Vec<_> = payload.iter().map(|(k, _)| Json::Str(k.clone())).collect();
+        keys.push(Json::Str("ref".into()));
+        Json::Arr(keys)
+    });
+    (Json::Obj(original), clearing)
+}
+
 #[test]
 fn prepared_lines_equal_successive_cli_fills() {
     let root = Path::new(env!("CARGO_TARGET_TMPDIR")).join("shadow-differential");
@@ -423,7 +463,7 @@ fn prepared_lines_equal_successive_cli_fills() {
     for step in 0..48 {
         let name = ["kiln", "workshop", "yard"][step % 3];
         let kind = if step % 11 == 5 { "change" } else { "thread" };
-        let mut payload = vec![(
+        let mut payload: Vec<(String, Json)> = vec![(
             rng.pick(&["message", "heat", "status"]).into(),
             Json::Str(step.to_string()),
         )];
@@ -431,16 +471,23 @@ fn prepared_lines_equal_successive_cli_fills() {
         if has_key {
             payload.push(("name".into(), Json::Str(name.into())));
         }
+        let (original, clearing) = reference_inputs(step, &mut payload);
         let payload = Json::Obj(payload);
-        let mut fact = fact(kind, &payload.canon());
+        let mut fact = fact(kind, &original.canon());
         if rng.below(3) == 0 || step == 4 {
             fact.observer.clear();
         }
-        let about = if fact.observer.is_empty() {
+        let mut about = if fact.observer.is_empty() {
             Vec::new()
         } else {
             vec![Json::Str("observer:yard:west".into())]
         };
+        if step >= 3 && name == "kiln" && kind == "thread" && has_key {
+            about.push(Json::Str("thread:yard".into()));
+        }
+        if step == 1 {
+            about.push(Json::Str("person:potter".into()));
+        }
         let time = if step % 2 == 0 {
             fact.ts_bits = (-0.25_f64).to_bits();
             "1969-12-31T23:59:59.75Z"
@@ -456,6 +503,9 @@ fn prepared_lines_equal_successive_cli_fills() {
             ("emitted".into(), Json::Str(emitted(step))),
             ("occurred".into(), Json::Str(time.into())),
         ];
+        if let Some(sets) = clearing {
+            reference.push(("sets".into(), sets));
+        }
         if kind == "thread" && has_key {
             reference.push(("of".into(), Json::Str(format!("thread:{name}"))));
         }
