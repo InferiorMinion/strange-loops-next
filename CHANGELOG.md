@@ -11,10 +11,21 @@ The record starts where the old roadmap's did. For anything earlier, and for eve
 
 In brief:
 - Built: `--in <name>`, a store by name on every verb that takes one; `.loops/store.json` read and used by the plain views; `ls --active`; `loops describe`, with `--group`; and the import's recipe for a payload, with no change to what it writes.
+- **Kyle rules BP1:** what was entered is accepted strictly; two rows go the other way from the recommendation.
 - The build of the rulings is planned and begun, and BP1 is put to Kyle: nine narrow cases the plan found open, each with a recommendation.
 - **Kyle rules SD1 to SD4 and AD5, each as recommended.** A store describes its kinds in a plain file that refuses nothing; `emit` stops on a key slip; reference fields are described and not copied into `about`; `ls --refers-to` reads them; the import writes a reference as `kind:key`, and the homelab will be imported afresh. Nothing is built yet.
 - SD1 to SD3 are put to Kyle: what a store says about its kinds. A plain `.loops/store.json` that describes each kind and refuses nothing (SD1); `emit` stopping before it signs a write that contradicts a declared key (SD2); and whether reference fields are copied into `about`, where an erasure does not reach them (SD3: recommended, describe them and copy nothing). Nothing is built.
 - SD4 and AD5 are put to Kyle, later the same day: a read of everything that refers to a thing, taken from the declared reference fields (SD4); and the import writing a reference field as `kind:key` where the old store proves it, which means importing the homelab afresh (AD5). Nothing is built.
+
+### Kyle rules BP1
+
+Ruled in the coordinator's session on 2026-11-24, on one principle he stated: **accept strictly what was entered, and do not infer or work round a likely error.** The entry as put, with the ruling at its head, is at the end of [the kinds and references note](notes/2026-11-24-kinds-and-references.md#bp1-nine-narrow-cases-the-build-plan-found-open).
+
+- **As recommended:** rows 1 to 4 (the kind and the thing's prefix may differ; a key that is not text stops the shorthand; a root that is meant keeps its payload; adding and dropping one mention is a usage error), row 6 with its option (a list from a literal comma, and from a comma and one space where the map reviews it for a field), rows 7 and 8, and row 9.
+- **Row 5, the other way.** A bare key beside a twin that resolves is left as entered and counted. The coordinator had recommended writing `kind:key`. The reference is not lost: AD4 already mentions what the twin resolves to. In the private group it is two fields, where most values are written in full and some are bare; they are to be corrected in the old store before it is exported. The import's check-only report is to count them.
+- **Row 8b, the other way.** The mention is cleared: the import mentions only what it repaired. Kyle's reason: where the field holds a proper reference, `ls --refers-to` finds it, and a mention adds nothing he needs.
+
+The rulings free pieces 3 and 4 (the `emit` shorthand and the mention flags) and pieces 9 and 10 (the import).
 
 ### Built: a store by name, and the import's recipe
 
@@ -41,7 +52,7 @@ The first two pieces of the plan. Codex workers wrote both; the coordinator read
 
 A Codex worker planned the build of the day's rulings in twelve parts and ten merge requests; the coordinator read it and keeps it with the briefs. It found nothing to change under `model/`, `vectors/`, `protocol/`, `interop/` or `design/`, and no refusal code to add. Two pieces are being built: a store by name on the verbs that take one store, and the import carrying a recipe for what it does to a payload, with no change to what it writes.
 
-The plan listed eight cases the rulings leave open that change a signed record or its id. They are put to Kyle as [BP1](DECISIONS.md#bp1-nine-narrow-cases-the-build-plan-found-open), with a ninth from the coordinator: a bare key beside a twin that resolves. Read from outside before they were put: Astra kept a repeated key field as `member-duplicate` and exempted a root that is meant from the key's checks; all three asked for a second reviewed list encoding; margins-claude and Astra differ on one row, and both views are in it.
+The plan listed eight cases the rulings leave open that change a signed record or its id. They are put to Kyle as [BP1](notes/2026-11-24-kinds-and-references.md#bp1-nine-narrow-cases-the-build-plan-found-open), with a ninth from the coordinator: a bare key beside a twin that resolves. Read from outside before they were put: Astra kept a repeated key field as `member-duplicate` and exempted a root that is meant from the key's checks; all three asked for a second reviewed list encoding; margins-claude and Astra differ on one row, and both views are in it.
 
 ### Kyle rules SD1 to SD4 and AD5
 
