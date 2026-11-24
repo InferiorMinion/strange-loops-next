@@ -1,13 +1,13 @@
 //! Inventory of the settled, admitted records in a store.
 use crate::values::{Field, Fields};
-use crate::{Fail, answered, count, find_store, object, plain, realm, say, text, usage};
+use crate::{Context, Fail, answered, count, object, plain, realm, say, text, usage};
 use loops::{
     json::{Json, canon_set, str_cmp},
     live::LiveState,
     record::Record,
 };
 use loops_place::dir::Held;
-use std::{collections::HashMap, path::Path};
+use std::collections::HashMap;
 
 struct ThingRow {
     thing: String,
@@ -116,7 +116,7 @@ fn thing_rows(held: &Held, records: &[Record], prefix: &str, names: &[&str]) -> 
         .collect()
 }
 
-pub(crate) fn run(start: &Path, args: &[String], format: plain::Format) -> Result<(), Fail> {
+pub(crate) fn run(ctx: &Context<'_>, args: &[String], format: plain::Format) -> Result<(), Fail> {
     let mut prefix = None;
     let mut names = Vec::new();
     let mut args = args.iter();
@@ -140,7 +140,7 @@ pub(crate) fn run(start: &Path, args: &[String], format: plain::Format) -> Resul
             }
         }
     }
-    let held = find_store(start)?.read()?;
+    let held = ctx.store()?.read()?;
     let records = realm(&held);
     let output = if let Some(p) = prefix.or_else(|| (!names.is_empty()).then_some("")) {
         let rows = thing_rows(&held, &records, p, &names);

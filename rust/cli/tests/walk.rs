@@ -4852,3 +4852,6 @@ mod shadow_import;
 
 #[path = "walk/tick_slice.rs"]
 mod tick_slice;
+
+#[path = "walk/store_by_name.rs"]
+mod store_by_name;

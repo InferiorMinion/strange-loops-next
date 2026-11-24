@@ -780,9 +780,9 @@ Every verb that reads the store says when either happened (choice 18).
       refused lines and altered segments across distinct directories and
       exits 1. Append `(stores: ...)` with all source names for the unclean
       directories, including aliases, sorted by name.
-    - Only `read` and `fold` accept the option. Other verbs keep their
-      existing store selection. In particular `tick` and `tick --check` use
-      the current store and ignore bindings, leaving tick bytes unchanged.
+    - Only `read` and `fold` accept the option **after** the verb. Choice 33
+      extends bindings before the verb. A tick uses its working store for both
+      writing and checking regardless of the names inside its spec.
 
     For example, a group file beside two stores can read
     `{"workshop":"workshop","yard":"yard"}`. With one task and one note in
@@ -991,6 +991,35 @@ Every verb that reads the store says when either happened (choice 18).
     For six backups and forty unrelated notes, the default covers six ids.
     If a `retired` record replaces the 412 MB backup, a tick counting
     current backups covers seven ids and answers 5 runs and 615 MB.
+
+33. **Select the working store by name.** Use `loops --in yard ls kiln:`
+    to read the store bound to `yard`. A single leading `--in <name>` selects
+    the store for `emit`, `erase`, `tick`, `import`, `get`, `of`, `export`,
+    `check`, `ls`, `read` and `fold`. The CLI reports a usage error for a
+    repeated selector, for `--group`, or for a selector on `init`, `whoami`,
+    `shadow-import`, help or version.
+
+    The origin is the starting directory or the directory selected by `-C`.
+    Resolve names once using choice 30's user list, first local list and
+    command overrides. A leading `--store name=dir` supplies a binding on
+    every verb. For `read` and `fold`, leading and trailing bindings combine
+    in command order, with the last binding for each name winning. Relative
+    command bindings and file operands use the origin, even when a binding
+    precedes `-C`. Only an exact bound directory holding its own
+    `.loops/segments` opens. An unknown or unusable name gives the existing
+    `store-unknown` refusal.
+
+    For example, `loops --in yard fold backups.json` reads the file at the
+    origin. In the spec, an unbound `.` selects the opened yard store. A
+    binding for `.` in either list or on the command overrides that default.
+    `loops --in yard read backups` reads the vertex from yard. Tick file
+    operands and vertices follow the same origin/working-store distinction.
+
+    Before a named `emit`, `erase`, writing `tick` or `import`, stderr gives
+    the requested name, canonical store directory and the winning list path,
+    command binding or current-store default. The verb writes through the
+    store already opened. Read commands, including `tick --check`, print
+    no destination notice. Standard output keeps its ordinary format.
 
 ## Checked by
 
