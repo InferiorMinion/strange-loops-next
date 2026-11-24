@@ -169,8 +169,7 @@ An old ID seen only on omitted rows maps to `[]`. Identical copies in two
 destinations have two entries. This 0600 lookup file contains no salts.
 The importer atomically publishes it under the group lock, skips an identical
 file, and regenerates a missing one on a writable rerun. Check-only never
-creates or repairs it. A v1 journal requires fresh shadows. The comparison command below still uses
-the earlier payload projection and map schema. See
+creates or repairs it. A v1 journal requires fresh shadows. See
 [choice 31](../../rust/PLACE.md) for recovery, cycle handling and counts.
 
 ## Compare a shadow with its source
@@ -182,36 +181,90 @@ beside it. For this example the group contains
 {"state":"private","sources":[{"name":"workshop","facts":"cut/workshop.facts.jsonl","map":"cut/workshop.map.json","destination":"workshop"}]}
 ```
 
-Review the exported map before the import. Run all three commands from the
-directory containing the group, with the Rust `loops` on PATH.
+Review the exported map before the import. With the shadows stationary, run
 
 ```sh
-python3 tools/shadow/export.py workshop.vertex --output-dir cut
 loops shadow-import group.json
-python3 tools/shadow/compare.py cut/workshop.facts.jsonl cut/workshop.map.json workshop
+python3 tools/shadow/compare.py --group group.json
 ```
 
-Use `--loops PATH` to select a binary, and `--unnamed` when the import used
-`--include-unnamed`. Compare a stationary shadow. The tool checks each shadow
-first, then reads record counts and keyed field projections with `ls`. A
-values fold supplies root payloads, shadow-only field names and fields that
-the comma-separated option cannot express or pass within the OS argument limit.
+This compares every source in manifest order. To report just the workshop,
+supply its triple. Repeat `--also FACTS MAP SHADOW` to select more reports
+and their union, in argument order. In either case every group cut participates
+in ID resolution.
 
-The JSON report lists sources in argument order and kinds in sorted name
-order, with counts only. Keyed things match by kind and key. Roots match by
-kind and full payload, including multiplicity. Unmatched roots count on their
-respective sides because the two sets of root IDs have no common identity.
-Field differences count matched things. Conflict and multiple-head counts
-cover the new reading. Exit 0 means the compared readings and record counts
-agree, 1 means a difference or a failed comparison, and 2 means bad usage.
-A failed read prints a diagnostic on stderr. `--show N` adds at most N
-examples across the report, with kind, key and field names.
+```sh
+python3 tools/shadow/compare.py cut/workshop.facts.jsonl cut/workshop.map.json workshop \
+    --group group.json --old-json workshop.read.json
+```
 
-Supply `--old-json FILE` for an independent comparison with the first
-source's `sl read <vertex> --json --all` rows. Its generated metadata is
-excluded and rows of unnamed kinds are counted separately. Repeat
-`--also FACTS MAP SHADOW` to compare more sources and their union. For each
-shared keyed thing, the old-side merge orders all copies by original binary64
-time, numeric arrival coordinate, then argument order for exact ties. The
-union reports shared things, differing readings and multiple heads. Multiple
-heads alone do not change the field-equality verdict.
+Use `--loops PATH` to select the binary and `--unnamed` when the import used
+`--include-unnamed`. The positional form recognizes a `group.json` in the
+working directory when it contains all selected triples. Without a manifest,
+the supplied triples constitute the lookup group. Supply the manifest for
+cross-store targets outside that selection or for references requiring
+another root's salted record ID.
+
+The tool checks each shadow, verifies the cuts through their trailers, and
+indexes included and omitted IDs before replaying arrivals. In group mode
+it requires the sibling `<stem>.ids.json`. It checks the four members of
+each occurrence, cut membership, destination, record presence and uniqueness,
+kind, keyed or root identity, occurrence time and keyed revision order
+against the cuts and signed envelopes. It uses the sidecar for the record
+names. The original facts and reviewed maps determine cleaning, target
+selection, cycles, current mentions and observer. The private journal is
+unused. Extra signed records remain visible in the reading and count in
+`unmapped_shadow_records`. A stale entry naming an absent record fails validation.
+
+The JSON report contains numeric counts. `sources[].things` totals the
+export-to-shadow comparison. Each entry in `sources[].kinds`, in sorted
+kind order, has `facts`, `records` and the same `things` counts.
+`record_count_mismatches` counts kinds whose totals differ. The tool reads
+record counts and projected fields with `ls`. A `fold --values` supplies the
+actual head mentions, root values and fields the comma-list cannot express.
+Keyed things match by kind and key. Roots match by translated identity
+when available. For unidentified roots, matching preserves multiplicity,
+preferring equal payloads and mention sets, then equal payloads.
+
+Among matched things, `fields_differing` counts differing field values or
+presence, and `mentions_differing` counts things whose mention **sets**
+differ. Either contributes to `differing` once per thing. Unmatched things
+count in `only_old` or `only_new`. `fields_conflicting` and `multiple_heads`
+describe the new side. Multiple heads alone allow equality.
+
+For `--old-json FILE`, supply the first selected source's
+`sl read <vertex> --json --all` output. Each named kind gains two comparisons:
+
+| Member | Left side (`old`) | Right side (`new`) |
+|---|---|---|
+| `old_json` | Replayed export | Normalized old rows |
+| `old_json_shadow` | Normalized old rows | Shadow fold |
+
+Only supplied old rows participate. `old_json.missing_key_roots` and
+`old_json.outside_collect_limit` break down export roots absent from that
+reading. Both are subsets of `only_old`. Unnamed old rows count separately
+in `old_json_unnamed_rows`. The old-row comparison excludes generated
+metadata. It resolves the row's accumulated `refs`, its current suffix and
+reviewed fields, and its latest observer, suppressing self mentions. The
+supplying export fact establishes whether a suffix originally had a companion.
+The old row supplies that suffix's value.
+
+The old fold consumed the raw `ref` member even when AD4 preserved it. On
+matched export and shadow things, `retained_ref_fields_export_checked` counts
+the original `ref` values checked against the shadow, including exact text
+with delimiters or unresolved parts. `retained_ref_fields_differing` counts
+failures, also included in `fields_differing`. The two old-row comparisons
+use the evidence available in the old JSON. A retained suffix or reviewed
+field in its payload is comparable there too.
+
+With several selected sources, `union` reports shared keyed things. It
+replays their changes by binary64 time, numeric coordinate and argument
+order for exact ties, resolving each fact in its own destination. The union
+reports `shared`, `differing`, `fields_differing`, `mentions_differing` and
+`multiple_heads`.
+
+Exit 0 means agreement, 1 means a difference or a failed comparison, and 2
+means bad usage. A failed read writes a diagnostic on stderr. `--show N`
+adds at most N examples across the report with source number, comparison,
+kind, key and differing field names. Mention targets and payload values are
+never printed.

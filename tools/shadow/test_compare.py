@@ -63,7 +63,7 @@ elif verb == "fold":
     if len(bindings) > 1:
         things = data["union"]
     out = {"items":{"things":{
-        key: {"values":row["values"],
+        key: {"values":row["values"], "about":row.get("about", []),
               "heads":[{"env":{"kind":row["kind"]}}] * row.get("heads", 1),
               "setters":{k:[{},{}] for k in row.get("conflicts", [])}}
         for key,row in things.items()}}}
@@ -238,10 +238,21 @@ class CompareTests(unittest.TestCase):
         ], {"thread:kiln": thing("thread", {"name": "kiln", "status": "early"})})
         self.reading(union={"thread:kiln": thing("thread", other, heads=2)})
         result = json.loads(self.run_compare("--also", *yard, "--also", *kiln).stdout)
-        self.assertEqual(result["union"], {"shared": 1, "differing": 0, "multiple_heads": 1})
+        self.assertEqual(result["union"], {"shared": 1, "differing": 0, "multiple_heads": 1,
+                                           "fields_differing": 0, "mentions_differing": 0})
         self.reading(union={"thread:kiln": thing("thread", self.kiln, heads=2, conflicts=["status"])})
         result = json.loads(self.run_compare("--also", *yard, code=1).stdout)
         self.assertEqual(result["union"]["differing"], 1)
+
+    def test_union_only_mention_difference(self):
+        yard = source(self.tmp, "yard", [
+            ("thread", 4, (1, 0), {"name": "kiln", "ref": "thread/firing"}),
+        ], {"thread:kiln": thing("thread", {"name": "kiln"}, about=["thread:firing"])})
+        self.reading(union={"thread:kiln": thing("thread", {**self.kiln, "status": "before"}, heads=2)})
+        result = json.loads(self.run_compare("--also", *yard, code=1).stdout)
+        self.assertTrue(all(s["things"]["differing"] == 0 for s in result["sources"]))
+        self.assertEqual(result["union"]["mentions_differing"], 1)
+        self.assertEqual(result["union"]["fields_differing"], 0)
 
     def test_failed_check_stops_and_suppresses_child_data(self):
         self.reading(fail="check")
@@ -269,3 +280,79 @@ class CompareTests(unittest.TestCase):
         path.write_bytes(path.read_bytes().replace(b"secret-open", b"secret-shut"))
         self.assertIn("trailer", self.run_compare(code=1).stderr)
         self.run_compare("--show", "-1", code=2)
+
+    def test_old_attestation_and_retained_bytes(self):
+        target = f"{1:026}"
+        raw = {"name": "kiln", "ref": "thread/firing, ?", "owner": "person/potter",
+               "owner_ref": target, "image": "kiln", "image_ref": "sha256:kiln",
+               "self_ref": f"{0:026}", "self": None, "members": [target]}
+        clean = {k: v for k, v in raw.items() if k not in ("self_ref", "owner_ref")}
+        # Re-supplying owner_ref without its companion makes it visible. The
+        # old row still contains owner from the first fact.
+        clean["owner_ref"] = target
+        about = ["thread:firing", "thread:potter"]
+        potter = {"name": "potter"}
+        yard = {"name": "yard"}
+        self.things = {"thread:kiln": thing("thread", clean, about=about, records=2),
+                       "thread:potter": thing("thread", potter), "thread:yard": thing("thread", yard)}
+        self.args = source(self.tmp, "potter", [
+            ("thread", 0, (1, 1), raw), ("thread", 1, (2, 1), potter),
+            ("thread", 2, (3, 1), {"name": "kiln", "owner_ref": target}),
+            ("thread", 3, (4, 1), yard),
+        ], self.things)
+        mapping = json.loads(self.args[1].read_text())
+        write_json(self.args[1], {**mapping, "ref_fields": ["members"]})
+        old = self.tmp / "old.json"
+        old_fields = {k: v for k, v in raw.items() if k != "ref"}
+        rows = [{"kind": "thread", "key": "kiln", "id": f"{2:026}", "refs": ["?", "thread/firing"],
+                 "observer": "", "payload": old_fields},
+                {"kind": "thread", "key": "potter", "id": target, "refs": [], "payload": potter},
+                {"kind": "thread", "key": "yard", "payload": yard}]
+        def result(code):
+            write_json(old, {"rows": rows})
+            return json.loads(self.run_compare("--old-json", old, code=code).stdout)["sources"][0]
+
+        summary = result(0)
+        self.assertEqual(summary["things"]["retained_ref_fields_export_checked"], 1)
+        self.assertEqual(summary["kinds"][1]["old_json_shadow"]["equal"], 3)
+        for key, change in (("observer", "yard"), ("refs", ["?", "thread/yard"])):
+            with self.subTest(key=key):
+                before = rows[0][key]
+                rows[0][key] = change
+                report = result(1)
+                self.assertEqual(report["things"]["differing"], 0)
+                for side in ("old_json", "old_json_shadow"):
+                    counts = report["kinds"][1][side]
+                    self.assertEqual((counts["mentions_differing"], counts["fields_differing"]), (1, 0))
+                rows[0][key] = before
+
+        for name, changed in (("owner_ref", f"{3:026}"), ("members", [f"{3:026}"])):
+            with self.subTest(field=name):
+                saved = old_fields[name]
+                old_fields[name] = changed
+                report = result(1)
+                for side in ("old_json", "old_json_shadow"):
+                    counts = report["kinds"][1][side]
+                    self.assertEqual((counts["mentions_differing"], counts["fields_differing"]), (1, 1))
+                old_fields[name] = saved
+
+        clean["ref"] = "thread/firing, different unresolved text"
+        self.reading()
+        report = result(1)
+        self.assertEqual((report["things"]["fields_differing"], report["things"]["mentions_differing"],
+                          report["things"]["retained_ref_fields_differing"]), (1, 0, 1))
+        self.assertEqual(report["kinds"][1]["old_json_shadow"]["differing"], 0)
+
+    def test_anonymous_roots_pair_equal_mentions_before_counting_differences(self):
+        self.args = source(self.tmp, "yard", [
+            ("change", 1, (1, 0), {"ref": "thread/potter"}),
+            ("change", 1, (2, 0), {"ref": "thread/kiln"}),
+        ], {"r:one": thing("change", {}, about=["thread:kiln"]),
+            "r:two": thing("change", {}, about=["thread:potter"])})
+        self.run_compare()
+        self.things = {"r:one": thing("change", {}, about=["thread:kiln"]),
+                       "r:two": thing("change", {}, about=["thread:yard"])}
+        self.reading()
+        counts = json.loads(self.run_compare(code=1).stdout)["sources"][0]["things"]
+        self.assertEqual((counts["equal"], counts["mentions_differing"], counts["fields_differing"],
+                          counts["only_old"], counts["only_new"]), (1, 1, 0, 0, 0))

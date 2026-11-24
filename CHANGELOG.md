@@ -10,7 +10,7 @@ The record starts where the old roadmap's did. For anything earlier, and for eve
 ## 2026-11-23
 
 In brief:
-- AD4 is built in the import: the old stores' references become mentions, the payload is cleaned of the fields they came from, and the journal pins only the vertex's kinds. On copies of the six homelab stores, 14,727 `*_ref` fields and 889 `ref` fields became mentions, and an independent reading of the rule agrees on every keyed thing.
+- AD4 is built in the import: the old stores' references become mentions, the payload is cleaned of the fields they came from, and the journal pins only the vertex's kinds. On copies of the six homelab stores, 14,727 `*_ref` fields and 889 `ref` fields became mentions, and an independent reading of the rule agrees on every keyed thing. The comparison tool checks it against the exports and the old tool's own reading: on the six, every thing the old tool shows is equal, references included.
 - Kyle ruled W3b (the JavaScript stays frozen, as the rule) and AD4 (references in the old payloads become mentions, by one rule for old ids, and the payload is cleaned of the fields they came from). AD4 is being built, with the import's pin on the vertex's kinds only.
 - The look at the frozen JavaScript that W3 asked for is done and put to Kyle as W3b: it has caught no fault in Lean or Rust alone; it still checks 649 vectors and is the second computation of a spec's slice. Recommended: keep it frozen as the rule.
 - The first real import: Kyle's six homelab stores, into shadows outside every repository. Each reads as the old tool does in every field but one, a list of references in a field `ref`. How the old stores' references are carried is put to Kyle as AD4.
@@ -25,6 +25,32 @@ In brief:
 - `loops shadow-import` is built: it copies exported old stores into shadow stores, one signed record for each old fact, checks everything before it writes anything, and writes nothing on a second run. On a copy of four real stores it gave the old tool's reading for every thing held by one store.
 - The import's first two pieces are built: a script that exports an old store and its vertex to two text files, and the mapping of each old fact to a record, equal byte for byte to what `loops emit - --fill` writes. No verb yet.
 - The import has its plan. Two of its choices decide record ids and are put to Kyle as AD3: how a kind the vertex does not name is written when asked for, and how fine the old time is.
+
+### AD4, third piece: the comparison checks references
+
+The last of three pieces of AD4. Python only, in `tools/shadow/`; it changes no store and no Rust.
+
+```
+python3 tools/shadow/compare.py --group group.json                      (every source, against its export)
+python3 tools/shadow/compare.py --old-json workshop.old.json \
+    exports/workshop.facts.jsonl exports/workshop.map.json shadows/workshop   (one source, also against the old tool)
+```
+
+- **The whole group is read first**, as the import does, so a reference into another store is resolved, not mistaken for text. A positional comparison finds `group.json` in the working directory.
+- **AD4 is worked out again in Python** from the export's original facts: the mentions, the cleaning, the cycles. The id map is used only to translate an old id into the record it became, and each of its entries is checked against the exports and the shadows.
+- **Mentions are compared as sets**, from each thing's `about` in `loops fold --values`, and counted apart from fields. A difference in mentions alone fails the comparison.
+- **Against the old tool's reading** (`--old-json`): its `refs`, its current `*_ref` fields and its latest observer, cleaned by the same rule. Where the old tool took `ref` away but AD4 keeps it, the export is the witness, and the output says so. Facts without their key and collected items beyond the old tool's limit are shown as coverage differences, never made up.
+- Counts only, as before.
+
+**Run by the coordinator on the six homelab stores** (scratch copies, imported by the second piece):
+
+| Compared | Result |
+| --- | --- |
+| Every source against its export, as one group | every thing equal in fields and mentions: 5,021, 1,021, 35, 122, 10 and 272; no record outside the id map |
+| Each source against the old tool's own `sl read --json --all` | every thing the old tool shows is equal, references included; the only difference is the 37 facts without their key, which the shadows hold as roots and the old tool does not show |
+| Across the six | 10 things held by two stores under different old ids read with two heads, as AD2 counts them |
+
+A Codex worker wrote it; the coordinator reviewed it and ran the comparisons above.
 
 ### AD4, second piece: references become mentions
 

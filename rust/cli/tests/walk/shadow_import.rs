@@ -512,3 +512,22 @@ fn ad4_export_import_and_incremental_replay() {
         String::from_utf8_lossy(&output.stderr)
     );
 }
+
+#[test]
+fn compare_ad4_exports_old_rows_and_shadow_mentions() {
+    let s = Store::scratch("compare-ad4");
+    let cli = Path::new(env!("CARGO_MANIFEST_DIR"));
+    let output = s
+        .hermetic_command("python3")
+        .current_dir(&s.dir)
+        .arg(cli.join("tests/fixtures/shadow/compare_ad4.py"))
+        .arg(env!("CARGO_BIN_EXE_loops"))
+        .arg(cli.join("../../tools/shadow"))
+        .output()
+        .expect("python3 runs");
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+}
