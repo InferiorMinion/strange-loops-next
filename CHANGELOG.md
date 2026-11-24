@@ -11,6 +11,7 @@ The record starts where the old roadmap's did. For anything earlier, and for eve
 
 In brief:
 - SD1 to SD3 are put to Kyle: what a store says about its kinds. A plain `.loops/store.json` that describes each kind and refuses nothing (SD1); `emit` stopping before it signs a write that contradicts a declared key (SD2); and whether reference fields are copied into `about`, where an erasure does not reach them (SD3: recommended, describe them and copy nothing). Nothing is built.
+- SD4 and AD5 are put to Kyle, later the same day: a read of everything that refers to a thing, taken from the declared reference fields (SD4); and the import writing a reference field as `kind:key` where the old store proves it, which means importing the homelab afresh (AD5). Nothing is built.
 
 ### SD1 to SD3 are put
 
@@ -23,6 +24,19 @@ The entries come from a discussion of Neon's sketch of 2026-11-23 between the co
 - **An unknown key in the file stops the commands that use it** (the coordinator), and `loops describe` reports how the store fits its description (margins-claude and the coordinator).
 - **The sketch's first example was rewritten from the store.** `deploy.service` holds 65 bare names and is not a reference; `decision.status` is unset on 186 of 189 decisions, so decisions get no lifecycle.
 - **The entries no longer say that nothing changes a record's bytes or id** (Astra). The record format and every existing record are unchanged, but the same shorthand command writes another `of`, and so another id, depending on the file.
+
+### SD4 and AD5 are put
+
+Kyle trialled the import on a second, private group of stores (nothing from it is quoted), and asked for a second round in the room on what it showed. The same four agree on both entries. What each brought:
+
+- **Nothing keeps mentions in step with the fields after the import** (the coordinator). A move written without `--about` keeps the old mention and gains no new one, by the rule of 2026-11-14; shown on today's binary. The coordinator proposed a read taken from the declared reference fields, and the import writing one form.
+- **The read answers as a fold does, yes, no or unknown** (Astra, from 15 histories run on today's binary). Neon had it list a thing when any live setter holds the target; that contradicts the spec, where setters whose answers to the test differ answer unknown, and Neon withdrew it. Across fields any yes lists the thing; across stores the records are put together before they are read. margins-claude pointed to the spec's own sentences for it.
+- **The read's "no" needs its coverage beside it** (margins-claude). The coordinator had said the import mentions every reference in the audit store. margins-claude found 434 live values there that are a bare key with no kind, no twin and no mention, which that count had not seen (`sl-py/refs_twins.py`, margins `4b0d7cf` and `f410152`). They answer no, so the read states how many values in the fields it read are not typed.
+- **The old form was never kept on purpose**, and field and twin agree in all 13,854 facts (Neon, and margins-claude separately, then again as whole values byte for byte).
+- **The rewrite's six bounds** (Astra): never a kind's key field, which would rename a thing; decided from the fact's own field and twin; the whole value compared; a list and a bare key only by their own rows; the same rewrite in the check and the write, pinned in the journal, into fresh stores only.
+- **The five slip fields are repaired by a line in the group's map, not at read time** (margins-claude; Neon and Astra held the read to exact text). 586 values in old facts resolve, and are mentioned as twinned references are; 75 name nothing imported and stay. Astra had the mention stated as a second choice within the row, since it is permanent and the repair does not need it.
+- **A list for several targets** has no homelab case, and changes what `is` answers, so it is a row of its own. All four recommend it: under an exact match, comma text with several targets answers yes for none of them (margins-claude).
+- **Read as put before the merge** by Astra and margins-claude, who corrected the draft: it had said a ruling against row 1 would make the read take both forms; it had the import's mentions as complete; it gave "not typed" as naming nothing, where it is about the form alone; and row 2 did not say that a repaired value is also mentioned.
 
 ## 2026-11-23
 
