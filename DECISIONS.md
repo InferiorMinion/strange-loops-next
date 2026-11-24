@@ -194,7 +194,7 @@ And every reference value in the live stores is still in the imported `kind/key`
 
 **Where these come from.** On 2026-11-24, after SD1 to SD3 were put, Kyle trialled the import on a second, private group of stores. Nothing from it is quoted here. It showed what the homelab had hidden. The import gives a mention to each reference the old tool recorded with an id, and after it nothing keeps the mentions in step with the fields: under SD3's option C a new or changed reference adds no mention, and a move leaves the old one. The same four went through that in the room. Two questions came out. SD4 is a read. AD5 changes what the import writes, and the homelab would be imported afresh.
 
-One thing needs no ruling and should follow SD1 to SD3 directly: a store found by name on every verb ([the note](notes/2026-11-23-store-descriptions.md#3-a-store-found-by-name-on-every-verb), section 3). In the private group a large share of references name a thing held in another store of the group, so a read by reference and `describe` both have to read the group.
+One thing needs no ruling and is built in the same pass, at your word: a store found by name on every verb, spelled `--in <name>` ([the note](notes/2026-11-23-store-descriptions.md#3-a-store-found-by-name-on-every-verb), section 3, with what the room settled). In the private group a large share of references name a thing held in another store of the group, so a read by reference and `describe` both have to read the group.
 
 ## SD4: a read of everything that refers to a thing
 
