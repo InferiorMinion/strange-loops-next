@@ -38,6 +38,10 @@ Kyle trialled the import on a second, private group of stores (nothing from it i
 - **A list for several targets** has no homelab case, and changes what `is` answers, so it is a row of its own. All four recommend it: under an exact match, comma text with several targets answers yes for none of them (margins-claude).
 - **Read as put before the merge** by Astra and margins-claude, who corrected the draft: it had said a ruling against row 1 would make the read take both forms; it had the import's mentions as complete; it gave "not typed" as naming nothing, where it is about the form alone; and row 2 did not say that a repaired value is also mentioned.
 
+### A store by name on every verb joins the pass
+
+Kyle asked that a store found by name on every verb be built with SD1 to SD4 and not after. The four settled its form in the room, and it is written in [the store descriptions note](notes/2026-11-23-store-descriptions.md#3-a-store-found-by-name-on-every-verb), section 3: `--in <name>` before the verb. It stands under W7. margins-claude showed on the homelab group that `--in` cannot simply be `-C` with the resolved directory; Astra gave the resolver's present edges from 16 checks, the rule that a write names its store on standard error, and that only the two union reads take more than one store; Neon chose the spelling with Kyle's section in mind and added `--store` before the verb. Nothing is built.
+
 ## 2026-11-23
 
 In brief:
