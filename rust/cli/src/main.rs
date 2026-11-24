@@ -6,10 +6,12 @@
 //! lines that check, then is refused `store-not-clean` when a line or a
 //! segment did not.
 mod cut;
+mod describe;
 mod description;
 mod draft;
 mod ls;
 mod plain;
+mod references;
 mod registry;
 mod shadow;
 mod values;
@@ -45,10 +47,12 @@ use values::View;
 const USAGE: &str = "\
 usage: loops [-C <dir>] <verb> ...
        loops [-C <dir>] [--store <name>=<dir>]... [--in <name>] <verb> ...
+       loops [-C <dir>] [--store <name>=<dir>]... [--group | --in <name> ...] describe [--plain]
 
   --in selects one working store. File operands and --store paths start at -C
   or the working directory. Named writes report the destination on stderr.
-  init, whoami and shadow-import take no --in. --group is not supported.
+  init, whoami and shadow-import take no --in. For describe, --in may repeat
+  or --group selects all names from the first local stores.json.
 
   init                          make .loops/ here
   emit <kind> [field=text | field:=json]... [\"message\"]
@@ -80,6 +84,8 @@ usage: loops [-C <dir>] <verb> ...
                                 the prefix after the colon may be empty (e.g. kiln: or kiln:e)
                                 hide things whose live lifecycle field is one text value in closed
                                 JSON and plain output state the kind, field and closed list applied
+  describe [--plain]            show each store's description and fit against the selected union
+                                default: current store; loops --group describe reads the local group
   get <id>                      one record
   of <thing> [--plain]          a thing's values, each key's from its live
                                 setters; its about, its heads, and how many
@@ -916,16 +922,34 @@ fn check_report(held: &Held) -> Json {
 struct Arguments {
     start: PathBuf,
     rest: Vec<String>,
-    name: Option<String>,
+    selection: registry::Selection,
     overrides: registry::Bindings,
     format: Format,
+}
+
+// Look past leading options and their literal operands only. Keep the old
+// immediate selector diagnostics on verbs that still operate on one store.
+fn multi_store_verb(args: &[String]) -> bool {
+    let mut args = args.iter();
+    while let Some(arg) = args.next() {
+        match arg.as_str() {
+            "-C" | "--store" | "--in" => {
+                args.next();
+            }
+            "--json" | "--group" => {}
+            verb => return verb == "describe",
+        }
+    }
+    false
 }
 
 fn arguments(args: &[String]) -> Result<Arguments, Fail> {
     let mut start = PathBuf::from(".");
     let mut rest = Vec::new();
     let mut json = false;
-    let mut name = None;
+    let multi = multi_store_verb(args);
+    let mut names = Vec::new();
+    let mut group = false;
     let mut overrides = registry::Bindings::new();
     let mut args = args.iter();
     while let Some(arg) = args.next() {
@@ -937,16 +961,24 @@ fn arguments(args: &[String]) -> Result<Arguments, Fail> {
                     .into();
             }
             "--in" if rest.is_empty() => {
-                if name.is_some() {
+                if !multi && !names.is_empty() {
                     return Err(usage("use --in once"));
                 }
-                name = Some(
+                names.push(
                     args.next()
                         .ok_or_else(|| usage("--in takes a store name"))?
                         .clone(),
                 );
             }
-            "--group" if rest.is_empty() => return Err(usage("--group is not supported")),
+            "--group" if rest.is_empty() => {
+                if !multi {
+                    return Err(usage("--group is not supported"));
+                }
+                if group {
+                    return Err(usage("use --group once"));
+                }
+                group = true;
+            }
             "--" if rest
                 .first()
                 .is_some_and(|v: &String| matches!(v.as_str(), "emit" | "tick")) =>
@@ -977,9 +1009,12 @@ fn arguments(args: &[String]) -> Result<Arguments, Fail> {
             _ => rest.push(arg.clone()),
         }
     }
+    if group && !names.is_empty() {
+        return Err(usage("--group cannot be combined with --in"));
+    }
     let format = if rest
         .first()
-        .is_some_and(|v| matches!(v.as_str(), "ls" | "of" | "read" | "fold"))
+        .is_some_and(|v| matches!(v.as_str(), "ls" | "of" | "read" | "fold" | "describe"))
         && rest.iter().any(|a| a == "--plain")
     {
         if json {
@@ -996,7 +1031,11 @@ fn arguments(args: &[String]) -> Result<Arguments, Fail> {
     Ok(Arguments {
         start,
         rest,
-        name,
+        selection: if group {
+            registry::Selection::Group
+        } else {
+            registry::Selection::Names(names)
+        },
         overrides,
         format,
     })
@@ -1037,16 +1076,32 @@ fn run(args: &[String]) -> Result<(), Fail> {
     let Arguments {
         start,
         rest,
-        name,
+        selection,
         overrides,
         format,
     } = arguments(args)?;
     let Some((verb, rest)) = rest.split_first() else {
         return Err(usage(USAGE));
     };
+    if verb == "describe" {
+        if !rest.is_empty() {
+            return Err(usage("describe takes no operands"));
+        }
+        let stores = registry::selected(&start, overrides, &selection)?;
+        return describe::run(stores, format);
+    }
+    let registry::Selection::Names(names) = selection else {
+        return Err(usage("--group is not supported"));
+    };
     let ctx = Context {
         origin: &start,
-        destination: destination(&start, name.as_deref(), verb, rest, overrides)?,
+        destination: destination(
+            &start,
+            names.first().map(String::as_str),
+            verb,
+            rest,
+            overrides,
+        )?,
     };
     match verb.as_str() {
         "init" => {

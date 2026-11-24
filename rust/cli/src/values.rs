@@ -47,6 +47,22 @@ pub(crate) fn member<'a>(payload: &'a Json, key: &str) -> Option<&'a Json> {
     }
 }
 
+/// Raw field values, once per distinct live setter. A hidden setter yields
+/// None; an open setter with no such member contributes no value.
+pub(crate) fn setter_values<'a>(
+    held: &'a Held,
+    state: &live::LiveState<'_>,
+    key: &'a str,
+) -> impl Iterator<Item = Option<&'a Json>> {
+    state.setters(key).into_iter().filter_map(move |r| {
+        if r.shown == Shown::Here {
+            payload(held, r).and_then(|p| member(p, key)).map(Some)
+        } else {
+            Some(None)
+        }
+    })
+}
+
 /// One live setter of `key`: its id and `shown`, and its value of the key
 /// when its payload is held and holds the key.
 fn setter(held: &Held, record: &Record, key: &str) -> Json {

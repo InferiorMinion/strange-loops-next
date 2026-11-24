@@ -10,17 +10,17 @@ use std::{
 #[derive(Default)]
 pub(crate) struct Description {
     note: Option<String>,
-    kinds: BTreeMap<String, Kind>,
+    pub(crate) kinds: BTreeMap<String, Kind>,
 }
 
 #[derive(Default)]
-struct Kind {
+pub(crate) struct Kind {
     note: Option<String>,
     key: Key,
     key_format: Option<String>,
     headline: Option<String>,
-    refs: Option<BTreeMap<String, Vec<String>>>,
-    lifecycle: Option<Lifecycle>,
+    pub(crate) refs: Option<BTreeMap<String, Vec<String>>>,
+    pub(crate) lifecycle: Option<Lifecycle>,
     preview: Option<Vec<String>>,
     search: Option<Vec<String>>,
 }
@@ -42,6 +42,18 @@ pub(crate) struct Lifecycle {
 impl Description {
     /// The directory is the working store's opened .loops directory.
     pub(crate) fn load(dir: &Path) -> Result<Option<Self>, Fail> {
+        Self::read(dir, Self::parse)
+    }
+
+    /// Keep the validated source for describe, including omitted members and explicit nulls.
+    pub(crate) fn with_source(dir: &Path) -> Result<Option<(Self, Json)>, Fail> {
+        Self::read(dir, |raw| Ok((Self::parse(raw.clone())?, raw)))
+    }
+
+    fn read<T>(
+        dir: &Path,
+        validate: impl FnOnce(Json) -> Result<T, String>,
+    ) -> Result<Option<T>, Fail> {
         let path = dir.join("store.json");
         let bytes = match fs::read(&path) {
             Ok(bytes) => bytes,
@@ -51,7 +63,7 @@ impl Description {
         let invalid = |why: String| usage(format!("{}: {why}", path.display()));
         let input = std::str::from_utf8(&bytes).map_err(|e| invalid(format!("$: {e}")))?;
         let json = loops_eval::parse_json(input).map_err(|e| invalid(format!("$: {e}")))?;
-        Self::parse(json).map(Some).map_err(invalid)
+        validate(json).map(Some).map_err(invalid)
     }
 
     fn parse(json: Json) -> Result<Self, String> {
@@ -125,10 +137,14 @@ fn natural_kind(name: &str) -> bool {
 
 impl Kind {
     fn headline(&self) -> Option<&str> {
-        self.headline.as_deref().or(match &self.key {
+        self.headline.as_deref().or_else(|| self.key_field())
+    }
+
+    pub(crate) fn key_field(&self) -> Option<&str> {
+        match &self.key {
             Key::Field(name) => Some(name.as_str()),
             Key::Null | Key::Omitted => None,
-        })
+        }
     }
 
     fn parse(json: Json, path: &str, name: &str) -> Result<Self, String> {
@@ -171,6 +187,10 @@ impl Kind {
 }
 
 impl Lifecycle {
+    pub(crate) fn lists(&self, value: &Json) -> bool {
+        matches!(value, Json::Str(s) if self.closed().contains(s) || self.active.as_deref().unwrap_or_default().contains(s))
+    }
+
     pub(crate) fn closed(&self) -> &[String] {
         self.closed.as_deref().unwrap_or_default()
     }

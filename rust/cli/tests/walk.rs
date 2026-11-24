@@ -4861,3 +4861,6 @@ mod description;
 
 #[path = "walk/ls_active.rs"]
 mod ls_active;
+
+#[path = "walk/describe.rs"]
+mod describe;
