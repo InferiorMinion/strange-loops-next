@@ -10,6 +10,7 @@ The record starts where the old roadmap's did. For anything earlier, and for eve
 ## 2026-11-23
 
 In brief:
+- `loops emit - --fill` no longer slows with the square of the batch: 2,000 revisions take 0.22 s, not 7 s, and 8,000 take 0.86 s. The records it writes are unchanged. It was the fault the store descriptions note measured.
 - [A note on store descriptions](notes/2026-11-23-store-descriptions.md) gathers what the homelab conversion and Kyle and Neon's collector prototype asked of a store's description of its kinds, as the opening input for that question. Nothing in it is ruled. It measures one fault: `emit - --fill` takes time in the square of the batch, 6.7 s for 2,000 revisions against 0.07 s for plain `emit -`.
 - The homelab repository is converted, waiting on Kyle's merges (gruel.network !9 to !11): its agents emit with the new tool into the live stores, the changelog page and the session-start hook read them, and CI pins the old stores as a frozen archive. The SRE agent's history search reads them too (committed in the workbench's bench). `estate.py` and `atlas_materialize.py` stay on the archive, at Kyle's word. The import left out 25 facts of kinds no vertex names, and Kyle kept that default.
 - `loops` is first on `PATH` on the workbench, and the six homelab stores are cut over: their shadows are the live stores and the old stores are the archive. Converting the homelab repository's writers and readers to the new tool is next. rex-chat names its store `.`, so the release binary on main is built again.
@@ -29,6 +30,24 @@ In brief:
 - `loops shadow-import` is built: it copies exported old stores into shadow stores, one signed record for each old fact, checks everything before it writes anything, and writes nothing on a second run. On a copy of four real stores it gave the old tool's reading for every thing held by one store.
 - The import's first two pieces are built: a script that exports an old store and its vertex to two text files, and the mapping of each old fact to a record, equal byte for byte to what `loops emit - --fill` writes. No verb yet.
 - The import has its plan. Two of its choices decide record ids and are put to Kyle as AD3: how a kind the vertex does not name is written when asked for, and how fine the old time is.
+
+### `emit - --fill` keeps its state through the batch
+
+Kyle and Neon's collector prototype found it, and the store descriptions note measured it. For every row, `fill::changeset_with_base` settled and admitted everything the store holds plus every row prepared so far, then used only that row's thing. It now builds an index once, by thing, with each id's preferred form and every erased id, and adds each prepared row to it. A row's realm is read from its own thing's records. Codex wrote it; the coordinator reviewed it.
+
+| Revisions in one batch | Before | After |
+| --- | --- | --- |
+| 250 | 0.12 s | 0.03 s |
+| 1,000 | 1.56 s | 0.10 s |
+| 2,000 | 6.98 s | 0.22 s |
+| 8,000 | 132 s | 0.86 s |
+
+Release builds, a fresh store each, one new thing per row and then one revision of each.
+
+- **The records are the same.** Main's per-row algorithm is kept as a test-only reference. `fill::differential::indexed_fill_matches_per_row_realm` runs both over 2,048 generated changesets, each with and without a base (seed `0x2026_1123_f111_ba7c`, about 6 s): new things, several revisions of one thing, labels both ways, erasures and `prev` across things, a predecessor that arrives during the batch, withheld and duplicate forms, conflicting base forms, and refusals. Drafts and notices must be equal, in order. Six faults planted in the index were tried, and the tests caught five. The sixth, letting a base walk add again a held form the index already has, writes the same records.
+- **`--base` uses the same index.** A base's held ancestors of the row's thing are added for that row only, as before.
+- **Two checks in `rust/core` were made linear.** The batch writer's `check_prev` looked up each `prev` target by scanning the batch, and `check_label_names` compared each label with every earlier one. Each now uses a map or a set. The first match and the order of refusals are as before. Without this, 8,000 rows took 5.7 times as long as 2,000.
+- **What is still not linear.** Each row still reads all of its own thing's records, so a batch of many revisions of one thing costs in the square of that thing's length.
 
 ### The homelab repository converted to the new tool
 

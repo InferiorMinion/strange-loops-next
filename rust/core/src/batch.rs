@@ -5,7 +5,10 @@ use crate::number::Nat;
 use crate::read::{members, optional, required, text};
 use crate::stored::{self, Stored, Written};
 use num_bigint::BigUint;
-use std::fmt;
+use std::{
+    collections::{HashMap, HashSet},
+    fmt,
+};
 
 /// Lean: `Loops.Draft`, model/Loops/Batch.lean.
 /// A draft holds an unchecked record and an optional batch label.
@@ -316,23 +319,14 @@ pub fn check_prev(
     held: &impl Fn(&str) -> Option<Held>,
     rs: &[Stored],
 ) -> Result<(), Error> {
-    let in_batch: Vec<_> = rs
-        .iter()
-        .map(|r| {
-            let held = Held {
-                of: r.env.of.clone(),
-                prev: r.env.prev.clone(),
-            };
-            (r.id(h), held)
-        })
-        .collect();
-    let target = |p: &str| {
-        in_batch
-            .iter()
-            .find(|(id, _)| id == p)
-            .map(|(_, held)| held.clone())
-            .or_else(|| held(p))
-    };
+    let mut in_batch = HashMap::with_capacity(rs.len());
+    for r in rs {
+        in_batch.entry(r.id(h)).or_insert_with(|| Held {
+            of: r.env.of.clone(),
+            prev: r.env.prev.clone(),
+        });
+    }
+    let target = |p: &str| in_batch.get(p).cloned().or_else(|| held(p));
     if rs
         .iter()
         .any(|r| r.env.prev.iter().any(|p| target(p).is_none()))
@@ -390,15 +384,13 @@ fn writer_priority(error: stored::Error) -> u8 {
 /// # Errors
 /// Duplicate labels precede references to unknown labels.
 pub fn check_label_names<'a>(mut ds: impl Iterator<Item = &'a Draft> + Clone) -> Result<(), Error> {
-    let labels: Vec<_> = ds.clone().filter_map(|d| d.label.as_deref()).collect();
-    if labels
-        .iter()
-        .enumerate()
-        .any(|(i, label)| labels[..i].contains(label))
-    {
-        return Err(Error::LabelDuplicate);
+    let mut labels = HashSet::new();
+    for label in ds.clone().filter_map(|d| d.label.as_deref()) {
+        if !labels.insert(label) {
+            return Err(Error::LabelDuplicate);
+        }
     }
-    if !ds.all(|d| d.refs().iter().all(|r| labels.contains(&r.as_str()))) {
+    if !ds.all(|d| d.refs().iter().all(|r| labels.contains(r.as_str()))) {
         return Err(Error::LabelUnknown);
     }
     Ok(())
