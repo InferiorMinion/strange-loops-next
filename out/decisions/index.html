@@ -196,17 +196,11 @@ header.top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--g
 <a href="note-2026-11-21-tick-record.html">Step 4: the tick record, design note</a>
 <a href="note-2026-11-22-adoption.html">The adoption step: AD1 to AD4</a>
 <a href="note-2026-11-23-store-descriptions.html">Store descriptions: what the first two conversions asked for</a>
+<a href="note-2026-11-24-kinds-and-references.html">What a store says about its kinds, and references after an import: SD1 to SD4 and AD5</a>
 <a href="note-retained-boundaries.html">Retained boundaries</a></nav>
 <p class="source">Rendered from <code>DECISIONS.md</code> in the repository.</p>
 <details class="contents"><summary>On this page</summary>
 <ul><li><a href="#at-a-glance">At a glance</a></li>
-<li><a href="#what-a-store-says-about-its-kinds">What a store says about its kinds</a></li>
-<li><a href="#sd1-a-store-describes-its-kinds-in-a-file-and-enforces-nothing">SD1: a store describes its kinds in a file and enforces nothing</a></li>
-<li><a href="#sd2-a-write-that-contradicts-the-declared-key">SD2: a write that contradicts the declared key</a></li>
-<li><a href="#sd3-reference-fields-copied-into-about-and-erasure">SD3: reference fields copied into about, and erasure</a></li>
-<li><a href="#after-the-import-reading-and-writing-references">After the import: reading and writing references</a></li>
-<li><a href="#sd4-a-read-of-everything-that-refers-to-a-thing">SD4: a read of everything that refers to a thing</a></li>
-<li><a href="#ad5-one-written-form-for-a-reference-set-at-the-import">AD5: one written form for a reference, set at the import</a></li>
 <li><a href="#being-prepared">Being prepared</a></li>
 <li><a href="#deferred-by-you">Deferred by you</a></li>
 <li><a href="#ruled">Ruled</a></li></ul></details>
@@ -214,218 +208,21 @@ header.top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--g
 <h1 id="decisions">Decisions</h1>
 <p>Everything that waits on Kyle, in one place. Each entry has the question, an example, the options and a recommendation.</p>
 <ul>
-<li><p>An entry leaves this file when it is ruled. The entries ruled on 2026-11-21 have left it: PV1 to PV7, RC1, W7, E1 and I10, then TK1 to TK9 and W1 to W6. TK10 to TK12 and S4 left it on 2026-11-22, AD1 to AD4, TK13 and W3b on 2026-11-23.</p></li>
+<li><p>An entry leaves this file when it is ruled. The entries ruled on 2026-11-21 have left it: PV1 to PV7, RC1, W7, E1 and I10, then TK1 to TK9 and W1 to W6. TK10 to TK12 and S4 left it on 2026-11-22, AD1 to AD4, TK13 and W3b on 2026-11-23. SD1 to SD4 and AD5 left it on 2026-11-24, the day they were put.</p></li>
 <li><p>The ruling is written in <a href="changelog.html">CHANGELOG.md</a> under its date, and one line is added to <a href="#ruled">Ruled</a> at the end of this file.</p></li>
 <li><p>What is next once these are ruled is in <a href="roadmap.html">ROADMAP.md</a>.</p></li>
 <li><p>&quot;Today&quot; in an example means the <code>loops</code> binary built from main on 2026-11-21. Every &quot;today&quot; answer below was run, not predicted.</p></li>
 </ul>
 <h2 id="at-a-glance">At a glance</h2>
-<p>Five questions wait on a ruling. SD1 to SD3 are on what a store says about its kinds. SD4 and AD5, put later the same day, are on reading and writing references after an import. One more is <a href="#being-prepared">being prepared</a>.</p>
-<div class="table-scroll" tabindex="0"><table><thead><tr><th scope="col"></th><th scope="col">Question</th><th scope="col">Recommended</th></tr></thead>
-<tbody>
-<tr><td><a href="#sd1-a-store-describes-its-kinds-in-a-file-and-enforces-nothing">SD1</a></td><td>Does a store describe its kinds in a plain file that the CLI uses and no read depends on?</td><td>A: <code>.loops/store.json</code> now, records at step 3</td></tr>
-<tr><td><a href="#sd2-a-write-that-contradicts-the-declared-key">SD2</a></td><td>What does <code>emit</code> do when a write contradicts a kind's declared key?</td><td>A: stop before signing, and name the ways out</td></tr>
-<tr><td><a href="#sd3-reference-fields-copied-into-about-and-erasure">SD3</a></td><td>Does <code>emit</code> copy a declared reference field's value into <code>about</code>, where erasure cannot reach it?</td><td>C: describe reference fields, copy nothing in v1</td></tr>
-<tr><td><a href="#sd4-a-read-of-everything-that-refers-to-a-thing">SD4</a></td><td>Under C, how does a reader ask what refers to a thing, across kinds?</td><td>A: <code>loops ls --refers-to</code>, reading the declared reference fields as a fold does</td></tr>
-<tr><td><a href="#ad5-one-written-form-for-a-reference-set-at-the-import">AD5</a></td><td>Does the import write a reference field as <code>kind:key</code>, the one form everything else uses?</td><td>Yes, where the old store proves it, in three rows; the homelab is imported afresh</td></tr>
-</tbody></table></div>
-<p>Every earlier entry is ruled.</p>
+<p>Nothing waits on a ruling. One question is <a href="#being-prepared">being prepared</a>.</p>
+<p>Every entry is ruled.</p>
 <ul>
 <li><p>The tick record, TK1 to TK13: ruled and built. Step 4 is closed. The questions as they were put are in <a href="note-2026-11-21-tick-record.html#10-the-questions-as-they-were-put">the tick record note</a>, sections 10 and 11.</p></li>
 <li><p>The order of work, W1 to W6, and W3b, the look at the JavaScript after ticks: ruled. The entries as put are in <a href="note-2026-11-21-order-of-work.html">the order-of-work note</a>.</p></li>
 <li><p>The adoption step, AD1 to AD4: ruled on 2026-11-23. AD1 and AD2 each for its recommendation with additions, AD3 for its recommendation in both rows, AD4 for rows 1 to 3 with row 4 the other way and a rule for old ids. The entries as put, and the additions, are in <a href="note-2026-11-22-adoption.html">the adoption note</a>.</p></li>
+<li><p>What a store says about its kinds, SD1 to SD3, a read of what refers to a thing, SD4, and one written form for a reference at the import, AD5: put and ruled on 2026-11-24, each as recommended. The entries as put are in <a href="note-2026-11-24-kinds-and-references.html">the kinds and references note</a>.</p></li>
 </ul>
-<p>After the five entries: <a href="#being-prepared">what is being prepared</a>, <a href="#deferred-by-you">what you deferred</a> and <a href="#ruled">what is ruled</a>. Nothing waits to be confirmed: under your ruling of 2026-11-21 an implementer choice comes here only when it changes bytes or answers.</p>
-<h2 id="what-a-store-says-about-its-kinds">What a store says about its kinds</h2>
-<p><strong>Where these come from.</strong> <a href="note-2026-11-23-store-descriptions.html">The store descriptions note</a> gathered what the homelab conversion and a collector prototype asked for. Neon sketched a file from it on 2026-11-23. On 2026-11-24 the coordinator, Neon and margins-claude went through the sketch in a chat room kept in a store, and checked it against the six live homelab stores (6,482 things) and the prototype's store (1,994 items). Astra then reviewed the entries from outside, as put, and found a fault in each of SD2 and SD3; SD3's recommendation changed from A to C on it. The four now agree on every point below. Three points are yours: the form (SD1), the one place the CLI would decline a write (SD2), and a consequence for erasure (SD3).</p>
-<p>None of the three changes the record format, rewrites an existing record, or changes a law, a vector, or what a fold or a tick answers, so W7 does not send them here. One thing does change: the same shorthand command writes a different <code>of</code>, and so a record with another id, depending on the file. They are here because standing (step 3) will grow from whatever is chosen now.</p>
-<p>&quot;Today&quot; below is the <code>loops</code> binary built from main on 2026-11-24. Every &quot;today&quot; answer was run.</p>
-<h2 id="sd1-a-store-describes-its-kinds-in-a-file-and-enforces-nothing">SD1: a store describes its kinds in a file and enforces nothing</h2>
-<p><strong>Question.</strong> Does a store carry a description of its kinds that the CLI uses for shorthand and defaults, that no read depends on, and that refuses nothing? And is it a plain file now, or records from the first day?</p>
-<p><strong>Example.</strong> The description of the homelab coordination store, holding only what that store's records bear out:</p>
-<pre><code class="language-json">{
-  &quot;version&quot;: 1,
-  &quot;note&quot;: &quot;Operational coordination for the homelab: what was learned operating it.&quot;,
-  &quot;kinds&quot;: {
-    &quot;deploy&quot;: {
-      &quot;note&quot;: &quot;Rollouts: releases, host changes, migrations.&quot;,
-      &quot;key&quot;: &quot;name&quot;,
-      &quot;key_format&quot;: &quot;&lt;slug&gt;-&lt;YYYY-MM-DD&gt;&quot;,
-      &quot;preview&quot;: [&quot;name&quot;, &quot;service&quot;, &quot;message&quot;]
-    },
-    &quot;decision&quot;: {
-      &quot;note&quot;: &quot;Operational stances, revisable when context changes.&quot;,
-      &quot;key&quot;: &quot;topic&quot;,
-      &quot;preview&quot;: [&quot;topic&quot;, &quot;message&quot;]
-    },
-    &quot;thread&quot;: {
-      &quot;note&quot;: &quot;Open questions and design conversations in flight.&quot;,
-      &quot;key&quot;: &quot;name&quot;,
-      &quot;lifecycle&quot;: { &quot;field&quot;: &quot;status&quot;, &quot;closed&quot;: [&quot;closed&quot;, &quot;resolved&quot;, &quot;done&quot;, &quot;passed&quot;], &quot;active&quot;: [&quot;open&quot;] }
-    },
-    &quot;task&quot;: {
-      &quot;note&quot;: &quot;One implementation slice.&quot;,
-      &quot;key&quot;: &quot;name&quot;,
-      &quot;key_format&quot;: &quot;&lt;arc&gt;/&lt;slice&gt;&quot;,
-      &quot;refs&quot;: { &quot;source&quot;: [&quot;decision&quot;] },
-      &quot;lifecycle&quot;: { &quot;field&quot;: &quot;status&quot;, &quot;closed&quot;: [&quot;done&quot;, &quot;dropped&quot;], &quot;active&quot;: [&quot;open&quot;, &quot;in-progress&quot;] }
-    },
-    &quot;seal&quot;: { &quot;note&quot;: &quot;Session wrap markers.&quot;, &quot;key&quot;: null }
-  }
-}
-</code></pre>
-<p>A kind may state eight keys. What each one does:</p>
-<div class="table-scroll" tabindex="0"><table><thead><tr><th scope="col">Key</th><th scope="col">Today</th><th scope="col">With the file</th></tr></thead>
-<tbody>
-<tr><td><code>key</code></td><td>Every write states its key twice: <code>emit deploy --of deploy:&lt;slug&gt; name=&lt;slug&gt;</code>.</td><td><code>emit deploy name=&lt;slug&gt;</code> fills in <code>--of deploy:&lt;slug&gt;</code>. The record is the same one: <code>of</code> is still written in full.</td></tr>
-<tr><td><code>headline</code></td><td><code>loops ls decision: --plain</code> shows &quot;—&quot; for all 189 decisions. The headline is read from <code>name</code>, and decisions are keyed by <code>topic</code>.</td><td>The plain views show the key field, or the field <code>headline</code> names.</td></tr>
-<tr><td><code>lifecycle</code></td><td>The session hook hides closed threads with a status list copied into a jq filter.</td><td><code>loops ls thread: --active</code> hides the 57 threads whose status is in <code>closed</code> and shows the other 68.</td></tr>
-<tr><td><code>preview</code></td><td><code>--fields a,b,c</code> on every call.</td><td>The default columns of <code>ls &lt;kind&gt;: --plain</code>.</td></tr>
-<tr><td><code>refs</code></td><td>A reference is stated twice, as a field and as <code>--about</code>.</td><td>See <a href="#sd3-reference-fields-copied-into-about-and-erasure">SD3</a>.</td></tr>
-<tr><td><code>note</code>, <code>key_format</code>, <code>search</code></td><td>A table in the repository's CLAUDE.md, copied by hand from the old vertices.</td><td>Printed by <code>loops describe</code>. They drive nothing.</td></tr>
-</tbody></table></div>
-<p><strong>Why <code>closed</code> does the hiding, and not <code>active</code>.</strong> If <code>--active</code> showed only the statuses listed in <code>active</code>, 7 of the 125 threads would vanish from it (4 with no status, 2 <code>parked</code>, 1 <code>closed-bedrock-deferred</code>), and 6 of the 18 tasks (5 <code>built</code>, 1 <code>complete</code>). With <code>closed</code>, a thing with a missing, conflicting or undeclared status stays in view. <code>active</code> is kept as documentation. <code>--active</code> takes a prefix that names one kind, and that kind must declare a lifecycle; otherwise it is a usage error.</p>
-<p><strong>The boundary.</strong> All four agree on these. The tests they name are for the build to pass; today's binary cannot show them.</p>
-<ol>
-<li><p>A reader of records never needs the file. <code>of</code> and <code>about</code> are written in full in every record.</p></li>
-<li><p>With no flag that names the description, the JSON of every read is byte for byte the same with and without the file. That is a test in the suite, not a sentence. <code>--active</code> is the one such flag, and its output states the field and the list it applied, so two copies of a store that answer differently say why.</p></li>
-<li><p><code>headline</code> and <code>preview</code> change <code>--plain</code> output only.</p></li>
-<li><p>With no file, every command behaves as it does today. A file that does not parse, or that holds a key this version does not know, stops the commands that would have used it and names the file: shorthand <code>emit</code>, the plain views, <code>--active</code> and <code>describe</code>. Reads in JSON go on working, so a broken file never locks a store.</p></li>
-<li><p><code>emit -</code>, <code>emit - --fill</code> and <code>tick</code> never read the file. A collector's or an import's records cannot change because the file was edited. If shorthand ever reaches a batch, that batch pins the file's hash, as the import's journal pins its flags.</p></li>
-<li><p><code>loops describe</code> prints the description, then how the store fits it. For each kind: things whose key field differs from their key, keyless roots of a keyed kind, lifecycle values in neither list, and reference values that no mention carries. It changes nothing. It is where drift shows. The last count is not a fault to repair: a reference may be left out of <code>about</code> on purpose.</p></li>
-</ol>
-<p><strong>Options.</strong></p>
-<div class="table-scroll" tabindex="0"><table><thead><tr><th scope="col"></th><th scope="col">The description is</th><th scope="col">Cost</th></tr></thead>
-<tbody>
-<tr><td><strong>A (recommended)</strong></td><td>A plain file, <code>.loops/store.json</code>, beside <code>.loops/vertices/</code>. At step 3, <code>loops apply</code> compares the file with the store's declarations and emits one record, as the rethink has it. The expectation is that these keys carry over and <code>fields</code>, <code>writers</code> and the rest come in beside them. That is step 3's to settle, not promised here.</td><td>The file is not signed, has no history, and does not travel with <code>export</code>. Two copies of a store can describe themselves differently until step 3. Point 2 is what makes that bearable: nothing a spec answers depends on it.</td></tr>
-<tr><td>B</td><td>Records from the first day, of a reserved kind. Signed, with a history, and they travel with the store.</td><td>A reserved kind and its rules, before standing has ruled on any. Step 3 keeps or converts whatever is written now.</td></tr>
-<tr><td>C</td><td>Nothing until step 3.</td><td>The key table in CLAUDE.md, the status lists in jq and the doubled key all stay, and the next real import happens without a description.</td></tr>
-</tbody></table></div>
-<p><strong>What changes for you.</strong> Under A, one file for each store, written once from the old vertices and the CLAUDE.md table. Nothing is refused for departing from it, except as SD2 asks.</p>
-<h2 id="sd2-a-write-that-contradicts-the-declared-key">SD2: a write that contradicts the declared key</h2>
-<p><strong>Question.</strong> Once a kind declares its key field, <code>emit</code> can see two slips. Does it stop, or warn and write?</p>
-<p><strong>Example, run on today's binary</strong> in a scratch store. <code>deploy</code> is keyed by <code>name</code>.</p>
-<pre><code>$ loops emit deploy --of deploy:authentik-2026-11-24 name=authentik-2026-11-23 service=authentik &quot;Authentik to 2026.10&quot;
-r:t6rrbeb2…                                             exit 0
-$ loops emit deploy service=authentik &quot;rolled back&quot;
-r:51lrf6e6…                                             exit 0
-$ loops ls --things --plain
-THING                        HEAD KINDS  RECORDS  HEADS  HEADLINE
-deploy:authentik-2026-11-24  deploy      1        1      authentik-2026-11-23
-r:51lrf6e6                   deploy      1        1      —
-</code></pre>
-<p>The first is a deploy whose name says one day and whose key says another. The second is a deploy with no key, which <code>ls deploy:</code> does not list. Both are signed and permanent.</p>
-<p>The live homelab stores hold 37 keyless roots of keyed kinds, each a slip of the second sort. The first sort has not happened yet: in all 6,437 keyed things the key field equals the key, because the old tool derived one from the other.</p>
-<p><strong>Options.</strong></p>
-<div class="table-scroll" tabindex="0"><table><thead><tr><th scope="col"></th><th scope="col"><code>emit</code></th><th scope="col">Cost</th></tr></thead>
-<tbody>
-<tr><td><strong>A (recommended)</strong></td><td>Stops before anything is signed. The message says what is wrong and names the way out. For a missing key: state the key field or <code>--of</code>, or <code>--root</code> for a keyless root that is meant. For a key field that disagrees with <code>--of</code>: make them agree.</td><td>The first time <code>loops</code> declines a one-record write that a store would accept.</td></tr>
-<tr><td>B</td><td>Warns on standard error and writes, as the sketch first had it.</td><td>The warning arrives after the record. Taking the slip back means an erasure, or living with a second thing. An agent's script seldom reads standard error.</td></tr>
-<tr><td>C</td><td>Checks nothing, as today.</td><td>The 37 become more.</td></tr>
-</tbody></table></div>
-<p><strong>Why A keeps &quot;nothing is refused&quot;.</strong> The store refuses nothing. A keyless root can still be written with <code>--root</code>, and a record whose key field is meant to differ from its key through <code>emit -</code>. A is the shorthand declining to guess. It is spelled as a usage error, with no new refusal code.</p>
-<p><strong>What A leaves alone.</strong> A revision of an existing keyless root (<code>--of r:&lt;id&gt;</code>). <code>emit -</code> and <code>--fill</code>. A kind with no declared key, or with <code>&quot;key&quot;: null</code>.</p>
-<p><strong>A revision by <code>--prev</code>.</strong> A revision that states <code>--prev</code> and no <code>--of</code> is of what it replaces, so it is not a missing key. A key field stated on it is still compared with that thing's key. Today it is not: after <code>emit deploy --of deploy:prev-case name=prev-case</code>, the command <code>emit deploy --prev &lt;id&gt; name=different</code> leaves <code>deploy:prev-case</code> with the name <code>different</code> (found by Astra, run again by the coordinator).</p>
-<h2 id="sd3-reference-fields-copied-into-about-and-erasure">SD3: reference fields copied into <code>about</code>, and erasure</h2>
-<p><strong>Question.</strong> A kind's <code>refs</code> lists its reference fields. Does <code>emit</code> copy their values into <code>about</code>, so that a fold by mention finds the record? The copy lives in the envelope, and an erasure removes only the payload.</p>
-<p><strong>Example, run on today's binary.</strong> Under the sketch, <code>emit asset name=laptop/t14-0193 owner=person:dana-whitfield</code> would write the first record below. Written by hand, then erased:</p>
-<pre><code>$ loops emit asset --of asset:laptop/t14-0193 name=laptop/t14-0193 owner=person:dana-whitfield \
-    --about person:dana-whitfield &quot;ThinkPad T14, issued 2026-11&quot;
-r:fakp4mg3…
-$ loops erase r:fakp4mg3… &quot;the owner should not have been written here&quot;
-$ loops of asset:laptop/t14-0193 --plain
-other fields  unknown
-about  person:dana-whitfield
-$ loops export --about person:dana-whitfield
-(the record's envelope, with &quot;about&quot;:[&quot;person:dana-whitfield&quot;])
-</code></pre>
-<p>The payload is gone and the name is not. A stated <code>--about</code> and an <code>of</code> already behave this way. What copying would add is that a file moves a payload value into the envelope, and the writer never typed <code>--about</code>. You ruled on 2026-11-10 that erasure is the emergency stop for something that should not have been emitted.</p>
-<p><strong>Why the recommendation is C.</strong> The entry was first put with A recommended, and a rule for dropping an old copy when a field moves. Astra found a history where that rule fails. One asset, with <code>runs_on</code> declared a reference:</p>
-<pre><code>R    sets runs_on=asset:vm/a                        about: asset:vm/a
-H1   revises R, moves runs_on to asset:vm/b         about: asset:vm/b
-H2   revises R beside H1, sets only status          about: asset:vm/a
-     R is erased
-J    joins H1 and H2, moves runs_on to asset:vm/c   about: ?
-</code></pre>
-<p>The field reads <code>asset:vm/c</code>. H2 still carries <code>asset:vm/a</code>. Whether that mention was copied from the field or stated by hand was recorded only in R's payload, and R is erased. A rule that keeps it leaves an old target in J and in every later envelope. A rule that drops it also drops mentions a writer stated by hand. Astra ran the history on today's binary, stating by hand the mentions the rule would have written.</p>
-<p>This is the general case and not one missed corner. Nothing but the payload records where a mention came from, and an erasure removes the payload. The rule was rewritten four times on 2026-11-24, each time after another reader found a history it failed. What was shown: a copy never misses a readable live value (margins-claude's Python reader, 22,925 holdings with forks and late erasures). What was not: that a move removes the old copy. margins-claude then checked that too. Without an erasure it does: the rule worked out per head left no old copy in 425 things at one head. After an erasure it does not: Astra's history fails, and with the stop taken at its best an old copy stays in 48 of 388 things at one head. So the trouble is in erasure, not in forks.</p>
-<p><strong>Options.</strong></p>
-<div class="table-scroll" tabindex="0"><table><thead><tr><th scope="col"></th><th scope="col"><code>emit</code></th><th scope="col">Cost</th></tr></thead>
-<tbody>
-<tr><td>A</td><td>Copies every <code>kind:key</code> value of a declared reference field into <code>about</code>, and drops the old copy on a move where it can tell.</td><td>A name in a declared field cannot be erased. After an erasure or across a fork an old target can stay in every later envelope. It amends a sentence you ruled on 2026-11-14 (<a href="changelog.html">the changelog</a>, the writer): <code>--about</code> would state only the writer's own mentions, no longer the whole <code>about</code>.</td></tr>
-<tr><td>B</td><td>As A, but only for a field that asks for it. Every other reference field is only described.</td><td>A's costs for the fields that ask. If copying is ever taken, all four prefer this to A: a field such as <code>owner</code> is then described as a reference and stays erasable.</td></tr>
-<tr><td><strong>C (recommended)</strong></td><td>Copies nothing in v1. <code>refs</code> describes: <code>loops describe</code> prints it, a reader that cares about roles finds a kind's reference fields from it, and <code>describe</code> counts the <code>kind:key</code> values that no mention carries. <code>--about</code> is stated by hand, as today.</td><td>The write keeps its doubled reference: <code>rel=relationship:&lt;agent&gt; --about relationship:&lt;agent&gt;</code>. A fold by mention finds only what a writer stated.</td></tr>
-</tbody></table></div>
-<p><strong>What C does not lose today.</strong> The question &quot;what runs on this VM&quot; is already answered by the field. Run on today's binary, with three services of which two run on <code>asset:vm/media</code>: a fold with <code>&quot;where&quot;: {&quot;runs_on&quot;: {&quot;is&quot;: &quot;asset:vm/media&quot;}}</code> under <code>&quot;follow&quot;: &quot;keys&quot;</code> lists the two. After the record of one is erased it lists the other and says &quot;1 not read: needed payload or field unavailable&quot;, which is what an erasure should do. What a mention adds is one fold of everything that mentions a thing, across kinds and fields.</p>
-<p>And every reference value in the live stores is still in the imported <code>kind/key</code> form: in the four kinds sampled, 566 <code>runs_on</code> records in the audit store, 121 <code>source</code> records on tasks and 92 <code>rel</code> records on observations. Copying would have done nothing for them until a value was rewritten.</p>
-<p><strong>What comes with C.</strong> <code>--add-about</code> and <code>--drop-about</code> (<a href="note-2026-11-23-store-descriptions.html#4-who-wrote-it-and-the---about-hazard">the note</a>, section 4), which are CLI only and need no ruling. They keep a hand mention through later revisions.</p>
-<p><strong>When copying comes back.</strong> As its own entry, once a reader needs what the field cannot give: one fold of everything that mentions a thing, across kinds. It would be for each field that asks (B), and it would come with a check that a move removes the old copy, not only that a copy never misses.</p>
-<h2 id="after-the-import-reading-and-writing-references">After the import: reading and writing references</h2>
-<p><strong>Where these come from.</strong> On 2026-11-24, after SD1 to SD3 were put, Kyle trialled the import on a second, private group of stores. Nothing from it is quoted here. It showed what the homelab had hidden. The import gives a mention to each reference the old tool recorded with an id, and after it nothing keeps the mentions in step with the fields: under SD3's option C a new or changed reference adds no mention, and a move leaves the old one. The same four went through that in the room. Two questions came out. SD4 is a read. AD5 changes what the import writes, and the homelab would be imported afresh.</p>
-<p>One thing needs no ruling and is built in the same pass, at your word: a store found by name on every verb, spelled <code>--in &lt;name&gt;</code> (<a href="note-2026-11-23-store-descriptions.html#3-a-store-found-by-name-on-every-verb">the note</a>, section 3, with what the room settled). In the private group a large share of references name a thing held in another store of the group, so a read by reference and <code>describe</code> both have to read the group.</p>
-<h2 id="sd4-a-read-of-everything-that-refers-to-a-thing">SD4: a read of everything that refers to a thing</h2>
-<p><strong>Question.</strong> Under SD3's option C nothing copies a reference into <code>about</code>. How does a reader then ask &quot;what refers to this thing&quot;, across kinds and fields?</p>
-<p><strong>Example, run on today's binary</strong> in a scratch store. A service is written with its mention, then moved without one:</p>
-<pre><code>$ loops emit service --of service:jellyfin name=jellyfin runs_on=asset:vm/media --about asset:vm/media &quot;media server&quot;
-$ loops emit service --of service:jellyfin runs_on=asset:vm/apps &quot;moved to the apps VM&quot;
-$ loops export --about asset:vm/apps | wc -l
-0
-$ loops export --about asset:vm/media | wc -l
-2
-$ loops fold on-apps.json --plain          (where runs_on is asset:vm/apps, follow keys)
-  thing  service:jellyfin  jellyfin
-</code></pre>
-<p>The mention still says the media VM, because a write with no <code>--about</code> copies the heads' mentions (your ruling of 2026-11-14). The field says the apps VM, and the fold on the field is right. This is not SD3's doing; it is true today.</p>
-<p>The import mentions every reference that the old tool recorded with an id: in the six homelab stores, all 8,177 such live values. It does not mention 9 written in full without one, or the 434 bare keys of AD5's row 2 (margins-claude). After the cutover a revision inherits its thing's mentions, as the example shows. What fails is the change: a new or changed reference does not add its target unless the writer types it, and a move does not remove the old one unless the writer drops it. The homelab has reference fields in a handful of kinds. The private group has them in many more.</p>
-<p><strong>Options.</strong></p>
-<div class="table-scroll" tabindex="0"><table><thead><tr><th scope="col"></th><th scope="col">A reader asks</th><th scope="col">Cost</th></tr></thead>
-<tbody>
-<tr><td><strong>A (recommended)</strong></td><td><code>loops ls --refers-to &lt;thing&gt;</code> (the spelling is open). It takes each kind's reference fields from <code>refs</code> in the description, and asks of each the test a fold's <code>where</code> asks with <code>is</code>. It lists the things for which a field answers yes.</td><td>The answer depends on the file: a field that is not declared is not read. So the output states the stores read, the fields read for each kind, and three counts beside the list.</td></tr>
-<tr><td>B</td><td>Nothing new. A fold on the field, one spec for each kind and field, as today.</td><td>No one read across kinds. Each reader keeps its own list of reference fields.</td></tr>
-<tr><td>C</td><td>Copying comes back for the fields that ask (SD3's option B).</td><td>SD3's costs, for those fields.</td></tr>
-</tbody></table></div>
-<p><strong>What A answers, exactly.</strong> These were settled by histories Astra ran on today's binary (15 of them), and they are <a href="https://github.com/kgruel/strange-loops-next/blob/main/protocol/spec.md">the spec</a> as written, not a new rule.</p>
-<ul>
-<li><p><strong>Each field answers yes, no or unknown,</strong> as <code>where</code> does. Every live setter of the field is asked whether it holds the target. Yes when all say yes. No when all say no, or when no record sets the field. Unknown when their answers differ, or when a live setter is erased or withheld. Setters may hold different values and still agree: the lists <code>[a, b]</code> and <code>[a]</code> both say yes for <code>a</code> and no for <code>c</code>, and only <code>b</code> is unknown. Run on today's binary: one service, <code>runs_on</code> moved by two writers apart, to <code>asset:vm/a</code> and to <code>asset:vm/b</code>. A fold with <code>is asset:vm/a</code> lists nothing and says &quot;1 not read&quot;, and so does <code>is asset:vm/b</code>. <code>--refers-to</code> says the same: it does not list a thing because one setter holds the target.</p></li>
-<li><p><strong>Across a kind's fields: any yes lists the thing.</strong> Otherwise any unknown counts it once as not read. Otherwise it is not listed.</p></li>
-<li><p><strong>The value is matched as written:</strong> the whole text equal to <code>kind:key</code>, or an immediate member of a list. No comma text is split, and no kind is guessed for a bare key. A thing that names itself is found like any other.</p></li>
-<li><p><strong>Across stores, the records are put together first,</strong> and read after. Read store by store, a thing whose later record is in another store would keep its old target.</p></li>
-<li><p><strong>Three counts go with the list:</strong> things not read; values in the fields read that are not written <code>kind:key</code>; and the fields read. A &quot;no&quot; is only as good as these. In the homelab 491 live values in the five fields of AD5's row 2 are a bare key that names an imported thing, and all of them would answer no.</p></li>
-</ul>
-<p><strong>What A does not change.</strong> No record, fold, tick or law. <code>about</code> stays what writers state. The two then have separate jobs: a reference field is live, has a role, and can be erased; a mention is permanent and has no role.</p>
-<p><strong>In <code>describe</code>.</strong> A reference's target is counted as held here, held in the group, or not in the group. None of these is a fault. &quot;Not typed&quot; is about the form alone: a readable value that is not written <code>kind:key</code>. <code>asset:missing</code> is typed, whether or not anything holds that thing. A value that could not be read is counted apart from both.</p>
-<p><strong>One choice inside A.</strong> When two stores of a group describe the same kind with different <code>refs</code>, A reads the union of the fields. Adding a store can then make a field in another store take part, so the output says which description named each field.</p>
-<h2 id="ad5-one-written-form-for-a-reference-set-at-the-import">AD5: one written form for a reference, set at the import</h2>
-<p><strong>Question.</strong> The import keeps a reference field as the old tool wrote it, <code>runs_on: asset/vm/media</code>. Everything written since uses <code>asset:vm/media</code>: <code>of</code>, <code>about</code>, and the field form you ruled in E1. Does the import write the one form?</p>
-<p><strong>Example, run on today's binary</strong> on the live audit store, where 58 things run on the media VM:</p>
-<pre><code>$ loops fold on-media.json --plain         (where runs_on is asset:vm/media)
-q  —
-$ loops fold on-media-old.json --plain     (where runs_on is asset/vm/media)
-(58 things listed)
-</code></pre>
-<p>A reader has to know to ask in the old form. Every reference value kept with a twin is in it: 13,854 facts in the six stores, none in the new form. The old form cannot be read back reliably: 5,186 of the 6,438 named things have a slash in their key, so <code>asset/vm/media</code> is <code>asset:vm/media</code> only by a rule that the first slash ends the kind. Neon confirms it was never kept on purpose. The private group is already in the new form throughout.</p>
-<p>The old tool wrote the proof beside each value. <code>runs_on_ref</code> held the id of the fact referred to, and the import already resolves that id to a thing. In all 13,854 facts the field names the thing its twin resolves to, as the whole value, byte for byte (counted separately by Neon and by margins-claude).</p>
-<p><strong>The three rows.</strong></p>
-<div class="table-scroll" tabindex="0"><table><thead><tr><th scope="col">Row</th><th scope="col">Question</th><th scope="col">Recommended</th><th scope="col">The other way</th></tr></thead>
-<tbody>
-<tr><td>1</td><td>A field whose twin resolves to the thing the field names</td><td><strong>The import writes the thing's name, <code>kind:key</code>.</strong> Where they disagree it changes nothing and counts it. It never reads a slash as a separator.</td><td>(b) One revision for each thing after the import: no ruling needed, but the script becomes the live setter of every such field, and history keeps both forms. (c) Leave it: a reader asks for the stored old spelling by hand, SD4 finds none of these values, and they are revised later or never.</td></tr>
-<tr><td>2</td><td>Five fields that hold a bare key, written without a twin by a slip in the old tool: a thread's <code>run</code> and <code>gap</code>, a finding's <code>run</code>, a baseline's <code>gap</code> and <code>finding</code></td><td><strong>The group's map names the target kind for each of the five. Where that thing was imported, the import writes <code>kind:key</code> in the field and mentions the thing, as it does for a reference with a twin.</strong> 586 values in old facts are written so. The 75 that name nothing imported stay as they are and are counted.</td><td>(b) By hand, one revision for each of the 454 things whose current value is such a key (margins-claude). (c) Leave them: SD4 answers no for them, no mention finds 434 of them, and <code>describe</code> counts them as not typed.</td></tr>
-<tr><td>3</td><td>A field whose twin holds several ids, written as comma text</td><td><strong>A list</strong>, <code>[&quot;asset:a&quot;,&quot;asset:b&quot;]</code>, where the encoding has been reviewed and every part agrees, in the order written.</td><td>Comma text stays. <code>is asset:a</code> then never matches it, today and under SD4.</td></tr>
-</tbody></table></div>
-<p>Row 3 has no case in the homelab: outside <code>ref</code>, which AD4 took out, every twin beside its field holds one id. It matters for the private group. It also changes an answer, which is why it is a row of its own: today <code>is</code> matches comma text only as a whole, and matches a list by member (<a href="note-2026-11-21-payload-values.html#pv4-a-list-reads-as-a-set-under-is-and-not">PV4</a>). All four recommend the list, as E1 has it for a set one observer states. Under SD4's exact match, comma text with several targets can answer yes for none of them (margins-claude).</p>
-<p>In row 2 a run's own <code>run</code> field (247 values, each naming its own thing) is left out of this repair: it is the kind's key written a second time. That is a choice about this one field. A thing may refer to itself, and SD4 reads such a value.</p>
-<p><strong>Row 2 asks for two things, and you may take the first alone.</strong> Writing <code>kind:key</code> in the field is the repair. Mentioning the target as well is a second choice, and a permanent one: the mention stays when the payload that gave it is erased. With the field alone, SD4 finds the value and a read by mention gains nothing from the repair; no mention already there is removed. The mention is recommended so that the import treats a repaired reference as AD4 treats one with a twin. It is a choice about this import only. It does not turn on copying for later writes, which stays as SD3 rules it.</p>
-<p><strong>The bounds, all Astra's, agreed by the four.</strong> Field and twin agreeing is needed and is not enough.</p>
-<ol>
-<li><p><strong>Never a kind's key field.</strong> A <code>name</code> with a <code>name_ref</code> beside it would become a different key, and the import would have renamed a thing. The homelab has no such pair.</p></li>
-<li><p><strong>Decided from the fact's own field and twin,</strong> before anything is cleaned, with the group's rules for a target that is ambiguous or left out. A field is rewritten whole or not at all, and each field left alone is counted with its reason.</p></li>
-<li><p><strong>The whole value is compared</strong> with the resolved thing's name. A key may hold a comma, so nothing is split to find a single target.</p></li>
-<li><p><strong>A list only by row 3.</strong></p></li>
-<li><p><strong>A bare key only by row 2,</strong> for a kind and field the map names. That a thing of that name exists is not proof: <code>provider=cloud</code> may be prose.</p></li>
-<li><p><strong>The same rewrite in the check and in the write,</strong> pinned in the journal under a new version. It goes into fresh stores only. A store imported before does not take it on.</p></li>
-</ol>
-<p><strong>What it costs.</strong> The six homelab stores are imported afresh, and every imported record gets a new id and a new observer key, in stores with no reference field too: a fresh import signs with one new key for the group and a new salt for each old fact. The six are cut over, so it is a second cutover: the fresh stores take the place of the live ones, which are kept aside as the first import's were. One record has been written across the six since the import, and it is written again by hand, with its <code>prev</code> taken from the new ids. This is what <a href="note-2026-11-22-adoption.html">the adoption note</a> said a later change would cost, and today is the cheap day for it. It amends AD2, under which the import keeps every payload untouched. AD4 made the first exception when it took out <code>ref</code> and the twins.</p>
-<p><strong>The rows are ruled each on its own.</strong> If you rule against row 1, row 1 rewrites nothing, and rows 2 and 3 still stand or fall by your ruling on each. SD4 still matches <code>kind:key</code> exactly, finds none of the old values, and reports them in its count of values not typed. Reading both forms would be a different read from a fold's, and is not proposed.</p>
+<p>Below: <a href="#being-prepared">what is being prepared</a>, <a href="#deferred-by-you">what you deferred</a> and <a href="#ruled">what is ruled</a>. Nothing waits to be confirmed: under your ruling of 2026-11-21 an implementer choice comes here only when it changes bytes or answers.</p>
 <h2 id="being-prepared">Being prepared</h2>
 <p>Nothing here needs you yet. It is listed so that you know what is coming.</p>
 <p><strong>Numbers stored as text</strong>, with the import (<a href="note-2026-11-21-order-of-work.html#w1-an-adoption-step-before-standing-and-sharing">W1</a>). <a href="note-2026-11-21-tick-record.html#tk6-what-a-spec-reads-of-a-tick">TK6</a> shows one use for it.</p>
@@ -442,6 +239,11 @@ $ loops fold on-media-old.json --plain     (where runs_on is asset/vm/media)
 <p>One line for each ruling, newest first. The full text is in <a href="changelog.html">CHANGELOG.md</a> under the date, or in the note named.</p>
 <div class="table-scroll" tabindex="0"><table><thead><tr><th scope="col">Date</th><th scope="col">Ruling</th><th scope="col">Where</th></tr></thead>
 <tbody>
+<tr><td>2026-11-24</td><td>AD5: the import writes a reference field as <code>kind:key</code> where the old store proves it: where its twin resolves to the thing it names; in five slip fields the group's map names, with a mention; and as a list where a twin holds several ids. Never a kind's key field. The homelab is imported afresh</td><td>Changelog; <a href="note-2026-11-24-kinds-and-references.html#ad5-one-written-form-for-a-reference-set-at-the-import">the kinds and references note</a></td></tr>
+<tr><td>2026-11-24</td><td>SD4: <code>loops ls --refers-to &lt;thing&gt;</code> reads the declared reference fields as a fold's <code>is</code> does, yes, no or unknown, across kinds and across a group's stores, and states what it read</td><td>Changelog; <a href="note-2026-11-24-kinds-and-references.html#sd4-a-read-of-everything-that-refers-to-a-thing">the kinds and references note</a></td></tr>
+<tr><td>2026-11-24</td><td>SD3, option C: a kind's reference fields are described and nothing is copied into <code>about</code>; a mention is stated by the writer</td><td>Changelog; <a href="note-2026-11-24-kinds-and-references.html#sd3-reference-fields-copied-into-about-and-erasure">the kinds and references note</a></td></tr>
+<tr><td>2026-11-24</td><td>SD2, option A: <code>emit</code> stops before it signs a write with no key, or with a key field that disagrees with its thing's key; <code>--root</code> for a keyless root that is meant</td><td>Changelog; <a href="note-2026-11-24-kinds-and-references.html#sd2-a-write-that-contradicts-the-declared-key">the kinds and references note</a></td></tr>
+<tr><td>2026-11-24</td><td>SD1, option A: a store describes its kinds in a plain <code>.loops/store.json</code> that the CLI uses and no read depends on; it refuses nothing, and becomes records at step 3</td><td>Changelog; <a href="note-2026-11-24-kinds-and-references.html#sd1-a-store-describes-its-kinds-in-a-file-and-enforces-nothing">the kinds and references note</a></td></tr>
 <tr><td>2026-11-23</td><td>W3b: the JavaScript stays frozen, as the rule; new steps are built in Lean and Rust</td><td>Changelog; <a href="note-2026-11-21-order-of-work.html#w3b-the-frozen-javascript-after-ticks">the order-of-work note</a></td></tr>
 <tr><td>2026-11-23</td><td>AD4: references in the old payloads become mentions of what they name, through one rule for old ids; the payload is cleaned of the fields they came from</td><td>Changelog; <a href="note-2026-11-22-adoption.html#ad4-references-in-the-old-payloads">the adoption note</a></td></tr>
 <tr><td>2026-11-23</td><td>TK13: <code>loops tick &lt;spec&gt;</code> with no cut named covers the records the answer depends on, with everything held under them through <code>prev</code> and <code>under</code>; for a spec that reads things by key, every record of the things it touches; <code>--all</code> covers everything</td><td>Changelog; <a href="note-2026-11-21-tick-record.html#tk13-what-a-tick-covers-when-you-name-no-cut">the tick record note</a></td></tr>

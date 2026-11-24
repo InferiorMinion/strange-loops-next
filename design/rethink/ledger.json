@@ -491,6 +491,20 @@
   },
   {
     "kind": "decision",
+    "group": "Meaning · vertices and stores",
+    "status": "settled",
+    "claim": "A store describes its kinds in a plain file that refuses nothing.",
+    "why": "<code>.loops/store.json</code> says, for each kind, its key field, its reference fields, what to show and which states are closed. The CLI uses it: <code>emit</code> finds a thing's name from its key field and stops before it signs a write that contradicts the key, and <code>ls --active</code> hides what is closed. No read depends on it: with no flag that names the description, a read's JSON is the same with and without the file. The store itself refuses nothing until standing, when the description becomes records. Ruled on 2026-11-24 (<a href=\"../decisions/note-2026-11-24-kinds-and-references.html\">the kinds and references note</a>); being built. Version 38."
+  },
+  {
+    "kind": "decision",
+    "group": "Meaning · vertices and stores",
+    "status": "settled",
+    "claim": "A reference is a field; a mention is what a writer states.",
+    "why": "A kind's reference fields are described and nothing copies their values into <code>about</code>. A copy would sit in the envelope, where an erasure does not reach, and nothing but the erased payload says where a mention came from. What refers to a thing is read from the fields: <code>loops ls --refers-to</code> asks each declared field as a fold's <code>is</code> does, yes, no or unknown, across kinds and across a group's stores, and states what it read. Ruled on 2026-11-24 (<a href=\"../decisions/note-2026-11-24-kinds-and-references.html\">the kinds and references note</a>); being built. Version 38."
+  },
+  {
+    "kind": "decision",
     "group": "Building",
     "status": "settled",
     "claim": "An old store is imported as a shadow: one signed record for each old fact.",
@@ -502,5 +516,12 @@
     "status": "settled",
     "claim": "Only a choice that changes bytes or answers comes to Kyle.",
     "why": "A choice that changes a record's bytes or id, a result's bytes or hash, a refusal code, or what a spec answers is his, and is asked with a worked example. Every other implementer choice is written in the changelog and stands unless he objects. What is next, what waits on him and what was built are three documents, <code>ROADMAP.md</code>, <code>DECISIONS.md</code> and <code>CHANGELOG.md</code>, and <a href=\"../decisions/\">the Decisions page</a> renders them. Ruled on 2026-11-21. Version 36."
+  },
+  {
+    "kind": "decision",
+    "group": "Building",
+    "status": "settled",
+    "claim": "The import writes a reference as <code>kind:key</code> where the old store proves it.",
+    "why": "Where a field's twin resolves to the thing the field names, the import writes that thing's name; in the six homelab stores field and twin agree in all 13,854 facts. A bare key is written so only in fields the group's map names, and several targets become a list. A kind's key field is never rewritten. This amends the untouched payload, as taking out the old reference fields did. The homelab is imported afresh. Ruled on 2026-11-24 (<a href=\"../decisions/note-2026-11-24-kinds-and-references.html\">the kinds and references note</a>); being built. Version 38."
   }
 ]

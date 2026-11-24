@@ -196,6 +196,7 @@ header.top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--g
 <a href="note-2026-11-21-tick-record.html">Step 4: the tick record, design note</a>
 <a href="note-2026-11-22-adoption.html">The adoption step: AD1 to AD4</a>
 <a href="note-2026-11-23-store-descriptions.html">Store descriptions: what the first two conversions asked for</a>
+<a href="note-2026-11-24-kinds-and-references.html">What a store says about its kinds, and references after an import: SD1 to SD4 and AD5</a>
 <a href="note-retained-boundaries.html">Retained boundaries</a></nav>
 <p class="source">Rendered from <code>CHANGELOG.md</code> in the repository.</p>
 <details class="contents"><summary>On this page</summary>
@@ -220,9 +221,25 @@ The record starts where the old roadmap's did. For anything earlier, and for eve
 <h2 id="2026-11-24">2026-11-24</h2>
 <p>In brief:</p>
 <ul>
+<li><p><strong>Kyle rules SD1 to SD4 and AD5, each as recommended.</strong> A store describes its kinds in a plain file that refuses nothing; <code>emit</code> stops on a key slip; reference fields are described and not copied into <code>about</code>; <code>ls --refers-to</code> reads them; the import writes a reference as <code>kind:key</code>, and the homelab will be imported afresh. Nothing is built yet.</p></li>
 <li><p>SD1 to SD3 are put to Kyle: what a store says about its kinds. A plain <code>.loops/store.json</code> that describes each kind and refuses nothing (SD1); <code>emit</code> stopping before it signs a write that contradicts a declared key (SD2); and whether reference fields are copied into <code>about</code>, where an erasure does not reach them (SD3: recommended, describe them and copy nothing). Nothing is built.</p></li>
 <li><p>SD4 and AD5 are put to Kyle, later the same day: a read of everything that refers to a thing, taken from the declared reference fields (SD4); and the import writing a reference field as <code>kind:key</code> where the old store proves it, which means importing the homelab afresh (AD5). Nothing is built.</p></li>
 </ul>
+<h3 id="kyle-rules-sd1-to-sd4-and-ad5">Kyle rules SD1 to SD4 and AD5</h3>
+<p>Ruled in the coordinator's session on 2026-11-24, each as recommended by the four who prepared them. The entries as put, with the ruling at the head of each, are in <a href="note-2026-11-24-kinds-and-references.html">the kinds and references note</a>. The sections below this one tell how they were arrived at.</p>
+<ul>
+<li><p><strong>SD1, A.</strong> A store describes its kinds in <code>.loops/store.json</code>. The CLI uses it and no read depends on it: with no flag that names the description, the JSON of every read is the same with and without the file. It refuses nothing. It becomes records at step 3.</p></li>
+<li><p><strong>SD2, A.</strong> <code>emit</code> stops before it signs a write with no key, or with a key field that disagrees with its thing's key, and names the way out. <code>--root</code> writes a keyless root that is meant.</p></li>
+<li><p><strong>SD3, C.</strong> A kind's reference fields are described. Nothing is copied into <code>about</code>; a mention is what a writer states. <code>--add-about</code> and <code>--drop-about</code> are built with it.</p></li>
+<li><p><strong>SD4, A.</strong> <code>loops ls --refers-to &lt;thing&gt;</code> reads the declared reference fields as a fold's <code>is</code> does, across kinds and across the stores of a group, and states the stores and fields it read and what it could not.</p></li>
+<li><p><strong>AD5, all three rows.</strong> The import writes a reference field as <code>kind:key</code> where its twin resolves to the thing it names; in the five slip fields the group's map names, with a mention of the target; and as a list where a twin holds several ids. It never rewrites a kind's key field. This amends AD2, as AD4 did.</p></li>
+</ul>
+<p><strong>What follows, in order.</strong></p>
+<ol>
+<li><p>The CLI's part: the description file and the shorthand it gives <code>emit</code>, the stop and <code>--root</code>, <code>--add-about</code> and <code>--drop-about</code>, <code>describe</code>, <code>ls --active</code>, <code>ls --refers-to</code>, and a store by name on every verb (<code>--in</code>, <code>--group</code>), whose form is in <a href="note-2026-11-23-store-descriptions.html#3-a-store-found-by-name-on-every-verb">the store descriptions note</a>, section 3.</p></li>
+<li><p>The import's part: AD5's three rows within its six bounds, pinned in the journal under a new version.</p></li>
+<li><p>The homelab imported afresh into new stores and compared, then cut over a second time at Kyle's word. Every record gets a new id and a new observer key. The present live stores are kept aside.</p></li>
+</ol>
 <h3 id="sd1-to-sd3-are-put">SD1 to SD3 are put</h3>
 <p>The entries come from a discussion of Neon's sketch of 2026-11-23 between the coordinator, Neon and margins-claude, held on 2026-11-24 in a chat room kept in a store (rex-tools). Astra (Codex) then reviewed the entries from outside. The four agree on every point in them. What the discussion changed in the sketch:</p>
 <ul>

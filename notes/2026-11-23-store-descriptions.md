@@ -1,6 +1,6 @@
 # Store descriptions: what the first two conversions asked for
 
-**Written 2026-11-23, at Kyle's request, as the opening input for the question being prepared in [DECISIONS.md](../DECISIONS.md#being-prepared): what a store says about its kinds, without enforcing it, and what of the old `.vertex` and `.loop` files comes forward.** Nothing here is ruled or put to Kyle. (On 2026-11-24 the questions of sections 2 and 5 were put, as SD1 to SD3 in DECISIONS.md.)
+**Written 2026-11-23, at Kyle's request, as the opening input for the question being prepared in [DECISIONS.md](../DECISIONS.md#being-prepared): what a store says about its kinds, without enforcing it, and what of the old `.vertex` and `.loop` files comes forward.** Nothing here is ruled or put to Kyle. (On 2026-11-24 the questions of sections 2 and 5 were put, as SD1 to SD3, and ruled the same day with SD4 and AD5. The entries as put are in [the kinds and references note](2026-11-24-kinds-and-references.md).)
 
 It draws on two pieces of work done that day.
 

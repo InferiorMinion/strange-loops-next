@@ -10,8 +10,25 @@ The record starts where the old roadmap's did. For anything earlier, and for eve
 ## 2026-11-24
 
 In brief:
+- **Kyle rules SD1 to SD4 and AD5, each as recommended.** A store describes its kinds in a plain file that refuses nothing; `emit` stops on a key slip; reference fields are described and not copied into `about`; `ls --refers-to` reads them; the import writes a reference as `kind:key`, and the homelab will be imported afresh. Nothing is built yet.
 - SD1 to SD3 are put to Kyle: what a store says about its kinds. A plain `.loops/store.json` that describes each kind and refuses nothing (SD1); `emit` stopping before it signs a write that contradicts a declared key (SD2); and whether reference fields are copied into `about`, where an erasure does not reach them (SD3: recommended, describe them and copy nothing). Nothing is built.
 - SD4 and AD5 are put to Kyle, later the same day: a read of everything that refers to a thing, taken from the declared reference fields (SD4); and the import writing a reference field as `kind:key` where the old store proves it, which means importing the homelab afresh (AD5). Nothing is built.
+
+### Kyle rules SD1 to SD4 and AD5
+
+Ruled in the coordinator's session on 2026-11-24, each as recommended by the four who prepared them. The entries as put, with the ruling at the head of each, are in [the kinds and references note](notes/2026-11-24-kinds-and-references.md). The sections below this one tell how they were arrived at.
+
+- **SD1, A.** A store describes its kinds in `.loops/store.json`. The CLI uses it and no read depends on it: with no flag that names the description, the JSON of every read is the same with and without the file. It refuses nothing. It becomes records at step 3.
+- **SD2, A.** `emit` stops before it signs a write with no key, or with a key field that disagrees with its thing's key, and names the way out. `--root` writes a keyless root that is meant.
+- **SD3, C.** A kind's reference fields are described. Nothing is copied into `about`; a mention is what a writer states. `--add-about` and `--drop-about` are built with it.
+- **SD4, A.** `loops ls --refers-to <thing>` reads the declared reference fields as a fold's `is` does, across kinds and across the stores of a group, and states the stores and fields it read and what it could not.
+- **AD5, all three rows.** The import writes a reference field as `kind:key` where its twin resolves to the thing it names; in the five slip fields the group's map names, with a mention of the target; and as a list where a twin holds several ids. It never rewrites a kind's key field. This amends AD2, as AD4 did.
+
+**What follows, in order.**
+
+1. The CLI's part: the description file and the shorthand it gives `emit`, the stop and `--root`, `--add-about` and `--drop-about`, `describe`, `ls --active`, `ls --refers-to`, and a store by name on every verb (`--in`, `--group`), whose form is in [the store descriptions note](notes/2026-11-23-store-descriptions.md#3-a-store-found-by-name-on-every-verb), section 3.
+2. The import's part: AD5's three rows within its six bounds, pinned in the journal under a new version.
+3. The homelab imported afresh into new stores and compared, then cut over a second time at Kyle's word. Every record gets a new id and a new observer key. The present live stores are kept aside.
 
 ### SD1 to SD3 are put
 
