@@ -10,9 +10,16 @@ The record starts where the old roadmap's did. For anything earlier, and for eve
 ## 2026-11-24
 
 In brief:
+- The build of the rulings is planned and begun, and BP1 is put to Kyle: nine narrow cases the plan found open, each with a recommendation.
 - **Kyle rules SD1 to SD4 and AD5, each as recommended.** A store describes its kinds in a plain file that refuses nothing; `emit` stops on a key slip; reference fields are described and not copied into `about`; `ls --refers-to` reads them; the import writes a reference as `kind:key`, and the homelab will be imported afresh. Nothing is built yet.
 - SD1 to SD3 are put to Kyle: what a store says about its kinds. A plain `.loops/store.json` that describes each kind and refuses nothing (SD1); `emit` stopping before it signs a write that contradicts a declared key (SD2); and whether reference fields are copied into `about`, where an erasure does not reach them (SD3: recommended, describe them and copy nothing). Nothing is built.
 - SD4 and AD5 are put to Kyle, later the same day: a read of everything that refers to a thing, taken from the declared reference fields (SD4); and the import writing a reference field as `kind:key` where the old store proves it, which means importing the homelab afresh (AD5). Nothing is built.
+
+### The build plan, and BP1 is put
+
+A Codex worker planned the build of the day's rulings in twelve parts and ten merge requests; the coordinator read it and keeps it with the briefs. It found nothing to change under `model/`, `vectors/`, `protocol/`, `interop/` or `design/`, and no refusal code to add. Two pieces are being built: a store by name on the verbs that take one store, and the import carrying a recipe for what it does to a payload, with no change to what it writes.
+
+The plan listed eight cases the rulings leave open that change a signed record or its id. They are put to Kyle as [BP1](DECISIONS.md#bp1-nine-narrow-cases-the-build-plan-found-open), with a ninth from the coordinator: a bare key beside a twin that resolves. Read from outside before they were put: Astra kept a repeated key field as `member-duplicate` and exempted a root that is meant from the key's checks; all three asked for a second reviewed list encoding; margins-claude and Astra differ on one row, and both views are in it.
 
 ### Kyle rules SD1 to SD4 and AD5
 
