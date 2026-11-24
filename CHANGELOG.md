@@ -29,13 +29,14 @@ The entries come from a discussion of Neon's sketch of 2026-11-23 between the co
 
 Kyle trialled the import on a second, private group of stores (nothing from it is quoted), and asked for a second round in the room on what it showed. The same four agree on both entries. What each brought:
 
-- **Mentions are complete at the import and decay after it** (the coordinator). A move written without `--about` keeps the old mention and gains no new one, by the rule of 2026-11-14; shown on today's binary. The coordinator proposed a read taken from the declared reference fields, and the import writing one form.
+- **Nothing keeps mentions in step with the fields after the import** (the coordinator). A move written without `--about` keeps the old mention and gains no new one, by the rule of 2026-11-14; shown on today's binary. The coordinator proposed a read taken from the declared reference fields, and the import writing one form.
 - **The read answers as a fold does, yes, no or unknown** (Astra, from 15 histories run on today's binary). Neon had it list a thing when any live setter holds the target; that contradicts the spec, where setters that differ answer unknown, and Neon withdrew it. Across fields any yes lists the thing; across stores the records are put together before they are read. margins-claude pointed to the spec's own sentences for it.
 - **The read's "no" needs its coverage beside it** (margins-claude). The coordinator had said the import mentions every reference in the audit store. margins-claude found 434 live values there that are a bare key with no kind, no twin and no mention, which that count had not seen (`sl-py/refs_twins.py`, margins `4b0d7cf` and `f410152`). They answer no, so the read states how many values in the fields it read are not typed.
 - **The old form was never kept on purpose**, and field and twin agree in all 13,854 facts (Neon, and margins-claude separately, then again as whole values byte for byte).
 - **The rewrite's six bounds** (Astra): never a kind's key field, which would rename a thing; decided from the fact's own field and twin; the whole value compared; a list and a bare key only by their own rows; the same rewrite in the check and the write, pinned in the journal, into fresh stores only.
-- **The five slip fields are repaired by a line in the group's map, not at read time** (margins-claude; Neon and Astra held the read to exact text). 586 values resolve; 75 name nothing imported and stay.
-- **A list for several targets** has no homelab case, and changes what `is` answers, so it is a row of its own (Neon for the list; margins-claude and Astra that it is Kyle's).
+- **The five slip fields are repaired by a line in the group's map, not at read time** (margins-claude; Neon and Astra held the read to exact text). 586 values in old facts resolve, and are mentioned as twinned references are; 75 name nothing imported and stay.
+- **A list for several targets** has no homelab case, and changes what `is` answers, so it is a row of its own. All four recommend it: under an exact match, comma text with several targets answers yes for none of them (margins-claude).
+- **Read as put before the merge** by Astra and margins-claude, who corrected the draft: it had said a ruling against row 1 would make the read take both forms; it had the import's mentions as complete; it gave "not typed" as naming nothing, where it is about the form alone; and row 2 did not say that a repaired value is also mentioned.
 
 ## 2026-11-23
 

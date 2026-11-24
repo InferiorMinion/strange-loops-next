@@ -192,7 +192,7 @@ And every reference value in the live stores is still in the imported `kind/key`
 
 ## After the import: reading and writing references
 
-**Where these come from.** On 2026-11-24, after SD1 to SD3 were put, Kyle trialled the import on a second, private group of stores. Nothing from it is quoted here. It showed what the homelab had hidden: under SD3's option C the mentions are complete on the day of the import and wrong soon after. The same four went through that in the room. Two questions came out. SD4 is a read. AD5 changes what the import writes, and so every imported record's id.
+**Where these come from.** On 2026-11-24, after SD1 to SD3 were put, Kyle trialled the import on a second, private group of stores. Nothing from it is quoted here. It showed what the homelab had hidden. The import gives a mention to each reference the old tool recorded with an id, and after it nothing keeps the mentions in step with the fields: under SD3's option C a new or changed reference adds no mention, and a move leaves the old one. The same four went through that in the room. Two questions came out. SD4 is a read. AD5 changes what the import writes, and the homelab would be imported afresh.
 
 One thing needs no ruling and should follow SD1 to SD3 directly: a store found by name on every verb ([the note](notes/2026-11-23-store-descriptions.md#3-a-store-found-by-name-on-every-verb), section 3). In the private group a large share of references name a thing held in another store of the group, so a read by reference and `describe` both have to read the group.
 
@@ -215,7 +215,7 @@ $ loops fold on-apps.json --plain          (where runs_on is asset:vm/apps, foll
 
 The mention still says the media VM, because a write with no `--about` copies the heads' mentions (your ruling of 2026-11-14). The field says the apps VM, and the fold on the field is right. This is not SD3's doing; it is true today.
 
-The import mentions every reference that the old tool recorded with an id: in the six homelab stores, 8,177 of 8,186 such live values are mentioned (margins-claude). From the first write after the cutover a mention is there only if the writer typed it, and a move leaves the old one unless the writer drops it. The homelab has reference fields in a handful of kinds. The private group has them in many more.
+The import mentions every reference that the old tool recorded with an id: in the six homelab stores, all 8,177 such live values. It does not mention 9 written in full without one, or the 434 bare keys of AD5's row 2 (margins-claude). After the cutover a revision inherits its thing's mentions, as the example shows. What fails is the change: a new or changed reference does not add its target unless the writer types it, and a move does not remove the old one unless the writer drops it. The homelab has reference fields in a handful of kinds. The private group has them in many more.
 
 **Options.**
 
@@ -227,15 +227,15 @@ The import mentions every reference that the old tool recorded with an id: in th
 
 **What A answers, exactly.** These were settled by histories Astra ran on today's binary (15 of them), and they are [the spec](protocol/spec.md) as written, not a new rule.
 
-- **Each field answers yes, no or unknown,** as `where` does: yes when every live setter of the field holds the target, unknown when the setters differ or one is erased or withheld. Run on today's binary: one service, `runs_on` moved by two writers apart, to `asset:vm/a` and to `asset:vm/b`. A fold with `is asset:vm/a` lists nothing and says "1 not read", and so does `is asset:vm/b`. `--refers-to` says the same: it does not list a thing because one setter holds the target.
+- **Each field answers yes, no or unknown,** as `where` does. Every live setter of the field is asked whether it holds the target. Yes when all say yes. No when all say no, or when no record sets the field. Unknown when their answers differ, or when a live setter is erased or withheld. Setters may hold different values and still agree: the lists `[a, b]` and `[a]` both say yes for `a` and no for `c`, and only `b` is unknown. Run on today's binary: one service, `runs_on` moved by two writers apart, to `asset:vm/a` and to `asset:vm/b`. A fold with `is asset:vm/a` lists nothing and says "1 not read", and so does `is asset:vm/b`. `--refers-to` says the same: it does not list a thing because one setter holds the target.
 - **Across a kind's fields: any yes lists the thing.** Otherwise any unknown counts it once as not read. Otherwise it is not listed.
-- **The value is matched as written:** the whole text equal to `kind:key`, or a member of a list. No comma text is split, and no kind is guessed for a bare key.
+- **The value is matched as written:** the whole text equal to `kind:key`, or an immediate member of a list. No comma text is split, and no kind is guessed for a bare key. A thing that names itself is found like any other.
 - **Across stores, the records are put together first,** and read after. Read store by store, a thing whose later record is in another store would keep its old target.
 - **Three counts go with the list:** things not read; values in the fields read that are not written `kind:key`; and the fields read. A "no" is only as good as these. In the audit store 434 live values in reference fields are a bare key and would answer no.
 
 **What A does not change.** No record, fold, tick or law. `about` stays what writers state. The two then have separate jobs: a reference field is live, has a role, and can be erased; a mention is permanent and has no role.
 
-**In `describe`.** A reference's target is counted as held here, held in the group, or not in the group. None of these is a fault. A value that names nothing is "not typed", and is counted apart from a value that could not be read.
+**In `describe`.** A reference's target is counted as held here, held in the group, or not in the group. None of these is a fault. "Not typed" is about the form alone: a readable value that is not written `kind:key`. `asset:missing` is typed, whether or not anything holds that thing. A value that could not be read is counted apart from both.
 
 **One choice inside A.** When two stores of a group describe the same kind with different `refs`, A reads the union of the fields. Adding a store can then make a field in another store take part, so the output says which description named each field.
 
@@ -252,7 +252,7 @@ $ loops fold on-media-old.json --plain     (where runs_on is asset/vm/media)
 (58 things listed)
 ```
 
-A reader has to know to ask in the old form. Every reference value the import kept is in it: 13,854 facts in the six stores, none in the new form. The old form cannot be read back reliably: 5,186 of the 6,438 named things have a slash in their key, so `asset/vm/media` is `asset:vm/media` only by a rule that the first slash ends the kind. Neon confirms it was never kept on purpose. The private group is already in the new form throughout.
+A reader has to know to ask in the old form. Every reference value kept with a twin is in it: 13,854 facts in the six stores, none in the new form. The old form cannot be read back reliably: 5,186 of the 6,438 named things have a slash in their key, so `asset/vm/media` is `asset:vm/media` only by a rule that the first slash ends the kind. Neon confirms it was never kept on purpose. The private group is already in the new form throughout.
 
 The old tool wrote the proof beside each value. `runs_on_ref` held the id of the fact referred to, and the import already resolves that id to a thing. In all 13,854 facts the field names the thing its twin resolves to, as the whole value, byte for byte (counted separately by Neon and by margins-claude).
 
@@ -260,13 +260,13 @@ The old tool wrote the proof beside each value. `runs_on_ref` held the id of the
 
 | Row | Question | Recommended | The other way |
 | --- | --- | --- | --- |
-| 1 | A field whose twin resolves to the thing the field names | **The import writes the thing's name, `kind:key`.** Where they disagree it changes nothing and counts it. It never reads a slash as a separator. | (b) One revision for each thing after the import: no ruling needed, but the script becomes the live setter of every such field, and history keeps both forms. (c) Leave it: every reader accepts both forms for good. |
-| 2 | Five fields that hold a bare key, written without a twin by a slip in the old tool: a thread's `run` and `gap`, a finding's `run`, a baseline's `gap` and `finding` | **The group's map names the target kind for each of the five, and the import writes `kind:key` where that thing was imported.** 586 values. The 75 that name nothing imported stay as they are and are counted. | (b) By hand, 586 revisions. (c) Leave them: SD4 answers no for them, and `describe` counts them as not typed. |
-| 3 | A field whose twin holds several ids, written as comma text | **A list**, `["asset:a","asset:b"]`, where a reviewed encoding and every part agree. | Comma text stays. `is asset:a` then never matches it, today and under SD4. |
+| 1 | A field whose twin resolves to the thing the field names | **The import writes the thing's name, `kind:key`.** Where they disagree it changes nothing and counts it. It never reads a slash as a separator. | (b) One revision for each thing after the import: no ruling needed, but the script becomes the live setter of every such field, and history keeps both forms. (c) Leave it: a reader asks for the stored old spelling by hand, SD4 finds none of these values, and they are revised later or never. |
+| 2 | Five fields that hold a bare key, written without a twin by a slip in the old tool: a thread's `run` and `gap`, a finding's `run`, a baseline's `gap` and `finding` | **The group's map names the target kind for each of the five. Where that thing was imported, the import writes `kind:key` in the field and mentions the thing, as it does for a reference with a twin.** 586 values in old facts are written so. The 75 that name nothing imported stay as they are and are counted. | (b) By hand, one revision for each thing whose current value is such a key. (c) Leave them: SD4 answers no for them, no mention finds them, and `describe` counts them as not typed. |
+| 3 | A field whose twin holds several ids, written as comma text | **A list**, `["asset:a","asset:b"]`, where the encoding has been reviewed and every part agrees, in the order written. | Comma text stays. `is asset:a` then never matches it, today and under SD4. |
 
-Row 3 has no case in the homelab: every twin beside its field holds one id. It matters for the private group. It also changes an answer: today `is` matches comma text only as a whole, and matches a list by member ([PV4](notes/2026-11-21-payload-values.md#pv4-a-list-reads-as-a-set-under-is-and-not)). Neon and the coordinator recommend the list, as E1 has it for a set one observer states. Astra and margins-claude agree it is yours because the answer changes.
+Row 3 has no case in the homelab: outside `ref`, which AD4 took out, every twin beside its field holds one id. It matters for the private group. It also changes an answer, which is why it is a row of its own: today `is` matches comma text only as a whole, and matches a list by member ([PV4](notes/2026-11-21-payload-values.md#pv4-a-list-reads-as-a-set-under-is-and-not)). All four recommend the list, as E1 has it for a set one observer states. Under SD4's exact match, comma text with several targets can answer yes for none of them (margins-claude).
 
-In row 2 a run's own `run` field (247 values, each naming its own thing) is left out: it is the key written twice, not a reference.
+In row 2 a run's own `run` field (247 values, each naming its own thing) is left out of this repair: it is the kind's key written a second time. That is a choice about this one field. A thing may refer to itself, and SD4 reads such a value.
 
 **The bounds, all Astra's, agreed by the four.** Field and twin agreeing is needed and is not enough.
 
@@ -277,9 +277,9 @@ In row 2 a run's own `run` field (247 values, each naming its own thing) is left
 5. **A bare key only by row 2,** for a kind and field the map names. That a thing of that name exists is not proof: `provider=cloud` may be prose.
 6. **The same rewrite in the check and in the write,** pinned in the journal under a new version. It goes into fresh stores only. A store imported before does not take it on.
 
-**What it costs.** A rewritten payload is a different record, so every record of the six homelab stores gets a new id, and the stores are imported afresh. The six are cut over, so it is a second cutover: the fresh stores take the place of the live ones, which are kept aside as the first import's were. One record has been written across the six since the import, and it is written again by hand, with its `prev` taken from the new ids. This is what [the adoption note](notes/2026-11-22-adoption.md) said a later change would cost, and today is the cheap day for it. It amends AD2, under which the import keeps every payload untouched. AD4 made the first exception when it took out `ref` and the twins.
+**What it costs.** The six homelab stores are imported afresh, and every imported record gets a new id and a new observer key, in stores with no reference field too: a fresh import signs with one new key for the group and a new salt for each old fact. The six are cut over, so it is a second cutover: the fresh stores take the place of the live ones, which are kept aside as the first import's were. One record has been written across the six since the import, and it is written again by hand, with its `prev` taken from the new ids. This is what [the adoption note](notes/2026-11-22-adoption.md) said a later change would cost, and today is the cheap day for it. It amends AD2, under which the import keeps every payload untouched. AD4 made the first exception when it took out `ref` and the twins.
 
-**If you rule against row 1,** SD4 and the SD2 check read both forms, and `describe` counts each.
+**If you rule against row 1,** nothing is rewritten. SD4 still matches `kind:key` exactly, finds none of the old values, and reports them in its count of values not typed. Reading both forms would be a different read from a fold's, and is not proposed.
 
 ## Being prepared
 
