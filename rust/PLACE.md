@@ -1040,15 +1040,15 @@ Every verb that reads the store says when either happened (choice 18).
     | `lifecycle` | An object with required nonempty text `field` and optional `active` and `closed` arrays of distinct strings. Each omitted list defaults to empty. |
     | `preview`, `search` | Ordered arrays of distinct nonempty payload field names. |
 
-    Plain `ls`, `of`, `read` and `fold`, JSON `ls --active`, and `describe`
-    load this file. Each validates
-    the whole working store's description once. With `--in`, this is the
-    selected store. A plain fold outside any working store uses its ordinary
-    defaults. A source in a spec supplies records only, including when a
-    binding redirects `.`. Ordinary JSON reads, writes and exports are independent
-    of the description. Plain views without `--active` keep their existing output
-    when the file is missing. Bad UTF-8,
-    malformed JSON or a grammar error gives exit 2 with the filename and
+    Plain `ls`, `of`, `read` and `fold` load the working store's description.
+    Two `ls` flags also use descriptions in JSON output, `--active` and
+    `--refers-to`. The `describe` verb asks for descriptions directly.
+    Each validates the whole description once per selected store. A plain
+    fold outside any working store uses its ordinary defaults. A source in a
+    spec supplies records only, including when a binding redirects `.`.
+    Ordinary JSON reads, writes and exports are independent of the description.
+    Plain views without either flag keep their existing output when the file
+    is missing. Bad UTF-8, malformed JSON or a grammar error gives exit 2 with the filename and
     error location on stderr. A file-system failure gives exit 3 with the
     filename. Both leave stdout empty.
 
@@ -1126,6 +1126,34 @@ Every verb that reads the store says when either happened (choice 18).
     heads' mentions. These observations leave the command successful. An
     unclean store retains the checked-lines answer and the existing integrity
     refusal, naming the affected store directories.
+
+37. **Find things that refer to a target.** `loops ls --refers-to kiln:east`
+    takes one complete typed name. A root ID must be written in full.
+    Select the current store, use leading `--in` once per name, or use
+    `--group` as in choice 36. This mode accepts `--plain` or `--json`.
+    A prefix, `--things`, `--fields` or `--active` gives usage error 2.
+
+    Settle and admit the selected records together. For each thing, take
+    the union of reference field names declared for any current head kind
+    by any selected description. Ask the keyed fold's payload `is` test of
+    each distinct field over the thing's full admitted history. A yes in
+    any field lists the thing once. Otherwise an unknown counts it once as
+    unread. A field with no setter answers no. Reference kind lists,
+    mentions and target residence do not participate. A self-reference can
+    match. Lists match immediate members. Comma text is a single literal.
+    `a,b` is untyped, and `kiln:a,b` matches the exact name `kiln:a,b`.
+
+    Default JSON gives the literal `target`, sorted full names in `things`,
+    sorted canonical directories in `stores`, and `fields` rows with `kind`,
+    `field` and the sorted paths of their declaring `descriptions`. Arrays
+    of names and the kind/field rows use UTF-16 order. The three `counts`
+    are `things_not_read` as above, `values_not_typed` in the readable
+    occurrence units of choice 36, and `fields_read` in distinct declared
+    (kind, field) pairs, including kinds with no things. A field shared by
+    several head kinds contributes occurrences only once per thing. Plain
+    output gives the same lists and counts, including zeroes. An empty
+    local group reads zero stores. A selection without reference declarations
+    reads zero fields. Integrity diagnostics follow choice 36.
 
 ## Checked by
 
