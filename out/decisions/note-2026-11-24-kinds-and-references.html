@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
-<title>What a store says about its kinds, and references after an import: SD1 to SD4, AD5 and BP1 · Strange Loops</title>
+<title>What a store says about its kinds, and references after an import: SD1 to SD4, AD5, BP1 and ST1 · Strange Loops</title>
 <style>
 /* The register: a warm grey table, white sheets resting on it, height shown by shadow and
    hairline. One colour only, for what is erased or in conflict. */
@@ -196,7 +196,7 @@ header.top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--g
 <a href="note-2026-11-21-tick-record.html">Step 4: the tick record, design note</a>
 <a href="note-2026-11-22-adoption.html">The adoption step: AD1 to AD4</a>
 <a href="note-2026-11-23-store-descriptions.html">Store descriptions: what the first two conversions asked for</a>
-<a href="note-2026-11-24-kinds-and-references.html" aria-current="page">What a store says about its kinds, and references after an import: SD1 to SD4, AD5 and BP1</a>
+<a href="note-2026-11-24-kinds-and-references.html" aria-current="page">What a store says about its kinds, and references after an import: SD1 to SD4, AD5, BP1 and ST1</a>
 <a href="note-retained-boundaries.html">Retained boundaries</a></nav>
 <p class="source">Rendered from <code>notes/2026-11-24-kinds-and-references.md</code> in the repository.</p>
 <details class="contents"><summary>On this page</summary>
@@ -207,10 +207,11 @@ header.top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--g
 <li><a href="#after-the-import-reading-and-writing-references">After the import: reading and writing references</a></li>
 <li><a href="#sd4-a-read-of-everything-that-refers-to-a-thing">SD4: a read of everything that refers to a thing</a></li>
 <li><a href="#ad5-one-written-form-for-a-reference-set-at-the-import">AD5: one written form for a reference, set at the import</a></li>
-<li><a href="#bp1-nine-narrow-cases-the-build-plan-found-open">BP1: nine narrow cases the build plan found open</a></li></ul></details>
+<li><a href="#bp1-nine-narrow-cases-the-build-plan-found-open">BP1: nine narrow cases the build plan found open</a></li>
+<li><a href="#st1-the-shorthand-is-strict-and-the-description-says-what-it-allows">ST1: the shorthand is strict, and the description says what it allows</a></li></ul></details>
 <article>
-<h1 id="what-a-store-says-about-its-kinds-and-references-after-an-import-sd1-to-sd4-ad5-and-bp1">What a store says about its kinds, and references after an import: SD1 to SD4, AD5 and BP1</h1>
-<p><strong>Put to Kyle in <code>DECISIONS.md</code> on 2026-11-24 and ruled the same day: SD1 to SD4 and AD5 each as recommended, and BP1, at the end, row by row.</strong> The entries are kept here as they were put, with the ruling at the head of each. &quot;Recommended&quot;, &quot;today&quot;, &quot;yours&quot; and &quot;not built&quot; in the text are as written then.
+<h1 id="what-a-store-says-about-its-kinds-and-references-after-an-import-sd1-to-sd4-ad5-bp1-and-st1">What a store says about its kinds, and references after an import: SD1 to SD4, AD5, BP1 and ST1</h1>
+<p><strong>Put to Kyle in <code>DECISIONS.md</code> on 2026-11-24 and ruled the same day: SD1 to SD4 and AD5 each as recommended, and BP1, near the end, row by row. ST1, the last section, records what followed from his principle for BP1: the strict shorthand, a mention declined and the import's AD5 work deferred. Where ST1 differs from an entry above it, ST1 is the ruling.</strong> The entries are kept here as they were put, with the ruling at the head of each. &quot;Recommended&quot;, &quot;today&quot;, &quot;yours&quot; and &quot;not built&quot; in the text are as written then.
 The ruling is recorded in <a href="changelog.html">the changelog</a> under 2026-11-24. The opening input was <a href="note-2026-11-23-store-descriptions.html">the store descriptions note</a>, whose section 3 also holds the form of <code>--in</code>, a store by name on every verb, which is built with these and needed no ruling.</p>
 <h2 id="what-a-store-says-about-its-kinds">What a store says about its kinds</h2>
 <p><strong>Where these come from.</strong> <a href="note-2026-11-23-store-descriptions.html">The store descriptions note</a> gathered what the homelab conversion and a collector prototype asked for. Neon sketched a file from it on 2026-11-23. On 2026-11-24 the coordinator, Neon and margins-claude went through the sketch in a chat room kept in a store, and checked it against the six live homelab stores (6,482 things) and the prototype's store (1,994 items). Astra then reviewed the entries from outside, as put, and found a fault in each of SD2 and SD3; SD3's recommendation changed from A to C on it. The four now agree on every point below. Three points are yours: the form (SD1), the one place the CLI would decline a write (SD2), and a consequence for erasure (SD3).</p>
@@ -440,6 +441,37 @@ $ loops fold kilns-is-a.json --plain              (where kilns is kiln:a, follow
 </tbody></table></div>
 <p><strong>No homelab case</strong> for rows 5, 7, 8b and 9 (margins-claude): no slip-field value holds a colon, no twin resolves to a keyless root, and every agreeing value is in the old <code>kind/key</code> form. They matter for a group imported later.</p>
 <p><strong>One sentence of SD1 is out of date,</strong> and needs no ruling. It called <code>--active</code> the one flag whose JSON depends on the description. <code>--refers-to</code> (SD4) is a second. The test covers every read without either flag.</p>
+<h2 id="st1-the-shorthand-is-strict-and-the-description-says-what-it-allows">ST1: the shorthand is strict, and the description says what it allows</h2>
+<p><strong>Ruled by Kyle, 2026-11-24, in direction; the lines below were settled by the coordinator, Neon, margins-claude and Astra in the room, and he was told them.</strong> It was never an entry in <code>DECISIONS.md</code>: it came out of his rulings on BP1. No line here changes a record's bytes, a result or a refusal code. Each stop is a usage error before anything is signed.</p>
+<p><strong>The principle, in his words.</strong> &quot;We're strictly accepting what gets entered - not trying to infer or work around potential error.&quot; And: &quot;I generally would prefer, going forward, to be strictly explicit if possible.&quot; His concern was that the build was conforming to stores built up iteratively under the old tool, where there was a chance to remove ambiguity. He qualified it: the writers are mostly agents, so their ergonomics come before the principle where the two pull apart. He expects to rebuild many stores from first principles and pick from the originals later.</p>
+<p><strong>What it changed in the rulings above.</strong></p>
+<ul>
+<li><p><strong>AD5 row 2's mention is declined.</strong> The import, when it is built, writes <code>kind:key</code> in the five slip fields and adds nothing to <code>about</code>. BP1's rows 8 and 8b then decide nothing. AD4's own mentions stay as they are. His reason: where the field holds a proper reference, <code>ls --refers-to</code> finds it.</p></li>
+<li><p><strong>AD5's build is deferred, and the homelab is not cut over a second time.</strong> Pieces 9 and 10 of the plan wait until a store is picked from by its reference fields; then they are built into a fresh group that is not cut over. The plumbing (piece 8) and today's importer stay. A cutover would give every record a new id, a rebuild would replace that history again, and whatever cites a homelab id would break twice (margins-claude). margins-claude asks that row 2, the one place the import takes a kind from a hand-written map, be put to him again before it is built.</p></li>
+</ul>
+<p><strong>The shorthand's stops.</strong> <code>emit -</code>, <code>emit - --fill</code>, <code>tick</code> and the store itself refuse nothing, as before. Each message says what was typed, what the description allows, and the way out.</p>
+<ol>
+<li><p><strong>A kind the description does not name stops.</strong> With a <code>.loops/store.json</code> present, <code>emit &lt;kind&gt;</code> for a kind not under <code>kinds</code> is a usage error. The check is on the kind emitted, also with <code>--of</code>, <code>--prev</code> and <code>--root</code>. A kind declared as <code>{}</code> is named. With no file, as today. This amends SD2's &quot;what A leaves alone&quot;.</p></li>
+<li><p><strong>A lifecycle value in neither list stops.</strong> Where the kind declares <code>lifecycle</code> and the write states that field, the value must be text equal to a member of <code>closed</code> or <code>active</code>. A field left out, or unset with <code>--sets</code>, passes. So <code>active</code> now does something.</p></li>
+<li><p><strong>A reference field takes only references.</strong> Where the kind declares the field under <code>refs</code> and the write states it, the value is one reference or a flat list of them. <code>[]</code> passes, and clears the field. A reference is text that the record format accepts as a thing's name, with a prefix in the field's list, or any prefix where the list is empty. <code>null</code>, a nested list or a member that is not text stops. The target need not exist; the prefix is read from the text alone.</p></li>
+<li><p><strong>A record id in a reference field</strong> (<code>r:&lt;id&gt;</code>) passes only where the field's list is empty. A root's name carries no kind to check.</p></li>
+<li><p><strong>A comma stops, in a reference and in the key field.</strong> <code>owner=asset:a,asset:b</code> is one valid name, of a thing whose key is <code>a,asset:b</code>, and nobody means that. The shorthand declines it and shows the list form: <code>owners:=[&quot;asset:a&quot;,&quot;asset:b&quot;]</code>. It stops <code>emit kiln name=a,b</code> too, since that is how an agent would make a thing the shorthand then cannot refer to. This is a rule of the shorthand alone: a comma stays legal in a thing's name, <code>of</code>, <code>about</code> and SD4 do not move, and <code>emit -</code> writes such a name. It does not promise that the shorthand can never make such a thing: <code>emit kiln --of kiln:a,b</code> still does (Astra).</p></li>
+<li><p><strong><code>--root</code> skips only the key's checks.</strong> A root that is meant, and a revision of an existing keyless root, keep whatever payload they are given.</p></li>
+</ol>
+<p><strong>The description file.</strong> Version 1 is amended in place; no binary that reads the file had been installed anywhere.</p>
+<ol start="7">
+<li><p><code>key_format</code> and <code>search</code> leave the grammar. Nothing read them. A kind's naming guidance goes in its <code>note</code>, where an agent reading <code>describe</code> finds it.</p></li>
+<li><p>A <code>lifecycle</code> gives at least one value in <code>closed</code> or <code>active</code>, and none in both.</p></li>
+<li><p>Each kind in a <code>refs</code> list is a kind prefix, and not <code>r</code>.</p></li>
+<li><p>With a description file present, a plain headline comes only from a described head kind's <code>headline</code> or text <code>key</code>. A head kind the file does not describe, or heads that disagree, show none. With no file, <code>name</code> as before. JSON <code>ls</code> keeps its <code>headline</code>.</p></li>
+</ol>
+<p><strong><code>describe</code>.</strong></p>
+<ol start="11">
+<li><p>One more count for each reference field: typed values whose prefix the field's list does not name. With an empty list it is zero. It filters nothing, and SD4's match does not read it.</p></li>
+</ol>
+<p><strong>Not taken, by agreement of the four:</strong> required fields, a check that a target exists, refusing a payload field the description does not name, and a second list encoding for new writes. These belong to standing, or would burden an agent's ordinary write.</p>
+<p><strong>A cost, stated.</strong> A list is clumsy in the shorthand: <code>field:='[&quot;asset:a&quot;,&quot;asset:b&quot;]'</code>, with the shell's quoting. A repeatable field, or a reference field declared to hold many, could come later; either would be explicit.</p>
+<p><strong>Left for another day</strong> (found in the same look, and not part of this): imported records carry the old tool's <code>message</code> where a new write's trailing message goes to <code>text</code>; and a trailing message that holds <code>=</code> is taken as a field.</p>
 </article>
 </main>
 <script>

@@ -11,11 +11,27 @@ The record starts where the old roadmap's did. For anything earlier, and for eve
 
 In brief:
 - Built: `--in <name>`, a store by name on every verb that takes one; `.loops/store.json` read and used by the plain views; `ls --active`; `loops describe` and `ls --refers-to`, with `--group`; and the import's recipe for a payload, with no change to what it writes.
+- **Kyle rules the strict shorthand:** with a description, `emit` stops on a kind, a status or a reference the description does not allow. He declines the mention in AD5's row 2 and defers the import's AD5 work; the homelab is not cut over a second time.
 - **Kyle rules BP1:** what was entered is accepted strictly; two rows go the other way from the recommendation.
 - The build of the rulings is planned and begun, and BP1 is put to Kyle: nine narrow cases the plan found open, each with a recommendation.
 - **Kyle rules SD1 to SD4 and AD5, each as recommended.** A store describes its kinds in a plain file that refuses nothing; `emit` stops on a key slip; reference fields are described and not copied into `about`; `ls --refers-to` reads them; the import writes a reference as `kind:key`, and the homelab will be imported afresh. Nothing is built yet.
 - SD1 to SD3 are put to Kyle: what a store says about its kinds. A plain `.loops/store.json` that describes each kind and refuses nothing (SD1); `emit` stopping before it signs a write that contradicts a declared key (SD2); and whether reference fields are copied into `about`, where an erasure does not reach them (SD3: recommended, describe them and copy nothing). Nothing is built.
 - SD4 and AD5 are put to Kyle, later the same day: a read of everything that refers to a thing, taken from the declared reference fields (SD4); and the import writing a reference field as `kind:key` where the old store proves it, which means importing the homelab afresh (AD5). Nothing is built.
+
+### Kyle rules the strict shorthand, declines a mention, and defers the import's AD5 work
+
+After BP1, Kyle asked whether the day's decisions were conforming to stores built up iteratively under the old tool, and said he would rather be strictly explicit going forward, with one qualification: agents are the main writers, and their ergonomics come first where the two pull apart. He expects to rebuild many stores from first principles and pick from the originals later. The coordinator listed what the build still carried over; he took what was recommended; the four settled the lines in the room. The record is [ST1](notes/2026-11-24-kinds-and-references.md#st1-the-shorthand-is-strict-and-the-description-says-what-it-allows).
+
+- **Three more stops in the shorthand `emit`,** each a usage error before signing that names the way out: a kind the description does not name; a lifecycle value in neither list; a reference field holding anything but a reference of a listed kind, or a list of them. A field left out passes. `emit -` and the store refuse nothing.
+- **A comma stops in a reference and in the key field.** `owner=asset:a,asset:b` is one valid name that nobody means. Astra first held to the record format's own test, under which it passes; margins-claude too; both took the stop after Kyle's note on ergonomics, as a rule of the shorthand alone. Astra showed it gives no guarantee that the shorthand cannot make such a thing, and it is written without one.
+- **The description file loses `key_format` and `search`** (Neon, who had put them in the sketch with nothing reading them), a `lifecycle` must list a value and none twice, and a `refs` list holds kind prefixes. Version 1 is amended in place: no binary that reads the file was installed.
+- **No `name` headline once a description exists,** in the three places Neon found.
+- **`describe` counts references whose kind the field does not list.**
+- **Not taken:** required fields, a check that a target exists, refusing an undeclared payload field.
+- **AD5 row 2's mention is declined.** The import, when built, repairs the field and adds nothing to `about`. Kyle's reason: a proper reference in the field is found by `ls --refers-to`. The lines above this section that say "with a mention" are as ruled earlier in the day.
+- **AD5's build is deferred, and there is no second cutover of the homelab.** All four recommended it once he said he would rebuild. Pieces 9 and 10 wait; piece 8's plumbing and today's importer stay.
+
+What is left of the pass: the description tightened, the `emit` shorthand with its stops, and `--add-about` and `--drop-about`.
 
 ### Kyle rules BP1
 
@@ -70,7 +86,7 @@ Ruled in the coordinator's session on 2026-11-24, each as recommended by the fou
 
 1. The CLI's part: the description file and the shorthand it gives `emit`, the stop and `--root`, `--add-about` and `--drop-about`, `describe`, `ls --active`, `ls --refers-to`, and a store by name on every verb (`--in`, `--group`), whose form is in [the store descriptions note](notes/2026-11-23-store-descriptions.md#3-a-store-found-by-name-on-every-verb), section 3.
 2. The import's part: AD5's three rows within its six bounds, pinned in the journal under a new version.
-3. The homelab imported afresh into new stores and compared, then cut over a second time at Kyle's word. Every record gets a new id and a new observer key. The present live stores are kept aside.
+3. (Deferred later the same day, with the import's part; see the section on the strict shorthand.) The homelab imported afresh into new stores and compared, then cut over a second time at Kyle's word. Every record gets a new id and a new observer key. The present live stores are kept aside.
 
 ### SD1 to SD3 are put
 

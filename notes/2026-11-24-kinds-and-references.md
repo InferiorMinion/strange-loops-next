@@ -1,6 +1,6 @@
-# What a store says about its kinds, and references after an import: SD1 to SD4, AD5 and BP1
+# What a store says about its kinds, and references after an import: SD1 to SD4, AD5, BP1 and ST1
 
-**Put to Kyle in `DECISIONS.md` on 2026-11-24 and ruled the same day: SD1 to SD4 and AD5 each as recommended, and BP1, at the end, row by row.** The entries are kept here as they were put, with the ruling at the head of each. "Recommended", "today", "yours" and "not built" in the text are as written then.
+**Put to Kyle in `DECISIONS.md` on 2026-11-24 and ruled the same day: SD1 to SD4 and AD5 each as recommended, and BP1, near the end, row by row. ST1, the last section, records what followed from his principle for BP1: the strict shorthand, a mention declined and the import's AD5 work deferred. Where ST1 differs from an entry above it, ST1 is the ruling.** The entries are kept here as they were put, with the ruling at the head of each. "Recommended", "today", "yours" and "not built" in the text are as written then.
 The ruling is recorded in [the changelog](../CHANGELOG.md) under 2026-11-24. The opening input was [the store descriptions note](2026-11-23-store-descriptions.md), whose section 3 also holds the form of `--in`, a store by name on every verb, which is built with these and needed no ruling.
 
 ## What a store says about its kinds
@@ -312,3 +312,40 @@ $ loops fold kilns-is-a.json --plain              (where kilns is kiln:a, follow
 **No homelab case** for rows 5, 7, 8b and 9 (margins-claude): no slip-field value holds a colon, no twin resolves to a keyless root, and every agreeing value is in the old `kind/key` form. They matter for a group imported later.
 
 **One sentence of SD1 is out of date,** and needs no ruling. It called `--active` the one flag whose JSON depends on the description. `--refers-to` (SD4) is a second. The test covers every read without either flag.
+
+## ST1: the shorthand is strict, and the description says what it allows
+
+**Ruled by Kyle, 2026-11-24, in direction; the lines below were settled by the coordinator, Neon, margins-claude and Astra in the room, and he was told them.** It was never an entry in `DECISIONS.md`: it came out of his rulings on BP1. No line here changes a record's bytes, a result or a refusal code. Each stop is a usage error before anything is signed.
+
+**The principle, in his words.** "We're strictly accepting what gets entered - not trying to infer or work around potential error." And: "I generally would prefer, going forward, to be strictly explicit if possible." His concern was that the build was conforming to stores built up iteratively under the old tool, where there was a chance to remove ambiguity. He qualified it: the writers are mostly agents, so their ergonomics come before the principle where the two pull apart. He expects to rebuild many stores from first principles and pick from the originals later.
+
+**What it changed in the rulings above.**
+
+- **AD5 row 2's mention is declined.** The import, when it is built, writes `kind:key` in the five slip fields and adds nothing to `about`. BP1's rows 8 and 8b then decide nothing. AD4's own mentions stay as they are. His reason: where the field holds a proper reference, `ls --refers-to` finds it.
+- **AD5's build is deferred, and the homelab is not cut over a second time.** Pieces 9 and 10 of the plan wait until a store is picked from by its reference fields; then they are built into a fresh group that is not cut over. The plumbing (piece 8) and today's importer stay. A cutover would give every record a new id, a rebuild would replace that history again, and whatever cites a homelab id would break twice (margins-claude). margins-claude asks that row 2, the one place the import takes a kind from a hand-written map, be put to him again before it is built.
+
+**The shorthand's stops.** `emit -`, `emit - --fill`, `tick` and the store itself refuse nothing, as before. Each message says what was typed, what the description allows, and the way out.
+
+1. **A kind the description does not name stops.** With a `.loops/store.json` present, `emit <kind>` for a kind not under `kinds` is a usage error. The check is on the kind emitted, also with `--of`, `--prev` and `--root`. A kind declared as `{}` is named. With no file, as today. This amends SD2's "what A leaves alone".
+2. **A lifecycle value in neither list stops.** Where the kind declares `lifecycle` and the write states that field, the value must be text equal to a member of `closed` or `active`. A field left out, or unset with `--sets`, passes. So `active` now does something.
+3. **A reference field takes only references.** Where the kind declares the field under `refs` and the write states it, the value is one reference or a flat list of them. `[]` passes, and clears the field. A reference is text that the record format accepts as a thing's name, with a prefix in the field's list, or any prefix where the list is empty. `null`, a nested list or a member that is not text stops. The target need not exist; the prefix is read from the text alone.
+4. **A record id in a reference field** (`r:<id>`) passes only where the field's list is empty. A root's name carries no kind to check.
+5. **A comma stops, in a reference and in the key field.** `owner=asset:a,asset:b` is one valid name, of a thing whose key is `a,asset:b`, and nobody means that. The shorthand declines it and shows the list form: `owners:=["asset:a","asset:b"]`. It stops `emit kiln name=a,b` too, since that is how an agent would make a thing the shorthand then cannot refer to. This is a rule of the shorthand alone: a comma stays legal in a thing's name, `of`, `about` and SD4 do not move, and `emit -` writes such a name. It does not promise that the shorthand can never make such a thing: `emit kiln --of kiln:a,b` still does (Astra).
+6. **`--root` skips only the key's checks.** A root that is meant, and a revision of an existing keyless root, keep whatever payload they are given.
+
+**The description file.** Version 1 is amended in place; no binary that reads the file had been installed anywhere.
+
+7. `key_format` and `search` leave the grammar. Nothing read them. A kind's naming guidance goes in its `note`, where an agent reading `describe` finds it.
+8. A `lifecycle` gives at least one value in `closed` or `active`, and none in both.
+9. Each kind in a `refs` list is a kind prefix, and not `r`.
+10. With a description file present, a plain headline comes only from a described head kind's `headline` or text `key`. A head kind the file does not describe, or heads that disagree, show none. With no file, `name` as before. JSON `ls` keeps its `headline`.
+
+**`describe`.**
+
+11. One more count for each reference field: typed values whose prefix the field's list does not name. With an empty list it is zero. It filters nothing, and SD4's match does not read it.
+
+**Not taken, by agreement of the four:** required fields, a check that a target exists, refusing a payload field the description does not name, and a second list encoding for new writes. These belong to standing, or would burden an agent's ordinary write.
+
+**A cost, stated.** A list is clumsy in the shorthand: `field:='["asset:a","asset:b"]'`, with the shell's quoting. A repeatable field, or a reference field declared to hold many, could come later; either would be explicit.
+
+**Left for another day** (found in the same look, and not part of this): imported records carry the old tool's `message` where a new write's trailing message goes to `text`; and a trailing message that holds `=` is taken as a field.
