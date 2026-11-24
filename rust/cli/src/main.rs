@@ -12,7 +12,9 @@ mod draft;
 mod ls;
 mod plain;
 mod references;
+mod refers_to;
 mod registry;
+mod selection;
 mod shadow;
 mod values;
 
@@ -48,11 +50,12 @@ const USAGE: &str = "\
 usage: loops [-C <dir>] <verb> ...
        loops [-C <dir>] [--store <name>=<dir>]... [--in <name>] <verb> ...
        loops [-C <dir>] [--store <name>=<dir>]... [--group | --in <name> ...] describe [--plain]
+       loops [-C <dir>] [--store <name>=<dir>]... [--group | --in <name> ...] ls --refers-to <thing> [--plain]
 
   --in selects one working store. File operands and --store paths start at -C
   or the working directory. Named writes report the destination on stderr.
-  init, whoami and shadow-import take no --in. For describe, --in may repeat
-  or --group selects all names from the first local stores.json.
+  init, whoami and shadow-import take no --in. For describe and ls --refers-to, --in may
+  repeat or --group selects all names from the first local stores.json.
 
   init                          make .loops/ here
   emit <kind> [field=text | field:=json]... [\"message\"]
@@ -84,6 +87,9 @@ usage: loops [-C <dir>] <verb> ...
                                 the prefix after the colon may be empty (e.g. kiln: or kiln:e)
                                 hide things whose live lifecycle field is one text value in closed
                                 JSON and plain output state the kind, field and closed list applied
+  ls --refers-to <thing> [--plain | --json]
+                                list things whose declared reference fields match the literal typed target
+                                report stores, field declarations and coverage counts
   describe [--plain]            show each store's description and fit against the selected union
                                 default: current store; loops --group describe reads the local group
   get <id>                      one record
@@ -937,6 +943,11 @@ fn multi_store_verb(args: &[String]) -> bool {
                 args.next();
             }
             "--json" | "--group" => {}
+            "ls" => {
+                return args
+                    .find(|s| !matches!(s.as_str(), "--json" | "--plain"))
+                    .is_some_and(|s| s == "--refers-to");
+            }
             verb => return verb == "describe",
         }
     }
@@ -1089,6 +1100,12 @@ fn run(args: &[String]) -> Result<(), Fail> {
         }
         let stores = registry::selected(&start, overrides, &selection)?;
         return describe::run(stores, format);
+    }
+    if verb == "ls" {
+        if let Some(target) = refers_to::target(rest)? {
+            let stores = registry::selected(&start, overrides, &selection)?;
+            return refers_to::run(stores, target, format);
+        }
     }
     let registry::Selection::Names(names) = selection else {
         return Err(usage("--group is not supported"));

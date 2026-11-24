@@ -5,7 +5,9 @@ use crate::{
     finish_answer, object, plain, realm,
     references::count_values,
     registry::SelectedStore,
-    say, text, unclean,
+    say,
+    selection::Union,
+    text,
     values::{Field, Fields, member, records_by_thing, setter_values, thing_about},
 };
 use loops::{
@@ -404,39 +406,26 @@ fn measure(held: &Held, sites: &mut [Site], records: &[Record]) {
 }
 
 pub(crate) fn run(stores: Vec<SelectedStore>, format: Format) -> Result<(), Fail> {
-    let mut union = Held::default();
-    let mut dirty = Vec::new();
-    let mut sites = Vec::new();
-    for SelectedStore { directory, store } in stores {
-        let directory = directory
-            .to_str()
-            .ok_or_else(|| {
-                Fail::System(format!(
-                    "store directory is not UTF-8: {}",
-                    directory.display()
-                ))
-            })?
-            .to_owned();
-        let description = Description::with_source(store.dir.root())?;
-        let fit = description
-            .iter()
-            .flat_map(|(d, _)| &d.kinds)
-            .map(|(name, kind)| (name.clone(), Fit::declared(kind)))
-            .collect();
-        let held = store.read()?;
-        if unclean(&held).is_some() {
-            dirty.push(directory.clone());
-        }
-        let start = union.lines().len();
-        union.append(held);
-        sites.push(Site {
-            directory,
-            description,
-            lines: start..union.lines().len(),
-            fit,
-        });
-    }
-    measure(&union, &mut sites, &realm(&union));
+    let union = Union::read(stores)?;
+    let mut sites: Vec<_> = union
+        .sites
+        .into_iter()
+        .map(|site| {
+            let fit = site
+                .description
+                .iter()
+                .flat_map(|(d, _)| &d.kinds)
+                .map(|(name, kind)| (name.clone(), Fit::declared(kind)))
+                .collect();
+            Site {
+                directory: site.directory,
+                description: site.description,
+                lines: site.lines,
+                fit,
+            }
+        })
+        .collect();
+    measure(&union.held, &mut sites, &realm(&union.held));
     sites.sort_by(|a, b| str_cmp(&a.directory, &b.directory));
     let output = match format {
         Format::Json => object(vec![(
@@ -451,8 +440,5 @@ pub(crate) fn run(stores: Vec<SelectedStore>, format: Format) -> Result<(), Fail
             .collect::<Vec<_>>()
             .join("\n\n"),
     };
-    finish_answer(
-        say(&output),
-        unclean(&union).map(|why| format!("{why} (stores: {})", dirty.join(", "))),
-    )
+    finish_answer(say(&output), union.integrity)
 }
