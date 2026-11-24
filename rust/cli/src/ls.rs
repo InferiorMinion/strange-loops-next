@@ -1,4 +1,5 @@
 //! Inventory of the settled, admitted records in a store.
+use crate::description::Description;
 use crate::values::{Field, Fields};
 use crate::{Context, Fail, answered, count, object, plain, realm, say, text, usage};
 use loops::{
@@ -19,7 +20,13 @@ struct ThingRow {
 }
 
 impl ThingRow {
-    fn new(held: &Held, thing: String, records: Vec<&Record>, names: &[&str]) -> Self {
+    fn new(
+        held: &Held,
+        thing: String,
+        records: Vec<&Record>,
+        names: &[&str],
+        desc: Option<&Description>,
+    ) -> Self {
         let n = records.len();
         let state = LiveState::new(records);
         let heads = state.heads();
@@ -30,7 +37,7 @@ impl ThingRow {
             kinds: canon_set(&kinds),
             records: n,
             heads: heads.len(),
-            headline: reader.read("name"),
+            headline: reader.read(desc.and_then(|d| d.headline(&heads)).unwrap_or("name")),
             fields: names.iter().map(|k| reader.read(k)).collect(),
         }
     }
@@ -102,7 +109,13 @@ fn kind_counts(records: &[Record]) -> Vec<(String, usize)> {
     sorted(counts)
 }
 
-fn thing_rows(held: &Held, records: &[Record], prefix: &str, names: &[&str]) -> Vec<ThingRow> {
+fn thing_rows(
+    held: &Held,
+    records: &[Record],
+    prefix: &str,
+    names: &[&str],
+    desc: Option<&Description>,
+) -> Vec<ThingRow> {
     let mut groups = HashMap::<_, Vec<_>>::new();
     for record in records {
         let thing = record.thing();
@@ -112,7 +125,7 @@ fn thing_rows(held: &Held, records: &[Record], prefix: &str, names: &[&str]) -> 
     }
     sorted(groups)
         .into_iter()
-        .map(|(name, rs)| ThingRow::new(held, name, rs, names))
+        .map(|(name, rs)| ThingRow::new(held, name, rs, names, desc))
         .collect()
 }
 
@@ -140,10 +153,20 @@ pub(crate) fn run(ctx: &Context<'_>, args: &[String], format: plain::Format) -> 
             }
         }
     }
-    let held = ctx.store()?.read()?;
+    let store = ctx.store()?;
+    let desc = match format {
+        plain::Format::Plain => Description::load(store.dir.root())?,
+        plain::Format::Json => None,
+    };
+    let held = store.read()?;
     let records = realm(&held);
     let output = if let Some(p) = prefix.or_else(|| (!names.is_empty()).then_some("")) {
-        let rows = thing_rows(&held, &records, p, &names);
+        if names.is_empty() {
+            if let Some(preview) = desc.as_ref().and_then(|d| d.preview(p)) {
+                names.extend(preview.iter().map(String::as_str));
+            }
+        }
+        let rows = thing_rows(&held, &records, p, &names, desc.as_ref());
         if format == plain::Format::Plain {
             let mut header = vec![
                 "THING".into(),

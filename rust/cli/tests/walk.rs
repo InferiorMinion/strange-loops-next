@@ -4855,3 +4855,6 @@ mod tick_slice;
 
 #[path = "walk/store_by_name.rs"]
 mod store_by_name;
+
+#[path = "walk/description.rs"]
+mod description;

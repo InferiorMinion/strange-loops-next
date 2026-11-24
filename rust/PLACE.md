@@ -1021,6 +1021,43 @@ Every verb that reads the store says when either happened (choice 18).
     store already opened. Read commands, including `tick --check`, print
     no destination notice. Standard output keeps its ordinary format.
 
+34. **Plain views use a working store's description.** The optional UTF-8
+    file `.loops/store.json` holds one JSON object. It requires the number
+    `1` in `version` and an object in `kinds`. It may also have a text
+    `note`. An empty `kinds` object is valid. Each nonempty kind name maps
+    to an object with the following optional members. Fixed-member objects
+    are closed and object member names must be unique at every depth.
+
+    | Member | Value |
+    | --- | --- |
+    | `note`, `key_format` | Text, preserved literally. |
+    | `key` | A nonempty payload field name or explicit `null`. A string key requires a kind matching `[a-z][a-z0-9-]*` other than `r`. |
+    | `headline` | A nonempty payload field name. |
+    | `refs` | An object mapping nonempty payload field names to arrays of distinct nonempty kind names. The spec reserves `env.`, so a reference field cannot start with it. An empty array admits any kind. |
+    | `lifecycle` | An object with required nonempty text `field` and optional `active` and `closed` arrays of distinct strings. Each omitted list defaults to empty. |
+    | `preview`, `search` | Ordered arrays of distinct nonempty payload field names. |
+
+    Only plain `ls`, `of`, `read` and `fold` load this file. Each validates
+    the whole working store's description once. With `--in`, this is the
+    selected store. A plain fold outside any working store uses its ordinary
+    defaults. A source in a spec supplies records only, including when a
+    binding redirects `.`. JSON reads, writes and exports are independent
+    of the description. A missing file keeps the existing output. Bad UTF-8,
+    malformed JSON or a grammar error gives exit 2 with the filename and
+    error location on stderr. A file-system failure gives exit 3 with the
+    filename. Both leave stdout empty.
+
+    For each head kind, choose the field named by `headline`, then by a
+    string `key`, then `name`. If head kinds disagree, use `name`. Read that
+    literal payload field with the usual live-setter rules. Missing, non-text,
+    conflicting and unread values keep their ordinary headline rendering.
+    A configured headline appears on the thing line of plain `of` and keyed
+    folds, including with `--values`. All existing detail is still shown.
+    In a plain listing with a `kind:` prefix (including a narrower prefix
+    such as `kiln:e`), `preview` supplies the columns in written order.
+    An empty preview uses the headline column. The record-ID prefix `r:`
+    selects roots across kinds. Explicit `--fields` wins.
+
 ## Checked by
 
 `rust/place/tests/lines.rs` signs every accepted record vector and requires

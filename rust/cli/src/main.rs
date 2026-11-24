@@ -6,6 +6,7 @@
 //! lines that check, then is refused `store-not-clean` when a line or a
 //! segment did not.
 mod cut;
+mod description;
 mod draft;
 mod ls;
 mod plain;
@@ -13,6 +14,7 @@ mod registry;
 mod shadow;
 mod values;
 
+use description::Description;
 use loops::{
     batch, envelope,
     json::Json,
@@ -71,6 +73,9 @@ usage: loops [-C <dir>] <verb> ...
   ls [--plain]                  list kinds and their record counts
   ls [--things | <prefix>] [--fields a,b,c] [--plain]
                                 list things by literal prefix or project their live fields
+                                --plain on ls, of, read and fold uses the working store's optional
+                                .loops/store.json (version 1) for headlines. A kind prefix also
+                                selects preview columns unless --fields is supplied. JSON ignores this file.
   get <id>                      one record
   of <thing> [--plain]          a thing's values, each key's from its live
                                 setters; its about, its heads, and how many
@@ -625,7 +630,8 @@ fn of(ctx: &Context<'_>, args: &[String], format: Format) -> Result<(), Fail> {
     let [thing] = args else {
         return Err(usage("of takes one thing"));
     };
-    let held = ctx.store()?.read()?;
+    let store = ctx.store()?;
+    let held = store.read()?;
     let thing = if loops::envelope::typed_ref(thing) && !thing.starts_with("r:") {
         thing.clone()
     } else {
@@ -641,7 +647,9 @@ fn of(ctx: &Context<'_>, args: &[String], format: Format) -> Result<(), Fail> {
     let state = loops::live::LiveState::new(records);
     let heads = state.heads();
     if format == Format::Plain {
-        return answered(&held, say(&plain::thing(&held, &thing, n, &state, &heads)?));
+        let desc = Description::load(store.dir.root())?;
+        let output = plain::thing(&held, &thing, n, &state, &heads, desc.as_ref())?;
+        return answered(&held, say(&output));
     }
     let mut members = vec![
         ("thing", text(&thing)),
@@ -659,11 +667,17 @@ fn parse_spec(spec: &str) -> Result<Spec, Fail> {
     let json = loops_eval::parse_json(spec).map_err(|e| refused(format!("spec-not-json: {e}")))?;
     Spec::of_json(&json).map_err(|e| refused(format!("{} at {}", e.code(), e.path)))
 }
-fn fold_answer(held: &Held, spec: &Spec, view: View, format: Format) -> Result<(), Fail> {
+fn fold_answer(
+    held: &Held,
+    spec: &Spec,
+    view: View,
+    format: Format,
+    desc: Option<&Description>,
+) -> Result<(), Fail> {
     let admitted = realm(held);
     let result = spec.run_admitted(&admitted);
     if format == Format::Plain {
-        return say(&plain::fold(held, &admitted, result, view)?);
+        return say(&plain::fold(held, &admitted, result, view, desc)?);
     }
     let slots = loops_eval::slots_json(result);
     match view {
@@ -685,31 +699,36 @@ fn fold(ctx: Context<'_>, args: &[String], format: Format, input: SpecInput) -> 
     } else {
         View::Values
     };
+    // A fold may have named sources but no working store at its origin.
+    let working_dir = match (&ctx.destination, &input, format) {
+        (_, SpecInput::File, Format::Json) => None,
+        (Destination::Named(store, _), ..) => Some(store.dir.root().to_owned()),
+        (Destination::Origin(_), ..) => current_root(&start).map(|root| root.join(".loops")),
+    };
     let raw = match (input, operands.as_slice()) {
         (SpecInput::File, [file]) => spec_file(&start, file)?,
         (SpecInput::Vertex, [vertex]) => {
             if !vertex_name(vertex) {
                 return Err(usage("a vertex name is a file name without its .json"));
             }
-            let root = match &ctx.destination {
-                Destination::Named(store, _) => store.dir.root().to_owned(),
-                Destination::Origin(_) => current_root(&start)
-                    .ok_or_else(|| no_store(&start))?
-                    .join(".loops"),
-            };
-            vertex_text(&root, vertex)?
+            let root = working_dir.as_deref().ok_or_else(|| no_store(&start))?;
+            vertex_text(root, vertex)?
         }
         (SpecInput::File, _) => return Err(usage("fold takes one spec file, or - for stdin")),
         (SpecInput::Vertex, _) => return Err(usage("read takes one vertex name")),
     };
     let spec = parse_spec(&raw)?;
+    let desc = match (format, working_dir) {
+        (Format::Plain, Some(dir)) => Description::load(&dir)?,
+        _ => None,
+    };
     let (held, dirty) = match ctx.destination {
         Destination::Origin(overrides) => {
             registry::Registry::load(&start, overrides)?.read(&spec, None)?
         }
         Destination::Named(store, names) => names.read(&spec, Some(&store))?,
     };
-    let answer = fold_answer(&held, &spec, view, format);
+    let answer = fold_answer(&held, &spec, view, format, desc.as_ref());
     finish_answer(
         answer,
         unclean(&held).map(|why| format!("{why} (stores: {})", dirty.join(", "))),

@@ -2,6 +2,7 @@
 use super::{Prefixes, headline, keyed_fields, label, now, relative, text, value};
 use crate::{
     Fail,
+    description::Description,
     values::{Fields, View, records_by_thing, shown_name, thing_about},
 };
 use loops::{
@@ -21,6 +22,7 @@ struct Reading<'a> {
     ids: Prefixes<'a>,
     things: OnceCell<HashMap<String, Vec<&'a Record>>>,
     view: View,
+    description: Option<&'a Description>,
     clock: Option<Moment>,
 }
 
@@ -191,9 +193,10 @@ impl Reading<'_> {
                     let state = LiveState::new(records.clone());
                     write!(out, "\n  thing  {}", text(self.ids.short(&name)))
                         .expect("write string");
-                    if self.view == View::Ids {
-                        let name = Fields::new(self.held, &state).read("name");
-                        write!(out, "  {}", headline(&name)).expect("write string");
+                    let fields = Fields::new(self.held, &state);
+                    let configured = self.description.and_then(|d| d.headline(&state.heads()));
+                    if let Some(field) = configured.or((self.view == View::Ids).then_some("name")) {
+                        write!(out, "  {}", headline(&fields.read(field))).expect("write string");
                     }
                     out.push_str("\n    heads");
                     self.records(out, "      ", &view.heads, Detail::Envelope)?;
@@ -205,7 +208,7 @@ impl Reading<'_> {
                     self.records(out, "      ", &view.whole, Detail::Id)?;
                     if self.view == View::Values {
                         out.push_str("\n    fields");
-                        keyed_fields(out, self.held, &state, "    ");
+                        keyed_fields(out, &fields, &state, "    ");
                         write!(
                             out,
                             "\n    about  {}",
@@ -227,6 +230,7 @@ pub(crate) fn fold(
     realm: &[Record],
     slots: Vec<(String, SlotValue)>,
     view: View,
+    description: Option<&Description>,
 ) -> Result<String, Fail> {
     if slots.is_empty() {
         return Ok("no slots".into());
@@ -237,6 +241,7 @@ pub(crate) fn fold(
         ids: Prefixes::new(held),
         things: OnceCell::new(),
         view,
+        description,
         clock: None,
     };
     let mut out = String::new();

@@ -4,7 +4,9 @@ mod json_syntax;
 pub(crate) use fold::fold;
 
 use crate::{
-    Fail, usage,
+    Fail,
+    description::Description,
+    usage,
     values::{Field, Fields, member, thing_about},
 };
 use loops::{
@@ -194,14 +196,16 @@ pub(crate) fn thing(
     records: usize,
     state: &LiveState<'_>,
     heads: &[Record],
+    desc: Option<&Description>,
 ) -> Result<String, Fail> {
     let now = now()?;
-    let mut out = format!(
-        "thing  {}\nrecords  {records}\nheads  {}",
-        label(name),
-        heads.len()
-    );
-    keyed_fields(&mut out, held, state, "");
+    let mut out = format!("thing  {}", label(name));
+    let fields = Fields::new(held, state);
+    if let Some(key) = desc.and_then(|d| d.headline(heads)) {
+        write!(out, "  {}", headline(&fields.read(key))).expect("write string");
+    }
+    write!(out, "\nrecords  {records}\nheads  {}", heads.len()).expect("write string");
+    keyed_fields(&mut out, &fields, state, "");
     write!(
         out,
         "\nabout  {}",
@@ -222,8 +226,7 @@ pub(crate) fn thing(
 }
 
 /// Field state is read identically in the thing and keyed fold views.
-fn keyed_fields(out: &mut String, held: &Held, state: &LiveState<'_>, indent: &str) {
-    let fields = Fields::new(held, state);
+fn keyed_fields(out: &mut String, fields: &Fields<'_, '_>, state: &LiveState<'_>, indent: &str) {
     for k in &fields.names {
         write!(out, "\n{indent}  {}  {}", label(k), field(&fields.read(k))).expect("write string");
     }
