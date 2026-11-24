@@ -277,7 +277,7 @@ In row 2 a run's own `run` field (247 values, each naming its own thing) is left
 5. **A bare key only by row 2,** for a kind and field the map names. That a thing of that name exists is not proof: `provider=cloud` may be prose.
 6. **The same rewrite in the check and in the write,** pinned in the journal under a new version. It goes into fresh stores only. A store imported before does not take it on.
 
-**What it costs.** A rewritten payload is a different record, so every record of the six homelab stores gets a new id, and the stores are imported afresh. One record has been written across the six since the import of 2026-11-24, and it is written again by hand. This is what [the adoption note](notes/2026-11-22-adoption.md) said a later change would cost, and today is the cheap day for it. It amends AD2, under which the import keeps every payload untouched. AD4 made the first exception when it took out `ref` and the twins.
+**What it costs.** A rewritten payload is a different record, so every record of the six homelab stores gets a new id, and the stores are imported afresh. The six are cut over, so it is a second cutover: the fresh stores take the place of the live ones, which are kept aside as the first import's were. One record has been written across the six since the import, and it is written again by hand, with its `prev` taken from the new ids. This is what [the adoption note](notes/2026-11-22-adoption.md) said a later change would cost, and today is the cheap day for it. It amends AD2, under which the import keeps every payload untouched. AD4 made the first exception when it took out `ref` and the twins.
 
 **If you rule against row 1,** SD4 and the SD2 check read both forms, and `describe` counts each.
 
