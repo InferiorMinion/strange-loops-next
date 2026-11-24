@@ -190,6 +190,73 @@ impl Registry {
     }
 }
 
+pub(crate) enum Selection {
+    Names(Vec<String>),
+    Group,
+}
+
+pub(crate) struct SelectedStore {
+    pub(crate) directory: PathBuf,
+    pub(crate) store: Store,
+}
+
+/// Resolve the whole selection before any caller reads a description or segment.
+pub(crate) fn selected(
+    origin: &Path,
+    overrides: Bindings,
+    selection: &Selection,
+) -> Result<Vec<SelectedStore>, Fail> {
+    let registry;
+    let names: Vec<_> = match selection {
+        Selection::Names(names) if names.is_empty() => {
+            let store = crate::find_store(origin)?;
+            let directory = store
+                .dir
+                .root()
+                .parent()
+                .expect("opened .loops directory")
+                .to_owned();
+            return Ok(vec![SelectedStore { directory, store }]);
+        }
+        Selection::Names(names) => {
+            registry = Registry::load(origin, overrides)?;
+            names.iter().map(String::as_str).collect()
+        }
+        Selection::Group => {
+            // Every group member has a local or command binding.
+            registry = Registry::from_lists(origin, None, overrides)?;
+            let local = registry
+                .local
+                .as_ref()
+                .ok_or_else(|| usage("--group needs a local stores.json"))?;
+            let mut members: Vec<_> = local.keys().map(String::as_str).collect();
+            members.sort_by(|a, b| loops::json::str_cmp(a, b));
+            members
+        }
+    };
+    registry
+        .stores(names.into_iter(), None)?
+        .into_values()
+        .map(|(store, aliases)| {
+            // Store directories may themselves be symlinks, or two distinct
+            // directories may link .loops to the same data. Report one real
+            // selected directory, independently of the order of the selectors.
+            let mut directories = Vec::new();
+            for name in aliases {
+                let binding = registry.binding(name)?;
+                directories.push(
+                    binding
+                        .directory
+                        .canonicalize()
+                        .map_err(|e| binding.error(name, &e))?,
+                );
+            }
+            let directory = directories.into_iter().min().expect("one or more aliases");
+            Ok(SelectedStore { directory, store })
+        })
+        .collect()
+}
+
 impl Binding {
     pub(crate) fn resolve_directory(&mut self, origin: &Path) {
         self.directory = origin.join(&self.directory);

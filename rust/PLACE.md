@@ -29,6 +29,7 @@ loops ls [--things | <prefix>] [--fields a,b,c] [--plain]
                                     list things or project their live fields
 loops ls <kind>:<prefix> --active [--fields a,b,c] [--plain]
                                     hide things with a single live closed status
+loops describe [--plain]            declarations and fit for the current store, named stores or local group
 loops get <id>                      one record
 loops of <thing> [--plain]          a thing's values, its about, its heads, how many records are of it
 loops read <vertex> [--store <name>=<dir>]... [--values] [--plain]
@@ -997,9 +998,9 @@ Every verb that reads the store says when either happened (choice 18).
 33. **Select the working store by name.** Use `loops --in yard ls kiln:`
     to read the store bound to `yard`. A single leading `--in <name>` selects
     the store for `emit`, `erase`, `tick`, `import`, `get`, `of`, `export`,
-    `check`, `ls`, `read` and `fold`. The CLI reports a usage error for a
-    repeated selector, for `--group`, or for a selector on `init`, `whoami`,
-    `shadow-import`, help or version.
+    `check`, `ls`, `read` and `fold`. Those verbs reject a repeated selector
+    and `--group`. Only `describe` accepts several working stores (choice 36).
+    `init`, `whoami`, `shadow-import`, help and version reject store selectors.
 
     The origin is the starting directory or the directory selected by `-C`.
     Resolve names once using choice 30's user list, first local list and
@@ -1039,7 +1040,8 @@ Every verb that reads the store says when either happened (choice 18).
     | `lifecycle` | An object with required nonempty text `field` and optional `active` and `closed` arrays of distinct strings. Each omitted list defaults to empty. |
     | `preview`, `search` | Ordered arrays of distinct nonempty payload field names. |
 
-    Plain `ls`, `of`, `read` and `fold`, and JSON `ls --active`, load this file. Each validates
+    Plain `ls`, `of`, `read` and `fold`, JSON `ls --active`, and `describe`
+    load this file. Each validates
     the whole working store's description once. With `--in`, this is the
     selected store. A plain fold outside any working store uses its ordinary
     defaults. A source in a spec supplies records only, including when a
@@ -1080,6 +1082,50 @@ Every verb that reads the store says when either happened (choice 18).
     the closed values in their declared order, including for an empty result.
     `--fields` selects columns independently. With `--in`, both the rows
     and the rule come from the selected store.
+
+36. **Describe the selected stores.** `loops describe` reports on the current
+    store. `loops --in workshop --in yard describe` selects named stores.
+    `loops --group describe` selects exactly the names in the first local
+    list from choice 30. Command bindings can redirect those names. The
+    group's membership and lookup do not need the user list. A missing local
+    list gives usage error 2. An empty local list gives `{"stores":[]}` or,
+    with `--plain`, `stores  0`. Combining the two selection modes is a
+    usage error. All selected stores must open before any description or
+    segment is read. Aliases of one physical `.loops` count once. If distinct
+    selected working directories link to the same data, report the first of
+    their canonical paths in filesystem path order.
+
+    Each entry of `stores` gives a canonical store directory, its validated
+    `description` as supplied (or `null`), and `fit` keyed by kind. Plain
+    output prints the description, fit and reference tables in that order.
+    Settlement and admission happen once over the union. A store reports a
+    thing if it holds an admitted record of that thing. Count the thing once
+    for each distinct current head kind, using that store's own declarations.
+    Two stores can both report the same thing. A declared kind can have zero
+    things. An observed undeclared kind has `declared:false`.
+
+    A string key gives six exclusive buckets. Count a root-ID thing in
+    `keyless_roots` throughout its revisions. Compare the live field of a
+    natural key with the entire suffix after its first colon. A non-text
+    value counts as `different`. The remaining buckets are `equal`, `unset`,
+    `conflict` and `not_read`. For lifecycle, count things by their unset,
+    conflicting or unread field state. Also list every readable live setter's
+    value outside both lists in a histogram of typed `{value,count}` rows,
+    including readable values on competing setters. An inapplicable key or
+    lifecycle is `null`.
+
+    For each declared reference field, count a scalar once or each immediate
+    list member once per distinct live setter. Preserve repeats. A missing
+    member and an empty list supply zero occurrences. A hidden setter supplies
+    one `not_read`. Classify readable occurrences by their written form.
+    A typed target held in this store counts in `held_here`. Other typed targets count
+    in `held_elsewhere_in_group` or `not_in_group` according to residence.
+    A target's residence requires an admitted record of it. Other values,
+    including nested lists and objects, count as `not_typed`. Independently,
+    `without_mention` counts typed occurrences absent from the union of current
+    heads' mentions. These observations leave the command successful. An
+    unclean store retains the checked-lines answer and the existing integrity
+    refusal, naming the affected store directories.
 
 ## Checked by
 
