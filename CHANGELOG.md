@@ -10,10 +10,23 @@ The record starts where the old roadmap's did. For anything earlier, and for eve
 ## 2026-11-24
 
 In brief:
+- Built: `--in <name>`, a store by name on every verb that takes one; and the import's recipe for a payload, with no change to what it writes.
 - The build of the rulings is planned and begun, and BP1 is put to Kyle: nine narrow cases the plan found open, each with a recommendation.
 - **Kyle rules SD1 to SD4 and AD5, each as recommended.** A store describes its kinds in a plain file that refuses nothing; `emit` stops on a key slip; reference fields are described and not copied into `about`; `ls --refers-to` reads them; the import writes a reference as `kind:key`, and the homelab will be imported afresh. Nothing is built yet.
 - SD1 to SD3 are put to Kyle: what a store says about its kinds. A plain `.loops/store.json` that describes each kind and refuses nothing (SD1); `emit` stopping before it signs a write that contradicts a declared key (SD2); and whether reference fields are copied into `about`, where an erasure does not reach them (SD3: recommended, describe them and copy nothing). Nothing is built.
 - SD4 and AD5 are put to Kyle, later the same day: a read of everything that refers to a thing, taken from the declared reference fields (SD4); and the import writing a reference field as `kind:key` where the old store proves it, which means importing the homelab afresh (AD5). Nothing is built.
+
+### Built: a store by name, and the import's recipe
+
+The first two pieces of the plan. Codex workers wrote both; the coordinator read each diff, ran the gate, and made the checks named.
+
+- **`--in <name>` on every verb that takes one store** (plan piece 1): `emit`, `erase`, `tick`, `import`, `get`, `of`, `export`, `check`, `ls`, `read` and `fold`, as [the store descriptions note](notes/2026-11-23-store-descriptions.md#3-a-store-found-by-name-on-every-verb) settles it. `--store name=dir` is taken before the verb too. A write through `--in` says on standard error the name, the directory and what bound it. `init`, `whoami` and `shadow-import` refuse `--in`. `--group` and a second `--in` are usage errors for now; the reads that take several stores come with `describe` and `ls --refers-to`. Tried by hand on a group laid out as the homelab's is, where the first proposal failed: `loops --in audit fold q.json`, with a relative spec that also names a second store, answers.
+- **The shadow import carries one recipe** for what it does to a payload (plan piece 8), applied wherever it makes one: the root ids, the prospective ids and `sets`, the check and the write. It only removes the old reference fields, as before, and can hold a replacement that nothing produces yet. Every signed byte is as it was. The check-only report of the new binary equals the old one's, byte for byte, on a private group of six stores (3,817 facts).
+
+**Implementer choices; they stand under W7.**
+- The notice of a named write is printed as soon as the store is opened, so it also appears before a write that then fails its own checks.
+- A flag after the verb is the verb's: `emit asset --in yard` is a usage error and does not select a store.
+- The usage text keeps its first line and gains a second for the leading options.
 
 ### The build plan, and BP1 is put
 
