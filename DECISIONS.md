@@ -8,13 +8,15 @@ Everything that waits on Kyle, in one place. Each entry has the question, an exa
 - "Today" in an example means the `loops` binary built from main on 2026-11-21. Every "today" answer below was run, not predicted.
 ## At a glance
 
-Three questions wait on a ruling: SD1 to SD3, on what a store says about its kinds. One more is [being prepared](#being-prepared).
+Five questions wait on a ruling. SD1 to SD3 are on what a store says about its kinds. SD4 and AD5, put later the same day, are on reading and writing references after an import. One more is [being prepared](#being-prepared).
 
 | | Question | Recommended |
 | --- | --- | --- |
 | [SD1](#sd1-a-store-describes-its-kinds-in-a-file-and-enforces-nothing) | Does a store describe its kinds in a plain file that the CLI uses and no read depends on? | A: `.loops/store.json` now, records at step 3 |
 | [SD2](#sd2-a-write-that-contradicts-the-declared-key) | What does `emit` do when a write contradicts a kind's declared key? | A: stop before signing, and name the ways out |
 | [SD3](#sd3-reference-fields-copied-into-about-and-erasure) | Does `emit` copy a declared reference field's value into `about`, where erasure cannot reach it? | C: describe reference fields, copy nothing in v1 |
+| [SD4](#sd4-a-read-of-everything-that-refers-to-a-thing) | Under C, how does a reader ask what refers to a thing, across kinds? | A: `loops ls --refers-to`, reading the declared reference fields as a fold does |
+| [AD5](#ad5-one-written-form-for-a-reference-set-at-the-import) | Does the import write a reference field as `kind:key`, the one form everything else uses? | Yes, where the old store proves it, in three rows; the homelab is imported afresh |
 
 Every earlier entry is ruled.
 
@@ -22,7 +24,7 @@ Every earlier entry is ruled.
 - The order of work, W1 to W6, and W3b, the look at the JavaScript after ticks: ruled. The entries as put are in [the order-of-work note](notes/2026-11-21-order-of-work.md).
 - The adoption step, AD1 to AD4: ruled on 2026-11-23. AD1 and AD2 each for its recommendation with additions, AD3 for its recommendation in both rows, AD4 for rows 1 to 3 with row 4 the other way and a rule for old ids. The entries as put, and the additions, are in [the adoption note](notes/2026-11-22-adoption.md).
 
-After the three entries: [what is being prepared](#being-prepared), [what you deferred](#deferred-by-you) and [what is ruled](#ruled). Nothing waits to be confirmed: under your ruling of 2026-11-21 an implementer choice comes here only when it changes bytes or answers.
+After the five entries: [what is being prepared](#being-prepared), [what you deferred](#deferred-by-you) and [what is ruled](#ruled). Nothing waits to be confirmed: under your ruling of 2026-11-21 an implementer choice comes here only when it changes bytes or answers.
 
 ## What a store says about its kinds
 
@@ -187,6 +189,97 @@ And every reference value in the live stores is still in the imported `kind/key`
 **What comes with C.** `--add-about` and `--drop-about` ([the note](notes/2026-11-23-store-descriptions.md#4-who-wrote-it-and-the---about-hazard), section 4), which are CLI only and need no ruling. They keep a hand mention through later revisions.
 
 **When copying comes back.** As its own entry, once a reader needs what the field cannot give: one fold of everything that mentions a thing, across kinds. It would be for each field that asks (B), and it would come with a check that a move removes the old copy, not only that a copy never misses.
+
+## After the import: reading and writing references
+
+**Where these come from.** On 2026-11-24, after SD1 to SD3 were put, Kyle trialled the import on a second, private group of stores. Nothing from it is quoted here. It showed what the homelab had hidden: under SD3's option C the mentions are complete on the day of the import and wrong soon after. The same four went through that in the room. Two questions came out. SD4 is a read. AD5 changes what the import writes, and so every imported record's id.
+
+One thing needs no ruling and should follow SD1 to SD3 directly: a store found by name on every verb ([the note](notes/2026-11-23-store-descriptions.md#3-a-store-found-by-name-on-every-verb), section 3). In the private group a large share of references name a thing held in another store of the group, so a read by reference and `describe` both have to read the group.
+
+## SD4: a read of everything that refers to a thing
+
+**Question.** Under SD3's option C nothing copies a reference into `about`. How does a reader then ask "what refers to this thing", across kinds and fields?
+
+**Example, run on today's binary** in a scratch store. A service is written with its mention, then moved without one:
+
+```
+$ loops emit service --of service:jellyfin name=jellyfin runs_on=asset:vm/media --about asset:vm/media "media server"
+$ loops emit service --of service:jellyfin runs_on=asset:vm/apps "moved to the apps VM"
+$ loops export --about asset:vm/apps | wc -l
+0
+$ loops export --about asset:vm/media | wc -l
+2
+$ loops fold on-apps.json --plain          (where runs_on is asset:vm/apps, follow keys)
+  thing  service:jellyfin  jellyfin
+```
+
+The mention still says the media VM, because a write with no `--about` copies the heads' mentions (your ruling of 2026-11-14). The field says the apps VM, and the fold on the field is right. This is not SD3's doing; it is true today.
+
+The import mentions every reference that the old tool recorded with an id: in the six homelab stores, 8,177 of 8,186 such live values are mentioned (margins-claude). From the first write after the cutover a mention is there only if the writer typed it, and a move leaves the old one unless the writer drops it. The homelab has reference fields in a handful of kinds. The private group has them in many more.
+
+**Options.**
+
+| | A reader asks | Cost |
+| --- | --- | --- |
+| **A (recommended)** | `loops ls --refers-to <thing>` (the spelling is open). It takes each kind's reference fields from `refs` in the description, and asks of each the test a fold's `where` asks with `is`. It lists the things for which a field answers yes. | The answer depends on the file: a field that is not declared is not read. So the output states the stores read, the fields read for each kind, and three counts beside the list. |
+| B | Nothing new. A fold on the field, one spec for each kind and field, as today. | No one read across kinds. Each reader keeps its own list of reference fields. |
+| C | Copying comes back for the fields that ask (SD3's option B). | SD3's costs, for those fields. |
+
+**What A answers, exactly.** These were settled by histories Astra ran on today's binary (15 of them), and they are [the spec](protocol/spec.md) as written, not a new rule.
+
+- **Each field answers yes, no or unknown,** as `where` does: yes when every live setter of the field holds the target, unknown when the setters differ or one is erased or withheld. Run on today's binary: one service, `runs_on` moved by two writers apart, to `asset:vm/a` and to `asset:vm/b`. A fold with `is asset:vm/a` lists nothing and says "1 not read", and so does `is asset:vm/b`. `--refers-to` says the same: it does not list a thing because one setter holds the target.
+- **Across a kind's fields: any yes lists the thing.** Otherwise any unknown counts it once as not read. Otherwise it is not listed.
+- **The value is matched as written:** the whole text equal to `kind:key`, or a member of a list. No comma text is split, and no kind is guessed for a bare key.
+- **Across stores, the records are put together first,** and read after. Read store by store, a thing whose later record is in another store would keep its old target.
+- **Three counts go with the list:** things not read; values in the fields read that are not written `kind:key`; and the fields read. A "no" is only as good as these. In the audit store 434 live values in reference fields are a bare key and would answer no.
+
+**What A does not change.** No record, fold, tick or law. `about` stays what writers state. The two then have separate jobs: a reference field is live, has a role, and can be erased; a mention is permanent and has no role.
+
+**In `describe`.** A reference's target is counted as held here, held in the group, or not in the group. None of these is a fault. A value that names nothing is "not typed", and is counted apart from a value that could not be read.
+
+**One choice inside A.** When two stores of a group describe the same kind with different `refs`, A reads the union of the fields. Adding a store can then make a field in another store take part, so the output says which description named each field.
+
+## AD5: one written form for a reference, set at the import
+
+**Question.** The import keeps a reference field as the old tool wrote it, `runs_on: asset/vm/media`. Everything written since uses `asset:vm/media`: `of`, `about`, and the field form you ruled in E1. Does the import write the one form?
+
+**Example, run on today's binary** on the live audit store, where 58 things run on the media VM:
+
+```
+$ loops fold on-media.json --plain         (where runs_on is asset:vm/media)
+q  —
+$ loops fold on-media-old.json --plain     (where runs_on is asset/vm/media)
+(58 things listed)
+```
+
+A reader has to know to ask in the old form. Every reference value the import kept is in it: 13,854 facts in the six stores, none in the new form. The old form cannot be read back reliably: 5,186 of the 6,438 named things have a slash in their key, so `asset/vm/media` is `asset:vm/media` only by a rule that the first slash ends the kind. Neon confirms it was never kept on purpose. The private group is already in the new form throughout.
+
+The old tool wrote the proof beside each value. `runs_on_ref` held the id of the fact referred to, and the import already resolves that id to a thing. In all 13,854 facts the field names the thing its twin resolves to, as the whole value, byte for byte (counted separately by Neon and by margins-claude).
+
+**The three rows.**
+
+| Row | Question | Recommended | The other way |
+| --- | --- | --- | --- |
+| 1 | A field whose twin resolves to the thing the field names | **The import writes the thing's name, `kind:key`.** Where they disagree it changes nothing and counts it. It never reads a slash as a separator. | (b) One revision for each thing after the import: no ruling needed, but the script becomes the live setter of every such field, and history keeps both forms. (c) Leave it: every reader accepts both forms for good. |
+| 2 | Five fields that hold a bare key, written without a twin by a slip in the old tool: a thread's `run` and `gap`, a finding's `run`, a baseline's `gap` and `finding` | **The group's map names the target kind for each of the five, and the import writes `kind:key` where that thing was imported.** 586 values. The 75 that name nothing imported stay as they are and are counted. | (b) By hand, 586 revisions. (c) Leave them: SD4 answers no for them, and `describe` counts them as not typed. |
+| 3 | A field whose twin holds several ids, written as comma text | **A list**, `["asset:a","asset:b"]`, where a reviewed encoding and every part agree. | Comma text stays. `is asset:a` then never matches it, today and under SD4. |
+
+Row 3 has no case in the homelab: every twin beside its field holds one id. It matters for the private group. It also changes an answer: today `is` matches comma text only as a whole, and matches a list by member ([PV4](notes/2026-11-21-payload-values.md#pv4-a-list-reads-as-a-set-under-is-and-not)). Neon and the coordinator recommend the list, as E1 has it for a set one observer states. Astra and margins-claude agree it is yours because the answer changes.
+
+In row 2 a run's own `run` field (247 values, each naming its own thing) is left out: it is the key written twice, not a reference.
+
+**The bounds, all Astra's, agreed by the four.** Field and twin agreeing is needed and is not enough.
+
+1. **Never a kind's key field.** A `name` with a `name_ref` beside it would become a different key, and the import would have renamed a thing. The homelab has no such pair.
+2. **Decided from the fact's own field and twin,** before anything is cleaned, with the group's rules for a target that is ambiguous or left out. A field is rewritten whole or not at all, and each field left alone is counted with its reason.
+3. **The whole value is compared** with the resolved thing's name. A key may hold a comma, so nothing is split to find a single target.
+4. **A list only by row 3.**
+5. **A bare key only by row 2,** for a kind and field the map names. That a thing of that name exists is not proof: `provider=cloud` may be prose.
+6. **The same rewrite in the check and in the write,** pinned in the journal under a new version. It goes into fresh stores only. A store imported before does not take it on.
+
+**What it costs.** A rewritten payload is a different record, so every record of the six homelab stores gets a new id, and the stores are imported afresh. One record has been written across the six since the import of 2026-11-24, and it is written again by hand. This is what [the adoption note](notes/2026-11-22-adoption.md) said a later change would cost, and today is the cheap day for it. It amends AD2, under which the import keeps every payload untouched. AD4 made the first exception when it took out `ref` and the twins.
+
+**If you rule against row 1,** SD4 and the SD2 check read both forms, and `describe` counts each.
 
 ## Being prepared
 
