@@ -196,7 +196,7 @@ header.top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--g
 <a href="note-2026-11-21-tick-record.html">Step 4: the tick record, design note</a>
 <a href="note-2026-11-22-adoption.html">The adoption step: AD1 to AD4</a>
 <a href="note-2026-11-23-store-descriptions.html">Store descriptions: what the first two conversions asked for</a>
-<a href="note-2026-11-24-kinds-and-references.html">What a store says about its kinds, and references after an import: SD1 to SD4 and AD5</a>
+<a href="note-2026-11-24-kinds-and-references.html">What a store says about its kinds, and references after an import: SD1 to SD4, AD5 and BP1</a>
 <a href="note-retained-boundaries.html">Retained boundaries</a></nav>
 <p class="source">Rendered from <code>CHANGELOG.md</code> in the repository.</p>
 <details class="contents"><summary>On this page</summary>
@@ -222,11 +222,20 @@ The record starts where the old roadmap's did. For anything earlier, and for eve
 <p>In brief:</p>
 <ul>
 <li><p>Built: <code>--in &lt;name&gt;</code>, a store by name on every verb that takes one; <code>.loops/store.json</code> read and used by the plain views; <code>ls --active</code>; <code>loops describe</code>, with <code>--group</code>; and the import's recipe for a payload, with no change to what it writes.</p></li>
+<li><p><strong>Kyle rules BP1:</strong> what was entered is accepted strictly; two rows go the other way from the recommendation.</p></li>
 <li><p>The build of the rulings is planned and begun, and BP1 is put to Kyle: nine narrow cases the plan found open, each with a recommendation.</p></li>
 <li><p><strong>Kyle rules SD1 to SD4 and AD5, each as recommended.</strong> A store describes its kinds in a plain file that refuses nothing; <code>emit</code> stops on a key slip; reference fields are described and not copied into <code>about</code>; <code>ls --refers-to</code> reads them; the import writes a reference as <code>kind:key</code>, and the homelab will be imported afresh. Nothing is built yet.</p></li>
 <li><p>SD1 to SD3 are put to Kyle: what a store says about its kinds. A plain <code>.loops/store.json</code> that describes each kind and refuses nothing (SD1); <code>emit</code> stopping before it signs a write that contradicts a declared key (SD2); and whether reference fields are copied into <code>about</code>, where an erasure does not reach them (SD3: recommended, describe them and copy nothing). Nothing is built.</p></li>
 <li><p>SD4 and AD5 are put to Kyle, later the same day: a read of everything that refers to a thing, taken from the declared reference fields (SD4); and the import writing a reference field as <code>kind:key</code> where the old store proves it, which means importing the homelab afresh (AD5). Nothing is built.</p></li>
 </ul>
+<h3 id="kyle-rules-bp1">Kyle rules BP1</h3>
+<p>Ruled in the coordinator's session on 2026-11-24, on one principle he stated: <strong>accept strictly what was entered, and do not infer or work round a likely error.</strong> The entry as put, with the ruling at its head, is at the end of <a href="note-2026-11-24-kinds-and-references.html#bp1-nine-narrow-cases-the-build-plan-found-open">the kinds and references note</a>.</p>
+<ul>
+<li><p><strong>As recommended:</strong> rows 1 to 4 (the kind and the thing's prefix may differ; a key that is not text stops the shorthand; a root that is meant keeps its payload; adding and dropping one mention is a usage error), row 6 with its option (a list from a literal comma, and from a comma and one space where the map reviews it for a field), rows 7 and 8, and row 9.</p></li>
+<li><p><strong>Row 5, the other way.</strong> A bare key beside a twin that resolves is left as entered and counted. The coordinator had recommended writing <code>kind:key</code>. The reference is not lost: AD4 already mentions what the twin resolves to. In the private group it is two fields, where most values are written in full and some are bare; they are to be corrected in the old store before it is exported. The import's check-only report is to count them.</p></li>
+<li><p><strong>Row 8b, the other way.</strong> The mention is cleared: the import mentions only what it repaired. Kyle's reason: where the field holds a proper reference, <code>ls --refers-to</code> finds it, and a mention adds nothing he needs.</p></li>
+</ul>
+<p>The rulings free pieces 3 and 4 (the <code>emit</code> shorthand and the mention flags) and pieces 9 and 10 (the import).</p>
 <h3 id="built-a-store-by-name-and-the-imports-recipe">Built: a store by name, and the import's recipe</h3>
 <p>The first two pieces of the plan. Codex workers wrote both; the coordinator read each diff, ran the gate, and made the checks named.</p>
 <ul>
@@ -250,7 +259,7 @@ The record starts where the old roadmap's did. For anything earlier, and for eve
 </ul>
 <h3 id="the-build-plan-and-bp1-is-put">The build plan, and BP1 is put</h3>
 <p>A Codex worker planned the build of the day's rulings in twelve parts and ten merge requests; the coordinator read it and keeps it with the briefs. It found nothing to change under <code>model/</code>, <code>vectors/</code>, <code>protocol/</code>, <code>interop/</code> or <code>design/</code>, and no refusal code to add. Two pieces are being built: a store by name on the verbs that take one store, and the import carrying a recipe for what it does to a payload, with no change to what it writes.</p>
-<p>The plan listed eight cases the rulings leave open that change a signed record or its id. They are put to Kyle as <a href="index.html#bp1-nine-narrow-cases-the-build-plan-found-open">BP1</a>, with a ninth from the coordinator: a bare key beside a twin that resolves. Read from outside before they were put: Astra kept a repeated key field as <code>member-duplicate</code> and exempted a root that is meant from the key's checks; all three asked for a second reviewed list encoding; margins-claude and Astra differ on one row, and both views are in it.</p>
+<p>The plan listed eight cases the rulings leave open that change a signed record or its id. They are put to Kyle as <a href="note-2026-11-24-kinds-and-references.html#bp1-nine-narrow-cases-the-build-plan-found-open">BP1</a>, with a ninth from the coordinator: a bare key beside a twin that resolves. Read from outside before they were put: Astra kept a repeated key field as <code>member-duplicate</code> and exempted a root that is meant from the key's checks; all three asked for a second reviewed list encoding; margins-claude and Astra differ on one row, and both views are in it.</p>
 <h3 id="kyle-rules-sd1-to-sd4-and-ad5">Kyle rules SD1 to SD4 and AD5</h3>
 <p>Ruled in the coordinator's session on 2026-11-24, each as recommended by the four who prepared them. The entries as put, with the ruling at the head of each, are in <a href="note-2026-11-24-kinds-and-references.html">the kinds and references note</a>. The sections below this one tell how they were arrived at.</p>
 <ul>
