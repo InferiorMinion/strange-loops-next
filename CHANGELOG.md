@@ -10,6 +10,7 @@ The record starts where the old roadmap's did. For anything earlier, and for eve
 ## 2026-11-23
 
 In brief:
+- The homelab repository is converted, waiting on Kyle's merges (gruel.network !9 to !11): its agents emit with the new tool into the live stores, the changelog page and the session-start hook read them, and CI pins the old stores as a frozen archive. The SRE agent's history search reads them too (committed in the workbench's bench). `estate.py` and `atlas_materialize.py` stay on the archive, at Kyle's word. The import left out 25 facts of kinds no vertex names, and Kyle kept that default.
 - `loops` is first on `PATH` on the workbench, and the six homelab stores are cut over: their shadows are the live stores and the old stores are the archive. Converting the homelab repository's writers and readers to the new tool is next. rex-chat names its store `.`, so the release binary on main is built again.
 - The six homelab stores are imported again under AD4, into fresh shadows: every thing reads as its export says, and every thing the old tool shows reads as the old tool shows it, references included. Next for adoption: the old tool's remaining callers, then `loops` first on `PATH`.
 - AD4 is built in the import: the old stores' references become mentions, the payload is cleaned of the fields they came from, and the journal pins only the vertex's kinds. On copies of the six homelab stores, 14,727 `*_ref` fields and 889 `ref` fields became mentions, and an independent reading of the rule agrees on every keyed thing. The comparison tool checks it against the exports and the old tool's own reading: on the six, every thing the old tool shows is equal, references included.
@@ -27,6 +28,26 @@ In brief:
 - `loops shadow-import` is built: it copies exported old stores into shadow stores, one signed record for each old fact, checks everything before it writes anything, and writes nothing on a second run. On a copy of four real stores it gave the old tool's reading for every thing held by one store.
 - The import's first two pieces are built: a script that exports an old store and its vertex to two text files, and the mapping of each old fact to a record, equal byte for byte to what `loops emit - --fill` writes. No verb yet.
 - The import has its plan. Two of its choices decide record ids and are put to Kyle as AD3: how a kind the vertex does not name is written when asked for, and how fine the old time is.
+
+### The homelab repository converted to the new tool
+
+At Kyle's word (2026-11-23: "a full cutover here on gruel.network"). Each piece is a merge request in gruel.network for him to merge, in order: writers (!9), the changelog (!10), the session-start hook (!11).
+
+- **Where the stores are.** `~/.local/share/loops/gruel.network/<store>` is a symlink to the cut-over shadows, so nothing moved and no live path says "shadow". Kyle chose it.
+- **Writers.** The repository's CLAUDE.md, its docs checklist skill and its agent-identity page emit with `loops -C <store> emit <kind> --of <kind>:<key> … --about observer:<name>`, with a table of each kind's key field taken from the old `.vertex` files. Kyle chose plain commands over a wrapper, so the friction stays visible. Every agent on the workbench signs with the one workbench key, so the author is named by an `observer:<name>` mention, as the import named the old observers. The SRE agent's instructions in the bench say the same.
+- **The archive is frozen in CI.** A test pins the SHA-256 of the six old `.db` files, in a job on every push and merge request. A stray `sl emit` in one of the coder agent's clones now fails CI.
+- **The changelog page.** `scripts/generate_changelog.py` folds each of the two stores once (`collect` over five kinds), and dates a record by `occurred`, else `emitted`. Regenerated from the live stores, the page is byte for byte the old one except one line (below). Its `--check` left CI, which cannot see the stores, for the repository's pre-commit hook, which runs where the stores are. Kyle chose that.
+- **The session-start hook** folds `homelab-coord` and `relay` with `latest-by: of` and `follow: keys`: open threads, then the newest few things of each kind. The new tool ranks nothing by salience, so "newest" stands in. Two old faults were fixed on the way. The hook's warnings were lost in a subshell, and the monitor read on infra had always exited 127, because `~/.local/bin` is not on a non-interactive SSH's `PATH`. The settings now run the hook by `$CLAUDE_PROJECT_DIR`, so it runs on the workbench at all.
+- **The SRE agent's history search** folds each store and matches every word in the payload and in the mentions. AD4 moved the old `ref` fields into mentions, so without the mentions four of 32 old matches for "disk full" were lost. It takes 0.35 s for three stores.
+- **Not converted, at Kyle's word:** `estate.py` and `atlas_materialize.py`, which read `homelab-audit`. Nothing has written that store since 2026-11-05, and the old tool reads the archive the same way. They move when an audit next writes it. The remote hosts and the Mac stay on the old tool for now.
+
+**25 facts the import left out.** The import's counts showed them all along (`unnamed_left_out: 25`), and the changelog was the first reader to miss one. Each is of a kind its store's vertex does not name: 15 relay observations filed into `homelab-coord`, a deploy filed into `relay`, a credential in `host-dev`, and others. AD2's addition (d) leaves such kinds out by default. A fresh import with `--include-unnamed`, tried on a copy, took 3 s, compared clean and gave the old changelog byte for byte. Swapping it in would have changed every record id, so it was possible only before the first new write. Kyle kept the default. The 25 stay in the archive, and the page loses one line, a credential whose deploy twin has the same message.
+
+**What adoption showed** (input for later, nothing to rule now):
+- Every write names its thing and repeats its key: `--of deploy:<slug> name=<slug>`. The key table in the repository's CLAUDE.md is the descriptive half of a store declaration, written by hand (see "Being prepared" in DECISIONS.md).
+- A stated `--about` replaces every earlier mention of the thing. An agent that names only itself on a revision drops the thing's mentions, and one that names none carries over the previous author's.
+- Imported records all carry the import's `emitted`. Every reader that orders by time has to read `occurred` first.
+- With no index or salience, readers fold whole stores and rank by time. That is fast enough at these sizes (under 2,000 records a store), and step 6 lists index and search.
 
 ### `loops` first on `PATH` on the workbench; the homelab stores cut over
 
