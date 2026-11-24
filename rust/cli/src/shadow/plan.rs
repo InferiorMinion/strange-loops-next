@@ -1,10 +1,12 @@
 //! Preflight the entire group using compact recipes pointing into frozen exports.
 //! Payloads and signed lines are materialized one bounded changeset at a time.
+pub(super) mod roots;
 use super::{
     Input, Point, Runtime, digest, event,
+    id_map::IdMap,
     journal::{Journal, Seed},
     mapping::{self, Fate, History, Unnamed},
-    mismatch,
+    mismatch, refs,
     report::{Counts, Report},
     source::{self, Fact},
 };
@@ -63,17 +65,11 @@ impl Identities {
             self.omitted.insert(old.to_owned(), fp);
         }
     }
-    fn parameters(
-        &mut self,
-        old: &str,
-        fp: String,
-        runtime: &Runtime,
-    ) -> Result<(&[u8], &str), Fail> {
-        let seed = match self.seeds.entry(old.to_owned()) {
-            std::collections::hash_map::Entry::Occupied(e) => e.into_mut(),
-            std::collections::hash_map::Entry::Vacant(e) => e.insert((runtime.seed)(old, fp)?),
-        };
-        Ok((&seed.salt, &seed.emitted))
+    fn seed(&mut self, old: &str, fingerprint: &str, runtime: &Runtime) -> Result<(), Fail> {
+        if let std::collections::hash_map::Entry::Vacant(entry) = self.seeds.entry(old.to_owned()) {
+            entry.insert((runtime.seed)(old, fingerprint.to_owned())?);
+        }
+        Ok(())
     }
     fn conflicts(&self, old: &str, fingerprint: &str) -> bool {
         self.fingerprint(old)
@@ -93,20 +89,20 @@ pub(super) struct Occurrence {
     coordinate: Vec<i64>,
     line: FactLine,
     fingerprint: String,
-    empty_observer: bool,
     pub fate: Fate,
+    root: Option<usize>,
+    fields: Vec<refs::Field>,
 }
 
 #[derive(Default)]
 pub(super) struct Index {
     copies: HashMap<String, Vec<Occurrence>>,
+    roots: Vec<(String, usize)>,
 }
 
 pub(super) struct Cut {
     file: File,
     arrivals: Vec<String>,
-    // Report complete fact lines before a scan error, as in the v1 streaming preflight.
-    summary: Result<source::Summary, Fail>,
     prefix: String,
     prefix_changed: bool,
 }
@@ -116,16 +112,23 @@ impl Index {
         inputs: &[Input],
         unnamed: Unnamed,
         journal: &Journal,
-    ) -> (Self, Vec<Result<Cut, Fail>>) {
+        report: &mut Report,
+    ) -> Result<(Self, Vec<Cut>), Fail> {
         let mut index = Self::default();
         let cuts = inputs
             .iter()
             .enumerate()
             .map(|(source, input)| {
-                index.collect_cut(source, input, unnamed, journal.cuts.get(&input.name))
+                index.collect_cut(
+                    source,
+                    input,
+                    unnamed,
+                    journal.cuts.get(&input.name),
+                    &mut report.sources[source].1,
+                )
             })
-            .collect();
-        (index, cuts)
+            .collect::<Result<_, _>>()?;
+        Ok((index, cuts))
     }
 
     fn collect_cut(
@@ -134,6 +137,7 @@ impl Index {
         input: &Input,
         unnamed: Unnamed,
         checkpoint: Option<&(usize, String)>,
+        counts: &mut Counts,
     ) -> Result<Cut, Fail> {
         let map = input.map.as_ref().map_err(refused)?;
         let file = File::open(&input.facts)?;
@@ -141,6 +145,10 @@ impl Index {
         let mut prefix = Vec::new();
         let mut prefix_changed = false;
         let summary = source::scan(BufReader::new(&file), map, |f| {
+            counts.add("facts_read", 1);
+            if f.observer.is_empty() {
+                counts.add("empty_observer", 1);
+            }
             prefix.extend_from_slice(&f.raw_digest);
             prefix = hash(&prefix);
             if checkpoint
@@ -150,10 +158,23 @@ impl Index {
             }
             let payload = f.parsed_payload();
             let fate = mapping::classify(map, unnamed, &f, payload.as_ref());
+            let root = match &fate {
+                Fate::Included(Ok(row)) if !matches!(row.target, mapping::Target::Keyed(_)) => {
+                    self.roots.push((f.id.clone(), i));
+                    Some(self.roots.len() - 1)
+                }
+                _ => None,
+            };
+            let fields = if matches!(fate, Fate::Included(Ok(_))) {
+                refs::Field::read(payload.as_ref().expect("included payload"), map)
+            } else {
+                Vec::new()
+            };
             let occurrence = Occurrence {
+                fields,
+                root,
                 source: i,
                 fingerprint: fingerprint(&f, payload),
-                empty_observer: f.observer.is_empty(),
                 fate,
                 coordinate: f.coordinate,
                 line: FactLine {
@@ -170,14 +191,35 @@ impl Index {
         .map_err(|e| match e {
             source::ScanError::Invalid(why) => refused(format!("{}: {why}", input.name)),
             source::ScanError::Io(e) => Fail::System(format!("{}: {e}", input.facts.display())),
-        });
+        })?;
+        counts.add(
+            "old_ticks_left_out",
+            usize::try_from(summary.ticks).map_err(super::invalid)?,
+        );
+        debug_assert_eq!(summary.facts, u64::try_from(arrivals.len()).expect("count"));
         Ok(Cut {
             file,
             arrivals,
-            summary,
             prefix: base32::base32(&prefix),
             prefix_changed,
         })
+    }
+
+    pub(super) fn seed(
+        &self,
+        cuts: &[Cut],
+        identities: &mut Identities,
+        runtime: &Runtime,
+    ) -> Result<(), Fail> {
+        for (source, cut) in cuts.iter().enumerate() {
+            for id in &cut.arrivals {
+                let row = self.occurrence(id, source);
+                if matches!(row.fate, Fate::Included(_)) {
+                    identities.seed(id, &row.fingerprint, runtime)?;
+                }
+            }
+        }
+        Ok(())
     }
 
     pub(super) fn occurrence(&self, old: &str, source: usize) -> &Occurrence {
@@ -201,6 +243,7 @@ struct Item {
     draft: batch::Draft,
     line: FactLine,
     prior: Option<usize>,
+    removed: HashSet<String>,
 }
 struct Chunk {
     items: Vec<Item>,
@@ -242,6 +285,7 @@ impl Plan {
                 old,
                 id: p.id,
                 draft,
+                removed: p.removed,
                 line: line.clone(),
                 prior,
             },
@@ -304,6 +348,7 @@ fn prepare(
     for item in &chunk.items {
         let mut d = item.draft.clone();
         d.payload = item.line.payload(file)?;
+        refs::clean(&mut d.payload, &item.removed);
         drafts.push(d);
     }
     let view = |id: &str| staged.get(id).cloned().or_else(|| held.writer_view(id));
@@ -360,16 +405,17 @@ pub(super) fn preflight(
     input: &Input,
     i: usize,
     index: &Index,
-    cut: Result<Cut, Fail>,
+    cut: Cut,
+    roots: &roots::Roots,
+    ids: &mut IdMap,
     key: &Key,
     j: &Journal,
     identities: &mut Identities,
-    runtime: &Runtime,
     report: &mut Report,
 ) -> Result<Plan, Fail> {
     let map = input.map.as_ref().map_err(refused)?;
     let held = read_destination(input, key, j, &mut report.sources[i].1)?;
-    let cut = cut?;
+
     let mut plan = Plan {
         held,
         file: cut.file,
@@ -382,13 +428,10 @@ pub(super) fn preflight(
     let mut matched = 0;
     let checkpoint = j.cuts.get(&input.name);
     let mut drift = cut.prefix_changed;
-    let mut system = None;
+
     for old in cut.arrivals {
         let row = index.occurrence(&old, i);
-        report.sources[i].1.add("facts_read", 1);
-        if row.empty_observer {
-            report.sources[i].1.add("empty_observer", 1);
-        }
+        ids.seen(&old);
         let local = prior.and_then(|p| p.get(&old));
         if local.is_some() {
             matched += 1;
@@ -411,13 +454,7 @@ pub(super) fn preflight(
             }
             Fate::Included(result) => result,
         };
-        let (salt, time) = match identities.parameters(&old, row.fingerprint.clone(), runtime) {
-            Ok(pair) => pair,
-            Err(error) => {
-                system = Some(error);
-                continue;
-            }
-        };
+        let seed = &identities.seeds[&old];
         let included = match classification {
             Ok(included) => included,
             Err(e) => {
@@ -426,13 +463,19 @@ pub(super) fn preflight(
             }
         };
         let payload = row.line.payload(&mut plan.file)?;
-        match history.prepare_included(included, payload, key, salt, time) {
+        let own = match &included.target {
+            mapping::Target::Keyed(name) => Some(name.as_str()),
+            _ => None,
+        };
+        let changes = roots.changes(index, row, own);
+        match history.prepare_included(included, payload, changes, key, &seed.salt, &seed.emitted) {
             Err(e) => report.problem(i, e.code(), context(&e.to_string())),
             Ok(p) => {
                 if local.is_some_and(|(expected, _)| *expected != p.id) {
                     drift = true;
                     continue;
                 }
+                ids.record(&old, input, &p);
                 report.included(i, &old, &p, map.kinds.get(&included.kind));
                 plan.schedule(
                     p,
@@ -444,15 +487,6 @@ pub(super) fn preflight(
             }
         }
     }
-    let summary = cut.summary?;
-    if let Some(fail) = system {
-        return Err(fail);
-    }
-    report.sources[i].1.add(
-        "old_ticks_left_out",
-        usize::try_from(summary.ticks).map_err(super::invalid)?,
-    );
-    debug_assert_eq!(summary.facts, u64::try_from(plan.cut.0).expect("count"));
     if drift
         || checkpoint.is_some_and(|(n, _)| *n > plan.cut.0)
         || prior.is_some_and(|p| matched != p.len())
@@ -469,19 +503,11 @@ pub(super) fn preflight(
 }
 
 impl Plan {
-    #[expect(
-        clippy::too_many_arguments,
-        reason = "Publication owns the only journal and segment writes for a preflighted source."
-    )]
-    pub(super) fn publish(
+    pub(super) fn pin_cut(
         &mut self,
         input: &Input,
-        key: &Key,
         j: &mut Journal,
         log: &mut File,
-        seeds: &HashMap<String, Seed>,
-        runtime: &Runtime,
-        counts: &mut Counts,
     ) -> Result<(), Fail> {
         if j.cuts.get(&input.name) != Some(&self.cut) {
             j.append(
@@ -497,6 +523,17 @@ impl Plan {
                 ),
             )?;
         }
+        Ok(())
+    }
+    pub(super) fn publish(
+        &mut self,
+        input: &Input,
+        key: &Key,
+        j: &mut Journal,
+        log: &mut File,
+        runtime: &Runtime,
+        counts: &mut Counts,
+    ) -> Result<(), Fail> {
         let mut staged = HashMap::new();
         for chunk in &self.chunks {
             let lines = prepare(&mut self.file, chunk, key, &self.held, &mut staged)?;
@@ -507,7 +544,7 @@ impl Plan {
                 let entries = chunk
                     .items
                     .iter()
-                    .map(|r| seeds[&r.old].entry(&r.old, &r.id))
+                    .map(|r| Json::Arr(vec![text(&r.old), text(&r.id)]))
                     .collect();
                 (runtime.at)(Point::BeforeReserve)?;
                 j.append(

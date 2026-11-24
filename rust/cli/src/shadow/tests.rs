@@ -85,14 +85,12 @@ fn interruptions_recover_the_same_signed_lines() {
             },
             Point::Reserved => |p| if p == Point::Reserved { stop() } else { Ok(()) },
             Point::Appended => |p| if p == Point::Appended { stop() } else { Ok(()) },
+            _ => unreachable!(),
         };
         assert!(matches!(invoke(&dir, &first), Err(Fail::System(_))));
         let journal = dir.join("private/journal.jsonl");
         let j = success(Journal::read(&journal));
-        assert_eq!(
-            j.seeds.len(),
-            if point == Point::BeforeReserve { 0 } else { 3 }
-        );
+        assert_eq!(j.seeds.len(), 3);
         assert_eq!(
             lines(&dir).len(),
             if point == Point::Appended { 3 } else { 0 }
@@ -100,9 +98,7 @@ fn interruptions_recover_the_same_signed_lines() {
         assert_eq!(j.done.len(), 0);
         let mut retry = fixed();
         retry.key = || panic!("must reuse key");
-        if point != Point::BeforeReserve {
-            retry.seed = |_, _| panic!("must replay the reservation");
-        }
+        retry.seed = |_, _| panic!("must replay the reservation");
         success(invoke(&dir, &retry));
         assert_eq!(lines(&dir), expected);
         assert_eq!(success(Journal::read(&journal)).done.len(), 1);
@@ -166,6 +162,9 @@ fn group_fixture(label: &str, order: [&str; 2]) -> PathBuf {
         for (i, (id, kind, payload)) in [
             ("potter", "thread", r#"{"name":"potter"}"#),
             ("fire", "change", "{}"),
+            ("kiln-end", "change", "{}"),
+            ("kiln-middle", "change", r#"{"ref":"kiln-end"}"#),
+            ("kiln-first", "change", r#"{"ref":"kiln-middle"}"#),
             ("no-key", "thread", "{}"),
             ("note", "moved", "{}"),
             ("defect", "moved", "[]"),
@@ -175,7 +174,9 @@ fn group_fixture(label: &str, order: [&str; 2]) -> PathBuf {
         .enumerate()
         {
             // The same "later" fact has different predecessors in the two stores.
-            if name == "yard" && *id == "potter" {
+            if (name == "yard" && matches!(*id, "potter" | "kiln-middle"))
+                || (name == "workshop" && matches!(*id, "kiln-end" | "kiln-first"))
+            {
                 continue;
             }
             let start = bytes.len();
@@ -207,7 +208,12 @@ fn collected_occurrences_classify_each_destination_before_preparation() {
     let root = group_fixture("fates", ["workshop", "yard"]);
     for unnamed in [Unnamed::Omit, Unnamed::Roots] {
         let group = success(Group::read(&root.join("group.json"), unnamed));
-        let (index, _) = plan::Index::collect(&group.inputs, unnamed, &Journal::default());
+        let (index, _) = success(plan::Index::collect(
+            &group.inputs,
+            unnamed,
+            &Journal::default(),
+            &mut Report::for_inputs(&group.inputs),
+        ));
         for source in 0..2 {
             let fate = |id| &index.occurrence(id, source).fate;
             for (id, target) in [
@@ -271,6 +277,10 @@ fn source_order_preserves_segment_bytes_and_each_destination_is_read_once() {
             }
         }
         assert_eq!(segments.len(), 2);
+        segments.insert(
+            "group.ids.json".into(),
+            fs::read(root.join("group.ids.json")).unwrap(),
+        );
         fs::remove_dir_all(root).unwrap();
         segments
     };
@@ -297,5 +307,116 @@ fn preparation_rereads_the_previously_indexed_remote_cut() {
         matches!(invoke(&root, &runtime), Err(Fail::Refused(s)) if s.contains("export changed after preflight"))
     );
     assert!(!root.join("private").exists());
+    fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn cross_store_recovery_finishes_the_same_map_and_segments() {
+    use std::{cell::Cell, collections::BTreeMap};
+    thread_local! { static STOP: Cell<Option<Point>> = const { Cell::new(None) }; }
+    let outputs = |root: &Path| {
+        let mut bytes = BTreeMap::new();
+        for store in ["workshop", "yard"] {
+            for signer in fs::read_dir(root.join(store).join(".loops/segments")).unwrap() {
+                for entry in fs::read_dir(signer.unwrap().path()).unwrap() {
+                    let path = entry.unwrap().path();
+                    bytes.insert(
+                        path.strip_prefix(root).unwrap().to_owned(),
+                        fs::read(path).unwrap(),
+                    );
+                }
+            }
+        }
+        bytes.insert(
+            "group.ids.json".into(),
+            fs::read(root.join("group.ids.json")).unwrap(),
+        );
+        bytes
+    };
+    let base = group_fixture("durable-base", ["workshop", "yard"]);
+    success(invoke(&base, &fixed()));
+    let expected = outputs(&base);
+    for point in [
+        Point::BeforeSeeds,
+        Point::SeedsSynced,
+        Point::Reserved,
+        Point::Appended,
+        Point::BeforeMapRename,
+    ] {
+        let root = group_fixture(&format!("durable-{point:?}"), ["workshop", "yard"]);
+        STOP.with(|s| s.set(Some(point)));
+        let mut first = fixed();
+        first.at = |p| {
+            if STOP.with(Cell::get) == Some(p) {
+                Err(Fail::System("interrupted".into()))
+            } else {
+                Ok(())
+            }
+        };
+        assert!(matches!(invoke(&root, &first), Err(Fail::System(_))));
+        let log = root.join("private/journal.jsonl");
+        let j = success(Journal::read(&log));
+        assert_eq!(
+            j.seeds.contains_key("kiln-end"),
+            point != Point::BeforeSeeds
+        );
+        if point == Point::Reserved {
+            assert!(!j.records.contains_key("yard"));
+        }
+        assert!(!root.join("group.ids.json").exists());
+        let prior = fs::read(&log).unwrap();
+        success(import(
+            &root.join("group.json"),
+            Unnamed::Omit,
+            Mode::Check,
+            &fixed(),
+            &mut Report::default(),
+        ));
+        assert_eq!(prior, fs::read(&log).unwrap());
+        assert!(!root.join("group.ids.json").exists());
+        let mut retry = fixed();
+        if point != Point::BeforeSeeds {
+            retry.seed = |_, _| panic!("all group seeds are durable");
+        }
+        success(invoke(&root, &retry));
+        assert_eq!(outputs(&root), expected);
+        fs::remove_dir_all(root).unwrap();
+    }
+    fs::remove_dir_all(base).unwrap();
+}
+
+#[test]
+fn interrupted_seed_frames_resume_with_only_the_remaining_ids() {
+    let root = fixture("seed-frames");
+    let log = root.join("seeds.jsonl");
+    let mut j = Journal::default();
+    let mut file = success(j.writer(&log));
+    success(j.append(
+        &mut file,
+        &event("v2", [text("potter"), Json::Arr(Vec::new())]),
+    ));
+    let mut ids = plan::Identities::from(&j);
+    for n in 0..1001 {
+        let old = format!("potter-{n:04}");
+        ids.seeds
+            .insert(old.clone(), success((fixed().seed)(&old, old.clone())));
+    }
+    let mut first = fixed();
+    first.at = |p| {
+        if p == Point::SeedsSynced {
+            Err(Fail::System("stop".into()))
+        } else {
+            Ok(())
+        }
+    };
+    assert!(matches!(
+        save_seeds(&ids, &mut j, &mut file, &first),
+        Err(Fail::System(_))
+    ));
+    let mut resumed = success(Journal::read(&log));
+    assert_eq!(resumed.seeds.len(), 1000);
+    assert_eq!(resumed.batches.len(), 0);
+    success(save_seeds(&ids, &mut resumed, &mut file, &fixed()));
+    assert_eq!(success(Journal::read(&log)).seeds, ids.seeds);
     fs::remove_dir_all(root).unwrap();
 }

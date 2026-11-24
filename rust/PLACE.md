@@ -821,12 +821,40 @@ Every verb that reads the store says when either happened (choice 18).
     - For a kind keyed by `name`, the first `{"name":"kiln","heat":"hot"}`
       of kind `thread` is a whole record of `thread:kiln`. Each revision's
       `prev` is the canonical set of the first whole record, current head
-      and last setter of each field. Its `sets` is every top-level member
-      name of its own payload, including `name`. Each record states its
-      own occurrence time and its own `observer:<old observer>` mention.
-      An empty observer gives empty `about`. The new envelope observer is
-      the group's signing key. Payload values and the key field are kept.
+      and last setter of each field. Determine the thing from the original payload.
+      Its `sets` contains the cleaned payload keys plus any key removed by
+      cleaning that was visible before this revision. An absent member on
+      that setter clears the old value. A revision can state empty `sets`.
       Old origin and signature participate in identity checking.
+    - Under AD4, read every source and classify each original occurrence
+      before mapping records. In `ref`, an exact group ID takes precedence.
+      Otherwise split at the first colon or slash and form `prefix:value`
+      when the prefix matches `[a-z][a-z0-9-]*`, differs from `r` and the
+      value is nonempty. The addressed thing need not exist. Suffix fields
+      `<name>_ref` and the map's `ref_fields` accept only exact group IDs.
+      Split text at commas, trim and ignore empty parts. A configured field
+      also accepts an array of text, splitting each element. Mixed arrays
+      and other unsupported shapes yield no mentions. A bare `_ref` is
+      ordinary payload.
+    - Prefer an included occurrence in the referring destination. Otherwise
+      use a single distinct target among all included copies. A keyed target
+      is its thing, and a root target is its record ID. Omitted, ambiguous
+      and unresolvable targets are counted. Compute root IDs target-first.
+      Within a strongly connected component of root dependencies, a lookup
+      requiring an internal edge is unresolved (`cycle`). Direct self
+      references are accounted for and dropped. External parts remain usable.
+    - In destination arrival order, a keyed thing accumulates resolved
+      `ref` parts and keeps the current set for each suffix and configured
+      field. A supplied field replaces that set even when it yields none.
+      Extract these inputs before cleaning. Roots use only their own fact.
+      Add only the current fact's nonempty observer mention, suppress the
+      thing itself, and canonicalize the union for `about`. The group key
+      remains the signer. Remove a text `ref` once all parts are accounted
+      for, including empty or delimiter-only lists. Remove a text suffix
+      field only with its base member on the same original fact (any JSON
+      value) and at least one part with all parts accounted for, or a literal
+      empty string. A valid part in a retained field still contributes its
+      mention. Leave configured fields and all other members untouched.
     - A missing key field, a collected kind and an unnamed kind included
       by `--include-unnamed` each produce an independent root. A collect
       limit affects the old view only. The default omits unnamed kinds.
@@ -860,26 +888,44 @@ Every verb that reads the store says when either happened (choice 18).
       salts. Nonblocking advisory locks on the state lock file and selected
       segment directories serialize importers. Ordinary writers should use
       their own stores. The journal header pins the public key and each
-      source name, canonical destination, exact map digest and inclusion flag.
-      Additional sources get a new binding frame. A per-source count and
+      source name, canonical destination, semantic map digest and inclusion flag.
+      Hash the canonical UTF-8 JSON `{"kinds":K,"ref_fields":F}` with SHA-256
+      in base32hex, using every fold and the sorted set of configured field
+      names (default empty). The current map and export header still bind
+      to each other. A re-export after a comment edit succeeds when the
+      semantic mapping and fact prefix agree. Additional sources get a new
+      binding frame. Losing a pinned source gives `shadow-state-mismatch`. A per-source count and
       rolling hash pin the exact prefix of fact lines, including their coordinates
       and whitespace. Tick counts can grow independently. A cut also records
       previously unseen omitted ids and fingerprints for later identity checks.
     - The journal uses LF-terminated JSON arrays `[checksum,event]`. The
       checksum is the base32hex SHA-256 of the previous binary digest
       followed by the exact JSON bytes of the event. The initial digest is
-      empty. A reservation frame names its destination through the pinned source
+      empty. A v1 header gives `shadow-state-mismatch` with a request to import
+      into fresh shadows. After whole-group preflight, pin the cuts and sync
+      the new seeds in frames of at most 1,000. Each old ID gets one fingerprint,
+      salt and emitted time for the group. All its dependencies' seeds must
+      be durable before the first expected ID is reserved. A reservation frame names its destination through the pinned source
       and takes its batch number from its zero-based position among reservations.
-      It records each old id, fingerprint, salt, emitted time and expected id.
+      It records each old ID and its expected new record ID.
       Sync the frame before `Dir::append`, then sync the completion mark.
       On retry a held reserved id is done, including a commitment whose opening
       was purged. A missing id is reconstructed and checked against its reservation.
-      A complete rerun leaves both segments and journal byte-identical.
+      Recompute every reserved occurrence, including held records. If a newly
+      known target changes even one earlier expected ID, refuse the group
+      before writes. A complete rerun leaves segments and journal byte-identical.
       Ignore an unterminated tail while reading and truncate it on a successful
-      writable preflight. A damaged complete frame, changed prefix, map, flag,
+      writable preflight. A damaged complete frame, changed prefix, semantic pin, flag,
       signer or foreign destination record gives `shadow-state-mismatch`.
       Process interruption can leave completed batches in place. Power-loss
       behavior follows the existing segment writer.
+    - After all batches complete, publish `<group-stem>.ids.json` beside the
+      group file, under the same lock. It maps each old ID to its included
+      occurrences with exactly `source`, group-relative `destination`,
+      `record` and `thing`. A root's thing equals its record. An omitted-only
+      ID has an empty list. Write a same-directory 0600 file, sync, rename
+      and sync the directory. Skip identical bytes. Retry can finish this
+      step after segment publication. Check-only creates or repairs nothing.
     - Standard output is one JSON object with `sources` keyed by name and a
       `group` total. Row counts cover read, written, already held, planned
       writes, empty observers, missing keys, omitted ticks, included and
@@ -892,6 +938,21 @@ Every verb that reads the store says when either happened (choice 18).
       `shadow-source-invalid` and `shadow-map-invalid`. Writer refusals keep
       their existing codes. Exit statuses are 0 for success, 1 for data,
       2 for usage and 3 for system errors.
+
+    Reference counters count each included occurrence once on initial import,
+    check and replay. The following names are present even when zero.
+
+    | Counters | Unit |
+    |---|---|
+    | `ref_parts`, `suffix_parts`, `reviewed_parts` | Nonempty input parts at each location, before deduplication |
+    | `suffix_id_hits`, `reviewed_id_hits` | Parts at those locations exactly matching a group ID, including omitted targets |
+    | `thing_mentions`, `record_mentions` | Distinct final reference-derived targets per record, including carried targets |
+    | `self_dropped`, `self_observer_dropped` | Explicit self parts at their origin, and self-observers separately |
+    | `left_out_unnamed`, `left_out_defect` | Parts naming only omitted copies. A defective copy takes precedence when both reasons apply |
+    | `ambiguous_target`, `cycle`, `invalid_ref_part`, `nonmember_id_part` | Parts with differing effective targets, cyclic lookups, invalid free-form references, or unmatched ID-only text |
+    | `ref_not_text`, `reviewed_unsupported` | Fields with unsupported shapes |
+    | `ref_removed`, `suffix_removed` | Removed fields |
+    | `suffix_kept_no_companion`, `suffix_kept_not_text`, `suffix_kept_unresolved` | Retained suffix fields, one reason each in this precedence order. The last includes delimiter-only nonempty text |
 
 32. **Cover the records the spec’s answer depends on.** The owner ruled on
     2026-11-23 (TK13) that `loops tick <spec>` writes the downward-closed

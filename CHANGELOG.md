@@ -10,6 +10,7 @@ The record starts where the old roadmap's did. For anything earlier, and for eve
 ## 2026-11-23
 
 In brief:
+- AD4 is built in the import: the old stores' references become mentions, the payload is cleaned of the fields they came from, and the journal pins only the vertex's kinds. On copies of the six homelab stores, 14,727 `*_ref` fields and 889 `ref` fields became mentions, and an independent reading of the rule agrees on every keyed thing.
 - Kyle ruled W3b (the JavaScript stays frozen, as the rule) and AD4 (references in the old payloads become mentions, by one rule for old ids, and the payload is cleaned of the fields they came from). AD4 is being built, with the import's pin on the vertex's kinds only.
 - The look at the frozen JavaScript that W3 asked for is done and put to Kyle as W3b: it has caught no fault in Lean or Rust alone; it still checks 649 vectors and is the second computation of a spec's slice. Recommended: keep it frozen as the rule.
 - The first real import: Kyle's six homelab stores, into shadows outside every repository. Each reads as the old tool does in every field but one, a list of references in a field `ref`. How the old stores' references are carried is put to Kyle as AD4.
@@ -24,6 +25,40 @@ In brief:
 - `loops shadow-import` is built: it copies exported old stores into shadow stores, one signed record for each old fact, checks everything before it writes anything, and writes nothing on a second run. On a copy of four real stores it gave the old tool's reading for every thing held by one store.
 - The import's first two pieces are built: a script that exports an old store and its vertex to two text files, and the mapping of each old fact to a record, equal byte for byte to what `loops emit - --fill` writes. No verb yet.
 - The import has its plan. Two of its choices decide record ids and are put to Kyle as AD3: how a kind the vertex does not name is written when asked for, and how fine the old time is.
+
+### AD4, second piece: references become mentions
+
+The second of three pieces of AD4 (ruled 2026-11-23). Rust only, in `rust/cli/src/shadow/`; `rust/PLACE.md` choice 31 and `tools/shadow/FORMAT.md` say it all. No protocol rule and no vector changed. What the import writes changes, as AD4 says, so a shadow written before this is refused (below) and imported again.
+
+- **Mentions.** A `ref` part written `kind:key` or `kind/key` becomes `kind:key`. An old id, in `ref`, in a `<name>_ref` field or in a field the map names under `ref_fields`, becomes its fact's thing, or `r:<id>` for a fact with no key. Each record mentions what its thing refers to after it: every `ref` so far, the current value of each such field, and its own observer.
+- **The payload is cleaned.** `ref` goes once every part is accounted for; a `<name>_ref` goes when `<name>` is beside it and every part was an id that became a mention, or its value is empty. Everything else stays as written.
+- **Nothing is refused for a reference.** An id of a fact left out, a target that differs between stores, a `ref` part that is neither an id nor `kind:key`, a cycle among records without a key: no mention, the field stays, and it is counted.
+- **The order.** Records without a key are prepared before the records that mention them, since their ids are part of what mentions them. Their salts and times are saved in the journal before any batch is written, so an interrupted run resumes to the same bytes.
+- **The journal, version 2.** It pins the vertex's kinds and `ref_fields`, not the vertex file. A comment edit and a fresh export write nothing and refuse nothing; a changed fold, kind or `ref_fields` is refused. A version 1 journal is refused before anything is written: import into fresh shadows. A later run that leaves out a store the journal knows is refused.
+- **The id map.** After a complete run the import writes `<group>.ids.json` beside the group file: for each old id, the source, store, record and thing it became, or `[]` when it was left out. It holds no salt. A check-only run writes nothing.
+- **New counts** in the verb's output: the parts read in each kind of field, the mentions made, self references dropped, each unresolved reason, and the fields taken out or kept.
+
+**Run by the coordinator on copies of the six homelab stores**, into fresh scratch shadows (counts only):
+
+| | |
+| --- | --- |
+| The import | 11,047 records in 2.7 s, none refused; a second run writes nothing; every shadow passes `loops check` |
+| `ref` | 928 parts; 889 fields taken out |
+| `*_ref` | 14,910 parts, 14,752 of them old ids; 14,727 fields taken out; 85 kept with no `<name>` beside them, 75 kept with a part that is not an id (158 such parts, the Docker image references) |
+| Self references dropped | 188 |
+| Mentions | 15,238 across the records |
+| The id map | 11,072 old ids; 25 left out |
+| An independent reading | the coordinator's own reading of the rule from the exports and the id map agrees with the shadows on every keyed thing (6,437), mentions and field names |
+
+**Implementer choices; they stand under Kyle's ruling of 2026-11-21 (W7).**
+- A part that names the record's own thing counts as accounted for, so `ref:"task/kiln"` on `task:kiln` is taken out. Its mention is said by `of`.
+- When a later revision takes out a `ref` or `*_ref` that the thing still shows from an earlier one, the revision names it in `sets`, which clears it. None of the 11,047 homelab records needed it.
+- A `*_ref` field's ids become mentions even when the field stays; an empty value clears that field's mentions; a value that is not text stays as written and gives none.
+- A part that is the id of a fact in the group is looked up first, before it is read as `kind/key`.
+- An observer mention that is the thing itself is dropped. None here.
+- `ref_fields` may not name `ref` or a `*_ref` field; a malformed map is `shadow-map-invalid`.
+
+A Codex worker planned and wrote it; the coordinator reviewed it, ran the gates and made the runs above.
 
 ### AD4, first piece: the import reads the whole group before it writes
 

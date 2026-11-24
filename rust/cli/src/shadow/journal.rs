@@ -34,13 +34,12 @@ pub(super) struct Seed {
     pub emitted: String,
 }
 impl Seed {
-    pub(super) fn entry(&self, old: &str, id: &str) -> Json {
+    pub(super) fn entry(&self, old: &str) -> Json {
         Json::Arr(vec![
             text(old),
             text(&self.fingerprint),
             text(base32::base32(&self.salt)),
             text(&self.emitted),
-            text(id),
         ])
     }
 }
@@ -111,7 +110,10 @@ impl Journal {
     fn apply(&mut self, event: &Json) -> Result<(), Fail> {
         let (op, args) = array(event)?.split_first().ok_or_else(bad)?;
         match (word(op)?, args) {
-            ("v1", [public, Json::Arr(pins)]) if self.public.is_none() => {
+            ("v1", [_, Json::Arr(_)]) if self.public.is_none() => {
+                return Err(mismatch("v1 shadow journal; import into fresh shadows"));
+            }
+            ("v2", [public, Json::Arr(pins)]) if self.public.is_none() => {
                 self.public = Some(word(public)?.into());
                 self.add_pins(pins)?;
             }
@@ -127,29 +129,38 @@ impl Journal {
                 self.cuts
                     .insert(word(name)?.into(), (index(n)?, word(sum)?.into()));
             }
-            ("reserve", [name, Json::Arr(entries)]) if self.pins.contains_key(word(name)?) => {
-                let name = word(name)?;
-                let batch = self.batches.len();
-                let records = self.records.entry(name.into()).or_default();
+            ("seeds", [Json::Arr(entries)]) if self.public.is_some() => {
                 for entry in entries {
-                    let [old, fp, salt, time, id] = array(entry)? else {
+                    let [old, fp, salt, time] = array(entry)? else {
                         return Err(bad());
                     };
-                    let old = word(old)?;
                     let seed = Seed {
                         fingerprint: word(fp)?.into(),
                         salt: base32::decode(word(salt)?).ok_or_else(bad)?,
                         emitted: word(time)?.into(),
                     };
-                    if self.seeds.get(old).is_some_and(|s| s != &seed)
-                        || seed.salt.len() != 16
+                    if seed.salt.len() != 16 || self.seeds.insert(word(old)?.into(), seed).is_some()
+                    {
+                        return Err(bad());
+                    }
+                }
+            }
+            ("reserve", [name, Json::Arr(entries)]) if self.pins.contains_key(word(name)?) => {
+                let name = word(name)?;
+                let batch = self.batches.len();
+                let records = self.records.entry(name.into()).or_default();
+                for entry in entries {
+                    let [old, id] = array(entry)? else {
+                        return Err(bad());
+                    };
+                    let old = word(old)?;
+                    if !self.seeds.contains_key(old)
                         || records
                             .insert(old.into(), (word(id)?.into(), batch))
                             .is_some()
                     {
                         return Err(bad());
                     }
-                    self.seeds.insert(old.into(), seed);
                 }
                 self.batches.push(name.into());
             }

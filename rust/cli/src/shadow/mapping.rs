@@ -1,4 +1,5 @@
 //! Map one arrival against the history of this destination only.
+use super::refs::{self, Changes, References};
 use super::source::{Fact, Fold, Map};
 use loops::{
     batch::Draft,
@@ -7,7 +8,10 @@ use loops::{
     stored,
 };
 use loops_place::{clock, key::Key, line::hash};
-use std::{collections::HashMap, fmt};
+use std::{
+    collections::{BTreeMap, HashMap, HashSet},
+    fmt,
+};
 
 /// Use the exact binary64 value. Fixed-point formatting rounds directly to
 /// six decimal places, including ties to even. Multiplying by 1e6 in f64
@@ -43,6 +47,8 @@ pub(super) struct Prepared {
     pub id: String,
     pub draft: Draft,
     pub missing_key: bool,
+    pub removed: HashSet<String>,
+    pub stats: BTreeMap<&'static str, usize>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -107,6 +113,8 @@ struct Live {
     whole: String,
     head: String,
     setters: HashMap<String, String>,
+    references: References,
+    visible: HashSet<String>,
 }
 
 impl Live {
@@ -198,11 +206,13 @@ impl History {
     pub(super) fn prepare_included(
         &mut self,
         row: &Included,
-        payload: Json,
+        mut payload: Json,
+        mut changes: Changes,
         key: &Key,
         salt: &[u8],
         emitted: &str,
     ) -> Result<Prepared, Refusal> {
+        refs::clean(&mut payload, &changes.removed);
         let Json::Obj(members) = &payload else {
             unreachable!("classified payload was a verified object")
         };
@@ -211,19 +221,32 @@ impl History {
             _ => None,
         };
         let live = of.as_ref().and_then(|thing| self.things.get(thing));
+        let mut references = live.map(|l| l.references.clone()).unwrap_or_default();
+        let mut about = references.apply(&mut changes);
+        if !row.observer.is_empty() {
+            let observer = format!("observer:{}", row.observer);
+            if of.as_ref() == Some(&observer) {
+                changes.count("self_observer_dropped");
+            } else {
+                about.push(observer);
+            }
+        }
+        let sets = live.map(|previous| {
+            let names: Vec<_> = members
+                .iter()
+                .map(|(k, _)| k.clone())
+                .chain(changes.removed.intersection(&previous.visible).cloned())
+                .collect();
+            canon_set(&names)
+        });
         let env = Env {
             kind: row.kind.clone(),
             observer: key.public(),
             of,
             occurred: Some(row.occurred.clone()),
             emitted: emitted.into(),
-            about: if row.observer.is_empty() {
-                Vec::new()
-            } else {
-                vec![format!("observer:{}", row.observer)]
-            },
-            sets: live
-                .map(|_| canon_set(&members.iter().map(|(k, _)| k.clone()).collect::<Vec<_>>())),
+            about: canon_set(&about),
+            sets,
             prev: live.map(Live::predecessors).unwrap_or_default(),
             ..Env::default()
         };
@@ -242,7 +265,21 @@ impl History {
                 whole: id.clone(),
                 head: id.clone(),
                 setters: HashMap::new(),
+                references: References::default(),
+                visible: HashSet::new(),
             });
+            state.references = references;
+            if let Json::Obj(members) = &draft.payload {
+                state.visible.extend(
+                    members
+                        .iter()
+                        .map(|(k, _)| k.clone())
+                        .filter(|k| k == "ref" || k.ends_with("_ref")),
+                );
+            }
+            for k in &changes.removed {
+                state.visible.remove(k);
+            }
             state.head.clone_from(&id);
             for field in draft.env.sets.iter().flatten() {
                 state.setters.insert(field.clone(), id.clone());
@@ -251,6 +288,8 @@ impl History {
         Ok(Prepared {
             id,
             draft,
+            removed: changes.removed,
+            stats: changes.stats,
             missing_key: row.target == Target::MissingKey,
         })
     }
