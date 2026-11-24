@@ -170,7 +170,7 @@ J    joins H1 and H2, moves runs_on to asset:vm/c   about: ?
 
 The field reads `asset:vm/c`. H2 still carries `asset:vm/a`. Whether that mention was copied from the field or stated by hand was recorded only in R's payload, and R is erased. A rule that keeps it leaves an old target in J and in every later envelope. A rule that drops it also drops mentions a writer stated by hand. Astra ran the history on today's binary, stating by hand the mentions the rule would have written.
 
-This is the general case and not one missed corner. Nothing but the payload records where a mention came from, and an erasure removes the payload. The rule was rewritten four times on 2026-11-24, each time after another reader found a history it failed. What was shown: a copy never misses a readable live value (margins-claude's Python reader, 22,925 holdings with forks and late erasures). What was not: that a move removes the old copy.
+This is the general case and not one missed corner. Nothing but the payload records where a mention came from, and an erasure removes the payload. The rule was rewritten four times on 2026-11-24, each time after another reader found a history it failed. What was shown: a copy never misses a readable live value (margins-claude's Python reader, 22,925 holdings with forks and late erasures). What was not: that a move removes the old copy. margins-claude then checked that too. Without an erasure it does: the rule worked out per head left no old copy in 425 things at one head. After an erasure it does not: Astra's history fails, and with the stop taken at its best an old copy stays in 48 of 388 things at one head. So the trouble is in erasure, not in forks.
 
 **Options.**
 
@@ -180,7 +180,9 @@ This is the general case and not one missed corner. Nothing but the payload reco
 | B | As A, but only for a field that asks for it. Every other reference field is only described. | A's costs for the fields that ask. If copying is ever taken, all four prefer this to A: a field such as `owner` is then described as a reference and stays erasable. |
 | **C (recommended)** | Copies nothing in v1. `refs` describes: `loops describe` prints it, a reader that cares about roles finds a kind's reference fields from it, and `describe` counts the `kind:key` values that no mention carries. `--about` is stated by hand, as today. | The write keeps its doubled reference: `rel=relationship:<agent> --about relationship:<agent>`. A fold by mention finds only what a writer stated. |
 
-**What C does not lose today.** Every reference value in the live stores is still in the imported `kind/key` form: in the four kinds sampled, 566 `runs_on` records in the audit store, 121 `source` records on tasks and 92 `rel` records on observations. Copying would have done nothing for them until a value was rewritten.
+**What C does not lose today.** The question "what runs on this VM" is already answered by the field. Run on today's binary, with three services of which two run on `asset:vm/media`: a fold with `"where": {"runs_on": {"is": "asset:vm/media"}}` under `"follow": "keys"` lists the two. After the record of one is erased it lists the other and says "1 not read: needed payload or field unavailable", which is what an erasure should do. What a mention adds is one fold of everything that mentions a thing, across kinds and fields.
+
+And every reference value in the live stores is still in the imported `kind/key` form: in the four kinds sampled, 566 `runs_on` records in the audit store, 121 `source` records on tasks and 92 `rel` records on observations. Copying would have done nothing for them until a value was rewritten.
 
 **What comes with C.** `--add-about` and `--drop-about` ([the note](notes/2026-11-23-store-descriptions.md#4-who-wrote-it-and-the---about-hazard), section 4), which are CLI only and need no ruling. They keep a hand mention through later revisions.
 
