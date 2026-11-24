@@ -42,6 +42,11 @@ use values::View;
 
 const USAGE: &str = "\
 usage: loops [-C <dir>] <verb> ...
+       loops [-C <dir>] [--store <name>=<dir>]... [--in <name>] <verb> ...
+
+  --in selects one working store. File operands and --store paths start at -C
+  or the working directory. Named writes report the destination on stderr.
+  init, whoami and shadow-import take no --in. --group is not supported.
 
   init                          make .loops/ here
   emit <kind> [field=text | field:=json]... [\"message\"]
@@ -195,6 +200,7 @@ fn warn_unclean(held: &Held) {
 
 /// CLI reads can reuse the user's verification cache. The underlying
 /// directory always verifies signatures when read directly by `loops check`.
+#[derive(Clone)]
 struct Store {
     dir: Dir,
 }
@@ -235,6 +241,26 @@ fn find_store(start: &Path) -> Result<Store, Fail> {
     Ok(Store {
         dir: Dir::open(&root.join(".loops"))?,
     })
+}
+
+/// The origin supplies file operands and lists. Only the store for the verb moves.
+struct Context<'a> {
+    origin: &'a Path,
+    destination: Destination,
+}
+
+enum Destination {
+    Origin(registry::Bindings),
+    Named(Store, registry::Registry),
+}
+
+impl Context<'_> {
+    fn store(&self) -> Result<Store, Fail> {
+        match &self.destination {
+            Destination::Origin(_) => find_store(self.origin),
+            Destination::Named(store, _) => Ok(store.clone()),
+        }
+    }
 }
 
 fn key_file() -> Result<PathBuf, Fail> {
@@ -467,8 +493,8 @@ fn base_notices(notices: impl IntoIterator<Item = fill::BaseNotice>) {
     }
 }
 
-fn emit(start: &Path, args: &[String]) -> Result<(), Fail> {
-    let place = find_store(start)?;
+fn emit(ctx: &Context<'_>, args: &[String]) -> Result<(), Fail> {
+    let place = ctx.store()?;
     let held = place.read()?;
     warn_unclean(&held);
     let key = signing_key(Missing::Make)?;
@@ -530,8 +556,8 @@ fn write_one(
     say(lines.first().map_or("", Line::id))
 }
 
-fn erase(start: &Path, args: &[String]) -> Result<(), Fail> {
-    let place = find_store(start)?;
+fn erase(ctx: &Context<'_>, args: &[String]) -> Result<(), Fail> {
+    let place = ctx.store()?;
     let held = place.read()?;
     warn_unclean(&held);
     let key = signing_key(Missing::Make)?;
@@ -580,11 +606,11 @@ fn erase(start: &Path, args: &[String]) -> Result<(), Fail> {
     .canon())
 }
 
-fn get(start: &Path, args: &[String]) -> Result<(), Fail> {
+fn get(ctx: &Context<'_>, args: &[String]) -> Result<(), Fail> {
     let [given] = args else {
         return Err(usage("get takes one id"));
     };
-    let held = find_store(start)?.read()?;
+    let held = ctx.store()?.read()?;
     let id = one_id(&held, given)?;
     let record = held
         .settled()
@@ -595,11 +621,11 @@ fn get(start: &Path, args: &[String]) -> Result<(), Fail> {
     answered(&held, say(&line.canon()))
 }
 
-fn of(start: &Path, args: &[String], format: Format) -> Result<(), Fail> {
+fn of(ctx: &Context<'_>, args: &[String], format: Format) -> Result<(), Fail> {
     let [thing] = args else {
         return Err(usage("of takes one thing"));
     };
-    let held = find_store(start)?.read()?;
+    let held = ctx.store()?.read()?;
     let thing = if loops::envelope::typed_ref(thing) && !thing.starts_with("r:") {
         thing.clone()
     } else {
@@ -651,35 +677,38 @@ enum SpecInput {
     File,
 }
 
-fn fold(
-    start: &Path,
-    args: &[String],
-    format: Format,
-    input: SpecInput,
-    overrides: registry::Bindings,
-) -> Result<(), Fail> {
-    let start = start.canonicalize()?;
+fn fold(ctx: Context<'_>, args: &[String], format: Format, input: SpecInput) -> Result<(), Fail> {
+    let start = ctx.origin.canonicalize()?;
     let operands: Vec<_> = args.iter().filter(|arg| *arg != "--values").collect();
     let view = if operands.len() == args.len() {
         View::Ids
     } else {
         View::Values
     };
-    let current = current_root(&start);
     let raw = match (input, operands.as_slice()) {
         (SpecInput::File, [file]) => spec_file(&start, file)?,
         (SpecInput::Vertex, [vertex]) => {
             if !vertex_name(vertex) {
                 return Err(usage("a vertex name is a file name without its .json"));
             }
-            let root = current.ok_or_else(|| no_store(&start))?;
-            vertex_text(&root.join(".loops"), vertex)?
+            let root = match &ctx.destination {
+                Destination::Named(store, _) => store.dir.root().to_owned(),
+                Destination::Origin(_) => current_root(&start)
+                    .ok_or_else(|| no_store(&start))?
+                    .join(".loops"),
+            };
+            vertex_text(&root, vertex)?
         }
         (SpecInput::File, _) => return Err(usage("fold takes one spec file, or - for stdin")),
         (SpecInput::Vertex, _) => return Err(usage("read takes one vertex name")),
     };
     let spec = parse_spec(&raw)?;
-    let (held, dirty) = registry::read(&spec, &start, current, overrides)?;
+    let (held, dirty) = match ctx.destination {
+        Destination::Origin(overrides) => {
+            registry::Registry::load(&start, overrides)?.read(&spec, None)?
+        }
+        Destination::Named(store, names) => names.read(&spec, Some(&store))?,
+    };
     let answer = fold_answer(&held, &spec, view, format);
     finish_answer(
         answer,
@@ -713,11 +742,11 @@ fn held_forms(held: &Held) -> Vec<Record> {
     held.lines().iter().map(Line::record).collect()
 }
 
-fn check_held_tick(start: &Path, args: &[String]) -> Result<(), Fail> {
+fn check_held_tick(ctx: &Context<'_>, args: &[String]) -> Result<(), Fail> {
     let [given] = args else {
         return Err(usage("tick --check takes one record id or unique prefix"));
     };
-    let held = find_store(start)?.read()?;
+    let held = ctx.store()?.read()?;
     let id = one_id(&held, given)?;
     let line = held
         .line(&id)
@@ -735,16 +764,16 @@ fn check_held_tick(start: &Path, args: &[String]) -> Result<(), Fail> {
     if same { Ok(()) } else { Err(Fail::TickNotSame) }
 }
 
-fn tick(start: &Path, args: &[String]) -> Result<(), Fail> {
+fn tick(ctx: &Context<'_>, args: &[String]) -> Result<(), Fail> {
     let Some((source, flags)) = args.split_first() else {
         return Err(usage("tick takes a vertex, a spec file, or - for stdin"));
     };
     if source == "--check" {
-        return check_held_tick(start, flags);
+        return check_held_tick(ctx, flags);
     }
-    let place = find_store(start)?;
-    let input = if source == "-" || !vertex_name(source) || start.join(source).is_file() {
-        spec_file(start, source)?
+    let place = ctx.store()?;
+    let input = if source == "-" || !vertex_name(source) || ctx.origin.join(source).is_file() {
+        spec_file(ctx.origin, source)?
     } else {
         vertex_text(place.dir.root(), source)?
     };
@@ -756,7 +785,7 @@ fn tick(start: &Path, args: &[String]) -> Result<(), Fail> {
     write_one(&place.dir, &held, &key, &now, flags, Some(spec))
 }
 
-fn export(start: &Path, args: &[String]) -> Result<(), Fail> {
+fn export(ctx: &Context<'_>, args: &[String]) -> Result<(), Fail> {
     // As a spec's `from` reads them: `--of` takes the records of a thing,
     // `--about` those whose `about` mentions it, as written.
     let mut kind = None;
@@ -775,7 +804,7 @@ fn export(start: &Path, args: &[String]) -> Result<(), Fail> {
                 .ok_or_else(|| usage(format!("{arg} takes a value")))?,
         );
     }
-    let held = find_store(start)?.read()?;
+    let held = ctx.store()?.read()?;
     let mut records = held.settled();
     records.sort_by(content_order);
     let mut out = io::stdout().lock();
@@ -791,7 +820,7 @@ fn export(start: &Path, args: &[String]) -> Result<(), Fail> {
     answered(&held, written.map_err(Fail::from))
 }
 
-fn import(start: &Path, args: &[String]) -> Result<(), Fail> {
+fn import(ctx: &Context<'_>, args: &[String]) -> Result<(), Fail> {
     let mut input = String::new();
     match args {
         [] => {
@@ -800,10 +829,10 @@ fn import(start: &Path, args: &[String]) -> Result<(), Fail> {
         [file] if file == "-" => {
             io::stdin().read_to_string(&mut input)?;
         }
-        [file] => input = fs::read_to_string(start.join(file))?,
+        [file] => input = fs::read_to_string(ctx.origin.join(file))?,
         _ => return Err(usage("import takes one file, or - for stdin")),
     }
-    let place = find_store(start)?;
+    let place = ctx.store()?;
     let mut lines = Vec::new();
     for (i, line) in input.lines().enumerate() {
         if line.is_empty() {
@@ -824,8 +853,8 @@ fn import(start: &Path, args: &[String]) -> Result<(), Fail> {
     .canon())
 }
 
-fn check(start: &Path) -> Result<(), Fail> {
-    let held = find_store(start)?.dir.read()?;
+fn check(ctx: &Context<'_>) -> Result<(), Fail> {
+    let held = ctx.store()?.dir.read()?;
     answered(&held, say(&check_report(&held).canon()))
 }
 fn check_report(held: &Held) -> Json {
@@ -861,10 +890,19 @@ fn check_report(held: &Held) -> Json {
     ])
 }
 
-fn run(args: &[String]) -> Result<(), Fail> {
+struct Arguments {
+    start: PathBuf,
+    rest: Vec<String>,
+    name: Option<String>,
+    overrides: registry::Bindings,
+    format: Format,
+}
+
+fn arguments(args: &[String]) -> Result<Arguments, Fail> {
     let mut start = PathBuf::from(".");
     let mut rest = Vec::new();
     let mut json = false;
+    let mut name = None;
     let mut overrides = registry::Bindings::new();
     let mut args = args.iter();
     while let Some(arg) = args.next() {
@@ -875,6 +913,17 @@ fn run(args: &[String]) -> Result<(), Fail> {
                     .ok_or_else(|| usage("-C takes a directory"))?
                     .into();
             }
+            "--in" if rest.is_empty() => {
+                if name.is_some() {
+                    return Err(usage("use --in once"));
+                }
+                name = Some(
+                    args.next()
+                        .ok_or_else(|| usage("--in takes a store name"))?
+                        .clone(),
+                );
+            }
+            "--group" if rest.is_empty() => return Err(usage("--group is not supported")),
             "--" if rest
                 .first()
                 .is_some_and(|v: &String| matches!(v.as_str(), "emit" | "tick")) =>
@@ -884,11 +933,11 @@ fn run(args: &[String]) -> Result<(), Fail> {
                 break;
             }
             "--store" => match rest.first().map(String::as_str) {
-                Some("read" | "fold") => {
+                None | Some("read" | "fold") => {
                     let operand = args
                         .next()
                         .ok_or_else(|| usage("--store takes <name>=<dir>"))?;
-                    registry::bind(&mut overrides, &start, operand)?;
+                    registry::bind(&mut overrides, operand)?;
                 }
                 // A preceding option can take this text literally, e.g.
                 // `emit --sets --store`. Let the verb's parser decide.
@@ -918,29 +967,84 @@ fn run(args: &[String]) -> Result<(), Fail> {
     } else {
         Format::Json
     };
+    for binding in overrides.values_mut() {
+        binding.resolve_directory(&start);
+    }
+    Ok(Arguments {
+        start,
+        rest,
+        name,
+        overrides,
+        format,
+    })
+}
+
+fn destination(
+    start: &Path,
+    name: Option<&str>,
+    verb: &str,
+    args: &[String],
+    overrides: registry::Bindings,
+) -> Result<Destination, Fail> {
+    let Some(name) = name else {
+        return Ok(Destination::Origin(overrides));
+    };
+    let writing = match verb {
+        "emit" | "erase" | "import" => true,
+        "tick" => args.first().is_some_and(|s| s != "--check"),
+        "get" | "of" | "export" | "check" | "ls" | "read" | "fold" => false,
+        _ => return Err(usage(format!("{verb} does not take --in"))),
+    };
+    let names = registry::Registry::load(start, overrides)?;
+    let (store, directory, source) = names.open(name)?;
+    if writing {
+        writeln!(
+            io::stderr().lock(),
+            "writing --in {} to {} (bound by {})",
+            plain::label(name),
+            plain::label(&directory.display().to_string()),
+            plain::label(source)
+        )
+        .map_err(|e| Fail::System(format!("writing destination notice: {e}")))?;
+    }
+    Ok(Destination::Named(store, names))
+}
+
+fn run(args: &[String]) -> Result<(), Fail> {
+    let Arguments {
+        start,
+        rest,
+        name,
+        overrides,
+        format,
+    } = arguments(args)?;
     let Some((verb, rest)) = rest.split_first() else {
         return Err(usage(USAGE));
+    };
+    let ctx = Context {
+        origin: &start,
+        destination: destination(&start, name.as_deref(), verb, rest, overrides)?,
     };
     match verb.as_str() {
         "init" => {
             let place = Dir::init(&start.join(".loops"))?;
             say(&place.root().display().to_string())
         }
-        "emit" => emit(&start, rest),
-        "tick" => tick(&start, rest),
-        "erase" => erase(&start, rest),
+        "emit" => emit(&ctx, rest),
+        "tick" => tick(&ctx, rest),
+        "erase" => erase(&ctx, rest),
         "--version" if rest.is_empty() => {
             say(concat!("strange-loops-next ", env!("CARGO_PKG_VERSION")))
         }
-        "ls" => ls::run(&start, rest, format),
-        "of" => of(&start, rest, format),
-        "get" => get(&start, rest),
-        "read" => fold(&start, rest, format, SpecInput::Vertex, overrides),
-        "fold" => fold(&start, rest, format, SpecInput::File, overrides),
-        "export" => export(&start, rest),
-        "import" => import(&start, rest),
+        "ls" => ls::run(&ctx, rest, format),
+        "of" => of(&ctx, rest, format),
+        "get" => get(&ctx, rest),
+        "read" => fold(ctx, rest, format, SpecInput::Vertex),
+        "fold" => fold(ctx, rest, format, SpecInput::File),
+        "export" => export(&ctx, rest),
+        "import" => import(&ctx, rest),
         "shadow-import" => shadow::run(&start, rest),
-        "check" => check(&start),
+        "check" => check(&ctx),
         "whoami" if rest == ["--init"] => say(&signing_key(Missing::Make)?.public()),
         "whoami" if rest.iter().any(|arg| arg == "--init") => {
             Err(usage("whoami --init takes no other arguments"))
