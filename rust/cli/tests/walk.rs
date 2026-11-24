@@ -4858,3 +4858,6 @@ mod store_by_name;
 
 #[path = "walk/description.rs"]
 mod description;
+
+#[path = "walk/ls_active.rs"]
+mod ls_active;

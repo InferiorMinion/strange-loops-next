@@ -75,7 +75,11 @@ usage: loops [-C <dir>] <verb> ...
                                 list things by literal prefix or project their live fields
                                 --plain on ls, of, read and fold uses the working store's optional
                                 .loops/store.json (version 1) for headlines. A kind prefix also
-                                selects preview columns unless --fields is supplied. JSON ignores this file.
+                                selects preview columns unless --fields is supplied.
+  ls <kind>:<prefix> --active [--fields a,b,c] [--plain]
+                                the prefix after the colon may be empty (e.g. kiln: or kiln:e)
+                                hide things whose live lifecycle field is one text value in closed
+                                JSON and plain output state the kind, field and closed list applied
   get <id>                      one record
   of <thing> [--plain]          a thing's values, each key's from its live
                                 setters; its about, its heads, and how many

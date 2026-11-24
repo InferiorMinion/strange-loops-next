@@ -1,4 +1,4 @@
-//! The optional, store-local description used by the CLI's plain views.
+//! The optional, store-local description used by the CLI's listings and plain views.
 use crate::{Fail, plain::label, usage};
 use loops::{envelope::typed_ref, json::Json, record::Record, where_::Field};
 use std::{
@@ -33,8 +33,8 @@ enum Key {
     Field(String),
 }
 
-struct Lifecycle {
-    field: String,
+pub(crate) struct Lifecycle {
+    pub(crate) field: String,
     active: Option<Vec<String>>,
     closed: Option<Vec<String>>,
 }
@@ -105,12 +105,17 @@ impl Description {
     }
 
     pub(crate) fn preview(&self, prefix: &str) -> Option<&[String]> {
-        let (kind, _) = prefix.split_once(':')?;
-        if !natural_kind(kind) {
-            return None;
-        }
-        self.kinds.get(kind)?.preview.as_deref()
+        self.kinds.get(prefix_kind(prefix)?)?.preview.as_deref()
     }
+
+    pub(crate) fn lifecycle(&self, kind: &str) -> Option<&Lifecycle> {
+        self.kinds.get(kind)?.lifecycle.as_ref()
+    }
+}
+
+pub(crate) fn prefix_kind(prefix: &str) -> Option<&str> {
+    let (kind, _) = prefix.split_once(':')?;
+    natural_kind(kind).then_some(kind)
 }
 
 // The reserved record-ID prefix selects roots across kinds.
@@ -166,6 +171,10 @@ impl Kind {
 }
 
 impl Lifecycle {
+    pub(crate) fn closed(&self) -> &[String] {
+        self.closed.as_deref().unwrap_or_default()
+    }
+
     fn parse(json: Json, path: &str) -> Result<Self, String> {
         let mut lifecycle = Self {
             field: String::new(),

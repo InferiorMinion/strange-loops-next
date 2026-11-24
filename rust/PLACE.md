@@ -27,6 +27,8 @@ loops --version                     print the strange-loops-next version
 loops ls [--plain]                  list kinds and their record counts
 loops ls [--things | <prefix>] [--fields a,b,c] [--plain]
                                     list things or project their live fields
+loops ls <kind>:<prefix> --active [--fields a,b,c] [--plain]
+                                    hide things with a single live closed status
 loops get <id>                      one record
 loops of <thing> [--plain]          a thing's values, its about, its heads, how many records are of it
 loops read <vertex> [--store <name>=<dir>]... [--values] [--plain]
@@ -1037,12 +1039,13 @@ Every verb that reads the store says when either happened (choice 18).
     | `lifecycle` | An object with required nonempty text `field` and optional `active` and `closed` arrays of distinct strings. Each omitted list defaults to empty. |
     | `preview`, `search` | Ordered arrays of distinct nonempty payload field names. |
 
-    Only plain `ls`, `of`, `read` and `fold` load this file. Each validates
+    Plain `ls`, `of`, `read` and `fold`, and JSON `ls --active`, load this file. Each validates
     the whole working store's description once. With `--in`, this is the
     selected store. A plain fold outside any working store uses its ordinary
     defaults. A source in a spec supplies records only, including when a
-    binding redirects `.`. JSON reads, writes and exports are independent
-    of the description. A missing file keeps the existing output. Bad UTF-8,
+    binding redirects `.`. Ordinary JSON reads, writes and exports are independent
+    of the description. Plain views without `--active` keep their existing output
+    when the file is missing. Bad UTF-8,
     malformed JSON or a grammar error gives exit 2 with the filename and
     error location on stderr. A file-system failure gives exit 3 with the
     filename. Both leave stdout empty.
@@ -1057,6 +1060,26 @@ Every verb that reads the store says when either happened (choice 18).
     such as `kiln:e`), `preview` supplies the columns in written order.
     An empty preview uses the headline column. The record-ID prefix `r:`
     selects roots across kinds. Explicit `--fields` wins.
+
+35. **List active things.** `loops ls kiln: --active` reads the lifecycle
+    declared for `kiln` in the working store. A narrower literal prefix such
+    as `kiln:e` uses the same rule. The prefix must name a declared natural
+    kind and include its colon. A missing description or lifecycle, an
+    incomplete prefix, `r:`, or `--things` gives usage error 2.
+
+    For each thing in the prefix, read the declared field from its live
+    setters before projecting columns. Hide the thing only if this yields
+    one text value in `closed`. A missing value, a list, an unread setter,
+    or competing setters leave the thing visible, even if both setters say
+    `retired`. The lifecycle's `active` list is descriptive. An omitted or
+    empty `closed` list keeps every thing.
+
+    JSON keeps the usual `things` rows and reports the applied rule in
+    `active`, for example `{"closed":["retired","broken"],"field":"status","kind":"kiln"}`.
+    Plain output prints `active` and that object above the table. Both report
+    the closed values in their declared order, including for an empty result.
+    `--fields` selects columns independently. With `--in`, both the rows
+    and the rule come from the selected store.
 
 ## Checked by
 
