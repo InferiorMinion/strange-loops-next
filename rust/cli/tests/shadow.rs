@@ -106,6 +106,64 @@ fn sign(prepared: &Prepared) -> Line {
     line
 }
 
+fn check_recipe<const N: usize>(original: &str, edits: [(&str, Option<Json>); N], expected: &str) {
+    let recipe = refs::PayloadRecipe {
+        edits: edits
+            .into_iter()
+            .map(|(name, edit)| (name.to_owned(), edit))
+            .collect(),
+    };
+    let original = loops_eval::parse_writer_payload(original).expect("original payload");
+    let edited = recipe.apply(original.clone());
+    // Structural equality checks member order, which canonical JSON sorts away.
+    assert_eq!(
+        edited,
+        loops_eval::parse_writer_payload(expected).expect("expected payload")
+    );
+    assert_eq!(recipe.apply(original).canon(), edited.canon());
+}
+
+#[test]
+fn recipe_removes_only_the_named_member() {
+    check_recipe(
+        r#"{"yard":{"ref":"potter"},"ref":"potter","kiln":true}"#,
+        [("ref", None)],
+        r#"{"yard":{"ref":"potter"},"kiln":true}"#,
+    );
+}
+
+#[test]
+fn recipe_replaces_text_with_text_or_a_list_in_place() {
+    check_recipe(
+        r#"{"yard":"east","owner":"potter","backups":false}"#,
+        [("owner", Some(Json::Str("person:potter".into())))],
+        r#"{"yard":"east","owner":"person:potter","backups":false}"#,
+    );
+    check_recipe(
+        r#"{"yard":"east","kilns":"kiln/b,kiln/a","backups":false}"#,
+        [(
+            "kilns",
+            Some(Json::Arr(vec![
+                Json::Str("kiln:b".into()),
+                Json::Str("kiln:a".into()),
+            ])),
+        )],
+        r#"{"yard":"east","kilns":["kiln:b","kiln:a"],"backups":false}"#,
+    );
+}
+
+#[test]
+fn recipe_applies_removal_and_replacement_together() {
+    check_recipe(
+        r#"{"yard":"east","owner_ref":"potter","owner":"person/potter","backups":[]}"#,
+        [
+            ("owner", Some(Json::Str("person:potter".into()))),
+            ("owner_ref", None),
+        ],
+        r#"{"yard":"east","owner":"person:potter","backups":[]}"#,
+    );
+}
+
 #[test]
 fn exporter_cut_produces_known_signed_lines() {
     let map = Map::read(MAP).expect("reviewed map");
@@ -130,7 +188,7 @@ fn exporter_cut_produces_known_signed_lines() {
             )
             .expect("accepted");
         let prepared = included(row);
-        assert!(prepared.stats.is_empty() && prepared.removed.is_empty());
+        assert!(prepared.stats.is_empty() && prepared.recipe.removed().next().is_none());
         assert!(!prepared.missing_key);
         lines.push(sign(&prepared).render());
         coords.push(fact.coordinate);

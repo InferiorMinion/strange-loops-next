@@ -14,7 +14,7 @@ use loops_place::{
     clock,
     dir::Dir,
     key::{self, Key},
-    line::hash,
+    line::{Line, hash},
 };
 use mapping::Unnamed;
 use report::Report;
@@ -52,6 +52,7 @@ struct Runtime {
     key: fn() -> Result<Key, Fail>,
     seed: fn(&str, String) -> Result<Seed, Fail>,
     at: fn(Point) -> Result<(), Fail>,
+    verified: fn(Vec<Line>),
 }
 impl Default for Runtime {
     fn default() -> Self {
@@ -66,6 +67,7 @@ impl Default for Runtime {
                 })
             },
             at: |_| Ok(()),
+            verified: drop,
         }
     }
 }
@@ -351,19 +353,20 @@ fn import(
     let mut ids = id_map::IdMap::default();
     let (index, mut cuts) = plan::Index::collect(&group.inputs, unnamed, &j, report)?;
     index.seed(&cuts, &mut identities, runtime)?;
-    let roots = plan::roots::Roots::build(&index, &mut cuts, &identities, &key)?;
+    let mut roots = plan::roots::Roots::build(&index, &mut cuts, &identities, &key)?;
     for (i, (input, cut)) in group.inputs.iter().zip(cuts).enumerate() {
         plans.push(plan::preflight(
             input,
             i,
             &index,
             cut,
-            &roots,
+            &mut roots,
             &mut ids,
             &key,
             &j,
             &mut identities,
             report,
+            runtime.verified,
         )?);
     }
     drop(index);

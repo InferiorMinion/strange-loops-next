@@ -243,7 +243,7 @@ struct Item {
     draft: batch::Draft,
     line: FactLine,
     prior: Option<usize>,
-    removed: HashSet<String>,
+    recipe: refs::PayloadRecipe,
 }
 struct Chunk {
     items: Vec<Item>,
@@ -257,10 +257,11 @@ pub(super) struct Plan {
     omitted: Vec<Json>,
 }
 impl Plan {
-    fn verify(&mut self, key: &Key) -> Result<(), Fail> {
+    fn verify(&mut self, key: &Key, verified: fn(Vec<Line>)) -> Result<(), Fail> {
         let mut staged = HashMap::new();
         for chunk in &self.chunks {
-            prepare(&mut self.file, chunk, key, &self.held, &mut staged)?;
+            let lines = prepare(&mut self.file, chunk, key, &self.held, &mut staged)?;
+            verified(lines);
         }
         Ok(())
     }
@@ -285,7 +286,7 @@ impl Plan {
                 old,
                 id: p.id,
                 draft,
-                removed: p.removed,
+                recipe: p.recipe,
                 line: line.clone(),
                 prior,
             },
@@ -347,8 +348,7 @@ fn prepare(
     let mut drafts = Vec::with_capacity(chunk.items.len());
     for item in &chunk.items {
         let mut d = item.draft.clone();
-        d.payload = item.line.payload(file)?;
-        refs::clean(&mut d.payload, &item.removed);
+        d.payload = item.recipe.apply(item.line.payload(file)?);
         drafts.push(d);
     }
     let view = |id: &str| staged.get(id).cloned().or_else(|| held.writer_view(id));
@@ -406,12 +406,13 @@ pub(super) fn preflight(
     i: usize,
     index: &Index,
     cut: Cut,
-    roots: &roots::Roots,
+    roots: &mut roots::Roots,
     ids: &mut IdMap,
     key: &Key,
     j: &Journal,
     identities: &mut Identities,
     report: &mut Report,
+    verified: fn(Vec<Line>),
 ) -> Result<Plan, Fail> {
     let map = input.map.as_ref().map_err(refused)?;
     let held = read_destination(input, key, j, &mut report.sources[i].1)?;
@@ -467,7 +468,7 @@ pub(super) fn preflight(
             mapping::Target::Keyed(name) => Some(name.as_str()),
             _ => None,
         };
-        let changes = roots.changes(index, row, own);
+        let changes = roots.take_changes(index, row, own);
         match history.prepare_included(included, payload, changes, key, &seed.salt, &seed.emitted) {
             Err(e) => report.problem(i, e.code(), context(&e.to_string())),
             Ok(p) => {
@@ -497,7 +498,7 @@ pub(super) fn preflight(
         )));
     }
     if report.errors.is_empty() {
-        plan.verify(key)?;
+        plan.verify(key, verified)?;
     }
     Ok(plan)
 }

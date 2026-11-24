@@ -12,6 +12,8 @@ use loops_place::key::Key;
 pub(in crate::shadow) struct Roots {
     component: Vec<usize>,
     ids: Vec<Option<String>>,
+    // Root IDs are needed before arrival replay. Keep the decisions for that replay.
+    changes: Vec<Option<Changes>>,
 }
 
 impl Index {
@@ -60,6 +62,7 @@ impl Roots {
         let mut roots = Self {
             component: vec![0; index.roots.len()],
             ids: vec![None; index.roots.len()],
+            changes: vec![None; index.roots.len()],
         };
         for (c, nodes) in components.iter().enumerate() {
             for &node in nodes {
@@ -73,19 +76,41 @@ impl Roots {
                 let Fate::Included(Ok(included)) = &row.fate else {
                     unreachable!("indexed root")
                 };
-                let changes = roots.changes(index, row, None);
+                let changes = roots.resolve(index, row, None);
                 let seed = &seeds.seeds[old];
                 let payload = row.line.payload(&mut cuts[*source].file)?;
                 let record = History::default()
-                    .prepare_included(included, payload, changes, key, &seed.salt, &seed.emitted)
+                    .prepare_included(
+                        included,
+                        payload,
+                        changes.clone(),
+                        key,
+                        &seed.salt,
+                        &seed.emitted,
+                    )
                     .map_err(|e| refused(e.to_string()))?;
                 roots.ids[node] = Some(record.id);
+                roots.changes[node] = Some(changes);
             }
         }
         Ok(roots)
     }
 
-    pub(super) fn changes(&self, index: &Index, row: &Occurrence, own: Option<&str>) -> Changes {
+    pub(super) fn take_changes(
+        &mut self,
+        index: &Index,
+        row: &Occurrence,
+        own: Option<&str>,
+    ) -> Changes {
+        match row.root {
+            Some(node) => self.changes[node]
+                .take()
+                .expect("each root is replayed once"),
+            None => self.resolve(index, row, own),
+        }
+    }
+
+    fn resolve(&self, index: &Index, row: &Occurrence, own: Option<&str>) -> Changes {
         Changes::resolve(&row.fields, own, |id| self.lookup(index, row, id))
     }
 

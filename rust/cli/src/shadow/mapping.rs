@@ -1,5 +1,5 @@
 //! Map one arrival against the history of this destination only.
-use super::refs::{self, Changes, References};
+use super::refs::{Changes, PayloadRecipe, References};
 use super::source::{Fact, Fold, Map};
 use loops::{
     batch::Draft,
@@ -47,7 +47,7 @@ pub(super) struct Prepared {
     pub id: String,
     pub draft: Draft,
     pub missing_key: bool,
-    pub removed: HashSet<String>,
+    pub recipe: PayloadRecipe,
     pub stats: BTreeMap<&'static str, usize>,
 }
 
@@ -206,13 +206,13 @@ impl History {
     pub(super) fn prepare_included(
         &mut self,
         row: &Included,
-        mut payload: Json,
+        original: Json,
         mut changes: Changes,
         key: &Key,
         salt: &[u8],
         emitted: &str,
     ) -> Result<Prepared, Refusal> {
-        refs::clean(&mut payload, &changes.removed);
+        let payload = changes.recipe.apply(original);
         let Json::Obj(members) = &payload else {
             unreachable!("classified payload was a verified object")
         };
@@ -232,10 +232,15 @@ impl History {
             }
         }
         let sets = live.map(|previous| {
+            let cleared = changes
+                .recipe
+                .removed()
+                .filter(|k| previous.visible.contains(*k));
             let names: Vec<_> = members
                 .iter()
-                .map(|(k, _)| k.clone())
-                .chain(changes.removed.intersection(&previous.visible).cloned())
+                .map(|(k, _)| k)
+                .chain(cleared)
+                .cloned()
                 .collect();
             canon_set(&names)
         });
@@ -277,7 +282,7 @@ impl History {
                         .filter(|k| k == "ref" || k.ends_with("_ref")),
                 );
             }
-            for k in &changes.removed {
+            for k in changes.recipe.removed() {
                 state.visible.remove(k);
             }
             state.head.clone_from(&id);
@@ -288,7 +293,7 @@ impl History {
         Ok(Prepared {
             id,
             draft,
-            removed: changes.removed,
+            recipe: changes.recipe,
             stats: changes.stats,
             missing_key: row.target == Target::MissingKey,
         })

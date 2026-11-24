@@ -40,6 +40,7 @@ fn fixed() -> Runtime {
             })
         },
         at: |_| Ok(()),
+        verified: drop,
     }
 }
 fn invoke(root: &Path, r: &Runtime) -> Result<(), Fail> {
@@ -61,7 +62,6 @@ fn lines(root: &Path) -> Vec<String> {
         .map(Line::render)
         .collect()
 }
-use loops_place::line::Line;
 
 #[test]
 fn interruptions_recover_the_same_signed_lines() {
@@ -238,6 +238,44 @@ fn collected_occurrences_classify_each_destination_before_preparation() {
             }
         }
     }
+    fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn checked_and_published_payload_bytes_agree_after_removal() {
+    use std::cell::RefCell;
+    thread_local! { static CHECKED: RefCell<Vec<Line>> = const { RefCell::new(Vec::new()) }; }
+
+    let root = group_fixture("checked-payload", ["workshop", "yard"]);
+    let mut runtime = fixed();
+    runtime.verified = |lines| CHECKED.with_borrow_mut(|checked| checked.extend(lines));
+    success(import(
+        &root.join("group.json"),
+        Unnamed::Omit,
+        Mode::Check,
+        &runtime,
+        &mut Report::default(),
+    ));
+    success(invoke(&root, &fixed()));
+
+    // The workshop root kiln-middle originally held {"ref":"kiln-end"}.
+    let journal = success(Journal::read(&root.join("private/journal.jsonl")));
+    let (id, _) = &journal.records["workshop"]["kiln-middle"];
+    let checked = CHECKED
+        .take()
+        .into_iter()
+        .find(|line| line.id() == id)
+        .unwrap();
+    let bytes = checked.payload().unwrap().canon().into_bytes();
+    assert_eq!(bytes, b"{}");
+    let held = Dir::open(&root.join("workshop/.loops"))
+        .unwrap()
+        .read()
+        .unwrap();
+    assert_eq!(
+        held.line(id).unwrap().payload().unwrap().canon().as_bytes(),
+        bytes
+    );
     fs::remove_dir_all(root).unwrap();
 }
 

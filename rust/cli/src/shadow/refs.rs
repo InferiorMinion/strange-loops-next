@@ -87,11 +87,39 @@ fn address(part: &str) -> Option<String> {
     (prefix != "r" && typed_ref(&name)).then_some(name)
 }
 
-#[derive(Debug, Default)]
+/// Each named member is removed (None) or replaced in place (Some).
+#[derive(Clone, Debug, Default)]
+pub(super) struct PayloadRecipe {
+    pub edits: HashMap<String, Option<Json>>,
+}
+
+impl PayloadRecipe {
+    pub(super) fn apply(&self, mut original: Json) -> Json {
+        if let Json::Obj(members) = &mut original {
+            members.retain_mut(|(name, value)| match self.edits.get(name) {
+                Some(None) => false,
+                Some(Some(replacement)) => {
+                    value.clone_from(replacement);
+                    true
+                }
+                None => true,
+            });
+        }
+        original
+    }
+
+    pub(super) fn removed(&self) -> impl Iterator<Item = &String> {
+        self.edits
+            .iter()
+            .filter_map(|(name, edit)| edit.is_none().then_some(name))
+    }
+}
+
+#[derive(Clone, Debug, Default)]
 pub(super) struct Changes {
     additions: HashSet<String>,
     replacements: HashMap<String, HashSet<String>>,
-    pub removed: HashSet<String>,
+    pub recipe: PayloadRecipe,
     pub stats: BTreeMap<&'static str, usize>,
 }
 
@@ -146,7 +174,7 @@ impl Changes {
                     changes.additions.extend(mentions);
                     if complete {
                         changes.count("ref_removed");
-                        changes.removed.insert(field.name.clone());
+                        changes.recipe.edits.insert(field.name.clone(), None);
                     } else if field.parts.is_none() {
                         changes.count("ref_not_text");
                     }
@@ -159,7 +187,7 @@ impl Changes {
                         changes.count("suffix_kept_not_text");
                     } else if complete && (field.empty_text || field.parts().next().is_some()) {
                         changes.count("suffix_removed");
-                        changes.removed.insert(field.name.clone());
+                        changes.recipe.edits.insert(field.name.clone(), None);
                     } else {
                         changes.count("suffix_kept_unresolved");
                     }
@@ -200,11 +228,5 @@ impl References {
             });
         }
         mentions.into_iter().collect()
-    }
-}
-
-pub(super) fn clean(payload: &mut Json, removed: &HashSet<String>) {
-    if let Json::Obj(fields) = payload {
-        fields.retain(|(name, _)| !removed.contains(name));
     }
 }
