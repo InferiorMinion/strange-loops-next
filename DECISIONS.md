@@ -8,16 +8,57 @@ Everything that waits on Kyle, in one place. Each entry has the question, an exa
 - "Today" in an example means the `loops` binary built from main on 2026-11-21. Every "today" answer below was run, not predicted.
 ## At a glance
 
-Nothing waits on a ruling. One question is [being prepared](#being-prepared).
+One entry waits on a ruling: [BP1](#bp1-nine-narrow-cases-the-build-plan-found-open), nine narrow cases that the build plan found open, each with a recommendation. One question is [being prepared](#being-prepared).
 
-Every entry is ruled.
+Every earlier entry is ruled.
 
 - The tick record, TK1 to TK13: ruled and built. Step 4 is closed. The questions as they were put are in [the tick record note](notes/2026-11-21-tick-record.md#10-the-questions-as-they-were-put), sections 10 and 11.
 - The order of work, W1 to W6, and W3b, the look at the JavaScript after ticks: ruled. The entries as put are in [the order-of-work note](notes/2026-11-21-order-of-work.md).
 - The adoption step, AD1 to AD4: ruled on 2026-11-23. AD1 and AD2 each for its recommendation with additions, AD3 for its recommendation in both rows, AD4 for rows 1 to 3 with row 4 the other way and a rule for old ids. The entries as put, and the additions, are in [the adoption note](notes/2026-11-22-adoption.md).
 - What a store says about its kinds, SD1 to SD3, a read of what refers to a thing, SD4, and one written form for a reference at the import, AD5: put and ruled on 2026-11-24, each as recommended. The entries as put are in [the kinds and references note](notes/2026-11-24-kinds-and-references.md).
 
-Below: [what is being prepared](#being-prepared), [what you deferred](#deferred-by-you) and [what is ruled](#ruled). Nothing waits to be confirmed: under your ruling of 2026-11-21 an implementer choice comes here only when it changes bytes or answers.
+After the entry: [what is being prepared](#being-prepared), [what you deferred](#deferred-by-you) and [what is ruled](#ruled). Nothing waits to be confirmed: under your ruling of 2026-11-21 an implementer choice comes here only when it changes bytes or answers.
+
+## BP1: nine narrow cases the build plan found open
+
+**Where this comes from.** You ruled SD1 to SD4 and AD5 on 2026-11-24. A Codex worker then wrote the build plan, and listed the cases your rulings do not settle that change a signed record or its id. There are eight, and the coordinator adds one (row 5). Neon, margins-claude and Astra read them from outside, and what they changed is in the rows. None adds a refusal code. Each row can be ruled on its own.
+
+Pieces 1 and 2 of the build (a store by name, and the description file) wait on none of these. Rows 1 to 3 hold up the `emit` shorthand, row 4 the mention flags, rows 5 to 9 the import.
+
+**Run on today's binary** in a scratch store, for the rows that can be shown before the build:
+
+```
+$ loops emit kiln name=east name=west
+refused: member-duplicate                         exit 1
+$ loops emit kiln name:=7 "a number where the key goes"
+r:c0p91bic…                                       exit 0
+$ loops emit kiln name= "an empty key"
+r:sdqla6cq…                                       exit 0
+$ loops emit backups --of yard:east name=east "kind and prefix differ"
+r:omap89lt…                                       exit 0
+$ loops fold kilns-is-a.json --plain              (where kilns is kiln:a, follow keys)
+  thing  yard:south                               (kilns is the list ["kiln:a","kiln:b"])
+                                                  (yard:north, kilns "kiln:a,kiln:b", is not listed)
+```
+
+**The rows.** `kiln` declares `"key": "name"` in rows 1 to 3.
+
+| Row | The case | Recommended | The other way, and its cost |
+| --- | --- | --- | --- |
+| 1 | The kind and the thing's prefix differ: `emit backups --of yard:east name=east`, where `backups` is keyed by `name` | **Compare the key text only:** `east` with `east`. The record format lets a record's kind differ from its thing's prefix. | Require `backups:east`. A write that is valid today, and whose key agrees, stops. |
+| 2 | A key that is not text: `emit kiln name:=7`, or `name=` | **Stop as a usage error,** when a key is being found from the field or compared with it. Nothing is turned into text. A repeated `name` stays the refusal it is today, `member-duplicate`. A keyless root that is meant, and a revision of one, keep whatever payload they are given: `emit kiln --root name:=7` writes. (The last two sentences are Astra's.) | Turn `7` into `"7"`: the writer gets a thing named `kiln:7` they did not ask for. |
+| 3 | A root that is meant, with the key field stated: `emit kiln --root name=east` | **A root, with `name` kept in its payload.** `--root` with `--of` or `--prev` is a usage error. | Refuse the field: the writer then needs `emit -` to keep a field on a root. |
+| 4 | `--add-about yard:east --drop-about yard:east` on one command | **A usage error.** | Last one wins: changing the order of two flags changes a signed record. |
+| 5 | AD5 row 1, where the field holds the bare key and its twin resolves: `owner=potter` beside an `owner_ref` that resolves to `person:potter` | **Written `person:potter`,** when the whole value equals the whole key of the one thing the twin resolves to, byte for byte, and is not itself already written `kind:key`. The twin is the proof, a stronger one than row 2's line in the map. `owner=person:potter` beside a twin that resolves to `person:person:potter` is left and counted: it already names something (Astra). This widens AD5's bound 5, "a bare key only by row 2", for this one proved case. It adds no bare items to row 6's lists, and a twin that fails is never made up for by the map. The plan compares only with `person/potter` and `person:potter`, and would leave `potter`. (The coordinator's row, from the private group, which has such values. The homelab has none: every agreeing value there is `kind/key`.) | Leave it: SD4 answers no for it, though the old store recorded exactly what it refers to. |
+| 6 | AD5 row 3, how the several targets must be written to become a list | **A literal comma between items, nothing trimmed,** each item exactly the old or the new spelling of its resolved target, in the twin's order, repeats kept. **The map may also review, for a field, a comma followed by one space.** Anything else, and anything that can be read two ways, is left whole and counted. A comma inside a key is data. An item is the old or the new spelling only, never a bare key. | The comma alone: a field written `kiln:a, kiln:b` stays text, and SD4 answers no for both targets for good. All three reviewers prefer the option. |
+| 7 | AD5 row 2 on a value already written `kind:key`: `site=yard:east` in a field the map says holds a bare key of kind `yard` | **Left as written.** Only text that is not already `kind:key` is taken for a bare key. | Prefix every value: `yard:yard:east`. |
+| 8 | AD5 row 2's mention, through a thing's later facts: `site=east`, then `site=missing`, then no `site` | **One mention for each field, replaced by each later fact that states the field:** the new target where it resolves, none where it does not; kept where the fact does not state the field. No mention of the thing itself, as AD4 has it. | Mentions that only gather: a target the field left stays mentioned. |
+| 8b | The same, where the later fact is already typed: `site=east`, then `site=yard:east` | **The mention is kept: a typed value that names an imported thing of the kind the map states gives its mention.** Otherwise the same field is mentioned or not by how an earlier fact happened to spell it. (margins-claude's view and the coordinator's.) | Clear it, as the plan has it: row 2 then mentions only what it repaired, and nothing beyond what you ruled. The field still names `yard:east` and no mention finds it. (Astra leans this way.) |
+| 9 | A twin that resolves to a keyless root, or sits beside the `ref` AD4 takes out | **AD4's mention as today, and no rewrite of the field.** A root has no `kind:key` to write. | Write `r:<id>` into the field: more payloads and ids change, for a form no writer uses. |
+
+**No homelab case** for rows 5, 7, 8b and 9 (margins-claude): no slip-field value holds a colon, no twin resolves to a keyless root, and every agreeing value is in the old `kind/key` form. They matter for a group imported later.
+
+**One sentence of SD1 is out of date,** and needs no ruling. It called `--active` the one flag whose JSON depends on the description. `--refers-to` (SD4) is a second. The test covers every read without either flag.
 
 ## Being prepared
 

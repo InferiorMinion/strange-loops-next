@@ -201,6 +201,7 @@ header.top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--g
 <p class="source">Rendered from <code>DECISIONS.md</code> in the repository.</p>
 <details class="contents"><summary>On this page</summary>
 <ul><li><a href="#at-a-glance">At a glance</a></li>
+<li><a href="#bp1-nine-narrow-cases-the-build-plan-found-open">BP1: nine narrow cases the build plan found open</a></li>
 <li><a href="#being-prepared">Being prepared</a></li>
 <li><a href="#deferred-by-you">Deferred by you</a></li>
 <li><a href="#ruled">Ruled</a></li></ul></details>
@@ -214,15 +215,47 @@ header.top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--g
 <li><p>&quot;Today&quot; in an example means the <code>loops</code> binary built from main on 2026-11-21. Every &quot;today&quot; answer below was run, not predicted.</p></li>
 </ul>
 <h2 id="at-a-glance">At a glance</h2>
-<p>Nothing waits on a ruling. One question is <a href="#being-prepared">being prepared</a>.</p>
-<p>Every entry is ruled.</p>
+<p>One entry waits on a ruling: <a href="#bp1-nine-narrow-cases-the-build-plan-found-open">BP1</a>, nine narrow cases that the build plan found open, each with a recommendation. One question is <a href="#being-prepared">being prepared</a>.</p>
+<p>Every earlier entry is ruled.</p>
 <ul>
 <li><p>The tick record, TK1 to TK13: ruled and built. Step 4 is closed. The questions as they were put are in <a href="note-2026-11-21-tick-record.html#10-the-questions-as-they-were-put">the tick record note</a>, sections 10 and 11.</p></li>
 <li><p>The order of work, W1 to W6, and W3b, the look at the JavaScript after ticks: ruled. The entries as put are in <a href="note-2026-11-21-order-of-work.html">the order-of-work note</a>.</p></li>
 <li><p>The adoption step, AD1 to AD4: ruled on 2026-11-23. AD1 and AD2 each for its recommendation with additions, AD3 for its recommendation in both rows, AD4 for rows 1 to 3 with row 4 the other way and a rule for old ids. The entries as put, and the additions, are in <a href="note-2026-11-22-adoption.html">the adoption note</a>.</p></li>
 <li><p>What a store says about its kinds, SD1 to SD3, a read of what refers to a thing, SD4, and one written form for a reference at the import, AD5: put and ruled on 2026-11-24, each as recommended. The entries as put are in <a href="note-2026-11-24-kinds-and-references.html">the kinds and references note</a>.</p></li>
 </ul>
-<p>Below: <a href="#being-prepared">what is being prepared</a>, <a href="#deferred-by-you">what you deferred</a> and <a href="#ruled">what is ruled</a>. Nothing waits to be confirmed: under your ruling of 2026-11-21 an implementer choice comes here only when it changes bytes or answers.</p>
+<p>After the entry: <a href="#being-prepared">what is being prepared</a>, <a href="#deferred-by-you">what you deferred</a> and <a href="#ruled">what is ruled</a>. Nothing waits to be confirmed: under your ruling of 2026-11-21 an implementer choice comes here only when it changes bytes or answers.</p>
+<h2 id="bp1-nine-narrow-cases-the-build-plan-found-open">BP1: nine narrow cases the build plan found open</h2>
+<p><strong>Where this comes from.</strong> You ruled SD1 to SD4 and AD5 on 2026-11-24. A Codex worker then wrote the build plan, and listed the cases your rulings do not settle that change a signed record or its id. There are eight, and the coordinator adds one (row 5). Neon, margins-claude and Astra read them from outside, and what they changed is in the rows. None adds a refusal code. Each row can be ruled on its own.</p>
+<p>Pieces 1 and 2 of the build (a store by name, and the description file) wait on none of these. Rows 1 to 3 hold up the <code>emit</code> shorthand, row 4 the mention flags, rows 5 to 9 the import.</p>
+<p><strong>Run on today's binary</strong> in a scratch store, for the rows that can be shown before the build:</p>
+<pre><code>$ loops emit kiln name=east name=west
+refused: member-duplicate                         exit 1
+$ loops emit kiln name:=7 &quot;a number where the key goes&quot;
+r:c0p91bic…                                       exit 0
+$ loops emit kiln name= &quot;an empty key&quot;
+r:sdqla6cq…                                       exit 0
+$ loops emit backups --of yard:east name=east &quot;kind and prefix differ&quot;
+r:omap89lt…                                       exit 0
+$ loops fold kilns-is-a.json --plain              (where kilns is kiln:a, follow keys)
+  thing  yard:south                               (kilns is the list [&quot;kiln:a&quot;,&quot;kiln:b&quot;])
+                                                  (yard:north, kilns &quot;kiln:a,kiln:b&quot;, is not listed)
+</code></pre>
+<p><strong>The rows.</strong> <code>kiln</code> declares <code>&quot;key&quot;: &quot;name&quot;</code> in rows 1 to 3.</p>
+<div class="table-scroll" tabindex="0"><table><thead><tr><th scope="col">Row</th><th scope="col">The case</th><th scope="col">Recommended</th><th scope="col">The other way, and its cost</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>The kind and the thing's prefix differ: <code>emit backups --of yard:east name=east</code>, where <code>backups</code> is keyed by <code>name</code></td><td><strong>Compare the key text only:</strong> <code>east</code> with <code>east</code>. The record format lets a record's kind differ from its thing's prefix.</td><td>Require <code>backups:east</code>. A write that is valid today, and whose key agrees, stops.</td></tr>
+<tr><td>2</td><td>A key that is not text: <code>emit kiln name:=7</code>, or <code>name=</code></td><td><strong>Stop as a usage error,</strong> when a key is being found from the field or compared with it. Nothing is turned into text. A repeated <code>name</code> stays the refusal it is today, <code>member-duplicate</code>. A keyless root that is meant, and a revision of one, keep whatever payload they are given: <code>emit kiln --root name:=7</code> writes. (The last two sentences are Astra's.)</td><td>Turn <code>7</code> into <code>&quot;7&quot;</code>: the writer gets a thing named <code>kiln:7</code> they did not ask for.</td></tr>
+<tr><td>3</td><td>A root that is meant, with the key field stated: <code>emit kiln --root name=east</code></td><td><strong>A root, with <code>name</code> kept in its payload.</strong> <code>--root</code> with <code>--of</code> or <code>--prev</code> is a usage error.</td><td>Refuse the field: the writer then needs <code>emit -</code> to keep a field on a root.</td></tr>
+<tr><td>4</td><td><code>--add-about yard:east --drop-about yard:east</code> on one command</td><td><strong>A usage error.</strong></td><td>Last one wins: changing the order of two flags changes a signed record.</td></tr>
+<tr><td>5</td><td>AD5 row 1, where the field holds the bare key and its twin resolves: <code>owner=potter</code> beside an <code>owner_ref</code> that resolves to <code>person:potter</code></td><td><strong>Written <code>person:potter</code>,</strong> when the whole value equals the whole key of the one thing the twin resolves to, byte for byte, and is not itself already written <code>kind:key</code>. The twin is the proof, a stronger one than row 2's line in the map. <code>owner=person:potter</code> beside a twin that resolves to <code>person:person:potter</code> is left and counted: it already names something (Astra). This widens AD5's bound 5, &quot;a bare key only by row 2&quot;, for this one proved case. It adds no bare items to row 6's lists, and a twin that fails is never made up for by the map. The plan compares only with <code>person/potter</code> and <code>person:potter</code>, and would leave <code>potter</code>. (The coordinator's row, from the private group, which has such values. The homelab has none: every agreeing value there is <code>kind/key</code>.)</td><td>Leave it: SD4 answers no for it, though the old store recorded exactly what it refers to.</td></tr>
+<tr><td>6</td><td>AD5 row 3, how the several targets must be written to become a list</td><td><strong>A literal comma between items, nothing trimmed,</strong> each item exactly the old or the new spelling of its resolved target, in the twin's order, repeats kept. <strong>The map may also review, for a field, a comma followed by one space.</strong> Anything else, and anything that can be read two ways, is left whole and counted. A comma inside a key is data. An item is the old or the new spelling only, never a bare key.</td><td>The comma alone: a field written <code>kiln:a, kiln:b</code> stays text, and SD4 answers no for both targets for good. All three reviewers prefer the option.</td></tr>
+<tr><td>7</td><td>AD5 row 2 on a value already written <code>kind:key</code>: <code>site=yard:east</code> in a field the map says holds a bare key of kind <code>yard</code></td><td><strong>Left as written.</strong> Only text that is not already <code>kind:key</code> is taken for a bare key.</td><td>Prefix every value: <code>yard:yard:east</code>.</td></tr>
+<tr><td>8</td><td>AD5 row 2's mention, through a thing's later facts: <code>site=east</code>, then <code>site=missing</code>, then no <code>site</code></td><td><strong>One mention for each field, replaced by each later fact that states the field:</strong> the new target where it resolves, none where it does not; kept where the fact does not state the field. No mention of the thing itself, as AD4 has it.</td><td>Mentions that only gather: a target the field left stays mentioned.</td></tr>
+<tr><td>8b</td><td>The same, where the later fact is already typed: <code>site=east</code>, then <code>site=yard:east</code></td><td><strong>The mention is kept: a typed value that names an imported thing of the kind the map states gives its mention.</strong> Otherwise the same field is mentioned or not by how an earlier fact happened to spell it. (margins-claude's view and the coordinator's.)</td><td>Clear it, as the plan has it: row 2 then mentions only what it repaired, and nothing beyond what you ruled. The field still names <code>yard:east</code> and no mention finds it. (Astra leans this way.)</td></tr>
+<tr><td>9</td><td>A twin that resolves to a keyless root, or sits beside the <code>ref</code> AD4 takes out</td><td><strong>AD4's mention as today, and no rewrite of the field.</strong> A root has no <code>kind:key</code> to write.</td><td>Write <code>r:&lt;id&gt;</code> into the field: more payloads and ids change, for a form no writer uses.</td></tr>
+</tbody></table></div>
+<p><strong>No homelab case</strong> for rows 5, 7, 8b and 9 (margins-claude): no slip-field value holds a colon, no twin resolves to a keyless root, and every agreeing value is in the old <code>kind/key</code> form. They matter for a group imported later.</p>
+<p><strong>One sentence of SD1 is out of date,</strong> and needs no ruling. It called <code>--active</code> the one flag whose JSON depends on the description. <code>--refers-to</code> (SD4) is a second. The test covers every read without either flag.</p>
 <h2 id="being-prepared">Being prepared</h2>
 <p>Nothing here needs you yet. It is listed so that you know what is coming.</p>
 <p><strong>Numbers stored as text</strong>, with the import (<a href="note-2026-11-21-order-of-work.html#w1-an-adoption-step-before-standing-and-sharing">W1</a>). <a href="note-2026-11-21-tick-record.html#tk6-what-a-spec-reads-of-a-tick">TK6</a> shows one use for it.</p>
