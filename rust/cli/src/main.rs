@@ -81,16 +81,21 @@ usage: loops [-C <dir>] <verb> ...
   ls [--things | <prefix>] [--fields a,b,c] [--plain]
                                 list things by literal prefix or project their live fields
                                 --plain on ls, of, read and fold uses the working store's optional
-                                .loops/store.json (version 1) for headlines. A kind prefix also
-                                selects preview columns unless --fields is supplied.
+                                .loops/store.json (version 1) for headlines. With a file, every head
+                                kind must agree on a declared headline field (headline, then text key).
+                                A kind prefix selects preview columns unless --fields is supplied.
   ls <kind>:<prefix> --active [--fields a,b,c] [--plain]
                                 the prefix after the colon may be empty (e.g. kiln: or kiln:e)
                                 hide things whose live lifecycle field is one text value in closed
+                                closed and active must be disjoint and list at least one value between them
                                 JSON and plain output state the kind, field and closed list applied
   ls --refers-to <thing> [--plain | --json]
                                 list things whose declared reference fields match the literal typed target
                                 report stores, field declarations and coverage counts
   describe [--plain]            show each store's description and fit against the selected union
+                                its counts include typed references whose prefix the field's refs list
+                                does not name; a refs list holds kind prefixes ([a-z][a-z0-9-]*, not r),
+                                or [] for any prefix; a kind's naming guidance goes in its note
                                 default: current store; loops --group describe reads the local group
   get <id>                      one record
   of <thing> [--plain]          a thing's values, each key's from its live

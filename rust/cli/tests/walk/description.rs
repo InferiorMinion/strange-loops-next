@@ -5,9 +5,9 @@ use std::{fs, path::PathBuf};
 const SPEC: &str = r#"{"vertex":"kiln","from":[{"store":".","kind":["kiln"]}],"fold":{"kilns":{"latest-by":"of","follow":"keys"}}}"#;
 const TWO: &str = r#"{"vertex":"kiln","from":[{"store":"."},{"store":"backups"}],"fold":{"kilns":{"latest-by":"of","follow":"keys"}}}"#;
 const FULL: &str = r#"{"version":1,"note":"workshop","kinds":{
-    "kiln":{"note":"kilns","key":"slug","key_format":"<slug>","headline":"title",
-            "refs":{"yard":["yard","potter"],"workshop":[]},"lifecycle":{"field":"status","active":["hot",""],"closed":["cold","hot"]},
-            "preview":["status","yard"],"search":["slug","title"]},
+    "kiln":{"note":"kilns","key":"slug","headline":"title",
+            "refs":{"yard":["yard","potter"],"workshop":[]},"lifecycle":{"field":"status","active":["hot",""],"closed":["cold"]},
+            "preview":["status","yard"]},
     "potter":{"key":null},"workshop":{}}}"#;
 const CHANGED: &str = r#"{"version":1,"kinds":{"kiln":{"key":"slug","preview":["title"]}}}"#;
 const BAD: &str = r#"{"version":1,"kinds":{"#;
@@ -152,8 +152,9 @@ fn grammar_checks_the_version_and_kind_map() {
     for good in [
         FULL,
         CHANGED,
+        r#"{"version":1,"kinds":{"kiln":{"note":"Use a slug."}}}"#,
         r#"{"version":1.0,"kinds":{}}"#,
-        r#"{"version":1e0,"kinds":{"Workshop:kiln":{"key":null,"headline":"env.kind","lifecycle":{"field":"state"},"preview":[],"search":[]},"backups-2":{"key":"slug","refs":{"yard.east":[]}}}}"#,
+        r#"{"version":1e0,"kinds":{"Workshop:kiln":{"key":null,"headline":"env.kind","lifecycle":{"field":"state","closed":["cold"]},"preview":[]},"backups-2":{"key":"slug","refs":{"yard.east":[]}}}}"#,
     ] {
         describe(&s, good);
         stdout(&s, &["ls", "--plain"], "");
@@ -208,7 +209,8 @@ fn grammar_checks_each_kind_member_and_nested_name() {
         (r#""note":1"#, "note: expected"),
         (r#""key":false"#, "key: expected"),
         (r#""key":"""#, "key: expected nonempty"),
-        (r#""key_format":null"#, "key_format: expected"),
+        (r#""key_format":"<slug>""#, "key_format: unknown member"),
+        (r#""key_format":null"#, "key_format: unknown member"),
         (r#""headline":null"#, "headline: expected"),
         (r#""headline":"""#, "headline: expected nonempty"),
         (r#""headline":"a","headline":"b""#, "headline: repeated"),
@@ -261,16 +263,43 @@ fn grammar_checks_each_kind_member_and_nested_name() {
         (r#""preview":[false]"#, "preview[0]: expected"),
         (r#""preview":[""]"#, "preview[0]: expected nonempty"),
         (r#""preview":["yard","yard"]"#, "preview[1]: repeated"),
-        (r#""search":{}"#, "search: expected"),
-        (r#""search":[1]"#, "search[0]: expected"),
-        (r#""search":[""]"#, "search[0]: expected nonempty"),
-        (r#""search":["yard","yard"]"#, "search[1]: repeated"),
+        (r#""search":["yard"]"#, "search: unknown member"),
+        (r#""search":{}"#, "search: unknown member"),
+        (r#""search":[1]"#, "search: unknown member"),
+        (r#""search":[""]"#, "search: unknown member"),
+        (r#""search":["yard","yard"]"#, "search: unknown member"),
     ] {
         describe(
             &s,
             format!(r#"{{"version":1,"kinds":{{"kiln":{{{members}}}}}}}"#),
         );
         error(&s, &["ls", "--plain"], "", 2, &format!("kinds.kiln.{at}"));
+    }
+}
+
+#[test]
+fn refs_accept_only_natural_kind_prefixes() {
+    let s = fixed_store("kiln-description-refs");
+    let write = |list: &str| {
+        describe(
+            &s,
+            format!(r#"{{"version":1,"kinds":{{"kiln":{{"refs":{{"yard":{list}}}}}}}}}"#),
+        );
+    };
+    for list in ["[]", r#"["r2","yard-2"]"#] {
+        write(list);
+        stdout(&s, &["ls", "--plain"], "");
+    }
+    for prefix in ["r", "Yard", "yard:west", "yard_2", "2yard"] {
+        let list = format!(r#"["yard-2","{prefix}"]"#);
+        write(&list);
+        error(
+            &s,
+            &["ls", "--plain"],
+            "",
+            2,
+            "$.kinds.kiln.refs.yard[1]: expected a kind prefix [a-z][a-z0-9-]* other than r",
+        );
     }
 }
 
@@ -285,6 +314,8 @@ fn plain_headlines_previews_and_explicit_fields() {
             &["ls", "--things", "--plain"][..],
             &["of", "kiln:east", "--plain"],
             &["read", "morning", "--plain"],
+            &["read", "morning", "--values", "--plain"],
+            &["fold", ".loops/vertices/morning.json", "--plain"],
             &[
                 "fold",
                 ".loops/vertices/morning.json",
@@ -328,7 +359,7 @@ fn plain_headlines_previews_and_explicit_fields() {
         &s,
         r#"{"version":1,"kinds":{"kiln":{"key":null,"preview":[]}}}"#,
     );
-    assert_eq!(listing("kiln:"), original);
+    assert_eq!(listing("kiln:"), original.replace("  Kiln", "  —"));
     describe(
         &s,
         r#"{"version":1,"kinds":{"kiln":{"headline":"missing","key":"slug"}}}"#,
@@ -341,27 +372,45 @@ fn a_headline_needs_agreement_between_the_actual_head_kinds() {
     let s = fixed_store("workshop-description-heads");
     s.changeset(r#"{"kind":"yard","of":"kiln:east","sets":["name","title"],"payload":{"name":"Kiln","title":"East kiln"}}
 {"kind":"potter","of":"kiln:east","sets":[]}"#);
-    for (potter, want) in [
-        (r#"{"key":"title"}"#, "East kiln"),
-        (r#"{"headline":"yard"}"#, "Kiln"),
-        ("{}", "Kiln"),
+    let spec = SPEC.replace(r#","kind":["kiln"]"#, "");
+    save_morning(&s, &spec);
+    for (declarations, want) in [
+        (
+            r#""yard":{"headline":"title"},"potter":{"key":"title"}"#,
+            Some("East kiln"),
+        ),
+        (
+            r#""yard":{"headline":"title"},"potter":{"headline":"yard"}"#,
+            None,
+        ),
+        (r#""yard":{"headline":"title"},"potter":{}"#, None),
+        (r#""yard":{"headline":"name"}"#, None),
+        (r#""kiln":{"headline":"title"}"#, None),
     ] {
-        describe(
-            &s,
-            format!(
-                r#"{{"version":1,"kinds":{{"yard":{{"headline":"title"}},"potter":{potter},"kiln":{{"headline":"unused"}}}}}}"#
-            ),
-        );
-        assert!(s.ok(&["ls", "--things", "--plain"]).ends_with(want));
-        assert_eq!(
-            s.ok(&["of", "kiln:east", "--plain"]).lines().next(),
-            Some(format!("thing  kiln:east  {want}").as_str())
-        );
-        let spec = SPEC.replace(r#","kind":["kiln"]"#, "");
+        describe(&s, format!(r#"{{"version":1,"kinds":{{{declarations}}}}}"#));
+        let cell = want.unwrap_or("—");
         assert!(
-            s.ok_with(&["fold", "-", "--plain"], &spec)
-                .contains(&format!("thing  kiln:east  {want}\n"))
+            s.ok(&["ls", "--things", "--plain"])
+                .ends_with(&format!("  {cell}"))
         );
+        let mut expected = String::from("thing  kiln:east");
+        if let Some(headline) = want {
+            expected.push_str("  ");
+            expected.push_str(headline);
+        }
+        for args in [
+            &["of", "kiln:east", "--plain"][..],
+            &["read", "morning", "--plain"],
+            &["read", "morning", "--values", "--plain"],
+            &["fold", "-", "--plain"],
+            &["fold", "-", "--values", "--plain"],
+        ] {
+            let view = s.ok_with(args, if args[0] == "fold" { &spec } else { "" });
+            assert!(
+                view.lines().any(|line| line.trim_start() == expected),
+                "{args:?}\n{view}"
+            );
+        }
     }
 }
 

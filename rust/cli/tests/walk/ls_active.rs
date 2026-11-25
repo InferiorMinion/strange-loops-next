@@ -4,7 +4,7 @@ use std::fs;
 
 const DESCRIPTION: &str = r#"{"version":1,"kinds":{"kiln":{
     "headline":"title","preview":["title"],
-    "lifecycle":{"field":"stage","closed":["retired","broken"],"active":["hot","broken"]}
+    "lifecycle":{"field":"stage","closed":["retired","broken"],"active":["hot"]}
 },"yard":{}}}"#;
 const RULE: &str = r#"{"closed":["retired","broken"],"field":"stage","kind":"kiln"}"#;
 const NEEDS: &str = "--active needs a <kind>: prefix whose kind declares lifecycle";
@@ -126,7 +126,7 @@ fn empty_and_omitted_closed_keep_everything() {
     let baseline = s.json(&["ls", "kiln:"]);
     for lifecycle in [
         r#"{"field":"stage","active":["hot"],"closed":[]}"#,
-        r#"{"field":"stage"}"#,
+        r#"{"field":"stage","active":["hot"]}"#,
     ] {
         describe(
             &s,
@@ -179,6 +179,18 @@ fn invalid_prefix_and_description_diagnostics() {
         ("{}", ".field: missing member"),
         (r#"{"field":null}"#, ".field: expected text"),
         (r#"{"field":""}"#, ".field: expected nonempty text"),
+        (
+            r#"{"field":"stage"}"#,
+            ": expected at least one value in closed or active",
+        ),
+        (
+            r#"{"field":"stage","closed":[],"active":[]}"#,
+            ": expected at least one value in closed or active",
+        ),
+        (
+            r#"{"field":"stage","active":["hot","broken"],"closed":["broken"]}"#,
+            ".active[1]: broken also appears in closed",
+        ),
         (r#"{"closed":false}"#, ".closed: expected an array"),
         (r#"{"active":false}"#, ".active: expected an array"),
         (r#"{"closed":[1]}"#, ".closed[0]: expected text"),

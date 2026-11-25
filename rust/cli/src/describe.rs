@@ -113,10 +113,11 @@ struct References {
     not_typed: usize,
     not_read: usize,
     without_mention: usize,
+    unlisted_prefix: usize,
 }
 
 impl References {
-    fn counts(&self) -> [(&'static str, usize); 6] {
+    fn counts(&self) -> [(&'static str, usize); 7] {
         [
             ("held_here", self.held_here),
             ("held_elsewhere_in_group", self.elsewhere),
@@ -124,11 +125,18 @@ impl References {
             ("not_typed", self.not_typed),
             ("not_read", self.not_read),
             ("without_mention", self.without_mention),
+            ("unlisted_prefix", self.unlisted_prefix),
         ]
     }
 
-    fn observe(&mut self, field: &str, thing: &Thing<'_>, site: usize) {
+    fn observe(&mut self, field: &str, prefixes: &[String], thing: &Thing<'_>, site: usize) {
         let coverage = count_values(setter_values(thing.held, thing.state, field), |target| {
+            let (prefix, _) = target
+                .split_once(':')
+                .expect("typed reference has a prefix");
+            if !prefixes.is_empty() && !prefixes.iter().any(|p| p == prefix) {
+                self.unlisted_prefix += 1;
+            }
             match thing.locations.get(target) {
                 Some(sites) if sites.contains(&site) => self.held_here += 1,
                 Some(_) => self.elsewhere += 1,
@@ -190,8 +198,13 @@ impl Fit {
         if let (Some(status), Some(life)) = (&mut self.lifecycle, &kind.lifecycle) {
             status.observe(life, thing);
         }
-        for (field, counts) in &mut self.refs {
-            counts.observe(field, thing, site);
+        if let Some(refs) = &kind.refs {
+            for (field, prefixes) in refs {
+                self.refs
+                    .get_mut(field)
+                    .expect("declared reference field")
+                    .observe(field, prefixes, thing, site);
+            }
         }
     }
 
@@ -327,7 +340,8 @@ impl Site {
                             "OUTSIDE SELECTED GROUP",
                             "NOT TYPED",
                             "NOT READ",
-                            "WITHOUT MENTION"
+                            "WITHOUT MENTION",
+                            "UNLISTED PREFIX"
                         ],
                         rows
                     )

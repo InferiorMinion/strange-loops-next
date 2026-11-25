@@ -17,12 +17,10 @@ pub(crate) struct Description {
 pub(crate) struct Kind {
     note: Option<String>,
     key: Key,
-    key_format: Option<String>,
     headline: Option<String>,
     pub(crate) refs: Option<BTreeMap<String, Vec<String>>>,
     pub(crate) lifecycle: Option<Lifecycle>,
     preview: Option<Vec<String>>,
-    search: Option<Vec<String>>,
 }
 
 #[derive(Default)]
@@ -33,10 +31,11 @@ enum Key {
     Field(String),
 }
 
+#[derive(Default)]
 pub(crate) struct Lifecycle {
     pub(crate) field: String,
-    active: Option<Vec<String>>,
-    closed: Option<Vec<String>>,
+    active: Vec<String>,
+    closed: Vec<String>,
 }
 
 impl Description {
@@ -99,21 +98,13 @@ impl Description {
         Ok(desc)
     }
 
-    /// A field configured by the heads. Disagreement uses the historical name
-    /// field. Without any configuration, each view keeps its original layout.
+    /// Every head kind must declare the same effective headline field.
     pub(crate) fn headline<'a>(&'a self, heads: &[Record]) -> Option<&'a str> {
-        let mut common = None;
-        let mut configured = false;
-        for head in heads {
-            let field = self.kinds.get(&head.kind).and_then(Kind::headline);
-            configured |= field.is_some();
-            let effective = field.unwrap_or("name");
-            if common.is_some_and(|previous| previous != effective) {
-                return Some("name");
-            }
-            common = Some(effective);
-        }
-        common.filter(|_| configured)
+        let mut fields = heads
+            .iter()
+            .map(|head| self.kinds.get(&head.kind)?.headline());
+        let common = fields.next().flatten()?;
+        fields.all(|field| field == Some(common)).then_some(common)
     }
 
     pub(crate) fn preview(&self, prefix: &str) -> Option<&[String]> {
@@ -152,7 +143,6 @@ impl Kind {
         members(json, path, |key, at, val| {
             match key.as_str() {
                 "note" => kind.note = Some(string(val, at)?),
-                "key_format" => kind.key_format = Some(string(val, at)?),
                 "headline" => kind.headline = Some(nonempty(val, at)?),
                 "key" if val == Json::Null => kind.key = Key::Null,
                 "key" => {
@@ -170,14 +160,13 @@ impl Kind {
                         if !matches!(Field::of_name(&field), Some(Field::Payload(_))) {
                             return Err(format!("{at}: expected a payload field name"));
                         }
-                        refs.insert(field, list(targets, at, nonempty)?);
+                        refs.insert(field, list(targets, at, kind_prefix)?);
                         Ok(())
                     })?;
                     kind.refs = Some(refs);
                 }
                 "lifecycle" => kind.lifecycle = Some(Lifecycle::parse(val, at)?),
                 "preview" => kind.preview = Some(list(val, at, nonempty)?),
-                "search" => kind.search = Some(list(val, at, nonempty)?),
                 _ => return Err(format!("{at}: unknown member")),
             }
             Ok(())
@@ -188,30 +177,40 @@ impl Kind {
 
 impl Lifecycle {
     pub(crate) fn lists(&self, value: &Json) -> bool {
-        matches!(value, Json::Str(s) if self.closed().contains(s) || self.active.as_deref().unwrap_or_default().contains(s))
+        matches!(value, Json::Str(s) if self.closed.contains(s) || self.active.contains(s))
     }
 
     pub(crate) fn closed(&self) -> &[String] {
-        self.closed.as_deref().unwrap_or_default()
+        &self.closed
     }
 
     fn parse(json: Json, path: &str) -> Result<Self, String> {
-        let mut lifecycle = Self {
-            field: String::new(),
-            active: None,
-            closed: None,
-        };
+        let mut lifecycle = Self::default();
         members(json, path, |key, at, val| {
             match key.as_str() {
                 "field" => lifecycle.field = nonempty(val, at)?,
-                "active" => lifecycle.active = Some(list(val, at, string)?),
-                "closed" => lifecycle.closed = Some(list(val, at, string)?),
+                "active" => lifecycle.active = list(val, at, string)?,
+                "closed" => lifecycle.closed = list(val, at, string)?,
                 _ => return Err(format!("{at}: unknown member")),
             }
             Ok(())
         })?;
         if lifecycle.field.is_empty() {
             return Err(format!("{path}.field: missing member"));
+        }
+        if lifecycle.active.is_empty() && lifecycle.closed.is_empty() {
+            return Err(format!(
+                "{path}: expected at least one value in closed or active"
+            ));
+        }
+        let closed: HashSet<_> = lifecycle.closed.iter().collect();
+        for (i, value) in lifecycle.active.iter().enumerate() {
+            if closed.contains(value) {
+                return Err(format!(
+                    "{path}.active[{i}]: {} also appears in closed",
+                    label(value)
+                ));
+            }
         }
         Ok(lifecycle)
     }
@@ -247,6 +246,16 @@ fn nonempty(json: Json, path: &str) -> Result<String, String> {
     let s = string(json, path)?;
     if s.is_empty() {
         return Err(format!("{path}: expected nonempty text"));
+    }
+    Ok(s)
+}
+
+fn kind_prefix(json: Json, path: &str) -> Result<String, String> {
+    let s = nonempty(json, path)?;
+    if !natural_kind(&s) {
+        return Err(format!(
+            "{path}: expected a kind prefix [a-z][a-z0-9-]* other than r"
+        ));
     }
     Ok(s)
 }
