@@ -15,7 +15,8 @@ written down here so they can be changed on purpose.
 ```
 loops init                          make .loops/ here
 loops emit <kind> [field=text | field:=json]... ["message"]
-      [--root | [--of <thing>] [--prev <id>]...] [--about <thing>]... [--no-about]
+      [--root | [--of <thing>] [--prev <id>]...]
+      [(--about <thing>)... | --no-about | [--add-about <thing>]... [--drop-about <thing>]...]
       [--erases <id>]... [--occurred <when> | --no-occurred] [--under <id>]
       [--sets <key>]... [--sets-nothing] [--whole]
       [--base <tick-id>] [--base-id <id>]...
@@ -79,8 +80,9 @@ loops whoami --init                     ensure the signing key exists and print 
   the filler starts from the tick cover, the literal ids and any stated
   `--prev`. It follows held predecessors within the thing and adds that
   view's live records to the stated `prev` (choices 11 and 23).
-* An emit of a thing carries the thing's whole `about`, copied from its heads
-  unless `--about` or `--no-about` states it; see choices 12 and 13.
+* An emit of a thing copies `about` from its heads. The shorthand can edit
+  that copy with `--add-about` and `--drop-about`, or state the whole set
+  with `--about` or `--no-about`. See choices 12 and 13.
 * An emit copies `occurred` when every head states the same text, unless
   `--occurred` or `--no-occurred` states it. See choice 19.
 * A plain `emit -` changeset states its own `of`, `sets`, `prev`, `about`
@@ -226,6 +228,22 @@ Every verb that reads the store says when either happened (choice 18).
     `--no-about` states that the emit mentions nothing, and the thing then
     mentions nothing until an emit names something again. The two together
     are a usage error, as `--sets` with `--sets-nothing` is.
+
+    On one-record shorthand `emit`, each `--add-about <thing>` adds one
+    mention to the heads' union and each `--drop-about <thing>` removes one.
+    With `--base`, the union comes from the heads in the writer's selected
+    view. A root or a first write starts empty. For example, if the heads
+    mention `potter:p` and `yard:a`, then `--drop-about yard:a --add-about yard:b`
+    writes `["potter:p","yard:b"]`. The writer signs the distinct mentions
+    in canonical order, and a later ordinary revision copies that set.
+
+    Both flags take literal typed names, including a drop of an absent
+    mention. Repeating either flag, adding a carried mention, or dropping
+    an absent one is harmless. Mixing either flag with a whole-set flag,
+    or adding and dropping the same name, gives usage error 2. The edit
+    needs no description and copies no payload references into `about`.
+    The usual shorthand checks still apply. Changeset input and `tick`
+    keep their existing envelope options.
 14. **The filler is in `loops-place`.** `loops_place::fill` fills in `of`
     (choice 9), then `sets` (choice 15), then the anchor and `about`
     (choices 11–13), over what a store holds, and `loops emit` calls it

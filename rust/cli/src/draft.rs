@@ -3,9 +3,9 @@
 use crate::{Fail, cut::Cut, link, refused, thing_ref, usage};
 use loops::{
     base32,
-    batch::Draft,
+    batch::{self, Draft},
     envelope::{self, Env},
-    json::Json,
+    json::{Json, canon_set},
     spec::Spec,
 };
 use loops_place::{
@@ -13,6 +13,7 @@ use loops_place::{
     fill::{About, Occurred, Sets, Statement},
     key,
 };
+use std::collections::BTreeSet;
 
 fn new_salt() -> Result<Vec<u8>, Fail> {
     key::salt().map_err(|e| Fail::System(e.to_string()))
@@ -116,6 +117,64 @@ pub(crate) struct Single {
     pub(crate) statement: Statement,
     pub(crate) base: Option<BaseArgs>,
     pub(crate) root: bool,
+    pub(crate) mentions: AboutFlags,
+}
+
+#[derive(Default)]
+pub(crate) struct AboutFlags {
+    no_about: bool,
+    add: BTreeSet<String>,
+    drop: BTreeSet<String>,
+}
+
+impl AboutFlags {
+    fn mode(&self, stated: &[String]) -> Result<About, Fail> {
+        if self.no_about && !stated.is_empty() {
+            return Err(usage("--no-about takes no --about beside it"));
+        }
+        if self.no_about || !stated.is_empty() {
+            let whole = if self.no_about {
+                "--no-about"
+            } else {
+                "--about"
+            };
+            for (flag, operands) in [("--add-about", &self.add), ("--drop-about", &self.drop)] {
+                if !operands.is_empty() {
+                    return Err(usage(format!(
+                        "{whole} states the whole mention set and cannot be combined with {flag}"
+                    )));
+                }
+            }
+            return Ok(About::Stated);
+        }
+        if let Some(thing) = self.add.intersection(&self.drop).next() {
+            return Err(usage(format!(
+                "cannot both add and drop {} (--add-about and --drop-about)",
+                crate::plain::label(thing)
+            )));
+        }
+        Ok(About::Copied)
+    }
+
+    /// The filler has already selected the heads visible to this write.
+    pub(crate) fn apply(self, carried: &mut Vec<String>) -> Result<(), Fail> {
+        if self.add.is_empty() && self.drop.is_empty() {
+            return Ok(());
+        }
+        // Even a drop that removes nothing takes a valid --about operand.
+        // A one-record shorthand has no batch labels to resolve.
+        let mut operands = self.add.iter().chain(&self.drop);
+        if operands.clone().any(|s| batch::is_label(s)) {
+            return Err(refused("label-unknown"));
+        }
+        if !operands.all(|s| envelope::typed_ref(s)) {
+            return Err(refused("about-not-typed"));
+        }
+        carried.retain(|s| !self.drop.contains(s));
+        carried.extend(self.add);
+        *carried = canon_set(carried);
+        Ok(())
+    }
 }
 
 #[derive(Default)]
@@ -170,7 +229,7 @@ pub(crate) fn from_args(
     let mut fields: Vec<(String, Json)> = Vec::new();
     let mut message = None;
     let mut set_flags = SetFlags::default();
-    let mut no_about = false;
+    let mut mentions = AboutFlags::default();
     let mut no_occurred = false;
     let mut rest = args.iter();
     let mut options = true;
@@ -191,7 +250,13 @@ pub(crate) fn from_args(
             "--root" if tick_spec.is_none() => root = true,
             "--about" => env.about.push(value()?),
             "--base" | "--base-id" => add_base(&mut base, arg, value()?)?,
-            "--no-about" => no_about = true,
+            "--no-about" => mentions.no_about = true,
+            "--add-about" if tick_spec.is_none() => {
+                mentions.add.insert(value()?);
+            }
+            "--drop-about" if tick_spec.is_none() => {
+                mentions.drop.insert(value()?);
+            }
             "--of" => env.of = Some(thing_ref(held, &value()?)?),
             "--prev" => env.prev.push(link(held, &value()?)?),
             "--erases" => env.erases.push(link(held, &value()?)?),
@@ -222,18 +287,11 @@ pub(crate) fn from_args(
         ));
     }
     let sets = set_flags.mode(&env)?;
-    if no_about && !env.about.is_empty() {
-        return Err(usage("--no-about takes no --about beside it"));
-    }
+    let about = mentions.mode(&env.about)?;
     let occurred = match (no_occurred, env.occurred.is_some()) {
         (true, true) => return Err(usage("--no-occurred takes no --occurred beside it")),
         (false, false) => Occurred::Copied,
         _ => Occurred::Stated,
-    };
-    let about = if no_about || !env.about.is_empty() {
-        About::Stated
-    } else {
-        About::Copied
     };
     env.kind = kind.ok_or_else(|| usage("emit takes a kind"))?;
     if let Some(message) = message {
@@ -258,6 +316,7 @@ pub(crate) fn from_args(
         statement,
         base,
         root,
+        mentions,
     })
 }
 

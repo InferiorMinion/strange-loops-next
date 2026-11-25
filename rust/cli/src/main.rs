@@ -60,7 +60,8 @@ usage: loops [-C <dir>] <verb> ...
 
   init                          make .loops/ here
   emit <kind> [field=text | field:=json]... [\"message\"]
-       [--root | [--of <thing>] [--prev <id>]...] [--about <thing>]... [--no-about]
+       [--root | [--of <thing>] [--prev <id>]...]
+       [(--about <thing>)... | --no-about | [--add-about <thing>]... [--drop-about <thing>]...]
        [--erases <id>]... [--occurred <when> | --no-occurred] [--under <id>]
        [--sets <key>]... [--sets-nothing] [--whole]
        [--base <tick-id>] [--base-id <id>]...
@@ -86,7 +87,10 @@ usage: loops [-C <dir>] <verb> ...
                                 include stated prev targets, then follow held prev within the thing
                                 add the thing's live records to prev and copy its heads' about
                                 copy occurred when every head states the same text
-                                the about and occurred flags override copying
+                                --about (repeatable) or --no-about states the whole mention set
+                                --add-about and --drop-about edit the copied mentions by literal name
+                                repeat either flag freely. Adding and dropping the same name is an error.
+                                --occurred and --no-occurred override the copied occurrence
                                 for a thing held in that view, set the payload keys unless stated
   emit - [--fill [--base <tick-id>] [--base-id <id>]...]
                                 read one JSONL changeset from stdin
@@ -541,9 +545,12 @@ fn emit(ctx: &Context<'_>, args: &[String]) -> Result<(), Fail> {
     let key = signing_key(Missing::Make)?;
     let now = clock::now().ok_or_else(|| Fail::System("the clock is outside 1970–9999".into()))?;
     if args.first().is_some_and(|a| a == "-")
-        && args
-            .get(1)
-            .is_none_or(|a| matches!(a.as_str(), "--fill" | "--base" | "--base-id"))
+        && args.get(1).is_none_or(|a| {
+            matches!(
+                a.as_str(),
+                "--fill" | "--base" | "--base-id" | "--add-about" | "--drop-about"
+            )
+        })
     {
         let (mode, selector) = draft::changeset_args(&args[1..])?;
         let mut input = String::new();
@@ -595,7 +602,7 @@ fn write_one(
     } else {
         None
     };
-    let (draft, notices) = if let Some(args) = single.base {
+    let (mut draft, notices) = if let Some(args) = single.base {
         fill::one_with_base(held, &base_forms(held, args)?, single.statement)
     } else {
         fill::one(&|id| held.writer_view(id), &realm(held), single.statement)
@@ -605,6 +612,7 @@ fn write_one(
     if let Some(field) = compare {
         shorthand::compare_key(&draft, field, source)?;
     }
+    single.mentions.apply(&mut draft.env.about)?;
     bound(key, [&draft])?;
     let lines = write_changeset(place, held, key, &[draft])?;
     base_notices(notices);
