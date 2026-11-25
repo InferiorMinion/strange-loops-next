@@ -94,7 +94,7 @@ fn forks_and_competing_lists_match_keyed_folds() {
 #[test]
 fn literal_targets_coverage_and_absent_setters_match_keyed_folds() {
     let s = fixed_store("kiln-reference-literals");
-    describe(&s, KILN);
+    describe(&s, r#"{"kiln":{"refs":{"site":[]}},"potter":{}}"#);
     let root = s.ok(&["emit", "potter"]);
     s.changeset(&format!(r#"{{"kind":"kiln","of":"kiln:east","payload":{{"site":"kiln:east"}}}}
 {{"kind":"kiln","of":"kiln:bare","payload":{{"site":"east"}}}}
@@ -166,7 +166,7 @@ fn only_current_head_kinds_select_fields_and_overlapping_roles_count_once() {
     let s = fixed_store("workshop-reference-head-kinds");
     describe(
         &s,
-        r#"{"workshop":{"refs":{"site":[]}},"yard":{"refs":{"site":[]}}}"#,
+        r#"{"workshop":{"refs":{"site":[]}},"yard":{"refs":{"site":[]}},"potter":{}}"#,
     );
     let root = s.ok(&[
         "emit",

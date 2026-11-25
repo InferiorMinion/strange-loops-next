@@ -4867,3 +4867,6 @@ mod describe;
 
 #[path = "walk/refers_to.rs"]
 mod refers_to;
+
+#[path = "walk/emit_strict.rs"]
+mod emit_strict;

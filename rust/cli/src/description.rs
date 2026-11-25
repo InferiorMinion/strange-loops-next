@@ -1,4 +1,4 @@
-//! The optional, store-local description used by the CLI's listings and plain views.
+//! The optional, store-local kind declarations for CLI readers and shorthand emit.
 use crate::{Fail, plain::label, usage};
 use loops::{envelope::typed_ref, json::Json, record::Record, where_::Field};
 use std::{
@@ -182,6 +182,10 @@ impl Lifecycle {
 
     pub(crate) fn closed(&self) -> &[String] {
         &self.closed
+    }
+
+    pub(crate) fn active(&self) -> &[String] {
+        &self.active
     }
 
     fn parse(json: Json, path: &str) -> Result<Self, String> {

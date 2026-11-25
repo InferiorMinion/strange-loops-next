@@ -45,16 +45,11 @@ fn descriptions_preserve_declarations_and_measure_key_and_lifecycle_drift() {
 {"kind":"kiln","of":"kiln:fork","sets":["slug","stage"],"payload":{"slug":"east","stage":"parked"}}
 {"kind":"kiln","of":"kiln:fork","sets":["slug","stage"],"payload":{"slug":"west","stage":{"yard":2}}}
 {"kind":"potter","of":"potter:east","payload":{}}"#);
-    let hidden = s.ok(&[
-        "emit",
-        "kiln",
-        "--of",
-        "kiln:hidden",
-        "slug=hidden",
-        "stage=parked",
-    ]);
-    s.ok(&["erase", &hidden]);
-    let root = s.ok(&["emit", "kiln", "slug=old", "stage=hot"]);
+    let hidden = s.changeset(
+        r#"{"kind":"kiln","of":"kiln:hidden","payload":{"slug":"hidden","stage":"parked"}}"#,
+    );
+    s.ok(&["erase", &hidden[0]]);
+    let root = s.ok(&["emit", "kiln", "--root", "slug=old", "stage=hot"]);
     s.ok(&["emit", "kiln", "--prev", &root, "slug=new"]);
     let report = s.json(&["describe"]);
     let here = site(&report, &s);
