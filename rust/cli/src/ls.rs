@@ -44,7 +44,12 @@ impl ThingRow {
             kinds: canon_set(&kinds),
             records: n,
             heads: heads.len(),
-            headline: reader.read(desc.and_then(|d| d.headline(&heads)).unwrap_or("name")),
+            headline: match desc {
+                Some(d) => d
+                    .headline(&heads)
+                    .map_or(Field::Unset, |key| reader.read(key)),
+                None => reader.read("name"),
+            },
             fields: names.iter().map(|k| reader.read(k)).collect(),
         })
     }

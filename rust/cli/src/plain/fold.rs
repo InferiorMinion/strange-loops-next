@@ -194,8 +194,11 @@ impl Reading<'_> {
                     write!(out, "\n  thing  {}", text(self.ids.short(&name)))
                         .expect("write string");
                     let fields = Fields::new(self.held, &state);
-                    let configured = self.description.and_then(|d| d.headline(&state.heads()));
-                    if let Some(field) = configured.or((self.view == View::Ids).then_some("name")) {
+                    let field = match self.description {
+                        Some(desc) => desc.headline(&state.heads()),
+                        None => (self.view == View::Ids).then_some("name"),
+                    };
+                    if let Some(field) = field {
                         write!(out, "  {}", headline(&fields.read(field))).expect("write string");
                     }
                     out.push_str("\n    heads");

@@ -1033,12 +1033,12 @@ Every verb that reads the store says when either happened (choice 18).
 
     | Member | Value |
     | --- | --- |
-    | `note`, `key_format` | Text, preserved literally. |
+    | `note` | Text, preserved literally. Put the kind's naming guidance here. |
     | `key` | A nonempty payload field name or explicit `null`. A string key requires a kind matching `[a-z][a-z0-9-]*` other than `r`. |
     | `headline` | A nonempty payload field name. |
-    | `refs` | An object mapping nonempty payload field names to arrays of distinct nonempty kind names. The spec reserves `env.`, so a reference field cannot start with it. An empty array admits any kind. |
-    | `lifecycle` | An object with required nonempty text `field` and optional `active` and `closed` arrays of distinct strings. Each omitted list defaults to empty. |
-    | `preview`, `search` | Ordered arrays of distinct nonempty payload field names. |
+    | `refs` | An object mapping nonempty payload field names to arrays of distinct kind prefixes matching `[a-z][a-z0-9-]*` other than `r`. An empty array allows every prefix, including `r`. The spec reserves `env.`, so a reference field cannot start with it. |
+    | `lifecycle` | An object with required nonempty text `field` and optional `active` and `closed` arrays of distinct strings. An omitted list defaults to empty. Together the lists must contain at least one value, and they must be disjoint. |
+    | `preview` | An ordered array of distinct nonempty payload field names. |
 
     Plain `ls`, `of`, `read` and `fold` load the working store's description.
     Two `ls` flags also use descriptions in JSON output, `--active` and
@@ -1052,9 +1052,13 @@ Every verb that reads the store says when either happened (choice 18).
     error location on stderr. A file-system failure gives exit 3 with the
     filename. Both leave stdout empty.
 
-    For each head kind, choose the field named by `headline`, then by a
-    string `key`, then `name`. If head kinds disagree, use `name`. Read that
-    literal payload field with the usual live-setter rules. Missing, non-text,
+    With a file, each head kind must declare the same headline field. Use
+    the kind's `headline` when present, otherwise its string `key`. If any
+    head lacks a declared field or the heads disagree, the `ls` headline
+    cell shows `—` and the other plain views omit the headline. With no file,
+    plain `ls` and keyed folds in ID view use `name` as before. JSON `ls`
+    always reads its headline from `name`. The selected field is read
+    literally with the usual live-setter rules. Missing, non-text,
     conflicting and unread values keep their ordinary headline rendering.
     A configured headline appears on the thing line of plain `of` and keyed
     folds, including with `--values`. All existing detail is still shown.
@@ -1123,9 +1127,12 @@ Every verb that reads the store says when either happened (choice 18).
     A target's residence requires an admitted record of it. Other values,
     including nested lists and objects, count as `not_typed`. Independently,
     `without_mention` counts typed occurrences absent from the union of current
-    heads' mentions. These observations leave the command successful. An
-    unclean store retains the checked-lines answer and the existing integrity
-    refusal, naming the affected store directories.
+    heads' mentions. `unlisted_prefix` counts readable typed occurrences
+    whose prefix is absent from the field's `refs` list. A nonempty list
+    counts every `r:` occurrence as unlisted. An empty list always gives
+    zero. These observations leave the command successful. An unclean store
+    retains the checked-lines answer and the existing integrity refusal,
+    naming the affected store directories.
 
 37. **Find things that refer to a target.** `loops ls --refers-to kiln:east`
     takes one complete typed name. A root ID must be written in full.

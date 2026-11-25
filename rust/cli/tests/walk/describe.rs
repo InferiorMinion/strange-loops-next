@@ -33,10 +33,10 @@ fn expect(value: &Json, keys: &[&str], json: &str) {
 fn descriptions_preserve_declarations_and_measure_key_and_lifecycle_drift() {
     let s = fixed_store("kiln-describe-fit");
     let description = r#"{"note":"Workshop kilns","version":1,"kinds":{
-        "kiln":{"key":"slug","key_format":"<slug>","search":["notes","stage"],"headline":"notes","preview":[],
+        "kiln":{"key":"slug","note":"Use a slug.","headline":"notes","preview":[],
                 "lifecycle":{"field":"stage","closed":["cold"],"active":["hot"]}},
         "backups":{"key":null,"note":"Backups"},
-        "yard":{"key":"name","refs":{"kilns":[]},"lifecycle":{"field":"stage"}}}}"#;
+        "yard":{"key":"name","refs":{"kilns":[]},"lifecycle":{"field":"stage","closed":["cold"]}}}}"#;
     put(&s, description);
     s.changeset(r#"{"kind":"kiln","of":"kiln:east:1","payload":{"slug":"east:1","stage":"parked"}}
 {"kind":"kiln","of":"kiln:west","payload":{"slug":3,"stage":"cold"}}
@@ -82,7 +82,7 @@ fn descriptions_preserve_declarations_and_measure_key_and_lifecycle_drift() {
         &["fit", "yard"],
         r#"{"declared":true,"things":0,"key":{"equal":0,"different":0,"unset":0,"conflict":0,"not_read":0,"keyless_roots":0},
         "lifecycle":{"outside":[],"unset":0,"conflict":0,"not_read":0},
-        "refs":{"kilns":{"held_here":0,"held_elsewhere_in_group":0,"not_in_group":0,"not_typed":0,"not_read":0,"without_mention":0}}}"#,
+        "refs":{"kilns":{"held_here":0,"held_elsewhere_in_group":0,"not_in_group":0,"not_typed":0,"not_read":0,"without_mention":0,"unlisted_prefix":0}}}"#,
     );
     let plain = s.ok(&["describe", "--plain"]);
     for part in [
@@ -98,6 +98,7 @@ fn descriptions_preserve_declarations_and_measure_key_and_lifecycle_drift() {
         "ELSEWHERE IN SELECTED GROUP",
         "OUTSIDE SELECTED GROUP",
         "WITHOUT MENTION",
+        "UNLISTED PREFIX",
     ] {
         assert!(plain.contains(part), "{part}\n{plain}");
     }
@@ -110,6 +111,36 @@ fn descriptions_preserve_declarations_and_measure_key_and_lifecycle_drift() {
 
 fn copy_id(from: &Store, to: &Store, id: &str) {
     to.ok_with(&["import"], &from.ok(&["get", id]));
+}
+
+#[test]
+fn unlisted_prefix_counts_typed_occurrences_and_keeps_them_searchable() {
+    let s = fixed_store("kiln-describe-prefixes");
+    let root = s.ok(&["emit", "potter"]);
+    s.ok(&[
+        "emit",
+        "kiln",
+        "--of",
+        "kiln:east",
+        &format!(r#"owners:=["yard:east","potter:west","{root}","bare",["potter:west"]]"#),
+    ]);
+    for (prefixes, want) in [(r#"["yard"]"#, "2"), ("[]", "0")] {
+        put(
+            &s,
+            &format!(r#"{{"version":1,"kinds":{{"kiln":{{"refs":{{"owners":{prefixes}}}}}}}}}"#),
+        );
+        let report = s.json(&["describe"]);
+        let field = at(site(&report, &s), &["fit", "kiln", "refs", "owners"]);
+        expect(field, &["unlisted_prefix"], want);
+        expect(field, &["not_typed"], "2");
+        for target in ["potter:west", &root] {
+            expect(
+                &s.json(&["ls", "--refers-to", target]),
+                &["things"],
+                r#"["kiln:east"]"#,
+            );
+        }
+    }
 }
 
 #[test]
@@ -163,12 +194,12 @@ fn union_reads_new_heads_but_reports_each_locations_own_declarations_and_targets
     expect(
         a,
         &["fit", "kiln", "refs", "owners"],
-        r#"{"held_here":4,"held_elsewhere_in_group":2,"not_in_group":2,"not_typed":6,"not_read":1,"without_mention":5}"#,
+        r#"{"held_here":4,"held_elsewhere_in_group":2,"not_in_group":2,"not_typed":6,"not_read":1,"without_mention":5,"unlisted_prefix":8}"#,
     );
     expect(
         b,
         &["fit", "kiln", "refs", "owners"],
-        r#"{"held_here":3,"held_elsewhere_in_group":3,"not_in_group":2,"not_typed":6,"not_read":0,"without_mention":5}"#,
+        r#"{"held_here":3,"held_elsewhere_in_group":3,"not_in_group":2,"not_typed":6,"not_read":0,"without_mention":5,"unlisted_prefix":0}"#,
     );
     expect(a, &["fit", "kiln", "refs", "spare", "not_read"], "1");
     assert!(!super::has(b, &["fit", "kiln", "refs"], "spare"));
@@ -302,7 +333,7 @@ fn target_residence_requires_union_admission_and_accepts_a_full_root_id() {
     expect(
         here,
         &["fit", "kiln", "refs", "owner"],
-        r#"{"held_here":0,"held_elsewhere_in_group":1,"not_in_group":1,"not_typed":0,"not_read":0,"without_mention":2}"#,
+        r#"{"held_here":0,"held_elsewhere_in_group":1,"not_in_group":1,"not_typed":0,"not_read":0,"without_mention":2,"unlisted_prefix":0}"#,
     );
 }
 
@@ -368,7 +399,7 @@ fn one_shared_setter_counts_once_even_with_different_local_visibility() {
             entry,
             &["fit", "kiln", "refs", "owners"],
             r#"{"held_here":0,"held_elsewhere_in_group":0,"not_in_group":2,
-            "not_typed":0,"not_read":0,"without_mention":2}"#,
+            "not_typed":0,"not_read":0,"without_mention":2,"unlisted_prefix":0}"#,
         );
     }
 }
