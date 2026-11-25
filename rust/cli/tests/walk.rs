@@ -4870,3 +4870,6 @@ mod refers_to;
 
 #[path = "walk/emit_strict.rs"]
 mod emit_strict;
+
+#[path = "walk/about_flags.rs"]
+mod about_flags;
