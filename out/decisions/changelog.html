@@ -196,7 +196,7 @@ header.top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--g
 <a href="note-2026-11-21-tick-record.html">Step 4: the tick record, design note</a>
 <a href="note-2026-11-22-adoption.html">The adoption step: AD1 to AD4</a>
 <a href="note-2026-11-23-store-descriptions.html">Store descriptions: what the first two conversions asked for</a>
-<a href="note-2026-11-24-kinds-and-references.html">What a store says about its kinds, and references after an import: SD1 to SD4, AD5 and BP1</a>
+<a href="note-2026-11-24-kinds-and-references.html">What a store says about its kinds, and references after an import: SD1 to SD4, AD5, BP1 and ST1</a>
 <a href="note-retained-boundaries.html">Retained boundaries</a></nav>
 <p class="source">Rendered from <code>CHANGELOG.md</code> in the repository.</p>
 <details class="contents"><summary>On this page</summary>
@@ -222,12 +222,26 @@ The record starts where the old roadmap's did. For anything earlier, and for eve
 <p>In brief:</p>
 <ul>
 <li><p>Built: <code>--in &lt;name&gt;</code>, a store by name on every verb that takes one; <code>.loops/store.json</code> read and used by the plain views; <code>ls --active</code>; <code>loops describe</code> and <code>ls --refers-to</code>, with <code>--group</code>; and the import's recipe for a payload, with no change to what it writes.</p></li>
+<li><p><strong>Kyle rules the strict shorthand:</strong> with a description, <code>emit</code> stops on a kind, a status or a reference the description does not allow. He declines the mention in AD5's row 2 and defers the import's AD5 work; the homelab is not cut over a second time.</p></li>
 <li><p><strong>Kyle rules BP1:</strong> what was entered is accepted strictly; two rows go the other way from the recommendation.</p></li>
 <li><p>The build of the rulings is planned and begun, and BP1 is put to Kyle: nine narrow cases the plan found open, each with a recommendation.</p></li>
 <li><p><strong>Kyle rules SD1 to SD4 and AD5, each as recommended.</strong> A store describes its kinds in a plain file that refuses nothing; <code>emit</code> stops on a key slip; reference fields are described and not copied into <code>about</code>; <code>ls --refers-to</code> reads them; the import writes a reference as <code>kind:key</code>, and the homelab will be imported afresh. Nothing is built yet.</p></li>
 <li><p>SD1 to SD3 are put to Kyle: what a store says about its kinds. A plain <code>.loops/store.json</code> that describes each kind and refuses nothing (SD1); <code>emit</code> stopping before it signs a write that contradicts a declared key (SD2); and whether reference fields are copied into <code>about</code>, where an erasure does not reach them (SD3: recommended, describe them and copy nothing). Nothing is built.</p></li>
 <li><p>SD4 and AD5 are put to Kyle, later the same day: a read of everything that refers to a thing, taken from the declared reference fields (SD4); and the import writing a reference field as <code>kind:key</code> where the old store proves it, which means importing the homelab afresh (AD5). Nothing is built.</p></li>
 </ul>
+<h3 id="kyle-rules-the-strict-shorthand-declines-a-mention-and-defers-the-imports-ad5-work">Kyle rules the strict shorthand, declines a mention, and defers the import's AD5 work</h3>
+<p>After BP1, Kyle asked whether the day's decisions were conforming to stores built up iteratively under the old tool, and said he would rather be strictly explicit going forward, with one qualification: agents are the main writers, and their ergonomics come first where the two pull apart. He expects to rebuild many stores from first principles and pick from the originals later. The coordinator listed what the build still carried over; he took what was recommended; the four settled the lines in the room. The record is <a href="note-2026-11-24-kinds-and-references.html#st1-the-shorthand-is-strict-and-the-description-says-what-it-allows">ST1</a>.</p>
+<ul>
+<li><p><strong>Three more stops in the shorthand <code>emit</code>,</strong> each a usage error before signing that names the way out: a kind the description does not name; a lifecycle value in neither list; a reference field holding anything but a reference of a listed kind, or a list of them. A field left out passes. <code>emit -</code> and the store refuse nothing.</p></li>
+<li><p><strong>A comma stops in a reference and in the key field.</strong> <code>owner=asset:a,asset:b</code> is one valid name that nobody means. Astra first held to the record format's own test, under which it passes; margins-claude too; both took the stop after Kyle's note on ergonomics, as a rule of the shorthand alone. Astra showed it gives no guarantee that the shorthand cannot make such a thing, and it is written without one.</p></li>
+<li><p><strong>The description file loses <code>key_format</code> and <code>search</code></strong> (Neon, who had put them in the sketch with nothing reading them), a <code>lifecycle</code> must list a value and none twice, and a <code>refs</code> list holds kind prefixes. Version 1 is amended in place: no binary that reads the file was installed.</p></li>
+<li><p><strong>No <code>name</code> headline once a description exists,</strong> in the three places Neon found.</p></li>
+<li><p><strong><code>describe</code> counts references whose kind the field does not list.</strong></p></li>
+<li><p><strong>Not taken:</strong> required fields, a check that a target exists, refusing an undeclared payload field.</p></li>
+<li><p><strong>AD5 row 2's mention is declined.</strong> The import, when built, repairs the field and adds nothing to <code>about</code>. Kyle's reason: a proper reference in the field is found by <code>ls --refers-to</code>. The lines above this section that say &quot;with a mention&quot; are as ruled earlier in the day.</p></li>
+<li><p><strong>AD5's build is deferred, and there is no second cutover of the homelab.</strong> All four recommended it once he said he would rebuild. Pieces 9 and 10 wait; piece 8's plumbing and today's importer stay.</p></li>
+</ul>
+<p>What is left of the pass: the description tightened, the <code>emit</code> shorthand with its stops, and <code>--add-about</code> and <code>--drop-about</code>.</p>
 <h3 id="kyle-rules-bp1">Kyle rules BP1</h3>
 <p>Ruled in the coordinator's session on 2026-11-24, on one principle he stated: <strong>accept strictly what was entered, and do not infer or work round a likely error.</strong> The entry as put, with the ruling at its head, is at the end of <a href="note-2026-11-24-kinds-and-references.html#bp1-nine-narrow-cases-the-build-plan-found-open">the kinds and references note</a>.</p>
 <ul>
@@ -275,7 +289,7 @@ The record starts where the old roadmap's did. For anything earlier, and for eve
 <ol>
 <li><p>The CLI's part: the description file and the shorthand it gives <code>emit</code>, the stop and <code>--root</code>, <code>--add-about</code> and <code>--drop-about</code>, <code>describe</code>, <code>ls --active</code>, <code>ls --refers-to</code>, and a store by name on every verb (<code>--in</code>, <code>--group</code>), whose form is in <a href="note-2026-11-23-store-descriptions.html#3-a-store-found-by-name-on-every-verb">the store descriptions note</a>, section 3.</p></li>
 <li><p>The import's part: AD5's three rows within its six bounds, pinned in the journal under a new version.</p></li>
-<li><p>The homelab imported afresh into new stores and compared, then cut over a second time at Kyle's word. Every record gets a new id and a new observer key. The present live stores are kept aside.</p></li>
+<li><p>(Deferred later the same day, with the import's part; see the section on the strict shorthand.) The homelab imported afresh into new stores and compared, then cut over a second time at Kyle's word. Every record gets a new id and a new observer key. The present live stores are kept aside.</p></li>
 </ol>
 <h3 id="sd1-to-sd3-are-put">SD1 to SD3 are put</h3>
 <p>The entries come from a discussion of Neon's sketch of 2026-11-23 between the coordinator, Neon and margins-claude, held on 2026-11-24 in a chat room kept in a store (rex-tools). Astra (Codex) then reviewed the entries from outside. The four agree on every point in them. What the discussion changed in the sketch:</p>

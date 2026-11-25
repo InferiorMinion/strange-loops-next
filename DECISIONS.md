@@ -17,6 +17,7 @@ Every entry is ruled.
 - The adoption step, AD1 to AD4: ruled on 2026-11-23. AD1 and AD2 each for its recommendation with additions, AD3 for its recommendation in both rows, AD4 for rows 1 to 3 with row 4 the other way and a rule for old ids. The entries as put, and the additions, are in [the adoption note](notes/2026-11-22-adoption.md).
 - What a store says about its kinds, SD1 to SD3, a read of what refers to a thing, SD4, and one written form for a reference at the import, AD5: put and ruled on 2026-11-24, each as recommended. The entries as put are in [the kinds and references note](notes/2026-11-24-kinds-and-references.md).
 - The nine narrow cases the build plan found open, BP1: ruled on 2026-11-24, seven rows as recommended and two the other way, on the principle that what was entered is accepted strictly. The entry as put is at the end of the same note.
+- The strict shorthand, ST1: ruled in direction on 2026-11-24 and settled in the room; with it a mention declined and the import's AD5 work deferred. It is the last section of the same note.
 
 Below: [what is being prepared](#being-prepared), [what you deferred](#deferred-by-you) and [what is ruled](#ruled). Nothing waits to be confirmed: under your ruling of 2026-11-21 an implementer choice comes here only when it changes bytes or answers.
 
@@ -35,6 +36,7 @@ Not asked now. Each comes back when its step does.
 - **A top-N across groups.** 2026-11-11: "a later discussion".
 - **What the old tool's `combine` and `discover` vertices did.** 2026-11-20: they wait until they are wanted.
 - **The provenance export mapping,** W3C PROV or PREMIS.
+- **The import writing a reference as `kind:key` (AD5), and a second cutover of the homelab.** 2026-11-24: deferred until a store is picked from by its reference fields; then built into a fresh group that is not cut over. Row 2 of AD5 comes back to you before it is built ([the kinds and references note](notes/2026-11-24-kinds-and-references.md#st1-the-shorthand-is-strict-and-the-description-says-what-it-allows)).
 
 ## Ruled
 
@@ -42,6 +44,8 @@ One line for each ruling, newest first. The full text is in [CHANGELOG.md](CHANG
 
 | Date | Ruling | Where |
 | --- | --- | --- |
+| 2026-11-24 | ST1: the shorthand is strict. With a description, `emit` stops on a kind it does not name, a lifecycle value in neither list, a reference field holding anything but references of a listed kind, and a comma in a reference or a key; the description loses `key_format` and `search`; no `name` headline once a description exists | Changelog; [the kinds and references note](notes/2026-11-24-kinds-and-references.md#st1-the-shorthand-is-strict-and-the-description-says-what-it-allows) |
+| 2026-11-24 | AD5 amended: the mention in row 2 is declined; the import's AD5 work is deferred and the homelab is not cut over a second time | Changelog; [the kinds and references note](notes/2026-11-24-kinds-and-references.md#st1-the-shorthand-is-strict-and-the-description-says-what-it-allows) |
 | 2026-11-24 | BP1: what was entered is accepted strictly. A key that is not text stops the shorthand; a root that is meant keeps its payload; `--add-about` and `--drop-about` of one thing is a usage error; the import leaves a bare key beside a twin as entered, makes a list from a comma or a reviewed comma and space, and mentions only what it repaired | Changelog; [the kinds and references note](notes/2026-11-24-kinds-and-references.md#bp1-nine-narrow-cases-the-build-plan-found-open) |
 | 2026-11-24 | AD5: the import writes a reference field as `kind:key` where the old store proves it: where its twin resolves to the thing it names; in five slip fields the group's map names, with a mention; and as a list where a twin holds several ids. Never a kind's key field. The homelab is imported afresh | Changelog; [the kinds and references note](notes/2026-11-24-kinds-and-references.md#ad5-one-written-form-for-a-reference-set-at-the-import) |
 | 2026-11-24 | SD4: `loops ls --refers-to <thing>` reads the declared reference fields as a fold's `is` does, yes, no or unknown, across kinds and across a group's stores, and states what it read | Changelog; [the kinds and references note](notes/2026-11-24-kinds-and-references.md#sd4-a-read-of-everything-that-refers-to-a-thing) |

@@ -196,7 +196,7 @@ header.top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--g
 <a href="note-2026-11-21-tick-record.html">Step 4: the tick record, design note</a>
 <a href="note-2026-11-22-adoption.html">The adoption step: AD1 to AD4</a>
 <a href="note-2026-11-23-store-descriptions.html">Store descriptions: what the first two conversions asked for</a>
-<a href="note-2026-11-24-kinds-and-references.html">What a store says about its kinds, and references after an import: SD1 to SD4, AD5 and BP1</a>
+<a href="note-2026-11-24-kinds-and-references.html">What a store says about its kinds, and references after an import: SD1 to SD4, AD5, BP1 and ST1</a>
 <a href="note-retained-boundaries.html">Retained boundaries</a></nav>
 <p class="source">Rendered from <code>DECISIONS.md</code> in the repository.</p>
 <details class="contents"><summary>On this page</summary>
@@ -222,6 +222,7 @@ header.top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--g
 <li><p>The adoption step, AD1 to AD4: ruled on 2026-11-23. AD1 and AD2 each for its recommendation with additions, AD3 for its recommendation in both rows, AD4 for rows 1 to 3 with row 4 the other way and a rule for old ids. The entries as put, and the additions, are in <a href="note-2026-11-22-adoption.html">the adoption note</a>.</p></li>
 <li><p>What a store says about its kinds, SD1 to SD3, a read of what refers to a thing, SD4, and one written form for a reference at the import, AD5: put and ruled on 2026-11-24, each as recommended. The entries as put are in <a href="note-2026-11-24-kinds-and-references.html">the kinds and references note</a>.</p></li>
 <li><p>The nine narrow cases the build plan found open, BP1: ruled on 2026-11-24, seven rows as recommended and two the other way, on the principle that what was entered is accepted strictly. The entry as put is at the end of the same note.</p></li>
+<li><p>The strict shorthand, ST1: ruled in direction on 2026-11-24 and settled in the room; with it a mention declined and the import's AD5 work deferred. It is the last section of the same note.</p></li>
 </ul>
 <p>Below: <a href="#being-prepared">what is being prepared</a>, <a href="#deferred-by-you">what you deferred</a> and <a href="#ruled">what is ruled</a>. Nothing waits to be confirmed: under your ruling of 2026-11-21 an implementer choice comes here only when it changes bytes or answers.</p>
 <h2 id="being-prepared">Being prepared</h2>
@@ -235,11 +236,14 @@ header.top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--g
 <li><p><strong>A top-N across groups.</strong> 2026-11-11: &quot;a later discussion&quot;.</p></li>
 <li><p><strong>What the old tool's <code>combine</code> and <code>discover</code> vertices did.</strong> 2026-11-20: they wait until they are wanted.</p></li>
 <li><p><strong>The provenance export mapping,</strong> W3C PROV or PREMIS.</p></li>
+<li><p><strong>The import writing a reference as <code>kind:key</code> (AD5), and a second cutover of the homelab.</strong> 2026-11-24: deferred until a store is picked from by its reference fields; then built into a fresh group that is not cut over. Row 2 of AD5 comes back to you before it is built (<a href="note-2026-11-24-kinds-and-references.html#st1-the-shorthand-is-strict-and-the-description-says-what-it-allows">the kinds and references note</a>).</p></li>
 </ul>
 <h2 id="ruled">Ruled</h2>
 <p>One line for each ruling, newest first. The full text is in <a href="changelog.html">CHANGELOG.md</a> under the date, or in the note named.</p>
 <div class="table-scroll" tabindex="0"><table><thead><tr><th scope="col">Date</th><th scope="col">Ruling</th><th scope="col">Where</th></tr></thead>
 <tbody>
+<tr><td>2026-11-24</td><td>ST1: the shorthand is strict. With a description, <code>emit</code> stops on a kind it does not name, a lifecycle value in neither list, a reference field holding anything but references of a listed kind, and a comma in a reference or a key; the description loses <code>key_format</code> and <code>search</code>; no <code>name</code> headline once a description exists</td><td>Changelog; <a href="note-2026-11-24-kinds-and-references.html#st1-the-shorthand-is-strict-and-the-description-says-what-it-allows">the kinds and references note</a></td></tr>
+<tr><td>2026-11-24</td><td>AD5 amended: the mention in row 2 is declined; the import's AD5 work is deferred and the homelab is not cut over a second time</td><td>Changelog; <a href="note-2026-11-24-kinds-and-references.html#st1-the-shorthand-is-strict-and-the-description-says-what-it-allows">the kinds and references note</a></td></tr>
 <tr><td>2026-11-24</td><td>BP1: what was entered is accepted strictly. A key that is not text stops the shorthand; a root that is meant keeps its payload; <code>--add-about</code> and <code>--drop-about</code> of one thing is a usage error; the import leaves a bare key beside a twin as entered, makes a list from a comma or a reviewed comma and space, and mentions only what it repaired</td><td>Changelog; <a href="note-2026-11-24-kinds-and-references.html#bp1-nine-narrow-cases-the-build-plan-found-open">the kinds and references note</a></td></tr>
 <tr><td>2026-11-24</td><td>AD5: the import writes a reference field as <code>kind:key</code> where the old store proves it: where its twin resolves to the thing it names; in five slip fields the group's map names, with a mention; and as a list where a twin holds several ids. Never a kind's key field. The homelab is imported afresh</td><td>Changelog; <a href="note-2026-11-24-kinds-and-references.html#ad5-one-written-form-for-a-reference-set-at-the-import">the kinds and references note</a></td></tr>
 <tr><td>2026-11-24</td><td>SD4: <code>loops ls --refers-to &lt;thing&gt;</code> reads the declared reference fields as a fold's <code>is</code> does, yes, no or unknown, across kinds and across a group's stores, and states what it read</td><td>Changelog; <a href="note-2026-11-24-kinds-and-references.html#sd4-a-read-of-everything-that-refers-to-a-thing">the kinds and references note</a></td></tr>

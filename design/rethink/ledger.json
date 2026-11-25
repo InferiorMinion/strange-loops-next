@@ -494,7 +494,7 @@
     "group": "Meaning · vertices and stores",
     "status": "settled",
     "claim": "A store describes its kinds in a plain file that refuses nothing.",
-    "why": "<code>.loops/store.json</code> says, for each kind, its key field, its reference fields, what to show and which states are closed. The CLI uses it: <code>emit</code> finds a thing's name from its key field and stops before it signs a write that contradicts the key, and <code>ls --active</code> hides what is closed. No read depends on it: with no flag that names the description, a read's JSON is the same with and without the file. The store itself refuses nothing until standing, when the description becomes records. Ruled on 2026-11-24 (<a href=\"../decisions/note-2026-11-24-kinds-and-references.html\">the kinds and references note</a>); being built. Version 38."
+    "why": "<code>.loops/store.json</code> says, for each kind, its key field, its reference fields, what to show and which states are open and closed. The store refuses nothing until standing. The shorthand <code>emit</code> is strict about what it is given: it finds a thing's name from its key field, and stops before it signs on a key that disagrees, a kind the file does not name, a state in neither list, or a reference field holding anything but a reference of a listed kind. It never repairs or guesses; a batch through <code>emit -</code> is written as given. No read depends on the file: with no flag that names the description, a read's JSON is the same with and without it. Ruled on 2026-11-24 (<a href=\"../decisions/note-2026-11-24-kinds-and-references.html\">the kinds and references note</a>); being built. Version 38."
   },
   {
     "kind": "decision",
@@ -522,6 +522,6 @@
     "group": "Building",
     "status": "settled",
     "claim": "The import writes a reference as <code>kind:key</code> where the old store proves it.",
-    "why": "Where a field's twin resolves to the thing the field names, the import writes that thing's name; in the six homelab stores field and twin agree in all 13,854 facts. A bare key is written so only in fields the group's map names, and several targets become a list. A kind's key field is never rewritten. This amends the untouched payload, as taking out the old reference fields did. The homelab is imported afresh. Ruled on 2026-11-24 (<a href=\"../decisions/note-2026-11-24-kinds-and-references.html\">the kinds and references note</a>); being built. Version 38."
+    "why": "Where a field's twin resolves to the thing the field names, the import writes that thing's name; in the six homelab stores field and twin agree in all 13,854 facts. A bare key is written so only in fields the group's map names, with no mention added, and several targets become a list. A kind's key field is never rewritten, and a bare key beside a twin is left as entered. Ruled on 2026-11-24 and deferred the same day: Kyle expects to rebuild stores and pick from the originals, so it is built when a store is picked from by its reference fields, and the homelab is not cut over again (<a href=\"../decisions/note-2026-11-24-kinds-and-references.html\">the kinds and references note</a>). Version 38."
   }
 ]
