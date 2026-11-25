@@ -235,11 +235,12 @@ def fold_slot(node):
 def fold_entry(fold):
     """The map entry for a kind's fold, read as the old tool reads it.
 
-    The old tool keys a kind by its first slot when that slot is `by`, and
-    collects every other kind. Slots that only compute from the same facts
-    (`inc`, `latest`, `sum` and the rest) do not change which records the
-    facts become, so they are checked and left out of the map. A fold the map
-    cannot say the way the old tool reads it is refused, not guessed.
+    The old tool reads a kind's items from its first slot only: a first `by`
+    keys the kind, and a first `collect` collects it, with the limit an old
+    read shows. Slots after it only compute from the same facts (`inc`,
+    `latest`, `sum` and the rest) and do not change which records the facts
+    become, so they are checked and left out of the map. A fold whose first
+    slot is anything else, a later `by` or a second `collect` is refused.
     """
     slots = block(fold)
     if not slots:
@@ -250,18 +251,12 @@ def fold_entry(fold):
             raise InvalidVertex(node.line, f"duplicate fold slot {node.name!r}")
         seen.add(node.name)
         ops.append((node, *fold_slot(node)))
-    _, op, args = ops[0]
-    if op == "by":
-        for node, other, _ in ops[1:]:
-            if other == "by":
-                raise InvalidVertex(node.line, "a fold keys by one field")
-        return {"by": args[0]}
+    first, op, args = ops[0]
+    if op not in ("by", "collect"):
+        raise InvalidVertex(first.line, "a fold's first slot must be by or collect")
     for node, other, _ in ops[1:]:
         if other == "by":
             raise InvalidVertex(node.line, "a by slot keys the kind only as the fold's first slot")
-    collects = [(node, args) for node, other, args in ops if other == "collect"]
-    if not collects:
-        raise InvalidVertex(fold.line, "fold requires a first by slot or one collect slot")
-    if len(collects) > 1:
-        raise InvalidVertex(collects[1][0].line, "a fold collects in one slot")
-    return {"collect": collects[0][1][0]}
+        if other == "collect" and op == "collect":
+            raise InvalidVertex(node.line, "a fold collects in one slot")
+    return {op: args[0]}

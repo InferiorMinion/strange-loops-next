@@ -160,6 +160,8 @@ class VertexTests(unittest.TestCase):
             ('items "by" "name"', 'items "by" "name"; recent "window" "3" "name"'),
             ('items "collect" 2', 'items "collect" 2; older "collect" 4'),
             ('items "collect" 2', 'count "inc"; updated "latest"'),
+            ('items "collect" 2', 'count "inc"; items "collect" 2'),
+            ('items "collect" 2', 'count "count"; peak "max" "size"; items "collect" 2'),
             ('items "by" "name"', 'items "by"'),
             ('items "by" "name"', 'items "by" ""'),
             ('items "by" "name"', 'items "by" "name" { bogus }'),
@@ -177,8 +179,8 @@ class VertexTests(unittest.TestCase):
                     parse_vertex(VERTEX.replace(old, new))
 
     def test_folds_with_several_slots(self):
-        # The old tool keys a kind by a first `by` slot and collects every
-        # other kind; slots that compute from the same facts are left out.
+        # The old tool reads items from the first slot: a first `by` keys the
+        # kind, a first `collect` collects it; later slots are left out.
         cases = [
             ('items "by" "name"', 'latest "by" "name"', {"by": "name"}),
             ('items "by" "name"', 'items "by" "name"; count "inc"; seen "latest"', {"by": "name"}),
@@ -187,7 +189,7 @@ class VertexTests(unittest.TestCase):
             ('items "by" "name"', 'items "by" "name"; log "collect" 9', {"by": "name"}),
             ('items "collect" 2', 'observations "collect" 500; count "inc"; updated "latest"',
              {"collect": "500"}),
-            ('items "collect" 2', 'count "count"; peak "max" "size"; items "collect" 2',
+            ('items "collect" 2', 'items "collect" 2; count "count"; peak "max" "size"',
              {"collect": "2"}),
         ]
         for old, new, entry in cases:
