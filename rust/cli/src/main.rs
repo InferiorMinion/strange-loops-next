@@ -16,6 +16,7 @@ mod refers_to;
 mod registry;
 mod selection;
 mod shadow;
+mod shorthand;
 mod values;
 
 use description::Description;
@@ -59,12 +60,26 @@ usage: loops [-C <dir>] <verb> ...
 
   init                          make .loops/ here
   emit <kind> [field=text | field:=json]... [\"message\"]
-       [--of <thing>] [--about <thing>]... [--no-about] [--prev <id>]...
+       [--root | [--of <thing>] [--prev <id>]...] [--about <thing>]... [--no-about]
        [--erases <id>]... [--occurred <when> | --no-occurred] [--under <id>]
        [--sets <key>]... [--sets-nothing] [--whole]
        [--base <tick-id>] [--base-id <id>]...
                                 -- ends options; fields and the final message may start with -
                                 a revision without --of is of what it replaces
+                                with a .loops/store.json in the store written to, the shorthand follows it:
+                                  the kind must be one the file names
+                                  a kind's text key field names the thing: emit kiln name=east writes
+                                    kiln:east, unless --of, --prev or --root is given; a stated key must
+                                    equal the thing's key and be nonempty text with no comma
+                                  --root writes a keyless root on purpose (no --of or --prev); it and a
+                                    revision of a keyless root skip the key checks and no others
+                                  a stated lifecycle field takes a text value listed in active or closed
+                                  a stated reference field takes kind:key or a flat list, [] included,
+                                    with a listed prefix (an empty list allows any, r included) and no
+                                    comma; several targets: owners:='[\"yard:a\",\"yard:b\"]'
+                                  lifecycle and reference fields may be left out or unset
+                                emit -, emit - --fill and tick never read the file;
+                                emit - writes anything the store accepts
                                 by default the writer claims to have read everything held
                                 --base selects a tick's covers
                                 each --base-id adds a record to the selection
@@ -558,24 +573,38 @@ fn emit(ctx: &Context<'_>, args: &[String]) -> Result<(), Fail> {
             .collect();
         return say(&object(vec![("records", Json::Arr(records))]).canon());
     }
-    write_one(&place.dir, &held, &key, &now, args, None)
+    let single = draft::from_args(args, None, &now, &key.public(), &held)?;
+    let description = Description::load(place.dir.root())?;
+    write_one(&place.dir, &held, &key, single, description.as_ref())
 }
 
 fn write_one(
     place: &Dir,
     held: &Held,
     key: &Key,
-    now: &str,
-    args: &[String],
-    tick_spec: Option<Spec>,
+    mut single: draft::Single,
+    description: Option<&Description>,
 ) -> Result<(), Fail> {
-    let (statement, selector) = draft::from_args(args, tick_spec, now, &key.public(), held)?;
-    let (draft, notices) = if let Some(args) = selector {
-        fill::one_with_base(held, &base_forms(held, args)?, statement)
+    let source = if single.statement.draft.env.of.is_some() {
+        "--of"
     } else {
-        fill::one(&|id| held.writer_view(id), &realm(held), statement).map(|d| (d, Vec::new()))
+        "--prev"
+    };
+    let compare = if let Some(desc) = description {
+        shorthand::prepare(desc, &mut single)?
+    } else {
+        None
+    };
+    let (draft, notices) = if let Some(args) = single.base {
+        fill::one_with_base(held, &base_forms(held, args)?, single.statement)
+    } else {
+        fill::one(&|id| held.writer_view(id), &realm(held), single.statement)
+            .map(|d| (d, Vec::new()))
     }
     .map_err(|e| refused(e.code()))?;
+    if let Some(field) = compare {
+        shorthand::compare_key(&draft, field, source)?;
+    }
     bound(key, [&draft])?;
     let lines = write_changeset(place, held, key, &[draft])?;
     base_notices(notices);
@@ -822,7 +851,8 @@ fn tick(ctx: &Context<'_>, args: &[String]) -> Result<(), Fail> {
     warn_unclean(&held);
     let key = signing_key(Missing::Make)?;
     let now = clock::now().ok_or_else(|| Fail::System("the clock is outside 1970–9999".into()))?;
-    write_one(&place.dir, &held, &key, &now, flags, Some(spec))
+    let single = draft::from_args(flags, Some(spec), &now, &key.public(), &held)?;
+    write_one(&place.dir, &held, &key, single, None)
 }
 
 fn export(ctx: &Context<'_>, args: &[String]) -> Result<(), Fail> {

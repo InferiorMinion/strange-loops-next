@@ -15,7 +15,7 @@ written down here so they can be changed on purpose.
 ```
 loops init                          make .loops/ here
 loops emit <kind> [field=text | field:=json]... ["message"]
-      [--of <thing>] [--about <thing>]... [--no-about] [--prev <id>]...
+      [--root | [--of <thing>] [--prev <id>]...] [--about <thing>]... [--no-about]
       [--erases <id>]... [--occurred <when> | --no-occurred] [--under <id>]
       [--sets <key>]... [--sets-nothing] [--whole]
       [--base <tick-id>] [--base-id <id>]...
@@ -69,6 +69,9 @@ loops whoami --init                     ensure the signing key exists and print 
   `export --of` takes the records of a thing and `export --about` those that
   mention it, as a spec's `from.of` and `from.about` do.
 * A revision written without `--of` is of what it replaces; see choice 9.
+* Shorthand `emit <kind>` uses the destination's optional `.loops/store.json`
+  for key derivation and the checks in choice 34. `--root` requests a
+  keyless root with the supplied payload, with or without a description.
 * `--sets` names a key the emit sets; see choice 10. An emit of a thing the
   store holds a record of sets the fields it names, unless `--sets`,
   `--sets-nothing` or `--whole` states otherwise; see choice 15.
@@ -197,8 +200,8 @@ Every verb that reads the store says when either happened (choice 18).
     (`notes/2026-11-11-declared-keys.md`, section 5): every emit sets the envelope, so an emit of
     a thing names in `prev` every record of that thing the store holds that
     is live for some key, the envelope among them, and so every head. The
-    thing is `--of`, or what `--prev` replaces (choice 9); an emit with
-    neither is a root and names nothing, and the first record of a thing the
+    thing is the stated or derived `of`, or what `--prev` replaces (choice 9).
+    A root names nothing, and the first record of a thing the
     store holds nothing of names nothing. Liveness is the core's
     (`loops::live::live`), read over the store as `loops fold` reads it:
     settled, then admitted. An erased or withheld record keeps its envelope
@@ -236,7 +239,7 @@ Every verb that reads the store says when either happened (choice 18).
     states neither `--sets` nor `--sets-nothing`, is given the top-level
     payload keys it names as its `sets`: each `field=text`, each
     `field:=json`, and `text` for the bare message, in canonical order. The
-    thing is `--of`, or what `--prev` replaces (choice 9); held means a
+    thing is the stated or derived `of`, or what `--prev` replaces (choice 9); held means a
     record of it is in the store as `loops fold` reads it, settled and
     admitted, an erased or withheld one included. `--whole` states no `sets`:
     the emit is read whole and replaces everything, as choice 11 says. It is
@@ -1024,7 +1027,7 @@ Every verb that reads the store says when either happened (choice 18).
     store already opened. Read commands, including `tick --check`, print
     no destination notice. Standard output keeps its ordinary format.
 
-34. **Plain views use a working store's description.** The optional UTF-8
+34. **The working store's description.** The optional UTF-8
     file `.loops/store.json` holds one JSON object. It requires the number
     `1` in `version` and an object in `kinds`. It may also have a text
     `note`. An empty `kinds` object is valid. Each nonempty kind name maps
@@ -1046,11 +1049,45 @@ Every verb that reads the store says when either happened (choice 18).
     Each validates the whole description once per selected store. A plain
     fold outside any working store uses its ordinary defaults. A source in a
     spec supplies records only, including when a binding redirects `.`.
-    Ordinary JSON reads, writes and exports are independent of the description.
+    Ordinary JSON reads, exports, `emit -`, `emit - --fill` and `tick` are
+    independent of the description, even when the file does not parse.
     Plain views without either flag keep their existing output when the file
     is missing. Bad UTF-8, malformed JSON or a grammar error gives exit 2 with the filename and
     error location on stderr. A file-system failure gives exit 3 with the
     filename. Both leave stdout empty.
+
+    Shorthand `emit <kind>` loads the file from the store it writes to,
+    including the store selected by `--in`. With a file present, choose a
+    kind under `kinds`, even when supplying `--of`, `--prev` or `--root`.
+    An empty declaration `{}` names a kind. The checks below give usage
+    error 2 before signing or appending. To write an intentional exception,
+    `emit -` accepts any changeset the store accepts.
+
+    - For a kind with a text `key`, state that payload field, give `--of`
+      or a predecessor, or request a keyless root with `--root`. For
+      example, with `"key":"name"`, `emit kiln name=east` fills in
+      `of=kiln:east` before choosing the anchor and signs the same record
+      as `emit kiln --of kiln:east name=east`.
+    - With `--of` or `--prev`, the key field may be omitted. If supplied
+      for a natural thing, use nonempty, comma-free text equal byte for
+      byte to everything after its first colon. The thing's prefix may
+      differ from the emitted kind. The same text and comma checks apply
+      when deriving the key. Repeated fields retain `member-duplicate`.
+      A null or omitted `key` leaves addressing to the ordinary writer.
+    - Use `--root` without `--of` or `--prev`. Both a deliberate root and
+      a revision of a root by ID or predecessor skip the key checks and
+      keep the supplied payload. Their other field checks still apply.
+    - A stated lifecycle field takes text from its `active` or `closed`
+      list. A stated reference field takes one typed name accepted in
+      `about`, or a flat list of such names. Use a listed prefix when the
+      prefix list is nonempty. An empty prefix list allows every prefix,
+      including `r:`. The target may be absent. An empty payload list
+      `[]` writes the reference field with zero targets.
+    - A comma in any reference, including a list member, stops the
+      shorthand. Give multiple targets as separate list entries, for example
+      `owners:='["yard:east","yard:west"]'`. Commas are legal in `--of`,
+      `--about` and undeclared fields. Lifecycle and reference fields may
+      be omitted or unset with `--sets <field>` and no payload value.
 
     With a file, each head kind must declare the same headline field. Use
     the kind's `headline` when present, otherwise its string `key`. If any
@@ -1077,8 +1114,8 @@ Every verb that reads the store says when either happened (choice 18).
     setters before projecting columns. Hide the thing only if this yields
     one text value in `closed`. A missing value, a list, an unread setter,
     or competing setters leave the thing visible, even if both setters say
-    `retired`. The lifecycle's `active` list is descriptive. An omitted or
-    empty `closed` list keeps every thing.
+    `retired`. Only `closed` determines visibility in this listing. An
+    omitted or empty `closed` list keeps every thing.
 
     JSON keeps the usual `things` rows and reports the applied rule in
     `active`, for example `{"closed":["retired","broken"],"field":"status","kind":"kiln"}`.

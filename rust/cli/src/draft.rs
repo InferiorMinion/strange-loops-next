@@ -111,6 +111,35 @@ pub(crate) fn changeset_args(args: &[String]) -> Result<(JsonlMode, Option<BaseA
     ))
 }
 
+/// Single-record CLI options, including intent that never enters the envelope.
+pub(crate) struct Single {
+    pub(crate) statement: Statement,
+    pub(crate) base: Option<BaseArgs>,
+    pub(crate) root: bool,
+}
+
+#[derive(Default)]
+struct SetFlags {
+    nothing: bool,
+    whole: bool,
+}
+
+impl SetFlags {
+    fn mode(&self, env: &Env) -> Result<Sets, Fail> {
+        if self.nothing && env.sets.as_ref().is_some_and(|keys| !keys.is_empty()) {
+            return Err(usage("--sets-nothing takes no --sets beside it"));
+        }
+        if self.whole && env.sets.is_some() {
+            return Err(usage("--whole takes no --sets or --sets-nothing beside it"));
+        }
+        Ok(if self.whole || env.sets.is_some() {
+            Sets::Stated
+        } else {
+            Sets::Named
+        })
+    }
+}
+
 /// `emit <kind> [field=text | field:=json]... ["message"]` and its flags.
 /// `field=text` is always text and `field:=json` a JSON value, as `HTTPie` writes them.
 /// The draft comes back with whether it states its `about`: with `--about`,
@@ -126,8 +155,9 @@ pub(crate) fn from_args(
     now: &str,
     observer: &str,
     held: &Held,
-) -> Result<(Statement, Option<BaseArgs>), Fail> {
+) -> Result<Single, Fail> {
     let mut base = None;
+    let mut root = false;
     let mut cut = Cut::default();
     let mut env = Env {
         emitted: now.to_owned(),
@@ -139,8 +169,7 @@ pub(crate) fn from_args(
     let mut kind = tick_spec.as_ref().map(|_| "tick".to_owned());
     let mut fields: Vec<(String, Json)> = Vec::new();
     let mut message = None;
-    let mut nothing = false;
-    let mut whole = false;
+    let mut set_flags = SetFlags::default();
     let mut no_about = false;
     let mut no_occurred = false;
     let mut rest = args.iter();
@@ -159,6 +188,7 @@ pub(crate) fn from_args(
             "--json" => {}
             "--as-of" | "--cover" if tick_spec.is_some() => cut.select(arg, value()?)?,
             "--all" | "--slice" if tick_spec.is_some() => cut.mode(arg)?,
+            "--root" if tick_spec.is_none() => root = true,
             "--about" => env.about.push(value()?),
             "--base" | "--base-id" => add_base(&mut base, arg, value()?)?,
             "--no-about" => no_about = true,
@@ -172,10 +202,10 @@ pub(crate) fn from_args(
             // held thing sets the keys it names (`fill::sets`).
             "--sets" => env.sets.get_or_insert_with(Vec::new).push(value()?),
             "--sets-nothing" => {
-                nothing = true;
+                set_flags.nothing = true;
                 env.sets.get_or_insert_with(Vec::new);
             }
-            "--whole" => whole = true,
+            "--whole" => set_flags.whole = true,
             "--occurred" => env.occurred = Some(value()?),
             "--no-occurred" => no_occurred = true,
             "--observer" => env.observer = value()?,
@@ -186,12 +216,12 @@ pub(crate) fn from_args(
             flag => return Err(usage(format!("{verb} does not take {flag}"))),
         }
     }
-    if nothing && env.sets.as_ref().is_some_and(|keys| !keys.is_empty()) {
-        return Err(usage("--sets-nothing takes no --sets beside it"));
+    if root && (env.of.is_some() || !env.prev.is_empty()) {
+        return Err(usage(
+            "--root cannot be combined with --of or --prev. Use --root alone for a keyless root.",
+        ));
     }
-    if whole && env.sets.is_some() {
-        return Err(usage("--whole takes no --sets or --sets-nothing beside it"));
-    }
+    let sets = set_flags.mode(&env)?;
     if no_about && !env.about.is_empty() {
         return Err(usage("--no-about takes no --about beside it"));
     }
@@ -209,11 +239,6 @@ pub(crate) fn from_args(
     if let Some(message) = message {
         fields.push(("text".to_owned(), Json::Str(message)));
     }
-    let sets = if whole || env.sets.is_some() {
-        Sets::Stated
-    } else {
-        Sets::Named
-    };
     let draft = Draft {
         label: None,
         env,
@@ -229,7 +254,11 @@ pub(crate) fn from_args(
         occurred,
         sets,
     };
-    Ok((statement, base))
+    Ok(Single {
+        statement,
+        base,
+        root,
+    })
 }
 
 fn shape(line: usize, what: &str) -> Fail {

@@ -480,6 +480,7 @@ fn fixed_input_writers_keep_their_signed_lines() {
     let baseline = writes(&fixed_store("kiln-description-writes"));
     for (name, desc) in [
         ("yard-description-writes", FULL),
+        ("workshop-description-writes", r#"{"version":1,"kinds":{}}"#),
         ("potter-description-writes", BAD),
         ("backups-description-writes", UNKNOWN),
     ] {
