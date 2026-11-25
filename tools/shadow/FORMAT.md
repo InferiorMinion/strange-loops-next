@@ -67,7 +67,15 @@ this pin equal. A changed kind, fold or configured field membership gives
 The exporter requires one each of `name`, `store` and `loops`. Top-level
 `observers` and `sources` blocks may repeat. Each takes no arguments, and
 the reader checks its syntax and skips its contents. A kind has
-one `fold` with one `items "by" "<field>"` or `items "collect" N`. Under
+one `fold` of one or more slots, `<target> "<op>" <args>`, each target
+once. The ops are the old tool's: `by` and `sum`, `max`, `min` and `avg`
+take one quoted field, `collect` a count, `window` a count and a field,
+and `inc`, `count` and `latest` nothing. The kind is read as the old tool
+reads it: a first `by "<field>"` slot keys it (`{"by": field}`); otherwise
+its one `collect N` slot, in any place, collects it (`{"collect": N}`).
+Every other slot computes from the same facts, so it is checked and left
+out of the map. A second `by`, a `by` that is not first, a second
+`collect`, or no first `by` and no `collect` is refused. Under
 a kind, `edge`, `lifecycle`, `search`, `preview` and `boundary` are skipped,
 including their child blocks. A `boundary` beside the kinds is skipped too.
 The reader supports newline and semicolon terminators, quoted strings,
